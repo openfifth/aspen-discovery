@@ -282,6 +282,9 @@ class Library extends DataObject {
 	public /** @noinspection PhpUnused */
 		$showLibraryHoursNoticeOnAccountPages;
 	public $showShareOnExternalSites;
+	public $sharerLinkFacebook;
+	public $sharerLinkPinterest;
+	public $sharerLinkTwitter;
 	public /** @noinspection PhpUnused */
 		$barcodePrefix;
 	public $libraryCardBarcodeStyle;
@@ -3064,6 +3067,39 @@ class Library extends DataObject {
 						'description' => 'Whether or not sharing on external sites (Twitter, Facebook, Pinterest, etc.) is shown',
 						'hideInLists' => true,
 						'default' => 1,
+					],
+					'sharerLinksSection' => [
+						'property' => 'sharerLinksSection',
+						'type' => 'section',
+						'label' => 'Share Links To Show',
+						'hideInLists' => true,
+						'permissions' =>['Library Catalog Options'],
+						'properties' => [
+							'sharerLinkTwitter' => [
+								'property' => 'sharerLinkTwitter',
+								'type' => 'checkbox',
+								'label' => 'Show Sharing Link To Twitter',
+								'description' => 'Whether or not sharing on Twitter is shown',
+								'hideInLists' => true,
+								'default' => 1,
+							],
+							'sharerLinkFacebook' => [
+								'property' => 'sharerLinkFacebook',
+								'type' => 'checkbox',
+								'label' => 'Show Sharing Link To Facebook',
+								'description' => 'Whether or not sharing on Facebook is shown',
+								'hideInLists' => true,
+								'default' => 1,
+							],
+							'sharerLinkPinterest' => [
+								'property' => 'sharerLinkPinterest',
+								'type' => 'checkbox',
+								'label' => 'Show Sharing Link To Pinterest',
+								'description' => 'Whether or not sharing on Pinterest is shown',
+								'hideInLists' => true,
+								'default' => 1,
+							],
+						],
 					],
 				],
 			],
