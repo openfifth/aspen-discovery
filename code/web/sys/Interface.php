@@ -677,6 +677,9 @@ class UInterface extends Smarty {
 			$this->assign('showEmailThis', $location->showEmailThis && $library->showEmailThis);
 			$showStaffView = $groupedWorkDisplaySettings->showStaffView;
 			$this->assign('showShareOnExternalSites', $location->showShareOnExternalSites && $library->showShareOnExternalSites);
+			$this->assign('sharerLinkTwitter', $library->sharerLinkTwitter);
+			$this->assign('sharerLinkFacebook', $library->sharerLinkFacebook);
+			$this->assign('sharerLinkPinterest', $library->sharerLinkPinterest);
 			$this->assign('showGoodReadsReviews', $groupedWorkDisplaySettings->showGoodReadsReviews);
 			$showHoldButton = (($location->showHoldButton == 1) && ($library->showHoldButton == 1)) ? 1 : 0;
 			$showHoldButtonInSearchResults = (($location->showHoldButton == 1) && ($library->showHoldButtonInSearchResults == 1)) ? 1 : 0;
@@ -693,6 +696,9 @@ class UInterface extends Smarty {
 			$this->assign('showComments', $groupedWorkDisplaySettings->showComments);
 			$this->assign('showEmailThis', $library->showEmailThis);
 			$this->assign('showShareOnExternalSites', $library->showShareOnExternalSites);
+			$this->assign('sharerLinkTwitter', $library->sharerLinkTwitter);
+			$this->assign('sharerLinkFacebook', $library->sharerLinkFacebook);
+			$this->assign('sharerLinkPinterest', $library->sharerLinkPinterest);
 			$showStaffView = $library->getGroupedWorkDisplaySettings()->showStaffView;
 			$this->assign('showSimilarTitles', $groupedWorkDisplaySettings->showSimilarTitles);
 			$this->assign('showSimilarAuthors', $groupedWorkDisplaySettings->showSimilarAuthors);
