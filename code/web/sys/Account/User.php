@@ -4170,6 +4170,9 @@ class User extends DataObject {
 		$sections['translations']->addAction(new AdminAction('Languages', 'Define which languages are available within Aspen Discovery.', '/Translation/Languages'), 'Administer Languages');
 		$sections['translations']->addAction(new AdminAction('Translations', 'Translate the user interface of Aspen Discovery.', '/Translation/Translations'), 'Translate Aspen');
 
+		$sections['community'] = new AdminSection('Community Engagement');
+		$sections['community']->addAction(new AdminAction('Campaigns', 'Create and view campaigns.', '/Community/Campaigns'), 'Administer All Basic Pages');
+		$sections['community']->addAction(new AdminAction('Milestones', 'Create and view milestones.', '/Community/Milestones'), 'Administer All Basic Pages');
 		$sections['cataloging'] = new AdminSection('Catalog / Grouped Works');
 		$groupedWorkAction = new AdminAction('Grouped Work Display', 'Define information about what is displayed for Grouped Works in search results and full record displays.', '/Admin/GroupedWorkDisplay');
 		$groupedWorkAction->addSubAction(new AdminAction('Grouped Work Facets', 'Define information about what facets are displayed for grouped works in search results and Advanced Search.', '/Admin/GroupedWorkFacets'), [
