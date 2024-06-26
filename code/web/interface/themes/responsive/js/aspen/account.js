@@ -2845,6 +2845,11 @@ AspenDiscovery.Account = (function () {
 				}
 			});
 			return false;
+		},
+		seeCampaigns: function () {
+			var url = Globals.path + "/MyAccount/AJAX?method=seeAvailableCampaigns";
+			document.location.href = url;
+			return false;
 		}
 	};
 }(AspenDiscovery.Account || {}));
