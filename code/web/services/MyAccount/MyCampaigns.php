@@ -35,7 +35,7 @@ class MyCampaigns extends MyAccount {
         $campaign->find();
         while ($campaign->fetch()) {
             $campaignId = $campaign->id;
-
+            $campaign->progress = $this->calculateProgress($campaign->id, $userId);
             $isEnrolled = $this->checkUserEnrollment($userId, $campaignId);
             $campaign->enrolled = $isEnrolled;
 
@@ -60,6 +60,10 @@ class MyCampaigns extends MyAccount {
     
         // Check if the count is greater than 0
         return $result['count'] > 0;
+    }
+
+    function calculateProgress() {
+        return 75;
     }
 
     function getBreadcrumbs(): array

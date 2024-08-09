@@ -26,7 +26,14 @@
                             {/if}
                         </td>
                         <td>
-                        Progress Bar
+                        {if $campaign->enrolled}
+                            <div class="progess" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
+                                <div class="progress-bar" role="progressbar" aria-valuenow="{$campaing->progress}" aria-valuemin="0"
+                                    aria-valuemax="100" style="width: {$campaign->progress}%;">
+                                    {$campaign->progress}%
+                                </div>
+                            </div>
+                        {/if}
                         </td>
                         <td>
                         {if $campaign->enrolled}
