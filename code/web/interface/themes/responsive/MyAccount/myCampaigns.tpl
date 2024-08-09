@@ -19,7 +19,7 @@
                     <tr>
                         <td>{$campaign->name}</td>
                         <td>
-                            {if $campain->enrolled}
+                            {if $campaign->enrolled}
                                 {translate text="Enrolled" isPublicFacing=true}
                             {else}
                                 {translate text="Unenrolled" isPublicFacing=true}
@@ -29,7 +29,11 @@
                         Progress Bar
                         </td>
                         <td>
-                                <button>Button</button>
+                        {if $campaign->enrolled}
+                            <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
+                        {else}
+                                <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
+                        {/if}
                         </td>
                     </tr>
                 {/foreach}

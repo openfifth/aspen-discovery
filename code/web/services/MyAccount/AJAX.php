@@ -8939,8 +8939,121 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	/** @noinspection PhpUnused */
-	function getYearInReviewSlide(): array {
+	public function enrollCampaign() {
+		require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+		require_once ROOT_DIR . '/sys/Community/Campaign.php';
+
+		$campaignId = $_GET['campaignId'] ?? null;
+
+		if (!$campaignId) {
+			return[
+				'success' => false,
+           		 'message' => 'Campaign ID is missing.'
+			];
+		}
+
+		$userId = UserAccount::getActiveUserId();
+		if (!$userId) {
+			return [
+				'success' => false,
+				'message' => 'User is not logged in.'
+			];
+		}
+
+		$userCampaign = new UserCampaign();
+        $userCampaign->userId = $userId;
+        $userCampaign->campaignId = $campaignId;
+		$campaign = new Campaign();
+		$campaign->id = $campaignId;
+		if (!$campaign->find(true)) {
+			return [
+				'success' => false,
+				'message' => 'Campaign not found.'
+			];
+		}
+
+		if ($userCampaign->find(true)) {
+			return [
+				'success' => false,
+				'message' => 'User is already enrolled in this campaign.'
+			];
+		}
+
+		if ($userCampaign->insert()) {
+			$campaign->enrollmentCounter++;
+			$campaign->update();
+			return [
+				'success' => true,
+				'message' => 'User enrolled in campaign successfully.'
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => 'Failed to enroll user in campaign.'
+			];
+		}
+	}
+
+	public function unenrollCampaign() {
+		require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+		require_once ROOT_DIR . '/sys/Community/Campaign.php';
+
+		$campaignId = $_GET['campaignId'] ?? null;
+
+		if (!$campaignId) {
+			return [
+				'success' => false,
+				'message' => 'Campaign ID is missing.'
+			];
+		}
+
+		$userId = UserAccount::getActiveUserId();
+		if (!$userId) {
+			return [
+				'success' => false,
+				'message' => 'User is not logged in.'
+			];
+		}
+
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
+
+		//Find user campaign entry and delete
+		if ($userCampaign->find(true)) {
+			$campaign = new Campaign();
+			$campaign->id = $campaignId;
+			if ($campaign->find(true)) {
+				if ($userCampaign->delete()) {
+					//Increase unenrollment counter
+					$campaign->unenrollmentCounter++;
+					$campaign->update();
+
+					return [
+						'success' => true,
+						'message' => 'User has successfully unenrolled.'
+					];
+				} else {
+					return [
+						'success' => false,
+						'message' => 'Failed to unenroll.'
+					];
+				}
+			} else {
+				return [
+					'success' => false,
+					'message' => 'Campaign not found.'
+				];
+			}
+		} else {
+			return [
+				'success' => false,
+				'message' => 'User is not enrolled in this campaign.'
+			];
+		}
+	}
+
+	function getYearInReviewSlide() : array {
 		$result = [
 			'success' => false,
 			'title' => translate([

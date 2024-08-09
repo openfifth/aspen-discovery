@@ -8365,11 +8365,60 @@ AspenDiscovery.Account = (function () {
 			});
 			return false;
 		},
+		enroll: function (campaignId, userId) {
+			if (Globals.loggedIn) {
+				var url = Globals.path + "/MyAccount/AJAX";
+				var params = {
+					method: 'enrollCampaign',
+					campaignId: campaignId,
+					userId: userId
+				};
+				$.getJSON(url, params, function (data) {
+					if (data.success) {
+						alert('You have been enrolled in this campaign');
+						window.location.reload();
+					} else {
+						alert('Enrollment failed: ' + data.message);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+				});
+			} else {
+				AspenDiscovery.Account.ajaxLogin(null, function() {
+					return AspenDiscovery.Account.enroll(campaignId, userId);
+				}, false);
+			}
+		},
+		unenroll: function (campaignId, userId) {
+			console.log('unenroll');
+			if (Globals.loggedIn) {
+				var url = Globals.path + "/MyAccount/AJAX";
+				var params = {
+					method: 'unenrollCampaign',
+					campaignId: campaignId,
+					userId: userId,
+				};
+				$.getJSON(url, params, function(data) {
+					if (data.success) {
+						alert('You have unenrolled from this campaign');
+						window.location.reload();
+					} else {
+						alert('Failed to unenroll: ' + data.message);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+				})
+			} else {
+				AspenDiscovery.Account.ajaxLogin(null, function() {
+					return AspenDiscovery.Account.unenroll(campaignId, userId);
+				}, false);
+			}
+		},
 		seeCampaigns: function () {
 			var url = Globals.path + "/MyAccount/AJAX?method=seeAvailableCampaigns";
 			document.location.href = url;
 			return false;
-		}
+		},
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {
