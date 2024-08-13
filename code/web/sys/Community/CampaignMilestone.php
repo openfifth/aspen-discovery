@@ -2,6 +2,8 @@
 require_once ROOT_DIR . '/sys/Community/Reward.php';
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
 
+require_once ROOT_DIR . '/sys/Community/Milestone.php';
+
 class CampaignMilestone extends DataObject {
     public $__table = 'ce_campaign_milestones';
     public $id;
