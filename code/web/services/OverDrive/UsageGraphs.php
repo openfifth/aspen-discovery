@@ -1,12 +1,14 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveUsage.php';
 require_once ROOT_DIR . '/sys/OverDrive/OverDriveRecordUsage.php';
 require_once ROOT_DIR . '/sys/OverDrive/OverDriveStats.php';
 
-class OverDrive_Graphs extends Admin_Admin {
+
+class OverDrive_UsageGraphs extends Admin_Admin {
 	function launch() : void {
+
 		global $interface;
 
 		$readerName = new OverDriveDriver();
