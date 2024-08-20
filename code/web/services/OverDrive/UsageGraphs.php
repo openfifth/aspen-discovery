@@ -117,9 +117,7 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 			$stats->selectAdd('year');
 			$stats->selectAdd('month');
 			$stats->orderBy('year, month');
-			// $stats->selectAdd('SUM(numHoldsPlaced) as numHoldsPlaced');
-			// $stats->selectAdd('SUM(numCheckouts) as numCheckouts');
-	
+			
 			if ($stat =='failedLoans' || $stat =='general'){
 				$dataSeries['Total Failed Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$stats->selectAdd('SUM(numFailedCheckouts) as numFailedCheckouts');
@@ -175,8 +173,6 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 				if ( $stat != 'general' || !in_array("{$stats->month}-{$stats->year}", $columnLabels)) {  // prevents the multiple addition of a curPeriod
 					$columnLabels[] = $curPeriod;
 				}
-				// $dataSeries['Total Holds']['data'][$curPeriod] = $stats->numHoldsPlaced;
-				// $dataSeries['Total Checkouts']['data'][$curPeriod] = $stats->numCheckouts;
 				if ($stat =='failedLoans' || $stat =='general'){
 					/** @noinspection PhpUndefinedFieldInspection */
 					$dataSeries['Total Failed Loans']['data'][$curPeriod] = $stats->numFailedCheckouts;
