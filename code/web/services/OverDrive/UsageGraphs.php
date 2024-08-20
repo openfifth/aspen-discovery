@@ -23,136 +23,6 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 			$instanceName = '';
 		}
 
-		$dataSeries = [];
-		$columnLabels = [];
-
-		$dataSeries['Total Usage'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Unique Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Records Used'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Failed Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Checkouts'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Failed Checkouts'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Renewals'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Early Returns'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Holds Cancelled'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Holds Frozen'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Holds Thawed'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Downloads'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Previews'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Options Updates'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total API Errors'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$dataSeries['Total Connection Failures'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
-		$userUsage = new UserOverDriveUsage();
-		$userUsage->groupBy('year, month');
-		if (!empty($instanceName)) {
-			$userUsage->instance = $instanceName;
-		}
-		$userUsage->selectAdd();
-		$userUsage->selectAdd('year');
-		$userUsage->selectAdd('month');
-		$userUsage->selectAdd('COUNT(*) as numUsers');
-		$userUsage->selectAdd('SUM(usageCount) as sumUsage');
-		$userUsage->orderBy('year, month');
-		$userUsage->find();
-		while ($userUsage->fetch()) {
-			$curPeriod = "$userUsage->month-$userUsage->year";
-			$columnLabels[] = $curPeriod;
-			/** @noinspection PhpUndefinedFieldInspection */
-			$dataSeries['Total Usage']['data'][$curPeriod] = $userUsage->sumUsage;
-			/** @noinspection PhpUndefinedFieldInspection */
-			$dataSeries['Unique Users']['data'][$curPeriod] = $userUsage->numUsers;
-
-			//Make sure we have default values for all the other series
-			$dataSeries['Records Used']['data'][$curPeriod] = 0;
-			$dataSeries['Total Holds']['data'][$curPeriod] = 0;
-			$dataSeries['Total Failed Holds']['data'][$curPeriod] = 0;
-			$dataSeries['Total Checkouts']['data'][$curPeriod] = 0;
-			$dataSeries['Total Failed Checkouts']['data'][$curPeriod] = 0;
-			$dataSeries['Total Early Returns']['data'][$curPeriod] = 0;
-			$dataSeries['Total Renewals']['data'][$curPeriod] = 0;
-			$dataSeries['Total Holds Cancelled']['data'][$curPeriod] = 0;
-			$dataSeries['Total Holds Frozen']['data'][$curPeriod] = 0;
-			$dataSeries['Total Holds Thawed']['data'][$curPeriod] = 0;
-			$dataSeries['Total Downloads']['data'][$curPeriod] = 0;
-			$dataSeries['Total Previews']['data'][$curPeriod] = 0;
-			$dataSeries['Total Options Updates']['data'][$curPeriod] = 0;
-			$dataSeries['Total API Errors']['data'][$curPeriod] = 0;
-			$dataSeries['Total Connection Failures']['data'][$curPeriod] = 0;
-		}
-
-		//Load Record Stats
-		$stats = new OverDriveStats();
-		$stats->groupBy('year, month');
-		if (!empty($instanceName)) {
-			$stats->instance = $instanceName;
-		}
-		$stats->selectAdd();
-		$stats->selectAdd('year');
-		$stats->selectAdd('month');
-		$stats->selectAdd('SUM(numHoldsPlaced) as numHoldsPlaced');
-		$stats->selectAdd('SUM(numFailedHolds) as numFailedHolds');
-		$stats->selectAdd('SUM(numCheckouts) as numCheckouts');
-		$stats->selectAdd('SUM(numFailedCheckouts) as numFailedCheckouts');
-		$stats->selectAdd('SUM(numEarlyReturns) as numEarlyReturns');
-		$stats->selectAdd('SUM(numRenewals) as numRenewals');
-		$stats->selectAdd('SUM(numHoldsCancelled) as numHoldsCancelled');
-		$stats->selectAdd('SUM(numHoldsFrozen) as numHoldsFrozen');
-		$stats->selectAdd('SUM(numHoldsThawed) as numHoldsThawed');
-		$stats->selectAdd('SUM(numDownloads) as numDownloads');
-		$stats->selectAdd('SUM(numPreviews) as numPreviews');
-		$stats->selectAdd('SUM(numOptionsUpdates) as numOptionsUpdates');
-		$stats->selectAdd('SUM(numApiErrors) as numApiErrors');
-		$stats->selectAdd('SUM(numConnectionFailures) as numConnectionFailures');
-		$stats->orderBy('year, month');
-		$stats->find();
-		while ($stats->fetch()) {
-			$curPeriod = "$stats->month-$stats->year";
-			$dataSeries['Total Holds']['data'][$curPeriod] = $stats->numHoldsPlaced;
-			$dataSeries['Total Failed Holds']['data'][$curPeriod] = $stats->numFailedHolds;
-			$dataSeries['Total Checkouts']['data'][$curPeriod] = $stats->numCheckouts;
-			$dataSeries['Total Failed Checkouts']['data'][$curPeriod] = $stats->numFailedCheckouts;
-			$dataSeries['Total Early Returns']['data'][$curPeriod] = $stats->numEarlyReturns;
-			$dataSeries['Total Renewals']['data'][$curPeriod] = $stats->numRenewals;
-			$dataSeries['Total Holds Cancelled']['data'][$curPeriod] = $stats->numHoldsCancelled;
-			$dataSeries['Total Holds Frozen']['data'][$curPeriod] = $stats->numHoldsFrozen;
-			$dataSeries['Total Holds Thawed']['data'][$curPeriod] = $stats->numHoldsThawed;
-			$dataSeries['Total Downloads']['data'][$curPeriod] = $stats->numDownloads;
-			$dataSeries['Total Previews']['data'][$curPeriod] = $stats->numPreviews;
-			$dataSeries['Total Options Updates']['data'][$curPeriod] = $stats->numOptionsUpdates;
-			$dataSeries['Total API Errors']['data'][$curPeriod] = $stats->numApiErrors;
-			$dataSeries['Total Connection Failures']['data'][$curPeriod] = $stats->numConnectionFailures;
-		}
-
-		$recordUsage = new OverDriveRecordUsage();
-		$recordUsage->groupBy('year, month');
-		if (!empty($instanceName)) {
-			$recordUsage->instance = $instanceName;
-		}
-		$recordUsage->selectAdd();
-		$recordUsage->selectAdd('year');
-		$recordUsage->selectAdd('month');
-		$recordUsage->selectAdd('COUNT(*) as numRecordsUsed');
-		$recordUsage->selectAdd('SUM(timesHeld) as numHoldsPlaced');
-		$recordUsage->selectAdd('SUM(timesCheckedOut) as numCheckouts');
-		$recordUsage->orderBy('year, month');
-		$recordUsage->find();
-		while ($recordUsage->fetch()) {
-			$curPeriod = "$stats->month-$stats->year";
-			/** @noinspection PhpUndefinedFieldInspection */
-			$dataSeries['Records Used']['data'][$curPeriod] = $recordUsage->numRecordsUsed;
-			/** @noinspection PhpUndefinedFieldInspection */
-			$dataSeries['Total Holds']['data'][$curPeriod] = $recordUsage->numHoldsPlaced;
-			/** @noinspection PhpUndefinedFieldInspection */
-			$dataSeries['Total Checkouts']['data'][$curPeriod] = $recordUsage->numCheckouts;
-		}
-
-		$interface->assign('columnLabels', $columnLabels);
-		$interface->assign('dataSeries', $dataSeries);
-		$interface->assign('translateDataSeries', true);
-		$interface->assign('translateColumnLabels', false);
-
-
 		$interface->assign('graphTitle', $title);
 		$interface->assign('section', 'OverDrive');
 		$interface->assign('showCSVExportButton', true);
@@ -180,6 +50,236 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 			'View System Reports',
 			'View Dashboards',
 		]);
+	}
+
+	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+		global $interface;
+
+		$dataSeries = [];
+		$columnLabels = [];
+
+		// Load stats from user_overdrive_usage
+		if ($stat =='activeUsers' || $stat =='general'){
+			$userUsage = new UserOverDriveUsage();
+			$userUsage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$userUsage->instance = $instanceName;
+			}
+			$userUsage->selectAdd();
+			$userUsage->selectAdd('year');
+			$userUsage->selectAdd('month');
+			$userUsage->orderBy('year, month');
+
+			if ($stat =='activeUsers' || $stat =='general'){
+				$userUsage->selectAdd('COUNT(*) as numUsers');
+				$dataSeries['Unique Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			}
+			if ($stat =='general'){			
+				$userUsage->selectAdd('SUM(usageCount) as sumUsage');
+				$dataSeries['Total Usage'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			}
+			$userUsage->find();
+
+			while ($userUsage->fetch()) {
+				$curPeriod = "{$userUsage->month}-{$userUsage->year}";
+				$columnLabels[] = $curPeriod;
+				if ($stat =='activeUsers' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Usage']['data'][$curPeriod] = $userUsage->sumUsage;
+				}
+				if ($stat =='general'){	
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Unique Users']['data'][$curPeriod] = $userUsage->numUsers;
+				}
+			}
+		}
+
+		// Load stats from overdrive_stats
+		if ($stat =='failedLoans' ||
+			$stat =='failedHolds' ||
+			$stat =='earlyReturns' ||
+			$stat =='renewals' ||
+			$stat =='holdsCancelled' ||
+			$stat =='holdsFrozen' ||
+			$stat =='holdsThawed' ||
+			$stat =='downloads' ||
+			$stat =='previews' ||
+			$stat =='optionUpdates' ||
+			$stat =='apiErrors' ||
+			$stat =='connectionFailures' ||
+			$stat == 'general') {
+			$stats = new OverDriveStats();
+			$stats->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$stats->instance = $instanceName;
+			}
+			$stats->selectAdd();
+			$stats->selectAdd('year');
+			$stats->selectAdd('month');
+			$stats->orderBy('year, month');
+			// $stats->selectAdd('SUM(numHoldsPlaced) as numHoldsPlaced');
+			// $stats->selectAdd('SUM(numCheckouts) as numCheckouts');
+	
+			if ($stat =='failedLoans' || $stat =='general'){
+				$dataSeries['Total Failed Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numFailedCheckouts) as numFailedCheckouts');
+			}
+			if ($stat =='failedHolds' || $stat =='general'){
+				$dataSeries['Total Failed Loans'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numFailedHolds) as numFailedHolds');
+			}
+			if ($stat =='earlyReturns' || $stat =='general'){
+				$dataSeries['Total Early Returns'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numEarlyReturns) as numEarlyReturns');
+			}
+			if ($stat =='renewals' || $stat =='general'){
+				$dataSeries['Total Renewals'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numRenewals) as numRenewals');
+			}
+			if ($stat =='holdsCancelled' || $stat =='general'){
+				$dataSeries['Total Holds Cancelled'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numHoldsCancelled) as numHoldsCancelled');
+			}
+			if ($stat =='holdsFrozen' || $stat =='general'){
+				$dataSeries['Total Holds Frozen'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numHoldsFrozen) as numHoldsFrozen');
+			}
+			if ($stat =='holdsThawed' || $stat =='general'){
+				$dataSeries['Total Holds Thawed'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numHoldsThawed) as numHoldsThawed');
+			}
+			if ($stat =='downloads' || $stat =='general'){
+				$dataSeries['Total Downloads'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numDownloads) as numDownloads');
+			}
+			if ($stat =='previews' || $stat =='general'){
+				$dataSeries['Total Previews'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numPreviews) as numPreviews');
+			}
+			if ($stat =='optionUpdates' || $stat =='general'){
+				$dataSeries['Total Options Updates'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numOptionsUpdates) as numOptionsUpdates');
+			}
+			if ($stat =='apiErrors' || $stat =='general'){
+				$dataSeries['Total API Errors'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numApiErrors) as numApiErrors');
+			}
+			if ($stat =='connectionFailures' || $stat =='general'){
+				$dataSeries['Total Connection Failures'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$stats->selectAdd('SUM(numConnectionFailures) as numConnectionFailures');
+			}
+
+			$stats->find();
+			while ($stats->fetch()) {
+				$curPeriod = "{$stats->month}-{$stats->year}";
+				if ( $stat != 'general' || !in_array("{$stats->month}-{$stats->year}", $columnLabels)) {  // prevents the multiple addition of a curPeriod
+					$columnLabels[] = $curPeriod;
+				}
+				// $dataSeries['Total Holds']['data'][$curPeriod] = $stats->numHoldsPlaced;
+				// $dataSeries['Total Checkouts']['data'][$curPeriod] = $stats->numCheckouts;
+				if ($stat =='failedLoans' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Failed Loans']['data'][$curPeriod] = $stats->numFailedCheckouts;
+				}
+				if ($stat =='failedHolds' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Failed Holds']['data'][$curPeriod] = $stats->numFailedHolds;
+				}
+				if ($stat =='earlyReturns' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Early Returns']['data'][$curPeriod] = $stats->numEarlyReturns;
+				}
+				if ($stat =='renewals' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Renewals']['data'][$curPeriod] = $stats->numRenewals;
+				}
+				if ($stat =='holdsCancelled' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Holds Cancelled']['data'][$curPeriod] = $stats->numHoldsCancelled;
+				}
+				if ($stat =='holdsFrozen' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Holds Frozen']['data'][$curPeriod] = $stats->numHoldsFrozen;
+				}
+				if ($stat =='holdsThawed' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Holds Thawed']['data'][$curPeriod] = $stats->numHoldsThawed;
+				}
+				if ($stat =='downloads' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Downloads']['data'][$curPeriod] = $stats->numDownloads;
+				}
+				if ($stat =='previews' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Previews']['data'][$curPeriod] = $stats->numPreviews;
+				}
+				if ($stat =='optionUpdates' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Options Updates']['data'][$curPeriod] = $stats->numOptionsUpdates;
+				}
+				if ($stat =='apiErrors' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total API Errors']['data'][$curPeriod] = $stats->numApiErrors;
+				}
+				if ($stat =='connectionFailures' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Connection Failures']['data'][$curPeriod] = $stats->numConnectionFailures;
+				}
+			}
+		}
+
+		// Load stats from overdrive_record_usage
+		if ($stat =='recordsWithUsage' ||
+			$stat =='holds' ||
+			$stat =='loans' ||
+			$stat == 'general') {		
+			$recordUsage = new OverDriveRecordUsage();
+			$recordUsage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$recordUsage->instance = $instanceName;
+			}
+			$recordUsage->selectAdd();
+			$recordUsage->selectAdd('year');
+			$recordUsage->selectAdd('month');
+			$recordUsage->orderBy('year, month');
+
+			if ($stat =='recordsWithUsage' || $stat =='general'){
+				$recordUsage->selectAdd('COUNT(*) as numRecordsUsed');
+				$dataSeries['Records Used'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			}
+			if ($stat =='holds' || $stat =='general'){
+				$recordUsage->selectAdd('SUM(timesHeld) as numHoldsPlaced');
+				$dataSeries['Total Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			}
+			if ($stat =='loans' || $stat =='general'){
+				$recordUsage->selectAdd('SUM(timesCheckedOut) as numCheckouts');
+				$dataSeries['Total Checkouts'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			}
+
+			$recordUsage->find();
+			while ($recordUsage->fetch()) {
+				$curPeriod = "{$recordUsage->month}-{$recordUsage->year}";
+				if ( $stat != 'general' || !in_array("{$recordUsage->month}-{$recordUsage->year}", $columnLabels)) {  // prevents the multiple addition of a curPeriod
+					$columnLabels[] = $curPeriod;
+				}
+				if ($stat =='recordsWithUsage' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Records Used']['data'][$curPeriod] = $recordUsage->numRecordsUsed;
+				}
+				if ($stat =='holds' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Holds']['data'][$curPeriod] = $recordUsage->numHoldsPlaced;
+				}
+				if ($stat =='loans' || $stat =='general'){
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Checkouts']['data'][$curPeriod] = $recordUsage->numCheckouts;
+				}
+			}
+		}
+		$interface->assign('columnLabels', $columnLabels);
+		$interface->assign('dataSeries', $dataSeries);
+		$interface->assign('translateDataSeries', true);
+		$interface->assign('translateColumnLabels', false);
 	}
 
 	private function assignGraphSpecificTitle($stat) {
