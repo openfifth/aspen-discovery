@@ -12,6 +12,7 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 
 		global $interface;
 
+		$stat = $_REQUEST['stat'];
 		$readerName = new OverDriveDriver();
 		$readerName = $readerName->getReaderName();
 
@@ -151,6 +152,7 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 		$interface->assign('translateDataSeries', true);
 		$interface->assign('translateColumnLabels', false);
 
+
 		$interface->assign('graphTitle', $title);
 		$interface->assign('section', 'OverDrive');
 		$interface->assign('showCSVExportButton', true);
@@ -178,5 +180,64 @@ class OverDrive_UsageGraphs extends Admin_Admin {
 			'View System Reports',
 			'View Dashboards',
 		]);
+	}
+
+	private function assignGraphSpecificTitle($stat) {
+		global $interface;
+		$title = $interface->getVariable('graphTitle');
+		switch ($stat) {
+			case 'activeUsers':
+				$title .= ' - Active Users';
+				break;
+			case 'recordsWithUsage':
+				$title .= ' - Records With Usage';
+				break;
+			case 'loans':
+				$title .= ' - Loans';
+				break;
+			case 'failedLoans':
+				$title .= ' - Failed Loans';
+				break;
+			case 'renewals':
+				$title .= ' - Renewals';
+				break;
+			case 'earlyReturns':
+				$title .= ' - Early Returns';
+				break;
+			case 'holds':
+				$title .= ' - Holds';
+				break;
+			case 'failedHolds':
+				$title .= ' - Failed Holds';
+				break;
+			case 'holdsCancelled':
+				$title .= ' - Cancelled Holds';
+				break;
+			case 'holdsFrozen':
+				$title .= ' - Holds Frozen';
+				break;
+			case 'holdsThawed':
+				$title .= ' - Holds Thawed';
+				break;
+			case 'downloads':
+				$title .= ' - Downloads';
+				break;
+			case 'previews':
+				$title .= ' - Previews';
+				break;
+			case 'optionUpdates':
+				$title .= ' - Option Updates';
+				break;
+			case 'apiErrors':
+				$title .= ' - API Errors';
+				break;
+			case 'connectionFailures':
+				$title .= ' - Connection Failures';
+				break;
+			case 'general':
+				$title .= ' - General';
+				break;
+		}
+		$interface->assign('graphTitle', $title);
 	}
 }

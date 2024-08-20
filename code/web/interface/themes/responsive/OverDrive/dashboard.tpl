@@ -4,14 +4,18 @@
 		{include file="Admin/selectInterfaceForm.tpl"}
 		<div class="row">
 			<div class="col-xs-12">
-				<a href="/OverDrive/UsageGraphs?instance={$selectedInstance}" title="{translate text="Show Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i> {translate text="View as graph" isAdminFacing=true}</a>
+				<a href="/OverDrive/UsageGraphs?stat=general&instance={$selectedInstance}" title="{translate text="Show Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i> {translate text="View as graph" isAdminFacing=true}</a>
 			</div>
 		</div>
 		<div class="row">
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">
+							{translate text="Active Users" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=activeUsers&instance={$selectedInstance}" title="{translate text="Show Active Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -37,7 +41,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Records With Usage" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Records With Usage" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=recordsWithUsage&instance={$selectedInstance}" title="{translate text="Show Records With Usage Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -63,7 +70,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Loans" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Loans" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=loans&instance={$selectedInstance}" title="{translate text="Show Loans Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -89,7 +99,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Failed Loans" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Failed Loans" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=failedLoans&instance={$selectedInstance}" title="{translate text="Show Failed Loans Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -115,7 +128,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Renewals" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Renewals" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=renewals&instance={$selectedInstance}" title="{translate text="Show Renewals Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -141,7 +157,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Early Returns" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Early Returns" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=earlyReturns&instance={$selectedInstance}" title="{translate text="Show Early Returns Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -167,7 +186,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Holds" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Holds" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=holds&instance={$selectedInstance}" title="{translate text="Show Holds Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -193,7 +215,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Failed Holds" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Failed Holds" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=failedHolds&instance={$selectedInstance}" title="{translate text="Show Failed Holds Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -219,7 +244,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Cancelled Holds" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Cancelled Holds" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=holdsCancelled&instance={$selectedInstance}" title="{translate text="Show Cancelled Holds Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -245,7 +273,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Holds Frozen" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Holds Frozen" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=holdsFrozen&instance={$selectedInstance}" title="{translate text="Show Holds Frozen Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -271,7 +302,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Holds Thawed" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Holds Thawed" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=holdsThawed&instance={$selectedInstance}" title="{translate text="Show Holds Thawed Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -297,7 +331,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Downloads" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Downloads" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=downloads&instance={$selectedInstance}" title="{translate text="Show Downloads Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -323,7 +360,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Previews" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Previews" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=previews&instance={$selectedInstance}" title="{translate text="Show Previews Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -349,7 +389,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Options Updates" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Options Updates" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=optionUpdates&instance={$selectedInstance}" title="{translate text="Show Options Updates Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -375,7 +418,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="API Errors" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="API Errors" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=apiErrors&instance={$selectedInstance}" title="{translate text="Show API Errors Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -401,7 +447,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Connection Failures" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Connection Failures" isAdminFacing=true}
+							{' '}
+							<a href="/OverDrive/UsageGraphs?stat=connectionFailures&instance={$selectedInstance}" title="{translate text="Show Connection Failures Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
