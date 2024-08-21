@@ -52,15 +52,16 @@ class MyCampaigns extends MyAccount {
             foreach ($milestones as $milestone) {
                 $milestoneId = $milestone->milestoneId;
                 //Calculate milestone progress
-                $progress = $this->calculateMilestoneProgress($campaignId, $userId, $milestoneId);
-                $milestoneProgress[$milestoneId] = $progress;
+                $progressResult = $this->calculateMilestoneProgress($campaignId, $userId, $milestoneId);
+                $milestoneProgress[$milestoneId] = $progressResult['progress'];
+                $milestoneCompletedGoals[$milestoneId] = $progressResult['completed'];
                 //Get goal count for milestone
                 $milestoneGoalCount = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
                 $milestoneGoalCounts[$milestoneId] = $milestoneGoalCount;
-                // $milestoneGoal = $milestoneGoalCount;
             }
             $campaign->milestoneProgress = $milestoneProgress;
             $campaign->milestoneGoalCount = $milestoneGoalCounts;
+            $campaign->milestoneCompletedGoals = $milestoneCompletedGoals;
             $campaignList[] = clone $campaign;
         }
         return $campaignList;
@@ -85,7 +86,7 @@ class MyCampaigns extends MyAccount {
     }
 //Keep logic for milestone progress
     function calculateMilestoneProgress($campaignId, $userId, $milestoneId) {
-        require_once ROOT_DIR . '/sys/Community/UserCompletedMilestone.php';
+        require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
      
         $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
 
@@ -93,9 +94,12 @@ class MyCampaigns extends MyAccount {
             return 0;
         }
 
-        $userCompletedGoalCount = 2;
+        $userCompletedGoalCount = MilestoneUsersProgress::getProgressByMilestoneId($milestoneId, $userId);
         $progress = ($userCompletedGoalCount / $goal) * 100;
-        return round($progress, 2);
+        return [
+            'progress' => round($progress, 2),
+            'completed' => $userCompletedGoalCount,
+        ];
     }
 
     function getNumCampaignMilestones($campaignId) {

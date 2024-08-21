@@ -68,7 +68,7 @@
                                             <td>{$campaign->startDate}</td>
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
-                                            <td> Completed / {$campaign->milestoneGoalCount[$milestone->milestoneId]}</td>
+                                            <td> {$campaign->milestoneCompletedGoals[$milestone->milestoneId]} / {$campaign->milestoneGoalCount[$milestone->milestoneId]}</td>
                                             <td>
                                                 <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
                                                     <div class="progress-bar" role="progressbar" aria-valuenow="{$campaign->milestoneProgress[$milestone->milestoneId]}" aria-valuemin="0"
