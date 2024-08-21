@@ -9,7 +9,7 @@ class CloudLibrary_UsageGraphs extends Admin_AbstractUsageGraphs {
 	function launch(): void {
 		$this->launchGraph('CloudLibrary');
 	}
-
+	
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
@@ -37,6 +37,32 @@ class CloudLibrary_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$columnLabels = [];
 
 		// Load stats from cloud_library_record_usage
+		if ($stat == 'activeUsers' ) {
+			$userUsage = new UserCloudLibraryUsage();
+			$userUsage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$userUsage->instance = $instanceName;
+			}
+			$userUsage->selectAdd();
+			$userUsage->selectAdd('year');
+			$userUsage->selectAdd('month');
+			$userUsage->orderBy('year, month');
+			
+			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			$userUsage->selectAdd('COUNT(DISTINCT userId) as numUsers');
+
+			$userUsage->find();
+			while ($userUsage->fetch()) {
+				$curPeriod = "{$userUsage->month}-{$userUsage->year}";
+				if (!in_array("{$userUsage->month}-{$userUsage->year}", $columnLabels)) {  // prevents the multiple addition of a curPeriod
+					$columnLabels[] = $curPeriod;
+				}
+				/** @noinspection PhpUndefinedFieldInspection */
+				$dataSeries['Active Users']['data'][$curPeriod] = $userUsage->numUsers;
+			}
+		}
+
+		// Load stats from cloud_library_record_usage
 		if ($stat == 'recordsWithUsage' ||
 			$stat == 'loans' ||
 			$stat == 'holds') {
@@ -49,16 +75,16 @@ class CloudLibrary_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stats->selectAdd('year');
 			$stats->selectAdd('month');
 			$stats->orderBy('year, month');
-
-			if ($stat == 'Records With Usage'){
+			
+			if ($stat == 'recordsWithUsage'){
 				$dataSeries['Records With Usage'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$stats->selectAdd('COUNT(id) as recordsUsed');
 			}
-			if ($stat == 'totalHolds'){
+			if ($stat == 'holds'){
 				$dataSeries['Total Holds'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$stats->selectAdd('SUM(timesHeld) as totalHolds');
 			}
-			if ($stat == 'totalCheckouts'){
+			if ($stat == 'loans'){
 				$dataSeries['Total Loans'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$stats->selectAdd('SUM(timesCheckedOut) as totalCheckouts');
 			}
