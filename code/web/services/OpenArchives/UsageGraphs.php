@@ -45,6 +45,50 @@ class OpenArchives_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$openArchivesCollection->find();
 		return $openArchivesCollection->fetch()->id;
 	}
+
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+		global $interface;
+
+		$dataSeries = [];
+		$columnLabels = [];
+		$usage = [];
+
+		$collectionName = $_REQUEST['subSection'];
+		$collectionId = $this->getCollectionIdByCollectionName($collectionName);
+
+		// for the graph displaying data retrieved from the user_openArchivesCollection_usage table
+		if ($stat == 'activeUsers') {
+			$usage = new UserOpenArchivesUsage();
+			$usage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$usage->instance = $instanceName;
+			}
+			if (!empty($collectionId)){ // only narrows results down to a specific collection if required
+				$usage->whereAdd("openArchivesCollectionId = $collectionId");
+			}
+			$usage->selectAdd();
+			$usage->selectAdd('year');
+			$usage->selectAdd('month');
+			$usage->orderBy('year, month');
+
+			$dataSeries['Unique Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+			$usage->selectAdd('COUNT(id) as numUsers');
+			// collect the records
+			$usage->find();
+			while ($usage->fetch()) {
+				$curPeriod = "{$usage->month}-{$usage->year}";
+				$columnLabels[] = $curPeriod;
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Unique Users']['data'][$curPeriod] = $usage->numUsers;
+			}
+		}
+
+		$interface->assign('columnLabels', $columnLabels);
+		$interface->assign('dataSeries', $dataSeries);
+		$interface->assign('translateDataSeries', true);
+		$interface->assign('translateColumnLabels', false);
+	}
+
 	private function assignGraphSpecificTitle($stat) {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
