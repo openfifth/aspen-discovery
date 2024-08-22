@@ -83,6 +83,67 @@ class OpenArchives_UsageGraphs extends Admin_AbstractUsageGraphs {
 			}
 		}
 
+		// for the graph displaying data retrieved from the openArchivesCollection_record_usage table
+		if ($stat == 'numRecordViewed' ||
+			$stat == 'numViews' ||
+			$stat == 'numRecordsUsed' ||
+			$stat == 'numClicks') {
+
+			$usage = new OpenArchivesRecordUsage();
+			$recordInfo = new OpenArchivesRecord();
+			$usage->joinAdd($recordInfo, 'INNER', 'record', 'openArchivesRecordId', 'id');
+			$usage->groupBy('year, month');
+			if (!empty($instanceName)) {
+				$usage->instance = $instanceName;
+			}
+			if (!empty($collectionId)){ // only narrows results down to a specific collection if required
+				$usage->whereAdd("sourceCollection = $collectionId");
+			}
+			$usage->selectAdd();
+			$usage->selectAdd('year');
+			$usage->selectAdd('month');
+			$usage->orderBy('year, month');
+
+			if( $stat == 'numRecordViewed') {
+				$dataSeries['Unique Records Viewed'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(IF(timesViewedInSearch>0,1,0)) as numRecordViewed');
+			}
+			if( $stat == 'numViews') {
+				$dataSeries['Total Views'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(timesViewedInSearch) as numViews');
+			}
+			if( $stat == 'numRecordsUsed') {
+				$dataSeries['Unique Records Used (clicked on)'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
+			}
+			if( $stat == 'numClicks') {
+				$dataSeries['Total Clicks'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$usage->selectAdd('SUM(timesUsed) as numClicks');
+			}
+			// collect results
+			$usage->find();
+			while ($usage->fetch()) {
+				$curPeriod = "{$usage->month}-{$usage->year}";
+				$columnLabels[] = $curPeriod;
+				if ($stat == 'numRecordViewed') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Unique Records Viewed']['data'][$curPeriod] = $usage->numRecordViewed;
+				}
+				if ($stat == 'numViews') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Views']['data'][$curPeriod] = $usage->numViews;
+				}
+				if ($stat == 'numRecordsUsed') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Unique Records Used (clicked on)']['data'][$curPeriod] = $usage->numRecordsUsed;
+				}
+				if ($stat == 'numClicks') {
+					/** @noinspection PhpUndefinedFieldInspection */
+					$dataSeries['Total Clicks']['data'][$curPeriod] = $usage->numClicks;
+				}
+			}
+		}
+
 		$interface->assign('columnLabels', $columnLabels);
 		$interface->assign('dataSeries', $dataSeries);
 		$interface->assign('translateDataSeries', true);
