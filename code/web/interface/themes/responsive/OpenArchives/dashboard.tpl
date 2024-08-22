@@ -8,7 +8,10 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Unique Records Viewed" isAdminFacing=true}</h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Unique Records Viewed" isAdminFacing=true}
+								{' '}
+								<a href="/OpenArchives/UsageGraphs?stat=numRecordViewed{if !empty($collectionName)}&subSection={$collectionName}{/if}&instance={$selectedInstance}" title="{translate text="Show Unique Records Viewed Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
@@ -34,7 +37,10 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Total Views" isAdminFacing=true}</h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Total Views" isAdminFacing=true}
+								{' '}
+								<a href="/OpenArchives/UsageGraphs?stat=numViews{if !empty($collectionName)}&subSection={$collectionName}{/if}&instance={$selectedInstance}" title="{translate text="Show Total Views Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
@@ -60,7 +66,10 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Unique Records Used (clicked on)" isAdminFacing=true}</h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Unique Records Used (clicked on)" isAdminFacing=true}
+								{' '}
+								<a href="/OpenArchives/UsageGraphs?stat=numRecordsUsed{if !empty($collectionName)}&subSection={$collectionName}{/if}&instance={$selectedInstance}" title="{translate text="Show Unique Records Used (clicked on) Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
@@ -86,7 +95,10 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Total Clicks" isAdminFacing=true}</h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Total Clicks" isAdminFacing=true}
+								{' '}
+								<a href="/OpenArchives/UsageGraphs?stat=numClicks{if !empty($collectionName)}&subSection={$collectionName}{/if}&instance={$selectedInstance}" title="{translate text="Show Total Clicks Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
@@ -112,7 +124,10 @@
 				<div class="dashboardCategory col-sm-6">
 					<div class="row">
 						<div class="col-sm-10 col-sm-offset-1">
-							<h3 class="dashboardCategoryLabel">{translate text="Unique Logged In Users" isAdminFacing=true}</h3>
+							<h3 class="dashboardCategoryLabel">{translate text="Unique Logged In Users" isAdminFacing=true}
+								{' '}
+								<a href="/OpenArchives/UsageGraphs?stat=activeUsers{if !empty($collectionName)}&subSection={$collectionName}{/if}&instance={$selectedInstance}" title="{translate text="Show Unique Logged In Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+							</h3>
 						</div>
 					</div>
 					<div class="row">
