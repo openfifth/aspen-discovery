@@ -32,6 +32,19 @@ class OpenArchives_UsageGraphs extends Admin_AbstractUsageGraphs {
 		]);
 	}
 
+	/*
+		The only unique identifier available to determine for which
+		openArchivesCollection to fetch data is the openArchivesCollection's name as $collectionName. It is used
+		here to find the openArchivesCollections' id as only this exists on the openArchivesCollection
+		usage tables
+	*/
+	private function getCollectionIdByCollectionName($name) {
+		$openArchivesCollection = new OpenArchivesCollection();
+		$openArchivesCollection->whereAdd('name = "' . $name .'"');
+		$openArchivesCollection->selectAdd();
+		$openArchivesCollection->find();
+		return $openArchivesCollection->fetch()->id;
+	}
 	private function assignGraphSpecificTitle($stat) {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
