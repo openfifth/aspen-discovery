@@ -31,4 +31,28 @@ class OpenArchives_UsageGraphs extends Admin_AbstractUsageGraphs {
 			'View System Reports',
 		]);
 	}
+
+	private function assignGraphSpecificTitle($stat) {
+		global $interface;
+		$title = $interface->getVariable('graphTitle');
+
+		switch ($stat) {
+			case 'numRecordViewed':
+				$title .= ' - Unique Records Viewed';
+				break;
+			case 'numViews':
+				$title .= ' - Total Views';
+				break;
+			case 'numRecordsUsed':
+				$title .= ' - Unique Records Used (clicked on)';
+				break;
+			case 'numClicks':
+				$title .= ' - Total Clicks';
+				break;
+			case 'activeUsers':
+				$title .= ' - Unique Logged In Users';
+				break;
+		}
+		$interface->assign('graphTitle', $title);
+	}
 }
