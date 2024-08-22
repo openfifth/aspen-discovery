@@ -30,4 +30,30 @@ class RBdigital_UsageGraphs extends Admin_AbstractUsageGraphs {
 			'View System Reports',
 		]);
 	}
+
+	private function assignGraphSpecificTitle($stat) {
+		global $interface;
+		$title = $interface->getVariable('graphTitle');
+		switch ($stat) {
+			case 'activeUsers':
+				$title .= ' - Active Users';
+				break;
+			case 'recordsUsed':
+				$title .= ' - Records With Usage';
+				break;
+			case 'totalHolds':
+				$title .= ' - Holds';
+				break;
+			case 'totalCheckouts':
+				$title .= ' - Loans';
+				break;
+			case 'activeMagazines':
+				$title .= ' - Magazines With Usage';
+				break;
+			case 'magazineLoans':
+				$title .= ' - Magazine Checkouts';
+				break;
+		}
+		$interface->assign('graphTitle', $title);
+	}
 }
