@@ -6,7 +6,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}
+							{' '}
+							<a href="/EBSCO/EDSUsageGraphs?stat=activeUsers{if !empty($subSection)}&subSection={$subSection}{/if}&instance={$selectedInstance}" title="{translate text="Show Unique Logged In Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -32,7 +35,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Number of Records Viewed" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Number of Records Viewed" isAdminFacing=true}
+							{' '}
+							<a href="/EBSCO/EDSUsageGraphs?stat=numViews{if !empty($subSection)}&subSection={$subSection}{/if}&instance={$selectedInstance}" title="{translate text="Show Total Views Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -58,7 +64,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Number of Records Clicked" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Number of Records Clicked" isAdminFacing=true}
+							{' '}
+							<a href="/EBSCO/EDSUsageGraphs?stat=numRecordsUsed{if !empty($subSection)}&subSection={$subSection}{/if}&instance={$selectedInstance}" title="{translate text="Show Unique Records Used (clicked on) Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -84,7 +93,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Total Clicks" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Total Clicks" isAdminFacing=true}
+							{' '}
+							<a href="/EBSCO/EDSUsageGraphs?stat=numClicks{if !empty($subSection)}&subSection={$subSection}{/if}&instance={$selectedInstance}" title="{translate text="Show Total Clicks Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
