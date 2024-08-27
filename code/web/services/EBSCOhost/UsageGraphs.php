@@ -30,4 +30,24 @@ class EBSCOhost_UsageGraphs extends Admin_AbstractUsageGraphs {
 			'View Dashboards',
 		]);
 	}
+
+	private function assignGraphSpecificTitle($stat) {
+		global $interface;
+		$title = $interface->getVariable('graphTitle');
+		switch ($stat) {
+			case 'activeUsers':
+				$title .= ' - Active Users';
+			break;
+			case 'numViews':
+				$title .= ' - Number of Records Viewed';
+			break;
+			case 'numRecordsUsed':
+				$title .= ' - Number of Records Clicked';
+			break;
+			case 'numClicks':
+				$title .= ' - Total Clicks';
+			break;
+		}
+		$interface->assign('graphTitle', $title);
+	}
 }
