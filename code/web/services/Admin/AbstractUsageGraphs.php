@@ -33,4 +33,11 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$this->display('usage-graph.tpl', $graphTitle);
 	}
 
+	public function canView(): bool {
+		return UserAccount::userHasPermission([
+			'View Dashboards',
+			'View System Reports',
+		]);
+	}
+
 }
