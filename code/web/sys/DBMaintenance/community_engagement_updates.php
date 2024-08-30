@@ -42,7 +42,7 @@ function getCommunityEngagementUpdates() {
         ],
         'create_reward_table' => [
             'title' => 'Create Reward Table',
-            'description' => 'Create a table to store tyoes of reward',
+            'description' => 'Create a table to store types of reward',
             'sql' => [
                 "CREATE TABLE IF NOT EXISTS ce_reward (
                      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -57,7 +57,7 @@ function getCommunityEngagementUpdates() {
             'description' => 'Create a table to link users and campaigns',
             'sql' => [
                 "CREATE TABLE IF NOT EXISTS ce_user_campaign (
-                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY
+                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     userId INT NOT NULL,
                     campaignId INT NOT NULL,
                     enrollmentDate DATETIME DEFAULT CURRENT_TIMESTAMP,

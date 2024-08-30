@@ -3,7 +3,7 @@
 
     {if empty($campaignList)}
         <div class="alert alert-info">
-            {translate text="There are no available campaign at the moment" isPublicFacing=true}
+            {translate text="There are no available campaigns at the moment" isPublicFacing=true}
         </div>
     {else}
         <table class="table table-striped">
