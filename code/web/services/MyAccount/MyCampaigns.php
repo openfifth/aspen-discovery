@@ -3,6 +3,7 @@ require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
+require_once ROOT_DIR . '/sys/Community/UserCompletedMilestone.php';
 
 class MyCampaigns extends MyAccount {
 
@@ -15,6 +16,8 @@ class MyCampaigns extends MyAccount {
 
         $userId = $this->getUserId();
         $interface->assign('userId', $userId);
+
+
         $this->display('../MyAccount/myCampaigns.tpl', 'My Campaigns');
     }
 
@@ -50,7 +53,7 @@ class MyCampaigns extends MyAccount {
             $campaign->milestones = $milestones;
             $milestoneGoalCounts = [];
             foreach ($milestones as $milestone) {
-                $milestoneId = $milestone->milestoneId;
+                $milestoneId = $milestone->id;
                 //Calculate milestone progress
                 $progressResult = $this->calculateMilestoneProgress($campaignId, $userId, $milestoneId);
                 $milestoneProgress[$milestoneId] = $progressResult['progress'];
@@ -68,8 +71,8 @@ class MyCampaigns extends MyAccount {
     }
 
     function checkUserEnrollment($userId, $campaignId) {
-        global $aspen_db;
-        $query = "SELECT COUNT(*) AS count FROM user_campaign WHERE userId = :userId AND campaignId = :campaignId";
+        global $aspen_db; // Assuming $aspen_db is your PDO instance
+        $query = "SELECT COUNT(*) AS count FROM ce_user_campaign WHERE userId = :userId AND campaignId = :campaignId";
         $stmt = $aspen_db->prepare($query);
     
         // Execute the query with bound parameters

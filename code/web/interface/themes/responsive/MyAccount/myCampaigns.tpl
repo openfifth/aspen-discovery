@@ -68,12 +68,12 @@
                                             <td>{$campaign->startDate}</td>
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
-                                            <td> {$campaign->milestoneCompletedGoals[$milestone->milestoneId]} / {$campaign->milestoneGoalCount[$milestone->milestoneId]}</td>
+                                            <td> {$campaign->milestoneCompletedGoals[$milestone->id]} / {$campaign->milestoneGoalCount[$milestone->id]}</td>
                                             <td>
                                                 <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
-                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$campaign->milestoneProgress[$milestone->milestoneId]}" aria-valuemin="0"
-                                                     aria-valuemax="100" style="width: {$campaign->milestoneProgress[$milestone->milestoneId]}%; line-height: 20px; text-align: center; color: #fff;">
-                                                        {$campaign->milestoneProgress[$milestone->milestoneId]}%
+                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$campaign->milestoneProgress[$milestone->id]}" aria-valuemin="0"
+                                                     aria-valuemax="100" style="width: {$campaign->milestoneProgress[$milestone->id]}%; line-height: 20px; text-align: center; color: #fff;">
+                                                        {$campaign->milestoneProgress[$milestone->id]}%
                                                     </div>
                                                 </div>
                                             </td>
