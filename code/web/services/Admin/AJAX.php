@@ -1681,6 +1681,7 @@ class Admin_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/services/Admin/UsageGraphs.php';
 		$aspenUsageGraph = new Admin_UsageGraphs();
 		$aspenUsageGraph->buildCSV();
+
 	}
 	/**
 	 * Retrieves patron types for the admin_sso account profile and
