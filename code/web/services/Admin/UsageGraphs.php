@@ -21,7 +21,7 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return 'system_reports';
 	}
 
-	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 		global $enabledModules;
 		global $library;
@@ -322,7 +322,7 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle(string $stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		switch ($stat) {
