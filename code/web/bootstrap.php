@@ -232,6 +232,10 @@ try {
 	//Modules are not installed yet
 }
 
+if (array_key_exists('Community', $enabledModules)) {
+	require_once ROOT_DIR . '/sys/Community/action-hooks.php';
+}
+
 $timer->logTime("Basic Initialization");
 loadLibraryAndLocation();
 
