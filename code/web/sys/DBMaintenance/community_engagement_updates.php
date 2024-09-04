@@ -52,6 +52,33 @@ function getCommunityEngagementUpdates() {
                 )ENGINE = InnoDB",
             ],
         ],
+        'add_ce_milestone_progress_entries' => [
+            'title' => 'Add add_ce_milestone_progress_entries database table',
+            'description' => 'Store milestone progress entries to be processed by cronjob',
+            'sql' => [
+                "CREATE TABLE IF NOT EXISTS ce_milestone_progress_entries (
+                     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                     userId INT NOT NULL,
+                     ce_milestone_id INT NOT NULL,
+                     ce_milestone_users_progress_id INT NOT NULL,
+                     tableName VARCHAR(100),
+                     processed TINYINT DEFAULT 0,
+                     object MEDIUMTEXT
+                )ENGINE = InnoDB",
+            ],
+        ],
+        'add_ce_milestone_users_progress' => [
+            'title' => 'Add add_ce_milestone_users_progress database table',
+            'description' => 'Store milestone progress for each user',
+            'sql' => [
+                "CREATE TABLE IF NOT EXISTS ce_milestone_users_progress (
+                     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                     userId INT NOT NULL,
+                     ce_milestone_id INT NOT NULL,
+                     progress INT NOT NULL
+                )ENGINE = InnoDB",
+            ],
+        ],
         'create_user_campaign_table' => [
             'title' => 'Create User Campaign Table',
             'description' => 'Create a table to link users and campaigns',
