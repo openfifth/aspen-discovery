@@ -50,16 +50,24 @@ class Milestone extends DataObject {
                 'type' => 'enum',
                 'label' => 'Conditional Field: ',
                 'values' => [
-                    'title' => 'Title',
-                    'author' => 'Author',
-                    'hold_title' => 'Title',
-                    'hold_author' => 'Author',
-                    'list_id' => 'List Name',
-                    'list_name' => 'List Length',
-                    'work_id' => 'Reviewed Title',
-                    'work_author' => 'Reviewed Author',
+                    'title_display' => 'Title',
+                    'author_display' => 'Author',
+                    'subject_facet' => 'Subject',
                 ],
-                'required' => false,
+                // var_dump($groupedWorkDriver->getSolrField('format_category_main')); #Books, eBooks, Audiobooks, Music, Video
+                // var_dump($groupedWorkDriver->getSolrField('publisherStr'));
+                // var_dump($groupedWorkDriver->getSolrField('title_display'));
+                // var_dump($groupedWorkDriver->getSolrField('topic_facet'));
+                // var_dump($groupedWorkDriver->getSolrField('placeOfPublication'));
+                // var_dump($groupedWorkDriver->getSolrField('publishDate'));
+                // var_dump($groupedWorkDriver->getSolrField('owning_library_main'));
+                // var_dump($groupedWorkDriver->getSolrField('lc_subject'));
+                // var_dump($groupedWorkDriver->getSolrField('subject_facet'));
+                // var_dump($groupedWorkDriver->getSolrField('itype_main'));
+                // var_dump($groupedWorkDriver->getSolrField('format_main'));
+                // var_dump($groupedWorkDriver->getSolrField('language'));
+                // var_dump($groupedWorkDriver->getSolrField('auth_author2')); #contributors
+                // var_dump($groupedWorkDriver->getSolrField('author_display')); #main author
             ],
             'conditionalOperator' => [
                 'property' => 'conditionalOperator',
@@ -158,7 +166,10 @@ class Milestone extends DataObject {
     public function addMilestoneProgressEntry( $object, $userId)
     {
 
-        # First, check if this milestone already has progress for this user
+        if (!$this->conditionalsCheck($object))
+            return;
+
+        # Check if this milestone already has progress for this user
         $milestoneUsersProgress = new MilestoneUsersProgress();
         $milestoneUsersProgress->ce_milestone_id = $this->id;
         $milestoneUsersProgress->userId = $userId;
@@ -181,6 +192,66 @@ class Milestone extends DataObject {
 
         $milestoneUsersProgress->progress++;
         $milestoneUsersProgress->update();
+    }
+
+    /**
+     * Checks if a given object meets the conditionals of this milestone.
+     *
+     * If the object does not have a groupedWorkId, it is assumed to meet the conditionals.
+     * If the milestone does not have a conditional operator, field, or value, it is assumed
+     * to meet the conditionals.
+     *
+     * Otherwise, this method uses the groupedWorkDriver to get the value of the specified
+     * field from the grouped work.  It then checks if the value matches the conditional
+     * operator and value.  If it does, it returns true.  If not, it returns false.
+     *
+     * @param mixed $object The object to check against the conditionals.
+     * @return bool True if the object meets the conditionals, false otherwise.
+     */
+    protected function conditionalsCheck($object)
+    {
+
+        if (!$this->conditionalOperator || !$this->conditionalValue || !$this->conditionalField)
+            return true;
+
+        if (!$object->groupedWorkId)
+            return false;
+
+        require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+        $groupedWorkDriver = new GroupedWorkDriver($object->groupedWorkId);
+
+        if (!$fieldValues = $groupedWorkDriver->getSolrField($this->conditionalField))
+            return false;
+
+        if(!is_array($fieldValues)){
+            $fieldValues = [$fieldValues];
+        }
+    
+        if ($this->conditionalOperator == 'like') {
+            #Convert this foreach to array_map
+            foreach ($fieldValues as $fieldValue) {
+                if (str_contains(strtolower($fieldValue), strtolower($this->conditionalValue))) {
+                    return true;
+                }
+            }
+            return false;
+        } elseif ($this->conditionalOperator == 'equals') {
+            foreach ($fieldValues as $fieldValue) {
+                if (strtolower($fieldValue) == strtolower($this->conditionalValue)) {
+                    return true;
+                }
+            }
+            return false;
+        } elseif ($this->conditionalOperator == 'is_not') {
+            foreach ($fieldValues as $fieldValue) {
+                if (strtolower($fieldValue) != strtolower($this->conditionalValue)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return false;
     }
 
     /**
