@@ -44,7 +44,7 @@ class Reward extends DataObject {
     public static function getRewardType () {
         return [
             0 => 'Physical',
-            1 => 'Digiatal',
+            1 => 'Digital',
         ];
     }
 
