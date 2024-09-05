@@ -27,7 +27,7 @@ class CampaignMilestone extends DataObject {
         while ($milestone->fetch()) {
             $availableMilestones[$milestone->id] = $milestone->name;
         }
-        $goalRange = range(0, 100);
+        $goalRange = range(1, 100);
         $rewardList = Reward::getRewardList();
 
         return [
