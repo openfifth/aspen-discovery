@@ -68,7 +68,19 @@
                                             <td>{$campaign->startDate}</td>
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
-                                            <td> {$campaign->milestoneCompletedGoals[$milestone->id]} / {$campaign->milestoneGoalCount[$milestone->id]}</td>
+                                            <td>
+                                                {$campaign->milestoneCompletedGoals[$milestone->id]} / {$campaign->milestoneGoalCount[$milestone->id]}
+                                                <div>
+                                                    <button class="btn btn-primary" onclick="seeMilestoneProgress()">
+                                                        {translate text="More Information"}
+                                                    </button>
+                                                </div>
+                                                <div id="milestoneProgress" style="display:none;">
+                                                    <div>
+                                                        {$campaign->milestoneCompletedGoals[$milestone->id]} 
+                                                    </div>
+                                                </div>
+                                            </td>
                                             <td>
                                                 <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
                                                     <div class="progress-bar" role="progressbar" aria-valuenow="{$campaign->milestoneProgress[$milestone->id]}" aria-valuemin="0"
@@ -96,6 +108,14 @@
                 campaignInfoDiv.style.display = 'block';
             } else {
                 campaignInfoDiv.style.display = 'none';
+            }
+        }
+        function seeMilestoneProgress() {
+            var seeMilestoneProgressDiv = document.getElementById('milestoneProgress');
+            if (seeMilestoneProgressDiv.style.display === 'none') {
+                seeMilestoneProgressDiv.style.display = 'block';
+            } else {
+                seeMilestoneProgressDiv.style.display = 'none';
             }
         }
     </script>

@@ -114,7 +114,8 @@ class MyCampaigns extends MyAccount {
 
         return $numCampaignMilestones;
     }
-
+    //TODO:: Write a function that uses the milestone id for each progress bar to use the ce_milestone_progress_entries table and 
+    //get information about which books were checked out and count towards the milestone. 
     function getBreadcrumbs(): array
     {
         $breadcrumbs = [];
