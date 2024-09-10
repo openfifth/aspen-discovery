@@ -114,20 +114,15 @@ class Campaign extends DataObject {
 
  
     public function getMilestones(){
-        error_log("CALLED GET MILESTONES");
         if (!isset($this->_availableMilestones)) {
-            error_log("Available Milestones initialsing");
             $this->_availableMilestones = [];
             if (!empty($this->id)) {
                 $campaignMilestone = new CampaignMilestone();
                 $campaignMilestone->campaignId = $this->id;
                if ($campaignMilestone->find()) {
                     while ($campaignMilestone->fetch()) {
-                        error_log("Fetched milestones");
                         $this->_availableMilestones[$campaignMilestone->id] = clone($campaignMilestone);
                     }
-               } else {
-                error_log("No Milestone found for THIS CAMPAIGN");
                }
             }
         }
@@ -148,15 +143,13 @@ class Campaign extends DataObject {
     }
 
     /**
-     * Override the insert funcitonality to save related objects
+     * Override the insert functionality to save related objects
      * 
      * @see DB/DB_Data_Object::insert()
      */
     public function insert($context = '') {
         $ret = parent::insert();
-        error_log("CALLING INSERT");
         if ($ret !== FALSE) {
-            error_log("CALLING SAVE MILESTONES");
             $this->saveMilestones();
         }
         return $ret;
