@@ -177,6 +177,25 @@ class Campaign extends DataObject {
         return $campaignList;
     }
 
+    public static function getUpcomingCampaigns():array {
+        $campaign = new Campaign();
+
+        //Work out the date one month from today
+        $today = date("Y-m-d");
+        $nextMonth = date("Y-m-d", strtotime("+1 month"));
+
+        $campaign->whereAdd("startDate >= '" . $today . "'");
+        $campaign->whereAdd("startDate <= '" . $nextMonth . "'");
+
+        $campaignList = [];
+        if ($campaign->find()) {
+            while ($campaign->fetch()) {
+                $campaignList[$campaign->id] = $campaign;
+            }
+        }
+        return $campaignList;
+    }
+
     public function saveMilestones() {
         if (isset($this->_availableMilestones) && is_array($this->_availableMilestones)) {
             $this->saveOneToManyOptions($this->_availableMilestones, 'campaignId');

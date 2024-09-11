@@ -1,11 +1,23 @@
 {strip}
-    <h1>{translate text="Your Campaigns" isPublicFacing=true}</h1>
+    <h1>{translate text="Campaigns" isPublicFacing=true}</h1>
 
     {if empty($campaignList)}
         <div class="alert alert-info">
             {translate text="There are no available campaigns at the moment" isPublicFacing=true}
         </div>
     {else}
+        <h2>Your Campaigns</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+        <h2>All Campaigns</h2>
         <table class="table table-striped">
             <thead>
                 <tr>
@@ -98,6 +110,33 @@
                 {/foreach}
             </tbody>
         </table>
+    {/if}
+    {if !empty($activeCampaigns)}
+        <h2>Active Campaigns</h2>
+        {foreach from=$activeCampaigns item="activeCampaign" key="resultIndex"}
+            <div>
+                <p>{$activeCampaign}</p>
+            </div>
+        {/foreach}
+    {/if}
+    {if !empty($upcomingCampaigns)}
+        <h2>Upcoming Campaigns</h2>
+          <table>
+            <thead>
+                <tr>
+                    <th>{translate text="Campaign" isPublicFacing=true}</th>
+                    <th>{translate text="Start Date" isPublicFacing=true}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach from=$upcomingCampaigns item="upcomingCampaign" key="resultIndex"}
+                <tr>
+                    <td>{$campaign->name}</td>
+                    <td>{$campaign->startDate}</td>
+                </tr>
+            {/foreach}
+            </tbody>
+          </table>
     {/if}
 {/strip}
 {literal}

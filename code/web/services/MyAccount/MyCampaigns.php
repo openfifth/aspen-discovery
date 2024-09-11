@@ -17,6 +17,11 @@ class MyCampaigns extends MyAccount {
         $userId = $this->getUserId();
         $interface->assign('userId', $userId);
 
+        $campaign = new Campaign();
+        $activeCampaigns = $campaign->getActiveCampaignsList();
+        $interface->assign('activeCampaigns', $activeCampaigns);
+        $upcomingCampaigns = $campaign->getUpcomingCampaigns();
+        $interface->assign('upcomingCampaigns', $upcomingCampaigns);
 
         $this->display('../MyAccount/myCampaigns.tpl', 'My Campaigns');
     }
@@ -69,6 +74,13 @@ class MyCampaigns extends MyAccount {
         }
         return $campaignList;
     }
+
+    // function getActiveCampaigns() {
+    //     $campaign = new Campaign();
+
+    //     $activeCampaigns = $campaign->getActiveCampaignsList();
+    //     return $activeCampaigns;
+    // }
 
     function checkUserEnrollment($userId, $campaignId) {
         global $aspen_db; // Assuming $aspen_db is your PDO instance
