@@ -1,61 +1,26 @@
 {strip}
     <h1>{translate text="Campaigns" isPublicFacing=true}</h1>
-
     {if empty($campaignList)}
         <div class="alert alert-info">
             {translate text="There are no available campaigns at the moment" isPublicFacing=true}
         </div>
     {else}
         <h2>Your Campaigns</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th></th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-            </tbody>
-        </table>
-        <h2>All Campaigns</h2>
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>Campaign Name:</th>
-                    <th>Enrollment</th>
                     <th>Milestones Completed</th>
                 </tr>
             </thead>
             <tbody>
-                {foreach from=$campaignList item="campaign" key="resultIndex"}
+            {foreach from=$campaignList item="campaign" key="resultIndex"}
+                {if $campaign->enrolled}
                     <tr>
                         <td>{$campaign->name}</td>
+                        <td>{$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}</td>
                         <td>
-                            {if $campaign->enrolled}
-                                {translate text="Enrolled" isPublicFacing=true}
-                            {else}
-                                {translate text="Unenrolled" isPublicFacing=true}
-                            {/if}
-                        </td>
-                        <td>
-                        {if $campaign->enrolled}
-                            {* <div class="progess" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
-                                <div class="progress-bar" role="progressbar" aria-valuenow="{$campaing->progress}" aria-valuemin="0"
-                                    aria-valuemax="100" style="width: {$campaign->progress}%;">
-                                    {$campaign->progress}%
-                                </div>
-                            </div> *}
-                            <div>
-                                {$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}
-                            </div>
-                        {/if}
-                        </td>
-                        <td>
-                        {if $campaign->enrolled}
                             <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
-                        {else}
-                            <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
-                        {/if}
                         </td>
                         <td>
                             <button onclick="toggleCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
@@ -81,7 +46,7 @@
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
                                             <td>
-                                                {$campaign->milestoneCompletedGoals[$milestone->id]} / {$campaign->milestoneGoalCount[$milestone->id]}
+                                                {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 <div>
                                                     <button class="btn btn-primary" onclick="seeMilestoneProgress()">
                                                         {translate text="More Information"}
@@ -89,15 +54,15 @@
                                                 </div>
                                                 <div id="milestoneProgress" style="display:none;">
                                                     <div>
-                                                        {$campaign->milestoneCompletedGoals[$milestone->id]} 
+                                                        {$milestone->progress} 
                                                     </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
-                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$campaign->milestoneProgress[$milestone->id]}" aria-valuemin="0"
-                                                     aria-valuemax="100" style="width: {$campaign->milestoneProgress[$milestone->id]}%; line-height: 20px; text-align: center; color: #fff;">
-                                                        {$campaign->milestoneProgress[$milestone->id]}%
+                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
+                                                     aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                                        {$milestone->progress}%
                                                     </div>
                                                 </div>
                                             </td>
@@ -107,54 +72,88 @@
                                 </table>
                             </td>
                     </tr>
-                {/foreach}
+                {/if}
+            {/foreach}
             </tbody>
         </table>
-    {/if}
-    {if !empty($activeCampaigns)}
         <h2>Active Campaigns</h2>
-        {foreach from=$activeCampaigns item="activeCampaign" key="resultIndex"}
-            <div>
-                <p>{$activeCampaign}</p>
-            </div>
-        {/foreach}
-    {/if}
-    {if !empty($upcomingCampaigns)}
-        <h2>Upcoming Campaigns</h2>
-          <table>
+        <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>{translate text="Campaign" isPublicFacing=true}</th>
-                    <th>{translate text="Start Date" isPublicFacing=true}</th>
+                    <th>Campaign Name</th>
+                    <th>End Date</th>
+                    <th>Enrollment</th>
                 </tr>
             </thead>
             <tbody>
-            {foreach from=$upcomingCampaigns item="upcomingCampaign" key="resultIndex"}
-                <tr>
-                    <td>{$campaign->name}</td>
-                    <td>{$campaign->startDate}</td>
-                </tr>
+            {foreach from=$campaignList item="campaign" key="resultIndex"}
+                {if $campaign->isActive}
+                    <tr>
+                        <td>{$campaign->name}</td>
+                        <td>{$campaign->endDate}</td>
+                        {if $campaign->enrolled}
+                            <td>{translate text="Enrolled" isPublicFacing=true}</td>
+                        {else}
+                            <td>{translate text="Not Enrolled" isPublicFacing=true}</td>
+                        {/if}
+                        {if $campaign->enrolled}
+                        <td>
+                            <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
+                        </td>
+                        {else}
+                            <td>
+                                <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
+                            </td>
+                        {/if}
+                    </tr>
+                {/if}
             {/foreach}
             </tbody>
-          </table>
+        </table>
+        <h2>Upcoming Campaigns</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Campaign Name</th>
+                    <th>Start Date</th>
+                    <th>Enrollment</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+            {foreach from=$campaignList item="campaign" key="resultIndex"}
+                {if $campaign->isUpcoming}
+                    <tr>
+                        <td>{$campaign->name}</td>
+                        <td>{$campaign->startDate}</td>
+                        {if $campaign->enrolled}
+                            <td>{translate text="Enrolled" isPublicFacing=true}</td>
+                        {else}
+                            <td>{translate text="Not Enrolled" isPublicFacing=true}</td>
+                        {/if}
+                        {if $campaign->enrolled}
+                            <td>
+                                <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
+                            </td>
+                            {else}
+                                <td>
+                                    <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
+                                </td>
+                            {/if}
+                    </tr>
+                {/if}
+            {/foreach}
+        </table>
     {/if}
 {/strip}
 {literal}
-    <script tupe="text/javascript">
-        function toggleCampaignInfo(index) {
+    <script type="text/javascript">
+           function toggleCampaignInfo(index) {
             var campaignInfoDiv = document.getElementById('campaignInfo_' + index);
             if (campaignInfoDiv.style.display === 'none') {
                 campaignInfoDiv.style.display = 'block';
             } else {
                 campaignInfoDiv.style.display = 'none';
-            }
-        }
-        function seeMilestoneProgress() {
-            var seeMilestoneProgressDiv = document.getElementById('milestoneProgress');
-            if (seeMilestoneProgressDiv.style.display === 'none') {
-                seeMilestoneProgressDiv.style.display = 'block';
-            } else {
-                seeMilestoneProgressDiv.style.display = 'none';
             }
         }
     </script>

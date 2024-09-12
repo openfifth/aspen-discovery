@@ -1,6 +1,7 @@
 <?php
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 
 class Campaign extends DataObject {
     public $__table = 'ce_campaign';
@@ -171,7 +172,7 @@ class Campaign extends DataObject {
         $campaignList = [];
         if ($campaign->find()) {
             while ($campaign->fetch()) {
-                $campaignList[$campaign->id] = $campaign->name;
+                $campaignList[$campaign->id] = clone $campaign;
             }
         }
         return $campaignList;
@@ -194,6 +195,31 @@ class Campaign extends DataObject {
             }
         }
         return $campaignList;
+    }
+
+    public static function getUserEnrolledCampaigns($userId): array {
+        $campaign = new Campaign();
+
+        $campaign->joinAdd(new UserCampaign(), 'INNER', 'ce_user_campaign', 'id', 'campaignId');
+
+        //Filter by the userId
+        $campaign->whereAdd("ce_user_campaign.userId = " . $userId);
+
+        $campaignList = [];
+        if ($campaign->find()) {
+            while ($campaign->fetch()) {
+                $campaignList[] = clone $campaign;
+            }
+        }
+        return $campaignList;
+    }
+
+    public function isUserEnrolled($userId) {
+        $userCampaign = new UserCampaign();
+        $userCampaign->userId = $userId;
+        $userCampaign->campaignId = $this->id;
+
+        return $userCampaign->find(true);
     }
 
     public function saveMilestones() {

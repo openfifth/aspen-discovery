@@ -50,10 +50,5 @@ class UserCampaign extends DataObject {
         ];
     }
 
-    public static function getUserEnrolledCampaigns($userId): array {
-        $campaign = new Campaign();
-
-        $campaign->joinAdd(new UserCampaign())
-    }
 
 }
