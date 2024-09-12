@@ -47,16 +47,11 @@
                                             <td>{$milestone->name}</td>
                                             <td>
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
-                                                <div>
-                                                    <button class="btn btn-primary" onclick="seeMilestoneProgress()">
-                                                        {translate text="More Information"}
-                                                    </button>
+                                                {foreach from=$milestone->progressData item="progressData"}
+                                                <div style="padding:10px;">
+                                                    {$progressData['title']}
                                                 </div>
-                                                <div id="milestoneProgress" style="display:none;">
-                                                    <div>
-                                                        {$milestone->progress} 
-                                                    </div>
-                                                </div>
+                                                {/foreach}
                                             </td>
                                             <td>
                                                 <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
@@ -66,7 +61,7 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                        </tr>                                    
+                                        </tr>                                 
                                     {/foreach}
                                     </tbody>
                                 </table>
@@ -155,6 +150,6 @@
             } else {
                 campaignInfoDiv.style.display = 'none';
             }
-        }
+        }       
     </script>
 {/literal}

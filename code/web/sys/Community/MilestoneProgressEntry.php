@@ -41,4 +41,22 @@ class MilestoneProgressEntry extends DataObject
         $this->object = json_encode($args['object']);
         $this->insert();
     }
+
+    public static function getUserProgressDataByMilestoneId($userId, $milestoneId) {
+        $milestoneProgressEntry = new self();
+        $milestoneProgressEntry->whereAdd("userId = " . $userId);
+        $milestoneProgressEntry->whereAdd("ce_milestone_id = " . $milestoneId);
+
+        $results = [];
+        if ($milestoneProgressEntry->find()) {
+            $decodedObject = [];
+            while ($milestoneProgressEntry->fetch()) {
+                $decodedObject = json_decode($milestoneProgressEntry->object, true);
+                if ($decodedObject) {
+                    $results[$milestoneProgressEntry->id] = $decodedObject;
+                }
+            }
+        }
+        return $results;
+    }
 }

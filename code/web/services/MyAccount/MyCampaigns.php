@@ -63,6 +63,7 @@ class MyCampaigns extends MyAccount {
                 $milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
                 $completedMilestonesCount = 0;
                 $numCampaignMilestones = 0;
+                $milestoneProgressData = [];
 
                 //Store progress for each milestone
                 $campaign->milestoneProgress = [];
@@ -74,10 +75,14 @@ class MyCampaigns extends MyAccount {
 
                     //Calculate milestone progress
                     $milestoneProgress = CampaignMilestone::getMilestoneProgress($campaignId, $userId, $milestone->id);
-                 
+                    $progressData = MilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId);
+
                     $milestone->progress = $milestoneProgress['progress'];
                     $milestone->completedGoals = $milestoneProgress['completed'];
                     $milestone->totalGoals = CampaignMilestone::getMilestoneCountByCampaign($campaignId, $milestoneId);
+                    $milestone->progressData = $progressData;
+
+                
 
                     //Get completed milestones for user
                     $completedMilestones = UserCompletedMilestone::getCompletedMilestones($userId, $campaignId);
@@ -97,7 +102,6 @@ class MyCampaigns extends MyAccount {
                 //Add the campaign to the list
             // }
             $campaignList[] = clone $campaign;
-
         }
         return $campaignList;
     }
