@@ -378,6 +378,7 @@ AspenDiscovery.Account = (function () {
 			var totalCheckouts = 0;
 			var totalHolds = 0;
 			var totalFines = 0;
+			var totalEnrolledCampaigns = 0;
 			if (Globals.hasILSConnection) {
 				var ilsUrl = Globals.path + "/MyAccount/AJAX?method=getMenuDataIls&activeModule=" + Globals.activeModule + '&activeAction=' + Globals.activeAction;
 				$.getJSON(ilsUrl, function (data) {
@@ -386,7 +387,7 @@ AspenDiscovery.Account = (function () {
 						var summary = data.summary;
 						$(".ils-checkouts-placeholder").html(summary.numCheckedOut);
 						totalCheckouts += parseInt(summary.numCheckedOut);
-						$(".checkouts-placeholder").html(totalCheckouts);
+						$(".checkouts-placeholder").html(totalCheckouts);						
 						if (summary.numOverdue > 0) {
 							$(".ils-overdue-placeholder").html(summary.numOverdue);
 							$(".ils-overdue").show();
@@ -504,7 +505,13 @@ AspenDiscovery.Account = (function () {
 					}
 				});
 			}
-
+			var campaignsUrl = Globals.path + "/MyAccount/AJAX?method=getEnrolledCampaigns&activeModule=" + Globals.activeModule + '&activeAction=' + Globals.activeAction;
+			$.getJSON(campaignsUrl, function (data) {
+				if (data.success) {
+					$(".enrolled-campaigns-placeholder").html(data.numCampaigns);
+				}
+			})
+			console.log(data.numCampaigns);
 			return false;
 		},
 

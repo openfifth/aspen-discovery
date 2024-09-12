@@ -76,6 +76,17 @@
 							</a>
 						</div>
 					</div>
+					<div class="row">
+						<div class="col-sm-12">&nbsp;</div>
+					</div>
+					<div class="col-tn-6">
+						<div class="btn btn-block btn-default">
+							<a href="/MyAccount/MyCampaigns">
+								<div class="dashboardLabel">{translate text="Enrolled Campaigns" isPublicFacing=true}</div>
+								<div class="dashboardValue"><span class="enrolled-campaigns-placeholder"><img src="/images/loading.gif" alt="loading"></span></div>
+							</a>
+						</div>
+					</div>
 				</div>
 			{/if}
 			{/if}
