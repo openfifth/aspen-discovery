@@ -18,10 +18,18 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		} else {
 			$instanceName = '';
 		}
-		$sectionTitle = $sectionName . ' ' . 'Usage Graph';
+
+		// includes dashboard subsection name in title if relevant
+		$subSectionName = $_REQUEST['subSection'];
+		$sectionTitle = $sectionName;
+		if (!empty($subSectionName)) {
+			$sectionTitle .= ': ' . $subSectionName;
+		}
+		$sectionTitle .= ' Usage Graph';
 
 		$interface->assign('stat', $stat);
 		$interface->assign('section', $sectionName);
+		$interface->assign('subSection', $subSectionName);
 		$interface->assign('graphTitle', $sectionTitle);
 		$interface->assign('showCSVExportButton', true);
 		$interface->assign('propName', 'exportToCSV');
@@ -52,7 +60,15 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
 		$dataSeries = $interface->getVariable('dataSeries');
 
-		$filename = "{$section}UsageData_{$stat}.csv";
+		// ensures csv filename contains dashboard subsection name if relevant
+		$subSectionName = str_replace(' ', '_', $_REQUEST['subSection']);
+		$filename = $section . '_';
+		if (!empty($subSectionName)) {
+			$filename .=  $subSectionName . '_'; 
+		}
+		$filename .= 'UsageData_' .  $stat . '.csv';
+
+		// sets up the csv file
 		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 		header("Cache-Control: no-store, no-cache, must-revalidate");
 		header("Cache-Control: post-check=0, pre-check=0", false);
@@ -60,11 +76,13 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		header('Content-Type: text/csv; charset=utf-8');
 		header("Content-Disposition: attachment;filename={$filename}");
 		$fp = fopen('php://output', 'w');
+
+		// builds the file content
 		$graphTitles = array_keys($dataSeries);
 		$numGraphTitles = count($dataSeries);
 
-		// builds the header for each section of the table in the CSV - column headers: Dates, and the title of the graph
 		for($i = 0; $i < $numGraphTitles; $i++) {
+			// builds the header for each section of the table in the CSV - column headers: Dates, and the title of the graph
 			$dataSerie = $dataSeries[$graphTitles[$i]];
 			$numRows = count($dataSerie['data']);
 			$dates = array_keys($dataSerie['data']);
