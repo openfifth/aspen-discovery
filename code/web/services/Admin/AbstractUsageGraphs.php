@@ -38,7 +38,7 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
 		
 		$graphTitle = $interface->getVariable('graphTitle');
-		$this->display('usage-graph.tpl', $graphTitle);
+		$this->display('../Admin/usage-graph.tpl', $graphTitle);
 	}
 
 	public function canView(): bool {
