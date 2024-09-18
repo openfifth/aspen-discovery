@@ -59,6 +59,6 @@ class SideLoads_AJAX extends JSON_Action {
 	public function exportUsageData() {
 		require_once ROOT_DIR . '/services/SideLoads/UsageGraphs.php';
 		$aspenUsageGraph = new SideLoads_UsageGraphs();
-		$aspenUsageGraph->buildCSV();
+		$aspenUsageGraph->buildCSV('SideLoads');
 	}
 }

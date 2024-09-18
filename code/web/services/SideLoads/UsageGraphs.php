@@ -1,35 +1,14 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/Indexing/UserSideLoadUsage.php';
 require_once ROOT_DIR . '/sys/Indexing/SideLoadedRecordUsage.php';
+require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
-class SideLoads_UsageGraphs extends Admin_Admin {
-	function launch() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		$title = 'Side Loading Usage Graph';
 
-		$interface->assign('graphTitle', $title);
-		$this->assignGraphSpecificTitle($stat);
-		
-		$profileName= $_REQUEST['profileName'];
-		$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $sideloadId);
-		$interface->assign('profileName', $profileName);
-
-		$interface->assign('stat', $stat);
-		$interface->assign('propName', 'exportToCSV');
-		$interface->assign('showCSVExportButton', true);
-		$interface->assign('section', 'SideLoads');
-
-		$title = $interface->getVariable('graphTitle');
-		$this->display('../Admin/usage-graph.tpl', $title);
+class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
+	function launch(): void {
+		$this->launchGraph('SideLoads');
 	}
 
 	function getBreadcrumbs(): array {
@@ -52,60 +31,13 @@ class SideLoads_UsageGraphs extends Admin_Admin {
 		]);
 	}
 
-	// note that this will only handle tables with one stat (as is needed for Summon usage data)
-	// to see a version that handle multpile stats, see the Admin/UsageGraphs.php implementation
-	public function buildCSV() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		
-		$profileName= $_REQUEST['profileName'];
-		$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $sideloadId);
-		$dataSeries = $interface->getVariable('dataSeries');
-
-		$filename = "SideLoadsUsageData_{$stat}.csv";
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
-		$fp = fopen('php://output', 'w');
-
-		// builds the first row of the table in the CSV - column headers: Dates, and the title of the graph
-		fputcsv($fp, ['Dates', $stat]);
-
-		// builds each subsequent data row - aka the column value
-		foreach ($dataSeries as $dataSerie) {
-			$data = $dataSerie['data'];
-			$numRows = count($data);
-			$dates = array_keys($data);
-
-			if( empty($numRows)) {
-				fputcsv($fp, ['no data found!']);
-			}
-			for($i = 0; $i < $numRows; $i++) {
-				$date = $dates[$i];
-				$value = $data[$date];
-				$row = [$date, $value];
-				fputcsv($fp, $row);
-			}
-		}
-		exit();
-	}
-
 	/*
 		The only unique identifier available to determine for which
 		sideload to fetch data is the sideload's name as $profileName. It is used
 		here to find the sideloads' id as only this exists on the sideload
 		usage tables
 	*/
-	private function getSideloadIdBySideLoadName($name) {
+	private function getSideloadIdBySideLoadName($name): int {
 		$sideload = new SideLoad();
 		$sideload->whereAdd('name = "' . $name .'"');
 		$sideload->selectAdd();
@@ -113,12 +45,15 @@ class SideLoads_UsageGraphs extends Admin_Admin {
 		return $sideload->fetch()->id;
 	}
 
-	private function getAndSetInterfaceDataSeries($stat, $instanceName, $sideloadId) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 
 		$dataSeries = [];
 		$columnLabels = [];
 		$usage = [];
+
+		$profileName= $_REQUEST['subSection'];
+		$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
 
 		// for the graph displaying data retrieved from the user_sideload_usage table
 		if ($stat == 'activeUsers') {
@@ -133,11 +68,7 @@ class SideLoads_UsageGraphs extends Admin_Admin {
 			$usage->selectAdd('month');
 			$usage->orderBy('year, month');
 
-			$dataSeries['Active Users'] = [
-				'borderColor' => 'rgba(255, 99, 132, 1)',
-				'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$usage->selectAdd('COUNT(id) as numUsers');
 		}
 
@@ -156,11 +87,7 @@ class SideLoads_UsageGraphs extends Admin_Admin {
 			$usage->selectAdd('month');
 			$usage->orderBy('year, month');
 
-			$dataSeries['Records Accessed Online'] = [
-				'borderColor' => 'rgba(255, 99, 132, 1)',
-				'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Records Accessed Online'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$usage->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
 		}
 
@@ -185,7 +112,7 @@ class SideLoads_UsageGraphs extends Admin_Admin {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		if ($stat == 'activeUsers') {
