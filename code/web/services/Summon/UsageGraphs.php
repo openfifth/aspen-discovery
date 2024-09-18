@@ -1,28 +1,14 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/bstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
 require_once ROOT_DIR . '/sys/Summon/UserSummonUsage.php';
 require_once ROOT_DIR . '/sys/Summon/SummonRecordUsage.php';
+require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
-class Summon_UsageGraphs extends Admin_Admin {
-	function launch() {
-		global $interface;
-		$title = 'Summon Usage Graph';
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-
-		$interface->assign('graphTitle', $title);
-		$interface->assign('section', 'Summon');
-		$interface->assign('showCSVExportButton', true);
-		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$interface->assign('stat', $stat);
-		$this->display('../Admin/usage-graph.tpl', $title);
+class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
+	function launch(): void {
+		$this->launchGraph('Summon');
 	}
 
 	function getActiveAdminSection(): string {
@@ -45,51 +31,7 @@ class Summon_UsageGraphs extends Admin_Admin {
 		return $breadcrumbs;
 	}
 
-	// note that this will only handle tables with one stat (as is needed for Summon usage data)
-	// to see a version that handle multpile stats, see the Admin/UsageGraphs.php implementation
-	public function buildCSV() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$dataSeries = $interface->getVariable('dataSeries');
-
-		$filename = "SummonUsageData_{$stat}.csv";
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
-		$fp = fopen('php://output', 'w');
-		
-		// builds the first row of the table in the CSV - column headers: Dates, and the title of the graph
-		fputcsv($fp, ['Dates', $stat]);
-
-		// builds each subsequent data row - aka the column value
-		foreach ($dataSeries as $dataSerie) {
-			$data = $dataSerie['data'];
-			$numRows = count($data);
-			$dates = array_keys($data);
-
-			if( empty($numRows)) {
-				fputcsv($fp, ['no data found!']);
-			}
-			for($i = 0; $i < $numRows; $i++) {
-				$date = $dates[$i];
-				$value = $data[$date];
-				$row = [$date, $value];
-				fputcsv($fp, $row);
-			}
-		}
-		exit();
-	}
-
-	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
@@ -106,11 +48,7 @@ class Summon_UsageGraphs extends Admin_Admin {
 			$userSummonUsage->selectAdd('month');
 			$userSummonUsage->orderBy('year, month');
 
-			$dataSeries['Active Users'] = [
-				'borderColor' => 'rgba(255, 99, 132, 1)',
-				'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userSummonUsage->selectAdd('COUNT(DISTINCT userId) as activeUsers');
 
 			// Collects results
@@ -140,27 +78,15 @@ class Summon_UsageGraphs extends Admin_Admin {
 			$summonRecordUsage->orderBy('year, month');
 		
 			if ($stat == 'numRecordsViewed') {
-				$dataSeries['Number of Records Viewed'] = [
-					'borderColor' => 'rgba(255, 99, 132, 1)',
-					'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Number of Records Viewed'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$summonRecordUsage ->selectAdd('SUM(IF(timesViewedInSearch>0,1,0)) as numRecordsViewed');
 			}
 			if ($stat == 'numRecordsClicked') {
-				$dataSeries['Number of Records Clicked'] = [
-					'borderColor' => 'rgba(255, 99, 132, 1)',
-					'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Number of Records Clicked'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$summonRecordUsage ->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
 			}
 			if ($stat == 'totalClicks') {
-				$dataSeries['Total Clicks'] = [
-					'borderColor' => 'rgba(255, 99, 132, 1)',
-					'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Total Clicks'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$summonRecordUsage ->selectAdd('SUM(timesUsed) as numClicks');
 			}
 			// Collect results
@@ -189,7 +115,7 @@ class Summon_UsageGraphs extends Admin_Admin {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle'); 
 		switch ($stat) {
