@@ -1,28 +1,14 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraph.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
 require_once ROOT_DIR . '/sys/ILS/UserILSUsage.php';
 require_once ROOT_DIR . '/sys/ILS/ILSRecordUsage.php';
+require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
-class ILS_UsageGraphs extends Admin_Admin {
-	function launch() {
-		global $interface;
-		$title = 'ILS Usage Graph';
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-
-		$interface->assign('graphTitle', $title);
-		$interface->assign('section', 'ILS');
-		$interface->assign('showCSVExportButton', true);
-		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$interface->assign('stat', $stat);
-		$this->display('../Admin/usage-graph.tpl', $title);
+class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
+	function launch(): void {
+		$this->launchGraph('ILS');
 	}
 
 	function getBreadcrumbs(): array {
@@ -45,51 +31,7 @@ class ILS_UsageGraphs extends Admin_Admin {
 		]);
 	}
 
-	// note that this will only handle tables with one stat (as is needed for Summon usage data)
-	// to see a version that handle multpile stats, see the Admin/UsageGraphs.php implementation
-	public function buildCSV() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$dataSeries = $interface->getVariable('dataSeries');
-
-		$filename = "ILSUsageData_{$stat}.csv";
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
-		$fp = fopen('php://output', 'w');
-		
-		// builds the first row of the table in the CSV - column headers: Dates, and the title of the graph
-		fputcsv($fp, ['Dates', $stat]);
-
-		// builds each subsequent data row - aka the column value
-		foreach ($dataSeries as $dataSerie) {
-			$data = $dataSerie['data'];
-			$numRows = count($data);
-			$dates = array_keys($data);
-
-			if( empty($numRows)) {
-				fputcsv($fp, ['no data found!']);
-			}
-			for($i = 0; $i < $numRows; $i++) {
-				$date = $dates[$i];
-				$value = $data[$date];
-				$row = [$date, $value];
-				fputcsv($fp, $row);
-			}
-		}
-		exit();
-	}
-
-	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
@@ -114,51 +56,27 @@ class ILS_UsageGraphs extends Admin_Admin {
 			$userILSUsage->orderBy('year, month');
 			
 			if ($stat == 'userLogins') {
-				$dataSeries['User Logins'] = [
-					'borderColor' => 'rgba(255, 99, 132, 1)',
-					'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['User Logins'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userILSUsage->selectAdd('SUM(usageCount) as sumUserLogins');
 			}
 			if ($stat == 'selfRegistrations') {
-				$dataSeries['Self Registrations'] = [
-					'borderColor' => 'rgba(255, 159, 64, 1)',
-					'backgroundColor' => 'rgba(255, 159, 64, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Self Registrations'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userILSUsage->selectAdd('SUM(selfRegistrationCount) as sumSelfRegistrations');
 			}
 			if ($stat == 'usersWithPdfDownloads') {
-				$dataSeries['Users Who Downloaded At Least One PDF'] = [
-					'borderColor' => 'rgba(255, 206, 86, 1)',
-					'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Users Who Downloaded At Least One PDF'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userILSUsage->selectAdd('SUM(IF(pdfDownloadCount>0,1,0)) as usersWithPdfDownloads');
 			}
 			if ($stat == 'usersWithPdfViews') {
-				$dataSeries['Users Who Viewed At Least One PDF'] = [
-					'borderColor' => 'rgba(255, 206, 86, 1)',
-					'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Users Who Viewed At Least One PDF'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userILSUsage->selectAdd('SUM(IF(pdfViewCount>0,1,0)) as usersWithPdfViews');
 			}
 			if ($stat == 'usersWithSupplementalFileDownloads') {
-				$dataSeries['Users Who Downloaded At Least One Supplemental File'] = [
-					'borderColor' => 'rgba(255, 206, 86, 1)',
-					'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Users Who Downloaded At Least One Supplemental File'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userILSUsage->selectAdd('SUM(IF(supplementalFileDownloadCount>0,1,0)) as usersWithSupplementalFileDownloads');
 			}
 			if ($stat == 'usersWithHolds') {
-				$dataSeries['Users Who Placed At Least One Hold'] = [
-					'borderColor' => 'rgba(0, 255, 55, 1)',
-					'backgroundColor' => 'rgba(0, 255, 55, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Users Who Placed At Least One Hold'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userILSUsage->selectAdd('SUM(IF(usageCount>0,1,0)) as usersWithHolds');
 			}
 
@@ -214,43 +132,23 @@ class ILS_UsageGraphs extends Admin_Admin {
 			$recordILSUsage->orderBy('year, month');
 
 			if ($stat == 'pdfsDownloaded') {
-				$dataSeries['PDFs Downloaded'] = [
-					'borderColor' => 'rgba(255, 206, 86, 1)',
-					'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['PDFs Downloaded'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$recordILSUsage->selectAdd('SUM(pdfDownloadCount) as sumPdfsDownloaded');
 			}
 			if ($stat == 'pdfsViewed') {
-				$dataSeries['PDFs Viewed'] = [
-					'borderColor' => 'rgba(255, 206, 86, 1)',
-					'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['PDFs Viewed'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$recordILSUsage->selectAdd('SUM(pdfViewCount) as sumPdfsViewed');
 			}
 			if ($stat == 'supplementalFilesDownloaded') {
-				$dataSeries['Supplemental Files Downloaded'] = [
-					'borderColor' => 'rgba(255, 206, 86, 1)',
-					'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Supplemental Files Downloaded'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$recordILSUsage->selectAdd('SUM(supplementalFileDownloadCount) as sumSupplementalFilesDownloaded');
 			}
 			if ($stat == 'recordsHeld') {
-				$dataSeries['Records Held'] = [
-					'borderColor' => 'rgba(154, 75, 244, 1)',
-					'backgroundColor' => 'rgba(154, 75, 244, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Records Held'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$recordILSUsage->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
 			}
 			if ($stat == 'totalHolds') {
-				$dataSeries['Total Holds'] = [
-					'borderColor' => 'rgba(54, 162, 235, 1)',
-					'backgroundColor' => 'rgba(54, 162, 235, 0.2)',
-					'data' => [],
-				];
+				$dataSeries['Total Holds'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$recordILSUsage->selectAdd('SUM(timesUsed) as totalHolds');
 			}
 			
@@ -288,7 +186,7 @@ class ILS_UsageGraphs extends Admin_Admin {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle'); 
 		switch ($stat) {
