@@ -497,4 +497,10 @@ class MaterialsRequest_AJAX extends Action {
 	function getBreadcrumbs(): array {
 		return [];
 	}
+
+	public function exportUsageData(): void {
+		require_once ROOT_DIR . '/services/MaterialsRequest/UsageGraphs.php';
+		$MaterialsRequestUsageGraph = new MaterialsRequest_UsageGraphs(); 
+		$MaterialsRequestUsageGraph->buildCSV('MaterialsRequest');
+	}
 }
