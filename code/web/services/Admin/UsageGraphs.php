@@ -2,6 +2,7 @@
 
 require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
+require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 	function launch(): void {
@@ -40,183 +41,95 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		//General Usage Stats
 		if ($stat == 'pageViews' || $stat == 'generalUsage') {
-			$dataSeries['Page Views'] = [
-				'borderColor' => 'rgba(255, 99, 132, 1)',
-				'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Page Views'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(pageViews) as sumPageViews');
 		}
 		if ($stat == 'authenticatedPageViews' || $stat == 'generalUsage') {
-			$dataSeries['Authenticated Page Views'] = [
-				'borderColor' => 'rgba(255, 159, 64, 1)',
-				'backgroundColor' => 'rgba(255, 159, 64, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Authenticated Page Views'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(pageViewsByAuthenticatedUsers) as sumPageViewsByAuthenticatedUsers');
 		}
 		if ($stat == 'sessionsStarted' || $stat == 'generalUsage') {
-			$dataSeries['Sessions Started'] = [
-				'borderColor' => 'rgba(0, 255, 55, 1)',
-				'backgroundColor' => 'rgba(0, 255, 55, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Sessions Started'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(sessionsStarted) as sumSessionsStarted');
 		}
 		if ($stat == 'pageViewsByBots' || $stat == 'generalUsage') {
-			$dataSeries['Page Views By Bots'] = [
-				'borderColor' => 'rgba(154, 75, 244, 1)',
-				'backgroundColor' => 'rgba(154, 75, 244, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Page Views By Bots'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(pageViewsByBots) as sumPageViewsByBots');
 		}
 		if ($stat == 'asyncRequests' || $stat == 'generalUsage') {
-			$dataSeries['Asynchronous Requests'] = [
-				'borderColor' => 'rgba(54, 162, 235, 1)',
-				'backgroundColor' => 'rgba(54, 162, 235, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Asynchronous Requests'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(ajaxRequests) as sumAjaxRequests');
 		}
 		if ($stat == 'coversRequested' || $stat == 'generalUsage') {
-			$dataSeries['Covers Requested'] = [
-				'borderColor' => 'rgba(255, 206, 86, 1)',
-				'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Covers Requested'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(coverViews) as sumCoverViews');
 		}
 
 		//Search Stats
 		if ($stat == 'groupedWorksSearches' || $stat == 'searches') {
-			$dataSeries['Grouped Work Searches'] = [
-				'borderColor' => 'rgba(255, 99, 132, 1)',
-				'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Grouped Work Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(groupedWorkSearches) as sumGroupedWorkSearches');
 		}
 		if ($stat == 'listSearches' || $stat == 'searches') {
-			$dataSeries['List Searches'] = [
-				'borderColor' => 'rgba(54, 162, 235, 1)',
-				'backgroundColor' => 'rgba(54, 162, 235, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['List Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(userListSearches) as sumUserListSearches');
 		}
 		if (array_key_exists('EBSCO EDS', $enabledModules) && ($stat == 'edsSearches' || $stat == 'searches')) {
-			$dataSeries['EDS Searches'] = [
-				'borderColor' => 'rgba(255, 206, 86, 1)',
-				'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['EDS Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(ebscoEdsSearches) as sumEbscoEdsSearches');
 		}
 		if (array_key_exists('EBSCOhost', $enabledModules) && ($stat == 'ebscohostSearches' || $stat == 'searches')) {
-			$dataSeries['EBSCOhost Searches'] = [
-				'borderColor' => 'rgba(255, 206, 86, 1)',
-				'backgroundColor' => 'rgba(255, 206, 86, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['EBSCOhost Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(ebscohostSearches) as sumEbscohostSearches');
 		}
 		if (array_key_exists('Events', $enabledModules) && ($stat == 'eventSearches' || $stat == 'searches')) {
-			$dataSeries['Events Searches'] = [
-				'borderColor' => 'rgba(75, 192, 192, 1)',
-				'backgroundColor' => 'rgba(75, 192, 192, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Events Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(eventsSearches) as sumEventsSearches');
 		}
 		if ((array_key_exists('Web Indexer', $enabledModules) || array_key_exists('Web Builder', $enabledModules)) && ($stat == 'websiteSearches' || $stat == 'searches')) {
-			$dataSeries['Website Searches'] = [
-				'borderColor' => 'rgba(153, 102, 255, 1)',
-				'backgroundColor' => 'rgba(153, 102, 255, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Website Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(websiteSearches) as sumWebsiteSearches');
 		}
 		if (array_key_exists('Open Archives', $enabledModules) && ($stat == 'openArchivesSearches' || $stat == 'searches')) {
-			$dataSeries['Open Archives Searches'] = [
-				'borderColor' => 'rgba(255, 159, 64, 1)',
-				'backgroundColor' => 'rgba(255, 159, 64, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Open Archives Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(openArchivesSearches) as sumOpenArchivesSearches');
 		}
 		if ($library->enableGenealogy && ($stat == 'genealogySearches' || $stat == 'searches')) {
-			$dataSeries['Genealogy Searches'] = [
-				'borderColor' => 'rgba(154, 75, 244, 1)',
-				'backgroundColor' => 'rgba(2154, 75, 244, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Genealogy Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(genealogySearches) as sumGenealogySearches');
 		}
 
 		//Exceptions
 		if ($stat == 'blockedPages' || $stat == 'exceptionsReport') {
-			$dataSeries['Blocked Pages'] = [
-				'borderColor' => 'rgba(255, 99, 132, 1)',
-				'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Blocked Pages'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(blockedRequests) as sumBlockedRequests');
 		}
 		if ($stat == 'blockedApiRequests' || $stat == 'exceptionsReport') {
-			$dataSeries['Blocked API Requests'] = [
-				'borderColor' => 'rgba(255, 159, 64, 1)',
-				'backgroundColor' => 'rgba(255, 159, 64, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Blocked API Requests'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(blockedApiRequests) as sumBlockedApiRequests');
 		}
 		if ($stat == 'errors' || $stat == 'exceptionsReport') {
-			$dataSeries['Errors'] = [
-				'borderColor' => 'rgba(154, 75, 244, 1)',
-				'backgroundColor' => 'rgba(154, 75, 244, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Errors'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(pagesWithErrors) as sumPagesWithErrors');
 		}
 		if ($stat == 'searchesWithErrors' || $stat == 'exceptionsReport') {
-			$dataSeries['Searches with Errors'] = [
-				'borderColor' => 'rgba(154, 10, 120, 1)',
-				'backgroundColor' => 'rgba(154, 10, 120, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Searches with Errors'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(searchesWithErrors) as sumSearchesWithErrors');
 		}
 		if ($stat == 'timedOutSearches' || $stat == 'exceptionsReport') {
-			$dataSeries['Timed Out Searches'] = [
-				'borderColor' => 'rgba(120, 10 244, 1)',
-				'backgroundColor' => 'rgba(120, 10, 244, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Timed Out Searches'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(timedOutSearches) as sumTimedOutSearches');
 		}
 		if ($stat == 'timedOutSearchesWithHighLoad' || $stat == 'exceptionsReport') {
-			$dataSeries['Timed Out Searches Under High Load'] = [
-				'borderColor' => 'rgba(10, 120, 244, 1)',
-				'backgroundColor' => 'rgba(10, 120, 244, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Timed Out Searches Under High Load'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(timedOutSearchesWithHighLoad) as sumTimedOutSearchesWithHighLoad');
 		}
 		if ($stat == 'emailsSent' || $stat == 'emailSending') {
-			$dataSeries['Emails Sent'] = [
-				'borderColor' => 'rgba(120, 10 244, 1)',
-				'backgroundColor' => 'rgba(120, 10, 244, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Emails Sent'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(emailsSent) as sumEmailsSent');
 		}
 		if ($stat == 'failedEmails' || $stat == 'emailSending') {
-			$dataSeries['Failed Emails'] = [
-				'borderColor' => 'rgba(154, 10, 120, 1)',
-				'backgroundColor' => 'rgba(154, 10, 120, 0.2)',
-				'data' => [],
-			];
+			$dataSeries['Failed Emails'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userUsage->selectAdd('SUM(emailsFailed) as sumFailedEmails');
 		}
 
