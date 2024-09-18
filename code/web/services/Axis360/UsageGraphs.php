@@ -1,31 +1,14 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/Axis360/UserAxis360Usage.php';
 require_once ROOT_DIR . '/sys/Axis360/Axis360RecordUsage.php';
 require_once ROOT_DIR . '/sys/Axis360/Axis360Stats.php';
 require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
-class Axis360_UsageGraphs extends Admin_Admin {
-	function launch() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		$title = 'Boundless Usage Graph';
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-
-		$interface->assign('graphTitle', $title);
-		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$interface->assign('stat', $stat);
-		$interface->assign('propName', 'exportToCSV');
-		$interface->assign('showCSVExportButton', true);
-		$interface->assign('section', 'Axis360');
-
-		$this->display('../Admin/usage-graph.tpl', $title);
+class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
+	function launch(): void {
+		$this->launchGraph('Boundless');
 	}
 
 	function getBreadcrumbs(): array {
@@ -48,52 +31,7 @@ class Axis360_UsageGraphs extends Admin_Admin {
 		]);
 	}
 
-	public function buildCSV() {
-		global $interface;
-
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$dataSeries = $interface->getVariable('dataSeries');
-
-		$filename = "BoundlessUsageData_{$stat}.csv";
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
-		$fp = fopen('php://output', 'w');
-		$graphTitles = array_keys($dataSeries);
-		$numGraphTitles = count($dataSeries);
-
-		// builds the header for each section of the table in the CSV - column headers: Dates, and the title of the graph
-		for($i = 0; $i < $numGraphTitles; $i++) {
-			$dataSerie = $dataSeries[$graphTitles[$i]];
-			$numRows = count($dataSerie['data']);
-			$dates = array_keys($dataSerie['data']);
-			$header = ['Dates', $graphTitles[$i]];
-			fputcsv($fp, $header);
-
-				if( empty($numRows)) {
-					fputcsv($fp, ['no data found!']);
-				}
-				// builds each subsequent data row - aka the column value
-				for($j = 0; $j < $numRows; $j++) {
-					$date = $dates[$j];
-					$value = $dataSerie['data'][$date];
-					$row = [$date, $value];
-					fputcsv($fp, $row);
-				}
-		}
-		exit();
-	}
-
-	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
@@ -270,7 +208,7 @@ class Axis360_UsageGraphs extends Admin_Admin {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat) {
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		switch ($stat) {
