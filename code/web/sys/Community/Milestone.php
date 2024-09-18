@@ -43,15 +43,13 @@ class Milestone extends DataObject {
                     'user_list' => 'List',
                     'user_work_review' => 'Rating',
                 ],
+                'onchange' => 'updateConditionalField(this.value)',
             ],
             'conditionalField' => [
                 'property' => 'conditionalField',
                 'type' => 'enum',
                 'label' => 'Conditional Field: ',
-                'values' => [
-                    'title' => 'Title',
-                    'author' => 'Author',
-                ],
+                'values' => [],
             ],
             'conditionalOperator' => [
                 'property' => 'conditionalOperator',
@@ -74,6 +72,28 @@ class Milestone extends DataObject {
         ];
         return $structure;
     } 
+
+    public static function getConditionalFields($milestoneType) {
+        $conditionalFields = [
+            'user_checkout' => [
+                ['value' => 'title', 'label' => 'Title'],
+                ['value' => 'author', 'label' => 'Author'],
+            ],
+            'user_hold' => [
+                ['value' => 'hold_id', 'label' => 'Title'],
+                ['value' => 'patron', 'label' => 'Author'],
+            ],
+            'user_list' => [
+                ['value' => 'list_id', 'label' => 'List Name'],
+                ['value' => 'list_name', 'label' => 'List Length'],
+            ],
+            'user_work_review' => [
+                ['value' => 'work_id', 'label' => 'Reviewed Title'],
+                ['value' => 'review_text', 'label' => 'Reviewed Author'],
+            ],
+        ];
+        return $conditionalFields[$milestoneType] ?? [];
+    }
 
     /**
      * Gets a list of milestones for a given object and table name that are related to
@@ -169,3 +189,69 @@ class Milestone extends DataObject {
     return $milestoneList;
   }
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['milestoneType'])) {
+    $milestoneType = $_POST['milestoneType'];
+
+    $fields = Milestone::getConditionalFields($milestoneType);
+
+    header('Content-Type: application/json');
+    echo json_encode($fields);
+    exit();
+}
+?>
+<script>
+    function updateConditionalField(milestoneType) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', '', true); // Send POST request to the same PHP file
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+        // Handle the server response
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                var response = JSON.parse(xhr.responseText);
+
+                // Get the dropdown element for conditional fields
+                var conditionalFieldDropdown = document.querySelector('[name="conditionalField"]');
+
+                // Clear existing options in the dropdown
+                conditionalFieldDropdown.innerHTML = '';
+
+                // Check if there are no options available
+                if (response.length === 0) {
+                    var noOption = document.createElement('option');
+                    noOption.value = '';
+                    noOption.text = 'No conditional fields available';
+                    conditionalFieldDropdown.appendChild(noOption);
+                    return;
+                }
+
+                // Populate new options
+                response.forEach(function(option) {
+                    var newOption = document.createElement('option');
+                    newOption.value = option.value;
+                    newOption.text = option.label;
+                    conditionalFieldDropdown.appendChild(newOption);
+                });
+            } else {
+                console.error('Error fetching conditional fields:', xhr.statusText);
+            }
+        };
+
+        // Send the milestoneType data to the server
+        xhr.send('milestoneType=' + encodeURIComponent(milestoneType));
+    }
+
+    // Trigger dropdown update when the page loads or the milestoneType is changed
+    document.addEventListener('DOMContentLoaded', function() {
+        var milestoneTypeDropdown = document.querySelector('[name="milestoneType"]');
+        
+        // Attach event listener for dropdown change
+        milestoneTypeDropdown.addEventListener('change', function() {
+            updateConditionalField(this.value);
+        });
+
+        // Initialize with the first milestone type when the page loads
+        updateConditionalField(milestoneTypeDropdown.value);
+    });
+</script>
