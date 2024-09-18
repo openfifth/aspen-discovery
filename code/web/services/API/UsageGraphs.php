@@ -1,12 +1,11 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/Admin.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
+require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
-class API_UsageGraphs extends Admin_Admin
-{
-	function launch()
-	{
+class API_UsageGraphs extends Admin_AbstractUsageGraphs {
+	function launch(): void {
 		global $interface;
 
 		$stat = $_REQUEST['stat'];
@@ -27,8 +26,7 @@ class API_UsageGraphs extends Admin_Admin
 		$title = $interface->getVariable('graphTitle');
 		$this->display('../Admin/usage-graph.tpl', $title);
 	}
-	function getBreadcrumbs(): array
-	{
+	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#system_reports', 'System Reports');
@@ -37,63 +35,18 @@ class API_UsageGraphs extends Admin_Admin
 		return $breadcrumbs;
 	}
 
-	function getActiveAdminSection(): string
-	{
+	function getActiveAdminSection(): string {
 		return 'system_reports';
 	}
 
-	function canView(): bool
-	{
+	function canView(): bool {
 		return UserAccount::userHasPermission([
 			'View Dashboards',
 			'View System Reports',
 		]);
 	}
 
-	// note that this will only handle tables with one stat (as is needed for Summon usage data)
-	// to see a version that handle multpile stats, see the Admin/UsageGraphs.php implementation
-	public function buildCSV() {
-		global $interface;
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$dataSeries = $interface->getVariable('dataSeries');
-
-		$filename = "AspenAPIUsageData_{$stat}.csv";
-		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
-		header("Cache-Control: no-store, no-cache, must-revalidate");
-		header("Cache-Control: post-check=0, pre-check=0", false);
-		header("Pragma: no-cache");
-		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
-		$fp = fopen('php://output', 'w');
-
-		// builds the first row of the table in the CSV - column headers: Dates, and the title of the graph
-		fputcsv($fp, ['Dates', $stat]);
-
-		// builds each subsequent data row - aka the column value
-		foreach ($dataSeries as $dataSerie) {
-			$data = $dataSerie['data'];
-			$numRows = count($data);
-			$dates = array_keys($data);
-
-			if( empty($numRows)) {
-				fputcsv($fp, ['no data found!']);
-			}
-			for($i = 0; $i < $numRows; $i++) {
-				$date = $dates[$i];
-				$value = $data[$date];
-				$row = [$date, $value];
-				fputcsv($fp, $row);
-			}
-		}
-		exit();
-	}
-	private function getAndSetInterfaceDataSeries($stat, $instanceName) {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
 		global $interface;
 
 		$dataSeries = [];
@@ -108,11 +61,7 @@ class API_UsageGraphs extends Admin_Admin
 		$usage->selectAdd('year');
 		$usage->selectAdd('month');
 		$usage->orderBy('year, month');
-		$dataSeries[$stat] = [
-			'borderColor' => 'rgba(255, 99, 132, 1)',
-			'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
-			'data' => [],
-		];
+		$dataSeries[$stat] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 		$usage->selectAdd('SUM(numCalls) as numCalls');
 
 		//Collect results
@@ -130,8 +79,7 @@ class API_UsageGraphs extends Admin_Admin
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat)
-	{
+	protected function assignGraphSpecificTitle($stat): void {
 		global $interface;
 		$title = 'Aspen Discovery API Usage Graph';
 		$title .= " - $stat";
