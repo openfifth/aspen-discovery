@@ -49,7 +49,17 @@ class Milestone extends DataObject {
                 'property' => 'conditionalField',
                 'type' => 'enum',
                 'label' => 'Conditional Field: ',
-                'values' => [],
+                'values' => [
+                    'title' => 'Title',
+                    'author' => 'Author',
+                    'hold_title' => 'Title',
+                    'hold_author' => 'Author',
+                    'list_id' => 'List Name',
+                    'list_name' => 'List Length',
+                    'work_id' => 'Reviewed Title',
+                    'work_author' => 'Reviewed Author',
+                ],
+                'required' => false,
             ],
             'conditionalOperator' => [
                 'property' => 'conditionalOperator',
@@ -73,15 +83,15 @@ class Milestone extends DataObject {
         return $structure;
     } 
 
-    public static function getConditionalFields($milestoneType) {
+    public static function getConditionalFields() {
         $conditionalFields = [
             'user_checkout' => [
                 ['value' => 'title', 'label' => 'Title'],
                 ['value' => 'author', 'label' => 'Author'],
             ],
             'user_hold' => [
-                ['value' => 'hold_id', 'label' => 'Title'],
-                ['value' => 'patron', 'label' => 'Author'],
+                ['value' => 'hold_title', 'label' => 'Title'],
+                ['value' => 'hold_author', 'label' => 'Author'],
             ],
             'user_list' => [
                 ['value' => 'list_id', 'label' => 'List Name'],
@@ -89,7 +99,7 @@ class Milestone extends DataObject {
             ],
             'user_work_review' => [
                 ['value' => 'work_id', 'label' => 'Reviewed Title'],
-                ['value' => 'review_text', 'label' => 'Reviewed Author'],
+                ['value' => 'work_author', 'label' => 'Reviewed Author'],
             ],
         ];
         return $conditionalFields;
@@ -135,7 +145,6 @@ class Milestone extends DataObject {
 
         if (!$milestone->find())
             return false;
-
         return $milestone;
     }
 
@@ -190,26 +199,10 @@ class Milestone extends DataObject {
   }
 }
 
+$conditionalFields = Milestone::getConditionalFields();
 ?>
 <script>
-    var conditionalFieldsData = {
-        'user_checkout': [
-            { 'value': 'title', 'label': 'Title' },
-            { 'value': 'author', 'label': 'Author' }
-        ],
-        'user_hold': [
-            { 'value': 'hold_id', 'label': 'Hold Title' },
-            { 'value': 'patron', 'label': 'Hold Author' }
-        ],
-        'user_list': [
-            { 'value': 'list_id', 'label': 'List Name' },
-            { 'value': 'list_name', 'label': 'List Length' }
-        ],
-        'user_work_review': [
-            { 'value': 'work_id', 'label': 'Reviewed Title' },
-            { 'value': 'review_text', 'label': 'Reviewed Author' }
-        ]
-    };
+    var conditionalFields = <?php echo json_encode($conditionalFields); ?>
 
     function updateConditionalField(milestoneType) {
         // Get the dropdown element for conditional fields
@@ -219,7 +212,7 @@ class Milestone extends DataObject {
         conditionalFieldDropdown.innerHTML = '';
 
         // Check if milestoneType has conditional fields
-        var options = conditionalFieldsData[milestoneType] || [];
+        var options = conditionalFields[milestoneType] || [];
 
         // If no options are available
         if (options.length === 0) {
@@ -243,13 +236,15 @@ class Milestone extends DataObject {
     document.addEventListener('DOMContentLoaded', function() {
         var milestoneTypeDropdown = document.querySelector('[name="milestoneType"]');
 
-        // Attach event listener for dropdown change
-        milestoneTypeDropdown.addEventListener('change', function() {
-            updateConditionalField(this.value);
-        });
+        if(milestoneTypeDropdown) {
+            milestoneTypeDropdown.addEventListener('change', function() {
+                updateConditionalField(this.value);
+            });
+            updateConditionalField(milestoneTypeDropdown.value);
 
-        // Initialize with the first milestone type when the page loads
-        updateConditionalField(milestoneTypeDropdown.value);
+        } else {
+            console.error("Milestone type dropdown not found.");
+        }
     });
  
 </script>
