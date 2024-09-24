@@ -167,8 +167,8 @@ class Campaign extends DataObject {
     public static function getActiveCampaignsList(): array
     {
         $campaign = new Campaign();
-        $campaign->whereAdd("startDate < '" . date("Y-m-d") . "'");
-        $campaign->whereAdd("endDate > '" . date("Y-m-d") . "'");
+        $campaign->whereAdd("startDate <= '" . date("Y-m-d") . "'");
+        $campaign->whereAdd("endDate >='" . date("Y-m-d") . "'");
         $campaignList = [];
         if ($campaign->find()) {
             while ($campaign->fetch()) {
@@ -185,7 +185,7 @@ class Campaign extends DataObject {
         $today = date("Y-m-d");
         $nextMonth = date("Y-m-d", strtotime("+1 month"));
 
-        $campaign->whereAdd("startDate >= '" . $today . "'");
+        $campaign->whereAdd("startDate > '" . $today . "'");
         $campaign->whereAdd("startDate <= '" . $nextMonth . "'");
 
         $campaignList = [];
