@@ -53,7 +53,14 @@ class Milestone extends DataObject {
                     'title_display' => 'Title',
                     'author_display' => 'Author',
                     'subject_facet' => 'Subject',
+                     // 'hold_title' => 'Title',
+                    // 'hold_author' => 'Author',
+                    // 'list_id' => 'List Name',
+                    // 'list_name' => 'List Length',
+                    // 'work_id' => 'Reviewed Title',
+                    // 'work_author' => 'Reviewed Author',
                 ],
+                'required' => false,
                 // var_dump($groupedWorkDriver->getSolrField('format_category_main')); #Books, eBooks, Audiobooks, Music, Video
                 // var_dump($groupedWorkDriver->getSolrField('publisherStr'));
                 // var_dump($groupedWorkDriver->getSolrField('title_display'));
