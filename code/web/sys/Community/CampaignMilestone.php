@@ -104,18 +104,12 @@ class CampaignMilestone extends DataObject {
         return $campaignMilestone->goal;
     }
 
-    public static function getMilestoneCountByCampaign($campaignId) {
-        $campaignMilestone = new CampaignMilestone();
-        $campaignMilestone->campaignId = $campaignId;
-        return $campaignMilestone->count();
-    }
-
    public static function getMilestoneProgress($campaignId, $userId, $milestoneId) {
         $milestoneUsersProgress = new MilestoneUsersProgress();
         $campaignMilestone = new CampaignMilestone();
 
         //Get goal total
-        $goal = $campaignMilestone->getMilestoneCountByCampaign($campaignId, $milestoneId);
+        $goal = $campaignMilestone->getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
 
         //Number of completed goals for this milestone
         $userCompletedGoalCount = $milestoneUsersProgress->getProgressByMilestoneId($milestoneId, $userId);
