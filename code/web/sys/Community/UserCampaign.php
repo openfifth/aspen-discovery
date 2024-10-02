@@ -44,11 +44,35 @@ class UserCampaign extends DataObject {
             'completed' => [
                 'property' => 'completed',
                 'type' => 'checkbox',
-				'label' => 'Enrollment Date',
-				'description' => 'The Date of Enrollment',
+				'label' => 'Campaign Complete',
+				'description' => 'Whether or not the campaign is complete',
+                'default' => false,
             ]
         ];
     }
 
+    /**
+     * Checks if a user has completed all milestone for a given campaign. 
+     * 
+     * @return bool True is all milestones are complete, false otherwise.
+     */
+    public function isUserCampaignComplete($userId) {
+        require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
+        $campaignMilestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
 
+        foreach ($campaignMilestones as $milestone) {
+            $milestoneProgress = new MilestoneUsersProgress();
+            $milestoneProgress->ce_milestone_id = $milestone->id;
+            $milestoneProgress->userId = $userId;
+
+            if ($milestoneProgress->find(true)) {
+                if ($milestoneProgress->progress < $milestone->goal) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
 }

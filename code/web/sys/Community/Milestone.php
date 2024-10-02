@@ -172,6 +172,7 @@ class Milestone extends DataObject {
      */
     public function addMilestoneProgressEntry( $object, $userId)
     {
+        require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 
         if (!$this->conditionalsCheck($object))
             return;
