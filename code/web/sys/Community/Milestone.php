@@ -277,8 +277,8 @@ class Milestone extends DataObject {
   }
 }
 
-$conditionalFields = Milestone::getConditionalFields();
-?>
+// $conditionalFields = Milestone::getConditionalFields();
+/*?>
 <script>
     var conditionalFields = <?php echo json_encode($conditionalFields); ?>
 
@@ -325,4 +325,4 @@ $conditionalFields = Milestone::getConditionalFields();
         }
     });
  
-</script>
+</script>*/
