@@ -81,13 +81,13 @@ class Campaign extends DataObject {
         if (is_null($this->_users)) {
             $this->_users = [];
 
-            require_once ROOT_DIR . '/sys/AccountUser.php';
+            require_once ROOT_DIR . '/sys/Account/User.php';
 
             if ($this->id) {
                 $escapedId = $this->escape($this->id);
-
-                $user - new User();
-                $user->query("SELECT user.* FROM user INNER JOIN user_campaign ON  user.id = user_campaign.user_id WHERE user_campaign.campaign_id = $escapedId ORDER BY user.username");
+                error_log("Fetching users for campaign Id: " . $escapedId);
+                $user = new User();
+                $user->query("SELECT user.* FROM user INNER JOIN ce_user_campaign ON  user.id = ce_user_campaign.userId WHERE ce_user_campaign.campaignId = $escapedId ORDER BY user.username");
 
                 while($user->fetch()) {
                     $this->_users[$user->id] = clone $user;
@@ -95,6 +95,29 @@ class Campaign extends DataObject {
             }
         }
         return $this->_users;
+    }
+
+    public function getUsersForCampaign() {
+        require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+        $users = [];
+
+        if ($this->id) {
+            $userCampaign = new UserCampaign();
+
+            $userCampaign->campaignId = $this->id;
+
+            if ($userCampaign->find()) {
+                while ($userCampaign->fetch()) {
+                    $user = new User();
+                    $user->id = $userCampaign->userId;
+                    if ($user->find(true)) {
+                        $users[] = clone $user;
+                    }
+                }
+            }
+        }
+        error_log(print_r($users, true));
+        return $users;
     }
 
     public function __get($name) {

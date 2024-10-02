@@ -88,7 +88,29 @@
         </div>
         {*Show patrons that are enrolled in each campaign*}
         <div id="patronStatus" style="display:none;">
-                    patron status
+                    {foreach from=$campaigns item=campaign}
+                        <div class="campaign-patron-status">
+                            <h2>{translate text=$campaign->name isAdminFacing=true}</h2>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>{translate text="User ID" isAdminFacing=true}</th>
+                                        <th>{translate text="Username" isAdminFacing=true}</th>
+                                        <th>{translate text="Campaign Complete" isAdminFacing=true}</th>
+                                        <th>{translate text="Reward Given" isAdminFacing=true}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {foreach from=$campaign->getUsersForCampaign() item=user}
+                                        <tr>
+                                            <td>{$user->id}</td>
+                                            <td>{$user->username}</td>
+                                        </tr>
+                                    {/foreach}
+                                </tbody>
+                            </table>
+                        </div>
+                    {/foreach}
         </div>
     </div>
 {/strip}
