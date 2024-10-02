@@ -156,6 +156,18 @@ class Campaign extends DataObject {
         return $ret;
     }
 
+    public static function getAllCampaigns() : array {
+        $campaign = new Campaign();
+        $campaignList = [];
+
+        if ($campaign->find()) {
+            while ($campaign->fetch()) {
+                $campaignList[$campaign->id] = clone $campaign;
+            }
+        }
+        return $campaignList;
+    }
+
     /**
      * Retrieves a list of active campaigns.
      *
@@ -192,6 +204,24 @@ class Campaign extends DataObject {
         if ($campaign->find()) {
             while ($campaign->fetch()) {
                 $campaignList[$campaign->id] = $campaign;
+            }
+        }
+        return $campaignList;
+    }
+
+    public static function getCampaignsEndingThisMonth(): array {
+        $campaign = new Campaign();
+
+        $startOfMonth = date('Y-m-01');
+        $endOfMonth = date('Y-m-t'); //Last day of current month
+
+        $campaign->whereAdd("endDate >= '$startOfMonth'");
+        $campaign->whereAdd("endDate <= '$endOfMonth'");
+
+        $campaignList = [];
+        if ($campaign->find()) {
+            while ($campaign->fetch()) {
+                $campaignList[$campaign->id] = clone $campaign;
             }
         }
         return $campaignList;
