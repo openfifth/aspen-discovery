@@ -74,14 +74,13 @@ class Community_Campaigns extends ObjectEditor {
 
     function canView(): bool {
 		return UserAccount::userHasPermission([
-            'Administer All Basic Pages',
-			'Administer Library Basic Pages',
+            'Administer Community Module',
         ]);
 	}
 
     function canBatchEdit(): bool {
 		return UserAccount::userHasPermission([
-			'Administer All Basic Pages',
+			'Administer Community Module',
 		]);
 	}
 }

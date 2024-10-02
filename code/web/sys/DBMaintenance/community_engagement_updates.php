@@ -151,5 +151,20 @@ function getCommunityEngagementUpdates() {
                 )ENGINE = InnoDB",
             ],
         ],
+        'community_engagement_roles' => [
+            'title' => 'Community Engagement Module Roles and Permissions',
+            'description' => 'Set up roles and permissions for the Community Engagement Module',
+            'sql' => [
+                "INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES
+                    ('Community', 'Administer Community Module',' Community', 180, 'Allows the user to create rewards, milestones and campaigns.')"
+            ],
+        ],
+        'add_role_permissions_for_community_engagement_module' => [
+            'title' => 'Add Role Permissions For Community Engagement Module',
+            'description' => 'Set up role permissions to administer the Community Engagement module',
+            'sql' => [
+                "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Community Module'))"
+            ],
+        ],
     ];
 }
