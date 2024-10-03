@@ -143,6 +143,8 @@ class IndexingProfile extends DataObject {
 	public /** @noinspection PhpUnused */
 		$suppressRecordsWithUrlsMatching;
 	public /** @noinspection PhpUnused */
+		$treatItemsAsEcontent;
+	public /** @noinspection PhpUnused */
 		$determineAudienceBy;
 	public /** @noinspection PhpUnused */
 		$audienceSubfield;
@@ -489,6 +491,17 @@ class IndexingProfile extends DataObject {
 				'label' => 'Suppress Records With Urls Matching',
 				'description' => 'Any records with an 856u matching the pattern will be suppressed',
 				'defaultValue' => 'overdrive\.com|contentreserve\.com|hoopla|yourcloudlibrary|axis360\.baker-taylor\.com',
+				'hideInLists' => true,
+				'forcesReindex' => true,
+			],
+
+			'treatItemsAsEcontent' => [
+				'property' => 'treatItemsAsEcontent',
+				'hiddenByDefault' => true,
+				'type' => 'regularExpression',
+				'label' => 'Treat Item Types As eContent',
+				'description' => 'Any records with an item type matching the pattern will be treated as eContent',
+				'defaultValue' => 'ebook|ebk|eaudio|evideo|online|oneclick|eaudiobook|download',
 				'hideInLists' => true,
 				'forcesReindex' => true,
 			],
