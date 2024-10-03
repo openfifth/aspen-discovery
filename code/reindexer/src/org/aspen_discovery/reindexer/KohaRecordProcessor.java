@@ -12,6 +12,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 class KohaRecordProcessor extends IlsRecordProcessor {
 	private final HashSet<String> inTransitItems = new HashSet<>();
@@ -315,7 +316,7 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 		List<RecordInfo> unsuppressedEcontentRecords = new ArrayList<>();
 
 		//Retrieve the regex for eContent types from the indexing profile
-		String eContentTypeRegex = settings.getTreatItemsAsEcontent();
+		Pattern eContentTypeRegex = settings.getTreatItemsAsEcontent();
 
 		for (DataField itemField : itemRecords){
 			String itemIdentifier = MarcUtil.getItemSubfieldData(settings.getItemRecordNumberSubfield(), itemField, indexer.getLogEntry(), logger);
@@ -331,7 +332,7 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 				if (itemField.getSubfield(settings.getITypeSubfield()) != null){
 					String iType = itemField.getSubfield(settings.getITypeSubfield()).getData().toLowerCase().trim();
 					//if (iType.equals("ebook") || iType.equals("ebk") || iType.equals("eaudio") || iType.equals("evideo") || iType.equals("online") || iType.equals("oneclick") || iType.equals("eaudiobook") || iType.equals("download")){
-					if (iType.matches(eContentTypeRegex)) {
+					if (eContentTypeRegex.matcher(iType).matches()) {
 						isEContent = true;
 						String sourceType = getSourceType(record, itemField);
 						if (sourceType != null){
