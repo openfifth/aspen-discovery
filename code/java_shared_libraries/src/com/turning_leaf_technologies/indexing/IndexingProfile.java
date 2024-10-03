@@ -75,6 +75,7 @@ public class IndexingProfile extends BaseIndexingSettings {
 	private long lastUpdateOfAuthorities;
 	private long lastChangeProcessed;
 	private Pattern suppressRecordsWithUrlsMatching;
+	private Pattern treatItemsAsEcontent;
 	private String fallbackFormatField;
 	private boolean processRecordLinking;
 	private int evergreenOrgUnitSchema;
@@ -194,6 +195,7 @@ public class IndexingProfile extends BaseIndexingSettings {
 
 		this.setDoAutomaticEcontentSuppression(indexingProfileRS.getBoolean("doAutomaticEcontentSuppression"));
 		this.setSuppressRecordsWithUrlsMatching(indexingProfileRS.getString("suppressRecordsWithUrlsMatching"));
+		this.setTreatItemsAsEcontent(indexingProfileRS.getString("treatItemsAsEcontent"));
 		this.setEContentDescriptor(getCharFromRecordSet(indexingProfileRS, "eContentDescriptor"));
 
 		this.setLastYearCheckoutsSubfield(getCharFromRecordSet(indexingProfileRS, "lastYearCheckouts"));
@@ -892,8 +894,20 @@ public class IndexingProfile extends BaseIndexingSettings {
 		}
 	}
 
+	public void setTreatItemsAsEcontent(String treatItemsAsEcontent) {
+		if (treatItemsAsEcontent.isEmpty()){
+			this.treatItemsAsEcontent = null;
+		} else {
+			this.treatItemsAsEcontent = Pattern.compile(treatItemsAsEcontent, Pattern.CASE_INSENSITIVE);
+		}
+	}
+
 	public Pattern getSuppressRecordsWithUrlsMatching() {
 		return suppressRecordsWithUrlsMatching;
+	}
+
+	public Pattern getTreatItemsAsEcontent() {
+		return treatItemsAsEcontent;
 	}
 
 	public void setFallbackFormatField(String fallbackFormatField) {
