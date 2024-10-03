@@ -1821,5 +1821,6 @@ class IndexingProfile extends DataObject {
 		}
 		return $this->_accountProfile;
 	}
+
 }
 
