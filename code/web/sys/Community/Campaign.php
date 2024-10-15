@@ -2,6 +2,8 @@
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+require_once ROOT_DIR . '/sys/Community/Reward.php';
+
 
 class Campaign extends DataObject {
     public $__table = 'ce_campaign';
@@ -14,6 +16,7 @@ class Campaign extends DataObject {
     public $enrollmentCounter;
     public $unenrollmentCounter;
     public $currentEnrollments;
+    public $campaignReward;
 
     /** @var AvailableMilestones[] */
     private $_availableMilestones;
@@ -23,6 +26,7 @@ class Campaign extends DataObject {
         $milestoneStructure = CampaignMilestone::getObjectStructure($context);
         unset($milestoneStructure['campaignId']);
 
+        $rewardList = Reward::getRewardList();
         return [
             'id' => [
                 'property' => 'id',
@@ -74,6 +78,13 @@ class Campaign extends DataObject {
                 'label' => 'Campaign End Date',
                 'description' => 'The date the campaign ends',
             ],
+            'campaignReward' => [
+                'property' => 'campaignReward',
+                'type' => 'enum',
+                'label' => 'Reward for Completing Campaign',
+                'values' => $rewardList, 
+                'description' => 'The reward given for completing the campaign.'
+            ]
         ];
     }
 

@@ -21,7 +21,8 @@ function getCommunityEngagementUpdates() {
                     endDate DATE NULL,
                     enrollmentCounter INT(11) DEFAULT 0,
                     unenrollmentCounter INT(11) DEFAULT 0,
-                    currentEnrollments INT NOT NULL DEFAULT 0
+                    currentEnrollments INT NOT NULL DEFAULT 0,
+                    campaignReward INT(11) DEFAULT -1
                 ) ENGINE = InnoDB",
             ],
         ],
