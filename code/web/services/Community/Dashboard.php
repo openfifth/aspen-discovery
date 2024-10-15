@@ -55,7 +55,9 @@ class Community_Dashboard extends Admin_Dashboard {
     }
 
     function canView(): bool {
-        return true;
+        return UserAccount::userHasPermission([
+            'View Community Dashboard',
+        ]);
     }
 
     function getActiveAdminSection(): string

@@ -166,5 +166,20 @@ function getCommunityEngagementUpdates() {
                 "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Community Module'))"
             ],
         ],
+        'view_community_dashboard_permissions' => [
+            'title' => 'View Community Dashboard Permissions',
+            'description' => 'Set up permissions to restrict who can view the community dashboard',
+            'sql' => [
+                "INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES 
+                    ('Reporting', 'View Community Dashboard', 'Community', 190, 'Allows the user to view the community engagement dashboard.')"
+            ],
+        ],
+        'add_role_permissions_for_community_engagement_dashboard' => [
+            'title' => 'Add Role Permissions For Community Engagement Dashboard',
+            'description' => 'Set up role permissions for Community Engagement Dashboard',
+            'sql' => [
+                "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='View Community Dashboard'))"
+            ],
+        ],
     ];
 }

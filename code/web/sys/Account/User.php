@@ -4182,7 +4182,7 @@ class User extends DataObject {
 				'Administer Community Module',
 			]);
 			$sections['community']->addAction(new AdminAction('Dashboard', 'Create and view rewards.', '/Community/Dashboard'), [
-				'Administer Community Module',
+				'View Community Dashboard',
 			]);
 		}
 		$sections['cataloging'] = new AdminSection('Catalog / Grouped Works');
