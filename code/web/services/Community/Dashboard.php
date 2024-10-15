@@ -36,10 +36,9 @@ class Community_Dashboard extends Admin_Dashboard {
                 $userCampaign->campaignId = $campaign->id;
             
             if ($userCampaign->find(true)) {
-                $numMilestones = count(CampaignMilestone::getMilestoneByCampaign($campaign->id));
-                $userCampaigns[$campaign->id][$user->id] = [
-                    'rewardGiven' => (int)$userCampaign->rewardGiven,
-                ];
+                error_log("User: {$user->id}, Campaign: {$campaign->id}, RewardGiven: {$userCampaign->rewardGiven}");
+                $userCampaigns[$campaign->id][$user->id] = (int)$userCampaign->rewardGiven;
+                
             }
             }
         }
