@@ -8,6 +8,7 @@ class UserCampaign extends DataObject {
     public $enrollmentDate;
     public $unenerollmentDate;
     public $completed;
+    public $rewardGiven;
 
     public static function getObjectStructure($context = ''): array {
         return [
@@ -47,32 +48,44 @@ class UserCampaign extends DataObject {
 				'label' => 'Campaign Complete',
 				'description' => 'Whether or not the campaign is complete',
                 'default' => false,
-            ]
+            ],
+            'rewardGiven' => [
+                'property' => 'rewardGiven',
+                'type' => 'checkbox',
+                'label' => 'Reward Given',
+                'description' => 'Whether or not the reward for completing the campaign has been given',
+                'default' => false,
+            ],
         ];
     }
 
-    /**
-     * Checks if a user has completed all milestone for a given campaign. 
-     * 
-     * @return bool True is all milestones are complete, false otherwise.
-     */
-    public function isUserCampaignComplete($userId) {
+    public function checkCompletionStatus() {
+        require_once ROOT_DIR . '/sys/Community/Milestone.php';
         require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-        $campaignMilestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
+        require_once ROOT_DIR . '/sys/Community/UserCompletedMilestone.php';
+        
+        $campaignMilestone = new CampaignMilestone();
+        $campaignMilestone->campaignId = $this->campaignId;
 
-        foreach ($campaignMilestones as $milestone) {
-            $milestoneProgress = new MilestoneUsersProgress();
-            $milestoneProgress->ce_milestone_id = $milestone->id;
-            $milestoneProgress->userId = $userId;
+        $totalMilestones = 0;
+        $completedMilestonesCount = 0;
 
-            if ($milestoneProgress->find(true)) {
-                if ($milestoneProgress->progress < $milestone->goal) {
-                    return false;
+        if ($campaignMilestone->find()) {
+            while ($campaignMilestone->fetch()) {
+                $totalMilestones++;
+
+                $completedMilestone = new UserCompletedMilestone();
+                $completedMilestone->userId = $this->userId;
+                $completedMilestone->milestoneId = $campaignMilestone->milestoneId;
+                $completedMilestone->campaignId = $this->campaignId;
+
+                if ($completedMilestone->find(true)) {
+                    $completedMilestonesCount++;
                 }
-            } else {
-                return false;
             }
         }
-        return true;
+        $this->completed = ($totalMilestones > 0 && $completedMilestonesCount === $totalMilestones) ? 1 : 0;
+        $this->update();
     }
+
 }

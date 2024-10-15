@@ -105,6 +105,17 @@
                                         <tr>
                                             <td>{$user->id}</td>
                                             <td>{$user->username}</td>
+                                            <td>
+                                            </td>
+                                            <td>
+                                                {if isset ($userCampaigns[$campaign->id][$user->id]) && $userCampaigns[$campaign->id][$user->id] == 0}
+                                                <button class="set-reward-btn" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" onclick="AspenDiscovery.CommunityEngagement.campaignRewardGiven({$user->id}, {$campaign->id});">
+                                                    {translate text="Set Reward as Given" isPublicFacing=true}
+                                                </button>
+                                                {else}
+                                                    Reward Given
+                                                {/if}
+                                            </td>
                                         </tr>
                                     {/foreach}
                                 </tbody>
