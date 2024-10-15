@@ -136,6 +136,7 @@ class Role extends DataObject {
 					'Administer Boundless',
 					'Administer Cloud Library',
 					'Administer EBSCO EDS',
+					'Administer Community Module',
 					'Administer Summon',
 					'Administer Genealogy',
 					'Administer Hoopla',
