@@ -110,11 +110,34 @@
                                             <td>{$user->username}</td>
                                             {foreach from=$campaignMilestones[$campaign->id] item=milestone}
                                                 <td>
-                                                {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
-                                                    {translate text="Complete" isAdminFacing=true}
-                                                {else}
-                                                    {translate text="Incomplete" isAdminFacing=true}
-                                                {/if}
+                                                    {* <div style="display: flex; justify-content: space-between;">
+                                                        <div style="margin-right: 20px;">
+                                                            {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
+                                                                {translate text="Complete" isAdminFacing=true}
+                                                            {else}
+                                                                {translate text="Incomplete" isAdminFacing=true}
+                                                            {/if}
+                                                        </div>
+                                                        <div>
+                                                            Reward Given or not
+                                                        </div>
+                                                    </div> *}
+                                                    {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
+                                                            <div style="display: flex; justify-content: space-between;">
+                                                                <div style="margin-right: 20px;">
+                                                                    {translate text="Complete" isAdminFacing=true}
+                                                                </div>
+                                                                <div>
+                                                                    <button class="set-reward-btn" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}">
+                                                                        Set Reward As Given
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                    {else}
+                                                        <div>
+                                                            {translate text="Incomplete" isAdminFacing=true}
+                                                        </div>
+                                                    {/if}
                                                 </td>
                                             {/foreach}
                                             <td>

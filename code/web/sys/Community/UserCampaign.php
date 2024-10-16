@@ -78,4 +78,25 @@ class UserCampaign extends DataObject {
         return $isComplete;
     }
 
+    public function checkMilestoneCompletionStatus() {
+        $milestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
+        $milestoneCompletionStatus = [];
+
+        foreach ($milestones as $milestone) {
+            //User's progress for this milestone
+            $userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
+
+            //Goal for this milestone
+            $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
+
+            //Check if milestone is complete
+            $isMilestoneComplete = ($userProgress >= $goal);
+
+            //Add to array
+            $milestoneCompletionStatus[$milestone->id] = $isMilestoneComplete;
+        }
+
+        return $milestoneCompletionStatus;
+    }
+
 }
