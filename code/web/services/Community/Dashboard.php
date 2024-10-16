@@ -6,6 +6,8 @@ require_once ROOT_DIR . '/sys/Community/CampaignData.php';
 require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 require_once ROOT_DIR . '/sys/Community/UserCompletedMilestone.php';
+require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
+
 
 
 class Community_Dashboard extends Admin_Dashboard {
@@ -28,7 +30,13 @@ class Community_Dashboard extends Admin_Dashboard {
         $interface->assign('upcomingCampaigns', $upcomingCampaigns);
 
         $userCampaigns = [];
+        $campaignMilestones = [];
+        $userCampaignMilestones = [];
+
         foreach ($campaigns as $campaign) {
+            $milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
+            $campaignMilestones[$campaign->id] = $milestones;
+
             $users = $campaign->getUsersForCampaign();
             foreach ($users as $user) {
                 $userCampaign = new UserCampaign();
@@ -36,13 +44,34 @@ class Community_Dashboard extends Admin_Dashboard {
                 $userCampaign->campaignId = $campaign->id;
             
             if ($userCampaign->find(true)) {
-                error_log("User: {$user->id}, Campaign: {$campaign->id}, RewardGiven: {$userCampaign->rewardGiven}");
-                $userCampaigns[$campaign->id][$user->id] = (int)$userCampaign->rewardGiven;
+                $isCampaignComplete = $userCampaign->checkCompletionStatus();
+                if (!isset($userCampaigns[$campaign->id][$user->id])) {
+                    $userCampaigns[$campaign->id][$user->id] = [];
+                }
+
+                // $userCampaigns[$campaign->id][$user->id] = (int)$userCampaign->rewardGiven;
+                $userCampaigns[$campaign->id][$user->id]['rewardGiven']= (int)$userCampaign->rewardGiven;
+
+                // $userCampaigns[$campaign->id][$user->id]['campaignComplete']= $userCampaign->checkCompletionStatus();
+                $userCampaigns[$campaign->id][$user->id]['isCampaignComplete'] = $isCampaignComplete;
+
+                foreach ($milestones as $milestone) {
+                    $userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $user->id);
+                    $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
+                    $milestoneComplete = ($userProgress >= $totalGoals);
                 
+                    $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id] = [
+                        'milestoneComplete' => $milestoneComplete, 
+                        'userProgress' => $userProgress,
+                        'goal' => $totalGoals,
+                    ];
+
+                }
             }
             }
         }
         $interface->assign('userCampaigns', $userCampaigns);
+        $interface->assign('campaignMilestones', $campaignMilestones);
         $this->display('dashboard.tpl', 'Dashboard');
     }
 

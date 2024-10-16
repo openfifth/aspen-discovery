@@ -96,6 +96,9 @@
                                     <tr>
                                         <th>{translate text="User ID" isAdminFacing=true}</th>
                                         <th>{translate text="Username" isAdminFacing=true}</th>
+                                        {foreach from=$campaignMilestones[$campaign->id] item=milestone}
+                                        <th>{translate text="Milestone: {$milestone->name}" isAdminFacing=true}</th>
+                                        {/foreach}
                                         <th>{translate text="Campaign Complete" isAdminFacing=true}</th>
                                         <th>{translate text="Reward Given" isAdminFacing=true}</th>
                                     </tr>
@@ -105,7 +108,21 @@
                                         <tr>
                                             <td>{$user->id}</td>
                                             <td>{$user->username}</td>
+                                            {foreach from=$campaignMilestones[$campaign->id] item=milestone}
+                                                <td>
+                                                {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
+                                                    {translate text="Complete" isAdminFacing=true}
+                                                {else}
+                                                    {translate text="Incomplete" isAdminFacing=true}
+                                                {/if}
+                                                </td>
+                                            {/foreach}
                                             <td>
+                                            {if $userCampaigns[$campaign->id][$user->id]['isCampaignComplete']}
+                                                {translate text="Campaign Complete" isAdminFacing=true}
+                                            {else}
+                                                {translate text="Campaign Incomplete" isAdminFacing=true}
+                                            {/if}
                                             </td>
                                             <td>
                                                 {if $userCampaigns[$campaign->id][$user->id] == 0}

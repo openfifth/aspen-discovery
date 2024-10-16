@@ -1,4 +1,6 @@
 <?php
+    require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
+    require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
 
 class UserCampaign extends DataObject {
     public $__table = 'ce_user_campaign';
@@ -60,32 +62,20 @@ class UserCampaign extends DataObject {
     }
 
     public function checkCompletionStatus() {
-        require_once ROOT_DIR . '/sys/Community/Milestone.php';
-        require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-        require_once ROOT_DIR . '/sys/Community/UserCompletedMilestone.php';
-        
-        $campaignMilestone = new CampaignMilestone();
-        $campaignMilestone->campaignId = $this->campaignId;
+        //Get milestones for campaign
+        $milestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
+        $isComplete = true;
 
-        $totalMilestones = 0;
-        $completedMilestonesCount = 0;
+        foreach ($milestones as $milestone) {
+            $userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
+            $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
 
-        if ($campaignMilestone->find()) {
-            while ($campaignMilestone->fetch()) {
-                $totalMilestones++;
-
-                $completedMilestone = new UserCompletedMilestone();
-                $completedMilestone->userId = $this->userId;
-                $completedMilestone->milestoneId = $campaignMilestone->milestoneId;
-                $completedMilestone->campaignId = $this->campaignId;
-
-                if ($completedMilestone->find(true)) {
-                    $completedMilestonesCount++;
-                }
+            if ($userProgress < $goal) {
+                $isComplete = false;
+                break;
             }
         }
-        $this->completed = ($totalMilestones > 0 && $completedMilestonesCount === $totalMilestones) ? 1 : 0;
-        $this->update();
+        return $isComplete;
     }
 
 }
