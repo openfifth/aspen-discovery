@@ -6,6 +6,7 @@ class MilestoneUsersProgress extends DataObject
     public $userId;
     public $ce_milestone_id;
     public $progress;
+    public $rewardGiven;
 
     public static function getProgressByMilestoneId($milestoneId, $userId) {
         $milestoneProgress = new Self();
@@ -16,4 +17,15 @@ class MilestoneUsersProgress extends DataObject
 
         return $milestoneProgress->progress ? $milestoneProgress->progress : 0;
     }
+
+    public static function getRewardGivenForMilestone($milestoneId, $userId) {
+        $progress = new MilestoneUsersProgress();
+        $progress->ce_milestone_id = $milestoneId;
+        $progress->userId = $userId;
+
+        if ($progress->find(true)) {
+            return $progress->rewardGiven;
+        }
+        return false;
+    } 
 }

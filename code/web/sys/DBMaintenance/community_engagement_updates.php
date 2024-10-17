@@ -76,7 +76,8 @@ function getCommunityEngagementUpdates() {
                      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                      userId INT NOT NULL,
                      ce_milestone_id INT NOT NULL,
-                     progress INT NOT NULL
+                     progress INT NOT NULL,
+                     rewardGiven TINYINT DEFAULT 0
                 )ENGINE = InnoDB",
             ],
         ],

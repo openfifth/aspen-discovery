@@ -128,9 +128,13 @@
                                                                     {translate text="Complete" isAdminFacing=true}
                                                                 </div>
                                                                 <div>
-                                                                    <button class="set-reward-btn" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}">
-                                                                        Set Reward As Given
+                                                                {if $userCampaigns[$camapign->id][$user->id]['milestones'][$milestone->id]['rewardGiven'] == 0}
+                                                                    <button class="set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}" onclick="AspenDiscovery.CommunityEngagement.milestoneRewardGiven({$user->id}, {$campaign->id}, {$milestone->id});">
+                                                                        {translate text="Set Reward as Given" isAdminFacing=true}
                                                                     </button>
+                                                                {else}
+                                                                    {translate text="Reward Given" isAdminFacing=true}
+                                                                {/if}
                                                                 </div>
                                                             </div>
                                                     {else}
@@ -150,7 +154,7 @@
                                             <td>
                                                 {if $userCampaigns[$campaign->id][$user->id]['rewardGiven'] == 0}
                                                 <button class="set-reward-btn" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" onclick="AspenDiscovery.CommunityEngagement.campaignRewardGiven({$user->id}, {$campaign->id});">
-                                                    {translate text="Set Reward as Given" isPublicFacing=true}
+                                                    {translate text="Set Reward as Given" isAdminFacing=true}
                                                 </button>
                                                 {else}
                                                     {translate text="Reward Given" isAdminFacing=true}
