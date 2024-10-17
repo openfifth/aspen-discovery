@@ -56,24 +56,5 @@ class Community_AJAX extends JSON_Action {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
-        // $userId = $_GET['userId'];
-        // $milestoneId = $_GET['milestoneId'];
-
-        // $milestoneProgress = new MilestoneUsersProgress();
-        // $milestoneProgress->userId = $userId;
-        // $milestoneProgress->milestoneId = $milestoneId;
-
-        // if ($milestoneProgress->find(true)) {
-        //     $milestoneProgress->rewardGiven = 1;
-
-        //     if ($milestoneProgress->update()) {
-        //         echo json_encode(['success' => true]);
-        //     } else {
-        //         echo json_encode(['success' => false, 'message' => 'Failed to update reward status for milestone.']);
-        //     }
-        // } else {
-        //     echo json_encode(['success' => false, 'message' => 'Milestone progress record not found for the user.']);
-        // }
-        // exit;
     }
 }

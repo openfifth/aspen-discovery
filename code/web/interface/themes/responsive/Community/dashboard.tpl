@@ -110,18 +110,6 @@
                                             <td>{$user->username}</td>
                                             {foreach from=$campaignMilestones[$campaign->id] item=milestone}
                                                 <td>
-                                                    {* <div style="display: flex; justify-content: space-between;">
-                                                        <div style="margin-right: 20px;">
-                                                            {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
-                                                                {translate text="Complete" isAdminFacing=true}
-                                                            {else}
-                                                                {translate text="Incomplete" isAdminFacing=true}
-                                                            {/if}
-                                                        </div>
-                                                        <div>
-                                                            Reward Given or not
-                                                        </div>
-                                                    </div> *}
                                                     {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
                                                             <div style="display: flex; justify-content: space-between;">
                                                                 <div style="margin-right: 20px;">
