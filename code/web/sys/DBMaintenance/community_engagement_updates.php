@@ -50,7 +50,7 @@ function getCommunityEngagementUpdates() {
                     name VARCHAR(100) NOT NULL,
                     description VARCHAR(255),
                     rewardType INT(11) DEFAULT -1,
-                    badgeImage LONGBLOB
+                    badgeImage VARCHAR(512) NOT NULL
                 )ENGINE = InnoDB",
             ],
         ],

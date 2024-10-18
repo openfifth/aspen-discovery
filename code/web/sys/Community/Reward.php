@@ -6,8 +6,10 @@ class Reward extends DataObject {
     public $name;
     public $description;
     public $rewardType;
+    public $badgeImage;
 
     public static function getObjectStructure($context = ''):array {
+        global $serverName;
         $rewardType = self::getRewardType();
         return [
             'id' => [
@@ -38,6 +40,13 @@ class Reward extends DataObject {
                 'description' => 'The type of reward',
                 'values' => $rewardType,
             ],
+            'badgeImage' => [
+                'property' => 'badgeImage',
+                'type' => 'image',
+                'label' => 'Badge Image',
+                'path' => '/data/aspen-discovery/' . $serverName . '/uploads/reward_images',
+                'displayUrl' => '/Community/ViewImage?id=',
+            ],
         ];
     }
 
@@ -62,4 +71,8 @@ class Reward extends DataObject {
         }
         return $rewardList;
     }
+
+    // private function generateImage() {
+    //     if(!empty($this->))
+    // }
 }
