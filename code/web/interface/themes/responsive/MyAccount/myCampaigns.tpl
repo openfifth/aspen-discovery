@@ -139,6 +139,29 @@
                 {/if}
             {/foreach}
         </table>
+        <h2>Past Campaigns</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Campaign Name</th>
+                    <th>End Date</th>
+                    <th>Campaign Milestones</th>
+                    <th>Campaign Reward</th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach from=$pastCampaigns item="campaign" key="resultIndex"}
+                <tr>
+                    <td>{$campaign->name}</td>
+                    <td>{$campaign->endDate}</td>
+                    {foreach from=$campaign->milestones item="milestone"}
+                       <td>{$milestone->name}</td>
+                    {/foreach}
+                    <td>{$campaign->rewardName}</td>
+                </tr>
+            {/foreach}
+            </tbody>
+        </table>
     {/if}
 {/strip}
 {literal}

@@ -261,6 +261,33 @@ class Campaign extends DataObject {
         return $campaignList;
     }
 
+    public static function getPastCampaigns(): array {
+        $campaign = new Campaign();
+
+        $currentDate = date('Y-m-d H:i:s');
+
+
+        $campaign->whereAdd("endDate < '$currentDate'");
+        $pastCampaignList = [];
+
+        if ($campaign->find()) {
+            while ($campaign->fetch()){
+                $pastCampaignList[$campaign->id] = clone $campaign;
+
+                $reward = new Reward();
+                $reward->id = $campaign->campaignReward;
+                if ($reward->find(true)) {
+                    $pastCampaignList[$campaign->id]->rewardName = $reward->name;
+                }
+
+                $campaignId = $campaign->id;
+                $milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+                $pastCampaignList[$campaign->id]->milestones = $milestones;
+            }
+        }
+        return $pastCampaignList;
+    }
+
     public static function getUserEnrolledCampaigns($userId): array {
         $campaign = new Campaign();
 

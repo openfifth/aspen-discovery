@@ -11,9 +11,15 @@ class MyCampaigns extends MyAccount {
         global $interface;
         global $library;
 
+        $campaign = new Campaign();
+
         //Get Campaigns
         $campaignList = $this->getCampaigns();
         $interface->assign('campaignList', $campaignList);
+
+        //Get past campaigns
+        $pastCampaigns = $campaign->getPastCampaigns();
+        $interface->assign('pastCampaigns', $pastCampaigns);
 
         //Get User
         $userId = $this->getUserId();
@@ -105,6 +111,8 @@ class MyCampaigns extends MyAccount {
         }
         return $campaignList;
     }
+
+
 
     //TODO:: Write a function that uses the milestone id for each progress bar to use the ce_milestone_progress_entries table and 
     //get information about which books were checked out and count towards the milestone. 
