@@ -162,6 +162,23 @@
             {/foreach}
             </tbody>
         </table>
+        <h2>Your Past Campaigns</h2>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                </tr>
+            </thead>
+            <tbody>
+            {foreach from=$pastCampaigns item="campaign" key="resultIndex"}
+                {if $campaign->enrolled}
+                        <tr>
+                            <td>{$campaign->name}</td>
+                        </tr>
+                {/if}
+            {/foreach}
+            </tbody>
+        </table>
     {/if}
 {/strip}
 {literal}

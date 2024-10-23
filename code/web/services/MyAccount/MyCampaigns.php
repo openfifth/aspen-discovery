@@ -12,18 +12,18 @@ class MyCampaigns extends MyAccount {
         global $library;
 
         $campaign = new Campaign();
+          //Get User
+          $userId = $this->getUserId();
+          $interface->assign('userId', $userId);
 
         //Get Campaigns
         $campaignList = $this->getCampaigns();
         $interface->assign('campaignList', $campaignList);
 
         //Get past campaigns
-        $pastCampaigns = $campaign->getPastCampaigns();
+        $pastCampaigns = $campaign->getPastCampaigns($userId);
         $interface->assign('pastCampaigns', $pastCampaigns);
 
-        //Get User
-        $userId = $this->getUserId();
-        $interface->assign('userId', $userId);
 
         $this->display('../MyAccount/myCampaigns.tpl', ',My Campaigns');
     }

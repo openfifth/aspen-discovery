@@ -261,7 +261,7 @@ class Campaign extends DataObject {
         return $campaignList;
     }
 
-    public static function getPastCampaigns(): array {
+    public static function getPastCampaigns(int $userId): array {
         $campaign = new Campaign();
 
         $currentDate = date('Y-m-d H:i:s');
@@ -283,6 +283,8 @@ class Campaign extends DataObject {
                 $campaignId = $campaign->id;
                 $milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
                 $pastCampaignList[$campaign->id]->milestones = $milestones;
+
+                $pastCampaignList[$campaign->id]->enrolled = $campaign->isUserEnrolled($userId);
             }
         }
         return $pastCampaignList;
