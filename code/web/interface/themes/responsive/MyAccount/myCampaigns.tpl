@@ -143,10 +143,10 @@
         <table class="table table-striped">
             <thead>
                 <tr>
-                    <th>Campaign Name</th>
-                    <th>End Date</th>
-                    <th>Campaign Milestones</th>
-                    <th>Campaign Reward</th>
+                    <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="End Date" isPublicFacing=true}</th>
+                    <th>{translate text="Campaign Milestones" isPublicFacing=true}</th>
+                    <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
                 </tr>
             </thead>
             <tbody>
@@ -167,6 +167,9 @@
             <thead>
                 <tr>
                     <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="End Date" isPublicFacing=true}</th>
+                    <th colspan="{count($campaign->milestones)}">{translate text="Campaign Milestones" isPublicFacing=true}</th>
+                    <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
                 </tr>
             </thead>
             <tbody>
@@ -174,6 +177,30 @@
                 {if $campaign->enrolled}
                         <tr>
                             <td>{$campaign->name}</td>
+                            <td>{$campaign->endDate}</td>
+                            {foreach from=$campaign->milestones item="milestone"}
+                                <td>
+                                    <div style="text-align: center;">
+                                        <div style="margin-bottom: 5px;">
+                                            {$milestone->name}
+                                        </div>
+                                        <div>
+                                            {if $milestone->isComplete}
+                                                {translate text="Complete" isPublicFacing=true}
+                                                <br>
+                                                {if $milestone->rewardGiven}
+                                                   <strong>{translate text="Reward Received: " isPublicFacing=true}</strong><br>{$milestone->rewardName}
+                                                {/if}
+                                            {else}
+                                                {translate text="Incomplete" isPublicFacing=true}
+                                            {/if}
+                                        </div>
+                                    </div>
+                                </td>
+                             {/foreach}
+                             {if $campaign->campaignRewardGiven}
+                                <td><strong>{translate text="Campaign Reward Received: "}</strong><br>{$campaign->rewardName}</td>
+                             {/if}
                         </tr>
                 {/if}
             {/foreach}
