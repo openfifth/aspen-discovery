@@ -183,5 +183,12 @@ function getCommunityEngagementUpdates() {
                 "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='View Community Dashboard'))"
             ],
         ],
+        'add_image_uploads_to_rewards' => [
+            'title' => 'Add Image Uploads To Rewards',
+            'description' => 'Allow image uploads for digital badges',
+            'sql' => [
+                "ALTER TABLE ce_reward ADD COLUMN badgeImage VARCHAR(255) NULL"
+            ],
+        ],
     ];
 }
