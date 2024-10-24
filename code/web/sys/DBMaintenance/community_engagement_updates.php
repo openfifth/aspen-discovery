@@ -49,8 +49,7 @@ function getCommunityEngagementUpdates() {
                      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100) NOT NULL,
                     description VARCHAR(255),
-                    rewardType INT(11) DEFAULT -1,
-                    badgeImage VARCHAR(512) NOT NULL
+                    rewardType INT(11) DEFAULT -1
                 )ENGINE = InnoDB",
             ],
         ],
