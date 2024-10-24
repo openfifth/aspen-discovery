@@ -340,7 +340,7 @@ class Campaign extends DataObject {
         $currentDate = date('Y-m-d H:i:s');
 
         $campaign->whereAdd("endDate < '$currentDate'");
-        $campaignList = [];
+        $pastCampaignList = [];
 
         if ($campaign->find()) {
             while($campaign->fetch()) {
