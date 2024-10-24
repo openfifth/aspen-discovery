@@ -67,9 +67,6 @@ class CampaignMilestone extends DataObject {
         ];
     }
 
-    public function canActiveUserEdit() {
-		return true;
-	}
 
     public static function getMilestoneByCampaign($campaignId) {
       $milestones = [];

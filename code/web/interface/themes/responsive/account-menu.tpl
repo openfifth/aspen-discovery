@@ -67,7 +67,7 @@
 			{/if}
 			<div class="header-menu-option" >
 					<a href="/MyAccount/MyCampaigns">{translate text='Your Campaigns' isPublicFacing=true}</a>
-				</div>
+			</div>
 			{if !empty($enableSavedSearches)}
 				{* Only highlight saved searches as active if user is logged in: *}
 				<div class="header-menu-option" ><a href="/Search/History?require_login">{translate text='Your Searches' isPublicFacing=true}</a></div>
@@ -102,7 +102,6 @@
 					</a>
 				</div>
 			{/if}
-			<div class="header-menu-option"><a href="/MyAccount/MyCampaigns">{translate text="Your Campaigns" isPublicFacing=true}</a></div>
 			{if !empty($showUserPreferences)}<div class="header-menu-option" ><a href="/MyAccount/MyPreferences">{translate text='Your Preferences' isPublicFacing=true}</a></div>{/if}
 			{if $privacyConsentEnabled} <div class="header-menu-option"><a href="/MyAccount/MyPrivacySettings">{translate text="Your Privacy Settings" isPublicFacing=true}</a></div>{/if}
 			{if !empty($showUserContactInformation)}<div class="header-menu-option" ><a href="/MyAccount/ContactInformation">{translate text='Contact Information' isPublicFacing=true}</a></div>{/if}
