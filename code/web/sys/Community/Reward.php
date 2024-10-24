@@ -6,8 +6,10 @@ class Reward extends DataObject {
     public $name;
     public $description;
     public $rewardType;
+    public $badgeImage;
 
     public static function getObjectStructure($context = ''):array {
+        global $serverName;
         $rewardType = self::getRewardType();
         return [
             'id' => [
@@ -38,7 +40,43 @@ class Reward extends DataObject {
                 'description' => 'The type of reward',
                 'values' => $rewardType,
             ],
+            'badgeImage' => [
+                'property' => 'badgeImage',
+                'type' => 'image',
+                'label' => 'Image for Digital Badge',
+                'description' => 'The image to use for the digital badge',
+                'path' => '/data/aspen-discovery/' . $serverName . '/uploads/reward_image/full',
+                'displayUrl' => '/Community/ViewImage?size=full&id=',
+                'required' => false,
+            ],
         ];
+    }
+
+    public function getDisplayUrl(): string {
+        $size = 'full';
+        if (empty($this->id)) {
+            return  ' ';
+        }
+        return '/Community/ViewImage?size=' .$size . '&id=' . $this->id;
+    }
+
+    public function uploadImage() {
+        if (!empty($this->badgeImage)) {
+            global $serverName;
+            $imageFile = '/data/aspen-discovery/' . $serverName . '/uploads/reward_image/full/' . $this->badgeImage;
+        }
+    }
+
+    function insert($context = ' ') {
+            $this->uploadImage();
+        
+        return parent::insert();
+    }
+
+    function update($context = ' ') {
+            $this->uploadImage();
+        
+        return parent::update();
     }
 
     public static function getRewardType () {
