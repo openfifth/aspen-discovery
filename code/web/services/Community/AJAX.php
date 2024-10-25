@@ -1,5 +1,6 @@
 <?php
 require_once ROOT_DIR . '/JSON_Action.php';
+require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
 
@@ -56,5 +57,49 @@ class Community_AJAX extends JSON_Action {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
+    }
+
+    public function filterCampaignsAndUsers() {
+        try {
+            $filterType = $_GET['filterType'] ?? ' ';
+            $id = $_GET['id'] ?? ' ';
+    
+            $response = [];
+    
+           if ($filterType === 'campaign' && !empty($id)) {
+            $campaign = Campaign::getCampaignById($id);
+    
+                if ($campaign) {
+                    $response['success'] = true;
+                    $response['items'] = [$campaign];
+                } else {
+                    $response['success'] = false;
+                    $response['message'] = 'Campaign not found.';
+                }
+    
+           } elseif ($filterType === 'user' && !empty($id)) {
+            $campaigns = Campaign::getUserEnrolledCampaigns($id);
+    
+                if (!empty($campaigns)) {
+                    $response['success'] = true;
+                    $response['items'] = $campaigns;
+                } else {
+                    $response['success'] = false;
+                    $response['message'] = 'No campaigns found for this user.';
+                }
+    
+           } else {
+            $response['success'] = false;
+            $response['message'] = 'Invalid filter type or ID.';
+           }
+    
+           header('Content-Type: application/json');
+           echo json_encode($response);
+           exit;
+        } catch (Exception $e) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+        }
+      
     }
 }

@@ -1,6 +1,32 @@
 {strip}
     <div id="main-content" class="col-sm-12">
         <h1>{translate text="Dashboard" isAdminFacing=true}</h1>
+        {*Filter Results*}
+        <div>
+            <label for="filterBy">Filter By:</label>
+            <select id="filterBy" onchange="toggleFilterOptions()">
+                <option value="">Select Filter</option>
+                <option value="campaign">Campaign</option>
+                <option value="user">User</option>
+            </select>
+            <div id="campaignDropdown" style="display:none;">
+                <select id="campaign_id" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('campaign')">
+                    <option value="">All Campaigns</option>
+                    {foreach from=$campaigns item=$campaign}
+                        <option value="{$campaign->id}">{$campaign->name}</option>
+                    {/foreach}
+                </select>
+                <div id="selectedCampaignInfo"></div>
+            </div>
+            <div id="userDropdown" style="display:none;">
+                <select id="user_id" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
+                    <option value="">All Users</option>
+                    {foreach from=$users item=$user}
+                        <option value="{$user->id}">{$user->username}</option>
+                    {/foreach}
+                </select>
+            </div>
+        </div>
         <button id="toggleOverview" onClick="toggleCampaignOverview()">Camapign Overview</button>
         <button id="togglePatronStatusBtn" onClick="togglePatronStatus()">Patron Status</button>
         {*Overview of campaigns*}
@@ -182,4 +208,20 @@
         }
     }
 
+    function toggleFilterOptions() {
+        var filterBy = document.getElementById("filterBy").value;
+        var campaignDropdown = document.getElementById("campaignDropdown");
+        var userDropdown = document.getElementById("userDropdown");
+
+        if (filterBy === "campaign") {
+            campaignDropdown.style.display = "block";
+            userDropdown.style.display = "none";
+        } else if (filterBy === "user") {
+            userDropdown.style.display = "block";
+            campaignDropdown.style.display = "none";
+        } else {
+            campaignDropdown.style.display = "none";
+            userDropdown.style.display = "none";
+        }
+    }
 </script>
