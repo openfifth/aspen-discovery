@@ -29,6 +29,9 @@ class Community_Dashboard extends Admin_Dashboard {
         $upcomingCampaigns = $campaign->getUpcomingCampaigns();
         $interface->assign('upcomingCampaigns', $upcomingCampaigns);
 
+        $users = $campaign->getAllUsersInCampaigns();
+        $interface->assign('users', $users);
+
         $userCampaigns = [];
         $campaignMilestones = [];
         $userCampaignMilestones = [];
