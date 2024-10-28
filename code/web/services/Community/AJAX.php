@@ -3,6 +3,8 @@ require_once ROOT_DIR . '/JSON_Action.php';
 require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/UserAccount.php';
+
 
 class Community_AJAX extends JSON_Action {
     function campaignRewardGivenUpdate() {
@@ -79,10 +81,12 @@ class Community_AJAX extends JSON_Action {
     
            } elseif ($filterType === 'user' && !empty($id)) {
             $campaigns = Campaign::getUserEnrolledCampaigns($id);
+            $user = Campaign::getUserInfo($id);
     
                 if (!empty($campaigns)) {
                     $response['success'] = true;
                     $response['items'] = $campaigns;
+                    $response['user'] = $user ? $user->toArray() :  null;
                 } else {
                     $response['success'] = false;
                     $response['message'] = 'No campaigns found for this user.';

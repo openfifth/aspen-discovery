@@ -10,6 +10,7 @@ class MyCampaigns extends MyAccount {
     function launch() {
         global $interface;
         global $library;
+        // require_once ROOT_DIR . '/sys/Community/Campaign.php';
 
         $campaign = new Campaign();
           //Get User

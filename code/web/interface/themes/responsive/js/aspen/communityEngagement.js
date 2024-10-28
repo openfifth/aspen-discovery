@@ -58,16 +58,31 @@ AspenDiscovery.CommunityEngagement = function() {
 
             $.getJSON(url, params, function(data) {
                 if (data.success) {
+                    console.log(data.items);
+                   
+
+                    var campaignDiv = document.createElement('div');
+
                     if (filterType === 'campaign') {
-                        $('#campaignDropdown').empty().append('<option value=">All Campaigns</option>');
-                        $.each(data.items, function(index, campaign) {
-                            $('#campaignDropdown').append('<option value=" ' + campaign.id + ' ">' + campaign.name + '</option>');
-                        });
+                        document.getElementById('filteredCampaignList').innerHTML = '';
+
+                        data.items.forEach(function(campaign) {
+                            // var campaignDiv = document.createElement('div');
+                            campaignDiv.innerText = campaign.name;
+
+                            document.getElementById('filteredCampaignList').appendChild(campaignDiv);
+                        }) 
+
                     } else if (filterType === 'user') {
-                        $('#userDropdown').empty().append('<option value="">All Users</option>');
-                        $.each(data.items, function(index, user) {
-                            $('#userDropdown').append('<option value=" ' + user.id + '">' + user.username + '</option>');
-                        });
+                        document.getElementById('filteredCampaignsHeader').innerHTML = 'Campaigns for User';
+
+                        data.items.forEach(function(campaign) {
+                            campaignDiv.innerHTML = user;
+                        })
+                        // $('#userDropdown').empty().append('<option value="">All Users</option>');
+                        // $.each(data.items, function(index, user) {
+                        //     $('#userDropdown').append('<option value=" ' + user.id + '">' + user.username + '</option>');
+                        // });
                     }
                 } else {
                     alert("Error: " + data.message);

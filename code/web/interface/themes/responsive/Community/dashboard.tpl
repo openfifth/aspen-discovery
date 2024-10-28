@@ -16,7 +16,6 @@
                         <option value="{$campaign->id}">{$campaign->name}</option>
                     {/foreach}
                 </select>
-                <div id="selectedCampaignInfo"></div>
             </div>
             <div id="userDropdown" style="display:none;">
                 <select id="user_id" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
@@ -26,6 +25,9 @@
                     {/foreach}
                 </select>
             </div>
+        </div>
+        <div id="filteredCampaingsHeader"></div>
+        <div id="filteredCampaignList" style="border:4px solid red;width:100px;height:100px;">
         </div>
         <button id="toggleOverview" onClick="toggleCampaignOverview()">Camapign Overview</button>
         <button id="togglePatronStatusBtn" onClick="togglePatronStatus()">Patron Status</button>
