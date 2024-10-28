@@ -3,6 +3,7 @@ require_once ROOT_DIR . '/sys/Community/Milestone.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 require_once ROOT_DIR . '/sys/Community/Reward.php';
+require_once ROOT_DIR . '/sys/Account/User.php';
 
 
 class Campaign extends DataObject {
@@ -202,6 +203,15 @@ class Campaign extends DataObject {
         return $campaignList;
     }
 
+    public static function getCampaignById($id) {
+        $campaign = new Campaign();
+        $campaign->whereAdd("id = '" .$id . "'");
+        if ($campaign->find() && $campaign->fetch()) {
+          return $campaign;
+        }
+        return null;
+    }
+
     /**
      * Retrieves a list of active campaigns.
      *
@@ -293,47 +303,43 @@ class Campaign extends DataObject {
         return $milestoneRewards;
     }
 
-    // public static function getPastCampaigns(int $userId): array {
-    //     $campaign = new Campaign();
+    public static function getAllUsersInCampaigns(): array {
+        require_once ROOT_DIR . '/sys/Account/User.php';
+    
+        $userCampaign = new UserCampaign();
+        $userCampaign->selectAdd('userId');
+        $userCampaign->groupBy('userId'); 
+        $userCampaign->find();
+    
+        $userIds = [];
+        while ($userCampaign->fetch()) {
+            $userIds[] = $userCampaign->userId;
+        }
+    
+        // Fetch user details for the unique user IDs
+        $users = [];
+        if (!empty($userIds)) {
+            $userIdList = implode(',', array_map('intval', $userIds));
+            $user = new User();
+            $user->whereAdd("id IN ($userIdList)");
+            if ($user->find()) {
+                while ($user->fetch()) {
+                    $users[$user->id] = clone $user; // Or store as needed
+                }
+            }
+        }
+        return $users;
+    }
 
-    //     $currentDate = date('Y-m-d H:i:s');
-
-
-    //     $campaign->whereAdd("endDate < '$currentDate'");
-    //     $pastCampaignList = [];
-
-    //     if ($campaign->find()) {
-    //         while ($campaign->fetch()){
-    //             $pastCampaignList[$campaign->id] = clone $campaign;
-
-    //             $userCampaign = new UserCampaign();
-    //             $userCampaign->userId = $userId;
-    //             $userCampaign->campaignId = $campaign->id;
-
-    //             if($userCampaign->find(true)) {
-    //                 $pastCampaignList[$campaign->id]->enrolled = true;
-
-    //                 $milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
-    //                 $pastCampaignList[$campaign->id]->$milestoneCompletionStatus = $milestoneCompletionStatus;
-    //             } else {
-    //                 $pastCampaignList[$campaign->id]->enrolled = false;
-    //             }
-
-    //             $reward = new Reward();
-    //             $reward->id = $campaign->campaignReward;
-    //             if ($reward->find(true)) {
-    //                 $pastCampaignList[$campaign->id]->rewardName = $reward->name;
-    //             }
-
-    //             $campaignId = $campaign->id;
-    //             $milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
-    //             $pastCampaignList[$campaign->id]->milestones = $milestones;
-
-    //             // $pastCampaignList[$campaign->id]->enrolled = $campaign->isUserEnrolled($userId);
-    //         }
-    //     }
-    //     return $pastCampaignList;
-    // }
+    public static function getUserInfo($userId) {
+        $user = new User();
+        $user->whereAdd("id = $userId");
+        if ($user->find() && $user->fetch()){
+            return $user;
+        }
+        return null;
+    }
+    
 
     public function getPastCampaigns(int $userId): array {
         $campaign = new Campaign();
