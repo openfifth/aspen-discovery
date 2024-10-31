@@ -92,16 +92,22 @@ class MyCampaigns extends MyAccount {
                 
 
                     //Get completed milestones for user
-                    $completedMilestones = UserCompletedMilestone::getCompletedMilestones($userId, $campaignId);
-                    foreach ($completedMilestones as $completedMilestone) {
-                        if ($completedMilestone->milestoneId == $milestoneId) {
-                            $completedMilestonesCount++;
-                        }
-                    }
+                    // $completedMilestones = UserCompletedMilestone::getCompletedMilestones($userId, $campaignId);
+                    // foreach ($completedMilestones as $completedMilestone) {
+                    //     if ($completedMilestone->milestoneId == $milestoneId) {
+                    //         $completedMilestonesCount++;
+                    //     }
+                    // }
                 }
                 //Add completed milestones count to campaign object
-                $campaign->numCompletedMilestones = $completedMilestonesCount;
+                // $campaign->numCompletedMilestones = $completedMilestonesCount;
                 $campaign->numCampaignMilestones = $numCampaignMilestones;
+
+                $userCampaign = new UserCampaign();
+                $userCampaign->userId = $userId;
+                $userCampaign->campaignId = $campaignId;
+                $milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
+                $campaign->numCompletedMilestones = count(array_filter($milestoneCompletionStatus));
 
                 //Add milestones to campaign object
                 $campaign->milestones = $milestones;

@@ -61,6 +61,7 @@ class UserCampaign extends DataObject {
         ];
     }
 
+    //Check if the user has completed the campaign
     public function checkCompletionStatus() {
         //Get milestones for campaign
         $milestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
