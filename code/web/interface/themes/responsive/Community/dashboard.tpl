@@ -33,7 +33,7 @@
                     {foreach from=$campaigns item=campaign}
                         <div style="border-bottom: 2px solid #3174AF;padding: 10px; margin-bottom; 10px;">
                         <h5 style="font-weight:bold;">
-                            <a href="/Community/CampaignTable">
+                            <a href="/Community/CampaignTable?id={$campaign->id}">
                                 {translate text=$campaign->name isAdminFacing=true}
                             </a>
                         </h5>
