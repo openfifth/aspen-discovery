@@ -1,7 +1,7 @@
 {strip}
-    <div id="main-content" class="col-sm-12">
+    <div id="mian-content" class="col-sm-12">
         <h1>{translate text="Dashboard" isAdminFacing=true}</h1>
-        {*Filter Results*}
+        {*Filtered Results*}
         <div>
             <label for="filterBy">Filter By:</label>
             <select id="filterBy" onchange="toggleFilterOptions()">
@@ -18,28 +18,25 @@
                 </select>
             </div>
             <div id="userDropdown" style="display:none;">
-                <select id="user_id" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
-                    <option value="">All Users</option>
-                    {foreach from=$users item=$user}
-                        <option value="{$user->id}">{$user->username}</option>
-                    {/foreach}
-                </select>
+                    <select id="user_id" onchange="ApsenDiscover.CommunityEngagement.filterDropdownOptions('user')">
+                        <option value="">All Users</option>
+                        {foreach from=$users item=$user}
+                                <option value="{$user->id}">{$user->username}</option>
+                        {/foreach}
+                    </select>
             </div>
         </div>
-        <div id="filteredCampaingsHeader"></div>
-        <div id="filteredCampaignList" style="border:4px solid red;width:100px;height:100px;">
-        </div>
-        <button id="toggleOverview" onClick="toggleCampaignOverview()">Camapign Overview</button>
-        <button id="togglePatronStatusBtn" onClick="togglePatronStatus()">Patron Status</button>
-        {*Overview of campaigns*}
-        <div id="campaignOverview" style="display:none;">
-            {*All Campaigns*}
+        <div id="filteredCampaignsList">
             <div class="dashboardCategory row" style="border: 1px solid #3174AF;padding:0 10px 10px 10px; margin-bottom: 10px;">
                 <div class="col-sm-12">
                     <h2 class="dashboardCategoryLabel">{translate text="All Campaigns" isAdminFacing=true}</h2>
                     {foreach from=$campaigns item=campaign}
                         <div style="border-bottom: 2px solid #3174AF;padding: 10px; margin-bottom; 10px;">
-                        <h5 style="font-weight:bold;">{translate text=$campaign->name isAdminFacing=true}</h5>
+                        <h5 style="font-weight:bold;">
+                            <a href="/Community/CampaignTable">
+                                {translate text=$campaign->name isAdminFacing=true}
+                            </a>
+                        </h5>
 
                             <div class="dashboardLabel">Number of Patrons Enrolled:</div>
                             <div class="dashboardValue">{translate text=$campaign->currentEnrollments isAdminFacing=true}</div>
@@ -52,164 +49,12 @@
                         </div>
                     {/foreach}
                 </div>
-            </div>
-            {*Active Campaigns*}
-            <div class="dashboardCategory row" style="border: 1px solid #3174AF;padding: 0 10px 10px 10px; margin-bottom: 10px;">
-                <div class="col-sm-12">
-                    <h2 class="dashboardCategoryLabel">{translate text="Active Campaigns" isAdminFacing=true}</h2>
-                    {foreach from=$activeCampaigns item=activeCampaign}
-                        <div style="border-bottom: 2px solid #3174AF;padding: 10px; margin-bottom; 10px;">
-                            <h5 style="font-weight:bold;">{translate text=$activeCampaign->name isAdminFacing=true}</h5>
+            </div>            
+        <div>
 
-                            <div class="dashboardLabel">Number of Patrons Enrolled:</div>
-                            <div class="dashboardValue">{translate text=$activeCampaign->currentEnrollments isAdminFacing=true}</div>
-
-                            <div class="dashboardLabel">Total Number of Enrollments:</div>
-                            <div class="dashboardValue">{translate text=$activeCampaign->enrollmentCounter isAdminFacing=true}</div>
-
-                            <div class="dashboardLabel">Total Number of Unenrollments:</div>
-                            <div class="dashboardValue">{translate text=$activeCampaign->unenrollmentCounter isAdminFacing=true}</div>
-                        </div>
-                    {/foreach}
-                </div>
-            </div>
-            {*Upcoming Campaigns*}
-            <div class="dashboardCategory row" style="border: 1px solid #3174AF;padding: 0 10px 10px 10px; margin-bottom: 10px;">
-                <div class="col-sm-12">
-                    <h2 class="dashboardCategoryLabel">{translate text="Upcoming Campaigns" isAdminFacing=true}</h2>
-                    {foreach from=$upcomingCampaigns item=upcomingCampaign}
-                        <div style="border-bottom: 2px solid #3174AF;padding: 10px; margin-bottom; 10px;">
-                            <h5 style="font-weight:bold;">{translate text=$campaign->name isAdminFacing=true}</h5>
-
-                            <div class="dashboardLabel">Number of Patrons Enrolled:</div>
-                            <div class="dashboardValue">{translate text=$upcomingCampaign->currentEnrollments isAdminFacing=true}</div>
-
-                            <div class="dashboardLabel">Total Number of Enrollments:</div>
-                            <div class="dashboardValue">{translate text=$upcomingCampaign->enrollmentCounter isAdminFacing=true}</div>
-
-                            <div class="dashboardLabel">Total Number of Unenrollments:</div>
-                            <div class="dashboardValue">{translate text=$upcomimgCampaign->unenrollmentCounter isAdminFacing=true}</div>
-                        </div>
-                    {/foreach}
-                </div>
-            </div>
-            {*Campaigns that end this month*}
-            <div class="dashboardCategory row" style="border: 1px solid #3174AF;padding: 0 10px 10px 10px; margin-bottom: 10px;">
-                <div class="col-sm-12">
-                    <h2 class="dashboardCategoryLabel">{translate text="Campaigns Ending This Month" isAdminFacing=true}</h2>
-                    {foreach from=$campaignsEndingThisMonth item=campaignEnding}
-                        <div style="border-bottom: 2px solid #3174AF;padding: 10px; margin-bottom; 10px;">
-                            <h5 style="font-weight:bold;">{translate text=$campaignEnding->name isAdminFacing=true}</h5>
-
-                            <div class="dashboardLabel">Number of Patrons Enrolled:</div>
-                            <div class="dashboardValue">{translate text=$campaignEnding->currentEnrollments isAdminFacing=true}</div>
-
-                            <div class="dashboardLabel">Total Number of Enrollments:</div>
-                            <div class="dashboardValue">{translate text=$campaignEnding->enrollmentCounter isAdminFacing=true}</div>
-
-                            <div class="dashboardLabel">Total Number of Unenrollments:</div>
-                            <div class="dashboardValue">{translate text=$campaignEnding->unenrollmentCounter isAdminFacing=true}</div>
-                        </div>
-                    {/foreach}
-                </div>
-            </div>
-        </div>
-        {*Show patrons that are enrolled in each campaign*}
-        <div id="patronStatus" style="display:none;">
-                    {foreach from=$campaigns item=campaign}
-                        <div class="campaign-patron-status">
-                            <h2>{translate text=$campaign->name isAdminFacing=true}</h2>
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>{translate text="User ID" isAdminFacing=true}</th>
-                                        <th>{translate text="Username" isAdminFacing=true}</th>
-                                        {foreach from=$campaignMilestones[$campaign->id] item=milestone}
-                                        <th>{translate text="Milestone: {$milestone->name}" isAdminFacing=true}</th>
-                                        {/foreach}
-                                        <th>{translate text="Campaign Complete" isAdminFacing=true}</th>
-                                        <th>{translate text="Reward Given" isAdminFacing=true}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {foreach from=$campaign->getUsersForCampaign() item=user}
-                                        <tr>
-                                            <td>{$user->id}</td>
-                                            <td>{$user->username}</td>
-                                            {foreach from=$campaignMilestones[$campaign->id] item=milestone}
-                                                <td>
-                                                    {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneComplete']}
-                                                            <div style="display: flex; justify-content: space-between;">
-                                                                <div style="margin-right: 20px;">
-                                                                    {translate text="Complete" isAdminFacing=true}
-                                                                </div>
-                                                                <div>
-                                                                {if $userCampaigns[$camapign->id][$user->id]['milestones'][$milestone->id]['rewardGiven'] == 0}
-                                                                    <button class="set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}" onclick="AspenDiscovery.CommunityEngagement.milestoneRewardGiven({$user->id}, {$campaign->id}, {$milestone->id});">
-                                                                        {translate text="Set Reward as Given" isAdminFacing=true}
-                                                                    </button>
-                                                                {else}
-                                                                    {translate text="Reward Given" isAdminFacing=true}
-                                                                {/if}
-                                                                </div>
-                                                            </div>
-                                                    {else}
-                                                        <div>
-                                                            {translate text="Incomplete" isAdminFacing=true}
-                                                        </div>
-                                                    {/if}
-                                                </td>
-                                            {/foreach}
-                                            <td>
-                                            {if $userCampaigns[$campaign->id][$user->id]['isCampaignComplete']}
-                                                {translate text="Campaign Complete" isAdminFacing=true}
-                                            {else}
-                                                {translate text="Campaign Incomplete" isAdminFacing=true}
-                                            {/if}
-                                            </td>
-                                            <td>
-                                                {if $userCampaigns[$campaign->id][$user->id]['rewardGiven'] == 0}
-                                                <button class="set-reward-btn" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" onclick="AspenDiscovery.CommunityEngagement.campaignRewardGiven({$user->id}, {$campaign->id});">
-                                                    {translate text="Set Reward as Given" isAdminFacing=true}
-                                                </button>
-                                                {else}
-                                                    {translate text="Reward Given" isAdminFacing=true}
-                                                {/if}
-                                            </td>
-                                        </tr>
-                                    {/foreach}
-                                </tbody>
-                            </table>
-                        </div>
-                    {/foreach}
-        </div>
     </div>
 {/strip}
 <script type="text/javascript">
-    function toggleCampaignOverview() {
-        var overviewDiv = document.getElementById("campaignOverview");
-        var campaignOverviewBtn = document.getElementById("toggleOverview");
-        if (overviewDiv.style.display === "none") {
-            overviewDiv.style.display = "block";
-            campaignOverviewBtn.textContent = "Close Campaign Overview";
-        } else {
-            overviewDiv.style.display = "none";
-            campaignOverviewBtn.textContent = "Campaign Overview";
-        }
-    }
-
-    function togglePatronStatus() {
-        var patronStatusDiv = document.getElementById("patronStatus");
-        var patronStatusBtn = document.getElementById("togglePatronStatusBtn");
-        if (patronStatusDiv.style.display === "none") {
-            patronStatusDiv.style.display = "block";
-            patronStatusBtn.textContent = "Close Patron Status Overview";
-        } else {
-            patronStatusDiv.style.display = "none";
-            patronStatusBtn.textContent = "Patron Status";
-        }
-    }
-
     function toggleFilterOptions() {
         var filterBy = document.getElementById("filterBy").value;
         var campaignDropdown = document.getElementById("campaignDropdown");
