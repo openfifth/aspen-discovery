@@ -61,49 +61,41 @@ class Community_AJAX extends JSON_Action {
         exit;
     }
 
-    public function filterCampaignsAndUsers() {
-        try {
-            $filterType = $_GET['filterType'] ?? ' ';
-            $id = $_GET['id'] ?? ' ';
-    
-            $response = [];
-    
-           if ($filterType === 'campaign' && !empty($id)) {
-            $campaign = Campaign::getCampaignById($id);
-    
-                if ($campaign) {
-                    $response['success'] = true;
-                    $response['items'] = [$campaign];
-                } else {
-                    $response['success'] = false;
-                    $response['message'] = 'Campaign not found.';
-                }
-    
-           } elseif ($filterType === 'user' && !empty($id)) {
-            $campaigns = Campaign::getUserEnrolledCampaigns($id);
-            $user = Campaign::getUserInfo($id);
-    
-                if (!empty($campaigns)) {
-                    $response['success'] = true;
-                    $response['items'] = $campaigns;
-                    $response['user'] = $user ? $user->toArray() :  null;
-                } else {
-                    $response['success'] = false;
-                    $response['message'] = 'No campaigns found for this user.';
-                }
-    
-           } else {
-            $response['success'] = false;
-            $response['message'] = 'Invalid filter type or ID.';
-           }
-    
-           header('Content-Type: application/json');
-           echo json_encode($response);
-           exit;
-        } catch (Exception $e) {
-            header('Content-Type: application/json');
-            echo json_encode(['success' => false, 'message' => 'An error occurred: ' . $e->getMessage()]);
+    function filterCampaigns() {
+        global $interface;
+
+        $campaignId = isset($_REQUEST['campaignId']) ? intval($_REQUEST['campaignId']) : 0;
+
+        if ($campaignId > 0) {
+
+            $campaign = Campaign::getCampaignById($campaignId);
+            if ($campaign) {
+
+                $html = '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
+                $html .= '<div class="col-sm-12">';
+                $html .= "<h2 class=\"dashboardCategoryLabel\"><a href=\"/Community/CampaignTable?id={$campaignId}\">" . htmlspecialchars($campaign->name) . "</a></h2>";
+                $html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
+                $html .= '<div class="dashboardLabel">Number of Patrons Enrolled:</div>';
+                $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
+                $html .= '<div class="dashboardLabel">Total Number of Enrollments:</div>';
+                $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
+                $html .= '<div class="dashboardLabel">Total Number of Unenrollments:</div>';
+                $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
+                $html .= '</div>'; // End of campaign div
+                $html .= '</div>'; // End of col-sm-12
+                $html .= '</div>'; // End of dashboardCategory
+
+
+
+
+                $response['html'] = $html;
+                $response['success'] = true;
+            } else {
+                $response['message'] = 'Campaign not found';
+            }   
         }
-      
+        header('Content-Type: application/json');
+        echo json_encode($response);
+        exit;
     }
 }
