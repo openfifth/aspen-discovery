@@ -43,56 +43,33 @@ AspenDiscovery.CommunityEngagement = function() {
                 });
         },
         filterDropdownOptions: function(filterType) {
-            var selectedId = ' ';
-            if (filterType === 'campaign') {
-                selectedId = document.getElementById('campaign_id').value;
-            } else if (filterType === 'user') {
-                selectedId = document.getElementById('user_id').value;
-            }
-           
-            var url = Globals.path + "/Community/AJAX?method=filterCampaignsAndUsers";
+           var selectedId = (filterType === 'campaign') ? document.getElementById("campaign_id").value : document.getElementById("user_id").value;
+            var url = Globals.path + "/Community/AJAX?method=filterCampaigns";
             var params = {
-                filterType: filterType,
-                id: selectedId
-            };
+                campaignId: selectedId
+            }
 
-            $.getJSON(url, params, function(data) {
-                if (data.success) {
-                    console.log(data.items);
-                   
+            //Show/hide campaigns list and filtered campaigns divs
+            var campaignsList = document.getElementById("campaignsList");
+            var filteredCampaign = document.getElementById("filteredCampaign");
 
-                    var campaignDiv = document.createElement('div');
-
-                    if (filterType === 'campaign') {
-                        document.getElementById('filteredCampaignList').innerHTML = '';
-
-                        data.items.forEach(function(campaign) {
-                            // var campaignDiv = document.createElement('div');
-                            campaignDiv.innerText = campaign.name;
-
-                            document.getElementById('filteredCampaignList').appendChild(campaignDiv);
-                        }) 
-
-                    } else if (filterType === 'user') {
-                        document.getElementById('filteredCampaignsHeader').innerHTML = 'Campaigns for User';
-
-                        data.items.forEach(function(campaign) {
-                            campaignDiv.innerHTML = user;
-                        })
-                        // $('#userDropdown').empty().append('<option value="">All Users</option>');
-                        // $.each(data.items, function(index, user) {
-                        //     $('#userDropdown').append('<option value=" ' + user.id + '">' + user.username + '</option>');
-                        // });
+     
+            $.getJSON(url, params, 
+                function(data) {
+                    console.log(data);
+                    if (data.success) {
+                        $('#filteredCampaign').html(data.html);
+                        filteredCampaign.style.display = "block"; 
+                        campaignsList.style.display = "none";
+                    } else {
+                        alert("Error:" +  data.message);
                     }
-                } else {
-                    alert("Error: " + data.message);
-                }
-                console.log(data);
-            })
-            .fail(function(jqXHR, textStatus, errorThrown) {
-                console.error("AJAX Error: " + textStatus +", " + errorThrown);
-                alert('An error occurred while fetching filter options.' + textStatus + ', ' + errorThrown);
-            });
+                })
+                .fail(function() {
+                    console.error('Error retrieving campaign data.');
+                });
+        
         }
     }
+    
 }(AspenDiscovery.CommunityEngagement || {});

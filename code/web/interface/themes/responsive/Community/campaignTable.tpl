@@ -1,5 +1,4 @@
 <div id="campaignDetails">
-hi
     <h2>{translate text=$campaign->name isAdminFacing=true}</h2>
     <table class="table table-striped">
         <thead>

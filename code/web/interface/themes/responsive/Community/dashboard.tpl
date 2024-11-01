@@ -1,5 +1,5 @@
 {strip}
-    <div id="mian-content" class="col-sm-12">
+    <div id="main-content" class="col-sm-12">
         <h1>{translate text="Dashboard" isAdminFacing=true}</h1>
         {*Filtered Results*}
         <div>
@@ -18,7 +18,7 @@
                 </select>
             </div>
             <div id="userDropdown" style="display:none;">
-                    <select id="user_id" onchange="ApsenDiscover.CommunityEngagement.filterDropdownOptions('user')">
+                    <select id="user_id" onchange="ApsenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
                         <option value="">All Users</option>
                         {foreach from=$users item=$user}
                                 <option value="{$user->id}">{$user->username}</option>
@@ -26,17 +26,19 @@
                     </select>
             </div>
         </div>
-        <div id="filteredCampaignsList">
+        <div id="campaignsList">
             <div class="dashboardCategory row" style="border: 1px solid #3174AF;padding:0 10px 10px 10px; margin-bottom: 10px;">
+
                 <div class="col-sm-12">
                     <h2 class="dashboardCategoryLabel">{translate text="All Campaigns" isAdminFacing=true}</h2>
                     {foreach from=$campaigns item=campaign}
                         <div style="border-bottom: 2px solid #3174AF;padding: 10px; margin-bottom; 10px;">
-                        <h5 style="font-weight:bold;">
-                            <a href="/Community/CampaignTable?id={$campaign->id}">
-                                {translate text=$campaign->name isAdminFacing=true}
-                            </a>
-                        </h5>
+
+                            <h5 style="font-weight:bold;">
+                                <a href="/Community/CampaignTable?id={$campaign->id}">
+                                    {translate text=$campaign->name isAdminFacing=true}
+                                </a>
+                            </h5>
 
                             <div class="dashboardLabel">Number of Patrons Enrolled:</div>
                             <div class="dashboardValue">{translate text=$campaign->currentEnrollments isAdminFacing=true}</div>
@@ -49,9 +51,13 @@
                         </div>
                     {/foreach}
                 </div>
-            </div>            
-        <div>
+            </div>  
+        </div>
 
+        {*Filtered Campaigns*}
+        <div id="filteredCampaign">
+         
+        </div>
     </div>
 {/strip}
 <script type="text/javascript">
