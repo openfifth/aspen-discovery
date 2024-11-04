@@ -511,7 +511,6 @@ AspenDiscovery.Account = (function () {
 					$(".enrolled-campaigns-placeholder").html(data.numCampaigns);
 				}
 			})
-			console.log(data.numCampaigns);
 			return false;
 		},
 
@@ -2779,7 +2778,6 @@ AspenDiscovery.Account = (function () {
 			}
 		},
 		unenroll: function (campaignId, userId) {
-			console.log('unenroll');
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/MyAccount/AJAX";
 				var params = {
