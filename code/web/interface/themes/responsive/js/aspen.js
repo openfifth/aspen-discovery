@@ -6030,7 +6030,6 @@ AspenDiscovery.Account = (function () {
 					$(".enrolled-campaigns-placeholder").html(data.numCampaigns);
 				}
 			})
-			console.log(data.numCampaigns);
 			return false;
 		},
 
@@ -17362,23 +17361,18 @@ AspenDiscovery.CommunityEngagement = function() {
                     }
                 })
                 .fail(function(jqXHR, textStatus, errorThrown) {
-                    console.error("AJAX Error: " + textStatus + ", " + errorThrown);
-                    console.error("Response Text: " + jqXHR.responseText);
                     alert('An error occurred while updating the reward status for this milestone.' + textStatus + ', ' + errorThrown);
                 });
         },
         filterDropdownOptions: function(filterType) {
-            console.log("Filter Type: " + filterType);
 
            var selectedId = (filterType === 'campaign') ? document.getElementById("campaign_id").value : document.getElementById("user_id").value;
 
-           console.log("Selected ID: " + selectedId);
             var url = Globals.path + "/Community/AJAX?method=filterCampaigns";
             var params = {
                 campaignId: filterType === "campaign" ? selectedId : null,
                 userId: filterType === "user" ? selectedId : null
             }
-            console.log("Params: " +  params);
             
             //Show/hide campaigns list and filtered campaigns divs
             var campaignsList = document.getElementById("campaignsList");
