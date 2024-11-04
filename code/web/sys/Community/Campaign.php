@@ -418,6 +418,20 @@ class Campaign extends DataObject {
         return $campaignList;
     }
 
+    public function getCompletedUsersCount() {
+        $userCampaign = new UserCampaign();
+        $completedUsers = [];
+
+        $userCampaign->whereAdd("campaignId = {$this->id}");
+        $userCampaign->whereAdd("completed = 1");
+        $userCampaign->find();
+    
+        while($userCampaign->fetch()) {
+            $completedUsers[$userCampaign->userId] = true;
+        }
+        return count($completedUsers);
+    }
+
     public function isUserEnrolled($userId) {
         $userCampaign = new UserCampaign();
         $userCampaign->userId = $userId;

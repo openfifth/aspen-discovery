@@ -48,6 +48,9 @@
 
                             <div class="dashboardLabel">Total Number of Unenrollments:</div>
                             <div class="dashboardValue">{translate text=$campaign->unenrollmentCounter isAdminFacing=true}</div>
+
+                            <div class="dashboardLabel">Number of Users Who Have Completed the Campaign</div>
+                            <div class="dashboardValue">{translate text=$campaign->completedUsersCount isAdminFacing=true}</div>
                         </div>
                     {/foreach}
                 </div>
