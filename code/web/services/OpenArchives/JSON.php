@@ -65,7 +65,7 @@ class OpenArchives_JSON extends JSON_Action {
 					$userOpenArchivesUsage->usageCount = 1;
 					$userOpenArchivesUsage->insert();
 				}
-			}
+		}
 		}
 		return [
 			'success' => true,
