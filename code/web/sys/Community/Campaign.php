@@ -97,7 +97,6 @@ class Campaign extends DataObject {
 
             if ($this->id) {
                 $escapedId = $this->escape($this->id);
-                error_log("Fetching users for campaign Id: " . $escapedId);
                 $user = new User();
                 $user->query("SELECT user.* FROM user INNER JOIN ce_user_campaign ON  user.id = ce_user_campaign.userId WHERE ce_user_campaign.campaignId = $escapedId ORDER BY user.username");
 
@@ -128,7 +127,6 @@ class Campaign extends DataObject {
                 }
             }
         }
-        error_log(print_r($users, true));
         return $users;
     }
 
