@@ -65,6 +65,9 @@ class Community_AJAX extends JSON_Action {
         global $interface;
 
         $campaignId = isset($_REQUEST['campaignId']) ? intval($_REQUEST['campaignId']) : 0;
+        $userId = isset($_REQUEST['userId']) ? intval($_REQUEST['userId']) : 0;
+
+        $response = [];
 
         if ($campaignId > 0) {
 
@@ -81,19 +84,46 @@ class Community_AJAX extends JSON_Action {
                 $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
                 $html .= '<div class="dashboardLabel">Total Number of Unenrollments:</div>';
                 $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
-                $html .= '</div>'; // End of campaign div
-                $html .= '</div>'; // End of col-sm-12
-                $html .= '</div>'; // End of dashboardCategory
-
-
-
+                $html .= '</div>'; 
+                $html .= '</div>'; 
+                $html .= '</div>'; 
 
                 $response['html'] = $html;
                 $response['success'] = true;
             } else {
                 $response['message'] = 'Campaign not found';
             }   
+        } elseif ($userId > 0) {
+            $userCampaigns = Campaign::getUserEnrolledCampaigns($userId);
+
+            if (!empty($userCampaigns)) {
+                foreach ($userCampaigns as $campaign) {
+                    $html = '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
+                    $html .= '<div class="col-sm-12">';
+                    $html .= "<h5 style=\"font-weight:bold;\"><a href=\"/Community/CampaignTable?id={$campaign->id}\">" .htmlspecialchars($campaign->name) . "</a></h5>";
+                    $html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
+                    $html .= '<div class="dashboardLabel">Number of Patrons Enrolled: </div>';
+                    $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
+                    $html .= '<div class="dashboardLabel">Number of Enrollments: </div>';
+                    $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
+                    $html .= '<div class="dashboardLabel">Number of UnEnrollments: </div>';
+                    $html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
+                    $html .= '</div>';
+                    $html .= '</div>';
+                    $html .= '</div>';
+                }
+
+                $response['html'] = $html;
+                $response['success'] = true;
+            } else {
+                $response['message'] = 'No campaigns found for this user.';
+            }
+        } else {
+            $response['message'] = 'No valid campaign or user specified.';
         }
+
+        
+
         header('Content-Type: application/json');
         echo json_encode($response);
         exit;
