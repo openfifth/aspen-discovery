@@ -17368,12 +17368,18 @@ AspenDiscovery.CommunityEngagement = function() {
                 });
         },
         filterDropdownOptions: function(filterType) {
+            console.log("Filter Type: " + filterType);
+
            var selectedId = (filterType === 'campaign') ? document.getElementById("campaign_id").value : document.getElementById("user_id").value;
+
+           console.log("Selected ID: " + selectedId);
             var url = Globals.path + "/Community/AJAX?method=filterCampaigns";
             var params = {
-                campaignId: selectedId
+                campaignId: filterType === "campaign" ? selectedId : null,
+                userId: filterType === "user" ? selectedId : null
             }
-
+            console.log("Params: " +  params);
+            
             //Show/hide campaigns list and filtered campaigns divs
             var campaignsList = document.getElementById("campaignsList");
             var filteredCampaign = document.getElementById("filteredCampaign");

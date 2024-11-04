@@ -18,7 +18,7 @@
                 </select>
             </div>
             <div id="userDropdown" style="display:none;">
-                    <select id="user_id" onchange="ApsenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
+                    <select id="user_id" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
                         <option value="">All Users</option>
                         {foreach from=$users item=$user}
                                 <option value="{$user->id}">{$user->username}</option>
