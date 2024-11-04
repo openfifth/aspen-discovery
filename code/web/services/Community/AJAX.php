@@ -8,10 +8,8 @@ require_once ROOT_DIR . '/sys/UserAccount.php';
 
 class Community_AJAX extends JSON_Action {
     function campaignRewardGivenUpdate() {
-        error_log("Started campaignRewardGivenUpdate");
         $userId = $_GET['userId'];
         $campaignId = $_GET['campaignId'];
-        error_log("User ID: $userId, Campaign ID: $campaignId");
         $userCampaign = new UserCampaign();
         $userCampaign->userId = $userId;
         $userCampaign->campaignId = $campaignId;
@@ -55,14 +53,12 @@ class Community_AJAX extends JSON_Action {
 
         } catch(Exception $e) {
             ob_end_clean();
-            error_log("Update failed: " . $e->getMessage());
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }
         exit;
     }
 
     function filterCampaigns() {
-        global $interface;
 
         $campaignId = isset($_REQUEST['campaignId']) ? intval($_REQUEST['campaignId']) : 0;
         $userId = isset($_REQUEST['userId']) ? intval($_REQUEST['userId']) : 0;
