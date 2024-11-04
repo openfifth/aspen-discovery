@@ -73,6 +73,8 @@ class Community_Dashboard extends Admin_Dashboard {
                 }
             }
             }
+            //Count how many users have completed the campaign
+            $campaign->completedUsersCount = $campaign->getCompletedUsersCount();
         }
         $interface->assign('userCampaigns', $userCampaigns);
         $interface->assign('campaignMilestones', $campaignMilestones);
