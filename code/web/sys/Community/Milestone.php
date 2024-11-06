@@ -40,7 +40,6 @@ class Milestone extends DataObject {
                 'values' => [
                     'user_checkout' => 'Checkout',
                     'user_hold' => 'Hold',
-                    'user_list' => 'List',
                     'user_work_review' => 'Rating',
                 ],
                 'onchange' => 'updateConditionalField(this.value)',
@@ -53,6 +52,7 @@ class Milestone extends DataObject {
                     'title_display' => 'Title',
                     'author_display' => 'Author',
                     'subject_facet' => 'Subject',
+                    'user_list' => 'List (id)',
                      // 'hold_title' => 'Title',
                     // 'hold_author' => 'Author',
                     // 'list_id' => 'List Name',
@@ -225,6 +225,10 @@ class Milestone extends DataObject {
         if (!$object->groupedWorkId)
             return false;
 
+        if( $this->conditionalField == 'user_list' && is_numeric($this->conditionalValue) ) {
+            return $this->conditionalsListCheck($object);
+        }
+
         require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
         $groupedWorkDriver = new GroupedWorkDriver($object->groupedWorkId);
 
@@ -260,6 +264,23 @@ class Milestone extends DataObject {
         }
 
         return false;
+    }
+
+    /**
+     * Checks if a grouped work is on a certain list.
+     *
+     * @param $object The grouped work object to check.
+     *
+     * @return bool true if the grouped work is on the list, false otherwise.
+     */
+    protected function conditionalsListCheck($object){
+        require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+        $listEntry = new UserListEntry();
+        $listEntry->whereAdd("source ='GroupedWork'");
+        $listEntry->whereAdd("sourceId ='" . $object->groupedWorkId . "'");
+        $whereOp = $this->conditionalOperator == 'is_not' ? '!=' : '=';
+        $listEntry->whereAdd('listId '.$whereOp. ' ' . $this->conditionalValue);
+        return $listEntry->find(true);
     }
 
     /**
