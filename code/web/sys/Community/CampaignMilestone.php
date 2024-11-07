@@ -1,7 +1,7 @@
 <?php
 require_once ROOT_DIR . '/sys/Community/Reward.php';
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
-require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
 
 class CampaignMilestone extends DataObject {
     public $__table = 'ce_campaign_milestones';
@@ -116,14 +116,14 @@ class CampaignMilestone extends DataObject {
     }
 
    public static function getMilestoneProgress($campaignId, $userId, $milestoneId) {
-        $milestoneUsersProgress = new MilestoneUsersProgress();
+        $campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
         $campaignMilestone = new CampaignMilestone();
 
         //Get goal total
         $goal = $campaignMilestone->getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
 
         //Number of completed goals for this milestone
-        $userCompletedGoalCount = $milestoneUsersProgress->getProgressByMilestoneId($milestoneId, $userId);
+        $userCompletedGoalCount = $campaignMilestoneUsersProgress->getProgressByMilestoneId($milestoneId, $userId);
 
         if ($goal > 0) {
             $progress = ($userCompletedGoalCount / $goal ) * 100;

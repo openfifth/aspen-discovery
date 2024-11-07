@@ -61,18 +61,18 @@ function getCommunityEngagementUpdates() {
                      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                      userId INT NOT NULL,
                      ce_milestone_id INT NOT NULL,
-                     ce_milestone_users_progress_id INT NOT NULL,
+                     ce_campaign_milestone_users_progress_id INT NOT NULL,
                      tableName VARCHAR(100),
                      processed TINYINT DEFAULT 0,
                      object MEDIUMTEXT
                 )ENGINE = InnoDB",
             ],
         ],
-        'add_ce_milestone_users_progress' => [
-            'title' => 'Add add_ce_milestone_users_progress database table',
+        'add_ce_campaign_milestone_users_progress' => [
+            'title' => 'Add add_ce_campaign_milestone_users_progress database table',
             'description' => 'Store milestone progress for each user',
             'sql' => [
-                "CREATE TABLE IF NOT EXISTS ce_milestone_users_progress (
+                "CREATE TABLE IF NOT EXISTS ce_campaign_milestone_users_progress (
                      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                      userId INT NOT NULL,
                      ce_milestone_id INT NOT NULL,

@@ -7,7 +7,7 @@ class CampaignMilestoneProgressEntry extends DataObject
     public $id;
     public $userId;
     public $ce_milestone_id;
-    public $ce_milestone_users_progress_id;
+    public $ce_campaign_milestone_users_progress_id;
     public $tableName;
     public $processed;
     public $object;
@@ -19,9 +19,9 @@ class CampaignMilestoneProgressEntry extends DataObject
      * @param mixed $args Optional arguments to further configure the progress entry. Expects the following structure:
      * 
      *  [
-     *     "object"                 => An object param, may be of any of the allowed milestone types e.g. 'Checkout', 'Hold', etc.
-     *     "userId"                 => A user id param
-     *     "milestoneUsersProgress" => A MilestoneUsersProgress object param to be associated with this progress entry
+     *     "object"                         => An object param, may be of any of the allowed milestone types e.g. 'Checkout', 'Hold', etc.
+     *     "userId"                         => A user id param
+     *     "campaignMilestoneUsersProgress" => A CampaignMilestoneUsersProgress object param to be associated with this progress entry
      *  ]
      * 
      * @return void
@@ -35,7 +35,7 @@ class CampaignMilestoneProgressEntry extends DataObject
             return;
 
         $this->userId = $args['userId'];
-        $this->ce_milestone_users_progress_id = $args['milestoneUsersProgress']->id;
+        $this->ce_campaign_milestone_users_progress_id = $args['campaignMilestoneUsersProgress']->id;
         $this->processed = 0;
         $this->tableName = $args['object']->__table;
         $this->object = json_encode($args['object']);

@@ -1,6 +1,6 @@
 <?php
     require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-    require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
+    require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
 
 class UserCampaign extends DataObject {
     public $__table = 'ce_user_campaign';
@@ -68,7 +68,7 @@ class UserCampaign extends DataObject {
         $isComplete = true;
 
         foreach ($milestones as $milestone) {
-            $userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
+            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
             $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
 
             if ($userProgress < $goal) {
@@ -85,7 +85,7 @@ class UserCampaign extends DataObject {
 
         foreach ($milestones as $milestone) {
             //User's progress for this milestone
-            $userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
+            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
 
             //Goal for this milestone
             $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
