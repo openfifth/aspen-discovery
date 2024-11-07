@@ -85,7 +85,7 @@ class MyCampaigns extends MyAccount {
 
                     //Calculate milestone progress
                     $milestoneProgress = CampaignMilestone::getMilestoneProgress($campaignId, $userId, $milestone->id);
-                    $progressData = MilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId);
+                    $progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId);
 
                     $milestone->progress = $milestoneProgress['progress'];
                     $milestone->completedGoals = $milestoneProgress['completed'];

@@ -1,7 +1,7 @@
 <?php
 
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
-require_once ROOT_DIR . '/sys/Community/MilestoneProgressEntry.php';
+require_once ROOT_DIR . '/sys/Community/CampaignMilestoneProgressEntry.php';
 
 /**
  * after_checkout_insert
@@ -21,7 +21,7 @@ add_action('after_object_insert', 'after_checkout_insert', function ($value) {
         if (_milestoneProgressEntryObjectAlreadyExists($value, $milestone))
             return;
 
-        $milestone->addMilestoneProgressEntry($value, $value->userId);
+        $milestone->addCampaignMilestoneProgressEntry($value, $value->userId);
     }
     return;
 });
@@ -44,7 +44,7 @@ add_action('after_object_insert', 'after_hold_insert', function ($value) {
         if (_milestoneProgressEntryObjectAlreadyExists($value, $milestone))
             return;
 
-        $milestone->addMilestoneProgressEntry($value, $value->userId);
+        $milestone->addCampaignMilestoneProgressEntry($value, $value->userId);
     }
     return;
 });
@@ -64,7 +64,7 @@ add_action('after_object_insert', 'after_list_insert', function ($value) {
         return;
 
     while ($milestone->fetch()) {
-        $milestone->addMilestoneProgressEntry($value, $value->user_id);
+        $milestone->addCampaignMilestoneProgressEntry($value, $value->user_id);
     }
     return;
 });
@@ -84,7 +84,7 @@ add_action('after_object_insert', 'after_work_review_insert', function ($value) 
         return;
 
     while ($milestone->fetch()) {
-        $milestone->addMilestoneProgressEntry($value, $value->userId);
+        $milestone->addCampaignMilestoneProgressEntry($value, $value->userId);
     }
     return;
 });
@@ -100,7 +100,7 @@ add_action('after_object_insert', 'after_work_review_insert', function ($value) 
  */
 function _milestoneProgressEntryObjectAlreadyExists($value, $milestone)
 {
-    $milestoneProgressEntryCheck = new MilestoneProgressEntry();
+    $milestoneProgressEntryCheck = new CampaignMilestoneProgressEntry();
     $milestoneProgressEntryCheck->initialize($milestone);
     if ($milestoneProgressEntryCheck->find()) {
         while ($milestoneProgressEntryCheck->fetch()) {
