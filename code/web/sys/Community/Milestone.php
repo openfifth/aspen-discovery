@@ -1,7 +1,7 @@
 <?php
 require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
 require_once ROOT_DIR . '/sys/Community/Reward.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 class Milestone extends DataObject {
@@ -178,14 +178,14 @@ class Milestone extends DataObject {
             return;
 
         # Check if this milestone already has progress for this user
-        $milestoneUsersProgress = new MilestoneUsersProgress();
-        $milestoneUsersProgress->ce_milestone_id = $this->id;
-        $milestoneUsersProgress->userId = $userId;
+        $campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
+        $campaignMilestoneUsersProgress->ce_milestone_id = $this->id;
+        $campaignMilestoneUsersProgress->userId = $userId;
 
         # If there isn't one, create it.
-        if (!$milestoneUsersProgress->find(true)) {
-            $milestoneUsersProgress->progress = 0;
-            $milestoneUsersProgress->insert();
+        if (!$campaignMilestoneUsersProgress->find(true)) {
+            $campaignMilestoneUsersProgress->progress = 0;
+            $campaignMilestoneUsersProgress->insert();
         }
 
         $campaignMilestoneProgressEntry = new CampaignMilestoneProgressEntry();
@@ -194,12 +194,12 @@ class Milestone extends DataObject {
             [
                 "object" => $object,
                 "userId" => $userId,
-                "milestoneUsersProgress" => $milestoneUsersProgress
+                "campaignMilestoneUsersProgress" => $campaignMilestoneUsersProgress
             ]
         );
 
-        $milestoneUsersProgress->progress++;
-        $milestoneUsersProgress->update();
+        $campaignMilestoneUsersProgress->progress++;
+        $campaignMilestoneUsersProgress->update();
     }
 
     /**

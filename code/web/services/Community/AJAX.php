@@ -2,7 +2,7 @@
 require_once ROOT_DIR . '/JSON_Action.php';
 require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
-require_once ROOT_DIR . '/sys/Community/MilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
 require_once ROOT_DIR . '/sys/UserAccount.php';
 
 
@@ -34,14 +34,14 @@ class Community_AJAX extends JSON_Action {
             $userId = $_GET['userId'];
             $milestoneId = $_GET['milestoneId'];
 
-            $milestoneProgress = new MilestoneUsersProgress();
-            $milestoneProgress->userId = $userId;
-            $milestoneProgress->milestoneId = $milestoneId;
+            $campaignMilestoneProgress = new CampaignMilestoneUsersProgress();
+            $campaignMilestoneProgress->userId = $userId;
+            $campaignMilestoneProgress->milestoneId = $milestoneId;
 
-            if ($milestoneProgress->find(true)) {
-                $milestoneProgress->rewardGiven = 1;
+            if ($campaignMilestoneProgress->find(true)) {
+                $campaignMilestoneProgress->rewardGiven = 1;
 
-                if ($milestoneProgress->update()) {
+                if ($campaignMilestoneProgress->update()) {
                     ob_end_clean();
                     echo json_encode(['success' => true]);
                 } else {

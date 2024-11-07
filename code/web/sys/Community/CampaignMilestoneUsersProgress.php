@@ -1,7 +1,7 @@
 <?php
-class MilestoneUsersProgress extends DataObject
+class CampaignMilestoneUsersProgress extends DataObject
 {
-    public $__table = 'ce_milestone_users_progress';
+    public $__table = 'ce_campaign_milestone_users_progress';
     public $id;
     public $userId;
     public $ce_milestone_id;
@@ -19,7 +19,7 @@ class MilestoneUsersProgress extends DataObject
     }
 
     public static function getRewardGivenForMilestone($milestoneId, $userId) {
-        $progress = new MilestoneUsersProgress();
+        $progress = new CampaignMilestoneUsersProgress();
         $progress->ce_milestone_id = $milestoneId;
         $progress->userId = $userId;
 
