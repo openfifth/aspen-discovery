@@ -185,6 +185,75 @@ function getCommunityEngagementUpdates() {
                 "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='View Community Dashboard'))"
             ],
         ],
+        # !! DEV ONLY !!
+        'add_test_data' => [
+            'title' => 'Add Test Data',
+            'description' => 'Add test data to the community engagement tables',
+            'sql' => [
+                # Insert campaigns
+                "INSERT INTO ce_campaign (name, description, startDate, endDate) VALUES
+                    ('Campaign 1: Active', 'This is a test campaign', '2022-01-01 00:00:00', '2026-01-31 00:00:00'),
+                    ('Campaign 2: Active', 'This is a test campaign', '2022-01-01 00:00:00', '2026-01-31 00:00:00'),
+                    ('Campaign 3: Past', 'This is a test campaign', '2022-01-01 00:00:00', '2022-01-31 00:00:00'),
+                    ('Campaign 4: Long future', 'This is a test campaign in the long future ', '2026-01-01 00:00:00', '2028-01-31 00:00:00'),
+                    ('Campaign 5: Active', 'This is a test campaign', '2022-01-01 00:00:00', '2028-01-31 00:00:00'),
+                    ('Campaign 6: Upcoming', 'This is an upcoming test campaign (as of Nov 2024)', '2024-11-30 00:00:00', '2024-12-30 00:00:00'),
+                    ('Campaign 7: Not accessible to CPL', 'Campaign not accessible to CPL', '2024-11-02 00:00:00', '2026-12-30 00:00:00')",
+                # Enroll user 3 (ktd cardnumber: 42) to some campaigns
+                "INSERT INTO ce_user_campaign (userId, campaignId, enrollmentDate) VALUES
+                    (3, 5, '2024-11-06 16:55:26'),
+                    (3, 2, '2024-11-06 16:55:26')",
+                # Grant library access to campaigns (libraryId: 2 = Koha's Centerville)
+                "INSERT INTO ce_campaign_library_access (campaignId, libraryId) VALUES
+                    (1, 2),
+                    (2, 2),
+                    (3, 2),
+                    (4, 2),
+                    (5, 2),
+                    (6, 2),
+                    (7, 3)",
+                # Grant patron type access to campaigns (patronTypeId: 8 = 'S' Koha's Staff category)
+                "INSERT INTO ce_campaign_patron_type_access (campaignId, patronTypeId) VALUES
+                    (1, 8),
+                    (2, 8),
+                    (3, 8),
+                    (4, 8),
+                    (5, 8),
+                    (6, 8),
+                    (7, 3)",
+                # Insert milestones
+                "INSERT INTO ce_milestone (name, conditionalField, conditionalValue, conditionalOperator, milestoneType, campaignId) VALUES
+                    ('Milestone 1: checkout with condition', 'title_display', 'Title', 'equals', 'user_checkout', 1),
+                    ('Milestone 2: hold with condition', 'author_display', 'Author', 'equals', 'user_hold', 2),
+                    ('Milestone 3: checkout with condition', 'author_display', 'Author', 'equals', 'user_checkout', 2),
+                    ('Milestone 4: checkout without condition', 'author_display', '', 'equals', 'user_checkout', 2),
+                    ('Milestone 5: review with condition', 'subject_facet', 'Subject', 'equals', 'user_work_review', 3),
+                    ('Milestone 6: checkout with condition', 'user_list', '1', 'equals', 'user_checkout', 3),
+                    ('Milestone 7: checkout with condition', 'user_list', '1', 'equals', 'user_checkout', 5)",
+                # Link milestones to campaigns
+                "INSERT INTO ce_campaign_milestones (campaignId, milestoneId, goal, reward) VALUES
+                    (1, 1, 10, -1),
+                    (2, 2, 10, -1),
+                    (2, 3, 10, -1),
+                    (2, 4, 15, -1),
+                    (3, 3, 10, -1),
+                    (3, 4, 10, -1),
+                    (5, 5, 12, -1)",
+                # Insert rewards
+                "INSERT INTO ce_reward (name, description, rewardType) VALUES
+                    ('Test Reward 1', 'This is a test reward', 0),
+                    ('Test Reward 2', 'This is a test reward', 0),
+                    ('Test Reward 3', 'This is a test reward', 0)",
+                # Insert some users milestones progress
+                "INSERT INTO ce_campaign_milestone_users_progress (userId, ce_campaign_id, ce_milestone_id, progress, rewardGiven) VALUES
+                    (3, 5, 1, 4, 1),
+                    (3, 2, 2, 6, 0),
+                    (3, 2, 3, 3, 1),
+                    (3, 2, 4, 8, 0)",
+                # Enable the community module
+                "UPDATE modules SET enabled = 1 WHERE name = 'Community'"
+            ],
+        ],
         'add_image_uploads_to_rewards' => [
             'title' => 'Add Image Uploads To Rewards',
             'description' => 'Allow image uploads for digital badges',
