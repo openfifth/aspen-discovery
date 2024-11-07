@@ -164,13 +164,13 @@ class Milestone extends DataObject {
     }
 
     /**
-     * Adds a new MilestoneProgressEntry for a given milestone, object, and user.
+     * Adds a new CampaignMilestoneProgressEntry for a given milestone, object, and user.
      * 
      * @param Milestone $milestone The milestone associated with this progress entry.
      * @param mixed $object The object associated with this progress entry.
      * @param int $userId The user id associated with this progress entry.
      */
-    public function addMilestoneProgressEntry( $object, $userId)
+    public function addCampaignMilestoneProgressEntry( $object, $userId)
     {
         require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 
@@ -188,8 +188,8 @@ class Milestone extends DataObject {
             $milestoneUsersProgress->insert();
         }
 
-        $milestoneProgressEntry = new MilestoneProgressEntry();
-        $milestoneProgressEntry->initialize(
+        $campaignMilestoneProgressEntry = new CampaignMilestoneProgressEntry();
+        $campaignMilestoneProgressEntry->initialize(
             $this,
             [
                 "object" => $object,

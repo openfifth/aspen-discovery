@@ -1,9 +1,9 @@
 <?php
 require_once ROOT_DIR . '/sys/Community/Milestone.php';
 
-class MilestoneProgressEntry extends DataObject
+class CampaignMilestoneProgressEntry extends DataObject
 {
-    public $__table = 'ce_milestone_progress_entries';
+    public $__table = 'ce_campaign_milestone_progress_entries';
     public $id;
     public $userId;
     public $ce_milestone_id;
@@ -13,7 +13,7 @@ class MilestoneProgressEntry extends DataObject
     public $object;
 
     /**
-     * Initializes a new MilestoneProgressEntry object by setting its ce_milestone_id to the provided milestone object
+     * Initializes a new CampaignMilestoneProgressEntry object by setting its ce_milestone_id to the provided milestone object
      *
      * @param Milestone $milestone The milestone associated with this progress entry.
      * @param mixed $args Optional arguments to further configure the progress entry. Expects the following structure:
@@ -43,17 +43,17 @@ class MilestoneProgressEntry extends DataObject
     }
 
     public static function getUserProgressDataByMilestoneId($userId, $milestoneId) {
-        $milestoneProgressEntry = new self();
-        $milestoneProgressEntry->whereAdd("userId = " . $userId);
-        $milestoneProgressEntry->whereAdd("ce_milestone_id = " . $milestoneId);
+        $campaignMilestoneProgressEntry = new self();
+        $campaignMilestoneProgressEntry->whereAdd("userId = " . $userId);
+        $campaignMilestoneProgressEntry->whereAdd("ce_milestone_id = " . $milestoneId);
 
         $results = [];
-        if ($milestoneProgressEntry->find()) {
+        if ($campaignMilestoneProgressEntry->find()) {
             $decodedObject = [];
-            while ($milestoneProgressEntry->fetch()) {
-                $decodedObject = json_decode($milestoneProgressEntry->object, true);
+            while ($campaignMilestoneProgressEntry->fetch()) {
+                $decodedObject = json_decode($campaignMilestoneProgressEntry->object, true);
                 if ($decodedObject) {
-                    $results[$milestoneProgressEntry->id] = $decodedObject;
+                    $results[$campaignMilestoneProgressEntry->id] = $decodedObject;
                 }
             }
         }
