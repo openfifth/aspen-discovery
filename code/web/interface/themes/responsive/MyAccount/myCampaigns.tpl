@@ -6,7 +6,7 @@
         </div>
     {else}
         <h2>Your Campaigns</h2>
-        <table class="table table-striped">
+        <table id="yourCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
                     <th>Campaign Name:</th>
@@ -25,10 +25,10 @@
                             <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
                         </td>
                         <td>
-                            <button onclick="toggleCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            <button class="campaign-info-btn" data-table="your-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
                         </td>
                     </tr>
-                    <tr id="campaignInfo_{$resultIndex}" style="display:none;">
+                    <tr id="your-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
                             <td colspan="4">
                                 {* <h4>{translate text="Milestones"}</h4> *}
                                 <table class="table table-bordered">
@@ -74,7 +74,7 @@
             </tbody>
         </table>
         <h2>Active Campaigns</h2>
-        <table class="table table-striped">
+        <table id="activeCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
                     <th>Campaign Name</th>
@@ -104,13 +104,57 @@
                                 <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
                             </td>
                         {/if}
+                        <td>
+                            <button class="campaign-info-btn" data-table="active-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                        </td>
+                    </tr>
+                    <tr id="active-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                            <td colspan="4">
+                                {* <h4>{translate text="Milestones"}</h4> *}
+                                <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>{translate text="Start Date" isPublicFacing=true}</th>
+                                        <th>{translate text="End Date" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
+                                    </tr>
+                                </thead>
+                                    <tbody>
+                                    {foreach from=$campaign->milestones item="milestone"}
+                                        <tr>
+                                            <td>{$campaign->startDate}</td>
+                                            <td>{$campaign->endDate}</td>
+                                            <td>{$milestone->name}</td>
+                                            <td>
+                                                {$milestone->completedGoals}/ {$milestone->totalGoals}
+                                                {foreach from=$milestone->progressData item="progressData"}
+                                                <div style="padding:10px;">
+                                                    {$progressData['title']}
+                                                </div>
+                                                {/foreach}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
+                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
+                                                     aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                                        {$milestone->progress}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>                                 
+                                    {/foreach}
+                                    </tbody>
+                                </table>
+                            </td>
                     </tr>
                 {/if}
             {/foreach}
             </tbody>
         </table>
         <h2>Upcoming Campaigns</h2>
-        <table class="table table-striped">
+        <table id ="upcomingCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
                     <th>Campaign Name</th>
@@ -141,6 +185,50 @@
                                     <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
                                 </td>
                             {/if}
+                            <td>
+                                <button class="campaign-info-btn" data-table="upcoming-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            </td>
+                    </tr>
+                    <tr id="upcoming-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                            <td colspan="4">
+                                {* <h4>{translate text="Milestones"}</h4> *}
+                                <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>{translate text="Start Date" isPublicFacing=true}</th>
+                                        <th>{translate text="End Date" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
+                                    </tr>
+                                </thead>
+                                    <tbody>
+                                    {foreach from=$campaign->milestones item="milestone"}
+                                        <tr>
+                                            <td>{$campaign->startDate}</td>
+                                            <td>{$campaign->endDate}</td>
+                                            <td>{$milestone->name}</td>
+                                            <td>
+                                                {$milestone->completedGoals}/ {$milestone->totalGoals}
+                                                {foreach from=$milestone->progressData item="progressData"}
+                                                <div style="padding:10px;">
+                                                    {$progressData['title']}
+                                                </div>
+                                                {/foreach}
+                                            </td>
+                                            <td>
+                                                <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
+                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
+                                                     aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                                        {$milestone->progress}%
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>                                 
+                                    {/foreach}
+                                    </tbody>
+                                </table>
+                            </td>
                     </tr>
                 {/if}
             {/foreach}
@@ -216,13 +304,17 @@
 {/strip}
 {literal}
     <script type="text/javascript">
-           function toggleCampaignInfo(index) {
-            var campaignInfoDiv = document.getElementById('campaignInfo_' + index);
-            if (campaignInfoDiv.style.display === 'none') {
-                campaignInfoDiv.style.display = 'block';
-            } else {
-                campaignInfoDiv.style.display = 'none';
-            }
+           function toggleCampaignInfo(button) {
+                const tableId = button.getAttribute('data-table');
+                const dropdown = document.querySelector(`#${tableId}-campaign-dropdown`);
+
+                if (dropdown) {
+                    if (dropdown.style.display === "block" || dropdown.style.display === "") {
+                        dropdown.style.display = "none";
+                    } else {
+                        dropdown.style.display = "block";
+                    }
+                }
         }       
     </script>
 {/literal}
