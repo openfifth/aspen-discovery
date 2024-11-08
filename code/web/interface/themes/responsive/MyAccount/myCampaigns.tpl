@@ -9,9 +9,11 @@
         <table id="yourCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
-                    <th>Campaign Name:</th>
-                    <th>Campaign Reward</th>
-                    <th>Milestones Completed</th>
+                    <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="Start Date" isPublicFacing=true}</th>
+                    <th>{translate text="End Date" isPublicFacing=true}</th>
+                    <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
+                    <th>{translate text="Milestones Completed" isPublicFacing=true}</th>
                 </tr>
             </thead>
             <tbody>
@@ -19,6 +21,8 @@
                 {if $campaign->enrolled}
                     <tr>
                         <td>{$campaign->name}</td>
+                        <td>{$campaign->startDate}</td>
+                        <td>{$campaign->endDate}</td>
                         <td>{$campaign->rewardName}</td>
                         <td>{$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}</td>
                         <td>
@@ -34,8 +38,6 @@
                                 <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>{translate text="Start Date" isPublicFacing=true}</th>
-                                        <th>{translate text="End Date" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
@@ -45,8 +47,6 @@
                                     <tbody>
                                     {foreach from=$campaign->milestones item="milestone"}
                                         <tr>
-                                            <td>{$campaign->startDate}</td>
-                                            <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
                                             <td>{$milestone->rewardName}</td>
                                             <td>
@@ -79,10 +79,10 @@
         <table id="activeCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
-                    <th>Campaign Name</th>
-                    <th>Campaign Reward</th>
-                    <th>End Date</th>
-                    <th>Enrollment</th>
+                    <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
+                    <th>{translate text="End Date" isPublicFacing=true}</th>
+                    <th>{translate text="Enrollment" isPublicFacing=true}</th>
                 </tr>
             </thead>
             <tbody>
@@ -116,8 +116,6 @@
                                 <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>{translate text="Start Date" isPublicFacing=true}</th>
-                                        <th>{translate text="End Date" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
@@ -127,8 +125,6 @@
                                     <tbody>
                                     {foreach from=$campaign->milestones item="milestone"}
                                         <tr>
-                                            <td>{$campaign->startDate}</td>
-                                            <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
                                             <td>{$milestone->rewardName}</td>
                                             <td>
@@ -161,10 +157,10 @@
         <table id ="upcomingCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
-                    <th>Campaign Name</th>
-                    <th>Campaign Reward</th>
-                    <th>Start Date</th>
-                    <th>Enrollment</th>
+                    <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
+                    <th>{translate text="Start Date" isPublicFacing=true}</th>
+                    <th>{translate text="Enrollment" isPublicFacing=true}</th>
                 </tr>
             </thead>
             <tbody>
@@ -199,8 +195,6 @@
                                 <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th>{translate text="Start Date" isPublicFacing=true}</th>
-                                        <th>{translate text="End Date" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
@@ -210,8 +204,6 @@
                                     <tbody>
                                     {foreach from=$campaign->milestones item="milestone"}
                                         <tr>
-                                            <td>{$campaign->startDate}</td>
-                                            <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
                                             <td>{$milestone->rewardName}</td>
                                             <td>
@@ -244,8 +236,8 @@
             <thead>
                 <tr>
                     <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="Start Date" isPublicFacing=true}</th>
                     <th>{translate text="End Date" isPublicFacing=true}</th>
-                    <th>{translate text="Campaign Milestones" isPublicFacing=true}</th>
                     <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
                 </tr>
             </thead>
@@ -253,10 +245,8 @@
             {foreach from=$pastCampaigns item="campaign" key="resultIndex"}
                 <tr>
                     <td>{$campaign->name}</td>
+                    <td>{$campaign->startDate}</td>
                     <td>{$campaign->endDate}</td>
-                    {foreach from=$campaign->milestones item="milestone"}
-                       <td>{$milestone->name}</td>
-                    {/foreach}
                     <td>{$campaign->rewardName}</td>
                 </tr>
             {/foreach}
@@ -267,8 +257,8 @@
             <thead>
                 <tr>
                     <th>{translate text="Campaign Name" isPublicFacing=true}</th>
+                    <th>{translate text="Start Date" isPublicFacing=true}</th>
                     <th>{translate text="End Date" isPublicFacing=true}</th>
-                    <th colspan="{count($campaign->milestones)}">{translate text="Campaign Milestones" isPublicFacing=true}</th>
                     <th>{translate text="Campaign Reward" isPublicFacing=true}</th>
                 </tr>
             </thead>
@@ -277,30 +267,14 @@
                 {if $campaign->enrolled}
                         <tr>
                             <td>{$campaign->name}</td>
+                            <td>{$campaign->startDate}</td>
                             <td>{$campaign->endDate}</td>
-                            {foreach from=$campaign->milestones item="milestone"}
-                                <td>
-                                    <div style="text-align: center;">
-                                        <div style="margin-bottom: 5px;">
-                                            {$milestone->name}
-                                        </div>
-                                        <div>
-                                            {if $milestone->isComplete}
-                                                {translate text="Complete" isPublicFacing=true}
-                                                <br>
-                                                {if $milestone->rewardGiven}
-                                                   <strong>{translate text="Reward Received: " isPublicFacing=true}</strong><br>{$milestone->rewardName}
-                                                {/if}
-                                            {else}
-                                                {translate text="Incomplete" isPublicFacing=true}
-                                            {/if}
-                                        </div>
-                                    </div>
-                                </td>
-                             {/foreach}
+                            <td>
+                            {$campaign->rewardName}<br>
                              {if $campaign->campaignRewardGiven}
-                                <td><strong>{translate text="Campaign Reward Received: "}</strong><br>{$campaign->rewardName}</td>
+                                <strong>{translate text="Reward Received"}</strong>
                              {/if}
+                             </td>
                         </tr>
                 {/if}
             {/foreach}
