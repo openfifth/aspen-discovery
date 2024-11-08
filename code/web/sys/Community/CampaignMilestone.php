@@ -9,6 +9,7 @@ class CampaignMilestone extends DataObject {
     public $campaignId;
     public $milestoneId;
     public $goal;
+    public $reward;
 
     public function getNumericColumnNames(): array {
 		return [
@@ -75,8 +76,10 @@ class CampaignMilestone extends DataObject {
       $campaignMilestone->find();
 
       $milestoneIds = [];
+      $rewardMapping = [];
       while ($campaignMilestone->fetch()) {
         $milestoneIds[] = $campaignMilestone->milestoneId;
+        $rewardMapping[$campaignMilestone->milestoneId] = $campaignMilestone->reward;
       }
 
       if (!empty($milestoneIds)) {
@@ -85,7 +88,18 @@ class CampaignMilestone extends DataObject {
         $milestone->find();
 
         while ($milestone->fetch()) {
-            $milestones[] = clone $milestone;
+          $milestoneObj = clone $milestone;
+
+          //Fetch reward name
+          $rewardId = $rewardMapping[$milestone->id] ?? null;
+          if ($rewardId) {
+            $reward = new Reward();
+            $reward->id = $rewardId;
+            if ($reward->find(true)) {
+                $milestoneObj->rewardName = $reward->name;
+            }
+          }
+          $milestones[] = $milestoneObj;
         }
       }
       return $milestones;

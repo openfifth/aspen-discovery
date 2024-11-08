@@ -37,6 +37,7 @@
                                         <th>{translate text="Start Date" isPublicFacing=true}</th>
                                         <th>{translate text="End Date" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
                                     </tr>
@@ -47,6 +48,7 @@
                                             <td>{$campaign->startDate}</td>
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
+                                            <td>{$milestone->rewardName}</td>
                                             <td>
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
@@ -117,6 +119,7 @@
                                         <th>{translate text="Start Date" isPublicFacing=true}</th>
                                         <th>{translate text="End Date" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
                                     </tr>
@@ -127,6 +130,7 @@
                                             <td>{$campaign->startDate}</td>
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
+                                            <td>{$milestone->rewardName}</td>
                                             <td>
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
@@ -198,6 +202,7 @@
                                         <th>{translate text="Start Date" isPublicFacing=true}</th>
                                         <th>{translate text="End Date" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
                                     </tr>
@@ -208,6 +213,7 @@
                                             <td>{$campaign->startDate}</td>
                                             <td>{$campaign->endDate}</td>
                                             <td>{$milestone->name}</td>
+                                            <td>{$milestone->rewardName}</td>
                                             <td>
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
