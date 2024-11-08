@@ -232,7 +232,7 @@
             {/foreach}
         </table>
         <h2>Past Campaigns</h2>
-        <table class="table table-striped">
+        <table id="pastCampaignsTable" class="table table-striped">
             <thead>
                 <tr>
                     <th>{translate text="Campaign Name" isPublicFacing=true}</th>
@@ -248,6 +248,39 @@
                     <td>{$campaign->startDate}</td>
                     <td>{$campaign->endDate}</td>
                     <td>{$campaign->rewardName}</td>
+                    <td>
+                        <button class="campaign-info-btn" data-table="past-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                    </td>
+                </tr>
+                <tr id="past-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                    <td col="4">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                    <th>{translate text="Milestone Progress" isPublicFacing=true}</th>
+                                    <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
+                                    <th>{translate text="Milestone Reward Status" isPublicFacing=true}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {foreach from=$campaign->milestones item="milestone"}
+                                    <tr>
+                                        <td>{$milestone->name}</td>
+                                        <td>{$milestone->userProgress}</td>
+                                        <td>{$milestone->rewardName}</td>
+                                        <td>
+                                            {if $milestone->rewardGiven}
+                                                {translate text="Reward Given" isPublicFacing=true}
+                                            {else}
+                                                {translate text="Not Yet Given" isPublicFacing=true}
+                                            {/if}
+                                        </td>
+                                    </tr>
+                                {/foreach}
+                            </tbody>
+                        </table>
+                    </td>
                 </tr>
             {/foreach}
             </tbody>

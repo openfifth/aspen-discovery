@@ -119,6 +119,7 @@ class MyCampaigns extends MyAccount {
             // }
             $campaignList[] = clone $campaign;
         }
+        var_dump($milestone->progressData);
         return $campaignList;
     }
 
