@@ -163,6 +163,15 @@ class Campaign extends DataObject {
         return $this->_availableMilestones;
     }
 
+    public function getRewardName() {
+        $reward = new Reward();
+        $reward->id = $this->campaignReward;
+        if ($reward->find(true)) {
+            return $reward->name;
+        }
+        return null;
+    }
+
     /**
 	 * Override the update functionality to save related objects
 	 *

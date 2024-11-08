@@ -10,6 +10,7 @@
             <thead>
                 <tr>
                     <th>Campaign Name:</th>
+                    <th>Campaign Reward</th>
                     <th>Milestones Completed</th>
                 </tr>
             </thead>
@@ -18,6 +19,7 @@
                 {if $campaign->enrolled}
                     <tr>
                         <td>{$campaign->name}</td>
+                        <td>{$campaign->rewardName}</td>
                         <td>{$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}</td>
                         <td>
                             <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
@@ -76,6 +78,7 @@
             <thead>
                 <tr>
                     <th>Campaign Name</th>
+                    <th>Campaign Reward</th>
                     <th>End Date</th>
                     <th>Enrollment</th>
                 </tr>
@@ -85,6 +88,7 @@
                 {if $campaign->isActive}
                     <tr>
                         <td>{$campaign->name}</td>
+                        <td>{$campaign->rewardName}</td>
                         <td>{$campaign->endDate}</td>
                         {if $campaign->enrolled}
                             <td>{translate text="Enrolled" isPublicFacing=true}</td>
@@ -110,6 +114,7 @@
             <thead>
                 <tr>
                     <th>Campaign Name</th>
+                    <th>Campaign Reward</th>
                     <th>Start Date</th>
                     <th>Enrollment</th>
                 </tr>
@@ -120,6 +125,7 @@
                 {if $campaign->isUpcoming}
                     <tr>
                         <td>{$campaign->name}</td>
+                        <td>{$campaign->rewardName}</td>
                         <td>{$campaign->startDate}</td>
                         {if $campaign->enrolled}
                             <td>{translate text="Enrolled" isPublicFacing=true}</td>
