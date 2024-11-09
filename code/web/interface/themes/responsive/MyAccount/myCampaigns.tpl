@@ -29,10 +29,11 @@
                             <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
                         </td>
                         <td>
-                            <button class="campaign-info-btn" data-table="your-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            <button onclick="toggleYourCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                         </td>
                     </tr>
-                    <tr id="your-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                        {* <tr id="campaignInfo_{$resultIndex}" style="display:none;"> *}
+                        <tr id="yourCampaigns_{$resultIndex}" class="campaign-dropdown" style="display:none;">
                             <td colspan="4">
                                 {* <h4>{translate text="Milestones"}</h4> *}
                                 <table class="table table-bordered">
@@ -107,10 +108,12 @@
                             </td>
                         {/if}
                         <td>
-                            <button class="campaign-info-btn" data-table="active-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            <button onclick="toggleActiveCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                         </td>
                     </tr>
-                    <tr id="active-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                        {* <tr id="campaignInfo_{$resultIndex}" style="display:none;"> *}
+                        <tr id="activeCampaigns_{$resultIndex}" class="campaign-dropdown" style="display:none;">
+
                             <td colspan="4">
                                 {* <h4>{translate text="Milestones"}</h4> *}
                                 <table class="table table-bordered">
@@ -186,10 +189,10 @@
                                 </td>
                             {/if}
                             <td>
-                                <button class="campaign-info-btn" data-table="upcoming-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                                <button onclick="toggleUpcomingCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                             </td>
                     </tr>
-                    <tr id="upcoming-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                    <tr id="upcomingCampaigns_{$resultIndex}" class="campaign-dropdown" style="display:none;">
                             <td colspan="4">
                                 {* <h4>{translate text="Milestones"}</h4> *}
                                 <table class="table table-bordered">
@@ -249,10 +252,10 @@
                     <td>{$campaign->endDate}</td>
                     <td>{$campaign->rewardName}</td>
                     <td>
-                        <button class="campaign-info-btn" data-table="past-campaigns" onclick="toggleCampaignInfo(this)">{translate text="Campaign Information" isPublicFacing=true}</button>
+                        <button onclick="togglePastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                     </td>
                 </tr>
-                <tr id="past-campaigns-campaign-dropdown" class="campaign-dropdown" style="display:none;">
+                <tr id="pastCampaigns_{$resultIndex}" class="campaign-dropdown" style="display:none;">
                     <td col="4">
                         <table class="table table-bordered">
                             <thead>
@@ -308,6 +311,21 @@
                                 <strong>{translate text="Reward Received"}</strong>
                              {/if}
                              </td>
+                             <td>
+                                <button onclick="toggleYourPastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            </td>
+                        </tr>
+                        <tr id="yourPastCampaigns_{$resultIndex}" style="display:none;">
+                             <td colspan="4">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <th>{translate text="Milestone" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone Progress" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
+                                        <th>{translate text="Milestone Reward Status" isPublicFacing=true}</th>
+                                    </thead>
+                                </table>
+                             </td>
                         </tr>
                 {/if}
             {/foreach}
@@ -317,17 +335,49 @@
 {/strip}
 {literal}
     <script type="text/javascript">
-           function toggleCampaignInfo(button) {
-                const tableId = button.getAttribute('data-table');
-                const dropdown = document.querySelector(`#${tableId}-campaign-dropdown`);
-
-                if (dropdown) {
-                    if (dropdown.style.display === "block" || dropdown.style.display === "") {
-                        dropdown.style.display = "none";
-                    } else {
-                        dropdown.style.display = "block";
-                    }
-                }
+           function toggleYourCampaignInfo(index) {
+            var campaignInfoDiv = document.getElementById('yourCampaigns_' + index);
+            if (campaignInfoDiv.style.display === 'none') {
+                campaignInfoDiv.style.display = 'block';
+            } else {
+                campaignInfoDiv.style.display = 'none';
+            }
         }       
+
+        function toggleActiveCampaignInfo(index) {
+            var campaignInfoDiv = document.getElementById('activeCampaigns_' + index);
+            if (campaignInfoDiv.style.display === 'none') {
+                campaignInfoDiv.style.display = 'block';
+            } else {
+                campaignInfoDiv.style.display = 'none';
+            }
+        }    
+
+        function toggleUpcomingCampaignInfo(index) {
+            var campaignInfoDiv = document.getElementById('upcomingCampaigns_' + index);
+            if (campaignInfoDiv.style.display === 'none') {
+                campaignInfoDiv.style.display = 'block';
+            } else {
+                campaignInfoDiv.style.display = 'none';
+            }
+        }    
+
+        function togglePastCampaignInfo(index) {
+            var campaignInfoDiv = document.getElementById('pastCampaigns_' + index);
+            if (campaignInfoDiv.style.display === 'none') {
+                campaignInfoDiv.style.display = 'block';
+            } else {
+                campaignInfoDiv.style.display = 'none';
+            }
+        }    
+
+        function toggleYourPastCampaignInfo(index) {
+            var campaignInfoDiv = document.getElementById('yourPastCampaigns_' + index);
+            if (campaignInfoDiv.style.display === 'none') {
+                campaignInfoDiv.style.display = 'block';
+            } else {
+                campaignInfoDiv.style.display = 'none';
+            }
+        }    
     </script>
 {/literal}
