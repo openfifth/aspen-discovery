@@ -45,9 +45,9 @@ class Community_CampaignTable extends Admin_Dashboard {
 
                         foreach ($milestones as $milestone) {
                             $milestoneComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-                            $userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
+                            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
                             $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestone->id);
-                            $milestoneRewardGiven = MilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id);
+                            $milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id);
 
                             //Calculate percentage progress
                             $percentageProgress = $totalGoals > 0 ? ($userProgress / $totalGoals) * 100 : 0;
