@@ -45,7 +45,7 @@
                             {if $userCampaigns[$camapign->id][$user->id]['isCampaignComplete']}
                                 {translate text="Campaign Complete" isAdminFacing=true}
                             {else}
-                                {translate text="Campaign Inomplete" isAdminFacing=true}
+                                {translate text="Campaign Incomplete" isAdminFacing=true}
                             {/if}
                             </td>
                             <td>
