@@ -200,8 +200,13 @@ class CampaignMilestone extends DataObject {
         $campaignMilestoneUsersProgress->ce_campaign_id = $this->campaignId;
         $campaignMilestoneUsersProgress->userId = $userId;
 
-        # If there isn't one, create it.
-        if (!$campaignMilestoneUsersProgress->find(true)) {
+        # There is one, bail if goal has already been met
+        if ($campaignMilestoneUsersProgress->find(true)) {
+            if ($campaignMilestoneUsersProgress->progress >= $this->goal) {
+                return;
+            }
+        # There isn't one, create it.
+        } else {
             $campaignMilestoneUsersProgress->progress = 0;
             $campaignMilestoneUsersProgress->insert();
         }
