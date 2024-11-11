@@ -270,7 +270,13 @@
                                 {foreach from=$campaign->milestones item="milestone"}
                                     <tr>
                                         <td>{$milestone->name}</td>
-                                        <td>{$milestone->progress}</td>
+                                        <td>
+                                        <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
+                                            <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
+                                            aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                                {$milestone->progress}%
+                                            </div>
+                                        </td>
                                         <td>{$milestone->rewardName}</td>
                                         <td>
                                             {if $milestone->rewardGiven}
@@ -324,6 +330,28 @@
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward Status" isPublicFacing=true}</th>
                                     </thead>
+                                    <tbody>
+                                    {foreach from=$campaign->milestones item="milestone"}
+                                        <tr>
+                                            <td>{$milestone->name}</td>
+                                            <td>
+                                            <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
+                                                <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
+                                                aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                                    {$milestone->progress}%
+                                                </div>
+                                            </td>
+                                            <td>{$milestone->rewardName}</td>
+                                            <td>
+                                                {if $milestone->rewardGiven}
+                                                    {translate text="Reward Given" isPublicFacing=true}
+                                                {else}
+                                                    {translate text="Not Yet Given" isPublicFacing=true}
+                                                {/if}
+                                            </td>
+                                        </tr>
+                                    {/foreach}
+                                    </tbody>
                                 </table>
                              </td>
                         </tr>
