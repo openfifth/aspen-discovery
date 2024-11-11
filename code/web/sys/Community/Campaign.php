@@ -456,6 +456,7 @@ class Campaign extends DataObject {
                             $milestone->userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $userId);
                             $milestone->isComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
                             $milestone->rewardGiven = MilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $userId);
+                            $milestone->progress = CampaignMilestone::getMilestoneProgress($campaign->id, $userId, $milestone->id);
                         }
                     }
                 }

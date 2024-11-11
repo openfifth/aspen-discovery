@@ -270,7 +270,7 @@
                                 {foreach from=$campaign->milestones item="milestone"}
                                     <tr>
                                         <td>{$milestone->name}</td>
-                                        <td>{$milestone->userProgress}</td>
+                                        <td>{$milestone->progress}</td>
                                         <td>{$milestone->rewardName}</td>
                                         <td>
                                             {if $milestone->rewardGiven}
