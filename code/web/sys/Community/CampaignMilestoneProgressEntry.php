@@ -15,7 +15,7 @@ class CampaignMilestoneProgressEntry extends DataObject
     /**
      * Initializes a new CampaignMilestoneProgressEntry object by setting its ce_milestone_id to the provided milestone object
      *
-     * @param Milestone $milestone The milestone associated with this progress entry.
+     * @param CampaignMilestone $campaignMilestone The campaign milestone associated with this progress entry.
      * @param mixed $args Optional arguments to further configure the progress entry. Expects the following structure:
      * 
      *  [
@@ -26,10 +26,10 @@ class CampaignMilestoneProgressEntry extends DataObject
      * 
      * @return void
      */
-    public function initialize(Milestone $milestone, $args = null)
+    public function initialize(CampaignMilestone $campaignMilestone, $args = null)
     {
 
-        $this->ce_milestone_id = $milestone->id;
+        $this->ce_milestone_id = $campaignMilestone->ce_milestone_id;
 
         if (!$args)
             return;
