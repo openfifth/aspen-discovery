@@ -27,7 +27,7 @@
                                     <div>
                                         {if $userCampaigns[$camapign->id][$user->id]['milestones'][$milestone->id]['rewardGiven'] == 0}
                                             <button class="set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}" onclick="AspenDiscovery.CommunityEngagement.milestoneRewardGiven({$user->id}, {$campaign->id}, {$milestone->id});">
-                                                {translate text="Set Reward as Given" isAdminFacing=true}
+                                                {translate text="Give Reward" isAdminFacing=true}
                                             </button>
                                         {else}
                                             {translate text="Reward Given" isAdminFacing=true}
@@ -51,7 +51,7 @@
                             <td>
                                 {if $userCampaigns[$campaign->id][$user->id]['rewardGiven'] == 0}
                                     <button class="set-reward-btn" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" onclick="AspenDiscovery.CommunityEngagement.campaignRewardGiven({$user->id}, {$campaign->id});">
-                                        {translate text="Set Reward as Given" isAdminFacing=true}
+                                        {translate text="Give Reward" isAdminFacing=true}
                                     </button>
                                 {else}
                                     {translate text="Reward Given" isAdminFacing=true}
