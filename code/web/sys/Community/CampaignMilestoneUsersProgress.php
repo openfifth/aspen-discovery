@@ -4,14 +4,16 @@ class CampaignMilestoneUsersProgress extends DataObject
     public $__table = 'ce_campaign_milestone_users_progress';
     public $id;
     public $userId;
+    public $ce_campaign_id;
     public $ce_milestone_id;
     public $progress;
     public $rewardGiven;
 
-    public static function getProgressByMilestoneId($milestoneId, $userId) {
+    public static function getProgressByMilestoneId($milestoneId, $campaignId, $userId) {
         $milestoneProgress = new Self();
 
         $milestoneProgress->whereAdd('ce_milestone_id = ' . intval($milestoneId));
+        $milestoneProgress->whereAdd('ce_campaign_id = ' . intval($campaignId));
         $milestoneProgress->whereAdd('userId = ' . intval($userId));
         $milestoneProgress->find(true);
 

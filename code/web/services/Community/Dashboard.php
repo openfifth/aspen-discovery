@@ -60,7 +60,7 @@ class Community_Dashboard extends Admin_Dashboard {
                 $milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
                 foreach ($milestones as $milestone) {
                     $milestoneComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-                    $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $user->id);
+                    $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
                     $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
                     $milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id);
                     $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id] = [

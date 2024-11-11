@@ -123,7 +123,7 @@ class CampaignMilestone extends DataObject {
         $goal = $campaignMilestone->getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
 
         //Number of completed goals for this milestone
-        $userCompletedGoalCount = $campaignMilestoneUsersProgress->getProgressByMilestoneId($milestoneId, $userId);
+        $userCompletedGoalCount = $campaignMilestoneUsersProgress->getProgressByMilestoneId($milestoneId, $campaignId, $userId);
 
         if ($goal > 0) {
             $progress = ($userCompletedGoalCount / $goal ) * 100;

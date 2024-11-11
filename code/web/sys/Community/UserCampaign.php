@@ -68,7 +68,7 @@ class UserCampaign extends DataObject {
         $isComplete = true;
 
         foreach ($milestones as $milestone) {
-            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
+            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->campaignId, $this->userId);
             $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
 
             if ($userProgress < $goal) {
@@ -85,7 +85,7 @@ class UserCampaign extends DataObject {
 
         foreach ($milestones as $milestone) {
             //User's progress for this milestone
-            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->userId);
+            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->campaignId, $this->userId);
 
             //Goal for this milestone
             $goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
