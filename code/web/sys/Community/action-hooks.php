@@ -1,6 +1,6 @@
 <?php
 
-require_once ROOT_DIR . '/sys/Community/Milestone.php';
+require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestoneProgressEntry.php';
 
 /**
@@ -13,15 +13,15 @@ require_once ROOT_DIR . '/sys/Community/CampaignMilestoneProgressEntry.php';
  */
 
 add_action('after_object_insert', 'after_checkout_insert', function ($value) {
-    $milestone = Milestone::getMilestonesToUpdate($value, 'user_checkout', $value->userId);
-    if (!$milestone)
+    $campaignMilestone = CampaignMilestone::getCampaignMilestonesToUpdate($value, 'user_checkout', $value->userId);
+    if (!$campaignMilestone)
         return;
 
-    while ($milestone->fetch()) {
-        if (_campaignMilestoneProgressEntryObjectAlreadyExists($value, $milestone))
+    while ($campaignMilestone->fetch()) {
+        if (_campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone))
             return;
 
-        $milestone->addCampaignMilestoneProgressEntry($value, $value->userId);
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId);
     }
     return;
 });
@@ -36,15 +36,15 @@ add_action('after_object_insert', 'after_checkout_insert', function ($value) {
  */
 
 add_action('after_object_insert', 'after_hold_insert', function ($value) {
-    $milestone = Milestone::getMilestonesToUpdate($value, 'user_hold', $value->userId);
-    if (!$milestone)
+    $campaignMilestone = CampaignMilestone::getCampaignMilestonesToUpdate($value, 'user_hold', $value->userId);
+    if (!$campaignMilestone)
         return;
 
-    while ($milestone->fetch()) {
-        if (_campaignMilestoneProgressEntryObjectAlreadyExists($value, $milestone))
+    while ($campaignMilestone->fetch()) {
+        if (_campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone))
             return;
 
-        $milestone->addCampaignMilestoneProgressEntry($value, $value->userId);
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId);
     }
     return;
 });
@@ -59,12 +59,12 @@ add_action('after_object_insert', 'after_hold_insert', function ($value) {
  */
 
 add_action('after_object_insert', 'after_list_insert', function ($value) {
-    $milestone = Milestone::getMilestonesToUpdate($value, 'user_list', $value->user_id);
-    if (!$milestone)
+    $campaignMilestone = CampaignMilestone::getCampaignMilestonesToUpdate($value, 'user_list', $value->user_id);
+    if (!$campaignMilestone)
         return;
 
-    while ($milestone->fetch()) {
-        $milestone->addCampaignMilestoneProgressEntry($value, $value->user_id);
+    while ($campaignMilestone->fetch()) {
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->user_id);
     }
     return;
 });
@@ -79,12 +79,12 @@ add_action('after_object_insert', 'after_list_insert', function ($value) {
  */
 
 add_action('after_object_insert', 'after_work_review_insert', function ($value) {
-    $milestone = Milestone::getMilestonesToUpdate($value, 'user_work_review', $value->userId);
-    if (!$milestone)
+    $campaignMilestone = CampaignMilestone::getCampaignMilestonesToUpdate($value, 'user_work_review', $value->userId);
+    if (!$campaignMilestone)
         return;
 
-    while ($milestone->fetch()) {
-        $milestone->addCampaignMilestoneProgressEntry($value, $value->userId);
+    while ($campaignMilestone->fetch()) {
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId);
     }
     return;
 });
@@ -95,13 +95,13 @@ add_action('after_object_insert', 'after_work_review_insert', function ($value) 
  * For example, for checkouts and holds, these may be purged from the database and re-fetched from the ILS.
  *
  * @param object $value The object containing the sourceId, recordId, and userId.
- * @param Milestone $milestone The milestone object.
+ * @param CampaignMilestone $campaignMilestone The milestone object.
  * @return bool Returns true if an entry exists, false otherwise.
  */
-function _campaignMilestoneProgressEntryObjectAlreadyExists($value, $milestone)
+function _campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone)
 {
     $campaignMilestoneProgressEntryCheck = new CampaignMilestoneProgressEntry();
-    $campaignMilestoneProgressEntryCheck->initialize($milestone);
+    $campaignMilestoneProgressEntryCheck->initialize($campaignMilestone);
     if ($campaignMilestoneProgressEntryCheck->find()) {
         while ($campaignMilestoneProgressEntryCheck->fetch()) {
             $decoded_object = json_decode($campaignMilestoneProgressEntryCheck->object);

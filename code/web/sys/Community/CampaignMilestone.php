@@ -136,4 +136,175 @@ class CampaignMilestone extends DataObject {
         ];
    }
 
+    /**
+     * Gets a list of milestones for a given object and table name that are related to
+     * a patron enrolled in an active campaign and of type $tableName
+     *
+     * @param object $object The object to check
+     * @param string $tableName The table name to check for
+     * @param int $userId The user id of the patron
+     * @return CampaignMilestone|false Returns a Milestone object if one is found, false otherwise
+     */
+    public static function getCampaignMilestonesToUpdate($object, $tableName, $userId)
+    {
+
+        # Bail if not the table we want
+        if ($object->__table != $tableName)
+            return false;
+
+        # Bail if no active campaigns exist
+        $activeCampaigns = Campaign::getActiveCampaignsList();
+        if (!count($activeCampaigns))
+            return false;
+
+        # Bail if this object does not relate to a patron enrolled in an active campaign
+        $userCampaigns = new UserCampaign();
+        $userCampaigns->whereAdd("campaignId IN (" . implode(",", array_keys($activeCampaigns)) . ")");
+        $userCampaigns->userId = $userId;
+        if (!$userCampaigns->find())
+            return false;
+
+        # Bail if no user active campaigns' milestones are of type $tableName
+        $userActiveCampaigns = [];
+        while ($userCampaigns->fetch()) {
+            array_push($userActiveCampaigns, $userCampaigns->campaignId);
+        }
+        $campaignMilestone = new CampaignMilestone();
+        $campaignMilestone->milestoneType = $tableName;
+        $campaignMilestone->joinAdd(new Milestone(), 'LEFT', 'milestones', 'milestoneId', 'id');
+        $campaignMilestone->whereAdd('milestones.milestoneType = "' . $tableName . '" AND ce_campaign_milestones.campaignId IN (' . implode(',', $userActiveCampaigns) . ')');
+
+        if (!$campaignMilestone->find())
+            return false;
+
+        return $campaignMilestone;
+    }
+
+    /**
+     * Adds a new CampaignMilestoneProgressEntry for a given milestone, object, and user.
+     *
+     * @param Milestone $milestone The milestone associated with this progress entry.
+     * @param mixed $object The object associated with this progress entry.
+     * @param int $userId The user id associated with this progress entry.
+     */
+    public function addCampaignMilestoneProgressEntry( $object, $userId)
+    {
+        require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+
+        if (!$this->conditionalsCheck($object))
+            return;
+
+        # Check if this campaign milestone already has progress for this user
+        $campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
+        $campaignMilestoneUsersProgress->ce_milestone_id = $this->milestoneId;
+        $campaignMilestoneUsersProgress->ce_campaign_id = $this->campaignId;
+        $campaignMilestoneUsersProgress->userId = $userId;
+
+        # If there isn't one, create it.
+        if (!$campaignMilestoneUsersProgress->find(true)) {
+            $campaignMilestoneUsersProgress->progress = 0;
+            $campaignMilestoneUsersProgress->insert();
+        }
+
+        $campaignMilestoneProgressEntry = new CampaignMilestoneProgressEntry();
+        $campaignMilestoneProgressEntry->initialize(
+            $this,
+            [
+                "object" => $object,
+                "userId" => $userId,
+                "campaignMilestoneUsersProgress" => $campaignMilestoneUsersProgress
+            ]
+        );
+
+        $campaignMilestoneUsersProgress->progress++;
+        $campaignMilestoneUsersProgress->update();
+    }
+
+    /**
+     * Checks if a given object meets the conditionals of this milestone.
+     *
+     * If the object does not have a groupedWorkId, it is assumed to meet the conditionals.
+     * If the milestone does not have a conditional operator, field, or value, it is assumed
+     * to meet the conditionals.
+     *
+     * Otherwise, this method uses the groupedWorkDriver to get the value of the specified
+     * field from the grouped work.  It then checks if the value matches the conditional
+     * operator and value.  If it does, it returns true.  If not, it returns false.
+     *
+     * @param mixed $object The object to check against the conditionals.
+     * @return bool True if the object meets the conditionals, false otherwise.
+     */
+    protected function conditionalsCheck($object)
+    {
+        $milestone = new Milestone();
+        $milestone->id = $this->milestoneId;
+        if (!$milestone->find(true)){
+            return false;
+        }else{
+            $milestone->fetch();
+        }
+
+        if (!$milestone->conditionalOperator || !$milestone->conditionalValue || !$milestone->conditionalField)
+            return true;
+
+        if (!$object->groupedWorkId)
+            return false;
+
+        if( $milestone->conditionalField == 'user_list' && is_numeric($milestone->conditionalValue) ) {
+            return $this->conditionalsListCheck($object);
+        }
+
+        require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+        $groupedWorkDriver = new GroupedWorkDriver($object->groupedWorkId);
+
+        if (!$fieldValues = $groupedWorkDriver->getSolrField($milestone->conditionalField))
+            return false;
+
+        if(!is_array($fieldValues)){
+            $fieldValues = [$fieldValues];
+        }
+
+        if ($milestone->conditionalOperator == 'like') {
+            #Convert this foreach to array_map
+            foreach ($fieldValues as $fieldValue) {
+                if (str_contains(strtolower($fieldValue), strtolower($milestone->conditionalValue))) {
+                    return true;
+                }
+            }
+            return false;
+        } elseif ($milestone->conditionalOperator == 'equals') {
+            foreach ($fieldValues as $fieldValue) {
+                if (strtolower($fieldValue) == strtolower($milestone->conditionalValue)) {
+                    return true;
+                }
+            }
+            return false;
+        } elseif ($milestone->conditionalOperator == 'is_not') {
+            foreach ($fieldValues as $fieldValue) {
+                if (strtolower($fieldValue) != strtolower($milestone->conditionalValue)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks if a grouped work is on a certain list.
+     *
+     * @param $object The grouped work object to check.
+     *
+     * @return bool true if the grouped work is on the list, false otherwise.
+     */
+    protected function conditionalsListCheck($object){
+        require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+        $listEntry = new UserListEntry();
+        $listEntry->whereAdd("source ='GroupedWork'");
+        $listEntry->whereAdd("sourceId ='" . $object->groupedWorkId . "'");
+        $whereOp = $this->conditionalOperator == 'is_not' ? '!=' : '=';
+        $listEntry->whereAdd('listId '.$whereOp. ' ' . $this->conditionalValue);
+        return $listEntry->find(true);
+    }
 }
