@@ -42,10 +42,12 @@ class CampaignMilestoneProgressEntry extends DataObject
         $this->insert();
     }
 
-    public static function getUserProgressDataByMilestoneId($userId, $milestoneId) {
+    public static function getUserProgressDataByMilestoneId($userId, $milestoneId, $campaignId) {
         $campaignMilestoneProgressEntry = new self();
         $campaignMilestoneProgressEntry->whereAdd("userId = " . $userId);
         $campaignMilestoneProgressEntry->whereAdd("ce_milestone_id = " . $milestoneId);
+        $campaignMilestoneProgressEntry->whereAdd("ce_campaign_id = " . $campaignId);
+
 
         $results = [];
         if ($campaignMilestoneProgressEntry->find()) {
