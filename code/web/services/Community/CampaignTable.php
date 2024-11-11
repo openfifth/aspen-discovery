@@ -39,7 +39,7 @@ class Community_CampaignTable extends Admin_Dashboard {
                             'isCampaignComplete' =>$isCampaignComplete,
                             'milestones' => []
                         ];
-
+                        var_dump($isCampaignComplete);
                         //Get milestone completion status
                         $milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
 
