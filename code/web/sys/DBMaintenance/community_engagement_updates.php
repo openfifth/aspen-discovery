@@ -60,7 +60,7 @@ function getCommunityEngagementUpdates() {
                 "CREATE TABLE IF NOT EXISTS ce_campaign_milestone_progress_entries (
                      id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
                      userId INT NOT NULL,
-                     ce_campaign_id INT NOT NULL, #TODO: this may not be needed
+                     ce_campaign_id INT NOT NULL,
                      ce_milestone_id INT NOT NULL,
                      ce_campaign_milestone_users_progress_id INT NOT NULL,
                      tableName VARCHAR(100),

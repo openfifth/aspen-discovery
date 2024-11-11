@@ -6,6 +6,7 @@ class CampaignMilestoneProgressEntry extends DataObject
     public $__table = 'ce_campaign_milestone_progress_entries';
     public $id;
     public $userId;
+    public $ce_campaign_id;
     public $ce_milestone_id;
     public $ce_campaign_milestone_users_progress_id;
     public $tableName;
@@ -29,7 +30,8 @@ class CampaignMilestoneProgressEntry extends DataObject
     public function initialize(CampaignMilestone $campaignMilestone, $args = null)
     {
 
-        $this->ce_milestone_id = $campaignMilestone->ce_milestone_id;
+        $this->ce_milestone_id = $campaignMilestone->milestoneId;
+        $this->ce_campaign_id = $campaignMilestone->campaignId;
 
         if (!$args)
             return;
