@@ -36,7 +36,13 @@
                                 </div>
                                 {else}
                                     <div>
-                                        {translate text="Incomplete" isAdminFacing=true}
+                                        {translate text="Incomplete" isAdminFacing=true}<br>
+                                        <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
+                                        <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
+                                         aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                            {$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}%
+                                        </div>
+                                    </div>
                                     </div>
                                 {/if}
                             </td>
