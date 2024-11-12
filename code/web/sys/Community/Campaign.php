@@ -3,6 +3,7 @@ require_once ROOT_DIR . '/sys/Community/Milestone.php';
 require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 require_once ROOT_DIR . '/sys/Community/Reward.php';
+require_once ROOT_DIR . '/sys/Community/CampaignPatronTypeAccess.php';
 require_once ROOT_DIR . '/sys/Account/User.php';
 
 
@@ -22,11 +23,14 @@ class Campaign extends DataObject {
     /** @var AvailableMilestones[] */
     private $_availableMilestones;
 
+	protected $_allowPatronTypeAccess;
+
     public static function getObjectStructure($context = ''): array {
         $milestoneList = Milestone::getMilestoneList();
         $milestoneStructure = CampaignMilestone::getObjectStructure($context);
         unset($milestoneStructure['campaignId']);
 
+		$patronTypeList = PType::getPatronTypeList();
         $rewardList = Reward::getRewardList();
         return [
             'id' => [
@@ -85,9 +89,52 @@ class Campaign extends DataObject {
                 'label' => 'Reward for Completing Campaign',
                 'values' => $rewardList, 
                 'description' => 'The reward given for completing the campaign.'
-            ]
+            ],
+            'allowPatronTypeAccess' => [
+				'property' => 'allowPatronTypeAccess',
+				'type' => 'multiSelect',
+				'listStyle' => 'checkboxSimple',
+				'label' => 'Patron Type Access',
+				'description' => 'Define what patron types should have access to this campaign',
+				'values' => $patronTypeList,
+				'hideInLists' => false,
+			],
         ];
     }
+
+	public function getPatronTypeAccess() {
+		if (!isset($this->_allowPatronTypeAccess) && $this->id) {
+			$this->_allowPatronTypeAccess = [];
+			$patronTypeLink = new CampaignPatronTypeAccess();
+			$patronTypeLink->campaignId = $this->id;
+			$patronTypeLink->find();
+			while ($patronTypeLink->fetch()) {
+				$this->_allowPatronTypeAccess[$patronTypeLink->patronTypeId] = $patronTypeLink->patronTypeId;
+			}
+		}
+		return $this->_allowPatronTypeAccess;
+	}
+
+	public function savePatronTypeAccess() {
+		if (isset($this->_allowPatronTypeAccess) && is_array($this->_allowPatronTypeAccess)) {
+			$this->clearPatronTypeAccess();
+
+			foreach ($this->_allowPatronTypeAccess as $patronTypeId) {
+				$link = new CampaignPatronTypeAccess();
+				$link->campaignId = $this->id;
+				$link->patronTypeId = $patronTypeId;
+				$link->insert();
+			}
+			unset($this->_allowPatronTypeAccess);
+		}
+	}
+
+	private function clearPatronTypeAccess() {
+		//Delete links to the patron types
+		$link = new CampaignPatronTypeAccess();
+		$link->campaignId = $this->id;
+		return $link->delete(true);
+	}
 
     public function getUsers() {
         if (is_null($this->_users)) {
@@ -131,7 +178,9 @@ class Campaign extends DataObject {
     }
 
     public function __get($name) {
-        if ($name == 'availableMilestones') {
+		if ($name == 'allowPatronTypeAccess') {
+			return $this->getPatronTypeAccess();
+	    } else if ($name == 'availableMilestones') {
             return $this->getMilestones();
         } else {
             return parent::__get($name);
@@ -139,7 +188,9 @@ class Campaign extends DataObject {
     }
 
     public function __set($name, $value) {
-        if ($name == 'availableMilestones') {
+		if ($name == 'allowPatronTypeAccess') {
+			$this->_allowPatronTypeAccess = $value;
+        } else if ($name == 'availableMilestones') {
             $this->_availableMilestones = $value;
         } else {
             parent::__set($name, $value);
@@ -180,6 +231,7 @@ class Campaign extends DataObject {
 	public function update($context = '') {
         $ret = parent::update();
         if ($ret !== FALSE) {
+            $this->savePatronTypeAccess();
             $this->saveMilestones();
         }
         return $ret;
@@ -193,10 +245,19 @@ class Campaign extends DataObject {
     public function insert($context = '') {
         $ret = parent::insert();
         if ($ret !== FALSE) {
+            $this->savePatronTypeAccess();
             $this->saveMilestones();
         }
         return $ret;
     }
+
+	public function delete($useWhere = false) : int {
+		$ret = parent::delete($useWhere);
+		if ($ret && !empty($this->id)) {
+			$this->clearPatronTypeAccess();
+		}
+		return $ret;
+	}
 
     public static function getAllCampaigns() : array {
         $campaign = new Campaign();
@@ -218,6 +279,27 @@ class Campaign extends DataObject {
         }
         return null;
     }
+
+    /**
+     * Finds and retrieves campaign records based on user access and login status.
+     *
+     * If the user is not logged in or is an Aspen admin user, it performs a standard find operation.
+     * Otherwise, it filters campaigns based on the user's patron type, ensuring that the user has
+     * access to the campaign. This function supports optional fetching of the first match and
+     * requires at least one match to return results if specified.
+     *
+     * @param bool $fetchFirst Optional. Whether to fetch the first matching record. Default is false.
+     * @param bool $requireOneMatchToReturn Optional. Whether one match is required to return results. Default is true.
+     * @return bool True if a record is found, false otherwise.
+     */
+    public function find($fetchFirst = false, $requireOneMatchToReturn = true): bool {
+        if (!UserAccount::isLoggedIn() || UserAccount::getActiveUserObj()->isAspenAdminUser())
+            return parent::find($fetchFirst, $requireOneMatchToReturn);
+
+        $this->joinAdd(new CampaignPatronTypeAccess(), 'INNER', 'ce_campaign_patron_type_access', 'id', 'campaignId');
+        $this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . UserAccount::getActiveUserObj()->getPTypeObj()->id . "'");
+        return parent::find($fetchFirst, $requireOneMatchToReturn);
+	}
 
     /**
      * Retrieves a list of active campaigns.

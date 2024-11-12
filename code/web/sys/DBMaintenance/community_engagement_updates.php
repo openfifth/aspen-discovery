@@ -26,6 +26,17 @@ function getCommunityEngagementUpdates() {
                 ) ENGINE = InnoDB",
             ],
         ],
+        'create_campaign_patron_type_access' => [
+            'title' => 'Create Campaign Patron Type Access',
+            'description' => 'Add table for patron type campaign access',
+            'sql' => [
+                "CREATE TABLE ce_campaign_patron_type_access (
+                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    campaignId INT NOT NULL,
+                    patronTypeId INT NOT NULL
+                ) ENGINE = InnoDB",
+            ],
+        ],
         'create_milestones' => [
             'title' => 'Create Milestones',
             'description' => 'Add table for milestones',
