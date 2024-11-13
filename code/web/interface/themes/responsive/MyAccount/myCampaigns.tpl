@@ -18,7 +18,7 @@
             </thead>
             <tbody>
             {foreach from=$campaignList item="campaign" key="resultIndex"}
-                {if $campaign->enrolled}
+                {if $campaign->enrolled && ($campaign->isActive || $campaign->isUpcoming)}
                     <tr>
                         <td>{$campaign->name}</td>
                         <td>{$campaign->startDate}</td>
