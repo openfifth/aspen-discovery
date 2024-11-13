@@ -4,6 +4,7 @@ require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
 require_once ROOT_DIR . '/sys/Community/Reward.php';
 require_once ROOT_DIR . '/sys/Community/CampaignPatronTypeAccess.php';
+require_once ROOT_DIR . '/sys/Community/CampaignLibraryAccess.php';
 require_once ROOT_DIR . '/sys/Account/User.php';
 
 
@@ -24,12 +25,14 @@ class Campaign extends DataObject {
     private $_availableMilestones;
 
 	protected $_allowPatronTypeAccess;
+	protected $_allowLibraryAccess;
 
     public static function getObjectStructure($context = ''): array {
         $milestoneList = Milestone::getMilestoneList();
         $milestoneStructure = CampaignMilestone::getObjectStructure($context);
         unset($milestoneStructure['campaignId']);
 
+        $libraryList = Library::getLibraryList(false);
 		$patronTypeList = PType::getPatronTypeList();
         $rewardList = Reward::getRewardList();
         return [
@@ -99,6 +102,15 @@ class Campaign extends DataObject {
 				'values' => $patronTypeList,
 				'hideInLists' => false,
 			],
+			'allowLibraryAccess' => [
+				'property' => 'allowLibraryAccess',
+				'type' => 'multiSelect',
+				'listStyle' => 'checkboxSimple',
+				'label' => 'Library Access',
+				'description' => 'Define what libraries should have access to this campaign',
+				'values' => $libraryList,
+				'hideInLists' => false,
+			],
         ];
     }
 
@@ -115,6 +127,19 @@ class Campaign extends DataObject {
 		return $this->_allowPatronTypeAccess;
 	}
 
+	public function getLibraryAccess(): ?array {
+		if (!isset($this->_allowLibraryAccess) && $this->id) {
+			$this->_allowLibraryAccess = [];
+			$libraryLink = new CampaignLibraryAccess();
+			$libraryLink->campaignId = $this->id;
+			$libraryLink->find();
+			while ($libraryLink->fetch()) {
+				$this->_allowLibraryAccess[$libraryLink->libraryId] = $libraryLink->libraryId;
+			}
+		}
+		return $this->_allowLibraryAccess;
+	}
+
 	public function savePatronTypeAccess() {
 		if (isset($this->_allowPatronTypeAccess) && is_array($this->_allowPatronTypeAccess)) {
 			$this->clearPatronTypeAccess();
@@ -129,11 +154,32 @@ class Campaign extends DataObject {
 		}
 	}
 
+	public function saveLibraryAccess() {
+		if (isset($this->_allowLibraryAccess) && is_array($this->_allowLibraryAccess)) {
+			$this->clearLibraryAccess();
+
+			foreach ($this->_allowLibraryAccess as $libraryId) {
+				$libraryLink = new CampaignLibraryAccess();
+				$libraryLink->campaignId = $this->id;
+				$libraryLink->libraryId = $libraryId;
+				$libraryLink->insert();
+			}
+			unset($this->_allowLibraryAccess);
+		}
+	}
+
 	private function clearPatronTypeAccess() {
 		//Delete links to the patron types
 		$link = new CampaignPatronTypeAccess();
 		$link->campaignId = $this->id;
 		return $link->delete(true);
+	}
+
+	private function clearLibraryAccess() {
+		//Delete links to the libraries
+		$libraryLink = new CampaignLibraryAccess();
+		$libraryLink->campaignId = $this->id;
+		return $libraryLink->delete(true);
 	}
 
     public function getUsers() {
@@ -180,6 +226,8 @@ class Campaign extends DataObject {
     public function __get($name) {
 		if ($name == 'allowPatronTypeAccess') {
 			return $this->getPatronTypeAccess();
+	    } else if ($name == 'allowLibraryAccess') {
+            return $this->getLibraryAccess();
 	    } else if ($name == 'availableMilestones') {
             return $this->getMilestones();
         } else {
@@ -190,6 +238,8 @@ class Campaign extends DataObject {
     public function __set($name, $value) {
 		if ($name == 'allowPatronTypeAccess') {
 			$this->_allowPatronTypeAccess = $value;
+        } else if ($name == 'allowLibraryAccess') {
+            $this->_allowLibraryAccess = $value;
         } else if ($name == 'availableMilestones') {
             $this->_availableMilestones = $value;
         } else {
@@ -232,6 +282,7 @@ class Campaign extends DataObject {
         $ret = parent::update();
         if ($ret !== FALSE) {
             $this->savePatronTypeAccess();
+            $this->saveLibraryAccess();
             $this->saveMilestones();
         }
         return $ret;
@@ -246,6 +297,7 @@ class Campaign extends DataObject {
         $ret = parent::insert();
         if ($ret !== FALSE) {
             $this->savePatronTypeAccess();
+            $this->saveLibraryAccess();
             $this->saveMilestones();
         }
         return $ret;
@@ -255,6 +307,7 @@ class Campaign extends DataObject {
 		$ret = parent::delete($useWhere);
 		if ($ret && !empty($this->id)) {
 			$this->clearPatronTypeAccess();
+			$this->clearLibraryAccess();
 		}
 		return $ret;
 	}
