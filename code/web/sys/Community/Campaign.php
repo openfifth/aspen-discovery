@@ -351,6 +351,8 @@ class Campaign extends DataObject {
 
         $this->joinAdd(new CampaignPatronTypeAccess(), 'INNER', 'ce_campaign_patron_type_access', 'id', 'campaignId');
         $this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . UserAccount::getActiveUserObj()->getPTypeObj()->id . "'");
+        $this->joinAdd(new CampaignLibraryAccess(), 'INNER', 'ce_campaign_library_access', 'id', 'campaignId');
+        $this->whereAdd("ce_campaign_library_access.libraryId = '" . UserAccount::getActiveUserObj()->getHomeLibrary()->libraryId . "'");
         return parent::find($fetchFirst, $requireOneMatchToReturn);
 	}
 
