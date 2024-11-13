@@ -37,6 +37,17 @@ function getCommunityEngagementUpdates() {
                 ) ENGINE = InnoDB",
             ],
         ],
+        'create_campaign_library_access' => [
+            'title' => 'Create Campaign Library Access',
+            'description' => 'Add table for library campaign access',
+            'sql' => [
+                "CREATE TABLE ce_campaign_library_access (
+                    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                    campaignId INT NOT NULL,
+                    libraryId INT NOT NULL
+                ) ENGINE = InnoDB",
+            ],
+        ],
         'create_milestones' => [
             'title' => 'Create Milestones',
             'description' => 'Add table for milestones',
