@@ -200,8 +200,6 @@
                                     <tr>
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
-                                        <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
-                                        <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
                                     </tr>
                                 </thead>
                                     <tbody>
@@ -209,22 +207,6 @@
                                         <tr>
                                             <td>{$milestone->name}</td>
                                             <td>{$milestone->rewardName}</td>
-                                            <td>
-                                                {$milestone->completedGoals}/ {$milestone->totalGoals}
-                                                {foreach from=$milestone->progressData item="progressData"}
-                                                <div style="padding:10px;">
-                                                    {$progressData['title']}
-                                                </div>
-                                                {/foreach}
-                                            </td>
-                                            <td>
-                                                <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
-                                                    <div class="progress-bar" role="progressbar" aria-valuenow="{$milestone->progress}" aria-valuemin="0"
-                                                     aria-valuemax="100" style="width: {$milestone->progress}%; line-height: 20px; text-align: center; color: #fff;">
-                                                        {$milestone->progress}%
-                                                    </div>
-                                                </div>
-                                            </td>
                                         </tr>                                 
                                     {/foreach}
                                     </tbody>
