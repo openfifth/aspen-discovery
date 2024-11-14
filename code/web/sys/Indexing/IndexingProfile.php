@@ -122,6 +122,8 @@ class IndexingProfile extends DataObject {
 		$iCode2sToSuppress;
 	public /** @noinspection PhpUnused */
 		$bCode3sToSuppress;
+	public /** @noinspection PhpUnused */
+		$treatItemsAsEcontent;
 	public $format;
 	public $useSierraMatTypeForFormat;
 	public /** @noinspection PhpUnused */
@@ -499,6 +501,15 @@ class IndexingProfile extends DataObject {
 				'type' => 'text',
 				'label' => 'bCode3 values to suppress',
 				'description' => 'A regular expression containing the bCode3 values to suppress (Sierra Only).',
+				'forcesReindex' => true,
+			],
+
+			'treatItemsAsEcontent' => [
+				'property' => 'treatItemsAsEcontent',
+				'type' => 'regularExpression',
+				'label' => 'Treat Item Types As eContent',
+				'description' => 'Any records with an item type matching the pattern will be treated as eContent',
+				'defaultValue' => 'ebook|ebk|eaudio|evideo|online|oneclick|eaudiobook|download|eresource|electronic resource',
 				'forcesReindex' => true,
 			],
 
