@@ -12,7 +12,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
-
+import java.util.regex.Pattern;
 class KohaRecordProcessor extends IlsRecordProcessor {
 	private final HashSet<String> inTransitItems = new HashSet<>();
 	private final HashSet<String> onHoldShelfItems = new HashSet<>();
@@ -288,6 +288,8 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 
 	protected StringBuilder loadUnsuppressedPrintItems(AbstractGroupedWorkSolr groupedWork, RecordInfo recordInfo, String identifier, Record record, StringBuilder suppressionNotes){
 		List<DataField> itemRecords = MarcUtil.getDataFields(record, settings.getItemTagInt());
+		//Retrieve the eContent type Regex from the indexing profile
+		Pattern eContentTypeRegex = settings.getTreatItemsAsEcontent();
 		for (DataField itemField : itemRecords){
 			String itemIdentifier = MarcUtil.getItemSubfieldData(settings.getItemRecordNumberSubfield(), itemField, indexer.getLogEntry(), logger);
 			ResultWithNotes isSuppressed = isItemSuppressed(itemField, itemIdentifier, suppressionNotes);
@@ -297,7 +299,7 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 				boolean isEContent = false;
 				if (itemField.getSubfield(settings.getITypeSubfield()) != null){
 					String iType = itemField.getSubfield(settings.getITypeSubfield()).getData().toLowerCase().trim();
-					if (iType.equals("ebook") || iType.equals("ebk") || iType.equals("eaudio") || iType.equals("evideo") || iType.equals("online") || iType.equals("oneclick") || iType.equals("eaudiobook") || iType.equals("download")){
+					if (eContentTypeRegex.matcher(iType).matches()){
 						isEContent = true;
 					}
 				}
@@ -314,6 +316,9 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 		List<DataField> itemRecords = MarcUtil.getDataFields(record, settings.getItemTagInt());
 		List<RecordInfo> unsuppressedEcontentRecords = new ArrayList<>();
 
+		//Retrieve the Regex for eContent types from the indexing profile
+		Pattern eContentTypeRegex = settings.getTreatItemsAsEcontent();
+
 		for (DataField itemField : itemRecords){
 			String itemIdentifier = MarcUtil.getItemSubfieldData(settings.getItemRecordNumberSubfield(), itemField, indexer.getLogEntry(), logger);
 			ResultWithNotes isSuppressed = isItemSuppressed(itemField, itemIdentifier, suppressionNotes);
@@ -327,7 +332,7 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 				boolean isOneClickDigital = false;
 				if (itemField.getSubfield(settings.getITypeSubfield()) != null){
 					String iType = itemField.getSubfield(settings.getITypeSubfield()).getData().toLowerCase().trim();
-					if (iType.equals("ebook") || iType.equals("ebk") || iType.equals("eaudio") || iType.equals("evideo") || iType.equals("online") || iType.equals("oneclick") || iType.equals("eaudiobook") || iType.equals("download")){
+					if (eContentTypeRegex.matcher(iType).matches()){
 						isEContent = true;
 						String sourceType = getSourceType(record, itemField);
 						if (sourceType != null){
