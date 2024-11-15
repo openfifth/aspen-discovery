@@ -506,10 +506,12 @@ class IndexingProfile extends DataObject {
 
 			'treatItemsAsEcontent' => [
 				'property' => 'treatItemsAsEcontent',
+				'hiddenByDefault' => true,
 				'type' => 'regularExpression',
 				'label' => 'Treat Item Types As eContent',
 				'description' => 'Any records with an item type matching the pattern will be treated as eContent',
 				'defaultValue' => 'ebook|ebk|eaudio|evideo|online|oneclick|eaudiobook|download|eresource|electronic resource',
+				'hideInLists' => true,
 				'forcesReindex' => true,
 			],
 
