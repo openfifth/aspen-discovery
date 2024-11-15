@@ -417,17 +417,23 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 			$this->_formatSorting = $groupedWorkDisplaySettings->getFormatSortingGroup();
 		}
-		$groupedWork = $this->getGroupedWorkObject();
-		if ($groupedWork->grouping_category == 'book') {
-			$sortMethod = $this->_formatSorting->bookSortMethod;
-		}elseif ($groupedWork->grouping_category == 'comic') {
-			$sortMethod = $this->_formatSorting->comicSortMethod;
-		}elseif ($groupedWork->grouping_category == 'movie') {
-			$sortMethod = $this->_formatSorting->movieSortMethod;
-		}elseif ($groupedWork->grouping_category == 'music') {
-			$sortMethod = $this->_formatSorting->musicSortMethod;
+
+		//Format sorting can still be null before the format sorting is fully setup
+		if ($this->_formatSorting == null) {
+			$sortMethod = 1;
 		}else{
-			$sortMethod = $this->_formatSorting->otherSortMethod;
+			$groupedWork = $this->getGroupedWorkObject();
+			if ($groupedWork->grouping_category == 'book') {
+				$sortMethod = $this->_formatSorting->bookSortMethod;
+			}elseif ($groupedWork->grouping_category == 'comic') {
+				$sortMethod = $this->_formatSorting->comicSortMethod;
+			}elseif ($groupedWork->grouping_category == 'movie') {
+				$sortMethod = $this->_formatSorting->movieSortMethod;
+			}elseif ($groupedWork->grouping_category == 'music') {
+				$sortMethod = $this->_formatSorting->musicSortMethod;
+			}else{
+				$sortMethod = $this->_formatSorting->otherSortMethod;
+			}
 		}
 
 		if ($sortMethod == 1) {

@@ -77,4 +77,8 @@ class OverDrive_Scopes extends ObjectEditor {
 	function canView(): bool {
 		return UserAccount::userHasPermission('Administer Libby/Sora');
 	}
+
+	function canAddNew() {
+		return false;
+	}
 }

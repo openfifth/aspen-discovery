@@ -87,6 +87,7 @@ class MaterialsRequest extends DataObject {
 					'type' => 'label',
 					'label' => 'Format',
 					'description' => 'The format of the request',
+					'canSort' => false,
 				],
 				'numHoldCandidates' => [
 					'property' => 'numHoldCandidates',

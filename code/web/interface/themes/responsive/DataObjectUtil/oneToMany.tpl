@@ -8,7 +8,7 @@
 					<th>{translate text="Sort" isAdminFacing=true}</th>
 				{/if}
 				{foreach from=$property.structure item=subProperty}
-					{if (in_array($subProperty.type, array('text', 'regularExpression', 'multilineRegularExpression', 'enum', 'date', 'checkbox', 'integer', 'textarea', 'html', 'dynamic_label')) || ($subProperty.type == 'multiSelect' && $subProperty.listStyle == 'checkboxList')) && empty($subProperty.hideInLists) }
+					{if (in_array($subProperty.type, array('text', 'regularExpression', 'multilineRegularExpression', 'enum', 'date', 'checkbox', 'integer', 'textarea', 'html', 'dynamic_label', 'multiSelect')) || ($subProperty.type == 'multiSelect' && $subProperty.listStyle == 'checkboxList')) && empty($subProperty.hideInLists) }
 						<th{if in_array($subProperty.type, array('text', 'regularExpression', 'multilineRegularExpression', 'enum', 'html', 'multiSelect'))} style="min-width:150px"{/if}>{translate text=$subProperty.label isAdminFacing=true}</th>
 					{/if}
 				{/foreach}
@@ -29,7 +29,7 @@
 						</td>
 					{/if}
 					{foreach from=$property.structure item=subProperty}
-						{if in_array($subProperty.type, array('text', 'regularExpression', 'enum', 'date', 'checkbox', 'integer', 'textarea', 'html', 'dynamic_label'))  && empty($subProperty.hideInLists)}
+						{if in_array($subProperty.type, array('text', 'regularExpression', 'enum', 'date', 'checkbox', 'integer', 'textarea', 'html', 'dynamic_label', 'multiSelect'))  && empty($subProperty.hideInLists)}
 							<td>
 								{assign var=subPropName value=$subProperty.property}
 								{assign var=subPropValue value=$subObject->$subPropName}
@@ -46,6 +46,16 @@
 										{if $subPropValue == 1}{translate text='Yes' isAdminFacing=true}{else}{translate text='No' isAdminFacing=true}{/if}
 									{/if}
 									<input type='checkbox' name='{$propName}_{$subPropName}[{$subObject->id}]' {if $subPropValue == 1}checked='checked'{/if} {if !empty($subProperty.readOnly) || !empty($property.readOnly)} style="display: none"{/if} data-id="{$subObject->id}"/>
+								{elseif $subProperty.type=='multiSelect'}
+									<span id="{$propName}_{$subPropName}_{$subObject->id}" data-id="{$subObject->id}">
+										{if is_array($subPropValue) && count($subPropValue) > 0}
+											{foreach from=$subProperty.values item=propertyName key=propertyValue}
+												{if array_key_exists($propertyValue, $subPropValue)}{$propertyName|escape}<br/>{/if}
+											{/foreach}
+										{else}
+											{translate text="No values selected" isAdminFacing='true'}
+										{/if}
+									<span>
 								{else}
 									{if $subObject->canActiveUserChangeSelection()}
 										<select name='{$propName}_{$subPropName}[{$subObject->id}]' id='{$propName}{$subPropName}_{$subObject->id}' class='form-control {if !empty($subProperty.required)} required{/if}' {if !empty($subProperty.onchange)}onchange="{$subProperty.onchange}"{/if} {if !empty($subProperty.readOnly) || !empty($property.readOnly)} readonly disabled{/if} data-id="{$subObject->id}">
