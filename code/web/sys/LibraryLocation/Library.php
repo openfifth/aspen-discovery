@@ -952,7 +952,7 @@ class Library extends DataObject {
 				'property' => 'subdomain',
 				'type' => 'text',
 				'label' => 'Subdomain',
-				'description' => 'A unique id to identify the library within the system',
+				'description' => 'A unique id to identify the library within the system. This much match the base URL subdomain used.',
 				'uniqueProperty' => true,
 				'forcesReindex' => true,
 				'required' => true,
