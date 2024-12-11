@@ -6557,6 +6557,104 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
+	function createHeyCentricOrder(){
+		global $configArray;
+
+		$transactionType = $_REQUEST['type'];
+		if ($transactionType == 'donation') {
+			$result = $this->createGenericDonation('HeyCentric');
+		} else {
+			$result = $this->createGenericOrder('HeyCentric');
+		}
+
+		if (array_key_exists('success', $result) && $result['success'] === false) {
+			return $result;
+		}
+
+		if ($transactionType == 'donation') {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+				$tempDonation,
+			] = $result;
+		} else {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+			] = $result;
+		}
+
+		require_once ROOT_DIR . '/sys/ECommerce/HeyCentricSetting.php';
+		$heyCentricSettings = new HeyCentricSetting();
+		$heyCentricSettings->id = $paymentLibrary->heyCentricSettingId;
+
+		if (!$heyCentricSettings->find(true)) {
+			return [
+				'success' => false,
+				'message' => 'HeyCentric was not properly configured',
+			];
+		}
+
+		$finesSelected = [];
+
+		foreach(explode(',', $payment->finesPaid) as $fineSelected) {
+			$finesSelected[] = ['id' => explode('|', $fineSelected)[0], 'amount' => explode('|', $fineSelected)[1]];
+		}
+
+		$paymentRequestUrl = $heyCentricSettings->baseUrl;
+		$paymentRequestUrl .= "client=" . $heyCentricSettings->client;
+		$paymentRequestUrl .= "&area=" . $heyCentricSettings->area;
+		$paymentRequestUrl .= "&till=" . $heyCentricSettings->till;
+		$paymentRequestUrl .= "&entity=" . $heyCentricSettings->entity;
+			
+		$hashParams = "client=$heyCentricSettings->client";
+		$hashParams .= "&entity=$heyCentricSettings->entity";
+
+		foreach($finesSelected as $index => $fine) {	
+			$fineDetails = $patron->getCatalogDriver()->getFineById($fine['id'], true);
+			$multilineSuffix = $index > 0 ? "_$index=" : "=";
+
+			$paymentRequestUrl .= "&pmtTyp" . $multilineSuffix . $fineDetails['revenue_code'];
+			$paymentRequestUrl .= "&val1" . $multilineSuffix . $fineDetails['fineId'];
+			$paymentRequestUrl .= "&val1Desc" . $multilineSuffix . $fineDetails['message'];
+			$paymentRequestUrl .= "&am" .  $multilineSuffix . str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
+
+			$hashParams .= "&pmtTyp" .  $multilineSuffix . $fineDetails['revenue_code'];
+			$hashParams .= "&am" .  $multilineSuffix . str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
+		}
+
+		$paymentRequestUrl .= "&email=" . $patron->email;
+		$paymentRequestUrl .= "&rurl=" . $configArray['Site']['url'] . "/MyAccount/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id;
+		$paymentRequestUrl .= "&hash=" . base64_encode(md5($hashParams . $heyCentricSettings->privateKey));
+
+		// Placeholder for future requirement to facilitate Unit4 upgrades
+		// $paymentRequestUrl .= "&co=";
+		// $paymentRequestUrl .= "&bu=";
+		// $paymentRequestUrl .= "&lang=";
+		// $paymentRequestUrl .= "&mode=";
+
+		// Optional parameters - to be implemented in Phase Two (DIS-331)
+		// $paymentRequestUrl .= "&val2=";
+		// $paymentRequestUrl .= "&val2Desc=";
+		// $paymentRequestUrl .= "&cmt=";
+		// $paymentRequestUrl .= "&extRef=";
+		// $paymentRequestUrl .= "&burl=";
+		// $paymentRequestUrl .= "&ccemail=";
+		// $paymentRequestUrl .= "&sid=";
+
+		return [
+			'success' => true,
+			'message' => 'Redirecting to payment processor',
+			'paymentRequestUrl' => $paymentRequestUrl,
+		];
+	}
+
 	/** @noinspection PhpUnused */
 	function dismissBrowseCategory() {
 		$patronId = UserAccount::getActiveUserId();

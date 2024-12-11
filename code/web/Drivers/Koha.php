@@ -2984,6 +2984,137 @@ class Koha extends AbstractIlsDriver {
 		return $fines;
 	}
 
+
+	public function getFineById(string $id, bool $includeAdditionalFieldValues = false): array|null {
+		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
+
+		global $activeLanguage;
+
+		$currencyCode = 'USD';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+
+		$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
+
+		$this->initDatabaseConnection();
+
+		/** @noinspection SqlResolve */
+		$query = "SELECT * FROM accountlines WHERE accountlines_id = '" . mysqli_escape_string($this->dbConnection, $id) . "'";
+
+		$mySqliResultObj = mysqli_query($this->dbConnection, $query);
+
+		if ($mySqliResultObj->num_rows < 1) {
+			return null;
+		}
+		
+		$fine = $mySqliResultObj->fetch_assoc();
+
+		if (isset($fine['accountType'])) {
+			$type = array_key_exists($fine['accounttype'], Koha::$fineTypeTranslations) ? Koha::$fineTypeTranslations[$fine['accounttype']] : $fine['accounttype'];
+		} elseif (isset($fine['debit_type_code']) && !empty($fine['debit_type_code'])) {
+			//Lookup the type in the account
+			$type = array_key_exists($fine['debit_type_code'], Koha::$fineTypeTranslations) ? Koha::$fineTypeTranslations[$fine['debit_type_code']] : $fine['debit_type_code'];
+		} elseif (isset($fine['credit_type_code']) && !empty($fine['credit_type_code'])) {
+			//Lookup the type in the account
+			$type = array_key_exists($fine['credit_type_code'], Koha::$fineTypeTranslations) ? Koha::$fineTypeTranslations[$fine['credit_type_code']] : $fine['credit_type_code'];
+		} else {
+			$type = 'Unknown';
+		}
+
+		$formattedFine = [
+			'fineId' => $fine['accountlines_id'],
+			'date' => $fine['date'],
+			'type' => $type,
+			'reason' => $type,
+			'message' => $fine['description'],
+			'amountVal' => $fine['amount'],
+			'amountOutstandingVal' => $fine['amountoutstanding'],
+			'amount' => $currencyFormatter->formatCurrency($fine['amount'], $currencyCode),
+			'amountOutstanding' => $currencyFormatter->formatCurrency($fine['amountoutstanding'], $currencyCode),
+		];
+
+		if (!$includeAdditionalFieldValues) {
+			return $formattedFine;
+		}
+		
+		$additionalFineFieldValues = $this->getAdditionalFieldValuesByTable('accountlines:debit');
+
+		if (empty($additionalFineFieldValues)) {
+			return $formattedFine;
+		}
+
+		foreach ($additionalFineFieldValues as $additionalFineFieldValue) {
+			if ($additionalFineFieldValue["record_id"] == $fine['accountlines_id']) {
+				$formattedFine[$additionalFineFieldValue['field_name']] = $additionalFineFieldValue['value'];
+			}
+		}
+
+		$mySqliResultObj->close();
+
+		return $formattedFine;
+	}
+
+	public function getAdditionalFieldValuesByTable(string $tableName) {
+		$fields = $this->getAdditionalFieldsByTable($tableName);
+		$values = [];
+
+		if (empty($fields)) {
+			return [];
+		}
+
+		foreach ($fields as $field) {
+			$fieldValues = $this->getAdditionalFieldValuesByFieldId($field['id']);
+			if (empty($fieldValues)) {
+				continue;
+			}
+
+			foreach ($fieldValues as $value) {
+				$value['field_name'] = $field['name'];
+				$values[] = $value;
+			}
+		}
+
+		return $values;
+	}
+
+	private function getAdditionalFieldsByTable(string $tableName, string $category = null): array {
+		// TODO: refactor to send a GET request to the api/v1/extended_attribute_types endpoint instead
+		$this->initDatabaseConnection();
+		/** @noinspection SqlResolve */
+		$query = "SELECT * FROM additional_fields WHERE tablename = '" . mysqli_escape_string($this->dbConnection, $tableName) . "'";
+		if ($category) {
+			$query .= " AND authorised_value_category='" . mysqli_escape_string($this->dbConnection, $category) . "'";
+		}
+
+		$additionalFieldsResponse = mysqli_query($this->dbConnection, $query);
+		$additionalFields = [];
+		if ($additionalFieldsResponse->num_rows > 0) {
+			while ($allAdditionalFieldsRow = $additionalFieldsResponse->fetch_assoc()) {
+				$additionalFields[] = $allAdditionalFieldsRow;
+			}
+		}
+		$additionalFieldsResponse->close();
+		return $additionalFields;
+	}
+
+	private function getAdditionalFieldValuesByFieldId(string $fieldId): array {
+		$this->initDatabaseConnection();
+		/** @noinspection SqlResolve */
+		$query = "SELECT * FROM additional_field_values WHERE  field_id = '" . mysqli_escape_string($this->dbConnection, $fieldId) . "'";
+		$additionalFieldValuesResponse = mysqli_query($this->dbConnection, $query);
+
+		$additionalFieldValues = [];
+		if ($additionalFieldValuesResponse->num_rows > 0) {
+			while ($allAdditionalFieldsRow = $additionalFieldValuesResponse->fetch_assoc()) {
+				$additionalFieldValues[] = $allAdditionalFieldsRow;
+			}
+		}
+		$additionalFieldValuesResponse->close();
+		return $additionalFieldValues;
+	}
+
 	/**
 	 * Get Total Outstanding fines for a user.  Lifted from Koha:
 	 * C4::Accounts.pm gettotalowed method
