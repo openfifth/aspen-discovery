@@ -130,6 +130,13 @@
 					<h2>{translate text="Didn't find it?" isPublicFacing=true}</h2>
 					<p>{translate text="Can't find what you are looking for?" isPublicFacing=true} <a href="{$externalMaterialsRequestUrl}" class="btn btn-info">{translate text='Suggest a purchase' isPublicFacing=true}</a></p>
 				</div>
+			{elseif $materialRequestType == 4}
+				<div class="materialsRequestLink">
+					<h2>{translate text="Didn't find it?" isPublicFacing=true}</h2>
+					<p>
+						{translate text="Can't find what you are looking for?" isPublicFacing=true} <a href="/MaterialsRequest/NewRequestOCLCRSFG" class="btn btn-sm btn-info" onclick="return AspenDiscovery.Account.followLinkIfLoggedIn(this);">{translate text='Submit Request' isPublicFacing=true}</a>
+					</p>
+				</div>
 			{/if}
 		{/if}
 
