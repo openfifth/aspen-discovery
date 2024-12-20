@@ -46,6 +46,51 @@ class OCLCRSFGDriver {
 		return $summary;
 	}
 
+	public function getRequestDetails(OCLCRSFGSetting $setting, string $oclcRequestId) {
+		if (empty($this->_registryId)) {
+			return [];
+		}
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		$requestInAspenDb = new OCLCRSFGRequest();
+		try {
+			$this->updateRequestInAspenDb($requestInAspenDb, $this->getRequestFromOCLCRSFGWithId($setting, $oclcRequestId));
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Could not fetch data from OCLC Resource Sharing For Groups: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not fetch data from OCLC Resource Sharing For Groups.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+
+		}
+		return $requestInAspenDb;
+	}
+
 	public function getRequests(User $patron, $setting): array {
 		if (empty($this->_registryId)) {
 			return [];
