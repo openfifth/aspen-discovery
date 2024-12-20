@@ -7,7 +7,7 @@
 		<div class="dashboardCategory col-sm-6">
 			<div class="row">
 				<div class="col-sm-10 col-sm-offset-1">
-					<h3 class="dashboardCategoryLabel">{$statusStats.label} <a href="/MaterialsRequest/Graph?status={$statusStats.id}&location={$library}" title="{translate text="Show Graph" inAttribute="true" isAdminFacing=true}"> <i class="fas fa-chart-line"></i></a></h3> {* No translation needed *}
+					<h3 class="dashboardCategoryLabel">{$statusStats.label} <a href="/MaterialsRequest/UsageGraphs?stat={$statusStats.id}&location={$library}" title="{translate text="Show Graph" inAttribute="true" isAdminFacing=true}"> <i class="fas fa-chart-line"></i></a></h3> {* No translation needed *}
 				</div>
 			</div>
             <div class="row">

@@ -489,9 +489,9 @@ class Axis360_AJAX extends JSON_Action {
 		];
 	}
 
-	public function exportUsageData() {
+	public function exportUsageData(): void {
 		require_once ROOT_DIR . '/services/Axis360/UsageGraphs.php';
 		$axis360UsageGraph = new Axis360_UsageGraphs();
-		$axis360UsageGraph->buildCSV();
+		$axis360UsageGraph->buildCSV('Boundless');
 	}
 }
