@@ -97,6 +97,7 @@ class Location extends DataObject {
 	public $vdxFormId;
 	public $vdxLocation;
 	public $localIllFormId;
+	public $oclcRegistryId;
 	public $systemsToRepeatIn;
 	public $homeLink;
 	public $ptypesToAllowRenewals;
@@ -275,6 +276,13 @@ class Location extends DataObject {
 		$localIllForms[-1] = 'Select a form';
 		while ($localIllForm->fetch()) {
 			$localIllForms[$localIllForm->id] = $localIllForm->name;
+		}
+
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+		$oclcRSFGActive = false;
+		$oclcRSFGSettings = new OCLCRSFGSetting();
+		if ($oclcRSFGSettings->find(true)) {
+			$oclcRSFGActive = true;
 		}
 
 		$hasScoping = false;
@@ -1084,6 +1092,13 @@ class Location extends DataObject {
 						'description' => 'The form to use when submitting VDX requests',
 						'permissions' => ['Library ILL Options'],
 					],
+					'oclcRegistryId' => [
+						'property' => 'oclcRegistryId',
+						'type' => 'text',
+						'label' => 'OCLC Registry Id',
+						'description' => 'The Registry ID of your WorldShare institution',
+						'maxLength' => 50,
+					],
 				],
 			],
 		];
@@ -1467,9 +1482,17 @@ class Location extends DataObject {
 			unset($structure['curbsidePickupSettings']);
 		}
 
-		if (!$vdxActive) {
+		if (!$vdxActive && !$oclcRSFGActive) {
 			unset($structure['interLibraryLoanSection']['properties']['vdxFormId']);
 			unset($structure['interLibraryLoanSection']['properties']['vdxLocation']);
+			unset($structure['interLibraryLoanSection']['properties']['oclcRegistryId']);
+		}
+		if (!$vdxActive) {
+			unset($structure['interLibraryLoanSection']['properties']['vdxLocation']);
+			unset($structure['interLibraryLoanSection']['properties']['vdxFormId']);
+		}
+		if (!$oclcRSFGActive) {
+			unset($structure['interLibraryLoanSection']['properties']['oclcRegistryId']);
 		}
 		return $structure;
 	}
@@ -3142,6 +3165,15 @@ class Location extends DataObject {
 				if ($this->vdxFormId != -1) {
 					return 'vdx';
 				}
+			}
+			//Local ILL and VDX are not available, check to see if OCLC Resource Sharing For Groups is available.
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$oclcRSFGSettings = new OCLCRSFGSetting();
+			$homeLibrary = Library::getActiveLibrary();
+			$oclcRSFGSettings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
+			if ($oclcRSFGSettings->find(true)) {
+				return 'oclc_resource_sharing_for_groups';
 			}
 		} catch (Exception $e) {
 			//This happens if the tables aren't setup, ignore
