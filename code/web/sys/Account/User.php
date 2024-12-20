@@ -4579,6 +4579,11 @@ class User extends DataObject {
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Settings', 'Define settings for self-check in Aspen LiDA.', '/AspenLiDA/SelfCheckSettings'), 'Administer Aspen LiDA Self-Check Settings');
 		}
 
+		if (array_key_exists('OCLC Resource Sharing For Groups',  $enabledModules)) {
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Settings', 'Manage connections to OCLC Resource Sharing For Groups for various profiles', '/OCLCRSFG/OCLCRSFGSettings'), 'Administer OCLC Resource Sharing For Groups Settings');
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Forms', 'Create forms for patrons to use to submit an ILL by selecting the fields to be displayed', '/OCLCRSFG/OCLCRSFGForms'), 'Administer OCLC Resource Sharing For Groups Forms');
+		}
+
 		$sections['support'] = new AdminSection('Aspen Discovery Support');
 		$sections['support']->addAction(new AdminAction('Request Tracker Settings', 'Define settings for a Request Tracker support system.', '/Support/RequestTrackerConnections'), 'Administer Request Tracker Connection');
 		try {
