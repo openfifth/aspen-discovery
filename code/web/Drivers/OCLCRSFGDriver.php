@@ -17,6 +17,87 @@ class OCLCRSFGDriver {
 	}
 
 	// Controllers
+
+	public function getAccountSummary(User $user): AccountSummary {
+		[
+			$existingId,
+			$summary,
+		] = $user->getCachedAccountSummary('oclcRSFG');
+
+		if ($summary === null || isset($_REQUEST['reload'])) {
+			//Get account information from api
+			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
+			$summary = new AccountSummary();
+			$summary->userId = $user->id;
+			$summary->source = 'oclcRSFG';
+			$summary->resetCounters();
+
+			$settings = new OCLCRSFGSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$settings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
+			if($settings->find()) {
+				$settings->fetch();
+			}
+			$requests = $this->getRequests($user, $settings);
+			$summary->numUnavailableHolds = count($requests['unavailable']);
+			$summary->numAvailableHolds = count($requests['available']);
+		}
+
+		return $summary;
+	}
+
+	public function getRequests(User $patron, $setting): array {
+		if (empty($this->_registryId)) {
+			return [];
+		}
+		try {
+			if (empty($this->accessToken)) {
+				$this->setAccessToken($setting);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Exception conducting pre-submission checks for an ILL request to the Resource Sharing Requests API: $e", Logger::LOG_ERROR);
+			return [
+				'title' => translate([
+					'text' => 'Request Failed',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "Could not send request to the Resource Sharing For Groups system.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		$requestsSent = $this->getAllRequestsFromAspenDbForPatron($patron->id);
+		$openRequests = [];
+		$processedRequests = [];
+		foreach ($requestsSent as $requestInAspenDb) {
+			if ($requestInAspenDb->oclcRequestId) {
+				$requestInOCLCRSFG = $this->getRequestFromOCLCRSFGWithId($setting, $requestInAspenDb->oclcRequestId);
+			}
+			if (!empty($requestInOCLCRSFG)) {
+				$requestInAspenDb->requestStatus = $requestInOCLCRSFG['illRequest']['requestStatus'];
+				$requestInAspenDb->update();
+				if(
+					$requestInAspenDb->requestStatus == "REVIEW" ||
+					$requestInAspenDb->requestStatus == "REVIEWING"
+				){
+					$openRequests[] = $this->createTemporaryHold($patron->id, $requestInAspenDb);
+				}
+				if(
+					$requestInAspenDb->requestStatus == "RECEIVED"
+				){
+					$processedRequests[] = $this->createTemporaryHold($patron->id, $requestInAspenDb);
+				}
+			}
+		}
+		return [
+			'unavailable' => $openRequests,
+			'available' => $processedRequests
+		];
+	}
+
 	public function submitRequest(OCLCRSFGSetting $setting, User $patron, $requestFormData): array {
 		global $logger;
 		if (empty($this->_registryId)) {
@@ -269,6 +350,22 @@ class OCLCRSFGDriver {
 		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
 	}
 
+	private function getRequestFromOCLCRSFGWithId(OCLCRSFGSetting $setting, string $oclcRequestId): array|null {
+		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		$url = $setting->serviceBaseUrl . "/requests" . "/" . $oclcRequestId;
+		$curl = new CurlWrapper();
+		$customHeaders = [
+			"Authorization" => "Authorization: Bearer " . $this->accessToken->getToken(),
+		];
+		$curl->addCustomHeaders($customHeaders, false);
+		$curl->curl_connect($url);
+		$response = $curl->curlGetPage($url);
+		if (!$response) {
+			throw new Exception("No requests found with id $oclcRequestId");
+		}
+		return json_decode(json_encode(simplexml_load_string($response)), true)['responses'];
+	}
+
 	private function postToOCLCRSFG(string $serviceBaseUrl, OCLCRSFGRequest $newRequest): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$url = $serviceBaseUrl . "/requests";
@@ -309,6 +406,28 @@ class OCLCRSFGDriver {
 	}
 
 	// Helpers
+
+	private function createTemporaryHold($patronId, $request): Hold {
+		require_once ROOT_DIR . '/sys/User/Hold.php';
+		$curRequest = new Hold();
+		$curRequest->userId = $patronId;
+		$curRequest->type = 'interlibrary_loan';
+		$curRequest->isIll = true;
+		$curRequest->source = 'oclcRSFG';
+		$curRequest->sourceId = $request->catalogKey;
+		$curRequest->recordId = $request->catalogKey;
+		$curRequest->title = $request->title;
+		$curRequest->author = $request->author;
+		$curRequest->status = $request->requestStatus;
+		$curRequest->pickupLocationName = $request->pickupLocation;
+		$curRequest->cancelId = $request->oclcRequestId;
+		$curRequest->cancelable = false;
+		if ($request->requestStatus == 'REVIEW' || $request->requestStatus == 'REVIEWING') {
+			$curRequest->cancelable = true;
+		}
+		return $curRequest;
+	}
+
 	private function formatRequestBody(OCLCRSFGRequest $newRequest): object {
 		$illRequest = [];
 		$illRequest["requestStatus"] = "PROFILING";

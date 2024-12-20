@@ -890,6 +890,10 @@ class User extends DataObject {
 	}
 
 	function hasInterlibraryLoan(): bool {
+		return $this->hasVDXInterlibraryLoan() || $this->hasOCLCRSFGInterlibraryLoan();
+	}
+
+	function hasVDXInterlibraryLoan(): bool {
 		try {
 			$homeLocation = Location::getDefaultLocationForUser();
 			if ($homeLocation != null) {
@@ -915,6 +919,22 @@ class User extends DataObject {
 			}
 		} catch (Exception $e) {
 			//This happens if the tables aren't setup, ignore
+		}
+		return false;
+	}
+
+	function hasOCLCRSFGInterlibraryLoan(): bool {
+		try {
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$OCLCRSFGSettings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
+			if ($OCLCRSFGSettings->find(true)) {
+				return true;
+			}
+		} catch (Exception $e) {
+			//This happens if the tables are not installed yet
 		}
 		return false;
 	}
@@ -1896,13 +1916,24 @@ class User extends DataObject {
 			}
 
 			if ($source == 'all' || $source == 'interlibrary_loan') {
-				if ($this->hasInterlibraryLoan()) {
-					//For now, this is just VDX
+				if ($this->hasVDXInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/VdxDriver.php';
 					$driver = new VdxDriver();
 					$vdxRequests = $driver->getRequests($this);
 					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
 					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
+				}
+				if ($this->hasOCLCRSFGInterlibraryLoan()) {
+					require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+					require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+					$OCLCRSFGSettings = new OCLCRSFGSetting();
+					$OCLCRSFGSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcRSFGSettingsId);
+					if ($OCLCRSFGSettings->find(true)) {
+						$driver = new OCLCRSFGDriver();
+						$oclcRSFGRequests = $driver->getRequests($this, $OCLCRSFGSettings);
+						$allHolds = array_merge_recursive($allHolds, $oclcRSFGRequests);
+						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcRSFGRequests);
+					}
 				}
 			}
 			//Delete all existing holds
@@ -2061,7 +2092,7 @@ class User extends DataObject {
 			uasort($holdsToReturn['unavailable'], $holdSort);
 		}
 
-		if ($source == 'interlibrary_loan') {
+		if ($source == 'interlibrary_loan' && !$this->hasOCLCRSFGInterlibraryLoan()) {
 			unset($holdsToReturn['available']);
 		}
 

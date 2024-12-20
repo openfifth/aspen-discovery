@@ -2845,7 +2845,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 		if (UserAccount::isLoggedIn()) {
 			$user = UserAccount::getActiveUserObj();
-			if ($user->hasInterlibraryLoan()) {
+			if ($user->hasVDXInterlibraryLoan()) {
 				require_once ROOT_DIR . '/Drivers/VdxDriver.php';
 				$driver = new VdxDriver();
 				$vdxSummary = $driver->getAccountSummary($user);
@@ -2861,6 +2861,22 @@ class MyAccount_AJAX extends JSON_Action {
 					'success' => true,
 					'summary' => $vdxSummary->toArray(),
 				];
+			} elseif ($user->hasOCLCRSFGInterlibraryLoan()) {
+				require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+				$driver = new OCLCRSFGDriver();
+				$oclcRSFGSummary = $driver->getAccountSummary($user);
+				if ($user->getLinkedUsers() != null) {
+					/** @var User $user */
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$oclcRSFGSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+					}
+				}
+				$result = [
+					'success' => true,
+					'summary' => $oclcRSFGSummary->toArray(),
+				];
+
 			} else {
 				$result['message'] = 'Invalid for VDX';
 			}
