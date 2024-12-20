@@ -6,26 +6,9 @@ require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 	function launch(): void {
-		global $interface;
-
-		$stat = $_REQUEST['stat'];
-		if (!empty($_REQUEST['instance'])) {
-			$instanceName = $_REQUEST['instance'];
-		} else {
-			$instanceName = '';
-		}
-
-		$title = 'Aspen Discovery API Usage Graph';
-		$interface->assign('section', 'API');
-		$interface->assign('showCSVExportButton', true);
-		$interface->assign('graphTitle', $title);
-		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
-		$interface->assign('stat', $stat);
-		$interface->assign('propName', 'exportToCSV');
-		$title = $interface->getVariable('graphTitle');
-		$this->display('../Admin/usage-graph.tpl', $title);
+		$this->launchGraph('API');
 	}
+
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
@@ -37,13 +20,6 @@ class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 	function getActiveAdminSection(): string {
 		return 'system_reports';
-	}
-
-	function canView(): bool {
-		return UserAccount::userHasPermission([
-			'View Dashboards',
-			'View System Reports',
-		]);
 	}
 
 	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
