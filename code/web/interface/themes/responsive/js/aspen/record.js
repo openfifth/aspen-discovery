@@ -185,6 +185,26 @@ AspenDiscovery.Record = (function () {
 			return false;
 		},
 
+		showOCLCRSFGRequest: function(module, source, id) {
+			if (Globals.loggedIn){
+				document.body.style.cursor = "wait";
+				var url = Globals.path + "/" +  module + "/" + "AJAX?method=getOCLCRSFGRequestForm&recordSource=" + source + "&id=" + id;
+				$.getJSON(url, function(data){
+					document.body.style.cursor = "default";
+					if (data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			}else{
+				AspenDiscovery.Account.ajaxLogin(null, function(){
+				AspenDiscovery.Record.showOCLCRSFGRequest(module, source, id);
+				}, false);
+			}
+			return false;
+		},
+
 		showPlaceHoldEditions: function (module, source, id, volume, variationId) {
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldEditionsForm&recordSource=" + source;

@@ -93,6 +93,22 @@ function getVdxRequestAction($module, $source, $id) : array {
 	];
 }
 
+//OCLC RSFG (Resource Sharing For Groups) Requests
+function getOCLCRSFGRequestAction($module, $source, $id) : array {
+	return [
+		'title' => translate([
+			'text' => 'Request',
+			'isPublicFacing' => true,
+		]),
+		'url' => '',
+		'id' => "actionButton$id",
+		'onclick' => "return AspenDiscovery.Record.showOCLCRSFGRequest('$module', '$source', '$id');",
+		'requireLogin' => false,
+		'type' => 'OCLCRSFGRequest_request',
+		'btnType' => 'btn-OCLCRSFGRequest-request btn-action'
+	];
+}
+
 //PDF Actions
 function getViewSinglePdfAction($fileId) : array {
 	return [

@@ -1196,6 +1196,8 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 							$this->_actions[$variationId][] = getVdxRequestAction($this->getModule(), $source, $id);
 						} else if ($interLibraryLoanType == 'localIll') {
 							$this->_actions[$variationId][] = getLocalIllRequestAction($this->getModule(), $source, $id);
+						} else if ($interLibraryLoanType == 'oclc_resource_sharing_for_groups') {
+							$this->_actions[$variationId][] = getOCLCRSFGRequestAction($this->getModule(), $source, $id);
 						}
 					} else {
 						$this->_actions[$variationId][] = getHoldRequestAction($this->getModule(), $source, $id, $variationId);
