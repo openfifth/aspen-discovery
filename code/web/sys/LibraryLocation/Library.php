@@ -388,6 +388,7 @@ class Library extends DataObject {
 
 	//OCLC Resource Sharing For Groups
 	public $oclcRSFGSettingsId;
+	public $oclcRSFGFormId;
 
 	//Combined Results (Bento Box)
 	public /** @noinspection PhpUnused */
@@ -813,6 +814,16 @@ class Library extends DataObject {
 		$oclcRSFGSettings[-1] = 'none';
 		while ($oclcRSFGSetting->fetch()) {
 			$oclcRSFGSettings[$oclcRSFGSetting->id] = $oclcRSFGSetting->name;
+		}
+
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+		$oclcRSFGForm = new OCLCRSFGForm();
+		$oclcRSFGForm->orderBy('name');
+		$oclcRSFGForms = [];
+		$oclcRSFGForm->find();
+		$oclcRSFGForms[-1] = 'none';
+		while ($oclcRSFGForm->fetch()) {
+			$oclcRSFGForms[$oclcRSFGForm->id] = $oclcRSFGForm->name;
 		}
 
 		require_once ROOT_DIR . '/sys/Ebsco/EBSCOhostSetting.php';
@@ -3913,6 +3924,15 @@ class Library extends DataObject {
 						'values' => $oclcRSFGSettings,
 						'label' => 'OCLC Resource Sharing For Groups Settings',
 						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Settings selected',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+					'oclcRSFGFormsId' => [
+						'property' => 'oclcRSFGFormId',
+						'type' => 'enum',
+						'values' => $oclcRSFGForms,
+						'label' => 'OCLC Resource Sharing For Groups Form',
+						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Form selected',
 						'hideInLists' => true,
 						'default' => -1,
 					],
