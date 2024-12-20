@@ -205,6 +205,42 @@ AspenDiscovery.Record = (function () {
 			return false;
 		},
 
+		submitOCLCRSFGRequest: function(module, id) {
+			if (Globals.loggedIn){
+				document.body.style.cursor = "wait";
+				var params = {
+					'method': 'submitOCLCRSFGRequest',
+					title: $('#title').val(),
+					author: $('#author').val(),
+					publisher: $('#publisher').val(),
+					isbn: $('#isbn').val(),
+					issn: $('#issn').val(),
+					oclcNumber: $('#oclcNumber').val(),
+					uniqueIdentifierKey: $('#uniqueIdentifierKeySelect').val(),
+					uniqueIdentifierValue: $('#uniqueIdentifierValue').val(),
+					maximumFeeAmount: $('#maximumFeeAmount').val(),
+					acceptFee: $('#acceptFee').prop('checked'),
+					pickupLocation: $('#pickupLocationSelect').val(),
+					catalogKey: $('#catalogKey').val(),
+					note: $('#note').val()
+				};
+				var url = Globals.path + "/" + module + "/AJAX";
+				$.getJSON(url, params, function(data){
+					document.body.style.cursor = "default";
+					if (data.success) {
+						AspenDiscovery.showMessage(data.title, data.message, false, false);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message, false, false);
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			}else{
+				AspenDiscovery.Account.ajaxLogin(null, function(){
+					AspenDiscovery.Record.showOCLCRSFGRequest(module, source, id);
+				}, false);
+			}
+			return false;
+		},
+
 		showPlaceHoldEditions: function (module, source, id, volume, variationId) {
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldEditionsForm&recordSource=" + source;

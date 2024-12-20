@@ -500,6 +500,47 @@ class Record_AJAX extends Action {
 		return $results;
 
 	}
+
+	/** @noinspection PhpUnused */
+	function submitOCLCRSFGRequest(): array {
+		if (UserAccount::isLoggedIn()) {
+			require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			$OCLCRSFGSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcRSFGSettingsId);
+			if ($OCLCRSFGSettings->find(true)) {
+				$OCLCRSFGDriver = new OCLCRSFGDriver();
+				$results = $OCLCRSFGDriver->submitRequest($OCLCRSFGSettings, UserAccount::getActiveUserObj(), $_REQUEST, false);
+			} else {
+				$results = [
+					'title' => translate([
+						'text' => 'Invalid Configuration',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => "OCLC Resource Sharing For Groups Settings do not exist, please contact the library to make a request.",
+						'isPublicFacing' => true,
+					]),
+					'success' => false,
+				];
+			}
+		} else {
+			$results = [
+				'title' => translate([
+					'text' => 'Please login',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "You must be logged in.  Please close this dialog and login before placing your request.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		return $results;
+	}
+
 	/** @noinspection PhpUnused */
 	function getPlaceHoldForm() {
 		global $interface;
