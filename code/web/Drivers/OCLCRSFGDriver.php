@@ -11,7 +11,11 @@ class OCLCRSFGDriver {
 	private $accessToken;
 	private $_registryId;
 
-	public function __construct() {
+	public function __construct($registryId = null) {
+		if ($registryId) {
+			$this->_registryId = $registryId;
+			return;
+		}
 		$homeLocation = Location::getUserHomeLocation();
 		$this->_registryId = $homeLocation ? $homeLocation->oclcRegistryId : "" ;
 	}
