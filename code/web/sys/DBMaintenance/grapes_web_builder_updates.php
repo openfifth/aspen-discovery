@@ -83,5 +83,38 @@ function getGrapesWebBuilderUpdates() {
 				"INSERT INTO grapes_templates (templateName, templateContent) VALUES ('No Template', ' ')",
 			],
 		],
+		'add_grapes_templates_to_db' => [
+			'title' => 'Add Grapes Templates To DB',
+			'description' => 'Add grapes templates to db',
+			'sql' => [
+				'addTemplateFromJson'
+			],
+		],
    ];
+}
+
+function addTemplateFromJson(&$update) {
+	require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
+	$jsonFile = './web_builder/templates.json';
+
+	if (file_exists($jsonFile)) {
+		$jsonData = file_get_contents($jsonFile);
+
+		$jsonDecoded = json_decode($jsonData, true);
+
+		$templates = $jsonDecoded['templates'];
+
+		foreach ($templates as $preMadeTemplate) {
+			$template = new GrapesTemplate();
+
+			$template->addTemplate(
+				$preMadeTemplate['templateName'],
+				$preMadeTemplate['templateContent'],
+				$preMadeTemplate['htmlData'] ?? '',
+				$preMadeTemplate['cssData'] ?? ''
+			);
+		}
+		$update['success'] = true;
+
+	}
 }
