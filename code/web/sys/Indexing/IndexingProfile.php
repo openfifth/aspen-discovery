@@ -176,6 +176,7 @@ class IndexingProfile extends DataObject {
 
 	public $evergreenOrgUnitSchema;
 	public $index856Links;
+	public $index856LinkOnlyIfNoEcontentRecord;
 	public /** @noinspection PhpUnused */ $includePersonalAndCorporateNamesInTopics;
 
 	public $orderRecordsStatusesToInclude;
@@ -226,7 +227,8 @@ class IndexingProfile extends DataObject {
 			'orderRecordsToSuppressByDate',
 			'numRetriesForBibLookups',
 			'numMillisecondsToPauseAfterBibLookups',
-			'numExtractionThreads'
+			'numExtractionThreads',
+			'index856LinkOnlyIfNoEcontentRecord'
 		];
 	}
 
@@ -479,6 +481,16 @@ class IndexingProfile extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Index 856 links',
 				'description' => 'Whether or not 856 links with a first indicator of 4 and second indicator of 0 or 1 are indexed and treated as items.',
+				'defaultValue' => false,
+				'hideInLists' => true,
+				'forcesReindex' => true,
+			],
+
+			'index856LinkOnlyIfNoEcontentRecord' => [
+				'property' => 'index856LinkOnlyIfNoEcontentRecord',
+				'type' => 'checkbox',
+				'label' => 'Index 856 Links Only For Records Without eContent Items',
+				'description' => 'Whether or not records that have eContent items attached should be indexed by the 856 field when Index 856 Links is selected.',
 				'defaultValue' => false,
 				'hideInLists' => true,
 				'forcesReindex' => true,
