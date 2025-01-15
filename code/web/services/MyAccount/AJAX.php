@@ -3550,6 +3550,49 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	public function filterHolds($allHolds, $selectedUsers, $selectedHolds) {
+		if (!empty($selectedHolds) && !is_array($selectedHolds)) {
+			$selectedHoldsArray = [];
+			parse_str($selectedHolds, $parsedHolds);
+
+			if (isset($parsedHolds['selected'])) {
+				foreach ($parsedHolds['selected'] as $holdKey => $value) {
+					if (preg_match('/\|(\d+)\|/', $holdKey, $matches)) {
+						$selectedHoldsArray[] = (int)$matches[1];
+					}
+				}
+			}
+			$selectedHolds = $selectedHoldsArray;
+		}
+
+		$filteredHolds = [
+			'available' => [],
+			'unavailable' => [],
+		];
+
+		foreach (['available', 'unavailable'] as $type) {
+			foreach ($allHolds[$type] as $key => $hold) {
+				$includeHold = true;
+
+				if (!empty($selectedUsers)  && in_array($hold->userId, $selectedUsers)) {
+					$includeHold = false;
+				}
+
+				if (!empty($selectedHolds)) {
+					$recordIdMatched = in_array((int)$hold->recordId, $selectedHolds);
+					if (!$recordIdMatched) {
+						$includeHold = false;
+					}
+				}
+
+				if ($includeHold) {
+					$filteredHolds[$type][$key] = $hold;
+				}
+			}
+		}
+		return $filteredHolds;
+	}
+
 	/** @noinspection PhpUnused */
 	public function getHolds(): array {
 		global $interface;
@@ -3602,6 +3645,12 @@ class MyAccount_AJAX extends JSON_Action {
 				$showPlacedColumn = $user->showHoldPlacedDate();
 				$interface->assign('showPlacedColumn', $showPlacedColumn);
 
+				$selectedUsers = $this->setFilterLinkedUsers();
+				$interface->assign('selectedUsers', $selectedUsers);
+
+				$selectedHolds = $this->setFilterSelectedHolds();
+				$interface->assign('selectedHolds', $selectedHolds);
+
 				$location = new Location();
 				$pickupBranches = $location->getPickupBranches($user);
 				$interface->assign('numPickupBranches', count($pickupBranches));
@@ -3634,7 +3683,8 @@ class MyAccount_AJAX extends JSON_Action {
 					$availableHoldSortOptions['location'] = 'Pickup Location';
 				}
 
-				if (count($user->getLinkedUsers()) > 0) {
+				$linkedUsers = $user->getLinkedUsers();
+				if (count($linkedUsers) > 0) {
 					$unavailableHoldSortOptions['libraryAccount'] = 'Library Account';
 					$availableHoldSortOptions['libraryAccount'] = 'Library Account';
 				}
@@ -3643,6 +3693,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'available' => $availableHoldSortOptions,
 					'unavailable' => $unavailableHoldSortOptions,
 				]);
+				$interface->assign('linkedUsers', $linkedUsers);
 
 				if ($selectedAvailableSortOption == null || !array_key_exists($selectedAvailableSortOption, $availableHoldSortOptions)) {
 					$selectedAvailableSortOption = 'expire';
@@ -3664,7 +3715,7 @@ class MyAccount_AJAX extends JSON_Action {
 				global $offlineMode;
 				if (!$offlineMode) {
 					if ($user) {
-						$allHolds = $user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source);
+						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUsers, $selectedHolds);
 						$interface->assign('recordList', $allHolds);
 					}
 				}
@@ -3951,6 +4002,44 @@ class MyAccount_AJAX extends JSON_Action {
 			$sort = $_SESSION['sort_' . $sortType];
 		}
 		return $sort;
+	}
+
+	function setFilterLinkedUsers() {
+		global $interface;
+		$selectedUsers = [];
+		if (isset($_REQUEST['selectedUsers'])) {
+			$selectedUsers = explode(',', $_REQUEST['selectedUsers']);
+			if (isset($_SESSION)) {
+				$_SESSION['selectedUsers'] = $selectedUsers;
+			}
+		} elseif (isset($_SESSION['selectedUsers'])) {
+			$selectedUsers = $_SESSION['selectedUsers'];
+		}
+		$interface->assign('selectedUsers', $selectedUsers);
+
+		return $selectedUsers;
+	}
+
+	function setFilterSelectedHolds() {
+		global $interface;
+		$selectedHolds = [];
+
+		if (isset($_REQUEST['selectedHolds'])) {
+			$selectedHolds = json_decode($_REQUEST['selectedHolds'], true);
+
+			if (isset($_SESSION)) {
+				if (empty($selectedHolds)) {
+					unset($_SESSION['selectedHolds']);
+				} else {
+					$_SESSION['selectedHolds'] = $selectedHolds;
+				}
+			}
+		} elseif (isset($_SESSION['selectedHolds'])) {
+			$selectedHolds = $_SESSION['selectedHolds'];
+		}
+		$interface->assign('selectedHolds', $selectedHolds);
+
+		return $selectedHolds;
 	}
 
 	/**
