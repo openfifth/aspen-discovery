@@ -890,6 +890,10 @@ class User extends DataObject {
 	}
 
 	function hasInterlibraryLoan(): bool {
+		return $this->hasVDXInterlibraryLoan() || $this->hasOCLCRSFGInterlibraryLoan();
+	}
+
+	function hasVDXInterlibraryLoan(): bool {
 		try {
 			$homeLocation = Location::getDefaultLocationForUser();
 			if ($homeLocation != null) {
@@ -915,6 +919,22 @@ class User extends DataObject {
 			}
 		} catch (Exception $e) {
 			//This happens if the tables aren't setup, ignore
+		}
+		return false;
+	}
+
+	function hasOCLCRSFGInterlibraryLoan(): bool {
+		try {
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$OCLCRSFGSettings->whereAdd("id={$homeLibrary->oclcRSFGSettingsId}");
+			if ($OCLCRSFGSettings->find(true)) {
+				return true;
+			}
+		} catch (Exception $e) {
+			//This happens if the tables are not installed yet
 		}
 		return false;
 	}
@@ -1896,13 +1916,24 @@ class User extends DataObject {
 			}
 
 			if ($source == 'all' || $source == 'interlibrary_loan') {
-				if ($this->hasInterlibraryLoan()) {
-					//For now, this is just VDX
+				if ($this->hasVDXInterlibraryLoan()) {
 					require_once ROOT_DIR . '/Drivers/VdxDriver.php';
 					$driver = new VdxDriver();
 					$vdxRequests = $driver->getRequests($this);
 					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
 					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
+				}
+				if ($this->hasOCLCRSFGInterlibraryLoan()) {
+					require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+					require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+					$OCLCRSFGSettings = new OCLCRSFGSetting();
+					$OCLCRSFGSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcRSFGSettingsId);
+					if ($OCLCRSFGSettings->find(true)) {
+						$driver = new OCLCRSFGDriver();
+						$oclcRSFGRequests = $driver->getRequests($this, $OCLCRSFGSettings);
+						$allHolds = array_merge_recursive($allHolds, $oclcRSFGRequests);
+						$holdsToReturn = array_merge_recursive($holdsToReturn, $oclcRSFGRequests);
+					}
 				}
 			}
 			//Delete all existing holds
@@ -2061,7 +2092,7 @@ class User extends DataObject {
 			uasort($holdsToReturn['unavailable'], $holdSort);
 		}
 
-		if ($source == 'interlibrary_loan') {
+		if ($source == 'interlibrary_loan' && !$this->hasOCLCRSFGInterlibraryLoan()) {
 			unset($holdsToReturn['available']);
 		}
 
@@ -4577,6 +4608,11 @@ class User extends DataObject {
 				$sections['aspen_lida']->addAction(new AdminAction('Branded App Settings', 'Define settings for branded versions of Aspen LiDA.', '/AspenLiDA/BrandedAppSettings'), 'Administer Aspen LiDA Settings');
 			}
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Settings', 'Define settings for self-check in Aspen LiDA.', '/AspenLiDA/SelfCheckSettings'), 'Administer Aspen LiDA Self-Check Settings');
+		}
+
+		if (array_key_exists('OCLC Resource Sharing For Groups',  $enabledModules)) {
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Settings', 'Manage connections to OCLC Resource Sharing For Groups for various profiles', '/OCLCRSFG/OCLCRSFGSettings'), 'Administer OCLC Resource Sharing For Groups Settings');
+			$sections['ill_integration']->addAction(new AdminAction('Resource Sharing For Groups Forms', 'Create forms for patrons to use to submit an ILL by selecting the fields to be displayed', '/OCLCRSFG/OCLCRSFGForms'), 'Administer OCLC Resource Sharing For Groups Forms');
 		}
 
 		$sections['support'] = new AdminSection('Aspen Discovery Support');

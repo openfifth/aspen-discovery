@@ -386,6 +386,10 @@ class Library extends DataObject {
 	public $summonSettingsId;
 	public $showAvailableCoversInSummon;
 
+	//OCLC Resource Sharing For Groups
+	public $oclcRSFGSettingsId;
+	public $oclcRSFGFormId;
+
 	//Combined Results (Bento Box)
 	public /** @noinspection PhpUnused */
 		$enableCombinedResults;
@@ -586,6 +590,7 @@ class Library extends DataObject {
 			1 => 'Aspen Request System',
 			2 => 'ILS Request System',
 			3 => 'External Request Link',
+			4 => 'OCLC Resource Sharing For Groups'
 		];
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
 		if ($catalog == null || !$catalog->hasMaterialsRequestSupport()) {
@@ -802,6 +807,25 @@ class Library extends DataObject {
 			$summonSettings[$summonSetting->id] = $summonSetting->name;
 		}
 
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+		$oclcRSFGSetting = new OCLCRSFGSetting();
+		$oclcRSFGSetting->orderBy('name');
+		$oclcRSFGSettings = [];
+		$oclcRSFGSetting->find();
+		$oclcRSFGSettings[-1] = 'none';
+		while ($oclcRSFGSetting->fetch()) {
+			$oclcRSFGSettings[$oclcRSFGSetting->id] = $oclcRSFGSetting->name;
+		}
+
+		require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+		$oclcRSFGForm = new OCLCRSFGForm();
+		$oclcRSFGForm->orderBy('name');
+		$oclcRSFGForms = [];
+		$oclcRSFGForm->find();
+		$oclcRSFGForms[-1] = 'none';
+		while ($oclcRSFGForm->fetch()) {
+			$oclcRSFGForms[$oclcRSFGForm->id] = $oclcRSFGForm->name;
+		}
 
 		require_once ROOT_DIR . '/sys/Ebsco/EBSCOhostSetting.php';
 		$ebscohostSetting = new EBSCOhostSearchSetting();
@@ -3888,6 +3912,33 @@ class Library extends DataObject {
 				],
 			],
 
+			'oclcRSFGSection' => [
+				'property' => 'oclcRSFGSection',
+				'type' => 'section',
+				'label' => 'OCLC Resource Sharing For Groups',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'properties' => [
+					'oclcRSFGSettingsId' => [
+						'property' => 'oclcRSFGSettingsId',
+						'type' => 'enum',
+						'values' => $oclcRSFGSettings,
+						'label' => 'OCLC Resource Sharing For Groups Settings',
+						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Settings selected',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+					'oclcRSFGFormsId' => [
+						'property' => 'oclcRSFGFormId',
+						'type' => 'enum',
+						'values' => $oclcRSFGForms,
+						'label' => 'OCLC Resource Sharing For Groups Form',
+						'description' => 'Allow patrons of this library to make ILL requests through the OCLC Resource Sharing For Groups Form selected',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+				],
+			],
 
 			'casSection' => [
 				'property' => 'casSection',

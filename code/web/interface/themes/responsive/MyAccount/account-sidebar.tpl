@@ -95,7 +95,7 @@
 											</a>
 										</li>
 									{/if}
-									{if $user->getInterlibraryLoanType() == 'vdx'}
+                                    {if $user->getInterlibraryLoanType() == 'vdx' || $user->getInterlibraryLoanType() == 'oclc_resource_sharing_for_groups'}
 										<li class="myAccountLink">
 											&nbsp;&nbsp;&raquo;&nbsp;
 											<a href="/MyAccount/Holds?tab=interlibrary_loan" id="holdsInterlibraryLoan" title="View Interlibrary Loan Requests">

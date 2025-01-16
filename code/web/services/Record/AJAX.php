@@ -376,6 +376,171 @@ class Record_AJAX extends Action {
 		return $results;
 	}
 
+	function getOCLCRSFGRequestForm() {
+		global $interface;
+		if (UserAccount::isLoggedIn()) {
+			$user = UserAccount::getLoggedInUser();
+			$id = $_REQUEST['id'];
+			if (strpos($id, ':') > 0) {
+				[
+					,
+					$id,
+				] = explode(':', $id);
+			}
+			$recordSource = $_REQUEST['recordSource'];
+			$interface->assign('recordSource', $recordSource);
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			$activeLibrary = Library::getActiveLibrary();
+			$OCLCRSFGSettings->whereAdd("id=" . $activeLibrary->oclcRSFGSettingsId);
+			if ($OCLCRSFGSettings->find(true)) {
+				if ($activeLibrary != null) {
+					$rsfgForm = new OCLCRSFGForm();
+					$rsfgForm->id = $activeLibrary->OCLCRSFGFormId;
+					if ($rsfgForm->find(true)) {
+						$accountSummary = $user->getAccountSummary();
+						if ($accountSummary->isExpired()) {
+							$results = [
+								'title' => translate([
+									'text' => 'Request Title',
+									'isPublicFacing' => true,
+								]),
+								'modalBody' => translate([
+									'text' => 'Your account is not eligible to request titles from other libraries.  Please visit the library to renew your account.',
+									'isPublicFacing' => true,
+								]),
+								'modalButtons' => '',
+								'success' => true,
+							];
+						} elseif ($user->isBlockedFromIllRequests()) {
+							$results = [
+								'title' => translate([
+									'text' => 'Request Title',
+									'isPublicFacing' => true,
+								]),
+								'modalBody' => translate([
+									'text' => 'Your account is not eligible to request titles from other libraries.  Please visit the library to update your account.',
+									'isPublicFacing' => true,
+								]),
+								'modalButtons' => '',
+								'success' => true,
+							];
+						} else {
+							$marcRecord = new MarcRecordDriver($id);
+							$interface->assign('OCLCRSFGForm', $rsfgForm);
+							$rsfgFormFields = $rsfgForm->getFormFields($marcRecord);
+							$interface->assign('structure', $rsfgFormFields);
+							$interface->assign('rsfgFormFields', $interface->fetch('DataObjectUtil/ajaxForm.tpl'));
+							$results = [
+								'title' => translate([
+									'text' => 'Request Title',
+									'isPublicFacing' => true,
+								]),
+								'modalBody' => $interface->fetch("Record/oclc-rsfg-request-popup.tpl"),
+								'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.submitOCLCRSFGRequest(\'Record\', \'' . $id . '\')">' . translate([
+										'text' => 'Place Request',
+										'isPublicFacing' => true,
+									]) . '</a>',
+								'success' => true,
+							];
+						}
+					} else {
+						$results = [
+							'title' => translate([
+								'text' => 'Invalid Configuration',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => "Unable to find the specified form.",
+								'isPublicFacing' => true,
+							]),
+							'success' => false,
+						];
+					}
+				} else {
+					$results = [
+						'title' => translate([
+							'text' => 'Invalid Configuration',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => "Unable to determine home library to place request from.",
+							'isPublicFacing' => true,
+						]),
+						'success' => false,
+					];
+				}
+			} else {
+				$results = [
+					'title' => translate([
+						'text' => 'Invalid Configuration',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => " Settings do not exist, please contact the library to make a request.",
+						'isPublicFacing' => true,
+					]),
+					'success' => false,
+				];
+			}
+		} else {
+			$results = [
+				'title' => translate([
+					'text' => 'Please login',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "You must be logged in.  Please close this dialog and login before placing your request.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		return $results;
+
+	}
+
+	/** @noinspection PhpUnused */
+	function submitOCLCRSFGRequest(): array {
+		if (UserAccount::isLoggedIn()) {
+			require_once ROOT_DIR . '/Drivers/OCLCRSFGDriver.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGSetting.php';
+			require_once ROOT_DIR . '/sys/OCLCRSFG/OCLCRSFGForm.php';
+			$OCLCRSFGSettings = new OCLCRSFGSetting();
+			$OCLCRSFGSettings->whereAdd("id=" . Library::getActiveLibrary()->oclcRSFGSettingsId);
+			if ($OCLCRSFGSettings->find(true)) {
+				$OCLCRSFGDriver = new OCLCRSFGDriver();
+				$results = $OCLCRSFGDriver->submitRequest($OCLCRSFGSettings, UserAccount::getActiveUserObj(), $_REQUEST, false);
+			} else {
+				$results = [
+					'title' => translate([
+						'text' => 'Invalid Configuration',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => "OCLC Resource Sharing For Groups Settings do not exist, please contact the library to make a request.",
+						'isPublicFacing' => true,
+					]),
+					'success' => false,
+				];
+			}
+		} else {
+			$results = [
+				'title' => translate([
+					'text' => 'Please login',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => "You must be logged in.  Please close this dialog and login before placing your request.",
+					'isPublicFacing' => true,
+				]),
+				'success' => false,
+			];
+		}
+		return $results;
+	}
+
 	/** @noinspection PhpUnused */
 	function getPlaceHoldForm() {
 		global $interface;
