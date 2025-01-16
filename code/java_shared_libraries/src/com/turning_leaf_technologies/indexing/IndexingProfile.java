@@ -85,6 +85,7 @@ public class IndexingProfile extends BaseIndexingSettings {
 	private int orderRecordsToSuppressByDate;
 	private boolean checkSierraMatTypeForFormat;
 	private boolean index856Links;
+	private boolean index856LinkOnlyIfNoEcontentRecord;
 	private String treatUnknownAudienceAs;
 
 	//Fields for loading order information
@@ -263,6 +264,7 @@ public class IndexingProfile extends BaseIndexingSettings {
 
 		index856Links = indexingProfileRS.getBoolean("index856Links");
 		treatUnknownAudienceAs = indexingProfileRS.getString("treatUnknownAudienceAs");
+		index856LinkOnlyIfNoEcontentRecord = indexingProfileRS.getBoolean("index856LinkOnlyIfNoEcontentRecord");
 
 		//Custom Facet 1
 		this.customFacet1SourceField = indexingProfileRS.getString("customFacet1SourceField");
@@ -1104,6 +1106,14 @@ public class IndexingProfile extends BaseIndexingSettings {
 
 	public void setIndex856Links(boolean index856Links) {
 		this.index856Links = index856Links;
+	}
+
+	public boolean isIndex856LinkOnlyIfNoEcontentRecord() {
+		return index856LinkOnlyIfNoEcontentRecord;
+	}
+
+	public void setIndex856LinkOnlyIfNoEcontentRecord() {
+		this.index856LinkOnlyIfNoEcontentRecord = index856LinkOnlyIfNoEcontentRecord;
 	}
 
 	public String getTreatUnknownAudienceAs() {
