@@ -8948,7 +8948,14 @@ class MyAccount_AJAX extends JSON_Action {
 		if (!$campaignId) {
 			return[
 				'success' => false,
-           		 'message' => 'Campaign ID is missing.'
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 
@@ -8956,7 +8963,14 @@ class MyAccount_AJAX extends JSON_Action {
 		if (!$userId) {
 			return [
 				'success' => false,
-				'message' => 'User is not logged in.'
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'User is not logged in.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 
@@ -8968,14 +8982,28 @@ class MyAccount_AJAX extends JSON_Action {
 		if (!$campaign->find(true)) {
 			return [
 				'success' => false,
-				'message' => 'Campaign not found.'
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Campaign not found.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 
 		if ($userCampaign->find(true)) {
 			return [
 				'success' => false,
-				'message' => 'User is already enrolled in this campaign.'
+				'title' => translate([
+					'text' => 'Already Enrolled',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'User is already enrolled in this campaign.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 
@@ -8985,12 +9013,26 @@ class MyAccount_AJAX extends JSON_Action {
 			$campaign->update();
 			return [
 				'success' => true,
-				'message' => 'User enrolled in campaign successfully.'
+				'title' => translate([
+					'text' => 'Success',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'You have enrolled in the campaign successfully.',
+					'isPublicFacing' => true
+				])
 			];
 		} else {
 			return [
 				'success' => false,
-				'message' => 'Failed to enroll user in campaign.'
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Failed to enroll user in campaign.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 	}
@@ -9004,7 +9046,14 @@ class MyAccount_AJAX extends JSON_Action {
 		if (!$campaignId) {
 			return [
 				'success' => false,
-				'message' => 'Campaign ID is missing.'
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 
@@ -9012,7 +9061,14 @@ class MyAccount_AJAX extends JSON_Action {
 		if (!$userId) {
 			return [
 				'success' => false,
-				'message' => 'User is not logged in.'
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'User is not logged in.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 
@@ -9033,24 +9089,52 @@ class MyAccount_AJAX extends JSON_Action {
 
 					return [
 						'success' => true,
-						'message' => 'User has successfully unenrolled.'
+						'title' => translate([
+							'text' => 'Success',
+							'isPublicFacing' => true
+						]),
+						'message' => translate([
+							'text' => 'You have successfully unenrolled.',
+							'isPublicFacing' => true
+						])
 					];
 				} else {
 					return [
 						'success' => false,
-						'message' => 'Failed to unenroll.'
+						'title' => translate([
+							'text' => 'Error',
+							'isPublicFacing' => true
+						]),
+						'message' => translate([
+							'text' => 'Failed to unenroll.',
+							'isPublicFacing' => true
+						])
 					];
 				}
 			} else {
 				return [
 					'success' => false,
-					'message' => 'Campaign not found.'
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true
+					]),
+					'message' => translate([
+						'text' => 'Campaign not found.',
+						'isPublicFacing' => true
+					])
 				];
 			}
 		} else {
 			return [
 				'success' => false,
-				'message' => 'User is not enrolled in this campaign.'
+				'title' => translate([
+					'text' => 'User Not Enrolled',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'User is not enrolled in this campaign.',
+					'isPublicFacing' => true
+				])
 			];
 		}
 	}

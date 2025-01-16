@@ -2862,10 +2862,9 @@ AspenDiscovery.Account = (function () {
 				};
 				$.getJSON(url, params, function (data) {
 					if (data.success) {
-						alert('You have been enrolled in this campaign');
-						window.location.reload();
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 					} else {
-						alert('Enrollment failed: ' + data.message);
+						AspenDiscovery.showMessage(data.title, data.message);
 					}
 				}).fail(function(jqXHR, textStatus, errorThrown) {
 					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
@@ -2886,10 +2885,9 @@ AspenDiscovery.Account = (function () {
 				};
 				$.getJSON(url, params, function(data) {
 					if (data.success) {
-						alert('You have unenrolled from this campaign');
-						window.location.reload();
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 					} else {
-						alert('Failed to unenroll: ' + data.message);
+						AspenDiscovery.showMessage(data.title, data.message);
 					}
 				}).fail(function(jqXHR, textStatus, errorThrown) {
 					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);

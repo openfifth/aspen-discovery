@@ -8381,10 +8381,9 @@ AspenDiscovery.Account = (function () {
 				};
 				$.getJSON(url, params, function (data) {
 					if (data.success) {
-						alert('You have been enrolled in this campaign');
-						window.location.reload();
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 					} else {
-						alert('Enrollment failed: ' + data.message);
+						AspenDiscovery.showMessage(data.title, data.message);
 					}
 				}).fail(function(jqXHR, textStatus, errorThrown) {
 					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
@@ -8396,7 +8395,6 @@ AspenDiscovery.Account = (function () {
 			}
 		},
 		unenroll: function (campaignId, userId) {
-			console.log('unenroll');
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/MyAccount/AJAX";
 				var params = {
@@ -8406,10 +8404,9 @@ AspenDiscovery.Account = (function () {
 				};
 				$.getJSON(url, params, function(data) {
 					if (data.success) {
-						alert('You have unenrolled from this campaign');
-						window.location.reload();
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 					} else {
-						alert('Failed to unenroll: ' + data.message);
+						AspenDiscovery.showMessage(data.title, data.message);
 					}
 				}).fail(function(jqXHR, textStatus, errorThrown) {
 					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
@@ -17381,7 +17378,6 @@ AspenDiscovery.CommunityEngagement = function() {
      
             $.getJSON(url, params, 
                 function(data) {
-                    console.log(data);
                     if (data.success) {
                         $('#filteredCampaign').html(data.html);
                         filteredCampaign.style.display = "block"; 
