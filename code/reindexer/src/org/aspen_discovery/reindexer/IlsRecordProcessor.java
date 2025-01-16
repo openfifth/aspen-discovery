@@ -1387,6 +1387,10 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 	protected List<RecordInfo> loadUnsuppressedEContentItems(AbstractGroupedWorkSolr groupedWork, String identifier, org.marc4j.marc.Record record, StringBuilder suppressionNotes, RecordInfo mainRecordInfo, boolean hasParentRecord, boolean hasChildRecords){
 		List<RecordInfo> unsuppressedEcontentRecords = new ArrayList<>();
 		if (settings.isIndex856Links()) {
+			boolean hasEContentItems = !mainRecordInfo.getRelatedItems().isEmpty() && mainRecordInfo.getRelatedItems().stream().anyMatch(curItem->curItem.isEContent());
+			if (settings.isIndex856LinkOnlyIfNoEcontentRecord() && hasEContentItems) {
+				return unsuppressedEcontentRecords;
+			}
 			List<DataField> recordUrls = MarcUtil.getDataFields(record, 856);
 			if (recordUrls.isEmpty()) {
 				return unsuppressedEcontentRecords;

@@ -47,7 +47,7 @@ AspenDiscovery.IndexingClass = (function () {
 					'propertyRowtranslationMaps', 'FloatingSave', 'propertyRowindex856Links', 'propertyRowincludePersonalAndCorporateNamesInTopics',
 					'propertyRowcustomFacetSection', 'propertyRowcustomFacet1SourceField', 'propertyRowcustomFacet1ValuesToInclude', 'propertyRowcustomFacet1ValuesToExclude',
 					'propertyRowcustomFacet2SourceField', 'propertyRowcustomFacet2ValuesToInclude', 'propertyRowcustomFacet2ValuesToExclude',
-					'propertyRowcustomFacet3SourceField', 'propertyRowcustomFacet3ValuesToInclude', 'propertyRowcustomFacet3ValuesToExclude'
+					'propertyRowcustomFacet3SourceField', 'propertyRowcustomFacet3ValuesToInclude', 'propertyRowcustomFacet3ValuesToExclude', 'propertyRowindex856LinkOnlyIfNoEcontentRecord'
 				],
 				//Specific per class
 				Koha: ['propertyRowlastUpdateOfAuthorities'],
