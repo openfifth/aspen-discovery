@@ -26,10 +26,10 @@
                         <td>{$campaign->rewardName}</td>
                         <td>{$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}</td>
                         <td>
-                            <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
+                            <button class="btn btn-primary btn-sm" onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
                         </td>
                         <td>
-                            <button onclick="toggleYourCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            <button class="btn btn-primary btn-sm" onclick="toggleYourCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                         </td>
                     </tr>
                         {* <tr id="campaignInfo_{$resultIndex}" style="display:none;"> *}
@@ -100,15 +100,15 @@
                         {/if}
                         {if $campaign->enrolled}
                         <td>
-                            <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
+                            <button class="btn btn-primary btn-sm" onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
                         </td>
                         {else}
                             <td>
-                                <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
+                                <button class="btn btn-sm btn-primary" onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
                             </td>
                         {/if}
                         <td>
-                            <button onclick="toggleActiveCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                            <button class="btn btn-primary btn-sm" onclick="toggleActiveCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                         </td>
                     </tr>
                         {* <tr id="campaignInfo_{$resultIndex}" style="display:none;"> *}
@@ -181,15 +181,15 @@
                         {/if}
                         {if $campaign->enrolled}
                             <td>
-                                <button onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
+                                <button class="btn btn-primary btn-sm" onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
                             </td>
                             {else}
                                 <td>
-                                    <button onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
+                                    <button class="btn btn-primary btn-sm" onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
                                 </td>
                             {/if}
                             <td>
-                                <button onclick="toggleUpcomingCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                                <button class="btn btn-primary btn-sm" onclick="toggleUpcomingCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                             </td>
                     </tr>
                     <tr id="upcomingCampaigns_{$resultIndex}" class="campaign-dropdown" style="display:none;">
@@ -234,7 +234,7 @@
                     <td>{$campaign->endDate}</td>
                     <td>{$campaign->rewardName}</td>
                     <td>
-                        <button onclick="togglePastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                        <button class="btn btn-primary btn-small" onclick="togglePastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                     </td>
                 </tr>
                 <tr id="pastCampaigns_{$resultIndex}" class="campaign-dropdown" style="display:none;">
@@ -284,7 +284,7 @@
                              {/if}
                              </td>
                              <td>
-                                <button onclick="toggleYourPastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
+                                <button class="btn btn-primary btn-sm" onclick="toggleYourPastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                             </td>
                         </tr>
                         <tr id="yourPastCampaigns_{$resultIndex}" style="display:none;">
