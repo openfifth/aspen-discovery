@@ -75,6 +75,13 @@ function getUpdates25_02_00(): array {
 		//kodi
 
 		//alexander - PTFS-Europe
+		'readd_record_driver_column_to_indexing_profiles' => [
+			'title' => 'Readd Record Driver Column',
+			'description' => 'Readd record driver column to indexing profiles',
+			'sql' => [
+				"ALTER TABLE indexing_profiles ADD COLUMN recordDriver varchar(100) not null default 'MarcRecordDriver'"
+			],
+		],
 
 		//chloe - PTFS-Europe
 

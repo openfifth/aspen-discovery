@@ -216,6 +216,9 @@ class IndexingProfile extends DataObject {
 		$numMillisecondsToPauseAfterBibLookups;
 	public /** @noinspection PhpUnused */
 		$numExtractionThreads;
+	public /** @noinspection PhpUnused */
+		$recordDriver;
+
 
 	private $_translationMaps;
 	private $_timeToReshelve;
@@ -337,6 +340,16 @@ class IndexingProfile extends DataObject {
 						'serverValidation' => 'validateRecordUrlComponent',
 					],
 				],
+			],
+			'recordDriver' => [
+				'property' => 'recordDriver',
+				'hiddenByDefault' => true,
+				'type' => 'text',
+				'label' => 'Record Driver',
+				'maxLength' => 50,
+				'description' => 'The record driver to use while displaying information in Aspen Discovery',
+				'required' => true,
+				'default' => 'MarcRecordDriver',
 			],
 		];
 
