@@ -42,7 +42,7 @@
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
-                                        <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
+                                        <th>{translate text="Progress Percentage" isPublicFacing=true}</th>
                                     </tr>
                                 </thead>
                                     <tbody>
@@ -122,7 +122,7 @@
                                         <th>{translate text="Milestone" isPublicFacing=true}</th>
                                         <th>{translate text="Milestone Reward" isPublicFacing=true}</th>
                                         <th>{translate text="Progress Towards Milestone" isPublicFacing=true}</th>
-                                        <th>{translate text="Progess Percentage" isPublicFacing=true}</th>
+                                        <th>{translate text="Progress Percentage" isPublicFacing=true}</th>
                                     </tr>
                                 </thead>
                                     <tbody>
