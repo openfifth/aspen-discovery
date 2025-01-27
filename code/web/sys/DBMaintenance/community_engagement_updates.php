@@ -214,5 +214,18 @@ function getCommunityEngagementUpdates() {
                 "ALTER TABLE ce_reward ADD COLUMN badgeImage VARCHAR(255) NULL"
             ],
         ],
+        'update_community_engagement_roles' => [
+            'title' => 'Update Community Engagement Roles',
+            'description' => 'Alter the community engagement roles placement',
+            'sql' => [
+                "DELETE FROM role_permissions WHERE permissionId = (SELECT id FROM permissions WHERE name='Administer Community Module')",
+                "DELETE FROM permissions 
+                WHERE sectionName = 'Community'
+                AND name = 'Administer Community Module'",
+                "INSERT INTO permissions (sectionName, name, requiredModule, weight, description)
+                VALUES ('Primary Configuration', 'Administer Community Module', 'Community', 180, 'Allows the user to create rewards, milestones and campaigns')",
+                "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Community Module'))"
+            ],
+        ],
     ];
 }
