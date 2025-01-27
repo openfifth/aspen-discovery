@@ -21,7 +21,7 @@ add_action('after_object_insert', 'after_checkout_insert', function ($value) {
         if (_campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone))
             return;
 
-        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId);
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId, $value->groupedWorkId);
     }
     return;
 });
@@ -44,7 +44,7 @@ add_action('after_object_insert', 'after_hold_insert', function ($value) {
         if (_campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone))
             return;
 
-        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId);
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId, $value->groupedWorkId);
     }
     return;
 });
@@ -58,16 +58,16 @@ add_action('after_object_insert', 'after_hold_insert', function ($value) {
  * @param $value UserList() object
  */
 
-add_action('after_object_insert', 'after_list_insert', function ($value) {
-    $campaignMilestone = CampaignMilestone::getCampaignMilestonesToUpdate($value, 'user_list', $value->user_id);
-    if (!$campaignMilestone)
-        return;
+// add_action('after_object_insert', 'after_list_insert', function ($value) {
+//     $campaignMilestone = CampaignMilestone::getCampaignMilestonesToUpdate($value, 'user_list', $value->user_id);
+//     if (!$campaignMilestone)
+//         return;
 
-    while ($campaignMilestone->fetch()) {
-        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->user_id);
-    }
-    return;
-});
+//     while ($campaignMilestone->fetch()) {
+//         $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->user_id);
+//     }
+//     return;
+// });
 
 /**
  * after_work_review_insert
@@ -84,7 +84,7 @@ add_action('after_object_insert', 'after_work_review_insert', function ($value) 
         return;
 
     while ($campaignMilestone->fetch()) {
-        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId);
+        $campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId, $value->groupedRecordPermanentId);
     }
     return;
 });
