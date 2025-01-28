@@ -3553,7 +3553,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	public function filterHolds($allHolds, $selectedUsers, $selectedHolds) {
+	public function filterHolds(array $allHolds, array $selectedUsers, $selectedHolds): array {
 		if (!empty($selectedHolds) && !is_array($selectedHolds)) {
 			$selectedHoldsArray = [];
 			parse_str($selectedHolds, $parsedHolds);
@@ -4007,7 +4007,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return $sort;
 	}
 
-	function setFilterLinkedUsers() {
+	function setFilterLinkedUsers(): array {
 		global $interface;
 		$selectedUsers = [];
 		if (isset($_REQUEST['selectedUsers'])) {
