@@ -3560,8 +3560,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 			if (isset($parsedHolds['selected'])) {
 				foreach ($parsedHolds['selected'] as $holdKey => $value) {
-					if (preg_match('/\|(\d+)\|/', $holdKey, $matches)) {
-						$selectedHoldsArray[] = (int)$matches[1];
+					if (preg_match('/(\d+)\|(\d+)\|/', $holdKey, $matches)) {
+						$selectedHoldsArray[] = [
+							'userId' => (int)$matches[1],
+							'recordId' => (int)$matches[2],
+						];
 					}
 				}
 			}
@@ -3582,8 +3585,19 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 
 				if (!empty($selectedHolds)) {
-					$recordIdMatched = in_array((int)$hold->recordId, $selectedHolds);
-					if (!$recordIdMatched) {
+					$matchFound = false;
+					foreach ($selectedHolds as $selectedHold) {
+
+						$holdRecordId = intval(trim($hold->recordId));
+						$selectedHoldRecordId = intval(trim($selectedHold['recordId']));
+						$holdUserId = intval(trim($hold->userId));
+						$selectedHoldUserId = intval(trim($selectedHold['userId']));
+						if ($holdRecordId == $selectedHoldRecordId && $holdUserId == $selectedHoldUserId){
+							$matchFound = true;
+							break;
+						}
+					}
+					if (!$matchFound) {
 						$includeHold = false;
 					}
 				}
