@@ -205,17 +205,23 @@ class SAMLAuthentication{
 		$ssoArray = $this->mapSAMLAttributesToSSOArray($attributes);
 
 		if($this->ssoAuthOnly === false) {
-			$ilsUserArray = $this->setupILSUser($ssoArray);
-			if(!$this->validateWithILS($ssoArray)) {
-				if($this->selfRegister($ilsUserArray)) {
-					return $this->validateWithILS($ssoArray);
-				} else {
+			  $ilsUserArray = $this->setupILSUser($ssoArray);
+			  if(!$this->validateWithILS($ssoArray)) {
+				if ($this->config->createUserInIls) {
+					if($this->selfRegister($ilsUserArray)) {
+						return $this->validateWithILS($ssoArray);
+					} else {
 					AspenError::raiseError(new AspenError('Unable to register a new account with ILS during SAML authentication.'));
+					return false;
+					}
+				} else {
+					AspenError::raiseError(new AspenError('User does not exist in the ILS and autocreation of ILS users is disabled.'));
 					return false;
 				}
 			} else {
 				return $this->validateWithILS($ssoArray);
 			}
+			
 		} else {
 			if(!$this->validateWithAspen($this->uid)) {
 				$newUser = $this->selfRegisterAspenOnly($ssoArray);
