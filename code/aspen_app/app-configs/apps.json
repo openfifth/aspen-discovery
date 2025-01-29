@@ -1,0 +1,23 @@
+{
+	"LiDA-Europe": {
+	  "name": "Aspen-LiDA",
+	  "slug": "aspen-lida",
+	  "scheme": "aspenlida",
+	  "easId": "d0550b19-7df2-4a61-9fe1-e063f51e778e",
+	  "reverseDns": "com.jacobomara9011.aspenlida",
+	  "discoveryUrl": "https://greenhouse.aspendiscovery.co.uk/",
+	  "greenhouseUrl": "https://greenhouse.aspendiscovery.co.uk/",
+	  "libraryId": "1",
+	  "themeId": "1",
+	  "background": "#ffffff",
+	  "sentryProject": "aspen-lida",
+	  "sentryAuth": "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",
+	  "sentryDsn": "https://148acf47870cac6cce07e74327a60e0c@o4506319477604352.ingest.us.sentry.io/4506319478980608",
+	  "ascAppId": "6475778273",
+	  "appleTeamId": "A2N3J9ACDY",
+	  "ascApiKeyPath": "0",
+	  "ascApiKeyIssuerId": "e5007c12-0b4e-4d61-b7c0-0fe5d0a00e02",
+	  "ascApiKeyId": "6D59Y34BU4",
+	  "googleServiceKeyPath": "./GOOGLE_SERVICES_JSON"
+	}
+  }
