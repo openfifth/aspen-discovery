@@ -20,6 +20,7 @@ class Campaign extends DataObject {
     public $unenrollmentCounter;
     public $currentEnrollments;
     public $campaignReward;
+    public $userAgeRange;
 
     /** @var AvailableMilestones[] */
     private $_availableMilestones;
@@ -111,6 +112,15 @@ class Campaign extends DataObject {
 				'values' => $libraryList,
 				'hideInLists' => false,
 			],
+            'userAgeRange' => [
+                'property' => 'userAgeRange',
+                'type' => 'text',
+                'label' => 'User Age Range',
+                'description' => 'Define the age range for this campaign e.g. "14-18", "14+", "All Ages")',
+                'default' => 'All Ages',
+                'maxLength' => 255,
+                'hideInLists' => false,
+            ],
         ];
     }
 
@@ -349,10 +359,24 @@ class Campaign extends DataObject {
         if (!UserAccount::isLoggedIn() || UserAccount::getActiveUserObj()->isAspenAdminUser())
             return parent::find($fetchFirst, $requireOneMatchToReturn);
 
-        $this->joinAdd(new CampaignPatronTypeAccess(), 'INNER', 'ce_campaign_patron_type_access', 'id', 'campaignId');
-        $this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . UserAccount::getActiveUserObj()->getPTypeObj()->id . "'");
-        $this->joinAdd(new CampaignLibraryAccess(), 'INNER', 'ce_campaign_library_access', 'id', 'campaignId');
-        $this->whereAdd("ce_campaign_library_access.libraryId = '" . UserAccount::getActiveUserObj()->getHomeLibrary()->libraryId . "'");
+        $this->joinAdd(new CampaignPatronTypeAccess(), 'LEFT', 'ce_campaign_patron_type_access', 'id', 'campaignId');
+        $this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . UserAccount::getActiveUserObj()->getPTypeObj()->id . "' OR ce_campaign_patron_type_access.patronTypeId IS NULL");
+        $this->joinAdd(new CampaignLibraryAccess(), 'LEFT', 'ce_campaign_library_access', 'id', 'campaignId');
+        $this->whereAdd("ce_campaign_library_access.libraryId = '" . UserAccount::getActiveUserObj()->getHomeLibrary()->libraryId . "' OR NOT EXISTS (SELECT 1 FROM ce_campaign_library_access WHERE ce_campaign_library_access.campaignId = ce_campaign.id)");
+        $userAge = (int)UserAccount::getActiveUserObj()->getAge();
+        $ageCondition = "(
+            userAgeRange IS NULL OR
+            userAgeRange = '' OR
+            userAgeRange = 'All Ages' OR
+            (userAgeRange LIKE 'Under %' AND $userAge < CAST(SUBSTRING_INDEX(userAgeRange, ' ', -1) AS UNSIGNED)) OR
+            (userAgeRange LIKE 'Over %' AND $userAge > CAST(SUBSTRING_INDEX(userAgeRange, ' ', -1) AS UNSIGNED)) OR
+            (userAgeRange LIKE '%+' AND $userAge >= CAST(LEFT(userAgeRange, LOCATE('+', userAgeRange) -1) AS UNSIGNED)) OR
+            (userAgeRange LIKE '%-%' AND $userAge BETWEEN
+                CAST(LEFT(userAgeRange, LOCATE('-', userAgeRange) -1) AS UNSIGNED) AND
+                CAST(SUBSTRING_INDEX(userAgeRange, '-', -1) AS UNSIGNED)
+            )
+        )";
+        $this->whereAdd($ageCondition);
         return parent::find($fetchFirst, $requireOneMatchToReturn);
 	}
 

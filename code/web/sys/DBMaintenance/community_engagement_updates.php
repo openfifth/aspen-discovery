@@ -227,5 +227,19 @@ function getCommunityEngagementUpdates() {
                 "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Community Module'))"
             ],
         ],
+        'add_date_of_birth_to_user' => [
+            'title' => 'Add Date Of Birth To User',
+            'description' => 'Add the date of birth to the user object',
+            'sql' => [
+                "ALTER TABLE user ADD COLUMN dateOfBirth DATE"
+            ],
+        ],
+        'add_user_age_range_to_campaign' => [
+            'title' => 'Add User Age Range To Campaign',
+            'description' => 'Add an age range to the campaign',
+            'sql' => [
+                "ALTER TABLE ce_campaign ADD COLUMN userAgeRange VARCHAR(255) DEFAULT 'All Ages'"
+            ],
+        ],
     ];
 }

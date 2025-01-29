@@ -1107,7 +1107,7 @@ class Koha extends AbstractIlsDriver {
 		global $logger;
 
 		/** @noinspection SqlResolve */
-		$sql = "SELECT *, borrowernumber, cardnumber, surname, firstname, streetnumber, streettype, address, address2, city, state, zipcode, country, email, phone, mobile, categorycode, dateexpiry, password, userid, branchcode, opacnote, privacy from borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patronId) . "';";
+		$sql = "SELECT *, borrowernumber, cardnumber, surname, firstname, streetnumber, streettype, address, address2, city, state, zipcode, country, email, phone, mobile, categorycode, dateexpiry, password, userid, branchcode, opacnote, privacy, dateofbirth from borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patronId) . "';";
 
 		$userExistsInDB = false;
 		$lookupUserResult = mysqli_query($this->dbConnection, $sql, MYSQLI_USE_RESULT);
@@ -1229,6 +1229,7 @@ class Koha extends AbstractIlsDriver {
 			$user->ils_password = $password;
 			$user->email = $userFromDb['email'];
 			$user->patronType = $userFromDb['categorycode'];
+			$user->dateOfBirth = $userFromDb['dateofbirth'];
 
 			$user->_address1 = trim($userFromDb['streetnumber'] . ' ' . $userFromDb['address']);
 			$user->_address2 = $userFromDb['address2'];

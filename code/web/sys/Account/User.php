@@ -52,6 +52,7 @@ class User extends DataObject {
 	public $userCookiePreferenceLocalAnalytics;
 	public $holdInfoLastLoaded;
 	public $checkoutInfoLastLoaded;
+	public $dateOfBirth;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
@@ -3107,6 +3108,24 @@ class User extends DataObject {
 			}
 		}
 		return $this->_pTypeObj;
+	}
+
+	/**
+	 * Get the user's age based on their date of birth.
+	 * 
+	 * @return int|null The user's age or null if date of birth is not set.
+	*/
+	public function getAge(): ?int {
+		if (empty($this->dateOfBirth)) {
+			return null;
+		}
+
+		$dob = new DateTime($this->dateOfBirth);
+		$today = new DateTime();
+
+		$age = $dob->diff($today)->y;
+
+		return $age;
 	}
 
 	public function updatePatronInfo($canUpdateContactInfo, $fromMasquerade = false) {
