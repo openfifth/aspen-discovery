@@ -1115,6 +1115,12 @@ class User extends DataObject {
 		if ($this->firstname === null) {
 			$this->firstname = '';
 		}
+		if ($this->lastname === null) {
+			$this->lastname = '';
+		}
+		if ($this->displayName === null) {
+			$this->displayName = '';
+		}
 		if ($context == 'development') {
 			$this->source = 'development';
 			$this->homeLocationId = 0;
