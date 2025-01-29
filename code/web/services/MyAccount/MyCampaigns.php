@@ -58,7 +58,6 @@ class MyCampaigns extends MyAccount {
 
             //Find out if user is enrolled in campaign
             $campaign->enrolled = $campaign->isUserEnrolled($userId);
-
             //Find out if campaign is active
             $campaign->isActive = isset($activeCampaigns[$campaignId]);
 
@@ -66,7 +65,13 @@ class MyCampaigns extends MyAccount {
             $campaign->isUpcoming = isset($upcomingCampaigns[$campaignId]);
 
             //Get campaign reward name
-            $campaign->rewardName = $campaign->getRewardName();
+            $rewardDetails = $campaign->getRewardDetails();
+            if ($rewardDetails) {
+                $campaign->rewardName = $rewardDetails['name'];
+                $campaign->rewardType = $rewardDetails['rewardType'];
+                $campaign->badgeImage = $rewardDetails['badgeImage'];
+                $campaign->rewardExists = $rewardDetails['rewardExists'];
+            }
 
             // if ($campaign->enrolled) {
                 //Fetch milestones for this campaign

@@ -23,7 +23,12 @@
                         <td>{$campaign->name}</td>
                         <td>{$campaign->startDate}</td>
                         <td>{$campaign->endDate}</td>
-                        <td>{$campaign->rewardName}</td>
+                        <td>
+                            {$campaign->rewardName}
+                            {if $campaign->rewardType === 1 && $campaign->rewardExists}
+                                <img src="{$campaign->badgeImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
+                            {/if}
+                        </td>
                         <td>{$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}</td>
                         <td>
                             <button class="btn btn-primary btn-sm" onclick="AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});">{translate text="Unenroll" isPublicFacing=true}</button>
@@ -49,7 +54,12 @@
                                     {foreach from=$campaign->milestones item="milestone"}
                                         <tr>
                                             <td>{$milestone->name}</td>
-                                            <td>{$milestone->rewardName}</td>
+                                            <td>
+                                                {$milestone->rewardName}
+                                                 {if $milestone->rewardType === 1 && $milestone->rewardExists}
+                                                    <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
+                                                {/if}
+                                            </td>
                                             <td>
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
@@ -91,7 +101,12 @@
                 {if $campaign->isActive}
                     <tr>
                         <td>{$campaign->name}</td>
-                        <td>{$campaign->rewardName}</td>
+                        <td>
+                            {$campaign->rewardName}
+                            {if $campaign->rewardType === 1 && $campaign->rewardExists}
+                                <img src="{$campaign->badgeImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
+                            {/if}
+                        </td>
                         <td>{$campaign->endDate}</td>
                         {if $campaign->enrolled}
                             <td>{translate text="Enrolled" isPublicFacing=true}</td>
@@ -129,7 +144,12 @@
                                     {foreach from=$campaign->milestones item="milestone"}
                                         <tr>
                                             <td>{$milestone->name}</td>
-                                            <td>{$milestone->rewardName}</td>
+                                            <td>
+                                                {$milestone->rewardName}
+                                                 {if $milestone->rewardType === 1 && $milestone->rewardExists}
+                                                    <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
+                                                {/if}
+                                            </td>
                                             <td>
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
@@ -172,7 +192,12 @@
                 {if $campaign->isUpcoming}
                     <tr>
                         <td>{$campaign->name}</td>
-                        <td>{$campaign->rewardName}</td>
+                        <td>
+                            {$campaign->rewardName}
+                            {if $campaign->rewardType === 1 && $campaign->rewardExists}
+                                <img src="{$campaign->rewardImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
+                            {/if}
+                        </td>
                         <td>{$campaign->startDate}</td>
                         {if $campaign->enrolled}
                             <td>{translate text="Enrolled" isPublicFacing=true}</td>
@@ -206,7 +231,12 @@
                                     {foreach from=$campaign->milestones item="milestone"}
                                         <tr>
                                             <td>{$milestone->name}</td>
-                                            <td>{$milestone->rewardName}</td>
+                                            <td>
+                                                {$milestone->rewardName}
+                                                {if $milestone->rewardType === 1 && $milestone->rewardExists}
+                                                    <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
+                                                {/if}
+                                            </td>
                                         </tr>                                 
                                     {/foreach}
                                     </tbody>
@@ -232,7 +262,12 @@
                     <td>{$campaign->name}</td>
                     <td>{$campaign->startDate}</td>
                     <td>{$campaign->endDate}</td>
-                    <td>{$campaign->rewardName}</td>
+                    <td>
+                        {$campaign->rewardName}
+                        {if $campaign->rewardType === 1 && $campaign->rewardExists}
+                            <img src="{$campaign->rewardImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
+                        {/if}
+                    </td>
                     <td>
                         <button class="btn btn-primary btn-small" onclick="togglePastCampaignInfo({$resultIndex});">{translate text="Campaign Information" isPublicFacing=true}</button>
                     </td>
@@ -250,7 +285,12 @@
                                 {foreach from=$campaign->milestones item="milestone"}
                                     <tr>
                                         <td>{$milestone->name}</td>
-                                        <td>{$milestone->rewardName}</td>
+                                        <td>
+                                            {$milestone->rewardName}
+                                            {if $milestone->rewardType === 1 && $milestone->rewardExists}
+                                                <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
+                                            {/if}
+                                        </td>
                                     </tr>
                                 {/foreach}
                             </tbody>
@@ -278,7 +318,10 @@
                             <td>{$campaign->startDate}</td>
                             <td>{$campaign->endDate}</td>
                             <td>
-                            {$campaign->rewardName}<br>
+                            {$campaign->rewardName}
+                            {if $campaign->rewardType === 1 && $campaign->rewardExists}
+                                <img src="{$campaign->rewardImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
+                            {/if}<br>
                              {if $campaign->campaignRewardGiven}
                                 <strong>{translate text="Reward Received"}</strong>
                              {/if}
@@ -307,7 +350,12 @@
                                                     {$milestone->progress}%
                                                 </div>
                                             </td>
-                                            <td>{$milestone->rewardName}</td>
+                                            <td>
+                                                {$milestone->rewardName}
+                                                {if $milestone->rewardType === 1 && $milestone->rewardExists}
+                                                    <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
+                                                {/if}
+                                            </td>
                                             <td>
                                                 {if $milestone->rewardGiven}
                                                     {translate text="Reward Given" isPublicFacing=true}

@@ -274,11 +274,16 @@ class Campaign extends DataObject {
         return $this->_availableMilestones;
     }
 
-    public function getRewardName() {
+    public function getRewardDetails() {
         $reward = new Reward();
         $reward->id = $this->campaignReward;
         if ($reward->find(true)) {
-            return $reward->name;
+            return [
+                'name' => $reward->name,
+                'rewardType' => $reward->rewardType,
+                'badgeImage' => $reward->getDisplayUrl(),
+                'rewardExists' => !empty($reward->badgeImage),
+            ];
         }
         return null;
     }
@@ -592,11 +597,27 @@ class Campaign extends DataObject {
                 $campaignReward = new Reward();
                 $campaignReward->id = $campaign->campaignReward;
                 if ($campaignReward->find(true)) {
+                    $pastCampaignList[$campaign->id]->rewardId = $campaignReward->id;
                     $pastCampaignList[$campaign->id]->rewardName = $campaignReward->name;
+                    $pastCampaignList[$campaign->id]->rewardType = $campaignReward->rewardType;
+                    $pastCampaignList[$campaign->id]->rewardImage = $campaignReward->getDisplayUrl();
+                    if (!empty($campaignReward->badgeImage)) {
+                        $pastCampaignList[$campaign->id]->rewardExists = true;
+                    }
                 }
     
                 // Fetch campaign milestones and their rewards using mapping
                 $milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
+                // foreach ($milestones as $milestone) {
+                //     $milestoneReward = new Reward();
+                //     $milestoneReward->id = $milestone->campaignReward;
+                //     if ($milestoneReward->find(true)) {
+                //         $milestone->rewardName = $milestoneReward->name;
+                //         $milestone->rewardType = $milestone->rewardType;
+                //         $milestone->rewardImage = $milestoneReward->getDisplayUrl();
+                //         $milestone->rewardExists = !empty($milestoneReward->badgeImage);
+                //     }
+                // }
                 $pastCampaignList[$campaign->id]->milestones = $milestones;
     
                 // Check if user is enrolled
