@@ -1,4 +1,5 @@
 {assign var="hideCoversFormDisplayed" value=false}
+{assign var="linkedUsersDropdownDisplayed" value=false}
 {foreach from=$recordList item=sectionData key=sectionKey}
 	<h2>{if $sectionKey == 'available'}{translate text="Holds Ready For Pickup" isPublicFacing=true}{else}{if $source=='interlibrary_loan'}{translate text="Pending Requests" isPublicFacing=true}{else}{translate text="Pending Holds" isPublicFacing=true}{/if}{/if}</h2>
 	<p class="alert alert-info">
@@ -32,7 +33,7 @@
 				{/foreach}
 			</select>
 
-			{if count($linkedUsers) > 0}
+			{if count($linkedUsers) > 0 && empty($linkedUsersDropdownDisplayed)}
 				<div id="linkedUsersDropdownContainer" class="form-group d-flex align-items-center mt-2 mt-md-0 ms-md-3">
 					<label for="linkedUsersDropdown" class="control-label me-2 mb-0">{translate text="Linked Users" isPublicFacing=true}&nbsp;</label>
 					<select id="linkedUsersDropdown" class="form-control me-2 mt-2 mt-md-0" name="linkedUserIds[]" multiple="multiple" size="2">
@@ -45,6 +46,7 @@
 						{translate text="Hide Users" isPublicFacing=true}
 					</button>
 				</div>
+				{assign var="linkedUsersDropdownDisplayed" value=true}
 			{/if}
 
 			{if empty($hideCoversFormDisplayed)}
