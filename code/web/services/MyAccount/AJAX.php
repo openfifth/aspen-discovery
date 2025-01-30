@@ -3576,12 +3576,14 @@ class MyAccount_AJAX extends JSON_Action {
 			'unavailable' => [],
 		];
 
+		$allUsersSelected = in_array("", $selectedUsers);
+
 		foreach (['available', 'unavailable'] as $type) {
 			foreach ($allHolds[$type] as $key => $hold) {
-				$includeHold = true;
+				$includeHold = false;
 
-				if (!empty($selectedUsers)  && in_array($hold->userId, $selectedUsers)) {
-					$includeHold = false;
+				if ($allUsersSelected || empty($selectedUsers)  || in_array($hold->userId, $selectedUsers)) {
+					$includeHold = true;
 				}
 
 				if (!empty($selectedHolds)) {
@@ -3667,6 +3669,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 				$selectedHolds = $this->setFilterSelectedHolds();
 				$interface->assign('selectedHolds', $selectedHolds);
+				$interface->assign('currentUserId', $user->id);
+				$interface->assign('currentUserName', $user->displayName);
 
 				$location = new Location();
 				$pickupBranches = $location->getPickupBranches($user);

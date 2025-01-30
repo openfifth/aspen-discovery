@@ -37,13 +37,16 @@
 				<div id="linkedUsersDropdownContainer" class="form-group d-flex align-items-center mt-2 mt-md-0 ms-md-3">
 					<label for="linkedUsersDropdown" class="control-label me-2 mb-0">{translate text="Linked Users" isPublicFacing=true}&nbsp;</label>
 					<select id="linkedUsersDropdown" class="form-control me-2 mt-2 mt-md-0" name="linkedUserIds[]" multiple="multiple" size="2">
-						<option value="" {if empty($selectedUsers)}selected{/if}>None</option>
+						<option value="" {if empty($selectedUsers)}selected{/if}>All</option>
+						<option value="{$currentUserId}" {if in_array($currentUserId, $selectedUsers)} selected="selected"{/if}>
+							{$currentUserName}
+						</option>
 						{foreach from=$linkedUsers item=user}
 							<option value="{$user->id}"{if in_array($user->id, $selectedUsers)} selected="selected"{/if}>{$user->displayName}</option>
 						{/foreach}
 					</select>
 					<button type="button" class="btn btn-primary mt-2 mt-md-0" onclick="AspenDiscovery.Account.filterOutLinkedUsers();">
-						{translate text="Hide Users" isPublicFacing=true}
+						{translate text="Show Users" isPublicFacing=true}
 					</button>
 				</div>
 				{assign var="linkedUsersDropdownDisplayed" value=true}
