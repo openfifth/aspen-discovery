@@ -572,6 +572,12 @@ class SearchObject_SummonSearcher extends SearchObject_BaseSearcher{
 				$this->filters[] = urlencode($key) . ',' . $encodedValue . ',';
 			}
 		}
+
+		$summonSettings = $this->getSettings();
+
+		if ($summonSettings && !empty($summonSettings->filterOutBooksAndEbooks)) {
+			$this->filters[] = 'ContentType,Book%20%2F%20eBook,t';
+		}
 		return $this->filters;
 	}
 
