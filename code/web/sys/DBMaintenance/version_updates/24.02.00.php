@@ -270,6 +270,13 @@ function getUpdates24_02_00(): array {
 				) ENGINE INNODB",   
             ],
         ],
+		'filter_books_from_summon_results' => [
+			'title' => 'Filter Books From Summon Results',
+			'description' => 'Add the option of filtering out records with the content type of book or ebook from Summon results',
+			'sql' => [
+				"ALTER TABLE summon_settings ADD COLUMN filterOutBooksAndEbooks TINYINT(1) NOT NULL DEFAULT 0",
+			],
+		],
         //indexed_information_places_of_publication
         'add_place_of_publication_to_grouped_work' => [
             'title' => 'Add Place of Publication to Grouped Work',
