@@ -3576,35 +3576,45 @@ class MyAccount_AJAX extends JSON_Action {
 			'unavailable' => [],
 		];
 
-		foreach (['available', 'unavailable'] as $type) {
-			foreach ($allHolds[$type] as $key => $hold) {
-				$includeHold = true;
+		$allUsersSelected = in_array("", $selectedUsers);
 
-				if (!empty($selectedUsers)  && in_array($hold->userId, $selectedUsers)) {
+		foreach ($allHolds['available'] as $key => $hold) {
+			$includeHold = false;
+
+			if ($allUsersSelected || empty($selectedUsers) || in_array($hold->userId, $selectedUsers)) {
+				$includeHold = true;
+			}
+
+			if ($includeHold) {
+				$filteredHolds['available'][$key] = $hold;
+			}
+		}
+
+		foreach ($allHolds['unavailable'] as $key => $hold) {
+			$includeHold = false;
+
+			if ($allUsersSelected || empty($selectedUsers) || in_array($hold->userId, $selectedUsers)) {
+				$includeHold = true;
+			}
+			if (!empty($selectedHolds)) {
+				$matchFound = false;
+				foreach ($selectedHolds as $selectedHold) {
+					$holdRecordId = intval(trim($hold->recordId));
+					$selectedHoldRecordId = intval(trim($selectedHold['recordId']));
+					$holdUserId = intval(trim($hold->userId));
+					$selectedHoldUserId = intval(trim($selectedHold['userId']));
+					if ($holdRecordId == $selectedHoldRecordId && $holdUserId == $selectedHoldUserId){
+						$matchFound = true;
+						break;
+					}
+				}
+				if (!$matchFound) {
 					$includeHold = false;
 				}
+			}
 
-				if (!empty($selectedHolds)) {
-					$matchFound = false;
-					foreach ($selectedHolds as $selectedHold) {
-
-						$holdRecordId = intval(trim($hold->recordId));
-						$selectedHoldRecordId = intval(trim($selectedHold['recordId']));
-						$holdUserId = intval(trim($hold->userId));
-						$selectedHoldUserId = intval(trim($selectedHold['userId']));
-						if ($holdRecordId == $selectedHoldRecordId && $holdUserId == $selectedHoldUserId){
-							$matchFound = true;
-							break;
-						}
-					}
-					if (!$matchFound) {
-						$includeHold = false;
-					}
-				}
-
-				if ($includeHold) {
-					$filteredHolds[$type][$key] = $hold;
-				}
+			if ($includeHold) {
+				$filteredHolds['unavailable'][$key] = $hold;
 			}
 		}
 		return $filteredHolds;
@@ -3667,6 +3677,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 				$selectedHolds = $this->setFilterSelectedHolds();
 				$interface->assign('selectedHolds', $selectedHolds);
+				$interface->assign('currentUserId', $user->id);
+				$interface->assign('currentUserName', $user->displayName);
 
 				$location = new Location();
 				$pickupBranches = $location->getPickupBranches($user);
@@ -3733,6 +3745,9 @@ class MyAccount_AJAX extends JSON_Action {
 				if (!$offlineMode) {
 					if ($user) {
 						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUsers, $selectedHolds);
+						error_log('Available Holds: ' . print_r($allHolds['available'], true));
+                    	error_log('Unavailable Holds: ' . print_r($allHolds['unavailable'], true));
+
 						$interface->assign('recordList', $allHolds);
 					}
 				}
