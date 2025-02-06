@@ -4581,6 +4581,11 @@ class User extends DataObject {
 			]);
 		}
 
+		if (array_key_exists('BMJ Best Practice', $enabledModules)) {
+			$sections['bmjbp'] = new AdminSection('BMJ Best Practice');
+			$sections['bmjbp']->addAction(new AdminAction('Settings', 'Define connection information between BMJ Best Practice and Aspen Discovery.', '/BmjBp/BmjBpSettings'), ['View Dashboards']);
+		}
+
 		if (array_key_exists('Hoopla', $enabledModules)) {
 			$sections['hoopla'] = new AdminSection('Hoopla');
 			$hooplaSettingsAction = new AdminAction('Settings', 'Define connection information between Hoopla and Aspen Discovery.', '/Hoopla/Settings');
