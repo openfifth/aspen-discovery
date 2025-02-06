@@ -5704,6 +5704,18 @@ class User extends DataObject {
 		return $this->source == 'admin' && $this->username == 'aspen_admin';
 	}
 
+	public function isUserAdmin(): bool {
+		require_once ROOT_DIR . '/sys/Administration/UserRoles.php';
+		$userRole = new UserRoles();
+		$userRole->find();
+
+		$adminList = [];
+		while ($userRole->fetch()) {
+			$adminList[] = $userRole->userId;
+		}
+		return in_array($this->id, $adminList);
+	}
+
 	public function showRenewalLink(AccountSummary $ilsAccountSummary): bool {
 		$showRenewalLink = false;
 		if ($ilsAccountSummary->isExpirationClose()) {

@@ -361,9 +361,8 @@ class Campaign extends DataObject {
      * @return bool True if a record is found, false otherwise.
      */
     public function find($fetchFirst = false, $requireOneMatchToReturn = true): bool {
-        if (!UserAccount::isLoggedIn() || UserAccount::getActiveUserObj()->isAspenAdminUser())
-            return parent::find($fetchFirst, $requireOneMatchToReturn);
-
+        if (!UserAccount::isLoggedIn() || UserAccount::getActiveUserObj()->isAspenAdminUser() || UserAccount::getActiveUserObj()->isUserAdmin())
+             return parent::find($fetchFirst, $requireOneMatchToReturn);
         $this->joinAdd(new CampaignPatronTypeAccess(), 'LEFT', 'ce_campaign_patron_type_access', 'id', 'campaignId');
         $this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . UserAccount::getActiveUserObj()->getPTypeObj()->id . "' OR ce_campaign_patron_type_access.patronTypeId IS NULL");
         $this->joinAdd(new CampaignLibraryAccess(), 'LEFT', 'ce_campaign_library_access', 'id', 'campaignId');
