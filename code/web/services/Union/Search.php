@@ -105,6 +105,12 @@ class Union_Search extends ResultsAction {
 			$interface->assign('action', $action);
 			$this->searchResultsAction = new Summon_Results();
 			$this->searchResultsAction->launch();
+		} elseif ($searchSource == 'bmjBp') {
+			require_once(ROOT_DIR . '/services/BmjBp/Results.php');
+			$interface->assign('module', 'BmjBp');
+			$interface->assign('action','Results');
+			$this->searchResultsAction = new BmjBp_Results();
+			$this->searchResultsAction->launch();
 		} elseif ($searchSource == 'combined') {
 			require_once(ROOT_DIR . '/services/Union/CombinedResults.php');
 			$module = 'Union';
