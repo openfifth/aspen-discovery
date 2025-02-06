@@ -18,6 +18,9 @@ class SearchSources {
 			case 'summon':
 				$searchObject = SearchObjectFactory::initSearchObject('Summon');
 				break;
+			case 'bmjBp':
+				$searchObject = SearchObjectFactory::initSearchObject('BmjBp');
+				break;
 			case 'events':
 				$searchObject = SearchObjectFactory::initSearchObject('Events');
 				break;
@@ -98,6 +101,7 @@ class SearchSources {
 		$searchEbscoEDS = array_key_exists('EBSCO EDS', $enabledModules) && $library->edsSettingsId != -1;
 		$searchEbscohost = array_key_exists('EBSCOhost', $enabledModules) && $library->ebscohostSearchSettingId != -1;
 		$searchSummon = array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1;
+		$searchBmjBp = array_key_exists('BMJ Best Practice', $enabledModules) && $library->bmjBpSettingId != -1;
 		$searchOpenArchives = array_key_exists('Open Archives', $enabledModules) && $library->enableOpenArchives == 1;
 		$searchTalpa = array_key_exists('Talpa Search', $enabledModules) && $library->enableTalpaSearch == 1;
 		$searchCourseReserves = $library->enableCourseReserves == 2;
@@ -221,6 +225,16 @@ class SearchSources {
 				'hasAdvancedSearch' => false,
 			];
 		}
+
+		if ($searchBmjBp) {
+			$searchOptions['bmjBp'] = [
+				'name' => 'Articles & Databases',
+				'description' => 'BMJ Best Practice - Articles and Database',
+				'catalogType' => 'bmjBp ',
+				'hasAdvancedSearch' => false,
+			];
+		}
+		
 
 		// if ($searchSummon) {
 		// 	$searchOptions['summon'] = [
