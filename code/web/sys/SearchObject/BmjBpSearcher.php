@@ -19,6 +19,9 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 	/** @var int */
 	protected $limit = 10; // or use limit?
 
+	/** @var BmjBpSetting */
+	private $settings;
+
 	private $searchIndex = '';
 
 	public function __construct() {
@@ -40,6 +43,27 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		}
 
 		return true;
+	}
+
+	public function getSettings(): BmjBpSetting {
+		if (empty($this->settings)) {
+			$this->setSettings();
+		}
+		return $this->settings;
+	}
+
+	public function setSettings(): void {
+		global $library;
+		if ($library->bmjBpSettingId == -1) {
+			AspenError::raiseError(new AspenError('There are no BmjBp Settings set for this library system.'));
+			return;
+		}
+		$settings = new BmjBpSetting();
+		$settings->id = $library->bmjBpSettingId;
+		if (!$settings->find(true)) {
+			$settings = null;
+		}
+		$this->settings = $settings;
 	}
 
 	private function getSearchOptions (): array{
@@ -93,6 +117,7 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 
 	public function processSearch($returnIndexErrors = false, $recommendations = false, $preventQueryModification = false) : AspenError|array|null {
 		// TODO: determine which guard clauses are needed here
+		$baseApiUrl = $this->getSettings()->bmjBpBaseApiUrl;
 		$queryString = $this->buildQueryString();
 	}
 
