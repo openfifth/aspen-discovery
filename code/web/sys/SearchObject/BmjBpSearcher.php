@@ -5,7 +5,16 @@ require_once ROOT_DIR . '/sys/Pager.php';
 require_once ROOT_DIR . '/sys/SearchObject/BaseSearcher.php';
 
 class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
+	// TODO: use the CurlWrapper class instead of vanilla PHP CURL?
+	// TODO: implement a JWT library
 
+	static $instance;
+	/** @var string */
+	private $jwt;
+	/** @var BmjBpSetting */
+	private $settings;
+	/** @var array */
+	private $headers;
 	/** @var array */
 	private $searchOptions;
 
@@ -18,12 +27,6 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 	protected $page = 1; // or use page?
 	/** @var int */
 	protected $limit = 10; // or use limit?
-
-	/** @var string */
-	private $jwt;
-
-	/** @var BmjBpSetting */
-	private $settings;
 
 	private $searchIndex = '';
 
@@ -93,6 +96,20 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		$this->settings = $settings;
 	}
 
+	public function getHeaders(): array {
+		if (empty($headers)) {
+			$this->setHeaders($this->getJwt());
+		}
+		return $this->headers;
+	}
+
+	public function setHeaders(): void {
+		$this->headers = array(
+			'Accept' => 'application/json',
+			'Authorization' => 'JWT Bearer ' . $this->getJwt(),
+		);
+	}
+
 	private function getSearchOptions (): array{
 		if (empty($searchOptions)) {
 			$this->setSearchOptions();
@@ -146,6 +163,7 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		// TODO: determine which guard clauses are needed here
 		$baseApiUrl = $this->getSettings()->bmjBpBaseApiUrl;
 		$queryString = $this->buildQueryString();
+		$headers = $this->getHeaders();
 	}
 
 	public function __destruct() {
