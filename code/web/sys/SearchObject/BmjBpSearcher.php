@@ -28,6 +28,8 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 	/** @var int */
 	protected $limit = 10; // or use limit?
 
+	private $curl_connection;
+
 	private $searchIndex = '';
 
 	public function __construct() {
@@ -49,6 +51,20 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		}
 
 		return true;
+	}
+
+	public function getCurlConnection(): object {
+		if ($this->curl_connection == null) {
+			$this->curl_connection = curl_init();
+			curl_setopt($this->curl_connection, CURLOPT_CONNECTTIMEOUT, 15);
+			curl_setopt($this->curl_connection, CURLOPT_USERAGENT, "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)");
+			curl_setopt($this->curl_connection, CURLOPT_RETURNTRANSFER, true);
+			curl_setopt($this->curl_connection, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($this->curl_connection, CURLOPT_FOLLOWLOCATION, 1);
+			curl_setopt($this->curl_connection, CURLOPT_TIMEOUT, 30);
+			curl_setopt($this->curl_connection, CURLOPT_RETURNTRANSFER, TRUE);
+		}
+		return $this->curl_connection;
 	}
 
 	public function getJwt(): string {
@@ -151,6 +167,27 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		];
 	}
 
+	protected function sendHttpRequest($baseUrl, $queryString, $headers): array {
+		foreach ($headers as $key =>$value) {
+			$modified_headers[] = $key.": ".$value;
+		}
+		$curlConnection = $this->getCurlConnection();
+		$curlOptions = array(
+			CURLOPT_RETURNTRANSFER => 1,
+			CURLOPT_URL => "{$baseUrl}?{$queryString}",
+			CURLOPT_HTTPHEADER => $modified_headers
+		);
+
+		curl_setopt_array($curlConnection, $curlOptions);
+		$result = curl_exec($curlConnection);
+		$responseCode = curl_getinfo($curlConnection, CURLINFO_RESPONSE_CODE);
+		if ($result === false || $responseCode != '200') {
+			AspenError::raiseError("Could not get results from BMJ Best practice: error in HTTP Request.");
+		}
+		curl_close($curlConnection);
+		return json_decode($result, true);
+	}
+	
 	function getSearchName(): string {
 		return $this->searchSource;
 	}
@@ -164,6 +201,7 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		$baseApiUrl = $this->getSettings()->bmjBpBaseApiUrl;
 		$queryString = $this->buildQueryString();
 		$headers = $this->getHeaders();
+		$responseData= $this->sendHttpRequest($baseApiUrl, $queryString, $headers)['monograph'];
 	}
 
 	public function __destruct() {
