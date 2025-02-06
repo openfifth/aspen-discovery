@@ -19,6 +19,9 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 	/** @var int */
 	protected $limit = 10; // or use limit?
 
+	/** @var string */
+	private $jwt;
+
 	/** @var BmjBpSetting */
 	private $settings;
 
@@ -43,6 +46,30 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		}
 
 		return true;
+	}
+
+	public function getJwt(): string {
+		if (!$this->jwt) {
+			$this->setJwt($this->getSettings());
+		}
+		return $this->jwt;
+	}
+
+	public function setJwt(): void {
+		// TO BE REPLACED WITH THE USE OF A JWT LIBRARY
+		$header = [
+			"alg" => "HS256",
+			"typ" => "JWT"
+		];
+		$header = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(json_encode($header)));
+		$payload =  [
+			"iss" => $this->getSettings()->bmjBpApiKey,
+		];
+		$payload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(json_encode($payload)));
+		$signature = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode(hash_hmac('sha256', "$header.$payload", $this->getSettings()->bmjBpApiSecret, true)));
+		$this->jwt = "$header.$payload.$signature";
+		return;
+		// TO BE REPLACED WITH THE USE OF A JWT LIBRARY
 	}
 
 	public function getSettings(): BmjBpSetting {
