@@ -165,6 +165,25 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		return $html;
 	}
 
+	public function getCombinedResultHTML(): array {
+		global $interface;
+		$html = [];
+		if (isset($this->lastSearchResults)) {
+			foreach($this->lastSearchResults as $key=>$value){
+				$interface->assign('recordIndex', $key + 1);
+				$interface->assign('resultIndex', $key + 1 + (($this->page - 1) * $this->limit));
+
+				require_once ROOT_DIR . '/RecordDrivers/BmjBpRecordDriver.php';
+				$record = new BmjBpRecordDriver($value);
+				$interface->assign('recordDriver', $record);
+				$html[] = $interface->fetch($record->getCombinedResult());
+			}
+		} else {
+			$html[] = "Unable to find record";
+		}
+		return $html;
+	}
+
 	function buildQueryString(): string {
 		$query = "";
 		$index = 0;
@@ -216,6 +235,10 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 
 	public function getEngineName(): string {
 		return 'bmjBp';
+	}
+
+	public function getDefaultIndex(): string {
+		return $this->searchIndex;
 	}
 
 	public function processSearch($returnIndexErrors = false, $recommendations = false, $preventQueryModification = false) : AspenError|array|null {
