@@ -30,6 +30,8 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 
 	private $curl_connection;
 
+	protected $lastSearchResults;
+
 	private $searchIndex = '';
 
 	public function __construct() {
@@ -143,6 +145,26 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		];
 	}
 
+	public function getResultRecordHTML(): array {
+		global $interface;
+		global $timer;
+		$html = [];
+		$timer->logTime("Starting to load record html");
+		if (isset($this->lastSearchResults)) {
+			for ($x = 0; $x < count($this->lastSearchResults); $x++) {
+				$current = &$this->lastSearchResults[$x];
+				$interface->assign('recordIndex', $x + 1);
+				$interface->assign('resultIndex', $x + 1 + (($this->page - 1) * $this->limit));
+
+				require_once ROOT_DIR . '/RecordDrivers/BmjBpRecordDriver.php';
+				$record = new BmjBpRecordDriver($current);
+				$interface->assign('recordDriver', $record);
+				$html[] = $interface->fetch($record->getSearchResult());
+			}
+		};
+		return $html;
+	}
+
 	function buildQueryString(): string {
 		$query = "";
 		$index = 0;
@@ -202,6 +224,9 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		$queryString = $this->buildQueryString();
 		$headers = $this->getHeaders();
 		$responseData= $this->sendHttpRequest($baseApiUrl, $queryString, $headers)['monograph'];
+		$this->resultsTotal = $responseData['total'];
+		$this->lastSearchResults = $responseData['results'];
+		return $responseData;
 	}
 
 	public function __destruct() {
