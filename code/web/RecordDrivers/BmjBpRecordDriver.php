@@ -25,13 +25,38 @@ class BmjBpRecordDriver extends RecordInterface {
 		return "https://bestpractice.bmj.com/topics/en-gb/" . $this->record['id'];
 	}
 
+	public function getCombinedResult(): string {
+		global $interface;
+		
+		$interface->assign('summId', $this->getBmjBpRecordId());
+		$interface->assign('module', $this->getModule());
+		$interface->assign('summFormats', $this->getFormats());
+		$interface->assign('summUrl', $this->getBmjBpRecordUrl());
+		$interface->assign('summTitle', $this->getTitle());
+		$interface->assign('summDescription', $this->getDescription());
+
+		return 'RecordDrivers/BmjBp/combinedResult.tpl';
+	}
+
 	public function getDescription(): string {
 		if(!isset($this->record['highlight'])) {
 			return '';
 		} 
 		return $this->record['highlight'];
 	}
+
+	public function getFormats(): string {
+		if(isset($this->record['ContentType'][0])){
+			return (string)$this->record['ContentType'][0];
 		}
+		$sourceType = 'Unknown Source';
+		return $sourceType;
+	}
+
+	public function getModule(): string {
+		return 'BmjBp';
+	}
+
 	public function getSearchResult($view = 'list', $showListsAppearingOn = true) {
 		global $interface;
 		$interface->assign('summId', $this->getBmjBpRecordId());

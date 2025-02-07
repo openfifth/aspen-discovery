@@ -42,6 +42,8 @@ class Union_AJAX extends JSON_Action {
 			$results = $this->getResultsFromEDS($searchTerm, $numberOfResults, $fullResultsLink);
 		} elseif ($source == 'summon') {
 			$results = $this->getResultsFromSummon($searchTerm, $numberOfResults, $fullResultsLink);
+		} elseif ($source == 'bmjBp') {
+			$results = $this->getResultsFromBmjBp($searchTerm, $numberOfResults, $fullResultsLink);
 		} elseif ($source == 'ebscohost') {
 			$results = $this->getResultsFromEbscohost($searchTerm, $numberOfResults, $fullResultsLink);
 		} elseif ($source == 'events') {
@@ -264,6 +266,49 @@ class Union_AJAX extends JSON_Action {
 		}
 		return $results;
 	}
+
+	/**
+	 * @param $searchTerm
+	 * @param $numberOfResults
+	 * @param $fullResultsLink
+	 * @return string a string of HTML to be used to display results from a BMJ Best Practice search in combined results
+	 */
+	private function getResultsFromBmjBp($searchTerm, $numberOfResults, $fullResultsLink): string {
+		global $interface;
+		$interface->assign('viewingCombinedResults', true);
+
+		if ($searchTerm == '') {
+			$results = '<div class="clearfix"></div><div>' . translate(['text'=>'Enter search terms to see results.', 'isPublicFacing'=>true]) . '</div>';
+			return $results;
+		} 
+
+		/** @var SearchObject_BmjBpSearcher $bmjBpSearcher */
+		$bmjBpSearcher = SearchObjectFactory::initSearchObject("BmjBp");
+		$bmjBpSearcher->init();
+		$bmjBpSearcher->setSearchTerms([
+			'index' =>$bmjBpSearcher->getDefaultIndex(),
+			'lookfor' => $searchTerm,
+		]);
+		$bmjBpSearcher->processSearch(true, false);
+
+		$summary = $bmjBpSearcher->getResultSummary();
+		if ($summary['resultTotal' == 0]) {
+			$results = '<div class="clearfix"></div><div>' . translate(['text'=>'No results match your search.', 'isPublicFacing'=>true]) . '</div>';
+			return $results;
+		}
+
+		$records = array_slice($bmjBpSearcher->getCombinedResultHTML(), 0, $numberOfResults);
+		
+		$interface->assign('recordSet', $records);
+		$interface->assign('showExploreMoreBar', false);
+		
+		$formattedNumResults = number_format($summary['resultTotal']);
+		$results = "<a href='{$fullResultsLink}' class='btn btn-default combined-results-button'>See all {$formattedNumResults} results <i class='fas fa-chevron-right fa-lg' role='presentation'></i></a><div class='clearfix'></div>";
+		$results .= $interface->fetch('Search/list-list.tpl');
+		return $results;
+	}
+
+
 
 	/**
 	 * @param $searchType
