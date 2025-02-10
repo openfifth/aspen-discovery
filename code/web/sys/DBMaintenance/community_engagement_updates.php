@@ -248,5 +248,17 @@ function getCommunityEngagementUpdates() {
                 "UPDATE modules SET name = 'Community Engagement' WHERE name = 'Community'"
             ],
         ],
+        'update_community_engagement_permissions' => [
+            'title' => 'Update Community Engagement Permissions',
+            'description' => 'Update permissions and role assignments for the Community Engagement Module',
+            'sql' => [
+                "DELETE FROM role_permissions WHERE permissionId = (SELECT id FROM permissions WHERE name = 'Administer Community Module') AND roleId = (SELECT roleId FROM roles WHERE name = 'opacAdmin')",
+                "DELETE FROM role_permissions WHERE permissionId = (SELECT id FROM permissions WHERE name = 'View Community Dashboard') AND roleId = (SELECT roleId FROM roles WHERE name = 'opacAdmin')",
+                "UPDATE permissions SET name = 'Administer Community Engagement Module', requiredModule = 'Community Engagement' WHERE name = 'Administer Community Module' AND requiredModule = 'Community'",
+                "UPDATE permissions SET name = 'View Community Engagement Dashboard', requiredModule = 'Community Engagement' WHERE name = 'View Community Dashboard' AND requiredModule = 'Community'",
+                "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Community Engagement Module'))",
+                "INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='View Community Engagement Dashboard'))"
+            ],
+        ],
     ];
 }

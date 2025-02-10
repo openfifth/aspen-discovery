@@ -90,7 +90,7 @@ class CommunityEngagement_AdminView extends Admin_Dashboard {
 
     function canView(): bool {
         return UserAccount::userHasPermission([
-            'View Community Dashboard',
+            'View Community Engagement Dashboard',
         ]);
     }
 

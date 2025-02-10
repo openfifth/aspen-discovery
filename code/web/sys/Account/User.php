@@ -4192,16 +4192,16 @@ class User extends DataObject {
 		if (array_key_exists('Community Engagement', $enabledModules)) {
 			$sections['communityEngagement'] = new AdminSection('Community Engagement');
 			$sections['communityEngagement']->addAction(new AdminAction('Campaigns', 'Create and view campaigns.', '/CommunityEngagement/Campaigns'), [
-				'Administer Community Module',
+				'Administer Community Engagement Module',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Milestones', 'Create and view milestones.', '/CommunityEngagement/Milestones'), [
-				'Administer Community Module',
+				'Administer Community Engagement Module',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Rewards', 'Create and view rewards.', '/CommunityEngagement/Rewards'), [
-				'Administer Community Module',
+				'Administer Community Engagement Module',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Admin View', 'View progress and manage rewards.', '/CommunityEngagement/AdminView'), [
-				'View Community Dashboard',
+				'View Community Engagement Dashboard',
 			]);
 		}
 		$sections['cataloging'] = new AdminSection('Catalog / Grouped Works');
