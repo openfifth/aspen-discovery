@@ -1,6 +1,6 @@
 <?php
-    require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-    require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
+    require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+    require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
 
 class UserCampaign extends DataObject {
     public $__table = 'ce_user_campaign';

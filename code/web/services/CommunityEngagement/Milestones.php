@@ -1,28 +1,28 @@
 <?php
+
+require_once ROOT_DIR . '/Action.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/Community/Reward.php';
 
-
-class Community_Rewards extends ObjectEditor {
-
+class CommunityEngagement_Milestones extends ObjectEditor {
     function getObjectType(): string {
-		return 'Reward';
-	}
+        return 'Milestone';
+    }
 
-	function getToolName(): string {
-		return 'Rewards';
-	}
+    function getToolName(): string {
+        return 'Milestones';
+    }
 
     function getModule(): string {
-		return 'Community';
+		return 'Community Engagement';
 	}
 
     function getPageTitle(): string {
-		return 'Rewards';
+		return 'Milestones';
 	}
 
     function getAllObjects($page, $recordsPerPage): array {
-        $object = new Reward();
+        $object = new Milestone();
         $object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -34,20 +34,19 @@ class Community_Rewards extends ObjectEditor {
 		return $objectList;
     }
 
-     
-	function getDefaultSort(): string {
+    function getDefaultSort(): string {
 		return 'name asc';
 	}
 
-	function getObjectStructure($context = ''): array {
-		return Reward::getObjectStructure($context);
+    function getObjectStructure($context = ''): array {
+		return Milestone::getObjectStructure($context);
 	}
 
     function getPrimaryKeyColumn(): string {
 		return 'id';
 	}
 
-	function getIdKeyColumn(): string {
+    function getIdKeyColumn(): string {
 		return 'id';
 	}
 
@@ -62,12 +61,12 @@ class Community_Rewards extends ObjectEditor {
     function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community');
-		$breadcrumbs[] = new Breadcrumb('/Community/Rewards', 'Rewards');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community Engagement');
+		$breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Milestones', 'Milestones');
 		return $breadcrumbs;
 	}
 
-    function getActiveAdminSection(): string {
+	function getActiveAdminSection(): string {
 		return 'community';
 	}
 
@@ -82,5 +81,4 @@ class Community_Rewards extends ObjectEditor {
 			'Administer Community Module',
 		]);
 	}
-
 }

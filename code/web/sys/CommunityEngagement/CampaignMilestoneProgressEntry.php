@@ -1,5 +1,5 @@
 <?php
-require_once ROOT_DIR . '/sys/Community/Milestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
 
 class CampaignMilestoneProgressEntry extends DataObject
 {

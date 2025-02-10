@@ -241,5 +241,12 @@ function getCommunityEngagementUpdates() {
                 "ALTER TABLE ce_campaign ADD COLUMN userAgeRange VARCHAR(255) DEFAULT 'All Ages'"
             ],
         ],
+        'update_community_engagement_module_name' => [
+            'title' => 'Update Community Engagement Module Name',
+            'description' => 'Update module name to Community Engagement',
+            'sql' => [
+                "UPDATE modules SET name = 'Community Engagement' WHERE name = 'Community'"
+            ],
+        ],
     ];
 }

@@ -1,7 +1,7 @@
 <?php
-require_once ROOT_DIR . '/sys/Community/Reward.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
 
-class Community_ViewImage extends Action {
+class CommunityEngagement_ViewImage extends Action {
     private $uploadedImage;
 
     function launch() {
@@ -77,7 +77,7 @@ class Community_ViewImage extends Action {
         $breadcrumbs[] = new Breadcrumb('/', 'Home');
         $breadcrumbs[] = new Breadcrumb('', $this->uploadedImage->title, true);
         if (UserAccount::userHasPermission('Administer All Web Content')) {
-            $breadcrumbs[] = new Breadcrumb('/Community/Images?id=' . $this->uploadedImage->id . '&objectAction=edit', 'Edit', true);
+            $breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Images?id=' . $this->uploadedImage->id . '&objectAction=edit', 'Edit', true);
         }
         return $breadcrumbs;
     }

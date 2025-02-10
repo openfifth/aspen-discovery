@@ -194,7 +194,7 @@
 								{if $showFavorites == 1}
 									<div class="myAccountLink"><a href="/MyAccount/Lists">{translate text='Your Lists' isPublicFacing=true}</a></div>
 								{/if}
-								{if array_key_exists('Community', $enabledModules)}
+								{if array_key_exists('Community Engagement', $enabledModules)}
 									<div class="myAccountLink"><a href="/MyAccount/MyCampaigns">{translate text='Your Campaigns' isPublicFacing=true}</a></div>
 								{/if}
 								{if !empty($enableSavedSearches)}

@@ -65,7 +65,7 @@
 					<a href="/MyAccount/Lists">{translate text='Your Lists' isPublicFacing=true}</a>
 				</div>
 			{/if}
-			{if array_key_exists('Community', $enabledModules)}
+			{if array_key_exists('Community Engagement', $enabledModules)}
 				<div class="header-menu-option" >
 						<a href="/MyAccount/MyCampaigns">{translate text='Your Campaigns' isPublicFacing=true}</a>
 				</div>

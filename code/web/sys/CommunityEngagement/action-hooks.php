@@ -1,7 +1,7 @@
 <?php
 
-require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-require_once ROOT_DIR . '/sys/Community/CampaignMilestoneProgressEntry.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
 
 /**
  * after_checkout_insert

@@ -1,16 +1,17 @@
 <?php
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
-require_once ROOT_DIR . '/sys/Community/Campaign.php';
-require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-require_once ROOT_DIR . '/sys/Community/Milestone.php';
-require_once ROOT_DIR . '/sys/Community/UserCompletedMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/UserCompletedMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
 
 class MyCampaigns extends MyAccount {
 
     function launch() {
         global $interface;
         global $library;
-        // require_once ROOT_DIR . '/sys/Community/Campaign.php';
+        // require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
         $campaign = new Campaign();
           //Get User
@@ -26,7 +27,7 @@ class MyCampaigns extends MyAccount {
         $interface->assign('pastCampaigns', $pastCampaigns);
 
 
-        $this->display('../MyAccount/myCampaigns.tpl', ',My Campaigns');
+        $this->display('../MyAccount/myCampaigns.tpl', 'My Campaigns');
     }
 
     function getUserId() {

@@ -46,7 +46,7 @@ class Reward extends DataObject {
                 'label' => 'Image for Digital Badge',
                 'description' => 'The image to use for the digital badge',
                 'path' => '/data/aspen-discovery/' . $serverName . '/uploads/reward_image/full',
-                'displayUrl' => '/Community/ViewImage?size=full&id=',
+                'displayUrl' => '/CommunityEngagement/ViewImage?size=full&id=',
                 'required' => false,
             ],
         ];
@@ -57,13 +57,13 @@ class Reward extends DataObject {
         if (empty($this->id)) {
             return  ' ';
         }
-        return '/Community/ViewImage?size=' .$size . '&id=' . $this->id;
+        return '/CommunityEngagement/ViewImage?size=' .$size . '&id=' . $this->id;
     }
 
     public function getShareUrl(): string {
         global $serverName;
         $size = 'full';
-        return 'http://' . $serverName . '/Community/ViewImage?size=' . $size . '&id=' . $this->id;
+        return 'http://' . $serverName . '/CommunityEngagement/ViewImage?size=' . $size . '&id=' . $this->id;
     }
 
     public function uploadImage() {

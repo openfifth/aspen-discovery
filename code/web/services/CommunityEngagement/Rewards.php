@@ -1,29 +1,28 @@
 <?php
-
-require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/sys/Community/Campaign.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
 
-class Community_Campaigns extends ObjectEditor {
+
+class CommunityEngagement_Rewards extends ObjectEditor {
 
     function getObjectType(): string {
-		return 'Campaign';
+		return 'Reward';
 	}
 
 	function getToolName(): string {
-		return 'Campaigns';
+		return 'Rewards';
 	}
 
     function getModule(): string {
-		return 'Community';
+		return 'Community Engagement';
 	}
 
     function getPageTitle(): string {
-		return 'Campaigns';
+		return 'Rewards';
 	}
 
     function getAllObjects($page, $recordsPerPage): array {
-        $object = new Campaign();
+        $object = new Reward();
         $object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -35,13 +34,13 @@ class Community_Campaigns extends ObjectEditor {
 		return $objectList;
     }
 
-    
+     
 	function getDefaultSort(): string {
 		return 'name asc';
 	}
 
 	function getObjectStructure($context = ''): array {
-		return Campaign::getObjectStructure($context);
+		return Reward::getObjectStructure($context);
 	}
 
     function getPrimaryKeyColumn(): string {
@@ -63,12 +62,12 @@ class Community_Campaigns extends ObjectEditor {
     function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community');
-		$breadcrumbs[] = new Breadcrumb('/Community/Campaigns', 'Campaigns');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community Engagement');
+		$breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Rewards', 'Rewards');
 		return $breadcrumbs;
 	}
 
-	function getActiveAdminSection(): string {
+    function getActiveAdminSection(): string {
 		return 'community';
 	}
 
@@ -83,4 +82,5 @@ class Community_Campaigns extends ObjectEditor {
 			'Administer Community Module',
 		]);
 	}
+
 }

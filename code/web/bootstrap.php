@@ -233,7 +233,7 @@ try {
 }
 
 if (array_key_exists('Community', $enabledModules)) {
-	require_once ROOT_DIR . '/sys/Community/action-hooks.php';
+	require_once ROOT_DIR . '/sys/CommunityEngagement/action-hooks.php';
 }
 
 $timer->logTime("Basic Initialization");

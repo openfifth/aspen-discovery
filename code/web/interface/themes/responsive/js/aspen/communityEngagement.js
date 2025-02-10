@@ -1,7 +1,7 @@
 AspenDiscovery.CommunityEngagement = function() {
     return {
         campaignRewardGiven: function(userId, campaignId) {
-            var url = Globals.path + "/Community/AJAX?method=campaignRewardGivenUpdate";
+            var url = Globals.path + "/CommunityEngagement/AJAX?method=campaignRewardGivenUpdate";
             var params = {
                 userId: userId, 
                 campaignId: campaignId,
@@ -21,7 +21,7 @@ AspenDiscovery.CommunityEngagement = function() {
                 });
         },
         milestoneRewardGiven: function(userId, campaignId, milestoneId) {
-            var url = Globals.path + "/Community/AJAX?method=milestoneRewardGivenUpdate";
+            var url = Globals.path + "/CommunityEngagement/AJAX?method=milestoneRewardGivenUpdate";
             var params = {
                 userId: userId,
                 campaignId: campaignId,
@@ -44,7 +44,7 @@ AspenDiscovery.CommunityEngagement = function() {
 
            var selectedId = (filterType === 'campaign') ? document.getElementById("campaign_id").value : document.getElementById("user_id").value;
 
-            var url = Globals.path + "/Community/AJAX?method=filterCampaigns";
+            var url = Globals.path + "/CommunityEngagement/AJAX?method=filterCampaigns";
             var params = {
                 campaignId: filterType === "campaign" ? selectedId : null,
                 userId: filterType === "user" ? selectedId : null

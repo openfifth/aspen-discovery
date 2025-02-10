@@ -1,28 +1,29 @@
 <?php
 
 require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/sys/Community/Milestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
 
-class Community_Milestones extends ObjectEditor {
-    function getObjectType(): string {
-        return 'Milestone';
-    }
+class CommunityEngagement_Campaigns extends ObjectEditor {
 
-    function getToolName(): string {
-        return 'Milestones';
-    }
+    function getObjectType(): string {
+		return 'Campaign';
+	}
+
+	function getToolName(): string {
+		return 'Campaigns';
+	}
 
     function getModule(): string {
-		return 'Community';
+		return 'Community Engagement';
 	}
 
     function getPageTitle(): string {
-		return 'Milestones';
+		return 'Campaigns';
 	}
 
     function getAllObjects($page, $recordsPerPage): array {
-        $object = new Milestone();
+        $object = new Campaign();
         $object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -34,19 +35,20 @@ class Community_Milestones extends ObjectEditor {
 		return $objectList;
     }
 
-    function getDefaultSort(): string {
+    
+	function getDefaultSort(): string {
 		return 'name asc';
 	}
 
-    function getObjectStructure($context = ''): array {
-		return Milestone::getObjectStructure($context);
+	function getObjectStructure($context = ''): array {
+		return Campaign::getObjectStructure($context);
 	}
 
     function getPrimaryKeyColumn(): string {
 		return 'id';
 	}
 
-    function getIdKeyColumn(): string {
+	function getIdKeyColumn(): string {
 		return 'id';
 	}
 
@@ -61,8 +63,8 @@ class Community_Milestones extends ObjectEditor {
     function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community');
-		$breadcrumbs[] = new Breadcrumb('/Community/Milestones', 'Milestones');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community Engagement');
+		$breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Campaigns', 'Campaigns');
 		return $breadcrumbs;
 	}
 

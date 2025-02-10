@@ -1,9 +1,9 @@
 <?php
-require_once ROOT_DIR . '/sys/Community/Campaign.php';
-require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
-require_once ROOT_DIR . '/sys/Community/Reward.php';
-require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 class Milestone extends DataObject {
     public $__table = 'ce_milestone';
     public $id;

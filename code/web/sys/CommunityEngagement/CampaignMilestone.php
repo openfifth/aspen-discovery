@@ -1,7 +1,7 @@
 <?php
-require_once ROOT_DIR . '/sys/Community/Reward.php';
-require_once ROOT_DIR . '/sys/Community/Milestone.php';
-require_once ROOT_DIR . '/sys/Community/CampaignMilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
 
 class CampaignMilestone extends DataObject {
     public $__table = 'ce_campaign_milestones';
@@ -19,7 +19,7 @@ class CampaignMilestone extends DataObject {
 	}
 
     static function getObjectStructure($context = '') {
-        require_once ROOT_DIR . '/sys/Community/Milestone.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
         $milestone = new Milestone();
         $availableMilestones = [];
         $milestone->orderBy('name');
@@ -198,7 +198,7 @@ class CampaignMilestone extends DataObject {
      */
     public function addCampaignMilestoneProgressEntry( $object, $userId, $groupedWorkId)
     {
-        require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 
         if (!$this->conditionalsCheck($groupedWorkId))
             return;

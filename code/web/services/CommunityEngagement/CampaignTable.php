@@ -1,13 +1,13 @@
 <?php
 
-require_once ROOT_DIR . '/sys/Community/Campaign.php';
-require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 require_once ROOT_DIR . '/services/Admin/Dashboard.php';
 
-require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
 
 
-class Community_CampaignTable extends Admin_Dashboard {
+class CommunityEngagement_CampaignTable extends Admin_Dashboard {
     
     function launch() {
         global $interface;

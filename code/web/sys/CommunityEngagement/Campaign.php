@@ -1,10 +1,10 @@
 <?php
-require_once ROOT_DIR . '/sys/Community/Milestone.php';
-require_once ROOT_DIR . '/sys/Community/CampaignMilestone.php';
-require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
-require_once ROOT_DIR . '/sys/Community/Reward.php';
-require_once ROOT_DIR . '/sys/Community/CampaignPatronTypeAccess.php';
-require_once ROOT_DIR . '/sys/Community/CampaignLibraryAccess.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignPatronTypeAccess.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignLibraryAccess.php';
 require_once ROOT_DIR . '/sys/Account/User.php';
 
 
@@ -212,7 +212,7 @@ class Campaign extends DataObject {
     }
 
     public function getUsersForCampaign() {
-        require_once ROOT_DIR . '/sys/Community/UserCampaign.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
         $users = [];
 
         if ($this->id) {
