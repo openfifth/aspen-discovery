@@ -10,7 +10,7 @@ require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
 
 
 
-class CommunityEngagement_Dashboard extends Admin_Dashboard {
+class CommunityEngagement_AdminView extends Admin_Dashboard {
     function launch() {
         global $interface;
 
@@ -78,7 +78,7 @@ class CommunityEngagement_Dashboard extends Admin_Dashboard {
         }
         $interface->assign('userCampaigns', $userCampaigns);
         $interface->assign('campaignMilestones', $campaignMilestones);
-        $this->display('dashboard.tpl', 'Dashboard');
+        $this->display('adminView.tpl', 'Admin View');
     }
 
    

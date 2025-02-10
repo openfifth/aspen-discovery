@@ -4200,7 +4200,7 @@ class User extends DataObject {
 			$sections['communityEngagement']->addAction(new AdminAction('Rewards', 'Create and view rewards.', '/CommunityEngagement/Rewards'), [
 				'Administer Community Module',
 			]);
-			$sections['communityEngagement']->addAction(new AdminAction('Dashboard', 'View progress and manage rewards.', '/CommunityEngagement/Dashboard'), [
+			$sections['communityEngagement']->addAction(new AdminAction('Admin View', 'View progress and manage rewards.', '/CommunityEngagement/AdminView'), [
 				'View Community Dashboard',
 			]);
 		}

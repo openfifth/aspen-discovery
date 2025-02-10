@@ -1,6 +1,6 @@
 {strip}
     <div id="main-content" class="col-sm-12">
-        <h1>{translate text="Dashboard" isAdminFacing=true}</h1>
+        <h1>{translate text="Admin View" isAdminFacing=true}</h1>
         {*Filtered Results*}
         <div>
             <label for="filterBy">Filter By:</label>
