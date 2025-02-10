@@ -80,7 +80,7 @@ class CommunityEngagement_CampaignTable extends Admin_Dashboard {
 
     function getActiveAdminSection(): string
     {
-        return 'community';
+        return 'communityEngagement';
     }
 
     function getBreadcrumbs(): array

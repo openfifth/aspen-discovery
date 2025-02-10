@@ -96,6 +96,6 @@ class CommunityEngagement_Dashboard extends Admin_Dashboard {
 
     function getActiveAdminSection(): string
     {
-        return 'community';
+        return 'communityEngagement';
     }
 }

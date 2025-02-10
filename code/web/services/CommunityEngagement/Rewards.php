@@ -62,13 +62,13 @@ class CommunityEngagement_Rewards extends ObjectEditor {
     function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community Engagement');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#communityEngagement', 'Community Engagement');
 		$breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Rewards', 'Rewards');
 		return $breadcrumbs;
 	}
 
     function getActiveAdminSection(): string {
-		return 'community';
+		return 'communityEngagement';
 	}
 
     function canView(): bool {

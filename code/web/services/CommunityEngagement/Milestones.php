@@ -61,13 +61,13 @@ class CommunityEngagement_Milestones extends ObjectEditor {
     function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#community', 'Community Engagement');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#communityEngagement', 'Community Engagement');
 		$breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Milestones', 'Milestones');
 		return $breadcrumbs;
 	}
 
 	function getActiveAdminSection(): string {
-		return 'community';
+		return 'communityEngagement';
 	}
 
     function canView(): bool {

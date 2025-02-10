@@ -4190,17 +4190,17 @@ class User extends DataObject {
 		$sections['translations']->addAction(new AdminAction('Translations', 'Translate the user interface of Aspen Discovery.', '/Translation/Translations'), 'Translate Aspen');
 
 		if (array_key_exists('Community Engagement', $enabledModules)) {
-			$sections['community'] = new AdminSection('Community Engagement');
-			$sections['community']->addAction(new AdminAction('Campaigns', 'Create and view campaigns.', '/CommunityEngagement/Campaigns'), [
+			$sections['communityEngagement'] = new AdminSection('Community Engagement');
+			$sections['communityEngagement']->addAction(new AdminAction('Campaigns', 'Create and view campaigns.', '/CommunityEngagement/Campaigns'), [
 				'Administer Community Module',
 			]);
-			$sections['community']->addAction(new AdminAction('Milestones', 'Create and view milestones.', '/CommunityEngagement/Milestones'), [
+			$sections['communityEngagement']->addAction(new AdminAction('Milestones', 'Create and view milestones.', '/CommunityEngagement/Milestones'), [
 				'Administer Community Module',
 			]);
-			$sections['community']->addAction(new AdminAction('Rewards', 'Create and view rewards.', '/CommunityEngagement/Rewards'), [
+			$sections['communityEngagement']->addAction(new AdminAction('Rewards', 'Create and view rewards.', '/CommunityEngagement/Rewards'), [
 				'Administer Community Module',
 			]);
-			$sections['community']->addAction(new AdminAction('Dashboard', 'View progress and manage rewards.', '/CommunityEngagement/Dashboard'), [
+			$sections['communityEngagement']->addAction(new AdminAction('Dashboard', 'View progress and manage rewards.', '/CommunityEngagement/Dashboard'), [
 				'View Community Dashboard',
 			]);
 		}
