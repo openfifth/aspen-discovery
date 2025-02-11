@@ -5,26 +5,44 @@ require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/UserCompletedMilestone.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
+require_once ROOT_DIR . '/sys/Account/User.php';
 
 class MyCampaigns extends MyAccount {
 
 	function launch() {
 		global $interface;
 		global $library;
+        global $enabledModules;
 
-		$campaign = new Campaign();
-		  //Get User
-		  $userId = $this->getUserId();
-		  $interface->assign('userId', $userId);
+        $campaign = new Campaign();
+        //Get User
+        $userId = $this->getUserId();
+        $interface->assign('userId', $userId);
 
+        $hasLinkedAccounts = UserAccount::hasLinkedUsers();
+        $interface->assign('hasLinkedAccounts', $hasLinkedAccounts);
+
+        $linkedCampaigns = $campaign->getLinkedUserCampaigns($userId);
+        $interface->assign('linkedCampaigns', $linkedCampaigns);
+
+        $webBuilderEnabled = array_key_exists('Web Builder', $enabledModules);
+        $interface->assign('webBuilderEnabled', $webBuilderEnabled);
 		//Get Campaigns
-		$campaignList = $this->getCampaigns();
+		$campaignList = $campaign->getCampaigns();
 		$interface->assign('campaignList', $campaignList);
 
 		//Get past campaigns
 		$pastCampaigns = $campaign->getPastCampaigns($userId);
 		$interface->assign('pastCampaigns', $pastCampaigns);
 
+        $campaignLeaderboardDisplay = $this->userLeaderboardButtonDisplay();
+        $interface->assign('campaignLeaderboardDisplay', $campaignLeaderboardDisplay);
+
+        $url = $this->getBaseUrl();
+        $interface->assign('url', $url);
+
+        $userCanAdvertise = $this->userCanAdvertise();
+        $interface->assign('userCanAdvertise', $userCanAdvertise);
 
 		$this->display('../MyAccount/myCampaigns.tpl', 'My Campaigns');
 	}
@@ -35,96 +53,37 @@ class MyCampaigns extends MyAccount {
 		return $userId;
 	}
 
-	function getCampaigns() {
-		global $activeLanguage;
+    function userLeaderboardButtonDisplay() {
+        global $library;
+        $user = UserAccount::getLoggedInUser();
+        if ($user->getHomeLibrary() != null){
+            $userLibrary = $user->getHomeLibrary();
+            $campaignLeaderboardDisplay = $userLibrary->campaignLeaderboardDisplay;
+        } else {
+            $campaignLeaderboardDisplay = $library->campaignLeaderboardDisplay;
+        }
+        return $campaignLeaderboardDisplay;
+    }
 
-		$campaign = new Campaign();
-		$campaignList = [];
+    public function getBaseUrl(): string {
+        global $configArray;
+        return $configArray['Site']['url'];
+    }
 
-		if (!UserAccount::isLoggedIn()) {
-			return $campaignList;
-		}
-		$user = UserAccount::getLoggedInUser();
-		$userId = $user->id;
-
-		//Get active campaigns
-		$activeCampaigns = Campaign::getActiveCampaignsList();
-
-		//Get upcoming campaigns - those starting in the next month
-		$upcomingCampaigns = Campaign::getUpcomingCampaigns();
-
-		//Get campaigns
-		$campaign->find();
-		while ($campaign->fetch()) {
-			$campaignId = $campaign->id;
-
-			//Find out if user is enrolled in campaign
-			$campaign->enrolled = $campaign->isUserEnrolled($userId);
-			//Find out if campaign is active
-			$campaign->isActive = isset($activeCampaigns[$campaignId]);
-
-			//Find out if campaign in upcoming
-			$campaign->isUpcoming = isset($upcomingCampaigns[$campaignId]);
-			$campaign->textBlockTranslationDescription = $campaign->getTextBlockTranslation('description', $activeLanguage->code);
-			if (empty($campaign->textBlockTranslationDescription)) {
-				$campaign->textBlockTranslationDescription = "";
-			}
-			//Get campaign reward name
-			$rewardDetails = $campaign->getRewardDetails();
-			if ($rewardDetails) {
-				$campaign->rewardName = $rewardDetails['name'];
-				$campaign->rewardType = $rewardDetails['rewardType'];
-				$campaign->badgeImage = $rewardDetails['badgeImage'];
-				$campaign->rewardExists = $rewardDetails['rewardExists'];
-			}
-
-				//Fetch milestones for this campaign
-				$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
-				$completedMilestonesCount = 0;
-				$numCampaignMilestones = 0;
-				$milestoneProgressData = [];
-
-				//Store progress for each milestone
-				$campaign->milestoneProgress = [];
-
-
-				foreach ($milestones as $milestone) {
-					$milestoneId = $milestone->id;
-					$numCampaignMilestones++;
-
-					//Calculate milestone progress
-					$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaignId, $userId, $milestone->id);
-					$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId, $campaignId);
-
-					$milestone->progress = $milestoneProgress['progress'];
-					$milestone->completedGoals = $milestoneProgress['completed'];
-					$milestone->totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
-					$milestone->progressData = $progressData;
-				 
-				}
-				$campaign->numCampaignMilestones = $numCampaignMilestones;
-
-				$userCampaign = new UserCampaign();
-				$userCampaign->userId = $userId;
-				$userCampaign->campaignId = $campaignId;
-				$milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
-				$campaign->numCompletedMilestones = count(array_filter($milestoneCompletionStatus));
-
-				//Add milestones to campaign object
-				$campaign->milestones = $milestones;
-
-				//Add the campaign to the list
-
-			$campaignList[] = clone $campaign;
-		}
-		return $campaignList;
-	}
+    public function userCanAdvertise() {
+        $user = UserAccount::getActiveUserObj();
+        if ($user->isAspenAdminUser() || $user->isUserAdmin()){
+            return true;
+        }
+    }
 
 
 
-	function getBreadcrumbs(): array
-	{
-		$breadcrumbs = [];
+    //TODO:: Write a function that uses the milestone id for each progress bar to use the ce_milestone_progress_entries table and 
+    //get information about which books were checked out and count towards the milestone. 
+    function getBreadcrumbs(): array
+    {
+        $breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/MyAccount/Home', 'Your Account');
 		$breadcrumbs[] = new Breadcrumb('', 'Campaigns');
 		return $breadcrumbs;

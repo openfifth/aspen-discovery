@@ -2,6 +2,7 @@
 
 require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
 require_once ROOT_DIR . '/services/Admin/Dashboard.php';
 
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
@@ -18,6 +19,13 @@ class CommunityEngagement_CampaignTable extends Admin_Dashboard {
 			$campaign = Campaign::getCampaignById($campaignId);
 
 			if ($campaign) {
+				$campaignReward = new Reward();
+				$campaignReward->id = $campaign->campaignReward;
+				if ($campaignReward->find(true)) {
+					$campaign->rewardName = $campaignReward->name;
+					$campaign->awardAutomatically = $campaignReward->awardAutomatically;
+					$campaign->rewardType = $campaignReward->rewardType;
+				}
 				$interface->assign('campaign', $campaign);
 				
 				//Retrieve milestones for the campaign
@@ -42,28 +50,32 @@ class CommunityEngagement_CampaignTable extends Admin_Dashboard {
 						//Get milestone completion status
 						$milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
 
-						foreach ($milestones as $milestone) {
-							$milestoneComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-							$userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
-							$totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestone->id);
-							$milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id, $campaignId);
+                        foreach ($milestones as $milestone) {
+                            $milestoneComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
+                            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
+                            $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestone->id);
+                            $milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id, $campaignId);
+                            $milestoneType = $milestone->milestoneType;
+							$milestoneAwardAutomatically = $milestone->awardAutomatically;
 
-							//Calculate percentage progress
-							$percentageProgress = $totalGoals > 0 ? ($userProgress / $totalGoals) * 100 : 0;
-							//Add milestone data for each user
-							$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id] = [
-								'milestoneComplete' => $milestoneComplete,
-								'userProgress' => $userProgress,
-								'goal' => $totalGoals,
-								'milestoneRewardGiven' =>$milestoneRewardGiven,
-								'percentageProgress' => round($percentageProgress, 2),
-							];
-						}
-					}
-				}
-				$interface->assign('userCampaigns', $userCampaigns);
-				$interface->assign('milestones', $milestones);
-				$interface->assign('users', $users);
+                            //Calculate percentage progress
+                            $percentageProgress = $totalGoals > 0 ? ($userProgress / $totalGoals) * 100 : 0;
+                            //Add milestone data for each user
+                            $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id] = [
+                                'milestoneComplete' => $milestoneComplete,
+                                'userProgress' => $userProgress,
+                                'goal' => $totalGoals,
+                                'milestoneRewardGiven' =>$milestoneRewardGiven,
+                                'percentageProgress' => round($percentageProgress, 2),
+                                'milestoneType' => $milestoneType,
+								'milestoneAwardAutomatically' => $milestoneAwardAutomatically,
+                            ];
+                        }
+                    }
+                }
+                $interface->assign('userCampaigns', $userCampaigns);
+                $interface->assign('milestones', $milestones);
+                $interface->assign('users', $users);
 
 			} else {
 				$interface->assign('error', 'Campaign not found.');

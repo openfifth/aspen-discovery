@@ -13,6 +13,9 @@ class Milestone extends DataObject {
 	public $conditionalValue;
 	public $campaignId;
 	public $conditionalOperator;
+	public $progressBeyondOneHundredPercent;
+	public $allowPatronProgressInput;
+	public $description;
 
   
 
@@ -33,6 +36,15 @@ class Milestone extends DataObject {
 				'description' => 'A name for the milestone',
 				'required' => true,
 			],
+			'description' => [
+				'property' => 'description',
+				'type' => 'translatableTextBlock',
+				'label' => 'Description',
+				'maxLength' => 255,
+				'description' => 'A description of the campaign',
+				'defaultTextFile' => 'Milestone_description.MD',
+				'hideInLists'=> true,
+			],
 			'milestoneType' => [
 				'property' => 'milestoneType',
 				'type' => 'enum',
@@ -41,8 +53,9 @@ class Milestone extends DataObject {
 					'user_checkout' => 'Checkout',
 					'user_hold' => 'Hold',
 					'user_work_review' => 'Rating',
+					'manual' => 'Manual',
 				],
-				'onchange' => 'updateConditionalField(this.value)',
+				'onchange' => 'AspenDiscovery.CommunityEngagement.updateManualMilestoneFields()',
 			],
 			'conditionalField' => [
 				'property' => 'conditionalField',
@@ -73,6 +86,20 @@ class Milestone extends DataObject {
 				'maxLength' => 100,
 				'description' => 'Optional value e.g. Fantasy. This should be left blank to create a milestone with no condition.',
 				'required' => false,
+			],
+			'progressBeyondOneHundredPercent' => [
+				'property' => 'progressBeyondOneHundredPercent',
+				'type' => 'checkbox',
+				'label' => 'Track Progress Beyond 100%',
+				'description' => 'Whether or not progress should continue to be tracked once the milestone has reached 100% completion.',
+				'default' => false,
+			],
+			'allowPatronProgressInput' => [
+				'property' => 'allowPatronProgressInput',
+				'type' => 'checkbox',
+				'label' => 'Allow Patrons to Update Progress',
+				'description' => 'Allow patrons to update their own progress for this milestone.',
+				'default' => false,
 			],
 		];
 		return $structure;

@@ -69,7 +69,356 @@ AspenDiscovery.CommunityEngagement = function() {
 					console.error('Error retrieving campaign data.');
 				});
 		
-		}
+		},
+		filterLeaderboard: function() {
+			var selectedCampaignId = document.getElementById("campaign_id").value;
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=filterLeaderboardCampaigns";
+			var params = {
+				campaignId: selectedCampaignId
+			}
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					$('#leaderboard-table').html(data.html);
+					$('#campaign-name').html(data.campaignName);
+				} else {
+					$('#leaderboard-table').html(data.html);
+					$('#campaign-name').html(data.campaignName);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+
+		filterBranchLeaderboard: function() {
+			var selectedCampaignId = document.getElementById("campaign_id").value;
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=filterBranchLeaderboardCampaigns";
+			var params = {
+				campaignId: selectedCampaignId
+			}
+
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					$('#leaderboard-table').html(data.html);
+					$('#campaign-name').html(data.campaignName);
+				} else {
+					$('#leaderboard-table').html(data.html);
+					$('#campaign-name').html(data.campaignName);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+
+		filterLeaderboardType: function () {
+			let leaderboardType = document.getElementById("main-content").dataset.leaderboardType;
+
+			if (leaderboardType === "displayUser") {
+				AspenDiscovery.CommunityEngagement.filterLeaderboard();
+			} else {
+				AspenDiscovery.CommunityEngagement.filterBranchLeaderboard();
+			}
+		},
+
+		updateManualMilestoneFields: function () {
+			let milestoneType = document.querySelector('[name="milestoneType"]').value;
+			let allowPatronProgressInput = document.getElementById('propertyRowallowPatronProgressInput');
+			let conditionalField = document.getElementById('propertyRowconditionalField');
+			let conditionalOperator = document.getElementById('propertyRowconditionalOperator');
+			let conditionalValue = document.getElementById('propertyRowconditionalValue');
+			let description = document.getElementById('propertyRowdescription');
+
+
+
+			if (milestoneType !== 'manual') {
+				allowPatronProgressInput.style.display = 'none';
+				description.style.display = 'none';
+				conditionalField.style.display = '';
+				conditionalOperator.style.display = '';
+				conditionalValue.style.display = '';
+
+			} else {
+				allowPatronProgressInput.style.display = '';
+				description.style.display = '';
+				conditionalField.style.display = 'none';
+				conditionalOperator.style.display = 'none';
+				conditionalValue.style.display = 'none';
+
+			}
+		},
+		manuallyProgressMilestone: function (milestoneId, userId, campaignId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=manuallyProgressUserMilestone";
+			var params = {
+				milestoneId : milestoneId,
+				userId: userId,
+				campaignId: campaignId,
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		optInToCampaignLeaderboard: function (campaignId, userId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=campaignLeaderboardOptIn";
+			var params = {
+				campaignId: campaignId,
+				userId: userId,
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		optOutOfCampaignLeaderboard: function (campaignId, userId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=campaignLeaderboardOptOut";
+			var params = {
+				campaignId: campaignId,
+				userId: userId,
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		toggleCampaignEmailOptIn: function (campaignId, userId, optIn) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=saveCampaignEmailOptInToggle";
+			var params = {
+				campaignId: campaignId, 
+				userId: userId, 
+				optIn: optIn,
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		getSavedLeaderboardCss: function() {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=getLeaderboardData";
+			var cssData = '';
+
+			$.ajax({
+				url: url, 
+				method: 'GET',
+				dataType: 'json',
+				async: false,
+				success: function (data) {
+					if (data.css) {
+						cssData = data.css;
+					}
+				},
+				error: function(jqXHR, textStatus, errorThrown) {
+					console.error("AJAX Error: ", textStatus, errorThrown);
+				}
+			})
+			return cssData;
+		},
+		
+		
+
+		openLeaderboardEditor: function() {
+			// Show the GrapesJS editor and hide the main content
+			document.getElementById("gjs").style.display = 'block';
+			document.getElementById("main-content").style.display = 'none';
+			const mainContent = document.getElementById("main-content");
+			const leaderboardHTML = mainContent.innerHTML;
+			let leaderboardCSS = '';
+
+			leaderboardCSS = AspenDiscovery.CommunityEngagement.getSavedLeaderboardCss();
+
+			const editor = grapesjs.init({
+				container: '#gjs',
+				storageManager: {
+					type: 'none'
+				},
+				plugins: [
+					'gjs-blocks-basic', 
+				],
+				pluginOpts: {
+					'gjs-blocks-basic': {},
+				},
+				fromElement: false,
+			});
+			editor.Panels.addButton('options', [{
+				id: 'save-as-page',
+				className: 'fas fa-save',
+				command: 'saveLeaderboardChanges',
+				attributes: { title: 'Save as Page' }
+			}]);
+			editor.Commands.add('saveLeaderboardChanges', {
+				run: function (){
+					const updatedHTML = editor.getHtml();
+
+					document.getElementById("main-content").innerHTML = updatedHTML;
+
+					const updatedCSS = editor.getCss();
+
+					document.getElementById("gjs").style.display = 'none';
+					document.getElementById("main-content").style.display = 'block';
+
+					AspenDiscovery.CommunityEngagement.saveTemplateToDatabase(updatedHTML, updatedCSS);
+
+				}
+			});
+			editor.on('load', () => {
+				editor.setComponents(leaderboardHTML);
+				editor.setStyle(leaderboardCSS);
+
+				const topPanel = editor.Panels.getPanel('options');
+				if (topPanel) {
+					topPanel.view.$el.css({
+						'flex-wrap': 'nowrap',
+						'overflow': 'visible',
+						'min-height': '40px',
+						'justify-content': 'flex-start'
+					});
+				}
+
+				editor.Panels.getPanels().forEach(panel => {
+					panel.get('buttons').forEach(button => {
+						button.set({
+							attributes: { 
+								style: 'width: auto; min-width: 10px; min-height: 10px; display: flex; align-items: center; justify-content: center;'
+							}
+						});
+					});
+				});
+			})
+		},
+
+		saveTemplateToDatabase: function(updatedHTML, updatedCSS) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=saveLeaderboardChanges";
+			const params = {
+				html: updatedHTML,
+				css: updatedCSS, 
+				templateName: 'leaderboard_template'
+			};
+			$.ajax({
+				url: url,
+				type: "POST",
+				contentType: "application/json",
+				data: JSON.stringify(params),
+				dataType: "json",
+				success: function (data) {
+					if (data.success) {
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				},
+				error: function (jqXHR, textStatus, errorThrown) {
+					console.error("AJAX Error: ", textStatus, errorThrown);
+					console.error("Response Text:", jqXHR.responseText); // Log raw response
+				}
+			})
+		},
+		resetLeaderboard: function() {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=resetLeaderboardDisplay";
+			$.getJSON(url, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			
+		},
+		
+		optInToCampaignEmailNotifications: function (campaignId, userId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=campaignEmailOptIn";
+			var params = {
+				campaignId: campaignId,
+				userId: userId,
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		optOutOfCampaignEmailNotifications: function (campaignId, userId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=campaignEmailOptOut";
+			var params = {
+				campaignId: campaignId,
+				userId: userId,
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		handleCampaignEnrollment: function (campaignId, userId, emailOptIn) {
+
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				method: 'enrollCampaign',
+				campaignId: campaignId,
+				userId: userId,
+				emailOptIn: emailOptIn
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.CommunityEngagement.toggleCampaignEmailOptIn(campaignId, userId, emailOptIn);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail (function (jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			})
+		},
+		updateRewardFields: function () {
+			let rewardType = document.querySelector('[name="rewardType"]').value;
+			let displayRewardNameControl = document.getElementById('propertyRowdisplayName');
+			let automaticRewardControl = document.getElementById('propertyRowawardAutomatically');
+
+			if (rewardType == 0) {
+				displayRewardNameControl.style.display = 'none';
+				automaticRewardControl.style.display = 'none';
+			} else {
+				displayRewardNameControl.style.display = '';
+				automaticRewardControl.style.display = '';
+			}
+		},
+
 	}
 	
 }(AspenDiscovery.CommunityEngagement || {});

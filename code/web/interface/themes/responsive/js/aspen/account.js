@@ -2894,32 +2894,50 @@ AspenDiscovery.Account = (function () {
 			});
 			return false;
 		},
+		showEmailOptInPrompt: function (campaignId, userId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=getCampaignEmailOptInForm";
+			var params = {
+				campaignId: campaignId,
+				userId: userId,
+			}
+
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, true, '', false, false);
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.message);
+					console.error("Error fetching the email opt-in form.");
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX request failed:", textStatus, errorThrown);
+			})
+		},
 		enroll: function (campaignId, userId) {
 			AspenDiscovery.Account.reloadHolds();
 			AspenDiscovery.Account.reloadCheckouts();
 
 			if (Globals.loggedIn) {
-				var url = Globals.path + "/MyAccount/AJAX";
+				var url = Globals.path + "/CommunityEngagement/AJAX";
 				var params = {
-					method: 'enrollCampaign',
+					method: 'getCampaignEmailOptInForm',
 					campaignId: campaignId,
 					userId: userId
 				};
+
 				$.getJSON(url, params, function (data) {
-					if (data.success) {
-						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+					if(data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, true, '', false, false);
 					} else {
-						AspenDiscovery.showMessage(data.title, data.message);
+						AspenDiscovery.showMessage(data.title, data.message)
 					}
-				}).fail(function(jqXHR, textStatus, errorThrown) {
+				}).fail (function (jqXHR, textStatus, errorThrown) {
 					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 				});
-			} else {
-				AspenDiscovery.Account.ajaxLogin(null, function() {
-					return AspenDiscovery.Account.enroll(campaignId, userId);
-				}, false);
 			}
+
 		},
+
 		unenroll: function (campaignId, userId) {
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/MyAccount/AJAX";

@@ -9,18 +9,20 @@ require_once ROOT_DIR . '/sys/Account/User.php';
 
 
 class Campaign extends DataObject {
-	public $__table = 'ce_campaign';
-	public $id;
-	public $name;
-	public $description;
-	public $milestones;
-	public $startDate;
-	public $endDate;
-	public $enrollmentCounter;
-	public $unenrollmentCounter;
-	public $currentEnrollments;
-	public $campaignReward;
-	public $userAgeRange;
+    public $__table = 'ce_campaign';
+    public $id;
+    public $name;
+    public $description;
+    public $milestones;
+    public $startDate;
+    public $endDate;
+    public $enrollmentStartDate;
+    public $enrollmentEndDate;
+    public $enrollmentCounter;
+    public $unenrollmentCounter;
+    public $currentEnrollments;
+    public $campaignReward;
+    public $userAgeRange;
 
 	/** @var AvailableMilestones[] */
 	private $_availableMilestones;
@@ -60,43 +62,55 @@ class Campaign extends DataObject {
 				'defaultTextFile' => 'Campaign_description.MD',
 				'hideInLists'=> true,
 			],
-			'availableMilestones' => [
-				'property' => 'availableMilestones',
-				'type' => 'oneToMany',
-				'label' => 'Milestones',
-				'renderAsHeading' => true,
-				'description' => 'The Milestones to be linked to this campaign',
-				'keyThis' => 'campaignId',
-				'keyOther' => 'campaignId',
-				'subObjectType' => 'CampaignMilestone',
-				'structure' => $milestoneStructure,
-				'sortable' => true,
-				'storeDb' => true,
-				'allowEdit' => false,
-				'canEdit' => false,
-				'canAddNew' => true,
-				'canDelete' => true,
-			],
-			'startDate' => [
-				'property' => 'startDate',
-				'type' => 'date',
-				'label' => 'Campaign Start Date (campaigns with no start date will not be visible to patrons)',
-				'description' => 'The date the campaign starts',
-			],
-			'endDate' => [
-				'property' => 'endDate',
-				'type' => 'date',
-				'label' => 'Campaign End Date (campaigns with no end date will not be visible to patrons)',
-				'description' => 'The date the campaign ends',
-			],
-			'campaignReward' => [
-				'property' => 'campaignReward',
-				'type' => 'enum',
-				'label' => 'Reward for Completing Campaign',
-				'values' => $rewardList, 
-				'description' => 'The reward given for completing the campaign.'
-			],
-			'allowPatronTypeAccess' => [
+            'availableMilestones' => [
+                'property' => 'availableMilestones',
+                'type' => 'oneToMany',
+                'label' => 'Milestones',
+                'renderAsHeading' => true,
+                'description' => 'The Milestones to be linked to this campaign',
+                'keyThis' => 'campaignId',
+                'keyOther' => 'campaignId',
+                'subObjectType' => 'CampaignMilestone',
+                'structure' => $milestoneStructure,
+                'sortable' => true,
+                'storeDb' => true,
+                'allowEdit' => false,
+                'canEdit' => false,
+                'canAddNew' => true,
+                'canDelete' => true,
+            ],
+            'startDate' => [
+                'property' => 'startDate',
+                'type' => 'date',
+                'label' => 'Campaign Start Date (campaigns with no start date will not be visible to patrons)',
+                'description' => 'The date the campaign starts - (midnight on the selected date)',
+            ],
+            'endDate' => [
+                'property' => 'endDate',
+                'type' => 'date',
+                'label' => 'Campaign End Date (campaigns with no end date will not be visible to patrons)',
+                'description' => 'The date the campaign ends - (midnight on the selected date)',
+            ],
+            'campaignReward' => [
+                'property' => 'campaignReward',
+                'type' => 'enum',
+                'label' => 'Reward for Completing Campaign',
+                'values' => $rewardList, 
+                'description' => 'The reward given for completing the campaign.'
+            ],
+            'enrollmentStartDate' => [
+                'property' => 'enrollmentStartDate',
+                'type' => 'date',
+                'label' => 'Enrollment Period Start Date',
+                'description' => 'The date from which patrons can enroll in the campaign',
+            ],
+            'enrollmentEndDate' => [
+                'property' => 'enrollmentEndDate',
+                'type' => 'date',
+                'label' => 'Enrollment Period End Date',
+                'description' => 'The date patrons can enroll in the campaign until',
+            ],
+            'allowPatronTypeAccess' => [
 				'property' => 'allowPatronTypeAccess',
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
@@ -282,10 +296,13 @@ class Campaign extends DataObject {
 		$reward->id = $this->campaignReward;
 		if ($reward->find(true)) {
 			return [
+				'id' => $reward->id,
 				'name' => $reward->name,
 				'rewardType' => $reward->rewardType,
 				'badgeImage' => $reward->getDisplayUrl(),
 				'rewardExists' => !empty($reward->badgeImage),
+				'displayName' => $reward->displayName,
+				'awardAutomatically' =>$reward->awardAutomatically,
 			];
 		}
 		return null;
@@ -548,8 +565,10 @@ class Campaign extends DataObject {
 				if ($campaignReward->find(true)) {
 					$pastCampaignList[$campaign->id]->rewardId = $campaignReward->id;
 					$pastCampaignList[$campaign->id]->rewardName = $campaignReward->name;
+					$pastCampaignList[$campaign->id]->displayName = $campaignReward->displayName;
 					$pastCampaignList[$campaign->id]->rewardType = $campaignReward->rewardType;
 					$pastCampaignList[$campaign->id]->rewardImage = $campaignReward->getDisplayUrl();
+					$pastCampaignList[$campaign->id]->awardAutomatically = $campaignReward->awardAutomatically;
 					if (!empty($campaignReward->badgeImage)) {
 						$pastCampaignList[$campaign->id]->rewardExists = true;
 					}
@@ -571,23 +590,26 @@ class Campaign extends DataObject {
 					if ($userCampaign->find(true)) {
 						$milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
 						$pastCampaignList[$campaign->id]->campaignRewardGiven = (int)$userCampaign->rewardGiven;
+						$pastCampaignList[$campaign->id]->isComplete = $userCampaign->checkCompletionStatus();
 
-	
-						// Update milestone details based on user progress
-						foreach ($pastCampaignList[$campaign->id]->milestones as $milestone) {
-							$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $userId, $milestone->id);
-							$milestone->userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaign->id, $userId);
-							$milestone->isComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-							$milestone->rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $userId, $campaign->id);
-							$milestone->progress = $milestoneProgress['progress'];
-						}
-					}
-				}
-			}
-		}
-		return $pastCampaignList;
-	}
-	
+    
+                        // Update milestone details based on user progress
+                        foreach ($pastCampaignList[$campaign->id]->milestones as $milestone) {
+                            $milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $userId, $milestone->id);
+                            $milestone->userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaign->id, $userId);
+                            $milestone->isComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
+                            $milestone->rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $userId, $campaign->id);
+                            $milestone->progress = $milestoneProgress['progress'];
+                            $milestone->extraProgress = $milestoneProgress['extraProgress'];
+                            $milestone->progressBeyondOneHundredPercent = $milestone->progressBeyondOneHundredPercent;
+                        }
+                    }
+                }
+            }
+        }
+        return $pastCampaignList;
+    }
+    
 
 
    
@@ -632,10 +654,476 @@ class Campaign extends DataObject {
 		return $userCampaign->find(true);
 	}
 
-	public function saveMilestones() {
-		if (isset($this->_availableMilestones) && is_array($this->_availableMilestones)) {
-			$this->saveOneToManyOptions($this->_availableMilestones, 'campaignId');
-			unset($this->_availableMilestones);
+    public function saveMilestones() {
+        if (isset($this->_availableMilestones) && is_array($this->_availableMilestones)) {
+            $this->saveOneToManyOptions($this->_availableMilestones, 'campaignId');
+            unset($this->_availableMilestones);
+        }
+    }
+
+     /**
+     * Return an overall leaderboard based on the number of milestones completed by each user across all campaigns.
+     * 
+     * @return array An array of users ranked by the number of completed milestones.
+     */
+    public function getOverallLeaderboard() {
+        $userCampaign = new UserCampaign();
+        $users = $this->getAllUsersInCampaigns();
+		global $logger;
+		$logger->log($users, Logger::LOG_ERROR);
+        $leaderboard = [];
+        foreach ($users as $user) {
+            if ($user->optInToAllCampaignLeaderboards == 0) {
+                continue;
+            }
+            $totalCompletedMilestones = $userCampaign->calculateUserCompletedMilestones($user->id);
+            $leaderboard[] = [
+                'user' => $user->displayName,
+                'completedMilestones' => $totalCompletedMilestones
+            ];
+        }
+        usort($leaderboard, function ($a, $b) {
+            if ($b['completedMilestones'] !== $a['completedMilestones']) {
+                return $b['completedMilestones'] <=> $a['completedMilestones'];
+            }
+            return strcasecmp($a['user'], $b['user']);
+        });
+        $currentRank = 1;
+        $previousRankValue = null;
+        foreach ($leaderboard as $index => $entry) {
+            if ($entry['completedMilestones'] === 0) {
+                $leaderboard[$index]['rankDisplayed'] = '-';
+                continue;
+            }
+            if ($entry['completedMilestones'] !== $previousRankValue) {
+                $currentRank = $index + 1;
+                $previousRankValue = $entry['completedMilestones'];
+            }
+            $leaderboard[$index]['rankDisplayed'] = $this->getRankDisplayed($currentRank);
+        }
+        return $leaderboard;
+        
+    }
+    /**
+     * Return a leaderboard for each individual campaign based on the number of milestones completed by the user.
+     * 
+     * @param int $campaignId The ID of the campaign for which to fetch the leaderboard.
+     * @return array An array of users ranked by the number of completed milestones.
+     *  
+     */
+    public function getLeaderboardByCampaign($campaignId) {
+        $userCampaign = new UserCampaign();
+        $leaderboard = [];
+        $userCampaignRecords = [];
+       if (!$campaignId) {
+        return [];
+       }
+       $userCampaign->whereAdd("campaignId = '$campaignId'");
+       $userCampaign->find();
+       while ($userCampaign->fetch()) {
+        $userCampaignRecords[] = clone $userCampaign;
+       }
+       foreach ($userCampaignRecords as $userCampaignRecord) {
+		if ($userCampaignRecord->optInToCampaignLeaderboard != 1) {
+			continue;
 		}
-	}
+            $milestoneCompletionStatus = $userCampaignRecord->checkMilestoneCompletionStatus();
+            $userId = $userCampaignRecord->userId;
+            $user = new User();
+            $user->id = $userId;
+            if (!$user->find(true)) {
+                continue;
+            }
+            $completedMilestones = count(array_filter($milestoneCompletionStatus, function($status) {
+                return $status === true;
+            }));
+            $leaderboard[] = [
+                'user' => $user->displayName,
+                'completedMilestones' => $completedMilestones,
+            ];
+       }
+       usort($leaderboard, function($a, $b) {
+        if ($b['completedMilestones'] !== $a['completedMilestones']) {
+            return $b['completedMilestones']<=> $a['completedMilestones'];
+        }
+        return $a['user']<=> $b['user'];
+       });
+       //Add displayed rank after sorting, skip users with 0 completed milestones
+       $currentRank = 1;
+       $previousRankValue = null;
+       foreach ($leaderboard as $index =>$entry) {
+            if ($entry['completedMilestones'] === 0) {
+                $leaderboard[$index]['rankDisplayed'] = '-';
+                continue;
+            }
+            if ($entry['completedMilestones'] !== $previousRankValue) {
+                $currentRank = $index + 1;
+                $previousRankValue = $entry['completedMilestones'];
+            }
+            $leaderboard[$index]['rankDisplayed'] = $this->getRankDisplayed($currentRank);
+       }
+       return $leaderboard;
+    }
+    private function getRankDisplayed($completedMilestones) {
+        $suffix = 'th';
+        if ($completedMilestones % 10 == 1 && $completedMilestones % 100 != 11) {
+            $suffix= 'st';
+        } elseif ($completedMilestones % 10 == 2 && $completedMilestones % 100 != 12) {
+            $suffix = 'nd';
+        } elseif ($completedMilestones % 10 == 3 && $completedMilestones % 100 != 13) {
+            $suffix = 'rd';
+        }
+        return $completedMilestones . $suffix;
+    }
+
+     /**
+     * Return an overall leaderboard based on the number of milestones completed by each branch across all campaigns.
+     * 
+     * @return array An array of branches ranked by the number of completed milestones.
+     */
+    public function getOverallLeaderboardByBranch() {
+        $userCampaign = new UserCampaign();
+        $user = UserAccount::getActiveUserObj();
+        $users = $this->getAllUsersInCampaigns();
+        $branchMilestones = [];
+
+        foreach ($users as $user) {
+            $totalCompletedMilestones = $userCampaign->calculateUserCompletedMilestones($user->id);
+            $branch = $user->getHomeLocationName();
+
+            if (!isset($branchMilestones[$branch])) {
+                $branchMilestones[$branch] = 0;
+            }
+            $branchMilestones[$branch] += $totalCompletedMilestones;
+        }
+
+        $leaderboard = [];
+        foreach ($branchMilestones as $branch => $totalMilestones) {
+            $leaderboard[] = [
+                'branch' =>$branch,
+                'completedMilestones' => $totalMilestones
+            ];
+        }
+
+        usort($leaderboard, function ($a, $b) {
+            if ($b['completedMilestones'] !== $a['completedMilestones']) {
+                return $b['completedMilestones'] <=> $a['completedMilestones'];
+            }
+            return strcasecmp($a['branch'], $b['branch']);
+        });
+
+        $currentRank = 1;
+        $previousRankValue = null;
+        foreach ($leaderboard as $index => $entry) {
+            if ($entry['completedMilestones'] === 0) {
+                $leaderboard[$index]['rankDisplayed'] = '-';
+                continue;
+            }
+            if ($entry['completedMilestones'] !== $previousRankValue) {
+                $currentRank = $index + 1;
+                $previousRankValue = $entry['completedMilestones'];
+            }
+            $leaderboard[$index]['rankDisplayed'] = $this->getRankDisplayed($currentRank);
+        }
+        return $leaderboard;
+    }
+
+    /**
+     * Return a leaderboard for each individual campaign based on the number of milestones completed by the branch.
+     * 
+     * @param int $campaignId The ID of the campaign for which to fetch the leaderboard.
+     * @return array An array of users branches ranked by the number of completed milestones.
+     *  
+     */
+    public function getLeaderboardByBranchForCampaign($campaignId) {
+        if (!$campaignId) {
+            return [];
+        }
+
+        $userCampaign = new UserCampaign();
+        $branchLeaderboard = [];
+        $userCampaignRecords = [];
+
+        $userCampaign->whereAdd("campaignId = '$campaignId'");
+        $userCampaign->find();
+
+        while ($userCampaign->fetch()) {
+            $userCampaignRecords[] = clone $userCampaign;
+        }
+
+        foreach ($userCampaignRecords as $userCampaignRecord) {
+            $milestoneCompletionStatus = $userCampaignRecord->checkMilestoneCompletionStatus();
+            $userId = $userCampaignRecord->userId;
+
+            $user = new User();
+            $user->id = $userId;
+            if (!$user->find(true)) {
+                continue;
+            }
+
+            $branch = $user->getHomeLocationName();
+            $completedMilestones = count(array_filter($milestoneCompletionStatus, function ($status) {
+                return $status === true;
+            }));
+
+            if (!isset($branchLeaderboard[$branch])) {
+                $branchLeaderboard[$branch] = 0;
+            }
+
+            $branchLeaderboard[$branch] += $completedMilestones;
+        }
+        $leaderboard = [];
+        foreach ($branchLeaderboard as $branch => $completedMilestones) {
+            $leaderboard[] = [
+                'branch' => $branch,
+                'completedMilestones' => $completedMilestones
+            ];
+        }
+
+        usort($leaderboard, function ($a, $b) {
+            if ($b['completedMilestones'] !== $a['completedMilestones']) {
+                return $b['completedMilestones'] <=> $a['completedMilestones'];
+            }
+            return strcasecmp($a['branch'], $b['branch']);
+        });
+
+        $currentRank = 1;
+        $previousRankValue = null;
+        foreach ($leaderboard as $index => $entry) {
+            if ($entry['completedMilestones'] === 0) {
+                $leaderboard[$index]['rankDisplayed'] = '-';
+                continue;
+            }
+            if ($entry['completedMilestones'] !== $previousRankValue) {
+                $currentRank = $index + 1;
+                $previousRankValue = $entry['completedMilestones'];
+            }
+            $leaderboard[$index]['rankDisplayed'] = $this->getRankDisplayed($currentRank);
+        }
+        return $leaderboard;
+    }
+
+	function getCampaigns() {
+		global $activeLanguage;
+
+		$campaign = new Campaign();
+		$campaignList = [];
+
+		if (!UserAccount::isLoggedIn()) {
+			return $campaignList;
+		}
+		$user = UserAccount::getLoggedInUser();
+		$userId = $user->id;
+
+		//Get active campaigns
+		$activeCampaigns = Campaign::getActiveCampaignsList();
+
+		//Get upcoming campaigns - those starting in the next month
+		$upcomingCampaigns = Campaign::getUpcomingCampaigns();
+
+		//Get campaigns
+		$campaign->find();
+		while ($campaign->fetch()) {
+			$campaignId = $campaign->id;
+
+			//Find out if user is enrolled in campaign
+			$campaign->enrolled = $campaign->isUserEnrolled($userId);
+			//Find out if campaign is active
+			$campaign->isActive = isset($activeCampaigns[$campaignId]);
+
+			//Find out if campaign in upcoming
+			$campaign->isUpcoming = isset($upcomingCampaigns[$campaignId]);
+			//Get campaign reward name
+			$rewardDetails = $campaign->getRewardDetails();
+			if ($rewardDetails) {
+				$campaign->rewardName = $rewardDetails['name'];
+				$campaign->rewardId = $rewardDetails['id'];
+				$campaign->rewardType = $rewardDetails['rewardType'];
+				$campaign->badgeImage = $rewardDetails['badgeImage'];
+				$campaign->rewardExists = $rewardDetails['rewardExists'];
+                $campaign->displayName = $rewardDetails['displayName'];
+                $campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
+			}
+
+				//Fetch milestones for this campaign
+				$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+				$completedMilestonesCount = 0;
+				$numCampaignMilestones = 0;
+				$milestoneProgressData = [];
+
+				//Store progress for each milestone
+				$campaign->milestoneProgress = [];
+
+
+				foreach ($milestones as $milestone) {
+					$milestoneId = $milestone->id;
+					$numCampaignMilestones++;
+
+					//Calculate milestone progress
+					$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaignId, $userId, $milestone->id);
+					$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId, $campaignId);
+
+                    $milestone->progress = $milestoneProgress['progress'];
+                    $milestone->extraProgress = $milestoneProgress['extraProgress'];
+                    $milestone->completedGoals = $milestoneProgress['completed'];
+                    $milestone->totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
+                    $milestone->progressData = $progressData;
+
+					if ($milestone->completedGoals >= $milestone->totalGoals) {
+						$milestone->milestoneComplete = true;
+					} else {
+						$milestone->milestoneComplete = false;
+					}
+                }
+                //Add completed milestones count to campaign object
+                // $campaign->numCompletedMilestones = $completedMilestonesCount;
+                $campaign->numCampaignMilestones = $numCampaignMilestones;
+				
+
+				$currentDate = date('Y-m-d');
+				$canEnroll = (
+					(!$campaign->enrollmentStartDate || $currentDate >= $campaign->enrollmentStartDate) &&
+					(!$campaign->enrollmentEndDate || $currentDate <= $campaign->enrollmentEndDate)
+				);
+				$campaign->canEnroll = $canEnroll;
+                $userCampaign = new UserCampaign();
+                $userCampaign->userId = $userId;
+                $userCampaign->campaignId = $campaignId;
+                $userCampaign->find();
+                while($userCampaign->fetch()) {
+					$campaign->isComplete = $userCampaign->checkCompletionStatus();
+                    if ($userCampaign->optInToCampaignLeaderboard === null) {
+                        $campaign->optInToCampaignLeaderboard = $user->optInToAllCampaignLeaderboards;
+                    }else{
+                        $campaign->optInToCampaignLeaderboard = $userCampaign->optInToCampaignLeaderboard;
+                    }
+                    if ($userCampaign->optInToCampaignEmailNotifications == null) {
+                        $campaign->optInToCampaignEmailNotifications = $user->campaignNotificationsByEmail;
+                    } else {
+                        $campaign->optInToCampaignEmailNotifications = $userCampaign->optInToCampaignEmailNotifications;
+                    }
+                }
+                $milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
+                $campaign->numCompletedMilestones = count(array_filter($milestoneCompletionStatus));
+
+				//Add milestones to campaign object
+				$campaign->milestones = $milestones;
+
+                //Add the campaign to the list
+            $campaignList[] = clone $campaign;
+        }
+        return $campaignList;
+    }
+
+    function getLinkedUserCampaigns($userId) {
+        if (empty($userId)){
+            throw new InvalidArgumentException("User ID is required");
+        }
+        $user = new User();
+        $user->id = $userId;
+
+        if (!$user->find(true)) {
+            throw new RuntimeException("User not found.");
+        }
+
+        $linkedUsers = $user->getLinkedUsers();
+        if (empty($linkedUsers)) {
+            return [];
+        }
+
+        $groupedLinkedCampaigns = [];
+
+        foreach ($linkedUsers as $linkedUser) {
+            $eligibleCampaigns = [];
+            $campaign = new Campaign();
+
+            if ($campaign->find()) {
+                while ($campaign->fetch()) {
+                    $userCampaign = new UserCampaign();
+                    $userCampaign->userId = $linkedUser->id;
+                    $userCampaign->campaignId = $campaign->id;
+    
+                    $isEnrolled = $userCampaign->find(true);
+                    $campaignReward = null;
+                    $rewardDetails = $campaign->getRewardDetails();
+                    if ($rewardDetails != null) {
+                        $campaignReward = [
+                            'rewardName' => $rewardDetails['name'],
+                            'rewardType' => $rewardDetails['rewardType'], 
+                            'badgeImage' => $rewardDetails['badgeImage'],
+                            'rewardExists' => $rewardDetails['rewardExists'],
+                            'displayName' => $rewardDetails['displayName'],
+                        ];
+                    }
+
+                    $startDate = $campaign->startDate;
+                    $endDate = $campaign->endDate;
+
+					$currentDate = date('Y-m-d');
+					$canEnroll = (
+						(!$campaign->enrollmentStartDate || $currentDate >= $campaign->enrollmentStartDate) &&
+						(!$campaign->enrollmentEndDate || $currentDate <= $campaign->enrollmentEndDate)
+					);
+                    $milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
+                    $numCampaignMilestones = count($milestones);
+                    $numCompletedMilestones = 0;
+                    $milestoneRewards = [];
+
+                    foreach ($milestones as $milestone) {
+                        $milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $linkedUser->id, $milestone->id);
+                        $completedGoals = $milestoneProgress['completed'];
+                        $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
+						$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($linkedUser->id, $milestone->id, $campaign->id);
+
+
+                        if ($milestoneProgress['progress'] >= 100) {
+                            $numCompletedMilestones++;
+                        }
+
+
+                        $milestoneRewards[] = [
+                            'id' => $milestone->id,
+                            'milestoneName' => $milestone->name,
+                            'rewardName' => $milestone->rewardName, 
+                            'rewardType' => $milestone->rewardType, 
+                            'awardAutomatically' => $milestone->awardAutomatically, 
+                            'displayName' => $milestone->displayName,
+                            'badgeImage' => $milestone->rewardImage,
+                            'rewardExists' => $milestone->rewardExists,
+                            'progress' => $milestoneProgress['progress'],
+                            'extraProgress' => $milestoneProgress['extraProgress'],
+                            'completedGoals' => $completedGoals,
+                            'totalGoals' => $totalGoals,
+                            'progressData' => $progressData,
+                            // 'progressData' => $milestoneProgress['data'],
+                            'progressBeyondOneHundredPercent' => $milestone->progressBeyondOneHundredPercent,
+                            'allowPatronProgressInput' => $milestone->allowPatronProgressInput
+                        ];
+                    }
+
+
+                    $eligibleCampaigns[] = [
+                        'campaignId' => $campaign->id,
+                        'campaignName' => $campaign->name,
+                        'isEnrolled' => $isEnrolled,
+                        'campaignReward' => $campaignReward,
+                        'milestones' => $milestoneRewards,
+                        'numCompletedMilestones' => $numCompletedMilestones,
+                        'numCampaignMilestones' => $numCampaignMilestones,
+                        'startDate' => $startDate,
+                        'endDate' => $endDate,
+						'canEnroll' => $canEnroll
+                    ];
+                }
+            }
+
+            $groupedLinkedCampaigns[] = [
+                'linkedUserName' => $linkedUser->displayName, 
+                'linkedUserId' => $linkedUser->id,
+                'campaigns' => $eligibleCampaigns
+            ];
+        }
+       return $groupedLinkedCampaigns;
+    }
+    
 }

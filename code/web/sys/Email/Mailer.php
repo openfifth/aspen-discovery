@@ -22,6 +22,7 @@ class Mailer {
 		require_once ROOT_DIR . '/sys/Email/AmazonSesSetting.php';
 		require_once ROOT_DIR . '/sys/Email/SMTPSetting.php';
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
+		global $logger;
 		//TODO: Do validation of the address
 		$amazonSesSettings = new AmazonSesSetting();
 		$smtpServerSettings = new SMTPSetting();
@@ -110,6 +111,7 @@ class Mailer {
 	}
 
 	private function sendViaAmazonSes(AmazonSesSetting $amazonSesSettings, string $to, ?string $replyTo, string $subject, ?string $body, ?string $htmlBody, ?array $attachments): bool {
+		global $logger;
 		require_once ROOT_DIR . '/sys/Email/AmazonSesMessage.php';
 		$message = new AmazonSesMessage();
 		$toAddresses = explode(';', $to);
@@ -132,9 +134,11 @@ class Mailer {
 
 		$response = $amazonSesSettings->sendEmail($message, false, false);
 		if ($response == false) {
+			$logger->log("Amazon SES send failed no response", Logger::LOG_ERROR);
 			return false;
 		} else {
 			if (isset($response->error) && count($response->error) > 0) {
+				$logger->log('Amazon SES send failed: ' . implode(', ', $response->error), Logger::LOG_ERROR);
 				return false;
 			} else {
 				return true;

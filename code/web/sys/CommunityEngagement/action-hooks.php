@@ -2,6 +2,10 @@
 
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+
+
 
 /**
  * after_checkout_insert
@@ -22,11 +26,16 @@ add_action('after_object_insert', 'after_checkout_insert', function ($value) {
 			return;
 
 		$campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId, $value->groupedWorkId);
+
+        $userCampaign = new UserCampaign();
+		$userCampaign->userId = $value->userId;
+		$userCampaign->campaignId = $campaignMilestone->campaignId;
+        $userCampaign->checkAndHandleCampaignCompletion($value->userId, $campaignMilestone->campaignId);
 	}
 	return;
 });
 
-/**
+/**;
  * after_hold_insert
  *
  * React to a new user_hold being added to the database.
@@ -45,6 +54,11 @@ add_action('after_object_insert', 'after_hold_insert', function ($value) {
 			return;
 
 		$campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId, $value->groupedWorkId);
+
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $value->userId;
+		$userCampaign->campaignId = $campaignMilestone->campaignId;
+        $userCampaign->checkAndHandleCampaignCompletion($value->userId, $campaignMilestone->campaignId);
 	}
 	return;
 });
@@ -85,6 +99,11 @@ add_action('after_object_insert', 'after_work_review_insert', function ($value) 
 
 	while ($campaignMilestone->fetch()) {
 		$campaignMilestone->addCampaignMilestoneProgressEntry($value, $value->userId, $value->groupedRecordPermanentId);
+
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $value->userId;
+		$userCampaign->campaignId = $campaignMilestone->campaignId;
+        $userCampaign->checkAndHandleCampaignCompletion($value->userId, $campaignMilestone->campaignId);
 	}
 	return;
 });

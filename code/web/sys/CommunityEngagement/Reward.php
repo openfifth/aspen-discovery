@@ -4,9 +4,11 @@ class Reward extends DataObject {
 	public $__table = 'ce_reward';
 	public $id;
 	public $name;
+	public $displayName;
 	public $description;
 	public $rewardType;
 	public $badgeImage;
+	public $awardAutomatically;
 
 	public static function getObjectStructure($context = ''):array {
 		global $serverName;
@@ -41,6 +43,21 @@ class Reward extends DataObject {
 				'label' => 'Reward Type',
 				'description' => 'The type of reward',
 				'values' => $rewardType,
+				'onchange' => 'AspenDiscovery.CommunityEngagement.updateRewardFields()',
+			],
+			'displayName' => [
+				'property' => 'displayName',
+				'type' => 'checkbox',
+				'label' => 'Display Name',
+				'description' => 'Whether or not to display the reward name to patrons',
+				'default' => true,
+			],
+			'awardAutomatically' => [
+				'property' => 'awardAutomatically',
+				'type' => 'checkbox',
+				'label' => 'Award Automatically',
+				'description' => 'Whether or not to give this award automatically upon campaign or milestone completion',
+				'default' => true,
 			],
 			'badgeImage' => [
 				'property' => 'badgeImage',

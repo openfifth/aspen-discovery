@@ -446,6 +446,11 @@ class Library extends DataObject {
 	// ILS privacy consent
 	public $ilsConsentEnabled;
 
+	//Community Engagement
+	public $campaignLeaderboardDisplay;
+	public $sendStaffEmailOnCampaignCompletion;
+	public $campaignCompletionNewEmail;
+
 	//SHAREit
 	public $repeatInShareIt;
 	public $shareItCid;
@@ -3675,6 +3680,43 @@ class Library extends DataObject {
 						'default' => false,
 					],
 				]
+			],
+			'communityEngagement' => [
+				'property' => 'communityEngagement',
+				'type' => 'section',
+				'label' => 'Community Engagement',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'expandByDefault' => false,
+				'properties' => [
+					'campaignLeaderboardDisplay' => [
+						'property' => 'campaignLeaderboardDisplay',
+						'type' => 'enum',
+						'label' => 'Campaign Leaderbaord Display',
+						'description' => 'Whether to display the rank on the leaderboard by branch or by user',
+						'values' => [
+							'displayBranch' => 'Display Branch',
+							'displayUser' => 'Display User',
+						],
+						'default' => 'displayBranch',
+					],
+					'sendStaffEmailOnCampaignCompletion' => [
+						'property' => 'sendStaffEmailOnCampaignCompletion',
+						'type' => 'checkbox',
+						'label' => 'Send email to library when a user completes a campaign',
+						'description' => 'Whether or not an email should be sent out when a user has completed a campaign.',
+						'hideInLists' => true,
+						'default' => 0,
+					],
+					'campaignCompletionNewEmail' => [
+						'property' => 'campaignCompletionNewEmail',
+						'type' => 'text',
+						'label' => 'Email to receive notifications when patrons complete campaigns',
+						'description' => 'The email address that will receive emails when a patron completes a campaign.',
+						'maxLength' => 125,
+						'hideInLists' => true,
+					],
+				],
 			],
 			'messagingSection' => [
 				'property' => 'messagingSection',

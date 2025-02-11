@@ -8,6 +8,7 @@ class CampaignMilestoneUsersProgress extends DataObject
 	public $ce_milestone_id;
 	public $progress;
 	public $rewardGiven;
+	public $milestoneCompleteEmailSent;
 
 	public static function getProgressByMilestoneId($milestoneId, $campaignId, $userId) {
 		$milestoneProgress = new Self();
@@ -17,8 +18,9 @@ class CampaignMilestoneUsersProgress extends DataObject
 		$milestoneProgress->whereAdd('userId = ' . intval($userId));
 		$milestoneProgress->find(true);
 
-		return $milestoneProgress->progress ? $milestoneProgress->progress : 0;
-	}
+        return $milestoneProgress->progress ? $milestoneProgress->progress : 0;
+    }
+
 
 	public static function getRewardGivenForMilestone($milestoneId, $userId, $campaignId) {
 		$progress = new CampaignMilestoneUsersProgress();
