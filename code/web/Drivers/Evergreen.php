@@ -778,11 +778,29 @@ class Evergreen extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function updatePatronInfo(User $patron, $canUpdateContactInfo, $fromMasquerade): array {
-		return [
+	public function updatePatronInfo(User $patron, $canUpdateContactInfo, $fromMasquerade): array {
+		$authToken = $this->getAPIAuthToken($patron, true);
+		$userMessages = [
 			'success' => false,
-			'messages' => ['Cannot update patron information with this ILS.'],
+			'messages' => [],
 		];
+
+		if (!$authToken || !$canUpdateContactInfo) {
+			$userMessages['messages'][] = 'Your contact information cannot be updated.';
+			return $userMessages;
+		}
+		$propertyName = '';
+		
+		if (!isset($_REQUEST['email'])) {
+			return $userMessages;
+		}
+		$propertyName = 'email';
+		$propertyValue = $_REQUEST['email'];
+		$success = $this->updatePatronProperty($propertyName, $propertyValue, $patron->ils_password, $authToken);
+		$userMessages['messages'][] = $success ? 'Your email has been updated.' : 'Your email could not be updated. Please contact your library';
+		$userMessages['success'] = $success;
+
+		return $userMessages;
 	}
 
 	private function updatePatronProperty($propertyName, $propertyValue, $patronIlsPassword, $authToken): bool {
