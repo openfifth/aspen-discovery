@@ -785,6 +785,36 @@ class Evergreen extends AbstractIlsDriver {
 		];
 	}
 
+	private function updatePatronProperty($propertyName, $propertyValue, $patronIlsPassword, $authToken): bool {
+		$evergreenUrl = $this->accountProfile->patronApiUrl . "/osrf-gateway-v1/$propertyName";
+		$headers = [
+			'Content-Type: application/x-www-form-urlencoded',
+		];
+		$this->apiCurlWrapper->addCustomHeaders($headers, false);
+		/**The order of the request parameters is crucial
+		 * This Evergreen API only handles unnamed parameters,
+		 * And so it is only their position within the URL that
+		 * determines which is which
+		*/
+		$request = 'service=open-ils.actor';
+		$request .= "&method=open-ils.actor.user.$propertyName.update";
+		$request .= '&param=' . json_encode($authToken);
+		$request .= '&param=' . json_encode($propertyValue);
+		$request .= '&param=' . json_encode($patronIlsPassword);
+
+		$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
+		ExternalRequestLogEntry::logRequest('evergreen.updatePatronProperty', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $request, $this->apiCurlWrapper->getResponseCode(), $apiResponse, []);
+
+		/** It seems the response sent back by the Evergreen API will have a
+		 * status code of 200 even upon failure (eg. if the patron password
+		 * is incorrect.) However, a successful update will always result
+		 * in the "payload" property being set to 1. Check for this instead.
+		*/
+		$responseData = json_decode($apiResponse, true);
+		$success = isset($responseData['payload']) && $responseData['payload'][0] == 1;
+		return $success;
+	}
+
 
 	private function isDuplicateUserName($username):bool {
 		global $aspen_db;
