@@ -785,6 +785,16 @@ class Evergreen extends AbstractIlsDriver {
 		];
 	}
 
+
+	private function isDuplicateUserName($username):bool {
+		global $aspen_db;
+		$condition = "ils_username=" . "'" . $username . "'";
+		$query = "SELECT COUNT(ils_username) FROM user WHERE $condition;";
+		$queryObject = $aspen_db->query($query, PDO::FETCH_ASSOC);
+		$results = $queryObject->fetch();
+		return isset($results["COUNT(ils_username)"]) && $results["COUNT(ils_username)"];
+	}
+
 	public function hasNativeReadingHistory(): bool {
 		return true;
 	}
