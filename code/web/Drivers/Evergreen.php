@@ -2610,6 +2610,12 @@ class Evergreen extends AbstractIlsDriver {
 						if (!empty($mappedPatronData['suffix'])) {
 							$user->_fullname .= ' ' . $mappedPatronData['suffix'];
 						}
+						if (!empty($mappedPatronData['email'])) {
+							$user->email = $mappedPatronData['email'];
+						}
+						if (!empty($mappedPatronData['usrname'])) {
+							$user->ils_username = $mappedPatronData['usrname'];
+						}
 						$user->_fullname = trim($user->_fullname);
 
 						if (!empty($mappedPatronData['expire_date'])) {
