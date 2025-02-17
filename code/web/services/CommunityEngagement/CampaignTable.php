@@ -42,28 +42,30 @@ class CommunityEngagement_CampaignTable extends Admin_Dashboard {
 						//Get milestone completion status
 						$milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
 
-						foreach ($milestones as $milestone) {
-							$milestoneComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-							$userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
-							$totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestone->id);
-							$milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id);
+                        foreach ($milestones as $milestone) {
+                            $milestoneComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
+                            $userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaignId, $user->id);
+                            $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestone->id);
+                            $milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $user->id);
+                            $milestoneType = $milestone->milestoneType;
 
-							//Calculate percentage progress
-							$percentageProgress = $totalGoals > 0 ? ($userProgress / $totalGoals) * 100 : 0;
-							//Add milestone data for each user
-							$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id] = [
-								'milestoneComplete' => $milestoneComplete,
-								'userProgress' => $userProgress,
-								'goal' => $totalGoals,
-								'milestoneRewardGiven' =>$milestoneRewardGiven,
-								'percentageProgress' => round($percentageProgress, 2),
-							];
-						}
-					}
-				}
-				$interface->assign('userCampaigns', $userCampaigns);
-				$interface->assign('milestones', $milestones);
-				$interface->assign('users', $users);
+                            //Calculate percentage progress
+                            $percentageProgress = $totalGoals > 0 ? ($userProgress / $totalGoals) * 100 : 0;
+                            //Add milestone data for each user
+                            $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id] = [
+                                'milestoneComplete' => $milestoneComplete,
+                                'userProgress' => $userProgress,
+                                'goal' => $totalGoals,
+                                'milestoneRewardGiven' =>$milestoneRewardGiven,
+                                'percentageProgress' => round($percentageProgress, 2),
+                                'milestoneType' => $milestoneType,
+                            ];
+                        }
+                    }
+                }
+                $interface->assign('userCampaigns', $userCampaigns);
+                $interface->assign('milestones', $milestones);
+                $interface->assign('users', $users);
 
 			} else {
 				$interface->assign('error', 'Campaign not found.');
