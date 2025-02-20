@@ -71,12 +71,11 @@ class CommunityEngagement_ViewImage extends Action {
         }
     }
 
-    //TODO:: Change permissions
     function getBreadcrumbs(): array {
         $breadcrumbs = [];
         $breadcrumbs[] = new Breadcrumb('/', 'Home');
         $breadcrumbs[] = new Breadcrumb('', $this->uploadedImage->title, true);
-        if (UserAccount::userHasPermission('Administer All Web Content')) {
+        if (UserAccount::userHasPermission('Administer Community Engagement Module')) {
             $breadcrumbs[] = new Breadcrumb('/CommunityEngagement/Images?id=' . $this->uploadedImage->id . '&objectAction=edit', 'Edit', true);
         }
         return $breadcrumbs;
