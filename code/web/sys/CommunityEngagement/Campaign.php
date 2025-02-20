@@ -513,74 +513,6 @@ class Campaign extends DataObject {
     }
     
 
-    // public function getPastCampaigns(int $userId): array {
-    //     $campaign = new Campaign();
-    //     $currentDate = date('Y-m-d H:i:s');
-
-    //     $campaign->whereAdd("endDate < '$currentDate'");
-    //     $pastCampaignList = [];
-
-    //     if ($campaign->find()) {
-    //         while($campaign->fetch()) {
-    //             $pastCampaignList[$campaign->id] = clone $campaign;
-
-    //             //Fetch campaign reward
-    //             $reward = new Reward();
-    //             $reward->id = $campaign->campaignReward;
-    //             if ($reward->find(true)) {
-    //                 $pastCampaignList[$campaign->id]->rewardName = $reward->name;
-    //             }
-
-    //             //Fetch campaign milestones
-    //             $campaignId = $campaign->id;
-    //             $milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
-    //             $pastCampaignList[$campaign->id]->milestones = $milestones;
-
-
-    //             //check if user is enrolled
-    //             $pastCampaignList[$campaign->id]->enrolled = $campaign->isUserEnrolled($userId);
-
-
-    //             foreach ($pastCampaignList[$campaign->id]->milestones as $milestone) {
-    //                 $milestoneReward = new Reward();
-    //                 $milestoneReward->id = $milestone->rewardId;
-    //                 if ($milestoneReward->find(true)) {
-    //                     $milestone->rewardName = $milestoneReward->name;
-    //                 } else {
-    //                     $milestone->rewardName = null;
-    //                 }
-    //             }
-
-    //             //If user is enrolled, fetch their progress for each milestone
-    //             if ($pastCampaignList[$campaign->id]->enrolled) {
-    //                 $userCampaign = new UserCampaign();
-    //                 $userCampaign->userId = $userId;
-    //                 $userCampaign->campaignId = $campaign->id;
-
-    //                 if ($userCampaign->find(true)) {
-    //                     $milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
-    //                     $pastCampaignList[$campaign->id]->campaignRewardGiven = (int)$userCampaign->rewardGiven;
-
-    //                     foreach ($pastCampaignList[$campaign->id]->milestones as $milestone) {
-    //                         $milestone->userProgress = MilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $userId);
-    //                         $milestone->isComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-    //                         $milestone->rewardGiven = MilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $userId);
-    //                         $reward->id = $milestone->rewardId;
-    //                         // if($reward->find(true)) {
-    //                         //     $milestone->rewardName = $reward->name;
-    //                         // } else {
-    //                         //     $milestone->rewardName = null;
-    //                         // }
-    //                     }
-    //                 }
-    //              }
-    //             // $milestoneRewards = self::getMilestoneRewards($campaignId, $userId);
-    //             // $pastCampaignList[$campaign->id]->milestoneRewards = $milestoneRewards;
-    //         }
-    //     }
-    //     return $pastCampaignList;
-    // }
-
     public function getPastCampaigns(int $userId): array {
         $campaign = new Campaign();
         $currentDate = date('Y-m-d H:i:s');
@@ -607,16 +539,6 @@ class Campaign extends DataObject {
     
                 // Fetch campaign milestones and their rewards using mapping
                 $milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
-                // foreach ($milestones as $milestone) {
-                //     $milestoneReward = new Reward();
-                //     $milestoneReward->id = $milestone->campaignReward;
-                //     if ($milestoneReward->find(true)) {
-                //         $milestone->rewardName = $milestoneReward->name;
-                //         $milestone->rewardType = $milestone->rewardType;
-                //         $milestone->rewardImage = $milestoneReward->getDisplayUrl();
-                //         $milestone->rewardExists = !empty($milestoneReward->badgeImage);
-                //     }
-                // }
                 $pastCampaignList[$campaign->id]->milestones = $milestones;
     
                 // Check if user is enrolled

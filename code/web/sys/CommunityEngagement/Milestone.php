@@ -53,28 +53,8 @@ class Milestone extends DataObject {
                     'author_display' => 'Author',
                     'subject_facet' => 'Subject',
                     'user_list' => 'List (id)',
-                     // 'hold_title' => 'Title',
-                    // 'hold_author' => 'Author',
-                    // 'list_id' => 'List Name',
-                    // 'list_name' => 'List Length',
-                    // 'work_id' => 'Reviewed Title',
-                    // 'work_author' => 'Reviewed Author',
                 ],
                 'required' => false,
-                // var_dump($groupedWorkDriver->getSolrField('format_category_main')); #Books, eBooks, Audiobooks, Music, Video
-                // var_dump($groupedWorkDriver->getSolrField('publisherStr'));
-                // var_dump($groupedWorkDriver->getSolrField('title_display'));
-                // var_dump($groupedWorkDriver->getSolrField('topic_facet'));
-                // var_dump($groupedWorkDriver->getSolrField('placeOfPublication'));
-                // var_dump($groupedWorkDriver->getSolrField('publishDate'));
-                // var_dump($groupedWorkDriver->getSolrField('owning_library_main'));
-                // var_dump($groupedWorkDriver->getSolrField('lc_subject'));
-                // var_dump($groupedWorkDriver->getSolrField('subject_facet'));
-                // var_dump($groupedWorkDriver->getSolrField('itype_main'));
-                // var_dump($groupedWorkDriver->getSolrField('format_main'));
-                // var_dump($groupedWorkDriver->getSolrField('language'));
-                // var_dump($groupedWorkDriver->getSolrField('auth_author2')); #contributors
-                // var_dump($groupedWorkDriver->getSolrField('author_display')); #main author
             ],
             'conditionalOperator' => [
                 'property' => 'conditionalOperator',
@@ -98,27 +78,6 @@ class Milestone extends DataObject {
         return $structure;
     } 
 
-    public static function getConditionalFields() {
-        $conditionalFields = [
-            'user_checkout' => [
-                ['value' => 'title', 'label' => 'Title'],
-                ['value' => 'author', 'label' => 'Author'],
-            ],
-            'user_hold' => [
-                ['value' => 'hold_title', 'label' => 'Title'],
-                ['value' => 'hold_author', 'label' => 'Author'],
-            ],
-            'user_list' => [
-                ['value' => 'list_id', 'label' => 'List Name'],
-                ['value' => 'list_name', 'label' => 'List Length'],
-            ],
-            'user_work_review' => [
-                ['value' => 'work_id', 'label' => 'Reviewed Title'],
-                ['value' => 'work_author', 'label' => 'Reviewed Author'],
-            ],
-        ];
-        return $conditionalFields;
-    }
 
     /**
   * @return array
@@ -135,53 +94,3 @@ class Milestone extends DataObject {
     return $milestoneList;
   }
 }
-
-// $conditionalFields = Milestone::getConditionalFields();
-/*?>
-<script>
-    var conditionalFields = <?php echo json_encode($conditionalFields); ?>
-
-    function updateConditionalField(milestoneType) {
-        // Get the dropdown element for conditional fields
-        var conditionalFieldDropdown = document.querySelector('[name="conditionalField"]');
-
-        // Clear existing options in the dropdown
-        conditionalFieldDropdown.innerHTML = '';
-
-        // Check if milestoneType has conditional fields
-        var options = conditionalFields[milestoneType] || [];
-
-        // If no options are available
-        if (options.length === 0) {
-            var noOption = document.createElement('option');
-            noOption.value = '';
-            noOption.text = 'No conditional fields available';
-            conditionalFieldDropdown.appendChild(noOption);
-            return;
-        }
-
-        // Populate new options
-        options.forEach(function(option) {
-            var newOption = document.createElement('option');
-            newOption.value = option.value;
-            newOption.text = option.label;
-            conditionalFieldDropdown.appendChild(newOption);
-        });
-    }
-
-    // Trigger dropdown update when the page loads or the milestoneType is changed
-    document.addEventListener('DOMContentLoaded', function() {
-        var milestoneTypeDropdown = document.querySelector('[name="milestoneType"]');
-
-        if(milestoneTypeDropdown) {
-            milestoneTypeDropdown.addEventListener('change', function() {
-                updateConditionalField(this.value);
-            });
-            updateConditionalField(milestoneTypeDropdown.value);
-
-        } else {
-            console.error("Milestone type dropdown not found.");
-        }
-    });
- 
-</script>*/

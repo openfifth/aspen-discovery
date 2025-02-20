@@ -11,7 +11,6 @@ class MyCampaigns extends MyAccount {
     function launch() {
         global $interface;
         global $library;
-        // require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
         $campaign = new Campaign();
           //Get User
@@ -74,7 +73,6 @@ class MyCampaigns extends MyAccount {
                 $campaign->rewardExists = $rewardDetails['rewardExists'];
             }
 
-            // if ($campaign->enrolled) {
                 //Fetch milestones for this campaign
                 $milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
                 $completedMilestonesCount = 0;
@@ -97,18 +95,8 @@ class MyCampaigns extends MyAccount {
                     $milestone->completedGoals = $milestoneProgress['completed'];
                     $milestone->totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
                     $milestone->progressData = $progressData;
-                    // $milestone->rewardName = CampaignMilestone::getMilestoneRewardByCampaignId($campaignId, $milestoneId);
-
-                    //Get completed milestones for user
-                    // $completedMilestones = UserCompletedMilestone::getCompletedMilestones($userId, $campaignId);
-                    // foreach ($completedMilestones as $completedMilestone) {
-                    //     if ($completedMilestone->milestoneId == $milestoneId) {
-                    //         $completedMilestonesCount++;
-                    //     }
-                    // }
+                 
                 }
-                //Add completed milestones count to campaign object
-                // $campaign->numCompletedMilestones = $completedMilestonesCount;
                 $campaign->numCampaignMilestones = $numCampaignMilestones;
 
                 $userCampaign = new UserCampaign();
@@ -121,7 +109,7 @@ class MyCampaigns extends MyAccount {
                 $campaign->milestones = $milestones;
 
                 //Add the campaign to the list
-            // }
+
             $campaignList[] = clone $campaign;
         }
         return $campaignList;
@@ -129,8 +117,6 @@ class MyCampaigns extends MyAccount {
 
 
 
-    //TODO:: Write a function that uses the milestone id for each progress bar to use the ce_milestone_progress_entries table and 
-    //get information about which books were checked out and count towards the milestone. 
     function getBreadcrumbs(): array
     {
         $breadcrumbs = [];
