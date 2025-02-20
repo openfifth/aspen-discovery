@@ -64,7 +64,9 @@
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
                                                 <div style="padding:10px;">
-                                                    {$progressData['title']}
+                                                    {if isset($progressData['title'])}
+                                                        {$progressData['title']}
+                                                    {/if}
                                                 </div>
                                                 {/foreach}
                                             </td>
@@ -154,7 +156,9 @@
                                                 {$milestone->completedGoals}/ {$milestone->totalGoals}
                                                 {foreach from=$milestone->progressData item="progressData"}
                                                 <div style="padding:10px;">
-                                                    {$progressData['title']}
+                                                    {if isset($progressData['title'])}
+                                                        {$progressData['title']}
+                                                    {/if}
                                                 </div>
                                                 {/foreach}
                                             </td>
