@@ -366,8 +366,10 @@ class SystemAPI extends AbstractAPI {
 		$cloudLibraryUpdates = getCloudLibraryUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/grapes_web_builder_updates.php';
 		$grapesWebBuilderUpdates = getGrapesWebBuilderUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/heycentric_updates.php';
+		$heycentricUpdates = getHeyCentricUpdates();
 
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates);
+		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $heycentricUpdates);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
