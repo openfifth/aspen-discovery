@@ -1,5 +1,6 @@
 <?php
 
+require_once ROOT_DIR . '/sys/ECommerce/HeyCentricUrlParameterSettings.php'; 
 
 class HeyCentricSetting extends DataObject {
 	public $__table = 'heycentric_setting';
@@ -15,6 +16,28 @@ class HeyCentricSetting extends DataObject {
 	public $rurl;
 
 	private $_libraries;
+	private $_locations;
+	private $_urlParameters;
+
+	static function getHeyCentricUrlParamFields() {
+		$urlParamsArr = [];
+		$urlParam = new HeyCentricUrlParameter();
+		$urlParam = $urlParam->fetchAll();
+		
+		foreach($urlParam as $param) {
+			$urlParamsArr[] = [
+				'id' => $param->id,
+				'property' => $param->name,
+				'type' => 'section',
+				'label' => $param->name,
+				'description' => '',
+				'maxLength' => 10,
+				'required' => true,
+				'properties' => HeyCentricUrlParameterSettings::getObjectStructure(),
+			];
+		}
+		return $urlParamsArr;
+	}
 
 	public function getEncryptedFieldNames(): array {
 		return ['privateKey'];
@@ -22,6 +45,8 @@ class HeyCentricSetting extends DataObject {
 
 	static function getObjectStructure($context = ''): array {
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Libraries'));
+		$locationList = Location::getLocationList(!UserAccount::userHasPermission('Administer All Locations'));
+		$urlParams = HeyCentricSetting::getHeyCentricUrlParamFields();
 
 		$structure = [
 			'id' => [
@@ -53,23 +78,12 @@ class HeyCentricSetting extends DataObject {
 				'label' => 'HeyCentric Private Key',
 				'description' => 'The HeyCentric Private Key for your site',
 				'maxLength' => 50,
-				'required' => true,
 			],
 			'client' => [
 				'property' => 'client',
 				'type' => 'text',
 				'label' => 'Client',
 				'description' => '',
-				'maxLength' => 10,
-				'required' => true,
-			],
-			'entity' => [
-				'property' => 'entity',
-				'type' => 'text',
-				'label' => 'Entity',
-				'description' => '',
-				'maxLength' => 10,
-				'required' => true,
 			],
 			'till' => [
 				'property' => 'till',
@@ -77,7 +91,6 @@ class HeyCentricSetting extends DataObject {
 				'label' => 'Till',
 				'description' => '',
 				'maxLength' => 10,
-				'required' => true,
 			],
 			'area' => [
 				'property' => 'area',
@@ -85,7 +98,6 @@ class HeyCentricSetting extends DataObject {
 				'label' => 'Area',
 				'description' => '',
 				'maxLength' => 50,
-				'required' => true,
 			],
 			'rurl' => [
 				'property' => 'rurl',
@@ -96,6 +108,16 @@ class HeyCentricSetting extends DataObject {
 				'maxLength' => 50,
 				'default' => ROOT_DIR . '/MyAccount/AJAX?method=completeHeyCentricOrder'
 			],
+			'urlParameters' => [
+				'property' => 'urlParameters',
+				'type' => 'section',
+				'hideInLists' => true,
+				'label' => 'HeyCentric Payment URL Parameters',
+				'description' => 'The parameters to include when forming the HeyCentric payment URL and/or its hash',
+				'maxLength' => 50,
+				'required' => true,
+				'properties' => $urlParams,
+			],
 			'libraries' => [
 				'property' => 'libraries',
 				'type' => 'multiSelect',
@@ -103,6 +125,15 @@ class HeyCentricSetting extends DataObject {
 				'label' => 'Libraries',
 				'description' => 'Define libraries that use these settings',
 				'values' => $libraryList,
+				'hideInLists' => true,
+			],
+			'locations' => [
+				'property' => 'locations',
+				'type' => 'multiSelect',
+				'listStyle' => 'checkboxSimple',
+				'label' => 'Locations',
+				'description' => 'Define locations that use these settings',
+				'values' => $locationList,
 				'hideInLists' => true,
 			],
 		];
@@ -126,15 +157,26 @@ class HeyCentricSetting extends DataObject {
 			}
 			return $this->_libraries;
 		} else {
+
+			// TODO: handle locations
+			// TODO: handle url parameters and parameters settings
 			return parent::__get($name);
 		}
 	}
 
 	public function __set($name, $value) {
-		if ($name == "libraries") {
-			$this->_libraries = $value;
-		} else {
-			parent::__set($name, $value);
+		switch ($name) {
+			case "libraries":
+				$this->_libraries = $value;
+				break;
+			case "locations":
+				$this->_locations = $value;
+				break;
+			case "urlParameters":
+				$this->_urlParameters = $value;
+				break;
+			default:
+				parent::__set($name, $value);
 		}
 	}
 
@@ -142,6 +184,8 @@ class HeyCentricSetting extends DataObject {
 		$ret = parent::update();
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
+			$this->saveLocations();
+			$this->saveUrlParameters();
 		}
 		return true;
 	}
@@ -150,6 +194,8 @@ class HeyCentricSetting extends DataObject {
 		$ret = parent::insert();
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
+			$this->saveLocations();
+			$this->saveUrlParameters();
 		}
 		return $ret;
 	}
@@ -180,6 +226,51 @@ class HeyCentricSetting extends DataObject {
 				}
 			}
 			unset($this->_libraries);
+		}
+	}
+
+	public function saveUrlParameters() {
+		// TODO: saveURLParameters
+		if (isset ($this->_urlParameters) && is_array($this->_urlParameters)) {
+			$urlParams = HeyCentricSetting::getHeyCentricUrlParamFields();
+			foreach ($urlParams as $urlParam) {
+				$urlParamSetting = new HeyCentricUrlParameterSettings();
+				$urlParamSetting->heyCentricSettingId = $this->id;
+				$urlParamSetting->heyCenticUrlParameterId = $urlParam['id'];
+				$urlParamSetting->update();
+			}
+			global $logger;
+			$logger->log(json_encode($urlParamSetting), Logger::LOG_ERROR);
+			unset($this->_urlParameters);
+		}
+	}
+
+
+ 	// TODO: make HeyCentric specifc instead of websites
+	public function getLocations() {
+		if (!isset($this->_locations) && $this->id) {
+			$this->_locations = [];
+			$location = new LocationWebsiteIndexing();
+			$location->settingId = $this->id;
+			$location->find();
+			while ($location->fetch()) {
+				$this->_locations[$location->locationId] = $location->locationId;
+			}
+		}
+		return $this->_locations;
+	}
+
+	public function saveLocations() {
+		if (isset($this->_locations) && is_array($this->_locations)) {
+
+			foreach ($this->_locations as $libraryId) {
+				$locationWebsiteIndexing = new LocationWebsiteIndexing();
+
+				$locationWebsiteIndexing->settingId = $this->id;
+				$locationWebsiteIndexing->locationId = $libraryId;
+				$locationWebsiteIndexing->insert();
+			}
+			unset($this->_locations);
 		}
 	}
 }

@@ -3039,7 +3039,8 @@ class Koha extends AbstractIlsDriver {
 			return $formattedFine;
 		}
 		
-		$additionalFineFieldValues = $this->getAdditionalFieldValuesByTable('accountlines:debit');
+		// $additionalFineFieldValues = $this->getAdditionalFieldValuesByTable('accountlines:debit');
+		$additionalFineFieldValues = $this->getAdditionalFieldValuesByTable('account_debit_types');
 
 		if (empty($additionalFineFieldValues)) {
 			return $formattedFine;
@@ -3077,6 +3078,14 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		return $values;
+	}
+
+	public function getAdditionalFieldsNamesByTable(string $tableName, string $category = null): array {
+		$fieldNamesList = [];
+		foreach($this->getAdditionalFieldsByTable($tableName, $category) as $fields) {
+			$fieldNamesList[] = $fields['name'];
+		}
+		return $fieldNamesList;
 	}
 
 	private function getAdditionalFieldsByTable(string $tableName, string $category = null): array {
