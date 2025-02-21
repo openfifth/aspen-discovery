@@ -778,11 +778,69 @@ class Evergreen extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function updatePatronInfo(User $patron, $canUpdateContactInfo, $fromMasquerade): array {
-		return [
+	public function updatePatronInfo(User $patron, $canUpdateContactInfo, $fromMasquerade): array {
+		$authToken = $this->getAPIAuthToken($patron, true);
+		$userMessages = [
 			'success' => false,
-			'messages' => ['Cannot update patron information with this ILS.'],
+			'messages' => [],
 		];
+
+		if (!$authToken || !$canUpdateContactInfo) {
+			$userMessages['messages'][] = 'Your contact information cannot be updated.';
+			return $userMessages;
+		}
+		$propertyName = '';
+		
+		if (!isset($_REQUEST['email'])) {
+			return $userMessages;
+		}
+		$propertyName = 'email';
+		$propertyValue = $_REQUEST['email'];
+		$success = $this->updatePatronProperty($propertyName, $propertyValue, $patron->ils_password, $authToken);
+		$userMessages['messages'][] = $success ? 'Your email has been updated.' : 'Your email could not be updated. Please contact your library';
+		$userMessages['success'] = $success;
+
+		return $userMessages;
+	}
+
+	private function updatePatronProperty($propertyName, $propertyValue, $patronIlsPassword, $authToken): bool {
+		$evergreenUrl = $this->accountProfile->patronApiUrl . "/osrf-gateway-v1/$propertyName";
+		$headers = [
+			'Content-Type: application/x-www-form-urlencoded',
+		];
+		$this->apiCurlWrapper->addCustomHeaders($headers, false);
+		/**The order of the request parameters is crucial
+		 * This Evergreen API only handles unnamed parameters,
+		 * And so it is only their position within the URL that
+		 * determines which is which
+		*/
+		$request = 'service=open-ils.actor';
+		$request .= "&method=open-ils.actor.user.$propertyName.update";
+		$request .= '&param=' . json_encode($authToken);
+		$request .= '&param=' . json_encode($propertyValue);
+		$request .= '&param=' . json_encode($patronIlsPassword);
+
+		$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
+		ExternalRequestLogEntry::logRequest('evergreen.updatePatronProperty', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $request, $this->apiCurlWrapper->getResponseCode(), $apiResponse, []);
+
+		/** It seems the response sent back by the Evergreen API will have a
+		 * status code of 200 even upon failure (eg. if the patron password
+		 * is incorrect.) However, a successful update will always result
+		 * in the "payload" property being set to 1. Check for this instead.
+		*/
+		$responseData = json_decode($apiResponse, true);
+		$success = isset($responseData['payload']) && $responseData['payload'][0] == 1;
+		return $success;
+	}
+
+
+	private function isDuplicateUserName($username):bool {
+		global $aspen_db;
+		$condition = "ils_username=" . "'" . $username . "'";
+		$query = "SELECT COUNT(ils_username) FROM user WHERE $condition;";
+		$queryObject = $aspen_db->query($query, PDO::FETCH_ASSOC);
+		$results = $queryObject->fetch();
+		return isset($results["COUNT(ils_username)"]) && $results["COUNT(ils_username)"];
 	}
 
 	public function hasNativeReadingHistory(): bool {
@@ -1101,6 +1159,28 @@ class Evergreen extends AbstractIlsDriver {
 			}
 		}
 		return $holds;
+	}
+	
+	public function updateEditableUsername(User $patron, string $username): array {
+		$authToken = $this->getAPIAuthToken($patron, true);
+		if ($this->isDuplicateUserName($username)) {
+			$userMessages['message'] = 'This username is already in use. Please choose another username.';
+			$userMessages['success'] = false;
+			return $userMessages;
+		}
+		$success = $this->updatePatronProperty('username', $username, $patron->ils_password, $authToken);
+		$userMessages['message'] = $success ? 'Your username has been updated.' : 'Your username could not be updated. Please contact your library';
+		$userMessages['success'] = $success;
+		return $userMessages;
+	}
+
+	public function getEditableUsername(User $user) {
+		$this->loadContactInformation($user);
+		return $user->ils_username;
+	}
+
+	public function hasEditableUsername() {
+		return true;
 	}
 
 	/**
@@ -2529,6 +2609,12 @@ class Evergreen extends AbstractIlsDriver {
 						}
 						if (!empty($mappedPatronData['suffix'])) {
 							$user->_fullname .= ' ' . $mappedPatronData['suffix'];
+						}
+						if (!empty($mappedPatronData['email'])) {
+							$user->email = $mappedPatronData['email'];
+						}
+						if (!empty($mappedPatronData['usrname'])) {
+							$user->ils_username = $mappedPatronData['usrname'];
 						}
 						$user->_fullname = trim($user->_fullname);
 
