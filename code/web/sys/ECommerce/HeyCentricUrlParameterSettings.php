@@ -21,12 +21,21 @@ class HeyCentricUrlParameterSettings extends DataObject {
 		array_unshift($additionaFields, '');
 		
 		$structure = [
+			'value' => [
+				'property' => 'value',
+				'type' => 'text',
+				'label' => 'Parameter value',
+				'description' => 'If the parameter value is know and can be tied to a setting, please enter it here.',
+				'hideInLists' => false,
+				'default' => false,
+			], 
 			'includeInUrl' => [
 				'property' => 'includeInUrl',
 				'type' => 'checkbox',
 				'label' => 'Include In URL',
 				'description' => 'Whether or not to this URL parameter in the HeyCentric payment URL',
 				'hideInLists' => false,
+				'default' => false,
 			],  
 			'includeInHash' => [
 				'property' => 'includeInHash',
@@ -34,14 +43,43 @@ class HeyCentricUrlParameterSettings extends DataObject {
 				'label' => 'Include In Hash',
 				'description' => 'Whether or not to include this URL parameter in the HeyCentric payment URL hash',
 				'hideInLists' => false,
+				'default' => false,
 			],
-			'valueIsFromKohaAddionalField' => [
-				'property' => 'valueIsFromKohaAddionalField',
+			// Should be drop down?
+			'dbTableName' => [
+				'property' => 'dbTableName',
+				'type' => 'text',
+				'label' => 'Name of the matching ILS database table',
+				'description' => 'The name of the ILS database table where the parameter value is stored',
+				'hideInLists' => false,
+				'default' => null,
+			],
+			// Should be drop down?
+			'dbTableFieldName' => [
+				'property' => 'dbTableFieldName',
+				'type' => 'text',
+				'label' => 'Name of the matching ILS database field',
+				'description' => 'The name of the ILS database field where the parameter value is stored',
+				'hideInLists' => false,
+				'default' => null,
+			],
+			'isKohaAdditionalField' => [
+				'property' => 'valueIsKohaAdditionalField',
+				'type' => 'checkbox',
+				'label' => 'Is Koha Additional Field',
+				'description' => 'Whether this ILS database field in a Koha additional field',
+				'hideInLists' => false,
+				'default' => false,
+			],
+			// TODO: toggle based on isKohaAdditionalField value
+			'valueIsFromKohaAdditionalField' => [
+				'property' => 'valueIsFromKohaAdditionalField',
 				'type' => 'enum',
 				'label' => 'Name of the matching Koha additional field if any',
-				'description' => 'Whether or not the value for this parameter is stored in an additional field',
+				'description' => 'The name of the additional field in Koha where the parameter value is stored',
 				'values' => $additionaFields,
 				'hideInLists' => false,
+				'default' => null,
 			],
 		];
 
