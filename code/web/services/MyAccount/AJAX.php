@@ -9171,21 +9171,6 @@ class MyAccount_AJAX extends JSON_Action {
 			];
 		}
 
-		// $userId = UserAccount::getActiveUserId();
-		// if (!$userId) {
-		// 	return [
-		// 		'success' => false,
-		// 		'title' => translate([
-		// 			'text' => 'Error',
-		// 			'isPublicFacing' => true
-		// 		]),
-		// 		'message' => translate([
-		// 			'text' => 'User is not logged in.',
-		// 			'isPublicFacing' => true
-		// 		])
-		// 	];
-		// }
-
 		$userCampaign = new UserCampaign();
 		$userCampaign->userId = $userId;
 		$userCampaign->campaignId = $campaignId;
@@ -9260,6 +9245,9 @@ class MyAccount_AJAX extends JSON_Action {
 			$campaign->update();
 			return [
 				'success' => true,
+				'showEmailOptInPromptFlag' => true,
+				'campaignId' => $campaignId,
+				'userId' => $userId,
 				'title' => translate([
 					'text' => 'Success',
 					'isPublicFacing' => true
@@ -9280,9 +9268,6 @@ class MyAccount_AJAX extends JSON_Action {
 					'text' => 'Failed to enroll user in campaign.',
 					'isPublicFacing' => true
 				]),
-				'showEmailOptInPrompt' => true,
-				'campaignId' => $campaignId,
-				'userId' => $userId
 			];
 		}
 	}
