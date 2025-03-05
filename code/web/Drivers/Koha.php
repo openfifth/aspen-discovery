@@ -3058,7 +3058,7 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function getAdditionalFieldValuesByTable(string $tableName) {
-		$fields = $this->getAdditionalFieldsByTable($tableName);
+		$fields = $this->getAdditionalFields($tableName, null);
 		$values = [];
 
 		if (empty($fields)) {
@@ -3080,31 +3080,46 @@ class Koha extends AbstractIlsDriver {
 		return $values;
 	}
 
-	public function getAdditionalFieldsNamesByTable(string $tableName, string $category = null): array {
+	public function getAdditionalFieldNames(string|null $tableName, string|null $category): array {
 		$fieldNamesList = [];
-		foreach($this->getAdditionalFieldsByTable($tableName, $category) as $fields) {
+		foreach($this->getAdditionalFields($tableName, $category) as $fields) {
 			$fieldNamesList[] = $fields['name'];
 		}
 		return $fieldNamesList;
 	}
 
-	private function getAdditionalFieldsByTable(string $tableName, string $category = null): array {
-		// TODO: refactor to send a GET request to the api/v1/extended_attribute_types endpoint instead
+	private function getAdditionalFields(string|null $tableName, string|null $category): array {
+		// TODO: consider refactoring to send a GET request to the api/v1/extended_attribute_types endpoint instead
 		$this->initDatabaseConnection();
 		/** @noinspection SqlResolve */
-		$query = "SELECT * FROM additional_fields WHERE tablename = '" . mysqli_escape_string($this->dbConnection, $tableName) . "'";
-		if ($category) {
-			$query .= " AND authorised_value_category='" . mysqli_escape_string($this->dbConnection, $category) . "'";
+		$query = "SELECT * FROM additional_fields";
+
+		if ($tableName) {
+			$query .= " WHERE tablename =?";
 		}
 
-		$additionalFieldsResponse = mysqli_query($this->dbConnection, $query);
+		if ($category) {
+			$query .= " AND authorised_value_category=?";
+		}
+
+		$stmt = $this->dbConnection->prepare($query);
+
+		if ($tableName && $category) {
+			$stmt->bind_param("ss", $tableName, $category);
+		} else if ($tableName) {
+			$stmt->bind_param("s", $tableName);
+		}
+
+		$stmt->execute();
+		$additionalFieldsResponse = $stmt->get_result();
 		$additionalFields = [];
+
 		if ($additionalFieldsResponse->num_rows > 0) {
 			while ($allAdditionalFieldsRow = $additionalFieldsResponse->fetch_assoc()) {
 				$additionalFields[] = $allAdditionalFieldsRow;
 			}
 		}
-		$additionalFieldsResponse->close();
+		$stmt->close();
 		return $additionalFields;
 	}
 
@@ -8779,6 +8794,10 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function hasIlsConsentSupport(): bool {
+		return true;
+	}
+
+	public function hasAdditionalFields(): bool {
 		return true;
 	}
 }

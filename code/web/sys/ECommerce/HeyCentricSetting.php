@@ -79,35 +79,6 @@ class HeyCentricSetting extends DataObject {
 				'description' => 'The HeyCentric Private Key for your site',
 				'maxLength' => 50,
 			],
-			'client' => [
-				'property' => 'client',
-				'type' => 'text',
-				'label' => 'Client',
-				'description' => '',
-			],
-			'till' => [
-				'property' => 'till',
-				'type' => 'text',
-				'label' => 'Till',
-				'description' => '',
-				'maxLength' => 10,
-			],
-			'area' => [
-				'property' => 'area',
-				'type' => 'text',
-				'label' => 'Area',
-				'description' => '',
-				'maxLength' => 50,
-			],
-			'rurl' => [
-				'property' => 'rurl',
-				'type' => 'hidden',
-				'hideInLists' => true,
-				'label' => 'Return URL',
-				'description' => 'the URL to return the patron to once the payment has been processed',
-				'maxLength' => 50,
-				'default' => ROOT_DIR . '/MyAccount/AJAX?method=completeHeyCentricOrder'
-			],
 			'urlParameters' => [
 				'property' => 'urlParameters',
 				'type' => 'section',

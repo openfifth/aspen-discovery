@@ -12,20 +12,19 @@ class HeyCentricUrlParameterSettings extends DataObject {
 
 	static function getObjectStructure($context = ''): array {
 		// TODO: Error handling
-		// TODO: handle other ILSs (add a 'hasAdditionalFields' methods to catalog drivers OR check it the catalog driver's name is Koha)
 		global $library;
 		$accountProfile = $library->getAccountProfile();
 		$catalogDriverName = trim($accountProfile->driver);
 		$catalogDriver = CatalogFactory::getCatalogConnectionInstance($catalogDriverName, $accountProfile);
-		$additionaFields = $catalogDriver->getAdditionalFieldsNamesByTable('account_debit_types');
-		array_unshift($additionaFields, '');
+		$additionalFields = $catalogDriver->hasAdditionalFields() ? $catalogDriver->getAdditionalFieldNames(null, null) : null;
+		array_unshift($additionalFields, null);
 		
 		$structure = [
 			'value' => [
 				'property' => 'value',
 				'type' => 'text',
 				'label' => 'Parameter value',
-				'description' => 'If the parameter value is know and can be tied to a setting, please enter it here.',
+				'description' => 'If the parameter value is known and can be tied to a setting, please enter it here.',
 				'hideInLists' => false,
 				'default' => false,
 			], 
@@ -33,7 +32,7 @@ class HeyCentricUrlParameterSettings extends DataObject {
 				'property' => 'includeInUrl',
 				'type' => 'checkbox',
 				'label' => 'Include In URL',
-				'description' => 'Whether or not to this URL parameter in the HeyCentric payment URL',
+				'description' => 'Whether or not to to include this URL parameter in the HeyCentric payment URL',
 				'hideInLists' => false,
 				'default' => false,
 			],  
@@ -45,43 +44,20 @@ class HeyCentricUrlParameterSettings extends DataObject {
 				'hideInLists' => false,
 				'default' => false,
 			],
-			// Should be drop down?
-			'dbTableName' => [
-				'property' => 'dbTableName',
-				'type' => 'text',
-				'label' => 'Name of the matching ILS database table',
-				'description' => 'The name of the ILS database table where the parameter value is stored',
-				'hideInLists' => false,
-				'default' => null,
-			],
-			// Should be drop down?
-			'dbTableFieldName' => [
-				'property' => 'dbTableFieldName',
-				'type' => 'text',
-				'label' => 'Name of the matching ILS database field',
-				'description' => 'The name of the ILS database field where the parameter value is stored',
-				'hideInLists' => false,
-				'default' => null,
-			],
-			'isKohaAdditionalField' => [
-				'property' => 'valueIsKohaAdditionalField',
-				'type' => 'checkbox',
-				'label' => 'Is Koha Additional Field',
-				'description' => 'Whether this ILS database field in a Koha additional field',
-				'hideInLists' => false,
-				'default' => false,
-			],
-			// TODO: toggle based on isKohaAdditionalField value
-			'valueIsFromKohaAdditionalField' => [
-				'property' => 'valueIsFromKohaAdditionalField',
+			'kohaAdditionalFieldName' => [
+				'property' => 'kohaAdditionalFieldName',
 				'type' => 'enum',
 				'label' => 'Name of the matching Koha additional field if any',
-				'description' => 'The name of the additional field in Koha where the parameter value is stored',
-				'values' => $additionaFields,
+				'description' => 'If the value to be used for this parameter is stored in a Koha additional field, select its name here. Otherwise, please leave this blank.',
+				'values' => $additionalFields,
 				'hideInLists' => false,
 				'default' => null,
 			],
 		];
+
+		if (!$additionalFields) {
+			unset($structure['kohaAdditionalFieldName']);
+		}
 
 		return $structure;
 	}
