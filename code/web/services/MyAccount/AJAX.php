@@ -9218,6 +9218,8 @@ class MyAccount_AJAX extends JSON_Action {
 			];
 		}
 
+		$this->applyCampaignProgress($userId, $campaignId);
+
 		if ($userCampaign->insert()) {
 			$campaign->enrollmentCounter++;
 			$campaign->currentEnrollments++;
@@ -9251,6 +9253,9 @@ class MyAccount_AJAX extends JSON_Action {
 	public function unenrollCampaign() {
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
+
 
 		$campaignId = $_GET['campaignId'] ?? null;
 
@@ -9293,6 +9298,15 @@ class MyAccount_AJAX extends JSON_Action {
 			$campaign->id = $campaignId;
 			if ($campaign->find(true)) {
 				if ($userCampaign->delete()) {
+					$progressEntry = new CampaignMilestoneProgressEntry();
+					$progressEntry->userId = $userId;
+					$progressEntry->ce_campaign_id = $campaignId;
+					$progressEntry->delete(true);
+
+					$milestoneProgress = new CampaignMilestoneUsersProgress();
+					$milestoneProgress->userId = $userId;
+					$milestoneProgress->ce_campaign_id = $campaignId;
+					$milestoneProgress->delete(true);
 					//Increase unenrollment counter
 					$campaign->unenrollmentCounter++;
 					$campaign->currentEnrollments--;
@@ -9360,7 +9374,107 @@ class MyAccount_AJAX extends JSON_Action {
 			'success' => true,
 			'numCampaigns' => count($enrolledCampaigns)
 		];
+	}	
+
+	public function applyCampaignProgress($userId, $campaignId) {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+    	require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+    	require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
+		$campaign = new Campaign();
+		$campaign->id = $campaignId;
+		if (!$campaign->find(true)) {
+			return;
+		}
+
+		$campaignStartDate = strtotime($campaign->startDate);
+		$campaignEndDate = strtotime($campaign->endDate);
+
+		$entities = $this->getUserEntities($userId);
+
+		foreach ($entities as $entity) {
+			$entityDate = $entity->date;
+			$entityId = $entity->groupedWorkId;
+
+			if ($entityDate >= $campaignStartDate && $entityDate <= $campaignEndDate) {
+				$this->processCampaignMilestones($entity, $campaignId, $entityDate, $entityId);
+			}
+		}
 	}
+
+	private function getUserEntities($userId) {
+		require_once ROOT_DIR . '/sys/User/Hold.php';
+    	require_once ROOT_DIR . '/sys/User/Checkout.php';
+    	require_once ROOT_DIR . '/sys/LocalEnrichment/UserWorkReview.php';
+		$entities = [];
+
+		$hold = new Hold();
+		$hold->userId = $userId;
+		if ($hold->find()) {
+			while ($hold->fetch()) {
+				$hold->type = 'user_hold';
+				$hold->date = $hold->createDate;
+				$hold->groupedWorkId = $hold->groupedWorkId;
+				$entities[] = clone $hold;
+			}
+		}
+
+		$checkout = new Checkout();
+		$checkout->userId = $userId;
+		if ($checkout->find()) {
+			while ($checkout->fetch()) {
+				$checkout->type = 'user_checkout';
+				$checkout->date = $checkout->checkoutDate;
+				$checkout->groupedWorkId = $checkout->groupedWorkId;
+				$entities[] = clone $checkout;
+			}
+		}
+
+		$review = new UserWorkReview();
+		$review->userId = $userId;
+		if ($review->find()) {
+
+			while ($review->fetch()){
+
+				$review->type = 'user_work_review';
+				$review->date = $review->dateRated;
+				$review->groupedWorkId = $review->groupedRecordPermanentId;
+				$entities[] = clone $review;
+			}
+		}
+		return $entities;
+	}
+
+	private function processCampaignMilestones($entity, $campaignId, $entityDate, $entityId) {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/action-hooks.php';
+		
+		$campaignMilestone = new CampaignMilestone();
+		$campaignMilestone->campaignId = $campaignId;
+	
+		if ($campaignMilestone->find()) {
+			while ($campaignMilestone->fetch()) {
+				$milestone = new Milestone();
+				$milestone->id = $campaignMilestone->milestoneId;
+	
+				if (!$milestone->find(true)) {
+					continue;
+				}
+	
+				if ($milestone->milestoneType !== $entity->type) {
+					continue;
+				}
+	
+				if (_campaignMilestoneProgressEntryObjectAlreadyExists($entity, $campaignMilestone)) {
+					continue;
+				}
+	
+				$campaignMilestone->addCampaignMilestoneProgressEntry($entity, $entity->userId, $entityId);
+			}
+		}
+	}
+	
 
 	function getYearInReviewSlide() : array {
 		$result = [

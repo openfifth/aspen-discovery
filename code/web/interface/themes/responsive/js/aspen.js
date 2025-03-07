@@ -8427,6 +8427,9 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 		enroll: function (campaignId, userId) {
+			AspenDiscovery.Account.reloadHolds();
+			AspenDiscovery.Account.reloadCheckouts();
+
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/MyAccount/AJAX";
 				var params = {
