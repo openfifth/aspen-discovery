@@ -552,7 +552,11 @@ abstract class SearchObject_BaseSearcher {
 					$params[] = "lookfor=" . urlencode($this->searchTerms[0]['lookfor']);
 				}
 				if (isset($this->searchTerms[0]['index'])) {
-					if ($this->searchType == 'basic') {
+					if (
+						$this->searchType == 'basic' ||
+						$this->searchType == 'ebsco_eds' ||
+						$this->searchType = 'summon'
+					) {
 						$params[] = "searchIndex=" . urlencode($this->searchTerms[0]['index']);
 					} else {
 						$params[] = "type=" . urlencode($this->searchTerms[0]['index']);
