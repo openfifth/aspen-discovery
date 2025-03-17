@@ -397,6 +397,24 @@ class SystemVariables extends DataObject {
 		return SystemVariables::$_systemVariables;
 	}
 
+	public function getCurrencySymbol() {
+		$currencyCode = 'USD';
+		$systemVariables = SystemVariables::getSystemVariables();
+		if (!empty($systemVariables->currencyCode)) {
+			$currencyCode = $systemVariables->currencyCode;
+		}
+		if ($currencyCode == 'USD') {
+			$currencySymbol = '$';
+		} elseif ($currencyCode == 'EUR') {
+			$currencySymbol = '€';
+		} elseif ($currencyCode == 'CAD') {
+			$currencySymbol = '$';
+		} elseif ($currencyCode == 'GBP') {
+			$currencySymbol = '£';
+		}
+		return $currencySymbol;
+	}
+
 	public function update($context = '') {
 		if ($this->trackIpAddresses == 0) {
 			//Delete all previously stored usage stats.
