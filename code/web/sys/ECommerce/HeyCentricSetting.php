@@ -54,6 +54,16 @@ class HeyCentricSetting extends DataObject {
 				'description' => 'The HeyCentric Private Key for your site',
 				'maxLength' => 50,
 			],
+			'urlParameterSettings' => [
+				'property' => 'urlParameterSettings',
+				'type' => 'section',
+				'hideInLists' => true,
+				'label' => 'HeyCentric URL Parameter Settings',
+				'description' => 'The parameters to include when forming the HeyCentric payment URL and/or its hash',
+				'maxLength' => 50,
+				'required' => true,
+				'properties' => $urlParameterSettingFields,
+			],
 			'libraries' => [
 				'property' => 'libraries',
 				'type' => 'multiSelect',
