@@ -3072,6 +3072,21 @@ class Koha extends AbstractIlsDriver {
 	}
 
 
+	public function getAdditionalLocationDetails($locationId): array {
+		$additionalLocationDetails = [];
+		$additionalLibraryFieldValues = $this->getAdditionalFieldValuesByTable('branches');
+
+		foreach ($additionalLibraryFieldValues as $additionalLibraryFieldValue) {
+			if ($additionalLibraryFieldValue["record_id"] ==  $locationId) {
+				$lowerCaseFieldName = strtolower($additionalLibraryFieldValue['field_name']);
+				$snakeCaseFieldName = str_replace(" ", "_", $lowerCaseFieldName);
+				
+				$additionalLocationDetails[$snakeCaseFieldName] = $additionalLibraryFieldValue['value'];
+			}
+		}
+
+		return $additionalLocationDetails;
+	}
 
 	public function getAdditionalFieldValuesByTable(string $tableName) {
 		$fields = $this->getAdditionalFields($tableName, null);
