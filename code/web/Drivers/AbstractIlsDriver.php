@@ -921,4 +921,8 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	public function hasIlsConsentSupport(): bool {
 		return false;
 	}
+
+	public function hasAdditionalFields(): bool {
+		return false;
+	}
 }

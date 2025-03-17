@@ -8638,4 +8638,8 @@ class Koha extends AbstractIlsDriver {
 	public function hasIlsConsentSupport(): bool {
 		return true;
 	}
+
+	public function hasAdditionalFields(): bool {
+		return true;
+	}
 }
