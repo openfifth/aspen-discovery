@@ -139,6 +139,8 @@ class Location extends DataObject {
 	 */
 	public $ebscohostSearchSettingId;
 
+	public $heyCentricSettingId;
+
 	private $_sublocations;
 
 	//LiDA Settings
@@ -177,7 +179,8 @@ class Location extends DataObject {
 			'defaultToCombinedResults',
 			'useLibraryCombinedResultsSettings',
 			'ebscohostSearchSettingId',
-			'lidaSelfCheckSettingId'
+			'lidaSelfCheckSettingId',
+			'heyCentricSettingId',
 		];
 	}
 
