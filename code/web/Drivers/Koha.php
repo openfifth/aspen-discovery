@@ -2992,6 +2992,92 @@ class Koha extends AbstractIlsDriver {
 		return $fines;
 	}
 
+	public function getFineById(string $id, bool $includeAdditionalFieldValues = false, string $patronHomeLocationCode): array|null {
+		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
+
+		global $activeLanguage;
+
+		$currencyCode = 'USD';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+
+		$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
+
+		$this->initDatabaseConnection();
+
+		/** @noinspection SqlResolve */
+		$query = "SELECT * FROM accountlines WHERE accountlines_id = '" . mysqli_escape_string($this->dbConnection, $id) . "'";
+
+		$mySqliResultObj = mysqli_query($this->dbConnection, $query);
+
+		if ($mySqliResultObj->num_rows < 1) {
+			return null;
+		}
+
+		$fine = $mySqliResultObj->fetch_assoc();
+
+		if (isset($fine['accountType'])) {
+			$type = array_key_exists($fine['accounttype'], Koha::$fineTypeTranslations) ? Koha::$fineTypeTranslations[$fine['accounttype']] : $fine['accounttype'];
+		} elseif (isset($fine['debit_type_code']) && !empty($fine['debit_type_code'])) {
+			//Lookup the type in the account
+			$type = array_key_exists($fine['debit_type_code'], Koha::$fineTypeTranslations) ? Koha::$fineTypeTranslations[$fine['debit_type_code']] : $fine['debit_type_code'];
+		} elseif (isset($fine['credit_type_code']) && !empty($fine['credit_type_code'])) {
+			//Lookup the type in the account
+			$type = array_key_exists($fine['credit_type_code'], Koha::$fineTypeTranslations) ? Koha::$fineTypeTranslations[$fine['credit_type_code']] : $fine['credit_type_code'];
+		} else {
+			$type = 'Unknown';
+		}
+
+		$formattedFine = [
+			'fineId' => $fine['accountlines_id'],
+			'date' => $fine['date'],
+			'type' => $type,
+			'reason' => $type,
+			'message' => $fine['description'],
+			'amountVal' => $fine['amount'],
+			'amountOutstandingVal' => $fine['amountoutstanding'],
+			'amount' => $currencyFormatter->formatCurrency($fine['amount'], $currencyCode),
+			'amountOutstanding' => $currencyFormatter->formatCurrency($fine['amountoutstanding'], $currencyCode),
+		];
+
+		if (!$includeAdditionalFieldValues) {
+			return $formattedFine;
+		}
+
+		$additionalFineFieldValues = $this->getAdditionalFieldValuesByTable('account_debit_types') + $this->getAdditionalFieldValuesByTable('accountlines:debit');
+		$additionalLibraryFieldValues = $this->getAdditionalFieldValuesByTable('branches');
+
+		if (empty($additionalFineFieldValues) && empty($additionalLibraryFieldValues) ) {
+			return $formattedFine;
+		}
+
+		foreach ($additionalFineFieldValues as $additionalFineFieldValue) {
+			if ($additionalFineFieldValue["record_id"] == $fine['accountlines_id'] || $additionalFineFieldValue["record_id"] == $fine['debit_type_code']) {
+				$lowerCaseFieldName = strtolower($additionalFineFieldValue['field_name']);
+				$snakeCaseFieldName = str_replace(" ", "_", $lowerCaseFieldName);
+
+				$formattedFine[$snakeCaseFieldName] = $additionalFineFieldValue['value'];
+			}
+		}
+
+		foreach ($additionalLibraryFieldValues as $additionalLibraryFieldValue) {
+			if ($additionalLibraryFieldValue["record_id"] ==  $patronHomeLocationCode) {
+				$lowerCaseFieldName = strtolower($additionalLibraryFieldValue['field_name']);
+				$snakeCaseFieldName = str_replace(" ", "_", $lowerCaseFieldName);
+
+				$formattedFine[$snakeCaseFieldName] = $additionalLibraryFieldValue['value'];
+			}
+		}
+
+		$mySqliResultObj->close();
+
+		return $formattedFine;
+	}
+
+
+
 	public function getAdditionalFieldValuesByTable(string $tableName) {
 		$fields = $this->getAdditionalFields($tableName, null);
 		$values = [];
