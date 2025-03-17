@@ -4110,10 +4110,13 @@ class Koha extends AbstractIlsDriver {
 					}
 					$isRequired = $attribute['req'];
 					$borrowerAttributes[$attribute['code']]['property'] = "borrower_attribute_" . $attribute['code'];
-					$borrowerAttributes[$attribute['code']]['type'] = "enum";
+					$borrowerAttributes[$attribute['code']]['type'] =  $attribute['inputType'];
 					$borrowerAttributes[$attribute['code']]['values'] = $authorizedValues;
 					$borrowerAttributes[$attribute['code']]['label'] = $attribute['desc'];
 					$borrowerAttributes[$attribute['code']]['required'] = $isRequired;
+					if ($attribute['inputType'] == 'multiSelect') {
+						$borrowerAttributes[$attribute['code']]['listStyle'] = true;
+					}
 				}
 				$fields['additionalInfoSection'] = [
 					'property' => 'additionalInfoSection',
@@ -6657,7 +6660,7 @@ class Koha extends AbstractIlsDriver {
 			while ($curRow2 = $authorizedValueCategoryRS->fetch_assoc()) {
 				$authorizedValueCategories[$curRow2['authorised_value']] = $curRow2['lib_opac'];
 			}
-			if (!empty($authorizedValueCategories) && !$curRow['mandatory']) {
+			if (!empty($authorizedValueCategories) && !$curRow['mandatory'] && !$curRow['repeatable']) {
 				$authorizedValueCategories = array_merge([''=> ''], $authorizedValueCategories);
 			}
 
@@ -6665,6 +6668,7 @@ class Koha extends AbstractIlsDriver {
 				'code' => $curRow['code'],
 				'desc' => $curRow['description'],
 				'req' => $curRow['mandatory'],
+				'inputType' => $this->setExtendedAttributeInputType($curRow),
 				'authorized_values' => $authorizedValueCategories,
 			];
 
@@ -6674,6 +6678,19 @@ class Koha extends AbstractIlsDriver {
 		$borrowerAttributeTypesRS->close();
 
 		return $extendedAttributes;
+	}
+
+	private function setExtendedAttributeInputType($curRow): string {
+		if ($curRow['authorised_value_category'] && $curRow ['repeatable']) {
+			return 'multiSelect';
+		}
+		if ($curRow['authorised_value_category']) {
+			return 'enum';
+		}
+		if ($curRow['date']) {
+			return 'date';
+		}
+		return 'text';
 	}
 
 	/**
