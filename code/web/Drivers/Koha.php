@@ -2992,6 +2992,30 @@ class Koha extends AbstractIlsDriver {
 		return $fines;
 	}
 
+	private function getAdditionalFields(string|null $tableName, string|null $category): array {
+		// TODO: consider refactoring to send a GET request to the api/v1/extended_attribute_types endpoint instead
+		$this->initDatabaseConnection();
+		/** @noinspection SqlResolve */
+		$query = "SELECT * FROM additional_fields";
+
+		if ($tableName) {
+			$query .= " WHERE tablename = '" . mysqli_escape_string($this->dbConnection, $tableName) . "'";
+		}
+
+		if ($category) {
+			$query .= " AND authorised_value_category= '"  . mysqli_escape_string($this->dbConnection, $category) . "'";
+		}
+
+		$additionalFieldsResponse = mysqli_query($this->dbConnection, $query);
+		$additionalFields = [];
+		if ($additionalFieldsResponse->num_rows > 0) {
+			while ($allAdditionalFieldsRow = $additionalFieldsResponse->fetch_assoc()) {
+				$additionalFields[] = $allAdditionalFieldsRow;
+			}
+		}
+		return $additionalFields;
+	}
+
 	/**
 	 * Get Total Outstanding fines for a user.  Lifted from Koha:
 	 * C4::Accounts.pm gettotalowed method
