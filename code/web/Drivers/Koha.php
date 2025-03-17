@@ -2992,6 +2992,29 @@ class Koha extends AbstractIlsDriver {
 		return $fines;
 	}
 
+	public function getAdditionalFieldValuesByTable(string $tableName) {
+		$fields = $this->getAdditionalFields($tableName, null);
+		$values = [];
+
+		if (empty($fields)) {
+			return [];
+		}
+
+		foreach ($fields as $field) {
+			$fieldValues = $this->getAdditionalFieldValuesByFieldId($field['id']);
+			if (empty($fieldValues)) {
+				continue;
+			}
+
+			foreach ($fieldValues as $value) {
+				$value['field_name'] = $field['name'];
+				$values[] = $value;
+			}
+		}
+
+		return $values;
+	}
+
 	public function getAdditionalFieldNames(string|null $tableName, string|null $category): array {
 		$fieldNamesList = [];
 		foreach($this->getAdditionalFields($tableName, $category) as $field) {
@@ -3022,6 +3045,22 @@ class Koha extends AbstractIlsDriver {
 			}
 		}
 		return $additionalFields;
+	}
+
+	private function getAdditionalFieldValuesByFieldId(string $fieldId): array {
+		$this->initDatabaseConnection();
+		/** @noinspection SqlResolve */
+		$query = "SELECT * FROM additional_field_values WHERE  field_id = '" . mysqli_escape_string($this->dbConnection, $fieldId) . "'";
+		$additionalFieldValuesResponse = mysqli_query($this->dbConnection, $query);
+
+		$additionalFieldValues = [];
+		if ($additionalFieldValuesResponse->num_rows > 0) {
+			while ($allAdditionalFieldsRow = $additionalFieldValuesResponse->fetch_assoc()) {
+				$additionalFieldValues[] = $allAdditionalFieldsRow;
+			}
+		}
+		$additionalFieldValuesResponse->close();
+		return $additionalFieldValues;
 	}
 
 	/**
