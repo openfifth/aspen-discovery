@@ -6768,6 +6768,58 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
+	function createHeyCentricOrder(){
+		global $configArray;
+
+		$transactionType = $_REQUEST['type'];
+		if ($transactionType == 'donation') {
+			$result = $this->createGenericDonation('HeyCentric');
+		} else {
+			$result = $this->createGenericOrder('HeyCentric');
+		}
+
+		if (array_key_exists('success', $result) && $result['success'] === false) {
+			return $result;
+		}
+
+		if ($transactionType == 'donation') {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+				$tempDonation,
+			] = $result;
+		} else {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+			] = $result;
+		}
+
+		require_once ROOT_DIR . '/sys/ECommerce/HeyCentricSetting.php';
+		$heyCentricSettings = new HeyCentricSetting();
+		$homeLocationHeyCentricSettingId = $patron->getHomeLocation()->heyCentricSettingId;
+		$heyCentricSettings->id = $homeLocationHeyCentricSettingId ? $homeLocationHeyCentricSettingId : $paymentLibrary->heyCentricSettingId;
+
+		if (!$heyCentricSettings->find(true)) {
+			return [
+				'success' => false,
+				'message' => 'HeyCentric was not properly configured',
+			];
+		}
+
+		$paymentRequestUrl = $heyCentricSettings->baseUrl;
+		return [
+			'success' => true,
+			'message' => 'Redirecting to payment processor',
+			'paymentRequestUrl' => $paymentRequestUrl,
+		];
+	}
 	/** @noinspection PhpUnused */
 	function dismissBrowseCategory() {
 		$patronId = UserAccount::getActiveUserId();
