@@ -175,6 +175,8 @@ class DataObjectUtil {
 
 		} elseif (in_array($property['type'], [
 			'text',
+			'textFromNestedSection',
+			'enumFromNestedSection',
 			'enum',
 			'hidden',
 			'url',
@@ -285,8 +287,7 @@ class DataObjectUtil {
 			} else {
 				$object->setProperty($propertyName, 0, $property);
 			}
-
-		} elseif ($property['type'] == 'checkbox') {
+		} elseif ($property['type'] == 'checkbox' || $property['type'] == 'checkboxFromNestedSection') {
 			$object->setProperty($propertyName, isset($_REQUEST[$propertyName]) && $_REQUEST[$propertyName] == 'on' ? 1 : 0, $property);
 		} elseif ($property['type'] == 'webBuilderColor') {
 			$object->setProperty($propertyName, $_REQUEST[$propertyName], $property);
