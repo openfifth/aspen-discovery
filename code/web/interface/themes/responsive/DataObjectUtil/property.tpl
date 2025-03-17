@@ -218,6 +218,11 @@
 					<a class="btn btn-default btn-sm" href="{$property.editLink|replace:'propertyValue':$propValue}">Edit {$property.label}</a>
 				</div>
 			</div>
+		{elseif $property.type == 'textFromNestedSection'}
+			<input type='text' name='{$propName}' id='{$propName}' value='{$propValue.$propName|escape}' {if !empty($property.accessibleLabel)}aria-label="{$property.accessibleLabel}"{/if} {if !empty($property.maxLength)}maxlength='{$property.maxLength}'{/if} {if !empty($property.size)}size='{$property.size}'{/if} class='form-control {if !empty($property.required)}required{/if}{if !empty($property.validationGroupName)} {$property.validationGroupName}-validation-group{/if}' {if !empty($property.autocomplete)}autocomplete="{$property.autocomplete}"{/if} {if !empty($property.readOnly)}readonly{/if}  {if !empty($property.forcesReindex)}aria-describedby="{$propName}HelpBlock"{/if} >
+			{if !empty($property.forcesReindex)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Updating this setting causes a nightly reindex" isAdminFacing=true}</small></span>{/if}
+			{if !empty($property.affectsLiDA)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Aspen LiDA also uses this setting" isAdminFacing=true}</small></span>{/if}
+			{if !empty($property.note)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small><i class="fas fa-info-circle"></i> {$property.note}</small></span>{/if}
 		{elseif $property.type == 'text' || $property.type == 'regularExpression' || $property.type == 'folder'}
 			<input type='text' name='{$propName}' id='{$propName}' value='{$propValue|escape}' {if !empty($property.accessibleLabel)}aria-label="{$property.accessibleLabel}"{/if} {if !empty($property.maxLength)}maxlength='{$property.maxLength}'{/if} {if !empty($property.size)}size='{$property.size}'{/if} class='form-control {if !empty($property.required)}required{/if}{if !empty($property.validationGroupName)} {$property.validationGroupName}-validation-group{/if}' {if !empty($property.autocomplete)}autocomplete="{$property.autocomplete}"{/if} {if !empty($property.readOnly)}readonly{/if}  {if !empty($property.forcesReindex)}aria-describedby="{$propName}HelpBlock"{/if} >
 			{if !empty($property.forcesReindex)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Updating this setting causes a nightly reindex" isAdminFacing=true}</small></span>{/if}
@@ -457,12 +462,11 @@
 			{if !empty($property.affectsLiDA)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Aspen LiDA also uses this setting" isAdminFacing=true}</small></span>{/if}
 			{if !empty($property.note)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small><i class="fas fa-info-circle"></i> {$property.note}</small></span>{/if}
 
-		{elseif $property.type == 'enum'}
+		{elseif $property.type == 'enum' || $property.type == 'enumFromNestedSection'}
 			{include file="DataObjectUtil/enum.tpl"}
 			{if !empty($property.forcesReindex)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Updating this setting causes a nightly reindex" isAdminFacing=true}</small></span>{/if}
 			{if !empty($property.affectsLiDA)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Aspen LiDA also uses this setting" isAdminFacing=true}</small></span>{/if}
 			{if !empty($property.note)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small><i class="fas fa-info-circle"></i> {$property.note}</small></span>{/if}
-
 		{elseif $property.type == 'multiSelect'}
 			{include file="DataObjectUtil/multiSelect.tpl"}
 			{if !empty($property.forcesReindex)}<span id="{$propName}HelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Updating this setting causes a nightly reindex" isAdminFacing=true}</small></span>{/if}
@@ -531,6 +535,16 @@
 					{if !empty($property.returnValueForUnchecked) && $property.returnValueForUnchecked}
 						<input type='hidden' name='{$propName}' id='{$propName}Unchecked' value='{if !empty($propValue)}{$propValue}{else}0{/if}'>
 					{/if}
+				</label>
+				{include file="DataObjectUtil/fieldLockingInfo.tpl"}
+				{if !empty($property.description)}<a style="margin-right: .5em; margin-left: .25em" id="{$propName}Tooltip" class="text-info" role="tooltip" tabindex="0" data-toggle="tooltip" data-placement="right" data-title="{translate text=$property.description isAdminFacing=true inAttribute=true}"><i class="fas fa-question-circle"></i></a>{/if}
+			</div>
+		{elseif $property.type == 'checkboxFromNestedSection'}
+			{* {$propValue.$propName|@var_dump} *}
+			<div class="checkbox" {if !empty($property.forcesReindex) || !empty($property.affectsLiDA) || !empty($property.note)}style="margin-bottom: 0"{/if}>
+				<label for='{$propName}' {if !empty($property.description)}aria-describedby="{$propName}Tooltip" {/if}>
+					<input type='checkbox' name='{$propName}' id='{$propName}' {if is_array($propValue) && $propValue.$propName}checked='checked'{/if} {if !empty($property.readOnly)}readonly disabled{/if} {if !empty($property.onchange)} onchange="{$property.onchange}"{/if} {if !empty($property.required)}required{/if}> {translate text=$property.label isAdminFacing=true} {if !empty($property.required)}<span class="label label-danger" style="margin-right: .5em;">{translate text="Required" isAdminFacing=true}</span>{/if}
+					{* <input type='checkbox' name='{$propName}' id='{$propName}' {if is_array($propValue) && $propertyValue.$propName}checked='checked'{/if} {if !empty($property.readOnly)}readonly disabled{/if} {if !empty($property.onchange)} onchange="{$property.onchange}"{/if} {if !empty($property.required)}required{/if}> {translate text=$property.label isAdminFacing=true} {if !empty($property.required)}<span class="label label-danger" style="margin-right: .5em;">{translate text="Required" isAdminFacing=true}</span>{/if} *}
 				</label>
 				{include file="DataObjectUtil/fieldLockingInfo.tpl"}
 				{if !empty($property.description)}<a style="margin-right: .5em; margin-left: .25em" id="{$propName}Tooltip" class="text-info" role="tooltip" tabindex="0" data-toggle="tooltip" data-placement="right" data-title="{translate text=$property.description isAdminFacing=true inAttribute=true}"><i class="fas fa-question-circle"></i></a>{/if}
