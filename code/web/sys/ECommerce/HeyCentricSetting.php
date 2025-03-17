@@ -112,10 +112,36 @@ class HeyCentricSetting extends DataObject {
 			}
 			return $this->_locations;
 		}
+		
+		if (strpos($name, "value") || strpos($name, "includeInUrl") || strpos($name, "includeInHash") || strpos($name, "kohaAdditionalField") || $name == "urlParameterSettingList") {
+			if (!isset($this->_urlParameterSettings)) {
+				$this->_urlParameterSettings = [];
+				$urlParameterList = HeyCentricUrlParameter::getHeyCentricUrlParamFields();
+				foreach($urlParameterList as $urlParameter) {
+					$urlParameterSetting = new HeyCentricUrlParameterSetting();
+					if ($this->id) {
+						$urlParameterSetting->heyCentricSettingId = $this->id;
+						$urlParameterSetting->heyCentricUrlParameterId = $urlParameter['id'];
+						$urlParameterSetting->find(true);
+					}
+					$this->_urlParameterSettings[$urlParameter['property'] . "_value"] = $this->id ? $urlParameterSetting->value : null;
+					$this->_urlParameterSettings[$urlParameter['property'] . "_heyCentricSettingId"] = $this->id ? $urlParameterSetting->heyCentricSettingId : null;
+					$this->_urlParameterSettings[$urlParameter['property'] . "_heyCentricUrlParameterId"] = $this->id ? $urlParameterSetting->heyCentricUrlParameterId : null;
+					$this->_urlParameterSettings[$urlParameter['property'] . "_includeInUrl"] = $this->id ? $urlParameterSetting->includeInUrl : null;
+					$this->_urlParameterSettings[$urlParameter['property'] . "_includeInHash"] = $this->id ? $urlParameterSetting->includeInHash : null;
+					$this->_urlParameterSettings[$urlParameter['property'] . "_kohaAdditionalField"] = $this->id ? $urlParameterSetting->kohaAdditionalField : null;
+				}
+			}
 
+			return $this->_urlParameterSettings;
+		}
 		return parent::__get($name);
 	}
+
 	public function __set($name, $value): void {
+		if (strpos($name, '_') && !empty($this->_urlParameterSettings)) {
+			$this->_urlParameterSettings[$name] = $value;
+		}
 
 		switch ($name) {
 			case "libraries":
@@ -134,6 +160,7 @@ class HeyCentricSetting extends DataObject {
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
 			$this->saveLocations();
+			$this->saveUrlParameterSettings();
 		}
 		return true;
 	}
@@ -143,6 +170,7 @@ class HeyCentricSetting extends DataObject {
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
 			$this->saveLocations();
+			$this->saveUrlParameterSettings();
 		}
 		return $ret;
 	}
@@ -201,4 +229,25 @@ class HeyCentricSetting extends DataObject {
 		unset($this->_locations);
 	}
 
+	public function saveUrlParameterSettings(): void {
+		if (!isset($this->_urlParameterSettings) || !is_array($this->_urlParameterSettings)) {
+			return;
+		}
+
+		$urlParams = HeyCentricUrlParameter::getHeyCentricUrlParamFields();
+		foreach ($urlParams as $objectStructure) {
+			$urlParameterSetting = new HeyCentricUrlParameterSetting();
+			$urlParameterSetting->heyCentricSettingId = $this->id;
+			$urlParameterSetting->heyCentricUrlParameterId = $objectStructure['id'];
+			if(!$urlParameterSetting->find(true)) {
+				$urlParameterSetting->insert();
+			}
+			$urlParameterSetting->value = $this->_urlParameterSettings[$objectStructure["property"] . "_value"];
+			$urlParameterSetting->includeInUrl = $this->_urlParameterSettings[$objectStructure['property'] . "_includeInUrl"];
+			$urlParameterSetting->includeInHash = $this->_urlParameterSettings[$objectStructure['property'] . "_includeInHash"];
+			$urlParameterSetting->kohaAdditionalField = $this->_urlParameterSettings[$objectStructure['property'] . "_kohaAdditionalField"];
+			$urlParameterSetting->update();
+		}
+		unset($this->_urlParameterSettings);
+	}
 }

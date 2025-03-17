@@ -175,6 +175,8 @@ class DataObjectUtil {
 
 		} elseif (in_array($property['type'], [
 			'text',
+			'textFromNestedSection',
+			'enumFromNestedSection',
 			'enum',
 			'hidden',
 			'url',
@@ -290,7 +292,7 @@ class DataObjectUtil {
 				$object->setProperty($propertyName, 0, $property);
 			}
 
-		} elseif ($property['type'] == 'checkbox') {
+		} elseif ($property['type'] == 'checkbox' || $property['type'] == 'checkboxFromNestedSection') {
 			if (empty($property['readOnly'])) {
 				$object->setProperty($propertyName, isset($_REQUEST[$propertyName]) && $_REQUEST[$propertyName] == 'on' ? 1 : 0, $property);
 			}
