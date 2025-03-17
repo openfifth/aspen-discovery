@@ -63,6 +63,15 @@ class HeyCentricSetting extends DataObject {
 				'values' => $libraryList,
 				'hideInLists' => true,
 			],
+			'locations' => [
+				'property' => 'locations',
+				'type' => 'multiSelect',
+				'listStyle' => 'checkboxSimple',
+				'label' => 'Locations',
+				'description' => 'Define locations that use these settings',
+				'values' => $locationList,
+				'hideInLists' => true,
+			],
 		];
 
 		if (!UserAccount::userHasPermission('Library eCommerce Options')) {
@@ -83,6 +92,17 @@ class HeyCentricSetting extends DataObject {
 			return $this->_libraries;
 		}
 
+		if ($name == "locations" && !isset($this->_locations) && $this->id) {
+			$this->_locations = [];
+			$obj = new Location();
+			$obj->heyCentricSettingId = $this->id;
+			$obj->find();
+			while ($obj->fetch()) {
+				$this->_locations[$obj->locationId] = $obj->locationId;
+			}
+			return $this->_locations;
+		}
+
 		return parent::__get($name);
 	}
 	public function __set($name, $value): void {
@@ -90,6 +110,9 @@ class HeyCentricSetting extends DataObject {
 		switch ($name) {
 			case "libraries":
 				$this->_libraries = $value;
+				break;
+			case "locations":
+				$this->_locations = $value;
 				break;
 			default:
 				parent::__set($name, $value);
@@ -100,6 +123,7 @@ class HeyCentricSetting extends DataObject {
 		$ret = parent::update();
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
+			$this->saveLocations();
 		}
 		return true;
 	}
@@ -108,6 +132,7 @@ class HeyCentricSetting extends DataObject {
 		$ret = parent::insert();
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
+			$this->saveLocations();
 		}
 		return $ret;
 	}
@@ -138,6 +163,32 @@ class HeyCentricSetting extends DataObject {
 			}
 		}
 		unset($this->_libraries);
+	}
+	
+	public function saveLocations(): void {
+		if (!isset ($this->_locations) || !is_array($this->_locations)) {
+			return;
+		}
+		$locationList = Location::getLocationList(!UserAccount::userHasPermission('Administer All Locations'));
+		foreach ($locationList as $locationId => $displayName) {
+			$location = new Location();
+			$location->locationId = $locationId;
+			$location->find(true);
+			if (in_array($locationId, $this->_locations)) {
+				if ($location->heyCentricSettingId != $this->id) {
+					$location->heyCentricSettingId = $this->id;
+					$location->update();
+				}
+			} else {
+				if ($location->heyCentricSettingId == $this->id) {
+					if ($location->finePaymentType == 16) {
+					}
+					$location->heyCentricSettingId = -1;
+					$location->update();
+				}
+			}
+		}
+		unset($this->_locations);
 	}
 
 }
