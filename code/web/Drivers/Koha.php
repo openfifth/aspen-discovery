@@ -2992,6 +2992,14 @@ class Koha extends AbstractIlsDriver {
 		return $fines;
 	}
 
+	public function getAdditionalFieldNames(string|null $tableName, string|null $category): array {
+		$fieldNamesList = [];
+		foreach($this->getAdditionalFields($tableName, $category) as $field) {
+			$fieldNamesList[$field['name']] = $field['name'];
+		}
+		return $fieldNamesList;
+	}
+
 	private function getAdditionalFields(string|null $tableName, string|null $category): array {
 		// TODO: consider refactoring to send a GET request to the api/v1/extended_attribute_types endpoint instead
 		$this->initDatabaseConnection();
