@@ -54,6 +54,15 @@ class HeyCentricSetting extends DataObject {
 				'description' => 'The HeyCentric Private Key for your site',
 				'maxLength' => 50,
 			],
+			'libraries' => [
+				'property' => 'libraries',
+				'type' => 'multiSelect',
+				'listStyle' => 'checkboxSimple',
+				'label' => 'Libraries',
+				'description' => 'Define libraries that use these settings',
+				'values' => $libraryList,
+				'hideInLists' => true,
+			],
 		];
 
 		if (!UserAccount::userHasPermission('Library eCommerce Options')) {
@@ -61,4 +70,74 @@ class HeyCentricSetting extends DataObject {
 		}
 		return $structure;
 	}
+
+	public function __get($name): array|null {
+		if ($name == "libraries" && !isset($this->_libraries) && $this->id) {
+			$this->_libraries = [];
+			$obj = new Library();
+			$obj->heyCentricSettingId = $this->id;
+			$obj->find();
+			while ($obj->fetch()) {
+				$this->_libraries[$obj->libraryId] = $obj->libraryId;
+			}
+			return $this->_libraries;
+		}
+
+		return parent::__get($name);
+	}
+	public function __set($name, $value): void {
+
+		switch ($name) {
+			case "libraries":
+				$this->_libraries = $value;
+				break;
+			default:
+				parent::__set($name, $value);
+		}
+	}
+
+	public function update($context = ''): bool {
+		$ret = parent::update();
+		if ($ret !== FALSE) {
+			$this->saveLibraries();
+		}
+		return true;
+	}
+
+	public function insert($context = ''): int|bool {
+		$ret = parent::insert();
+		if ($ret !== FALSE) {
+			$this->saveLibraries();
+		}
+		return $ret;
+	}
+
+	public function saveLibraries(): void {
+		if (!isset ($this->_libraries) || !is_array($this->_libraries)) {
+			return;
+		}
+		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Libraries'));
+		foreach ($libraryList as $libraryId => $displayName) {
+			$library = new Library();
+			$library->libraryId = $libraryId;
+			$library->find(true);
+			if (in_array($libraryId, $this->_libraries)) {
+				if ($library->heyCentricSettingId != $this->id) {
+					$library->finePaymentType = 16;
+					$library->heyCentricSettingId = $this->id;
+					$library->update();
+				}
+			} else {
+				if ($library->heyCentricSettingId == $this->id) {
+					if ($library->finePaymentType == 16) {
+						$library->finePaymentType = 0;
+					}
+					$library->heyCentricSettingId = -1;
+					$library->update();
+				}
+			}
+		}
+		unset($this->_libraries);
+	}
+
 }
