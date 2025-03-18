@@ -6670,6 +6670,7 @@ class Koha extends AbstractIlsDriver {
 				'req' => $curRow['mandatory'],
 				'inputType' => $this->setExtendedAttributeInputType($curRow),
 				'authorized_values' => $authorizedValueCategories,
+				'repeatable' => $curRow['repeatable'],
 			];
 
 			$extendedAttributes[] = $attribute;
@@ -6681,13 +6682,13 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	private function setExtendedAttributeInputType($curRow): string {
-		if ($curRow['authorised_value_category'] && $curRow ['repeatable']) {
+		if ($curRow['authorised_value_category'] && $curRow['repeatable']) {
 			return 'multiSelect';
 		}
 		if ($curRow['authorised_value_category']) {
 			return 'enum';
 		}
-		if ($curRow['date']) {
+		if ($curRow['is_date']) {
 			return 'date';
 		}
 		return 'text';
@@ -6707,11 +6708,23 @@ class Koha extends AbstractIlsDriver {
 		$postVariables = [];
 		foreach ($extendedAttributes as $extendedAttribute) {
 			if (isset($_REQUEST["borrower_attribute_" . $extendedAttribute['code']])) {
-				$postVariable = [
-					'type' => $extendedAttribute['code'],
-					'value' => $_REQUEST["borrower_attribute_" . $extendedAttribute['code']],
-				];
-				$postVariables[] = $postVariable;
+				/* 
+				* attributes may be marked as 'repeatable' in Koha
+				* for these, each value needs to be passed as an invidiual patron attribute when forming the post variables.
+				*/
+				if($extendedAttribute['repeatable']) {
+					foreach ($_REQUEST["borrower_attribute_" . $extendedAttribute['code']] as $value) {
+						$postVariables[] = [
+							'type' => $extendedAttribute['code'],
+							'value' => $value,
+						];
+					}
+				} else {
+					$postVariables[] = [
+						'type' => $extendedAttribute['code'],
+						'value' => $_REQUEST["borrower_attribute_" . $extendedAttribute['code']],
+					];
+				}
 			}
 		}
 

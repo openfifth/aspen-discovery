@@ -1017,7 +1017,7 @@ class CatalogConnection {
 	function selfRegister($viaSSO = false, $ssoUser = []): array {
 		//Make sure data is valid
 		foreach ($_REQUEST as $requestVar) {
-			if ($requestVar != strip_tags($requestVar)) {
+			if (!is_array($requestVar) && $requestVar != strip_tags($requestVar)) {
 				return [
 					'success' => false,
 					'message' => 'Invalid information provided, please try again.'
