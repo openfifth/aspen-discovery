@@ -8437,6 +8437,7 @@ AspenDiscovery.Account = (function () {
 				if (data.success) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, true, '', false, false);
 				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.message);
 					console.error("Error fetching the email opt-in form.");
 				}
 			})
@@ -17712,9 +17713,9 @@ AspenDiscovery.CommunityEngagement = function() {
 
 			$.getJSON(url, params, function(data) {
 				if (data.success) {
-					AspenDiscovery.showMessage("Progress Added", data.message, false, true, false, false);
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 				} else {
-					AspenDiscovery.showMessage("An Error Has Occurred", data.message);
+					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) {
@@ -17729,9 +17730,9 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 			$.getJSON(url, params, function(data) {
 				if (data.success) {
-					AspenDiscovery.showMessage("Joined Leaderboard", data.message, false, true, false, false);
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 				} else {
-					AspenDiscovery.showMessage("An Error Has Occurred", data.message);
+					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) {
@@ -17746,9 +17747,9 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 			$.getJSON(url, params, function(data) {
 				if (data.success) {
-					AspenDiscovery.showMessage("Opted Out of Leaderboard", data.message, false, true, false, false);
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 				} else {
-					AspenDiscovery.showMessage("An Error Has Occurred", data.message);
+					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) {
@@ -17900,7 +17901,7 @@ AspenDiscovery.CommunityEngagement = function() {
 				if (data.success) {
 					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 				} else {
-					AspenDiscovery.showMessage("An Error Has Occurred", data.message);
+					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) {
@@ -17917,7 +17918,7 @@ AspenDiscovery.CommunityEngagement = function() {
 				if (data.success) {
 					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 				} else {
-					AspenDiscovery.showMessage("An Error Has Occurred", data.message);
+					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			})
 			.fail(function(jqXHR, textStatus, errorThrown) {
