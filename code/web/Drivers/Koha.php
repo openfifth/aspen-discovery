@@ -2992,7 +2992,7 @@ class Koha extends AbstractIlsDriver {
 		return $fines;
 	}
 
-	public function getFineById(string $id, bool $includeAdditionalFieldValues = false, string $patronHomeLocationCode): array|null {
+	public function getFineById(string $id, bool $includeAdditionalFieldValues = false): array|null {
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 
 		global $activeLanguage;
@@ -3040,6 +3040,7 @@ class Koha extends AbstractIlsDriver {
 			'amountOutstandingVal' => $fine['amountoutstanding'],
 			'amount' => $currencyFormatter->formatCurrency($fine['amount'], $currencyCode),
 			'amountOutstanding' => $currencyFormatter->formatCurrency($fine['amountoutstanding'], $currencyCode),
+			'branchCode' => $fine['branchcode'],
 		];
 
 		if (!$includeAdditionalFieldValues) {
@@ -3063,7 +3064,7 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		foreach ($additionalLibraryFieldValues as $additionalLibraryFieldValue) {
-			if ($additionalLibraryFieldValue["record_id"] ==  $patronHomeLocationCode) {
+			if ($additionalLibraryFieldValue["record_id"] ==  $fine['branchcode']) {
 				$lowerCaseFieldName = strtolower($additionalLibraryFieldValue['field_name']);
 				$snakeCaseFieldName = str_replace(" ", "_", $lowerCaseFieldName);
 
