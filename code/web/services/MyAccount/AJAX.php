@@ -6829,7 +6829,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "client=";
 			if(isset($urlParameterSettings['client_kohaAdditionalField']) && $urlParameterSettings['client_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['client_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['client_value'] &&  $urlParameterSettings['client_value'] ? $urlParameterSettings['client_value'] : "";
 			}
@@ -6838,7 +6838,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&area=";
 			if(isset($urlParameterSettings['area_kohaAdditionalField']) && $urlParameterSettings['area_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['area_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['area_value'] &&  $urlParameterSettings['area_value'] ? $urlParameterSettings['area_value'] : "";
 			}
@@ -6847,7 +6847,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&till=";
 			if(isset($urlParameterSettings['till_kohaAdditionalField']) && $urlParameterSettings['till_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['till_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['till_value'] &&  $urlParameterSettings['till_value'] ? $urlParameterSettings['till_value'] : "";
 			}
@@ -6856,7 +6856,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&entity=";
 			if(isset($urlParameterSettings['entity_kohaAdditionalField']) && $urlParameterSettings['entity_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['entity_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['entity_value'] &&  $urlParameterSettings['entity_value'] ? $urlParameterSettings['entity_value'] : "";
 			}
@@ -6865,7 +6865,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&co=";
 			if(isset($urlParameterSettings['co_kohaAdditionalField']) && $urlParameterSettings['co_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['co_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['co_value'] &&  $urlParameterSettings['co_value'] ? $urlParameterSettings['co_value'] : "";
 			}
@@ -6874,7 +6874,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&bu=";
 			if(isset($urlParameterSettings['bu_kohaAdditionalField']) && $urlParameterSettings['bu_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['bu_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['bu_value'] &&  $urlParameterSettings['bu_value'] ? $urlParameterSettings['bu_value'] : "";
 			}
@@ -6883,7 +6883,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&lang=";
 			if(isset($urlParameterSettings['lang_kohaAdditionalField']) && $urlParameterSettings['lang_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['lang_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['lang_value'] &&  $urlParameterSettings['lang_value'] ? $urlParameterSettings['lang_value'] : "";
 			}
@@ -6892,7 +6892,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&mode=";
 			if(isset($urlParameterSettings['mode_kohaAdditionalField']) && $urlParameterSettings['mode_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['mode_kohaAdditionalField']));
-				$paymentRequestUrl .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['mode_value'] &&  $urlParameterSettings['mode_value'] ? $urlParameterSettings['mode_value'] : "";
 			}
@@ -6904,7 +6904,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "client=";
 			if(isset($urlParameterSettings['client_kohaAdditionalField']) && $urlParameterSettings['client_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['client_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "client=" . $urlParameterSettings['client_value'] ? $urlParameterSettings['client_value'] : "";
 			}
@@ -6913,7 +6913,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&area=";
 			if(isset($urlParameterSettings['area_kohaAdditionalField']) && $urlParameterSettings['area_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['area_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "area=" . $urlParameterSettings['area_value'] ? $urlParameterSettings['area_value'] : "";
 			}
@@ -6922,7 +6922,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&till=";
 			if(isset($urlParameterSettings['till_kohaAdditionalField']) && $urlParameterSettings['till_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['till_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "till=" . $urlParameterSettings['till_value'] ? $urlParameterSettings['till_value'] : "";
 			}
@@ -6931,7 +6931,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&entity=";
 			if(isset($urlParameterSettings['entity_kohaAdditionalField']) && $urlParameterSettings['entity_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['entity_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "entity=" . $urlParameterSettings['entity_value'] ? $urlParameterSettings['entity_value'] : "";
 			}
@@ -6940,7 +6940,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&co=";
 			if(isset($urlParameterSettings['co_kohaAdditionalField']) && $urlParameterSettings['co_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['co_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "co=" . $urlParameterSettings['co_value'] ? $urlParameterSettings['co_value'] : "";
 			}
@@ -6949,7 +6949,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&bu=";
 			if(isset($urlParameterSettings['bu_kohaAdditionalField']) && $urlParameterSettings['bu_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['bu_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "bu=" . $urlParameterSettings['bu_value'] ? $urlParameterSettings['bu_value'] : "";
 			}
@@ -6958,7 +6958,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&lang=";
 			if(isset($urlParameterSettings['lang_kohaAdditionalField']) && $urlParameterSettings['lang_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['lang_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "lang=" . $urlParameterSettings['lang_value'] ? $urlParameterSettings['lang_value'] : "";
 			}
@@ -6967,7 +6967,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&mode=";
 			if(isset($urlParameterSettings['mode_kohaAdditionalField']) && $urlParameterSettings['mode_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['mode_kohaAdditionalField']));
-					$hashParams .= urlencode($locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "mode=" . $urlParameterSettings['mode_value'] ? $urlParameterSettings['mode_value'] : "";
 			}
@@ -6975,7 +6975,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		// multiline hash and URL parameters
 		foreach($finesSelected as $index => $fine) {	
-			$fineDetails = $patron->getCatalogDriver()->hasAdditionalFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true, $patron->getHomeLocationCode()) : [];
+			$fineDetails = $patron->getCatalogDriver()->hasAdditionalFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true) : [];
 			$multilineSuffix = $index > 0 ? "_$index=" : "=";
 			
 			// URL parameters
@@ -6983,7 +6983,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&pmtTyp" . $multilineSuffix;
 				if(isset($urlParameterSettings['pmtTyp_kohaAdditionalField']) && $urlParameterSettings['pmtTyp_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['pmtTyp_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName]: "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName]: "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['pmtTyp_value'] &&  $urlParameterSettings['pmtTyp_value'] ? $urlParameterSettings['pmtTyp_value'] : "";
 				}
@@ -6992,7 +6992,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&val1" . $multilineSuffix;
 				if(isset($urlParameterSettings['val1_kohaAdditionalField']) && $urlParameterSettings['val1_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['val1_value'] &&  $urlParameterSettings['val1_value'] ? $urlParameterSettings['val1_value'] : urlencode($fineDetails['fineId']);
 				}
@@ -7001,7 +7001,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&val1Desc" . $multilineSuffix;
 				if(isset($urlParameterSettings['val1Desc_kohaAdditionalField']) && $urlParameterSettings['val1Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1Desc_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					global $logger;
 					$paymentRequestUrl .= $urlParameterSettings['val1Desc_value'] &&  $urlParameterSettings['val1Desc_value'] &&  $urlParameterSettings['val1Desc_value'] ? $urlParameterSettings['val1Desc_value'] : urlencode($fineDetails['message']);
@@ -7011,7 +7011,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&val2" . $multilineSuffix;
 				if(isset($urlParameterSettings['val2_kohaAdditionalField']) && $urlParameterSettings['val2_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['val2_value'] &&  $urlParameterSettings['val2_value'] ? $urlParameterSettings['val2_value'] : "";
 				}
@@ -7020,7 +7020,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&val2Desc" . $multilineSuffix;
 				if(isset($urlParameterSettings['val2Desc_kohaAdditionalField']) && $urlParameterSettings['val2Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2Desc_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['val2Desc_value'] &&  $urlParameterSettings['val2Desc_value'] ? $urlParameterSettings['val2Desc_value'] : "";
 				}$paymentRequestUrl .= "&val2Desc" . $multilineSuffix . $urlParameterSettings['val2Desc_value'];
@@ -7029,7 +7029,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&am" . $multilineSuffix;
 				if(isset($urlParameterSettings['am_kohaAdditionalField']) && $urlParameterSettings['am_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['am_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['am_value'] &&  $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
 				}
@@ -7038,7 +7038,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&cmt" . $multilineSuffix;
 				if(isset($urlParameterSettings['cmt_kohaAdditionalField']) && $urlParameterSettings['cmt_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['cmt_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['cmt_value'] &&  $urlParameterSettings['cmt_value'] ? $urlParameterSettings['cmt_value'] : "";
 				}
@@ -7047,7 +7047,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= "&extRef" . $multilineSuffix;
 				if(isset($urlParameterSettings['extRef_kohaAdditionalField']) && $urlParameterSettings['extRef_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['extRef_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$paymentRequestUrl .= $urlParameterSettings['extRef_value'] &&  $urlParameterSettings['extRef_value'] ? $urlParameterSettings['extRef_value'] : "";
 				}
@@ -7058,7 +7058,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&pmtTyp" . $multilineSuffix;
 				if(isset($urlParameterSettings['pmtTyp_kohaAdditionalField']) && $urlParameterSettings['pmtTyp_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['pmtTyp_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['pmtTyp_value']) &&  $urlParameterSettings['pmtTyp_value'] ? $urlParameterSettings['pmtTyp_value'] : "";
 				}
@@ -7067,7 +7067,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&val1" . $multilineSuffix;
 				if(isset($urlParameterSettings['val1_kohaAdditionalField']) && $urlParameterSettings['val1_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['val1_value']) &&  $urlParameterSettings['val1_value'] ? $urlParameterSettings['val1_value'] : urlencode($fineDetails['fineId']);
 				}
@@ -7076,7 +7076,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&val1Desc" . $multilineSuffix;
 				if(isset($urlParameterSettings['val1Desc_kohaAdditionalField']) && $urlParameterSettings['val1Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1Desc_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['val1Desc_value']) &&  $urlParameterSettings['val1Desc_value'] ? $urlParameterSettings['val1Desc_value'] : urlencode($fineDetails['message']);
 				}
@@ -7085,7 +7085,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&val2" . $multilineSuffix;
 				if(isset($urlParameterSettings['val2_kohaAdditionalField']) && $urlParameterSettings['val2_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['val2_value']) &&  $urlParameterSettings['val2_value'] ? $urlParameterSettings['val2_value'] : "";
 				}
@@ -7094,7 +7094,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&val2Desc" . $multilineSuffix;
 				if(isset($urlParameterSettings['val2Desc_kohaAdditionalField']) && $urlParameterSettings['val2Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2Desc_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['val2Desc_value']) &&  $urlParameterSettings['val2Desc_value'] ? $urlParameterSettings['val2Desc_value'] : "";
 				}
@@ -7103,7 +7103,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&am" . $multilineSuffix;
 				if(isset($urlParameterSettings['am_kohaAdditionalField']) && $urlParameterSettings['am_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['am_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['am_value']) &&  $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
 				}
@@ -7112,7 +7112,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&cmt" . $multilineSuffix;
 				if(isset($urlParameterSettings['cmt_kohaAdditionalField']) && $urlParameterSettings['cmt_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['cmt_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['cmt_value']) &&  $urlParameterSettings['cmt_value'] ? $urlParameterSettings['cmt_value'] : "";
 				}
@@ -7121,7 +7121,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$hashParams .= "&extRef" . $multilineSuffix;
 				if(isset($urlParameterSettings['extRef_kohaAdditionalField']) && $urlParameterSettings['extRef_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['extRef_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
 					$hashParams .= isset($urlParameterSettings['extRef_value']) &&  $urlParameterSettings['extRef_value'] ? $urlParameterSettings['extRef_value'] : "";
 				}
@@ -7133,7 +7133,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&rurl=";
 			if(isset($urlParameterSettings['rurl_kohaAdditionalField']) && $urlParameterSettings['rurl_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['rurl_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "rurl=" . $urlParameterSettings['rurl_value'] ? $urlParameterSettings['rurl_value'] : "";
 			}
@@ -7142,7 +7142,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&burl=";
 			if(isset($urlParameterSettings['burl_kohaAdditionalField']) && $urlParameterSettings['burl_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['burl_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "burl=" . $urlParameterSettings['burl_value'] ? $urlParameterSettings['burl_value'] : "";
 			}
@@ -7151,7 +7151,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&email=";
 			if(isset($urlParameterSettings['email_kohaAdditionalField']) && $urlParameterSettings['email_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['email_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "email=" . $urlParameterSettings['email_value'] ? $urlParameterSettings['email_value'] : $patron->email;
 			}
@@ -7160,7 +7160,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&ccemail=";
 			if(isset($urlParameterSettings['ccemail_kohaAdditionalField']) && $urlParameterSettings['ccemail_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['ccemail_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "ccemail=" . $urlParameterSettings['ccemail_value'] ? $urlParameterSettings['ccemail_value'] : "";
 			}
@@ -7169,7 +7169,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hashParams .= "&sid=";
 			if(isset($urlParameterSettings['sid_kohaAdditionalField']) && $urlParameterSettings['sid_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['sid_kohaAdditionalField']));
-					$hashParams .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "sid=" . $urlParameterSettings['sid_value'] ? $urlParameterSettings['sid_value'] : "";
 			}
@@ -7180,7 +7180,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&rurl=";
 			if(isset($urlParameterSettings['rurl_kohaAdditionalField']) && $urlParameterSettings['rurl_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['rurl_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['rurl_value'] && $urlParameterSettings['rurl_value'] ? $urlParameterSettings['rurl_value'] . "/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id : $configArray['Site']['url'] . "/MyAccount/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id;
 			}
@@ -7189,7 +7189,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&burl=";
 			if(isset($urlParameterSettings['burl_kohaAdditionalField']) && $urlParameterSettings['burl_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['burl_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['burl_value'] ? $urlParameterSettings['burl_value'] : "";
 			}
@@ -7198,7 +7198,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&email=";
 			if(isset($urlParameterSettings['email_kohaAdditionalField']) && $urlParameterSettings['email_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['email_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['email_value'] ? $urlParameterSettings['email_value'] : $patron->email;
 			}
@@ -7207,7 +7207,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&ccemail=";
 			if(isset($urlParameterSettings['ccemail_kohaAdditionalField']) && $urlParameterSettings['ccemail_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['ccemail_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['ccemail_value'] ? $urlParameterSettings['ccemail_value'] : "";
 			}
@@ -7216,7 +7216,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentRequestUrl .= "&sid=";
 			if(isset($urlParameterSettings['sid_kohaAdditionalField']) && $urlParameterSettings['sid_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['sid_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode($fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$paymentRequestUrl .= $urlParameterSettings['sid_value'] ? $urlParameterSettings['sid_value'] : "";
 			}
