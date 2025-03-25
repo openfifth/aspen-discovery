@@ -3661,7 +3661,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 
 			if (!empty($authors)) {
 				foreach ($authors as $author){
-					$risFields[] = "AU - " . $author;
+					$risFields[] = "AU  - " . $author;
 				}
 			}
 
