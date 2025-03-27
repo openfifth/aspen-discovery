@@ -975,7 +975,7 @@ class CatalogConnection {
 	function updatePatronInfo($user, $canUpdateContactInfo, $fromMasquerade = false): array {
 		//Make sure data is valid
 		foreach ($_REQUEST as $requestVar) {
-			if ($requestVar != strip_tags($requestVar)) {
+			if (!is_array($requestVar) && $requestVar != strip_tags($requestVar)) {
 				return [
 					'success' => false,
 					'messages' => ['Invalid information provided, please try again.']
