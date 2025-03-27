@@ -276,6 +276,7 @@ class Koha extends AbstractIlsDriver {
 				}
 			} else {
 				//This method does use the review queue
+				// TODO: refactor to use the appropriate Koha API endpoint once available 
 				$catalogUrl = $this->accountProfile->vendorOpacUrl;
 
 				$loginResult = $this->loginToKohaOpac($patron);
@@ -339,7 +340,8 @@ class Koha extends AbstractIlsDriver {
 						$extendedAttributes = $this->setExtendedAttributes();
 						if (!empty($extendedAttributes)) {
 							foreach ($extendedAttributes as $attribute) {
-								$postVariables = $this->setPostFieldWithDifferentName($postVariables, "borrower_attribute_" . $attribute['code'], $attribute['code'], $library->useAllCapsWhenUpdatingProfile);
+								//TODO: this currently overwrites patron extended attributes and only sends an update request for the last one. Amend this.
+								$postVariables = $this->setPostFieldsForPatronExtendedAttributes($postVariables, $attribute['code'], $library->useAllCapsWhenUpdatingProfile);
 							}
 						}
 					}
@@ -4110,10 +4112,13 @@ class Koha extends AbstractIlsDriver {
 					}
 					$isRequired = $attribute['req'];
 					$borrowerAttributes[$attribute['code']]['property'] = "borrower_attribute_" . $attribute['code'];
-					$borrowerAttributes[$attribute['code']]['type'] = "enum";
+					$borrowerAttributes[$attribute['code']]['type'] =  $attribute['inputType'];
 					$borrowerAttributes[$attribute['code']]['values'] = $authorizedValues;
 					$borrowerAttributes[$attribute['code']]['label'] = $attribute['desc'];
 					$borrowerAttributes[$attribute['code']]['required'] = $isRequired;
+					if ($attribute['inputType'] == 'multiSelect') {
+						$borrowerAttributes[$attribute['code']]['listStyle'] = true;
+					}
 				}
 				$fields['additionalInfoSection'] = [
 					'property' => 'additionalInfoSection',
@@ -5683,6 +5688,28 @@ class Koha extends AbstractIlsDriver {
 		return $postFields;
 	}
 
+	private function setPostFieldsForPatronExtendedAttributes(array $postFields, string $requestFieldName, $convertToUpperCase = false, $stripNonNumericCharacters = false, $validFieldsToUpdate = []): array {
+		if (isset($_REQUEST['borrower_attribute_' . $requestFieldName])) {
+			if (!empty($validFieldsToUpdate) && !array_key_exists($requestFieldName, $validFieldsToUpdate)) {
+				return $postFields;
+			}
+			$postFields['patron_attribute_code'] = $requestFieldName;
+
+			$valueField = $_REQUEST['borrower_attribute_' . $requestFieldName];
+			if ($stripNonNumericCharacters) {
+				$valueField = preg_replace('/[^0-9]/', '', $valueField);
+			}
+			$valueField = str_replace('’', "'", $valueField);
+			if ($convertToUpperCase) {
+				$postFields['patron_attribute_value'] = strtoupper($valueField);
+			} else {
+				$postFields['patron_attribute_value'] = $valueField;
+			}
+
+		}
+		return $postFields;
+	}
+
 	/**
 	 * @param array $postFields
 	 * @param string $variableName
@@ -6657,7 +6684,7 @@ class Koha extends AbstractIlsDriver {
 			while ($curRow2 = $authorizedValueCategoryRS->fetch_assoc()) {
 				$authorizedValueCategories[$curRow2['authorised_value']] = $curRow2['lib_opac'];
 			}
-			if (!empty($authorizedValueCategories) && !$curRow['mandatory']) {
+			if (!empty($authorizedValueCategories) && !$curRow['mandatory'] && !$curRow['repeatable']) {
 				$authorizedValueCategories = array_merge([''=> ''], $authorizedValueCategories);
 			}
 
@@ -6665,7 +6692,9 @@ class Koha extends AbstractIlsDriver {
 				'code' => $curRow['code'],
 				'desc' => $curRow['description'],
 				'req' => $curRow['mandatory'],
+				'inputType' => $this->setExtendedAttributeInputType($curRow),
 				'authorized_values' => $authorizedValueCategories,
+				'repeatable' => $curRow['repeatable'],
 			];
 
 			$extendedAttributes[] = $attribute;
@@ -6674,6 +6703,19 @@ class Koha extends AbstractIlsDriver {
 		$borrowerAttributeTypesRS->close();
 
 		return $extendedAttributes;
+	}
+
+	private function setExtendedAttributeInputType($curRow): string {
+		if ($curRow['authorised_value_category'] && $curRow['repeatable']) {
+			return 'multiSelect';
+		}
+		if ($curRow['authorised_value_category']) {
+			return 'enum';
+		}
+		if ($curRow['is_date']) {
+			return 'date';
+		}
+		return 'text';
 	}
 
 	/**
@@ -6690,11 +6732,23 @@ class Koha extends AbstractIlsDriver {
 		$postVariables = [];
 		foreach ($extendedAttributes as $extendedAttribute) {
 			if (isset($_REQUEST["borrower_attribute_" . $extendedAttribute['code']])) {
-				$postVariable = [
-					'type' => $extendedAttribute['code'],
-					'value' => $_REQUEST["borrower_attribute_" . $extendedAttribute['code']],
-				];
-				$postVariables[] = $postVariable;
+				/* 
+				* attributes may be marked as 'repeatable' in Koha
+				* for these, each value needs to be passed as an invidiual patron attribute when forming the post variables.
+				*/
+				if($extendedAttribute['repeatable']) {
+					foreach ($_REQUEST["borrower_attribute_" . $extendedAttribute['code']] as $value) {
+						$postVariables[] = [
+							'type' => $extendedAttribute['code'],
+							'value' => $value,
+						];
+					}
+				} else {
+					$postVariables[] = [
+						'type' => $extendedAttribute['code'],
+						'value' => $_REQUEST["borrower_attribute_" . $extendedAttribute['code']],
+					];
+				}
 			}
 		}
 
@@ -6755,17 +6809,66 @@ class Koha extends AbstractIlsDriver {
 		$response = $this->kohaApiUserAgent->get("/api/v1/patrons/$borrowerNumber/extended_attributes",'koha.getUserExtendedAttributes',[],[]);
 		$responseCode = $response['code'];
 		if ($responseCode == 200) {
-			$body = $response['body'];
-			foreach($body as $elem ) { 
+			$userExtendedAttributeValues = $response['content'];
+			$multiSelectTypes = $this->getUserMultiSelectExtendedAttributeTypes($userExtendedAttributeValues);
+
+			foreach($userExtendedAttributeValues as $elem ) { 
 				$attribute = [
 					'id' => $elem['extended_attribute_id'],
 					'type' => $elem['type'],
 					'value' => $elem['value'],
 				];
-				$extendedAttributes[] = $attribute;
+
+				// is multi?
+				if (!isset($multiSelectTypes[$elem['type']])) {
+					$extendedAttributes[] = $attribute;
+					continue;
+				}
+
+				// if multi, try finding and updating existing
+				$found = false;
+				foreach($extendedAttributes as &$formattedAttribute) {
+					if ($formattedAttribute['type'] == $elem['type'] && isset($multiSelectTypes[$formattedAttribute['type']])) {
+						$formattedAttribute['value'][$elem['value']] = $elem['value'];
+						$found = true;
+						continue;
+					}
+				}
+
+				if (!$found) {
+					$attribute['value'] = [];
+					$attribute['value'][$elem['value']] = $elem['value'];
+					unset($attribute['id']);
+					$extendedAttributes[] = $attribute;
+				}
 			}
 		}
+
 		return $extendedAttributes;
+	}
+
+	private function getUserMultiSelectExtendedAttributeTypes(array $userExtendedAttributeValues): false|array {
+		$types = [];
+		foreach($userExtendedAttributeValues as $value ) {
+			$types[] = $value['type'];
+		}
+		if (empty($types)) {
+			return false;
+		}
+
+		$counts = array_count_values($types);
+		$duplicates = [];
+		foreach($counts as $type => $count) {
+			if ($count < 2) {
+				continue;
+			}
+			$duplicates[$type] = $count;
+		}
+		if (empty($duplicates)) {
+			return false;
+		}
+
+		return $duplicates;
 	}
 
 	private function getKohaVersion() {
