@@ -1,7 +1,7 @@
 <?php /** @noinspection SqlResolve */
 function getHeyCentricUpdates() {
 	return [
-        'create_heyCentric_url_paramaters_table' => [
+		'create_heyCentric_url_paramaters_table' => [
 			'title' => 'Create HeyCentric URL Parameters Table',
 			'description' => 'Add a list of existing current HeyCentric URL parameters',
 			'sql' => [
@@ -56,7 +56,7 @@ function getHeyCentricUpdates() {
 				)"
 			],
 		], // create_heyCentric_url_paramater_settings_table
-        'add_heycentric_setting_table' => [
+		'add_heycentric_setting_table' => [
 			'title' => 'HeyCentric Settings Are Stored',
 			'description' => 'HeyCentric settings are stored so they can be administered and assigned to libraries',
 			'continueOnError' => false,
@@ -105,5 +105,5 @@ function getHeyCentricUpdates() {
 				"ALTER TABLE user_payments ADD heyCentricPaymentReferenceNumber INT",
 			],
 		], // 'add_heyCentricPaymentReferenceNumber_to_user_payment'
-    ];
+	];
 }
