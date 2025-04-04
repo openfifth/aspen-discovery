@@ -8079,7 +8079,7 @@ class Koha extends AbstractIlsDriver {
 
 					$this->apiCurlWrapper->addCustomHeaders([
 						'Authorization: Bearer ' . $oAuthToken,
-						'x-koha-library: ' . $checkoutLocation->code,
+						'x-koha-library: ' . $checkoutLocation,
 						'User-Agent: Aspen Discovery',
 						'Accept: */*',
 						'Cache-Control: no-cache',
