@@ -695,6 +695,13 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 					'isPublicFacing' => true,
 				]);
 				$result['api']['message'] = translate(['text' => 'Sorry, we could not checkout this cloudLibrary title to you.', 'isPublicFacing' => true,]);
+			} elseif (str_contains($checkoutXml->Message, 'Patron cannot loan more than')) {
+				$result['message'] = translate(['text' => 'Borrow limit reached. You have reached the maximum number of books you can borrow. Return some before borrowing more.', 'isPublicFacing' => true,]);
+				$result['api']['title'] = translate([
+					'text' => 'Borrow limit reached',
+					'isPublicFacing' => true,
+				]);
+				$result['api']['message'] = translate(['text' => 'Borrow limit reached. You have reached the maximum number of books you can borrow. Return some before borrowing more.', 'isPublicFacing' => true,]);
 			} else {
 				$this->trackUserUsageOfCloudLibrary($patron);
 				$this->trackRecordCheckout($titleId);
