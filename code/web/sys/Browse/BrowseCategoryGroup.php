@@ -32,6 +32,12 @@ class BrowseCategoryGroup extends DB_LibraryLocationLinkedObject {
 		unset($browseCategoryUserStructure['browseCategoryGroupId']);
 
 		$objectStructure = [
+			'id' => [
+				'property' => 'id',
+				'type' => 'label',
+				'label' => 'Id',
+				'description' => 'The unique id',
+			],
 			'name' => [
 				'property' => 'name',
 				'type' => 'text',
