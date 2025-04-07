@@ -123,7 +123,7 @@ class UserPayment extends DataObject {
 			'declined' => [
 				'property' => 'declined',
 				'type' => 'checkbox',
-				'label' => 'Cancelled?',
+				'label' => 'Declined?',
 				'description' => 'Whether or not the payment was declined',
 				'readOnly' => true,
 			],
