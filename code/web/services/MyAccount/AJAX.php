@@ -6804,7 +6804,7 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/ECommerce/HeyCentricSetting.php';
 		$heyCentricSettings = new HeyCentricSetting();
 		$homeLocationHeyCentricSettingId = $patron->getHomeLocation()->heyCentricSettingId;
-		$heyCentricSettings->id = $homeLocationHeyCentricSettingId ? $homeLocationHeyCentricSettingId : $paymentLibrary->heyCentricSettingId;
+		$heyCentricSettings->id = $homeLocationHeyCentricSettingId != -1 ? $homeLocationHeyCentricSettingId : $paymentLibrary->heyCentricSettingId;
 
 		if (!$heyCentricSettings->find(true)) {
 			return [
