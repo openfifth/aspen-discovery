@@ -5,6 +5,9 @@ require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryCombinedResultSection.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryTheme.php';
+require_once ROOT_DIR . '/sys/Email/SendGridSetting.php';
+require_once ROOT_DIR . '/sys/Email/AmazonSesSetting.php';
+require_once ROOT_DIR . '/sys/Email/SMTPSetting.php';
 if (file_exists(ROOT_DIR . '/sys/Indexing/LibraryRecordToInclude.php')) {
 	require_once ROOT_DIR . '/sys/Indexing/LibraryRecordToInclude.php';
 }
@@ -57,6 +60,7 @@ class Library extends DataObject {
 	public $subdomain;                //varchar(15)
 	public $baseUrl;
 	public $isConsortialCatalog;
+	public $preferredMailSettingsId;
 
 	//Display information specific to the library
 	public $displayName;            //varchar(50)
@@ -1008,6 +1012,14 @@ class Library extends DataObject {
 				'label' => 'Account Profile Id',
 				'description' => 'Account Profile to apply to this interface',
 				'permissions' => ['Administer Account Profiles'],
+			],
+			'preferredMailSettingsId' => [
+				'property' => 'preferredMailSettingsId',
+				'type' => 'enum',
+				'label' => 'Preferred Mail Settings',
+				'description' => 'The preferred mail settings to use for this library',
+				'values' => self::getMailSettingsOptions(),
+				'default' => 0,
 			],
 			'isConsortialCatalog' => [
 				'property' => 'isConsortialCatalog',
@@ -5919,5 +5931,36 @@ class Library extends DataObject {
 			'showAlternateLibraryCardPassword' => $this->showAlternateLibraryCardPassword,
 			'useAlternateLibraryCardForCloudLibrary' => $useAlternateLibraryCardForCloudLibrary,
 		];
+	}
+
+	/**
+	 * Get available mail settings options
+	 * @return array
+	 */
+	public static function getMailSettingsOptions(): array {
+		$options = [0 => 'Use System Default'];
+		
+		// Add SendGrid options
+		$sendGridSettings = new SendGridSetting();
+		$sendGridSettings->find();
+		while ($sendGridSettings->fetch()) {
+			$options['sendgrid_' . $sendGridSettings->id] = 'SendGrid: ' . $sendGridSettings->fromAddress;
+		}
+		
+		// Add Amazon SES options
+		$amazonSesSettings = new AmazonSesSetting();
+		$amazonSesSettings->find();
+		while ($amazonSesSettings->fetch()) {
+			$options['amazon_' . $amazonSesSettings->id] = 'Amazon SES: ' . $amazonSesSettings->fromAddress;
+		}
+		
+		// Add SMTP options
+		$smtpSettings = new SMTPSetting();
+		$smtpSettings->find();
+		while ($smtpSettings->fetch()) {
+			$options['smtp_' . $smtpSettings->id] = 'SMTP: ' . $smtpSettings->from_address;
+		}
+		
+		return $options;
 	}
 }

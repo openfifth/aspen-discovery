@@ -17,26 +17,63 @@ class Mailer {
 	 * @return  boolean
 	 */
 	public function send($to, $subject, $body, $replyTo = null, $htmlBody = null, $attachments = []) : bool {
-
 		require_once ROOT_DIR . '/sys/Email/SendGridSetting.php';
 		require_once ROOT_DIR . '/sys/Email/AmazonSesSetting.php';
 		require_once ROOT_DIR . '/sys/Email/SMTPSetting.php';
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
-		global $logger;
-		//TODO: Do validation of the address
-		$amazonSesSettings = new AmazonSesSetting();
-		$smtpServerSettings = new SMTPSetting();
+		require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
 
-		if($smtpServerSettings->find(true)) {
-			$result = $this->sendViaSMTP($smtpServerSettings, $to, $replyTo, $subject, $body, $htmlBody, $attachments);
-		}elseif ($amazonSesSettings->find(true)) {
-			$result = $this->sendViaAmazonSes($amazonSesSettings, $to, $replyTo, $subject, $body, $htmlBody, $attachments);
-		} else {
-			$sendGridSettings = new SendGridSetting();
-			if ($sendGridSettings->find(true)) {
-				$result = $this->sendViaSendGrid($sendGridSettings, $to, $replyTo, $subject, $body, $htmlBody);
+		// Get the active library
+		$activeLibrary = Library::getActiveLibrary();
+		$result = false;
+
+		if ($activeLibrary && !empty($activeLibrary->preferredMailSettingsId)) {
+			// Parse the preferred mail settings ID
+			$settingsParts = explode('_', $activeLibrary->preferredMailSettingsId);
+			if (count($settingsParts) == 2) {
+				$type = $settingsParts[0];
+				$id = $settingsParts[1];
+
+				switch ($type) {
+					case 'sendgrid':
+						$sendGridSettings = new SendGridSetting();
+						$sendGridSettings->id = $id;
+						if ($sendGridSettings->find(true)) {
+							$result = $this->sendViaSendGrid($sendGridSettings, $to, $replyTo, $subject, $body, $htmlBody);
+						}
+						break;
+					case 'amazon':
+						$amazonSesSettings = new AmazonSesSetting();
+						$amazonSesSettings->id = $id;
+						if ($amazonSesSettings->find(true)) {
+							$result = $this->sendViaAmazonSes($amazonSesSettings, $to, $replyTo, $subject, $body, $htmlBody, $attachments);
+						}
+						break;
+					case 'smtp':
+						$smtpSettings = new SMTPSetting();
+						$smtpSettings->id = $id;
+						if ($smtpSettings->find(true)) {
+							$result = $this->sendViaSMTP($smtpSettings, $to, $replyTo, $subject, $body, $htmlBody, $attachments);
+						}
+						break;
+				}
+			}
+		}
+
+		// If no library-specific settings were found or used, fall back to system defaults
+		if (!$result) {
+			$amazonSesSettings = new AmazonSesSetting();
+			$smtpServerSettings = new SMTPSetting();
+
+			if($smtpServerSettings->find(true)) {
+				$result = $this->sendViaSMTP($smtpServerSettings, $to, $replyTo, $subject, $body, $htmlBody, $attachments);
+			}elseif ($amazonSesSettings->find(true)) {
+				$result = $this->sendViaAmazonSes($amazonSesSettings, $to, $replyTo, $subject, $body, $htmlBody, $attachments);
 			} else {
-				$result = false;
+				$sendGridSettings = new SendGridSetting();
+				if ($sendGridSettings->find(true)) {
+					$result = $this->sendViaSendGrid($sendGridSettings, $to, $replyTo, $subject, $body, $htmlBody);
+				}
 			}
 		}
 
