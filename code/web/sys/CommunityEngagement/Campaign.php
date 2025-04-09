@@ -94,7 +94,8 @@ class Campaign extends DataObject {
 				'type' => 'enum',
 				'label' => 'Reward for Completing Campaign',
 				'values' => $rewardList, 
-				'description' => 'The reward given for completing the campaign.'
+				'description' => 'The reward given for completing the campaign.',
+				'required' => true,
 			],
 			'allowPatronTypeAccess' => [
 				'property' => 'allowPatronTypeAccess',
