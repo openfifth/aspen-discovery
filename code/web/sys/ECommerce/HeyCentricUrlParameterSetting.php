@@ -16,7 +16,7 @@ class HeyCentricUrlParameterSetting extends DataObject {
 		$accountProfile = $library->getAccountProfile();
 		$catalogDriverName = trim($accountProfile->driver);
 		$catalogDriver = CatalogFactory::getCatalogConnectionInstance($catalogDriverName, $accountProfile);
-		$additionalFineFields = $catalogDriver->hasAdditionalFineFields() ? $catalogDriver->getAdditionalFieldNames('accountlines', null) : null;
+		$additionalFineFields = $catalogDriver->hasAdditionalFineFields() ? $catalogDriver->getAdditionalFieldNames('accountlines:debit', null) : null;
 		$additionalDebitTypeFields = $catalogDriver->hasAdditionalFineFields() ? $catalogDriver->getAdditionalFieldNames('account_debit_types', null) : null;
 		$additionalLibraryBranchFields = $catalogDriver->hasAdditionalFineFields() ? $catalogDriver->getAdditionalFieldNames('branches', null) : null;
 		
