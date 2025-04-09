@@ -923,7 +923,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 		return false;
 	}
 
-	public function hasAdditionalFields(): bool {
+	public function hasAdditionalFineFields(): bool {
 		return false;
 	}
 }

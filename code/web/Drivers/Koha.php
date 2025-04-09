@@ -8895,7 +8895,7 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function hasAdditionalFields(): bool {
+	public function hasAdditionalFineFields(): bool {
 		return true;
 	}
 }

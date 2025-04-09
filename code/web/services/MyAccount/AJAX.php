@@ -6821,7 +6821,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$finesSelected[] = ['id' => explode('|', $fineSelected)[0], 'amount' => explode('|', $fineSelected)[1]];
 		}
 
-		$locationDetails = $patron->getCatalogDriver()->hasAdditionalFields() ? $patron->getCatalogDriver()->getAdditionalLocationDetails($patron->getHomeLocationCode()) : [];
+		$locationDetails = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getAdditionalLocationDetails($patron->getHomeLocationCode()) : [];
 
 		// URL parameters
 		$paymentRequestUrl = $heyCentricSettings->baseUrl;
@@ -6975,7 +6975,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		// multiline hash and URL parameters
 		foreach($finesSelected as $index => $fine) {	
-			$fineDetails = $patron->getCatalogDriver()->hasAdditionalFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true) : [];
+			$fineDetails = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true) : [];
 			$multilineSuffix = $index > 0 ? "_$index=" : "=";
 			
 			// URL parameters
