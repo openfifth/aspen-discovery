@@ -66,6 +66,7 @@ class MyAccount_MyPrivacySettings extends MyAccount {
 			session_write_close();
 			$actionUrl = '/MyAccount/MyPrivacySettings' . ($patronRefferedTo->id == $user->id ? '': '?patronId=' . $patronId);
 			header("Location: " . $actionUrl);
+			return;
 		}
 
 		if (!empty($user->updateMessage)) {
