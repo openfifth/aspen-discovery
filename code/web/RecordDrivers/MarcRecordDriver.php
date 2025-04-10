@@ -540,12 +540,13 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		$matches = [];
 		$currentLine = '';
 
-		// Loop through all specified subfields, collecting results:
-		foreach ($subfields as $subfield) {
-			/** @var File_MARC_Subfield[] $subfieldsResult */
-			$subfieldsResult = $currentField->getSubfields($subfield);
-			if (is_array($subfieldsResult)) {
-				foreach ($subfieldsResult as $currentSubfield) {
+		//Loop through all subfields within the field to ensure the order of subfields is preserved even if not all subfields are shown
+		/** @var File_MARC_Subfield[] $subfieldsResult */
+		$subfieldsResult = $currentField->getSubfields();
+		foreach ($subfieldsResult as $currentSubfield) {
+			// Loop through all specified subfields, collecting results:
+			foreach ($subfields as $subfield) {
+				if ($currentSubfield->getCode() == $subfield) {
 					// Grab the current subfield value and act on it if it is
 					// non-empty:
 					$data = trim($currentSubfield->getData());
@@ -557,6 +558,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 							$matches[] = $data;
 						}
 					}
+					break;
 				}
 			}
 		}
