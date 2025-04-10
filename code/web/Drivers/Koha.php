@@ -17,6 +17,8 @@ class Koha extends AbstractIlsDriver {
 	private $delApiCurlWrapper;
 	/** @var CurlWrapper */
 	private $renewalsCurlWrapper;
+	/** @var CurlWrapper */
+	private $consentApiCurlWrapper;
 
 	static $fineTypeTranslations = [
 		'A' => 'Account management fee',
@@ -1395,12 +1397,15 @@ class Koha extends AbstractIlsDriver {
 		$this->delApiCurlWrapper->setTimeout(30);
 		$this->renewalsCurlWrapper = new CurlWrapper();
 		$this->renewalsCurlWrapper->setTimeout(30);
+		$this->consentApiCurlWrapper = new CurlWrapper();
+		$this->consentApiCurlWrapper->setTimeout(30);
 		$this->kohaApiUserAgent = new KohaApiUserAgent($accountProfile);
 	}
 
 	function __destruct() {
 		$this->curlWrapper = null;
 		$this->apiCurlWrapper = null;
+		$this->consentApiCurlWrapper = null;
 		$this->delApiCurlWrapper = null;
 		$this->renewalsCurlWrapper = null;
 
@@ -8780,7 +8785,7 @@ class Koha extends AbstractIlsDriver {
 
 		$customHeaders = [];
 
-		$headers = implode($this->apiCurlWrapper->getHeaders());
+		$headers = implode($this->consentApiCurlWrapper->getHeaders());
 		if(strpos($headers, 'Authorization: Bearer ') === false) {
 			$customHeaders[] = 'Authorization: Bearer ' . $oauthToken;
 		};
@@ -8792,13 +8797,13 @@ class Koha extends AbstractIlsDriver {
 		};
 		
 		if ($customHeaders) {
-			$this->apiCurlWrapper->addCustomHeaders($customHeaders, false);
+			$this->consentApiCurlWrapper->addCustomHeaders($customHeaders, false);
 		}
 		
-		$this->apiCurlWrapper->curl_connect($url);
-		$response = $this->apiCurlWrapper->curlGetPage($url);
+		$this->consentApiCurlWrapper->curl_connect($url);
+		$response = $this->consentApiCurlWrapper->curlGetPage($url);
 
-		if ($this->apiCurlWrapper->getResponseCode() == 200) {
+		if ($this->consentApiCurlWrapper->getResponseCode() == 200) {
 			return json_decode($response, true);
 		} else {
 			return translate([
