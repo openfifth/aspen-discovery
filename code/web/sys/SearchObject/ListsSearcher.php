@@ -44,10 +44,10 @@ class SearchObject_ListsSearcher extends SearchObject_SolrSearcher {
 		$this->sortOptions = [
 			'relevance' => 'Best Match',
 			'title_sort' => 'Title',
-			'days_since_added, title_sort desc' => 'Date Added Desc',
-			'days_since_added, title_sort asc' => 'Date Added Asc',
-			'days_since_updated, title_sort desc' => 'Date Updated Desc',
-			'days_since_updated, title_sort asc' => 'Date Updated Asc',
+			'days_since_added desc, title_sort desc' => 'Date Added Desc',
+			'days_since_added asc, title_sort asc' => 'Date Added Asc',
+			'days_since_updated desc, title_sort desc' => 'Date Updated Desc',
+			'days_since_updated asc, title_sort asc' => 'Date Updated Asc',
 		];
 
 		// Debugging
