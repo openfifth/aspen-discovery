@@ -139,6 +139,14 @@ class CurlWrapper {
 	}
 
 	/**
+	 * Resets options set on the curl_connection so that older requests do not affect newer requests.
+	 */
+	public function resetCurlConnectionOptions():void {
+		curl_setopt($this->curl_connection, CURLOPT_CUSTOMREQUEST, null);
+		return;
+	}
+
+	/**
 	 * Uses the POST Method to retrieve content from a page
 	 *
 	 * @param string $url The url to post to
