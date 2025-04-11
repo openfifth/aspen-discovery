@@ -10,11 +10,13 @@ class CampaignMilestone extends DataObject {
 	public $milestoneId;
 	public $goal;
 	public $reward;
+	public $weight;
 
 	public function getNumericColumnNames(): array {
 		return [
 			'campaignId',
 			'milestoneId',
+			'weight'
 		];
 	}
 
@@ -36,6 +38,13 @@ class CampaignMilestone extends DataObject {
 				'type' => 'label',
 				'label' => 'Id',
 				'description' => 'The unique id',
+			],
+			'weight' => [
+				'property' => 'weight',
+				'type' => 'numeric',
+				'label' => 'Weight',
+				'weight' => 'Defines how items are sorted.  Lower weights are displayed higher.',
+				'required' => true,
 			],
 			'campaignId' => [
 				'property' => 'campaignId',

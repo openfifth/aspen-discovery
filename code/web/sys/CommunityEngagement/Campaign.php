@@ -32,6 +32,7 @@ class Campaign extends DataObject {
 		$milestoneList = Milestone::getMilestoneList();
 		$milestoneStructure = CampaignMilestone::getObjectStructure($context);
 		unset($milestoneStructure['campaignId']);
+		unset($milestoneStructure['weight']);
 
 		$libraryList = Library::getLibraryList(false);
 		$patronTypeList = PType::getPatronTypeList();
@@ -268,6 +269,7 @@ class Campaign extends DataObject {
 			if (!empty($this->id)) {
 				$campaignMilestone = new CampaignMilestone();
 				$campaignMilestone->campaignId = $this->id;
+				$campaignMilestone->orderBy('weight');
 			   if ($campaignMilestone->find()) {
 					while ($campaignMilestone->fetch()) {
 						$this->_availableMilestones[$campaignMilestone->id] = clone($campaignMilestone);
