@@ -45,6 +45,13 @@ function getUpdates25_05_00(): array {
 			'sql' => [
 				"ALTER TABLE ce_campaign_milestones ADD COLUMN weight int(11) NOT NULL DEFAULT 0",
 			],
+		], 
+		'add_ability_to_highlight_campaigns_in_account_area' => [
+			'title' => 'Add Ability to Highlight Campaigns In Account Area',
+			'description' => 'Allow libraries to choose whether to display a block highlighting campaigns on the account page',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN highlightCommunityEngagement TINYINT(1) DEFAULT 0",
+			],
 		],
 
 		//chloe - PTFS-Europe
