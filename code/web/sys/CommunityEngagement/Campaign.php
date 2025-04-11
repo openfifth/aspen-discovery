@@ -641,6 +641,10 @@ class Campaign extends DataObject {
 				$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaign->id);
 				$pastCampaignList[$campaign->id]->milestones = $milestones;
 				$pastCampaignList[$campaign->id]->extraCreditActivities = $extraCreditActivities;
+
+				usort($pastCampaignList[$campaign->id]->milestones, function($a, $b) {
+					return $a->weight <=> $b->weight;
+				});
 	
 				// Check if user is enrolled
 				$pastCampaignList[$campaign->id]->enrolled = $campaign->isUserEnrolled($userId);
@@ -1058,6 +1062,9 @@ class Campaign extends DataObject {
 						$milestone->milestoneComplete = false;
 					}
                 }
+				usort($milestones, function($a, $b) {
+					return $a->weight <=> $b->weight;
+				});
                 //Add completed milestones count to campaign object
                 // $campaign->numCompletedMilestones = $completedMilestonesCount;
                 $campaign->numCampaignMilestones = $numCampaignMilestones;
