@@ -89,6 +89,7 @@ class CampaignMilestone extends DataObject {
 	  while ($campaignMilestone->fetch()) {
 		$milestoneIds[] = $campaignMilestone->milestoneId;
 		$rewardMapping[$campaignMilestone->milestoneId] = $campaignMilestone->reward;
+		$milestoneWeights[$campaignMilestone->milestoneId] = $campaignMilestone->weight;
 	  }
 
 	  if (!empty($milestoneIds)) {
@@ -118,6 +119,7 @@ class CampaignMilestone extends DataObject {
 				}
 			}
 		  }
+		  $milestoneObj->weight = $milestoneWeights[$milestone->id] ?? null;
 		  $milestones[] = $milestoneObj;
 		}
 	  }
