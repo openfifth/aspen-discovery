@@ -118,6 +118,13 @@ function getUpdates25_05_00(): array {
 				"ALTER TABLE library ADD COLUMN highlightCommunityEngagement TINYINT(1) DEFAULT 0",
 			],
 		],
+		'add_weight_to_campaign_milestones' => [
+			'title' => 'Add Weight To Campaign Milestones',
+			'description' => 'Add a weight column to campaign milestones to allow ordering',
+			'sql' => [
+				"ALTER TABLE ce_campaign_milestones ADD COLUMN weight int(11) NOT NULL DEFAULT 0",
+			],
+		],
 
 		//chloe - PTFS-Europe
 
