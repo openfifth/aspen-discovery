@@ -6657,8 +6657,34 @@ class UserAPI extends AbstractAPI {
 
 			if ($include) {
 				$this->processCampaignDetails($singleCampaign, $user->id);
-				$campaignsList[] = clone $singleCampaign;
 
+				$campaignsList[] = [
+					'id' => $singleCampaign->id,
+					'title' => $singleCampaign->title,
+					'description' => $singleCampaign->description,
+					'milestones' => $singleCampaign->milestones,
+					'numCampaignMilestones' => $singleCampaign->numCampaignMilestones,
+					'startDate' => $singleCampaign->startDate,
+					'endDate' => $singleCampaign->endDate,
+					'enrollmentStartDate' => $singleCampaign->enrollmentStartDate,
+					'enrollmentEndDate' => $singleCampaign->enrollmentEndDate,
+					'enrolled' => $singleCampaign->isUserEnrolled($user->id),
+					'isActive' => isset($activeCampaigns[$singleCampaign->id]),
+					'isUpcoming' => isset($upcomingCampaigns[$singleCampaign->id]),
+					'isPast' => isset($pastCampaigns[$singleCampaign->id]),
+					'isComplete' => $singleCampaign->isComplete ?? false,
+
+					'rewardName' => $singleCampaign->rewardName ?? null,
+					'rewardId' => $singleCampaign->rewardId ?? null,
+					'rewardType' => $singleCampaign->rewardType ?? null,
+					'badgeImage' => $singleCampaign->badgeImage ?? null,
+					'rewardExists' => $singleCampaign->rewardExists ?? false,
+					'displayName' => $singleCampaign->displayName ?? null,
+					'awardAutomatically' => $singleCampaign->awardAutomatically ?? false,
+
+					'optInToCampaignLeaderboard' => $singleCampaign->optInToCampaignLeaderboard ?? null,
+					'optInToCampaignEmailNotifications' => $singleCampaign->optInToCampaignEmailNotifications ?? null,
+				];
 				// $campaignsList[] = [
 				// 	'id' => $singleCampaign->id,
 				// 	'title' => $singleCampaign->title,
@@ -6673,7 +6699,7 @@ class UserAPI extends AbstractAPI {
 		$total = count($campaignsList);
 		$offset = ($page -1) * $pageSize;
 		$paginated = array_slice($campaignsList, $offset, $pageSize);
-
+		
 		return [
 			'success' => true,
 			'campaigns' => $paginated,
