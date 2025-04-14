@@ -8518,8 +8518,16 @@ class Koha extends AbstractIlsDriver {
 	public function getFormattedConsentTypes(): array {
 		$consentTypes = $this->getConsentTypes();
 		if (empty($consentTypes)) {
-			return [];
+			return [
+				'success' => false,
+				'messages' => 'There are no consent options to show'
+			];
 		}
+
+		if ((isset($consentTypes['success']) && !$consentTypes['success'])) {
+			return $consentTypes;
+		}
+
 		$formattedConsentTypes = [];
 		foreach ($consentTypes as $key => $consentType) {
 			if (strtolower($key) == 'gdpr_processing') {
@@ -8623,6 +8631,7 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function getPatronConsents($patron): array {	
+		$result = ['success' => false,];
 		$oauthToken = $this->getOAuthToken();
 		if (!$oauthToken) {
 			$result['message'] = translate([
@@ -8657,21 +8666,23 @@ class Koha extends AbstractIlsDriver {
 		if ($this->apiCurlWrapper->getResponseCode() == 200) {
 			return json_decode($response, true);
 		} else {
-			return translate([
-				'text' => 'Error getting a list of consents for this patron from Koha.',
+			$result['message'] = translate([
+				'text' => 'There was an error while getting your existing consent information from Koha.',
 				'isPublicFacing' => true,
 			]);
 		}
-
+		return $result;
 	}
 
 	private function getConsentTypes(): array {
+		$result = ['success' => false,];
 		$oauthToken = $this->getOAuthToken();
 		if (!$oauthToken) {
-			return translate([
+			$result['message'] = translate([
 				'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
 				'isPublicFacing' => true,
 			]);
+			return $result;
 		}
 		
 		$url = $this->getWebServiceURL() . '/api/v1/contrib/newsletterconsent/consents/';
@@ -8699,11 +8710,12 @@ class Koha extends AbstractIlsDriver {
 		if ($this->apiCurlWrapper->getResponseCode() == 200) {
 			return json_decode($response, true);
 		} else {
-			return translate([
+			$result['message'] = translate([
 				'text' => 'There was an error while getting existing consent types from Koha.',
 				'isPublicFacing' => true,
 			]);
 		}
+		return $result;
 	}
 
 	public function hasIlsConsentSupport(): bool {
