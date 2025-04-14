@@ -102,7 +102,8 @@ class UserAPI extends AbstractAPI {
 					'getMaterialsRequestDetails',
 					'createMaterialsRequest',
 					'cancelMaterialsRequest',
-					'deleteAspenUser'
+					'deleteAspenUser',
+					'getUserCampaigns'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -6551,6 +6552,131 @@ class UserAPI extends AbstractAPI {
 			'success' => false,
 			'title' => 'Error',
 			'message' => 'Unable to validate user',
+		];
+	}
+
+	function getUserCampaigns() {
+		global $offlineMode;
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$user = $this->getUserForApiCall();
+
+		if (!$user || $user instanceof AspenError) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Invalid user.'
+				]),
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		$campaign = new Campaign();
+
+
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$page = $_REQUEST['page'] ?? 1;
+		$pageSize = $_REQUEST['pageSize'] ?? 20;
+
+		if ($filter === 'linkedUserCampaigns') {
+			try {
+				$linkedUserCampaigns = $campaign->getLinkedUserCampaigns($user->id);
+				$flatCampaigns = [];
+				foreach ($linkedUserCampaigns as $linkedUser) {
+					foreach ($linkeduser['campaigns'] as $campaign) {
+						$campaign['linkedUserId'] = $linkedUser['linkedUserId'];
+						$campaign['linkedUserName'] = $linkedUser['linkedUserName'];
+						$flatCampaigns[] = $campaign;
+					}
+				}
+				$total = count($flatCamapigns);
+				$offset - ($page -1) * $pageSize;
+				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
+
+				return [
+					'success' => true,
+					'campaigns' => $paginated,
+					'total' => $total,
+					'page' => (int)$page,
+					'pageSize' => (int)$pageSize,
+				];
+			} catch (Exception $e) {
+				return [
+					'success' => false,
+					'message' => translate([
+						'Error fetching linked user campaigns: ' . $e->getMessage(),
+					]),
+				];
+			}
+		}
+
+
+		$activeCampaigns = $campaign->getActiveCampaignsList();
+		$upcomingCampaigns = $campaign->getUpcomingCampaigns();
+		$pastCampaigns = $campaign->getPastCampaigns($user->id);
+
+		$allCampaigns = array_merge($activeCampaigns, $upcomingCampaigns, $pastCampaigns);
+		$campaignsList = [];
+
+		foreach ($allCampaigns as $singleCampaign) {
+			$campaignId = $singleCampaign->id;
+			$isEnrolled = $singleCampaign->isUserEnrolled($user->id);
+			$isActive = isset($activeCampaigns[$campaignId]);
+			$isUpcoming = isset($upcomingCampaigns[$campaignId]);
+			$isPast = isset($pastCampaigns[$campaignId]);
+
+			$include = true;
+			switch ($filter) {
+				case 'enrolled':
+					$include = $isEnrolled;
+					break;
+				case 'active':
+					$include = $isActive;
+					break;
+				case 'upcoming':
+					$include = $isUpcoming;
+					break;
+				case 'past':
+					$include = $isPast;
+					break;
+				case 'pastEnrolled':
+					$include = $isPast && $isEnrolled;
+					break;
+				case null:
+					$include = true;
+					break;
+				default:
+					$include = false;
+			}
+
+			if ($include) {
+				$campaignsList[] = [
+					'id' => $singleCampaign->id,
+					'title' => $singleCampaign->title,
+					'description' => $singleCampaign->description,
+					'enrolled' => $isEnrolled,
+					'isActive' => $isActive,
+					'isUpcoming' => $isUpcoming,
+					'isPast' => $isPast,
+				];
+			}
+		}
+		$total = count($campaignsList);
+		$offset = ($page -1) * $pageSize;
+		$paginated = array_slice($campaignsList, $offset, $pageSize);
+
+		return [
+			'success' => true,
+			'campaigns' => $paginated,
+			'total' => $total,
+			'page' => (int)$page,
+			'pageSize' => (int)$pageSize,
 		];
 	}
 }
