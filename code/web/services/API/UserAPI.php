@@ -6656,15 +6656,18 @@ class UserAPI extends AbstractAPI {
 			}
 
 			if ($include) {
-				$campaignsList[] = [
-					'id' => $singleCampaign->id,
-					'title' => $singleCampaign->title,
-					'description' => $singleCampaign->description,
-					'enrolled' => $isEnrolled,
-					'isActive' => $isActive,
-					'isUpcoming' => $isUpcoming,
-					'isPast' => $isPast,
-				];
+				$this->processCampaignDetails($singleCampaign, $user->id);
+				$campaignsList[] = clone $singleCampaign;
+
+				// $campaignsList[] = [
+				// 	'id' => $singleCampaign->id,
+				// 	'title' => $singleCampaign->title,
+				// 	'description' => $singleCampaign->description,
+				// 	'enrolled' => $isEnrolled,
+				// 	'isActive' => $isActive,
+				// 	'isUpcoming' => $isUpcoming,
+				// 	'isPast' => $isPast,
+				// ];
 			}
 		}
 		$total = count($campaignsList);
@@ -6678,5 +6681,47 @@ class UserAPI extends AbstractAPI {
 			'page' => (int)$page,
 			'pageSize' => (int)$pageSize,
 		];
+	}
+
+	private function processCampaignDetails($campaign, $userId) {
+		$rewardDetails = $campaign->getRewardDetails();
+		if ($rewardDetails) {
+			$campaign->rewardName = $rewardDetails['name'];
+			$campaign->rewardId = $rewardDetails['id'];
+			$campaign->rewardType = $rewardDetails['rewardType'];
+			$campaign->badgeImage = $rewardDetails['badgeImage'];
+			$campaign->rewardExists = $rewardDetails['rewardExists'];
+			$campaign->displayName = $rewardDetails['displayName'];
+			$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
+		}
+
+		$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
+		$milestoneProgressData = [];
+	
+		foreach ($milestones as $milestone) {
+			$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $userId, $milestone->id);
+			$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestone->id, $campaign->id);
+	
+			$milestone->progress = $milestoneProgress['progress'];
+			$milestone->extraProgress = $milestoneProgress['extraProgress'];
+			$milestone->completedGoals = $milestoneProgress['completed'];
+			$milestone->totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
+			$milestone->progressData = $progressData;
+	
+			$milestoneProgressData[] = $milestone;
+		}
+
+		$campaign->milestones = $milestoneProgressData;
+		$campaign->numCampaignMilestones = count($milestoneProgressData);
+
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaign->id;
+		$userCampaign->find();
+		while ($userCampaign->fetch()) {
+			$campaign->isComplete = $userCampaign->checkCompletionStatus();
+			$campaign->optInToCampaignLeaderboard = $userCampaign->optInToCampaignLeaderboard ?? $userCampaign->optInToCampaignLeaderboard;
+			$campaign->optInToCampaignEmailNotifications = $userCampaign->optInToCampaignEmailNotifications ?? $userCampaign->optInToCampaignEmailNotifications;
+		}
 	}
 }
