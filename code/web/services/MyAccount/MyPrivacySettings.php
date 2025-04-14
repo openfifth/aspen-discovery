@@ -6,6 +6,7 @@ class MyAccount_MyPrivacySettings extends MyAccount {
 	function launch(): void {
 		global $interface;
 		global $library;
+		$ilsMessages = [];
 		
 		// Handles patrons attempting to access the page directly through the URL when the 'Privacy Settings' link is disabled and does not show
 		if (!$library->ilsConsentEnabled && !$library->cookieStorageConsent) {
@@ -83,8 +84,32 @@ class MyAccount_MyPrivacySettings extends MyAccount {
 			return;
 		}
 
-		// Handles cases where the patron has already given their consent on Koha
+		// Handle errors to do with retrieving consent options for the ILS.
+		if ((isset($consentTypes['success']) && !$consentTypes['success'])) {
+			$ilsMessages[] = [
+				'messageStyle' => 'warning',
+				'message' => $consentTypes['message'] . " Please contact your library."
+			];
+			$interface->assign('ilsMessages', $ilsMessages);
+			$interface->assign('edit', false);
+			$this->display('myPrivacySettings.tpl', 'My Privacy Settings');
+			return;
+		}
+
+		// Handles errors to do with retrieving existing patron consent information
 		$userConsents = $driver->getPatronConsents($user);
+		if ((isset($userConsents['success']) && !$userConsents['success'])) {
+			$ilsMessages[] = [
+				'messageStyle' => 'warning',
+				'message' => $userConsents['message'] . " Please contact your library."
+			];
+			$interface->assign('ilsMessages', $ilsMessages);
+			$interface->assign('edit', false);
+			$this->display('myPrivacySettings.tpl', 'My Privacy Settings');
+			return;
+		}
+
+		// Handles cases where the patron has already given their consent on Koha
 		if (!empty($userConsents)) {
 			foreach($userConsents as $userConsent) {
 				if ($userConsent['given_on']) {
