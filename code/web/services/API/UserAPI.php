@@ -6660,7 +6660,7 @@ class UserAPI extends AbstractAPI {
 
 				$campaignsList[] = [
 					'id' => $singleCampaign->id,
-					'title' => $singleCampaign->title,
+					'title' => $singleCampaign->name,
 					'description' => $singleCampaign->description,
 					'milestones' => $singleCampaign->milestones,
 					'numCampaignMilestones' => $singleCampaign->numCampaignMilestones,
