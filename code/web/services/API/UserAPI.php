@@ -6665,6 +6665,23 @@ class UserAPI extends AbstractAPI {
 		$paginated = array_map(function($campaign) {
 			$base = get_object_vars($campaign);
 				$base['rewardName'] = $campaign->rewardName ?? null;
+				$base['rewardId'] = $campaign->rewardId ?? null;
+				$base['rewardType'] = $campaign->rewardType ?? null;
+				$base['badgeImage'] = $campaign->badgeImage ?? null;
+				$base['rewardExists'] = $campaign->rewardExists ?? null;
+				$base['displayName'] = $campaign->displayName ?? null;
+				$base['awardAutomatically'] = $campaign->awardAutomatically ?? null;
+				$base['enrolled'] = $campaign->enrolled ?? false;
+				$base['isPast'] = $campaign->isPast ?? false;
+
+				if (!empty($campaign->milestones) && is_array($campaign->milestones)) {
+					$base['milestones'] = array_map(function ($milestone) {
+						$m = get_object_vars($milestone);
+						$m['completedGoals'] = $milestone->completedGoals ?? null;
+						$m['totalGoals'] = $milestone->totalGoals ?? null;
+						return $m;
+					}, $campaign->milestones);
+				}
 				return $base;
 		}, $paginated);
 		
