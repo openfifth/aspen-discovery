@@ -6631,6 +6631,9 @@ class UserAPI extends AbstractAPI {
 				$campaign->rewardExists = $rewardDetails['rewardExists'];
 				$campaign->displayName = $rewardDetails['displayName'];
 				$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
+			} else {
+				global $logger;
+				$logger->log("no reward details", Logger::LOG_ERROR);
 			}
 		}
 
