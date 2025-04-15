@@ -6663,7 +6663,7 @@ class UserAPI extends AbstractAPI {
 		$paginated = array_slice($campaigns, $offset, $pageSize);
 
 		$paginated = array_map(function($campaign) {
-			return $camapign->toArray();
+			return $camapigns->toArray();
 		}, $paginated);
 		
 		return [
