@@ -6617,7 +6617,7 @@ class UserAPI extends AbstractAPI {
 		}
 
 		$campaigns = $campaign->getCampaigns();
-		foreach ($campaings as $campaign) {
+		foreach ($campaigns as $campaign) {
 			$campaign->enrolled = $campaign->isUserEnrolled($user->id);
 			$today = date('Y-m-d');
 			$campaign->isPast = ($campaign->endDate && $campaign->endDate < $today);
@@ -6640,122 +6640,13 @@ class UserAPI extends AbstractAPI {
 			}
 		});
 
-
-		// $activeCampaigns = $campaign->getActiveCampaignsList();
-		// $upcomingCampaigns = $campaign->getUpcomingCampaigns();
-		// $pastCampaigns = $campaign->getPastCampaigns($user->id);
-
-		// $allCampaigns = array_merge($activeCampaigns, $upcomingCampaigns, $pastCampaigns);
-		// $campaignsList = [];
-
-		// foreach ($allCampaigns as $singleCampaign) {
-		// 	$campaignId = $singleCampaign->id;
-		// 	$isEnrolled = $singleCampaign->isUserEnrolled($user->id);
-		// 	$isActive = isset($activeCampaigns[$campaignId]);
-		// 	$isUpcoming = isset($upcomingCampaigns[$campaignId]);
-		// 	$isPast = isset($pastCampaigns[$campaignId]);
-
-		// 	$include = true;
-		// 	switch ($filter) {
-		// 		case 'enrolled':
-		// 			$include = $isEnrolled;
-		// 			break;
-		// 		case 'active':
-		// 			$include = $isActive;
-		// 			break;
-		// 		case 'upcoming':
-		// 			$include = $isUpcoming;
-		// 			break;
-		// 		case 'past':
-		// 			$include = $isPast;
-		// 			break;
-		// 		case 'pastEnrolled':
-		// 			$include = $isPast && $isEnrolled;
-		// 			break;
-		// 		case null:
-		// 			$include = true;
-		// 			break;
-		// 		default:
-		// 			$include = false;
-		// 	}
-
-			// if ($include) {
-			// 	$this->processCampaignDetails($singleCampaign, $user->id);
-
-			// 	$milestoneArray = [];
-			// 	foreach ($singleCampaign->milestones as $milestone) {
-			// 		$milestoneArray[] = [
-			// 			'id' => $milestone->id,
-			// 			'name' => $milestone->name,
-			// 			'description' => $milestone->description,
-			// 			'milestoneType' => $milestone->milestoneType,
-			// 			'campaignId' => $milestone->campaignId,
-			// 			'conditionalField' => $milestone->conditionalField,
-			// 			'conditionalValue' => $milestone->conditionalValue,
-			// 			'conditionalOperator' => $milestone->conditionalOperator,
-			// 			'progressBeyondOneHundredPercent' => $milestone->progressBeyondOneHundredPercent,
-			// 			'allowPatronProgressInput' => $milestone->allowPatronProgressInput,
-
-			// 			'progress' => $milestone->progress,
-			// 			'extraProgress' => $milestone->extraProgress,
-			// 			'completedGoals' => $milestone->completedGoals,
-			// 			'totalGoals' => $milestone->totalGoals,
-			// 			'progressData' => $milestone->progressData,
-
-			// 			'rewardName' => $milestone->rewardName ?? null,
-			// 			'rewardId' => $milestone->rewardId ?? null,
-			// 			'rewardType' => $milestone->rewardType ?? null,
-			// 			'badgeImage' => $milestone->badgeImage ?? null,
-			// 			'rewardExists' => $milestone->rewardExists ?? false,
-			// 			'displayName' => $milestone->displayName ?? null,
-			// 			'awardAutomatically' => $milestone->awardAutomatically ?? false,
-			// 							];
-			// 	}
-
-			// 	$campaignsList[] = [
-			// 		'id' => $singleCampaign->id,
-			// 		'title' => $singleCampaign->name,
-			// 		'description' => $singleCampaign->description,
-			// 		// 'milestones' => $singleCampaign->milestones,
-			// 		'numCampaignMilestones' => $singleCampaign->numCampaignMilestones,
-			// 		'startDate' => $singleCampaign->startDate,
-			// 		'endDate' => $singleCampaign->endDate,
-			// 		'enrollmentStartDate' => $singleCampaign->enrollmentStartDate,
-			// 		'enrollmentEndDate' => $singleCampaign->enrollmentEndDate,
-			// 		'enrolled' => $singleCampaign->isUserEnrolled($user->id),
-			// 		'isActive' => isset($activeCampaigns[$singleCampaign->id]),
-			// 		'isUpcoming' => isset($upcomingCampaigns[$singleCampaign->id]),
-			// 		'isPast' => isset($pastCampaigns[$singleCampaign->id]),
-			// 		'isComplete' => $singleCampaign->isComplete ?? false,
-
-			// 		'rewardName' => $singleCampaign->rewardName ?? null,
-			// 		'rewardId' => $singleCampaign->rewardId ?? null,
-			// 		'rewardType' => $singleCampaign->rewardType ?? null,
-			// 		'badgeImage' => $singleCampaign->badgeImage ?? null,
-			// 		'rewardExists' => $singleCampaign->rewardExists ?? false,
-			// 		'displayName' => $singleCampaign->displayName ?? null,
-			// 		'awardAutomatically' => $singleCampaign->awardAutomatically ?? false,
-
-			// 		'optInToCampaignLeaderboard' => $singleCampaign->optInToCampaignLeaderboard ?? null,
-			// 		'optInToCampaignEmailNotifications' => $singleCampaign->optInToCampaignEmailNotifications ?? null,
-
-			// 		'milestones' => $milestoneArray,
-			// 		'numCampaignMilestones' => $singleCampaign->numCampaignMilestones ?? null,
-			// 	];
-				// $campaignsList[] = [
-				// 	'id' => $singleCampaign->id,
-				// 	'title' => $singleCampaign->title,
-				// 	'description' => $singleCampaign->description,
-				// 	'enrolled' => $isEnrolled,
-				// 	'isActive' => $isActive,
-				// 	'isUpcoming' => $isUpcoming,
-				// 	'isPast' => $isPast,
-				// ];
-		// 	}
-		// }
 		$total = count($campaigns);
 		$offset = ($page -1) * $pageSize;
 		$paginated = array_slice($campaigns, $offset, $pageSize);
+
+		$paginated = array_map(function($campaign) {
+			return (array)$campaign;
+		}, $paginated);
 		
 		return [
 			'success' => true,
@@ -6766,56 +6657,4 @@ class UserAPI extends AbstractAPI {
 		];
 	}
 
-	// private function processCampaignDetails($campaign, $userId) {
-	// 	$rewardDetails = $campaign->getRewardDetails();
-	// 	if ($rewardDetails) {
-	// 		$campaign->rewardName = $rewardDetails['name'];
-	// 		$campaign->rewardId = $rewardDetails['id'];
-	// 		$campaign->rewardType = $rewardDetails['rewardType'];
-	// 		$campaign->badgeImage = $rewardDetails['badgeImage'];
-	// 		$campaign->rewardExists = $rewardDetails['rewardExists'];
-	// 		$campaign->displayName = $rewardDetails['displayName'];
-	// 		$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
-	// 	}
-
-	// 	$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
-	// 	$milestoneProgressData = [];
-	
-	// 	foreach ($milestones as $milestone) {
-	// 		$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $userId, $milestone->id);
-	// 		$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestone->id, $campaign->id);
-	
-	// 		$milestone->progress = $milestoneProgress['progress'];
-	// 		$milestone->extraProgress = $milestoneProgress['extraProgress'];
-	// 		$milestone->completedGoals = $milestoneProgress['completed'];
-	// 		$milestone->totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
-	// 		$milestone->progressData = $progressData;
-
-	// 		$rewardDetails = $milestone->getRewardDetails(); // Make sure this method exists!
-	// 		if ($rewardDetails) {
-	// 			$milestone->rewardName = $rewardDetails['name'] ?? null;
-	// 			$milestone->rewardId = $rewardDetails['id'] ?? null;
-	// 			$milestone->rewardType = $rewardDetails['rewardType'] ?? null;
-	// 			$milestone->badgeImage = $rewardDetails['badgeImage'] ?? null;
-	// 			$milestone->rewardExists = $rewardDetails['rewardExists'] ?? false;
-	// 			$milestone->displayName = $rewardDetails['displayName'] ?? null;
-	// 			$milestone->awardAutomatically = $rewardDetails['awardAutomatically'] ?? false;
-	// 		}
-	
-	// 		$milestoneProgressData[] = $milestone;
-	// 	}
-
-	// 	$campaign->milestones = $milestoneProgressData;
-	// 	$campaign->numCampaignMilestones = count($milestoneProgressData);
-
-	// 	$userCampaign = new UserCampaign();
-	// 	$userCampaign->userId = $userId;
-	// 	$userCampaign->campaignId = $campaign->id;
-	// 	$userCampaign->find();
-	// 	while ($userCampaign->fetch()) {
-	// 		$campaign->isComplete = $userCampaign->checkCompletionStatus();
-	// 		$campaign->optInToCampaignLeaderboard = $userCampaign->optInToCampaignLeaderboard ?? $userCampaign->optInToCampaignLeaderboard;
-	// 		$campaign->optInToCampaignEmailNotifications = $userCampaign->optInToCampaignEmailNotifications ?? $userCampaign->optInToCampaignEmailNotifications;
-	// 	}
-	// }
 }
