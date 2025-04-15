@@ -6628,6 +6628,8 @@ class UserAPI extends AbstractAPI {
 				$logger->log("yes reward details", Logger::LOG_ERROR);
 
 				$campaign->rewardName = $rewardDetails['name'];
+				$logger->log("reward name: " . $campaign->rewardName, Logger::LOG_ERROR);
+
 				$campaign->rewardId = $rewardDetails['id'];
 				$campaign->rewardType = $rewardDetails['rewardType'];
 				$campaign->badgeImage = $rewardDetails['badgeImage'];
