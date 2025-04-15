@@ -6753,9 +6753,9 @@ class UserAPI extends AbstractAPI {
 				// ];
 		// 	}
 		// }
-		$total = count($campaignsList);
+		$total = count($campaigns);
 		$offset = ($page -1) * $pageSize;
-		$paginated = array_slice($campaignsList, $offset, $pageSize);
+		$paginated = array_slice($campaigns, $offset, $pageSize);
 		
 		return [
 			'success' => true,
