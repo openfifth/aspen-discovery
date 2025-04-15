@@ -6596,8 +6596,8 @@ class UserAPI extends AbstractAPI {
 						$flatCampaigns[] = $campaign;
 					}
 				}
-				$total = count($flatCamapigns);
-				$offset - ($page -1) * $pageSize;
+				$total = count($flatCampaigns);
+				$offset = ($page -1) * $pageSize;
 				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
 
 				return [
