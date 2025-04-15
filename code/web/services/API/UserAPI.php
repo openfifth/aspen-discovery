@@ -6557,6 +6557,7 @@ class UserAPI extends AbstractAPI {
 
 	function getUserCampaigns() {
 		global $offlineMode;
+		global $logger;
 		if ($offlineMode) {
 			return [
 				'success' => false,
@@ -6624,6 +6625,8 @@ class UserAPI extends AbstractAPI {
 
 			$rewardDetails = $campaign->getRewardDetails();
 			if ($rewardDetails) {
+				$logger->log("yes reward details", Logger::LOG_ERROR);
+
 				$campaign->rewardName = $rewardDetails['name'];
 				$campaign->rewardId = $rewardDetails['id'];
 				$campaign->rewardType = $rewardDetails['rewardType'];
@@ -6632,7 +6635,6 @@ class UserAPI extends AbstractAPI {
 				$campaign->displayName = $rewardDetails['displayName'];
 				$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
 			} else {
-				global $logger;
 				$logger->log("no reward details", Logger::LOG_ERROR);
 			}
 		}
