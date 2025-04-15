@@ -271,7 +271,7 @@ class MyAccount_Fines extends MyAccount {
 						if ($rc == 'A') {
 							$recNo = $_REQUEST['RecNo'];
 							$finePaymentResult->success = true;
-							$finePaymentResult->message = "Payment successful: $pmt GBP paid (HeyCentric payment reference number: $recNo)";
+							$finePaymentResult->message ="Payment successful: $pmt GBP paid (HeyCentric payment reference number:" .  ($recNo ? $recNo  : " none specified") . ")";
 						}
 						if ($rc == 'D') {
 							$finePaymentResult->success = false;

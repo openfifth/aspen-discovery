@@ -7246,7 +7246,9 @@ class MyAccount_AJAX extends JSON_Action {
 	
 		if ($rc == 'A') {
 			$payment->completed = true;
-			$payment->heyCentricPaymentReferenceNumber = $recNo;
+			if ($recNo) {
+				$payment->heyCentricPaymentReferenceNumber = $recNo;
+			}
 			$updateDebtInIls = true;
 		}
 		if ($rc == 'C') {
