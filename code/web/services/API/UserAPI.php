@@ -6621,6 +6621,17 @@ class UserAPI extends AbstractAPI {
 			$campaign->enrolled = $campaign->isUserEnrolled($user->id);
 			$today = date('Y-m-d');
 			$campaign->isPast = ($campaign->endDate && $campaign->endDate < $today);
+
+			$rewardDetails = $campaign->getRewardDetails();
+			if ($rewardDetails) {
+				$campaign->rewardName = $rewardDetails['name'];
+				$campaign->rewardId = $rewardDetails['id'];
+				$campaign->rewardType = $rewardDetails['rewardType'];
+				$campaign->badgeImage = $rewardDetails['badgeImage'];
+				$campaign->rewardExists = $rewardDetails['rewardExists'];
+				$campaign->displayName = $rewardDetails['displayName'];
+				$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
+			}
 		}
 
 		$campaigns = array_filter($campaigns, function($campaign) use ($filter) {
