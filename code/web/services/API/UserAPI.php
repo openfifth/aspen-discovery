@@ -6623,22 +6623,22 @@ class UserAPI extends AbstractAPI {
 			$today = date('Y-m-d');
 			$campaign->isPast = ($campaign->endDate && $campaign->endDate < $today);
 
-			$rewardDetails = $campaign->getRewardDetails();
-			if ($rewardDetails) {
-				$logger->log("yes reward details", Logger::LOG_ERROR);
+			// $rewardDetails = $campaign->getRewardDetails();
+			// if ($rewardDetails) {
+			// 	$logger->log("yes reward details", Logger::LOG_ERROR);
 
-				$campaign->rewardName = $rewardDetails['name'];
-				$logger->log("reward name: " . $campaign->rewardName, Logger::LOG_ERROR);
+			// 	$campaign->rewardName = $rewardDetails['name'];
+			// 	$logger->log("reward name: " . $campaign->rewardName, Logger::LOG_ERROR);
 
-				$campaign->rewardId = $rewardDetails['id'];
-				$campaign->rewardType = $rewardDetails['rewardType'];
-				$campaign->badgeImage = $rewardDetails['badgeImage'];
-				$campaign->rewardExists = $rewardDetails['rewardExists'];
-				$campaign->displayName = $rewardDetails['displayName'];
-				$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
-			} else {
-				$logger->log("no reward details", Logger::LOG_ERROR);
-			}
+			// 	$campaign->rewardId = $rewardDetails['id'];
+			// 	$campaign->rewardType = $rewardDetails['rewardType'];
+			// 	$campaign->badgeImage = $rewardDetails['badgeImage'];
+			// 	$campaign->rewardExists = $rewardDetails['rewardExists'];
+			// 	$campaign->displayName = $rewardDetails['displayName'];
+			// 	$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
+			// } else {
+			// 	$logger->log("no reward details", Logger::LOG_ERROR);
+			// }
 		}
 
 		$campaigns = array_filter($campaigns, function($campaign) use ($filter) {
@@ -6663,7 +6663,9 @@ class UserAPI extends AbstractAPI {
 		$paginated = array_slice($campaigns, $offset, $pageSize);
 
 		$paginated = array_map(function($campaign) {
-			return $campaign->toArray();
+			$base = get_object_vars($campaign);
+				$base['rewardName'] = $campaign->rewardName ?? null;
+				return $base;
 		}, $paginated);
 		
 		return [
