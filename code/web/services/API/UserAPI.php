@@ -6679,6 +6679,13 @@ class UserAPI extends AbstractAPI {
 						$m = get_object_vars($milestone);
 						$m['completedGoals'] = $milestone->completedGoals ?? null;
 						$m['totalGoals'] = $milestone->totalGoals ?? null;
+						$m['rewardName'] = $milestone->rewardName ?? null;
+						$m['rewardId'] = $milestone->rewardId ?? null;
+						$m['rewardType'] = $milestone->rewardType ?? null;
+						$m['rewardExists'] = $milestone->rewardExists ?? null;
+						$m['displayName'] = $milestone->displayName ?? null;
+						$m['awardAutomatically'] = $milestone->awardAutomatically ?? null;
+						$m['rewardImage'] = $milestone->rewardImage ?? null;
 						return $m;
 					}, $campaign->milestones);
 				}
