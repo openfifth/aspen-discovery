@@ -74,4 +74,49 @@ class CampaignExtraCredit extends DataObject {
 			],
 		];
 	}
+
+	public static function getExtraCreditByCampaign($campaignId) {
+		$extraCreditActivities = [];
+		$campaignExtraCredit = new CampaignExtraCredit();
+		$campaignExtraCredit->whereAdd('campaignId = ' . $campaignId);
+		$campaignExtraCredit->find();
+
+		$extraCreditIds = [];
+		$rewardMapping = [];
+		while ($campaignExtraCredit->fetch()) {
+			$extraCreditIds[] = $campaignExtraCredit->extraCreditId;
+			$rewardMapping[$campaignExtraCredit->extraCreditId] = $campaignExtraCredit->reward;
+		}
+
+		if (!empty($extraCreditIds)) {
+			$extraCredit = new ExtraCredit();
+			$extraCredit->whereAddIn('id', $extraCreditIds, true);
+			$extraCredit->find();
+
+			while ($extraCredit->fetch()) {
+				$extraCreditObj = clone $extraCredit;
+
+				$rewardId = $rewardMapping[$extraCredit->id] ?? null;
+				if ($rewardId) {
+					$reward = new Reward();
+					$reward->id = $rewardId;
+					if ($reward->find(true)) {
+						$extraCreditObj->rewardName = $reward->name;
+						$extraCreditObj->displayName = $reward->displayName;
+						$extraCreditObj->rewardType = $reward->rewardType;
+						$extraCreditObj->rewardId = $reward->id;
+						$extraCreditObj->awardAutomatically = $reward->awardAutomatically;
+						$extraCreditObj->rewardImage = $reward->getDisplayUrl();
+						if (!empty($reward->badgeImage)) {
+							$extraCreditObj->rewardExists = true;
+						} else {
+							$extraCreditObj->rewardExists = false;
+						}
+					}
+				}
+				$extraCreditActivities[] = $extraCreditObj;
+			}
+		}
+		return $extraCreditActivities;
+	}
 }

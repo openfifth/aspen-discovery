@@ -368,6 +368,32 @@
                                         {/foreach}
                                         </tbody>
                                     </table>
+
+                                    {* <h4>{translate text="Extra Credit Activities"}</h4> *}
+                                    <table class="table table-bordered">
+
+                                    <thead>
+                                        <tr>
+                                            <th>{translate text="Extra Credit Activity" isPublicFacing=true}</th>
+                                            <th>{translate text="Reward" isPublicFacing=true}</th>
+                                        </tr>
+                                    </thead>
+                                        <tbody>
+                                        {foreach from=$campaign->extraCreditActivities item="extraCredit"}
+                                            <tr>
+                                                <td>{$extraCredit->name}</td>
+                                                <td>
+                                                    {if $extraCredit->displayName}
+                                                        {$extraCredit->rewardName}
+                                                    {/if}
+                                                    {if $extraCredit->rewardType == 1 && $extraCredit->rewardExists}
+                                                        <img src="{$extraCredit->rewardImage}" alt="{$extraCredit->rewardName}" style="max-width:100px; max-height:100px;" />
+                                                    {/if}
+                                                </td>
+                                            </tr>                                 
+                                        {/foreach}
+                                        </tbody>
+                                    </table>
                                 </td>
                         </tr>
                     {/if}
@@ -520,6 +546,32 @@
                                                 {/if}
                                                 {if $milestone->rewardType == 1 && $milestone->rewardExists}
                                                     <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
+                                                {/if}
+                                            </td>
+                                        </tr>
+                                    {/foreach}
+                                </tbody>
+                            </table>
+
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>{translate text="Extra Credit" isPublicFacing=true}</th>
+                                        <th>{translate text="Reward" isPublicFacing=true}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {foreach from=$campaign->extraCreditActivities item="extraCredit"}
+                                        <tr>
+                                            <td>
+                                                {$extraCredit->name}
+                                            </td>
+                                            <td>
+                                                {if $extraCredit->displayName}
+                                                    {$extraCredit->rewardName}
+                                                {/if}
+                                                {if $extraCredit->rewardType == 1 && $extraCredit->rewardExists}
+                                                    <img src="{$extraCredit->rewardImage}" alt="{$extraCredit->rewardName}" style="max-width:100px; max-height:100px;" />
                                                 {/if}
                                             </td>
                                         </tr>

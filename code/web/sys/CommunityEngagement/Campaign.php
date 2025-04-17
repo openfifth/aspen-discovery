@@ -636,7 +636,9 @@ class Campaign extends DataObject {
 	
 				// Fetch campaign milestones and their rewards using mapping
 				$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
+				$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaign->id);
 				$pastCampaignList[$campaign->id]->milestones = $milestones;
+				$pastCampaignList[$campaign->id]->extraCreditActivities = $extraCreditActivities;
 	
 				// Check if user is enrolled
 				$pastCampaignList[$campaign->id]->enrolled = $campaign->isUserEnrolled($userId);
@@ -1045,7 +1047,8 @@ class Campaign extends DataObject {
                 //Add completed milestones count to campaign object
                 // $campaign->numCompletedMilestones = $completedMilestonesCount;
                 $campaign->numCampaignMilestones = $numCampaignMilestones;
-				
+
+				$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaignId);
 
 				$currentDate = date('Y-m-d');
 				$canEnroll = (
@@ -1075,6 +1078,7 @@ class Campaign extends DataObject {
 
 				//Add milestones to campaign object
 				$campaign->milestones = $milestones;
+				$campaign->extraCreditActivities = $extraCreditActivities;
 
                 //Add the campaign to the list
             $campaignList[] = clone $campaign;
