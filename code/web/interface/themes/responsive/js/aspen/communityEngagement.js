@@ -418,6 +418,19 @@ AspenDiscovery.CommunityEngagement = function() {
 				automaticRewardControl.style.display = '';
 			}
 		},
+		displayExtraCreditBentoBox: function () {
+			let addExtraCreditActivities = document.getElementById('addExtraCreditActivities');
+			let extraCreditBentoBox = document.getElementById('propertyRowavailableExtraCreditActivities');
+
+
+
+			if (addExtraCreditActivities && addExtraCreditActivities.checked) {
+				extraCreditBentoBox.style.display = '';
+
+			} else {
+				extraCreditBentoBox.style.display = 'none';
+			}
+		},
 
 	}
 	

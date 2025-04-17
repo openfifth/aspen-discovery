@@ -6,6 +6,8 @@ require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignPatronTypeAccess.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignLibraryAccess.php';
 require_once ROOT_DIR . '/sys/Account/User.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignExtraCredit.php';
+
 
 
 class Campaign extends DataObject {
@@ -23,9 +25,14 @@ class Campaign extends DataObject {
     public $currentEnrollments;
     public $campaignReward;
     public $userAgeRange;
+	public $extraCreditActivities;
+	public $addExtraCreditActivities;
 
 	/** @var AvailableMilestones[] */
 	private $_availableMilestones;
+
+	/** @var AvailableExtraCreditActivities[] */
+	private $_availableExtraCreditActivities;
 
 	protected $_allowPatronTypeAccess;
 	protected $_allowLibraryAccess;
@@ -34,6 +41,10 @@ class Campaign extends DataObject {
 		$milestoneList = Milestone::getMilestoneList();
 		$milestoneStructure = CampaignMilestone::getObjectStructure($context);
 		unset($milestoneStructure['campaignId']);
+
+		$extraCreditStructure = CampaignExtraCredit::getObjectStructure($context);
+		unset($extraCreditStructure['campaignId']);
+		unset($extraCreditStructure['weight']);
 
 		$libraryList = Library::getLibraryList(false);
 		$patronTypeList = PType::getPatronTypeList();
@@ -79,6 +90,31 @@ class Campaign extends DataObject {
 				'canAddNew' => true,
 				'canDelete' => true,
 			],
+			'addExtraCreditActivities' => [
+				'property' => 'addExtraCreditActivities',
+				'type' => 'checkbox',
+				'label' => 'Add Extra Credit Activities to the Campaign',
+				'description' => 'Whether or not to add activities that earn rewards but do not count towards the completion of the campaign',
+				'deafult' => false,
+				'onchange' => 'AspenDiscovery.CommunityEngagement.displayExtraCreditBentoBox()',
+			],
+			'availableExtraCreditActivities' => [
+                'property' => 'availableExtraCreditActivities',
+                'type' => 'oneToMany',
+                'label' => 'Extra Credit Activities',
+                'renderAsHeading' => true,
+                'description' => 'The Extra Credit Activities to be linked to this campaign',
+                'keyThis' => 'campaignId',
+                'keyOther' => 'campaignId',
+                'subObjectType' => 'CampaignExtraCredit',
+                'structure' => $extraCreditStructure,
+                'sortable' => true,
+                'storeDb' => true,
+                'allowEdit' => false,
+                'canEdit' => false,
+                'canAddNew' => true,
+                'canDelete' => true,
+            ],
 			'startDate' => [
 				'property' => 'startDate',
 				'type' => 'date',
@@ -99,6 +135,18 @@ class Campaign extends DataObject {
 				'description' => 'The reward given for completing the campaign.',
 				'required' => true,
 			],
+			'enrollmentStartDate' => [
+                'property' => 'enrollmentStartDate',
+                'type' => 'date',
+                'label' => 'Enrollment Period Start Date',
+                'description' => 'The date from which patrons can enroll in the campaign',
+            ],
+            'enrollmentEndDate' => [
+                'property' => 'enrollmentEndDate',
+                'type' => 'date',
+                'label' => 'Enrollment Period End Date',
+                'description' => 'The date patrons can enroll in the campaign until',
+            ],
 			'allowPatronTypeAccess' => [
 				'property' => 'allowPatronTypeAccess',
 				'type' => 'multiSelect',
@@ -246,6 +294,8 @@ class Campaign extends DataObject {
 			return $this->getLibraryAccess();
 		} else if ($name == 'availableMilestones') {
 			return $this->getMilestones();
+		} else if ($name == 'availableExtraCreditActivities') {
+			return $this->getExtraCreditActivities();
 		} else {
 			return parent::__get($name);
 		}
@@ -258,6 +308,8 @@ class Campaign extends DataObject {
 			$this->_allowLibraryAccess = $value;
 		} else if ($name == 'availableMilestones') {
 			$this->_availableMilestones = $value;
+		} else if ($name === 'availableExtraCreditActivities'){
+			$this->_availableExtraCreditActivities = $value;
 		} else {
 			parent::__set($name, $value);
 		}
@@ -278,6 +330,23 @@ class Campaign extends DataObject {
 			}
 		}
 		return $this->_availableMilestones;
+	}
+
+	public function getExtraCreditActivities(){
+		if (!isset($this->_availableExtraCreditActivities)) {
+			$this->_availableExtraCreditActivities = [];
+			if (!empty($this->id)) {
+				$campaignExtraCredit = new CampaignExtraCredit();
+				$campaignExtraCredit->campaignId = $this->id;
+				$campaignExtraCredit->orderBy('weight');
+			   if ($campaignExtraCredit->find()) {
+					while ($campaignExtraCredit->fetch()) {
+						$this->_availableExtraCreditActivities[$campaignExtraCredit->id] = clone($campaignExtraCredit);
+					}
+			   }
+			}
+		}
+		return $this->_availableExtraCreditActivities;
 	}
 
 	public function getRewardDetails() {
@@ -309,6 +378,7 @@ class Campaign extends DataObject {
 			$this->saveLibraryAccess();
 			$this->saveMilestones();
 			$this->saveTextBlockTranslations('description');
+			$this->saveExtraCreditActivities();
 
 		}
 		return $ret;
@@ -326,6 +396,7 @@ class Campaign extends DataObject {
 			$this->saveLibraryAccess();
 			$this->saveMilestones();
 			$this->saveTextBlockTranslations('description');
+			$this->saveExtraCreditActivities();
 		}
 		return $ret;
 	}
@@ -647,6 +718,13 @@ class Campaign extends DataObject {
         if (isset($this->_availableMilestones) && is_array($this->_availableMilestones)) {
             $this->saveOneToManyOptions($this->_availableMilestones, 'campaignId');
             unset($this->_availableMilestones);
+        }
+    }
+
+	public function saveExtraCreditActivities() {
+        if (isset($this->_availableExtraCreditActivities) && is_array($this->_availableExtraCreditActivities)) {
+            $this->saveOneToManyOptions($this->_availableExtraCreditActivities, 'campaignId');
+            unset($this->_availableExtraCreditActivities);
         }
     }
 

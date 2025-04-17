@@ -83,4 +83,8 @@ class CommunityEngagement_Campaigns extends ObjectEditor {
 			'Administer Community Engagement Module',
 		]);
 	}
+
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.CommunityEngagement.displayExtraCreditBentoBox();';
+	}
 }
