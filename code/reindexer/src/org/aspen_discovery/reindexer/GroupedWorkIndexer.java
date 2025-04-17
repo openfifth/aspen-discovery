@@ -1458,7 +1458,7 @@ public class GroupedWorkIndexer {
 									} else {
 										authors = authors + "|" + newAuthor;
 									}
-									updateSeriesAuthor.setString(1, authors);
+									updateSeriesAuthor.setString(1, AspenStringUtils.trimTo(500, authors));
 									updateSeriesAuthor.executeUpdate();
 								}
 							}
@@ -1471,7 +1471,7 @@ public class GroupedWorkIndexer {
 							addSeriesStmt.setString(2, groupedWork.getTargetAudiencesAsString());
 							addSeriesStmt.setLong(3, timeNow);
 							addSeriesStmt.setLong(4, timeNow);
-							addSeriesStmt.setString(5, groupedWork.getPrimaryAuthor());
+							addSeriesStmt.setString(5, AspenStringUtils.trimTo(500, groupedWork.getPrimaryAuthor()));
 							addSeriesStmt.executeUpdate();
 							ResultSet generatedKeys = addSeriesStmt.getGeneratedKeys();
 							if (generatedKeys.next()) {
