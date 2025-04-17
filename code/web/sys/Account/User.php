@@ -4225,6 +4225,9 @@ class User extends DataObject {
 			$sections['communityEngagement']->addAction(new AdminAction('Milestone Criteria', 'Create and view milestones.', '/CommunityEngagement/Milestones'), [
 				'Administer Community Engagement Module',
 			]);
+			$sections['communityEngagement']->addAction(new AdminAction('Extra Credit', 'Create and view extra credit opportunities.', '/CommunityEngagement/ExtraCredits'), [
+				'Administer Community Engagement Module',
+			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Rewards', 'Create and view rewards.', '/CommunityEngagement/Rewards'), [
 				'Administer Community Engagement Module',
 			]);
