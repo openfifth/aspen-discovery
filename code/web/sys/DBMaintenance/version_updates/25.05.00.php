@@ -63,6 +63,18 @@ function getUpdates25_05_00(): array {
 				'ALTER TABLE library ADD COLUMN allowSelectingCheckoutsToExport TINYINT(1) DEFAULT 0'
 			],
 		], //allow_selecting_checkouts_to_export
+		'add_table_for_extra_credit' => [
+			'title' => 'Add Table For Extra Credit',
+			'description' => 'Add a table to for extra credit activites',
+			'sql' => [
+				"CREATE TABLE ce_extra_credit (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+					name VARCHAR(100) NOT NULL, 
+					description VARCHAR(100) NOT NULL,
+					allowPatronProgressInput TINYINT DEFAULT 0
+				)ENGINE = InnoDB"
+			],
+		],
 
 		//chloe - PTFS-Europe
 
