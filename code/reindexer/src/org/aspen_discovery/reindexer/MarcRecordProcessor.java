@@ -1536,10 +1536,10 @@ abstract class MarcRecordProcessor {
 		String authorInTitleField = null;
 		if (titleField != null) {
 			//noinspection SpellCheckingInspection
-			String subTitle = titleField.getSubfieldsAsString("bfgnp");
+			String subTitle = titleField.getSubfieldsAsString("bfgnp", " ");
 			if (!hasParentRecord) {
 				//noinspection SpellCheckingInspection
-				groupedWork.setTitle(titleField.getSubfieldsAsString("a"), subTitle, titleField.getSubfieldsAsString("abfgnp"), this.getSortableTitle(record), format, formatCategory);
+				groupedWork.setTitle(titleField.getSubfieldsAsString("a"), subTitle, titleField.getSubfieldsAsString("abfgnp", " "), this.getSortableTitle(record), format, formatCategory);
 			}
 			//title full
 			authorInTitleField = titleField.getSubfieldsAsString("c");
@@ -1611,7 +1611,7 @@ abstract class MarcRecordProcessor {
 		int nonFilingInt = getInd2AsInt(titleField);
 
 		//noinspection SpellCheckingInspection
-		String title = titleField.getSubfieldsAsString("abfgnp");
+		String title = titleField.getSubfieldsAsString("abfgnp", " ");
 		if (title == null){
 			return "";
 		}
