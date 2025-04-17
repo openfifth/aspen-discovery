@@ -6,6 +6,7 @@ require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
 require_once ROOT_DIR . '/services/Admin/Dashboard.php';
 
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignExtraCredit.php';
 
 
 class CommunityEngagement_CampaignTable extends Admin_Dashboard {
@@ -30,6 +31,7 @@ class CommunityEngagement_CampaignTable extends Admin_Dashboard {
 				
 				//Retrieve milestones for the campaign
 				$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+				$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaignId);
 
 				//Get users for campaign
 				$users = $campaign->getUsersForCampaign();
@@ -71,11 +73,29 @@ class CommunityEngagement_CampaignTable extends Admin_Dashboard {
 								'milestoneAwardAutomatically' => $milestoneAwardAutomatically,
                             ];
                         }
+
+						$extraCreditCompletionStatus = $userCampaign->checkExtraCreditActivityCompletionStatus();
+
+						foreach ($extraCreditActivities as $extraCreditActivity) {
+							$extraCreditComplete = $extraCreditCompletionStatus[$extraCreditActivity->id] ?? false;
+							$extraCreditUsersprogress = CampaignExtraCreditActivityUsersProgress::getProgressByExtraCreditId($extraCreditActivity->id, $campaignId, $user->id);
+							$totalActivityGoals = CampaignExtraCredit::getExtraCreditGoalCountByCampaign($campaignId, $extraCreditActivity->id);
+							$extraCreditActivityRewardGiven = CampaignExtraCreditActivityUsersProgress::getRewardGivenForExtraCreditActivity($extraCreditActivity->id, $user->id, $campaignId);
+							$percentageProgressExtraCredit = ($extraCreditUsersprogress / $totalActivityGoals) * 100;
+
+							$userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id] = [
+								'percentageProgress' => round($percentageProgressExtraCredit, 2),
+								'extraCreditRewardGiven' => $extraCreditActivityRewardGiven,
+								'extraCreditComplete' => $extraCreditComplete,
+							];
+
+						}
                     }
                 }
                 $interface->assign('userCampaigns', $userCampaigns);
                 $interface->assign('milestones', $milestones);
                 $interface->assign('users', $users);
+                $interface->assign('extraCreditActivities', $extraCreditActivities);
 
 			} else {
 				$interface->assign('error', 'Campaign not found.');

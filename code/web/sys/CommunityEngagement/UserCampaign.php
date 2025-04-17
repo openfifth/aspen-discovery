@@ -115,6 +115,26 @@ class UserCampaign extends DataObject {
 		return $milestoneCompletionStatus;
 	}
 
+    public function checkExtraCreditActivityCompletionStatus() {
+		$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($this->campaignId);
+		$extraCreditCompletionStatus = [];
+
+		foreach ($extraCreditActivities as $extraCreditActivity) {
+			//User's progress for this milestone
+			$userProgressInActivity = CampaignExtraCreditActivityUsersProgress::getProgressByExtraCreditId($extraCreditActivity->id, $this->campaignId, $this->userId);
+
+			//Goal for this milestone
+			$goal = CampaignExtraCredit::getExtraCreditGoalCountByCampaign($this->campaignId, $extraCreditActivity->id);
+			//Check if milestone is complete
+			$isExtraCreditActivityComplete = ($userProgressInActivity >= $goal);
+
+			//Add to array
+			$extraCreditCompletionStatus[$extraCreditActivity->id] = $isExtraCreditActivityComplete;
+		}
+
+		return $extraCreditCompletionStatus;
+	}
+
      /**
      * Calculate the total number of completed milestones for a user
      * @param int $userId

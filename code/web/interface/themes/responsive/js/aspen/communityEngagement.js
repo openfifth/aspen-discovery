@@ -431,6 +431,44 @@ AspenDiscovery.CommunityEngagement = function() {
 				extraCreditBentoBox.style.display = 'none';
 			}
 		},
+		addProgressToExtraCreditActivity: function (extraCreditActivityId, userId, campaignId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=addProgressToExtraCreditActivities";
+			var params = {
+				extraCreditActivityId : extraCreditActivityId,
+				userId: userId,
+				campaignId: campaignId,
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			})
+			.fail(function(jqXHR, textStatus, errorThrown) {
+				console.error("AJAX Error: ", textStatus, errorThrown);
+			});
+		},
+		extraCreditRewardGiven: function(userId, campaignId, extraCreditActivityId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=extraCreditRewardGivenUpdate";
+			var params = {
+				userId: userId,
+				campaignId: campaignId,
+				extraCreditActivityId: extraCreditActivityId,
+			};
+			$.getJSON(url, params,
+				function(data) {
+					if (data.success) {
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				})
+				.fail(function(jqXHR, textStatus, errorThrown) {
+					alert('An error occurred while updating the reward status for this milestone.' + textStatus + ', ' + errorThrown);
+				});
+		},
 
 	}
 	

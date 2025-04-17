@@ -1,3 +1,4 @@
+{strip}
 <div id="campaignDetails">
     <h2>{translate text=$campaign->name isAdminFacing=true}</h2>
     <table class="table table-striped">
@@ -10,6 +11,7 @@
                 {/foreach}
                 <th>{translate text="Campaign Complete" isAdminFacing=true}</th>
                 <th>{translate text="Reward Given" isAdminFacing=true}</th>
+                <th>{translate text="Extra Credit" isAdminFacing=true}</th>
             </tr>
         </thead>
         <tbody>
@@ -72,8 +74,65 @@
                                     {translate text="Reward Given" isAdminFacing=true}
                                 {/if}
                             </td>
+                           <td>
+                                <button class="btn btn-primary btn-sm" onclick="toggleExtraCreditDetails({$campaign->id}, {$user->id})">
+                                    {translate text="Extra Credit" isAdminFacing=true}
+                                </button>
+                           </td>
+
+                           <tr id="extraCreditDetails_{$campaign->id}_{$user->id}" class="extra-credit-details" style="display:none;">
+                                <td colspan="6">
+                                    <table class="table table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>{translate text="Extra Credit Activity" isAdminFacing=true}</th>
+                                                <th>{translate text="Progress" isAdminFacing=true}</th>
+                                                <th>{translate text="Reward" isAdminFacing=true}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                        {foreach from=$extraCreditActivities item="extraCreditActivity"}
+                                            <tr>
+                                                <td>{$extraCreditActivity->name}</td>
+                                                <td>
+                                                    {$userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['percentageProgress']}%
+                                                     <button class="btn btn-primary set-reward-btn-extra-credit" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-extraCreditActivity-id="{$extraCreditActivity->id}" onclick="AspenDiscovery.CommunityEngagement.addProgressToExtraCreditActivity({$extraCreditActivity->id}, {$user->id}, {$campaign->id});">
+                                                        {translate text="Add Progress" isAdminFacing=true}
+                                                    </button>
+                                                </td>
+                                                <td>
+                                                    {if $userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['extraCreditRewardGiven'] == 0}
+                                                        <button class="btn btn-primary set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-extraCreditActivity-id="{$extraCreditActivity->id}" onclick="AspenDiscovery.CommunityEngagement.extraCreditRewardGiven({$user->id}, {$campaign->id}, {$extraCreditActivity->id});">
+                                                            {translate text="Give Reward" isAdminFacing=true}
+                                                        </button>
+                                                    {else}
+                                                        {translate text="Reward Given" isAdminFacing=true}
+                                                    {/if}
+                                                </td>
+                                            </tr>
+                                        {/foreach}
+                                        </tbody>
+                                    </table>
+                                </td>
+                           </tr>
                         </tr>
                 {/foreach}
         </tbody>
     </table>
 </div>
+{/strip}
+{literal}
+<script type="text/javascript">
+    function toggleExtraCreditDetails(campaignId, userId) {
+        var tableRow = document.getElementById('extraCreditDetails_' + campaignId + '_' + userId);
+
+        if (tableRow) {
+            if (tableRow.style.display === 'none' || tableRow.style.display == '') {
+                tableRow.style.display = 'table-row';
+            } else {
+                tableRow.style.display = 'none';
+            }
+        }
+    }
+</script>
+{/literal}

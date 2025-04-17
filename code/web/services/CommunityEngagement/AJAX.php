@@ -980,6 +980,179 @@ class CommunityEngagement_AJAX extends JSON_Action {
         ]);
         exit;
     }
+
+    public function addProgressToExtraCreditActivities() {
+        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/ExtraCredit.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignExtraCreditActivityUsersProgress.php';
+
+        $extraCreditActivityId = $_GET['extraCreditActivityId'] ?? null;
+        $userId = $_GET['userId'] ?? null;
+        $campaignId = $_GET['campaignId'] ?? null;
+
+
+        if (!isset($extraCreditActivityId) || $extraCreditActivityId <= 0) {
+            echo json_encode([
+                'success' => false,
+                'title' => translate([
+                    'text' => 'Error',
+                    'isPublicFacing' => true,
+                ]),
+                'message' => translate([
+                    'text' => 'Invalid Extra Credit Activity ID.',
+                    'isPublicFacing' => true,
+                ]),
+            ]);
+            exit;
+        }
+
+        if (!isset($userId)) {
+            echo json_encode([
+                'success' => false,
+                'title' => translate([
+                    'text' => 'Error',
+                    'isPublicFacing' => true,
+                ]),
+                'message' => translate([
+                    'text' => 'Invalid user ID.',
+                    'isPublicFacing' => true,
+                ]),
+            ]);
+            exit;
+        }
+
+        if (!isset($campaignId)){
+            echo json_encode([
+                'success' => false,
+                'title' => translate([
+                    'text' => 'Error',
+                    'isPublicFacing' => true,
+                ]),
+                'message' => translate([
+                    'text' => 'Invalid campaign ID.',
+                    'isPublicFacing' => true,
+                ]),
+            ]);
+            exit;
+        }
+
+       
+        $campaignExtraCreditActivityUsersProgress = new CampaignExtraCreditActivityUsersProgress();
+        $campaignExtraCreditActivityUsersProgress->extraCreditId = $extraCreditActivityId;
+        $campaignExtraCreditActivityUsersProgress->userId = $userId;
+        $campaignExtraCreditActivityUsersProgress->campaignId = $campaignId;
+
+        if ($campaignExtraCreditActivityUsersProgress->find(true)) {
+            $campaignExtraCreditActivityUsersProgress->progress++;
+            $campaignExtraCreditActivityUsersProgress->update();
+        } else {
+            $campaignExtraCreditActivityUsersProgress->progress++;
+            $campaignExtraCreditActivityUsersProgress->insert();
+        }
+
+        echo json_encode([
+            'title' => translate([
+                    'text' => 'Progress Added',
+                    'isPublicFacing' => true,
+                ]),
+            'success' => true,
+            'message' => translate([
+                'text' => 'Progress added successfully!',
+                'isPublicFacing' => true,
+            ]),
+        ]);
+        exit;
+ 
+    }
+
+    function extraCreditRewardGivenUpdate() {
+		ob_start();
+
+		try {
+			$userId = $_GET['userId'];
+			$extraCreditActivityId = $_GET['extraCreditActivityId'];
+			$campaignId = $_GET['campaignId'];
+
+            if (!isset($extraCreditActivityId) || $extraCreditActivityId <= 0) {
+                echo json_encode([
+                    'success' => false,
+                    'title' => translate([
+                        'text' => 'Error',
+                        'isPublicFacing' => true,
+                    ]),
+                    'message' => translate([
+                        'text' => 'Invalid Extra Credit Activity ID.',
+                        'isPublicFacing' => true,
+                    ]),
+                ]);
+                exit;
+            }
+    
+            if (!isset($userId)) {
+                echo json_encode([
+                    'success' => false,
+                    'title' => translate([
+                        'text' => 'Error',
+                        'isPublicFacing' => true,
+                    ]),
+                    'message' => translate([
+                        'text' => 'Invalid user ID.',
+                        'isPublicFacing' => true,
+                    ]),
+                ]);
+                exit;
+            }
+    
+            if (!isset($campaignId)){
+                echo json_encode([
+                    'success' => false,
+                    'title' => translate([
+                        'text' => 'Error',
+                        'isPublicFacing' => true,
+                    ]),
+                    'message' => translate([
+                        'text' => 'Invalid campaign ID.',
+                        'isPublicFacing' => true,
+                    ]),
+                ]);
+                exit;
+            }
+
+			$campaignExtraCreditActivityUsersProgress = new CampaignExtraCreditActivityUsersProgress();
+			$campaignExtraCreditActivityUsersProgress->userId = $userId;
+			$campaignExtraCreditActivityUsersProgress->extraCreditId = $extraCreditActivityId;
+            $campaignExtraCreditActivityUsersProgress->campaignId = $campaignId;
+
+			if ($campaignExtraCreditActivityUsersProgress->find(true)) {
+				$campaignExtraCreditActivityUsersProgress->rewardGiven = 1;
+
+				if ($campaignExtraCreditActivityUsersProgress->update()) {
+					ob_end_clean();
+					echo json_encode([
+                        'success' => true,
+                        'title' => translate([
+                            'text' => 'Reward Given',
+                            'isPublicFacing' => true,
+                        ]),
+                        'message' => translate([
+                            'text' => 'Reward Status Updated',
+                            'isPublicFacing' => true,
+                        ]),
+                    ]);
+				} else {
+					throw new Exception('Failed to update reward status');
+				}
+			} else {
+				throw new Exception('Milestone progress record not found.');
+			}
+
+		} catch(Exception $e) {
+			ob_end_clean();
+			echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+		}
+		exit;
+	}
        
 
 }

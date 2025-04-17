@@ -654,6 +654,9 @@ class Campaign extends DataObject {
 						$pastCampaignList[$campaign->id]->campaignRewardGiven = (int)$userCampaign->rewardGiven;
 						$pastCampaignList[$campaign->id]->isComplete = $userCampaign->checkCompletionStatus();
 
+						$extraCreditCompletionStatus = $userCampaign->checkExtraCreditActivityCompletionStatus();
+
+
     
                         // Update milestone details based on user progress
                         foreach ($pastCampaignList[$campaign->id]->milestones as $milestone) {
@@ -665,6 +668,13 @@ class Campaign extends DataObject {
                             $milestone->extraProgress = $milestoneProgress['extraProgress'];
                             $milestone->progressBeyondOneHundredPercent = $milestone->progressBeyondOneHundredPercent;
                         }
+
+						foreach ($pastCampaignList[$campaign->id]->extraCreditActivities as $extraCreditActivity) {
+							$extraCreditActivityProgress = CampaignExtraCredit::getExtraCreditActivityProgress($campaign->id, $userId, $extraCreditActivity->id);
+							$extraCreditActivity->rewardGiven = CampaignExtraCreditActivityUsersProgress::getRewardGivenForExtraCreditActivity($extraCreditActivity->id, $userId, $campaign->id);
+							$extraCreditActivity->progress = $extraCreditActivityProgress['progress'];
+							$extraCreditActivity->isComplete = $extraCreditCompletionStatus[$extraCreditActivity->id] ?? false;
+						}
                     }
                 }
             }
@@ -1049,6 +1059,22 @@ class Campaign extends DataObject {
                 $campaign->numCampaignMilestones = $numCampaignMilestones;
 
 				$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaignId);
+				foreach ($extraCreditActivities as $extraCreditActivity) {
+					$extraCreditActivityId = $extraCreditActivity->id;
+					$numCampaignExtraCreditActivities++;
+
+					$extraCreditActivityProgress = CampaignExtraCredit::getExtraCreditActivityProgress($campaignId, $userId, $extraCreditActivityId);
+					
+					$extraCreditActivity->totalGoals = CampaignExtraCredit::getExtraCreditGoalCountByCampaign($campaignId, $extraCreditActivityId);
+					$extraCreditActivity->completedGoals = $extraCreditActivityProgress['completed'];
+					$extraCreditActivity->progress = $extraCreditActivityProgress['progress'];
+
+					if ($extraCreditActivity->completedGoals >= $extraCreditActivity->totalGoals) {
+						$extraCreditActivity->extraCreditActivityComplete = true;
+					} else {
+						$extraCreditActivity->extraCreditActivityComplete = false;
+					}
+				}
 
 				$currentDate = date('Y-m-d');
 				$canEnroll = (
@@ -1140,6 +1166,11 @@ class Campaign extends DataObject {
                     $numCompletedMilestones = 0;
                     $milestoneRewards = [];
 
+					$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaign->id);
+					$numCompletedExtraCredits = 0;
+					$numExtraCreditActivities = count($extraCreditActivities);
+					$extraCreditActivitiesArray = [];
+
                     foreach ($milestones as $milestone) {
                         $milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $linkedUser->id, $milestone->id);
                         $completedGoals = $milestoneProgress['completed'];
@@ -1172,6 +1203,30 @@ class Campaign extends DataObject {
                         ];
                     }
 
+					foreach ($extraCreditActivities as $extraCreditActivity) {
+						$extraCreditActivityProgress = CampaignExtraCredit::getExtraCreditActivityProgress($campain->id, $linkedUser->id, $extraCreditActivity->id);
+						$completedExtraCreditGoals = $extraCreditActivityProgress['completed'];
+						$totalExtraCreditGoals = CampaignExtraCredit::getExtraCreditGoalCountByCampaign($campaign->id, $extraCreditActivity->id);
+						if ($extraCreditActivityProgress['progress'] >= 100) {
+							$numCompletedExtraCredits++;
+						}
+
+						$extraCreditActivitiesArray[] = [
+							'id' => $extraCreditActivity->id,
+							'name' => $extraCreditActivity->name,
+							'rewardName' => $extraCreditActivity->rewardName,
+							'rewardType' => $extraCreditActivity->rewardType,
+							'awardAutomatically' => $extraCreditActivity->awardAutomatically, 
+                            'displayName' => $extraCreditActivity->displayName,
+                            'badgeImage' => $extraCreditActivity->rewardImage,
+                            'rewardExists' => $extraCreditActivity->rewardExists,
+                            'progress' => $extraCreditActivityProgress['progress'],
+                            'completedGoals' => $completedExtraCreditGoals,
+                            'totalGoals' => $totalExtraCreditGoals,
+							'allowPatronProgressInput' => $extraCreditActivity->allowPatronProgressInput
+						];
+					}
+
 
                     $eligibleCampaigns[] = [
                         'campaignId' => $campaign->id,
@@ -1183,7 +1238,8 @@ class Campaign extends DataObject {
                         'numCampaignMilestones' => $numCampaignMilestones,
                         'startDate' => $startDate,
                         'endDate' => $endDate,
-						'canEnroll' => $canEnroll
+						'canEnroll' => $canEnroll,
+						'extraCreditActivities' => $extraCreditActivitiesArray
                     ];
                 }
             }

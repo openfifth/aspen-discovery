@@ -96,6 +96,21 @@ function getUpdates25_05_00(): array {
 				)ENGINE = InnoDB",
 			],
 		],
+		'add_extra_credit_progress_table' => [
+			'title' => 'Add Extra Credit Progress Table',
+			'description' => 'Store progress for of extra credit activites for each user',
+			'sql' => [
+				"CREATE Table ce_campaign_extra_credit_activity_users_progress (
+                     id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                     userId INT NOT NULL,
+                     campaignId INT NOT NULL,
+                     extraCreditId INT NOT NULL,
+                     progress INT NOT NULL,
+                     rewardGiven TINYINT DEFAULT 0
+				)ENGINE = InnoDB",
+			],
+		],
+
 
 		//chloe - PTFS-Europe
 

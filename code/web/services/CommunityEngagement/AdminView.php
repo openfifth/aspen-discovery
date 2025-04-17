@@ -38,6 +38,7 @@ class CommunityEngagement_AdminView extends Admin_Dashboard {
 
 		foreach ($campaigns as $campaign) {
 			$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
+			$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaign->id);
 			$campaignMilestones[$campaign->id] = $milestones;
 
 			$users = $campaign->getUsersForCampaign();
