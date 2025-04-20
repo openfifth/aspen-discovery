@@ -992,7 +992,7 @@ class Record_AJAX extends Action {
 					if ($holdType == 'item' && isset($_REQUEST['selectedItem'])) {
 						$return = $patron->placeItemHold($shortId, $_REQUEST['selectedItem'], $pickupBranch, $cancelDate, $pickupSublocation);
 					} else {
-						if ($_REQUEST['volume'] == '~untitled~') {
+						if (isset($_REQUEST['volume']) && $_REQUEST['volume'] == '~untitled~') {
 							$holdType = 'volume';
 							$_REQUEST['volume'] = '';
 						}
