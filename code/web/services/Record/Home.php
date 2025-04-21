@@ -328,12 +328,17 @@ class Record_Home extends GroupedWorkSubRecordHomeAction {
 		}
 	}
 
-	public function concatenateSubfieldData($marcField, $subFields) {
+	public function concatenateSubfieldData(File_MARC_Data_Field $marcField, array $requestedSubFields) : string {
 		$value = '';
-		foreach ($subFields as $subField) {
-			$subFieldValue = $this->getSubfieldData($marcField, $subField);
-			if (strlen($subFieldValue) > 0) {
-				$value .= ' ' . $subFieldValue;
+		$allSubfields = $marcField->getSubfields();
+		foreach ($allSubfields as $subfield) {
+			foreach ($requestedSubFields as $requestedSubField) {
+				if ($subfield->getCode() == $requestedSubField) {
+					$subFieldValue = $subfield->getData();
+					if (strlen($subFieldValue) > 0) {
+						$value .= ' ' . $subFieldValue;
+					}
+				}
 			}
 		}
 		return $value;
