@@ -110,12 +110,9 @@ class Search_Home extends Action {
 				$browseCategory = new BrowseCategory();
 				$browseCategory->id = $localBrowseCategory->browseCategoryId;
 				$browseCategory->find(true);
+				// Only Show the Recommended for You browse category if the user is logged in and has rated titles
 				if ($browseCategory->isValidForDisplay()) {
-					// Only Show the Recommended for You browse category if the user is logged in and has rated titles
-					if ($browseCategory->isValidForDisplay()) {
-						$browseCategories[] = clone($browseCategory);
-					}
-
+					$browseCategories[] = clone($browseCategory);
 					if (($specifiedCategory && $_REQUEST['browseCategory'] == $browseCategory->textId) // A category has been selected through URL parameter
 						|| (!$specifiedCategory && $index == $first) // Or default to selecting the first browse category
 					) {
@@ -182,7 +179,7 @@ class Search_Home extends Action {
 				} else {
 					$temp = new BrowseCategory();
 					$temp->get($subCategory->subCategoryId);
-					if ($temp) {
+					if ($temp->isValidForDisplay()) {
 						if ($temp->textId == $_REQUEST['subCategory']) {
 							$validSubCategory = true;
 						}
