@@ -6825,6 +6825,7 @@ class UserAPI extends AbstractAPI {
 	function unenrollUserFromCampaign() {
 		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
 		global $logger;
+		$logger->log("inside unenrill from campaign", Logger::LOG_ERROR);
 
 		global $offlineMode;
 		global $logger;
