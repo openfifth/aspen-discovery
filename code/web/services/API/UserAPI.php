@@ -6743,7 +6743,7 @@ class UserAPI extends AbstractAPI {
 			$user = $this->getUserForApiCall();
 		}
 
-		if (!$user || empty($user->id)) {
+		if (!$user || $user instanceof AspenError) {
 			$logger->log("NO user or user ID", Logger::LOG_ERROR);
 
 			return [
@@ -6753,6 +6753,7 @@ class UserAPI extends AbstractAPI {
 				]),
 			];
 		}
+		$logger->log("USER: " . print_r($user, true), Logger::LOG_ERROR);
 
 		$userId = $user->id;
 		$logger->log("User id: " . $userId, Logger::LOG_ERROR);
