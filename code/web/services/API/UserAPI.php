@@ -6741,6 +6741,8 @@ class UserAPI extends AbstractAPI {
 			$logger->log("in corect check", Logger::LOG_ERROR);
 
 			$user = $this->getUserForApiCall();
+			$logger->log("User: " . print_r($user, true), Logger::LOG_ERROR);
+			$logger->log("User class: " . (is_object($user) ? get_class($user) : gettype($user)), Logger::LOG_ERROR);
 		}
 
 		if (!$user || $user instanceof AspenError) {
@@ -6753,7 +6755,6 @@ class UserAPI extends AbstractAPI {
 				]),
 			];
 		}
-		$logger->log("USER: " . print_r($user, true), Logger::LOG_ERROR);
 
 		$userId = $user->id;
 		$logger->log("User id: " . $userId, Logger::LOG_ERROR);
