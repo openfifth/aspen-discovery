@@ -6724,6 +6724,7 @@ class UserAPI extends AbstractAPI {
 		$logger->log("Campaign ID: " . $campaignId, Logger::LOG_ERROR);
 
 		if (empty($campaignId)) {
+			$logger->log("NO CAMPAIGN ID", Logger::LOG_ERROR);
 			return [
 				'success' => false,
 				'message' => translate([
@@ -6733,12 +6734,18 @@ class UserAPI extends AbstractAPI {
 		}
 
 		if ($filter == 'linkedUserCampaigns') {
+			$logger->log("in linked user check", Logger::LOG_ERROR);
+
 			$user = '';
 		} else {
+			$logger->log("in corect check", Logger::LOG_ERROR);
+
 			$user = $this->getUserForApiCall();
 		}
 
 		if (!$user || empty($user->id)) {
+			$logger->log("NO user or user ID", Logger::LOG_ERROR);
+
 			return [
 				'success' => false,
 				'message' => translate([
