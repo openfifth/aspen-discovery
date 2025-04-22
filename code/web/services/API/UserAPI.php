@@ -6588,8 +6588,10 @@ class UserAPI extends AbstractAPI {
 		$pageSize = $_REQUEST['pageSize'] ?? 20;
 
 		if ($filter === 'linkedUserCampaigns') {
+			$logger->log("IN linkedUserCampaigns", Logger::LOG_ERROR);
 			try {
 				$linkedUserCampaigns = $campaign->getLinkedUserCampaigns($user->id);
+				$logger->log("linked user camoaigns: " . print_r($linkedUserCampaigns, true), Logger::LOG_ERROR);
 				$flatCampaigns = [];
 				foreach ($linkedUserCampaigns as $linkedUser) {
 					foreach ($linkeduser['campaigns'] as $campaign) {
