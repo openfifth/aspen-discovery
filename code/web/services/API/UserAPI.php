@@ -6606,7 +6606,7 @@ class UserAPI extends AbstractAPI {
 				$logger->log("Offset: $offset, Page size: $pageSize", Logger::LOG_ERROR);
 
 				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
-				$logger->log("pagiated:" . json_encode($paginated, JSON_PRETTY), Logger::LOG_ERROR);
+				$logger->log("pagiated:" . json_encode($paginated, JSON_PRETTY_PRINT), Logger::LOG_ERROR);
 
 
 				return [
