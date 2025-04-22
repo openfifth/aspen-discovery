@@ -6594,7 +6594,7 @@ class UserAPI extends AbstractAPI {
 				$logger->log("linked user camoaigns: " . print_r($linkedUserCampaigns, true), Logger::LOG_ERROR);
 				$flatCampaigns = [];
 				foreach ($linkedUserCampaigns as $linkedUser) {
-					foreach ($linkeduser['campaigns'] as $campaign) {
+					foreach ($linkedUser['campaigns'] as $campaign) {
 						$campaign['linkedUserId'] = $linkedUser['linkedUserId'];
 						$campaign['linkedUserName'] = $linkedUser['linkedUserName'];
 						$flatCampaigns[] = $campaign;
@@ -6606,7 +6606,54 @@ class UserAPI extends AbstractAPI {
 				$logger->log("Offset: $offset, Page size: $pageSize", Logger::LOG_ERROR);
 
 				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
-				$logger->log("pagiated:" . json_encode($paginated, JSON_PRETTY_PRINT), Logger::LOG_ERROR);
+				$paginated = array_map(function($campaign) {
+					if (is_object($campaign)) {
+						$base = get_object_vars($campaign);
+						$base['name'] = $campaign->campaignName;
+						$base['id'] = $campaign->campaignId;
+						$base['enrolled'] = $campaign->isEnrolled;
+						if (isset($campaign->campaignReward) && is_object($campaign->campaignReward)) {
+							$base['rewardName'] = $campaign->campaignReward->rewardName;
+							$base['displayName'] = $campaign->campaignReward->displayName;
+							$base['rewardType'] = $campaign->campaignReward->rewardType;
+							$base['rewardExists'] = $campaign->campaignReward->rewardExists;
+							$base['badgeImage'] = $campaign->campaignReward->badgeImage;
+						}
+						return $base;
+					} else {
+						$campaign['name'] = $campaign['campaignName'];
+						$campaign['id'] = $campaign['campaignId'];
+						$campaign['enrolled'] = $campaign['isEnrolled'];
+						if (isset($campaign['campaignReward'])) {
+							$campaign['rewardName'] = $campaign['campaignReward']['rewardName'];
+							$campaign['displayName'] = $campaign['campaignReward']['displayName'];
+							$campaign['rewardType'] = $campaign['campaignReward']['rewardType'];
+							$campaign['rewardExists'] = $campaign['campaignReward']['rewardExists'];
+							$campaign['badgeImage'] = $campaign['campaignReward']['badgeImage'];
+						}
+
+						if (isset($campaign['milestones']) && is_array($campaign['milestones'])) {
+							$campaign['milestones'] = array_map(function ($milestone) {
+								return [
+									'id' => $milestone['id'] ?? null,
+									'name' => $milestone['milestoneName'] ?? null,
+									'completedGoals' => $milestone['completedGoals'] ?? null,
+									'totalGoals' => $milestone['totalGoals'] ?? null,
+									'rewardName' => $milestone['rewardName'] ?? null,
+									'rewardId' => $milestone['rewardId'] ?? null,
+									'rewardType' => $milestone['rewardType'] ?? null,
+									'rewardExists' => $milestone['rewardExists'] ?? null,
+									'displayName' => $milestone['displayName'] ?? null,
+									'awardAutomatically' => $milestone['awardAutomatically'] ?? null,
+									'rewardImage' => $milestone['badgeImage'] ?? null,
+								];
+							}, $campaign['milestones']);
+						}
+					
+						return $campaign;
+					}
+					
+				}, $paginated);
 
 
 				return [
@@ -6741,18 +6788,16 @@ class UserAPI extends AbstractAPI {
 		}
 
 		if ($filter == 'linkedUserCampaigns') {
-			$logger->log("in linked user check", Logger::LOG_ERROR);
-
-			$user = '';
+			$userId = $_REQUEST['linkedUserId'];
 		} else {
 			$logger->log("in corect check", Logger::LOG_ERROR);
-
 			$user = $this->getUserForApiCall();
+			$userId = $user->id;
 			$logger->log("User: " . print_r($user, true), Logger::LOG_ERROR);
 			$logger->log("User class: " . (is_object($user) ? get_class($user) : gettype($user)), Logger::LOG_ERROR);
 		}
 
-		if (!$user || $user instanceof AspenError) {
+		if (!$userId) {
 			$logger->log("NO user or user ID", Logger::LOG_ERROR);
 
 			return [
@@ -6763,8 +6808,6 @@ class UserAPI extends AbstractAPI {
 			];
 		}
 
-		$userId = $user->id;
-		$logger->log("User id: " . $userId, Logger::LOG_ERROR);
 
 
 		$originalGet = $_GET;
@@ -6808,13 +6851,13 @@ class UserAPI extends AbstractAPI {
 		}
 
 		if ($filter == 'linkedUserCampaigns') {
-
-			$user = '';
+			$userId = $_REQUEST['linkedUserId'];
 		} else {
 			$user = $this->getUserForApiCall();
+			$userId = $user->id;
 		}
 
-		if (!$user || $user instanceof AspenError) {
+		if (!$userId) {
 			return [
 				'success' => false,
 				'message' => translate([
@@ -6822,8 +6865,6 @@ class UserAPI extends AbstractAPI {
 				]),
 			];
 		}
-
-		$userId = $user->id;
 
 		$originalGet = $_GET;
 
