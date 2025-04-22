@@ -6789,6 +6789,7 @@ class UserAPI extends AbstractAPI {
 
 		if ($filter == 'linkedUserCampaigns') {
 			$userId = $_REQUEST['linkedUserId'];
+			$logger->log("user id: " . $userId, Logger::LOG_ERROR);
 		} else {
 			$logger->log("in corect check", Logger::LOG_ERROR);
 			$user = $this->getUserForApiCall();
@@ -6827,6 +6828,7 @@ class UserAPI extends AbstractAPI {
 
 	function unenrollUserFromCampaign() {
 		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+		global $logger;
 
 		global $offlineMode;
 		global $logger;
@@ -6842,6 +6844,7 @@ class UserAPI extends AbstractAPI {
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 
 		if (empty($campaignId)) {
+			$logger->log("no campaing id", Logger::LOG_ERROR);
 			return [
 				'success' => false,
 				'message' => translate([
@@ -6851,13 +6854,19 @@ class UserAPI extends AbstractAPI {
 		}
 
 		if ($filter == 'linkedUserCampaigns') {
+			$logger->log("filter by linked", Logger::LOG_ERROR);
+
 			$userId = $_REQUEST['linkedUserId'];
 		} else {
+			$logger->log("dont filter by linked", Logger::LOG_ERROR);
+
 			$user = $this->getUserForApiCall();
 			$userId = $user->id;
 		}
 
 		if (!$userId) {
+			$logger->log("no user id", Logger::LOG_ERROR);
+
 			return [
 				'success' => false,
 				'message' => translate([
