@@ -9916,8 +9916,15 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
 
+		global $logger;
+		$logger->log("Entered enrollCampaign", Logger::LOG_ERROR);
+
 		$campaignId = $_GET['campaignId'] ?? null;
 		$userId = $_GET['userId'] ?? null;
+
+		$logger->log("enrollCampaign camoaignId: " . $campaignId, Logger::LOG_ERROR);
+		$logger->log("enrollCampaign userId: " . $userId, Logger::LOG_ERROR);
+
 
 
 		if (!$campaignId || !$userId) {
@@ -9940,6 +9947,8 @@ class MyAccount_AJAX extends JSON_Action {
 		$campaign = new Campaign();
 		$campaign->id = $campaignId;
 		if (!$campaign->find(true)) {
+			$logger->log("Can't find campaign ", Logger::LOG_ERROR);
+
 			return [
 				'success' => false,
 				'title' => translate([
@@ -9987,6 +9996,8 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		if ($userCampaign->find(true)) {
+			$logger->log("Already enrolled", Logger::LOG_ERROR);
+
 			return [
 				'success' => false,
 				'title' => translate([
@@ -10003,6 +10014,8 @@ class MyAccount_AJAX extends JSON_Action {
 		$this->applyCampaignProgress($userId, $campaignId);
 
 		if ($userCampaign->insert()) {
+			$logger->log("Enrolled in enrollCampaign function", Logger::LOG_ERROR);
+
 			$campaign->enrollmentCounter++;
 			$campaign->currentEnrollments++;
 			$campaign->update();

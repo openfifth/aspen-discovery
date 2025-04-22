@@ -103,7 +103,9 @@ class UserAPI extends AbstractAPI {
 					'createMaterialsRequest',
 					'cancelMaterialsRequest',
 					'deleteAspenUser',
-					'getUserCampaigns'
+					'getUserCampaigns',
+					'enrollUserInCampaign',
+					'unenrollUserFromCampaign'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -6586,8 +6588,10 @@ class UserAPI extends AbstractAPI {
 		$pageSize = $_REQUEST['pageSize'] ?? 20;
 
 		if ($filter === 'linkedUserCampaigns') {
+			$logger->log("IN linkedUserCampaigns", Logger::LOG_ERROR);
 			try {
 				$linkedUserCampaigns = $campaign->getLinkedUserCampaigns($user->id);
+				$logger->log("linked user camoaigns: " . print_r($linkedUserCampaigns, true), Logger::LOG_ERROR);
 				$flatCampaigns = [];
 				foreach ($linkedUserCampaigns as $linkedUser) {
 					foreach ($linkeduser['campaigns'] as $campaign) {
@@ -6598,7 +6602,12 @@ class UserAPI extends AbstractAPI {
 				}
 				$total = count($flatCampaigns);
 				$offset = ($page -1) * $pageSize;
+				$logger->log("Total campaigns before slice: $total", Logger::LOG_ERROR);
+				$logger->log("Offset: $offset, Page size: $pageSize", Logger::LOG_ERROR);
+
 				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
+				$logger->log("pagiated:" . json_encode($paginated, JSON_PRETTY_PRINT), Logger::LOG_ERROR);
+
 
 				return [
 					'success' => true,
@@ -6699,6 +6708,137 @@ class UserAPI extends AbstractAPI {
 			'page' => (int)$page,
 			'pageSize' => (int)$pageSize,
 		];
+	}
+
+	function enrollUserInCampaign() {
+		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+
+		global $logger;
+
+		global $offlineMode;
+		global $logger;
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+		$logger->log("Filter: " . $filter, Logger::LOG_ERROR);
+		$logger->log("Campaign ID: " . $campaignId, Logger::LOG_ERROR);
+
+		if (empty($campaignId)) {
+			$logger->log("NO CAMPAIGN ID", Logger::LOG_ERROR);
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+				]),
+			];
+		}
+
+		if ($filter == 'linkedUserCampaigns') {
+			$logger->log("in linked user check", Logger::LOG_ERROR);
+
+			$user = '';
+		} else {
+			$logger->log("in corect check", Logger::LOG_ERROR);
+
+			$user = $this->getUserForApiCall();
+			$logger->log("User: " . print_r($user, true), Logger::LOG_ERROR);
+			$logger->log("User class: " . (is_object($user) ? get_class($user) : gettype($user)), Logger::LOG_ERROR);
+		}
+
+		if (!$user || $user instanceof AspenError) {
+			$logger->log("NO user or user ID", Logger::LOG_ERROR);
+
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'User not found.',
+				]),
+			];
+		}
+
+		$userId = $user->id;
+		$logger->log("User id: " . $userId, Logger::LOG_ERROR);
+
+
+		$originalGet = $_GET;
+
+		$_GET['campaignId'] = $campaignId;
+		$_GET['userId'] = $userId;
+
+		$ajaxHandler = new MyAccount_AJAX();
+
+		$response = $ajaxHandler->enrollCampaign();
+
+		$_GET = $originalGet;
+
+		return $response;
+
+	}
+
+	function unenrollUserFromCampaign() {
+		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+
+		global $offlineMode;
+		global $logger;
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
+		if (empty($campaignId)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+				]),
+			];
+		}
+
+		if ($filter == 'linkedUserCampaigns') {
+
+			$user = '';
+		} else {
+			$user = $this->getUserForApiCall();
+		}
+
+		if (!$user || $user instanceof AspenError) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'User not found.',
+				]),
+			];
+		}
+
+		$userId = $user->id;
+
+		$originalGet = $_GET;
+
+		$_GET['campaignId'] = $campaignId;
+		$_GET['userId'] = $userId;
+
+		$ajaxHandler = new MyAccount_AJAX();
+
+		$response = $ajaxHandler->unenrollCampaign();
+
+		$_GET = $originalGet;
+
+		return $response;
+
+
 	}
 
 }
