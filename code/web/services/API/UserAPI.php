@@ -6602,6 +6602,9 @@ class UserAPI extends AbstractAPI {
 				}
 				$total = count($flatCampaigns);
 				$offset = ($page -1) * $pageSize;
+				$logger->log("Total campaigns before slice: $total", Logger::LOG_ERROR);
+				$logger->log("Offset: $offset, Page size: $pageSize", Logger::LOG_ERROR);
+
 				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
 				$logger->log("pagiated:" . json_encode($paginated, JSON_PRETTY), Logger::LOG_ERROR);
 
