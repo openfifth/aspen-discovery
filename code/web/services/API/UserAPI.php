@@ -103,7 +103,9 @@ class UserAPI extends AbstractAPI {
 					'createMaterialsRequest',
 					'cancelMaterialsRequest',
 					'deleteAspenUser',
-					'getUserCampaigns'
+					'getUserCampaigns',
+					'enrollUserInCampaign',
+					'unenrollCampaign'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -6699,6 +6701,67 @@ class UserAPI extends AbstractAPI {
 			'page' => (int)$page,
 			'pageSize' => (int)$pageSize,
 		];
+	}
+
+	function enrollUserInCampaign() {
+		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+
+		global $offlineMode;
+		global $logger;
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
+		if (empty($campaignId)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+				]),
+			];
+		}
+
+		if ($filter == 'linkedUserCampaigns') {
+			$user = '';
+		} else {
+			$user = $this->getUserForApiCall();
+		}
+
+		if (!$user || empty($user->id)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'User not found.',
+				]),
+			];
+		}
+
+		$userId = $user->id;
+
+		$originalGet = $_GET;
+
+		$_GET['campaignId'] = $campaignId;
+		$_GET['userId'] = $userId;
+
+		$ajaxHandler = new MyAccount_AJAX();
+
+		$response = $ajaxHandler->enrollCampaign();
+
+		$_GET = $originalGet;
+
+		return $response;
+
+	}
+
+	function unenrollCampaign() {
+
 	}
 
 }
