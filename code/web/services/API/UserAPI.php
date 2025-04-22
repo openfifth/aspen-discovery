@@ -6706,6 +6706,8 @@ class UserAPI extends AbstractAPI {
 	function enrollUserInCampaign() {
 		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
 
+		global $logger;
+
 		global $offlineMode;
 		global $logger;
 		if ($offlineMode) {
@@ -6718,6 +6720,8 @@ class UserAPI extends AbstractAPI {
 		}
 		$filter = $_REQUEST['filter'] ?? 'enrolled';
 		$campaignId = $_REQUEST['campaignId'] ?? null;
+		$logger->log("Filter: " . $filter, Logger::LOG_ERROR);
+		$logger->log("Campaign ID: " . $campaignId, Logger::LOG_ERROR);
 
 		if (empty($campaignId)) {
 			return [
@@ -6744,6 +6748,8 @@ class UserAPI extends AbstractAPI {
 		}
 
 		$userId = $user->id;
+		$logger->log("User id: " . $userId, Logger::LOG_ERROR);
+
 
 		$originalGet = $_GET;
 
