@@ -6588,10 +6588,8 @@ class UserAPI extends AbstractAPI {
 		$pageSize = $_REQUEST['pageSize'] ?? 20;
 
 		if ($filter === 'linkedUserCampaigns') {
-			$logger->log("IN linkedUserCampaigns", Logger::LOG_ERROR);
 			try {
 				$linkedUserCampaigns = $campaign->getLinkedUserCampaigns($user->id);
-				$logger->log("linked user camoaigns: " . print_r($linkedUserCampaigns, true), Logger::LOG_ERROR);
 				$flatCampaigns = [];
 				foreach ($linkedUserCampaigns as $linkedUser) {
 					foreach ($linkedUser['campaigns'] as $campaign) {
@@ -6602,8 +6600,6 @@ class UserAPI extends AbstractAPI {
 				}
 				$total = count($flatCampaigns);
 				$offset = ($page -1) * $pageSize;
-				$logger->log("Total campaigns before slice: $total", Logger::LOG_ERROR);
-				$logger->log("Offset: $offset, Page size: $pageSize", Logger::LOG_ERROR);
 
 				$paginated = array_slice($flatCampaigns, $offset, $pageSize);
 				$paginated = array_map(function($campaign) {
