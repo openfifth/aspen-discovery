@@ -922,6 +922,9 @@ class UserList extends DataObject {
 	}
 
 	public static function getUserListsForRecord($source, $sourceId): array {
+		global $searchSource;
+		$searchLibrary = Library::getSearchLibrary($searchSource);
+		$searchLocation = Location::getSearchLocation($searchSource);
 		$userLists = [];
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
@@ -941,8 +944,52 @@ class UserList extends DataObject {
 						$okToShow = true;
 						$key = 0 . strtolower($userList->title);
 					} elseif ($userList->public == 1 && $userList->searchable == 1) {
-						$okToShow = true;
-						$key = 1 . strtolower($userList->title);
+						//Check restrictions for this list to be sure we should show it in this interface
+						$ownedByLibrary = false;
+						if ($searchLocation != null) {
+							if ($searchLocation->publicListsToInclude == 0) {
+								//Include no lists
+								/** @noinspection PhpConditionAlreadyCheckedInspection */
+								$okToShow = false;
+							}elseif ($searchLocation->publicListsToInclude == 1 || $searchLocation->publicListsToInclude == 4) {
+								//Lists from this location
+								$owningLocationId = $userList->getOwningLocationId();
+								$okToShow = $owningLocationId == null || $owningLocationId == -1 || $owningLocationId == $searchLocation->locationId;
+								$ownedByLibrary = $owningLocationId == $searchLocation->locationId;
+							}elseif ($searchLocation->publicListsToInclude == 2 || $searchLocation->publicListsToInclude == 5) {
+								//Lists from this library
+								$owningLibraryId = $userList->getOwningLibraryId();
+								$okToShow = $owningLibraryId == null || $owningLibraryId == -1 || $owningLibraryId == $searchLibrary->libraryId;
+								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
+							}elseif ($searchLocation->publicListsToInclude == 3 || $searchLocation->publicListsToInclude == 6) {
+								//All lists
+								$owningLibraryId = $userList->getOwningLibraryId();
+								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
+								$okToShow = true;
+							}
+						}else{
+							if ($searchLibrary->publicListsToInclude == 0) {
+								//Include no lists
+								/** @noinspection PhpConditionAlreadyCheckedInspection */
+								$okToShow = false;
+							}else if ($searchLibrary->publicListsToInclude == 1 || $searchLibrary->publicListsToInclude == 3) {
+								//Lists from this library (these 2 options are equivalent since we restrict to only searchable lists)
+								$owningLibraryId = $userList->getOwningLibraryId();
+								$okToShow = $owningLibraryId == null || $owningLibraryId == -1 || $owningLibraryId == $searchLibrary->libraryId;
+								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
+							}else if ($searchLibrary->publicListsToInclude == 2 || $searchLibrary->publicListsToInclude == 4) {
+								//All Lists (these 2 options are equivalent since we restrict to only searchable lists)
+								$owningLibraryId = $userList->getOwningLibraryId();
+								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
+								$okToShow = true;
+							}
+						}
+						if ($ownedByLibrary) {
+							$key = 1 . strtolower($userList->title);
+						}else{
+							$key = 2 . strtolower($userList->title);
+						}
+
 					}
 				}
 				if ($okToShow) {
@@ -955,6 +1002,37 @@ class UserList extends DataObject {
 		}
 		ksort($userLists);
 		return $userLists;
+	}
+
+	private function getOwningLibraryId() {
+		$owningUser = new User();
+		$owningUser->selectAdd();
+		$owningUser->selectAdd('homeLocationId');
+		$owningUser->selectAdd('libraryId');
+		$location = new Location();
+		$location->selectAdd();
+		$location->selectAdd('libraryId');
+		$location->selectAdd('locationId');
+		$owningUser->joinAdd($location, 'LEFT', 'userLocation', 'homeLocationId', 'locationId');
+		$owningUser->id = $this->user_id;
+		if ($owningUser->find(true)) {
+			/** @noinspection PhpUndefinedFieldInspection */
+			return $owningUser->libraryId;
+		}else{
+			return -1;
+		}
+	}
+
+	private function getOwningLocationId() : int {
+		$owningUser = new User();
+		$owningUser->selectAdd();
+		$owningUser->selectAdd('homeLocationId');
+		$owningUser->id = $this->user_id;
+		if ($owningUser->find(true)) {
+			return $owningUser->homeLocationId;
+		}else{
+			return -1;
+		}
 	}
 
 	public function toArray($includeRuntimeProperties = true, $encryptFields = false): array {

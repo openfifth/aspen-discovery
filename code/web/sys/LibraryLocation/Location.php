@@ -100,8 +100,7 @@ class Location extends DataObject {
 	public $systemsToRepeatIn;
 	public $homeLink;
 	public $ptypesToAllowRenewals;
-	public /** @noinspection PhpUnused */
-		$publicListsToInclude;
+	public $publicListsToInclude;
 	public $automaticTimeoutLength;
 	public $automaticTimeoutLengthLoggedOut;
 	public $additionalCss;
