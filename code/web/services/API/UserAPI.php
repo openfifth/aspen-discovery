@@ -6645,6 +6645,21 @@ class UserAPI extends AbstractAPI {
 								];
 							}, $campaign['milestones']);
 						}
+						if (!empty($campaign['extraCreditActivities']) && is_array($campaign['extraCreditActivities'])) {
+							$campaign['extraCreditActivities'] = array_map(function ($activity) {
+								return [
+									'name' => $activity['name'] ?? null,
+									'rewardImage' => $activity['badgeImage'] ?? null,
+									'displayName' => $activity['displayName'] ?? null,
+									'rewardType' => $activity['rewardType'] ?? null,
+									'rewardExists' => $activity['rewardExists'] ?? null,
+									'rewardName' => $activity['rewardName'] ?? null,
+									'completedGoals' => $activity['completedGoals'] ?? null,
+									'totalGoals' => $activity['totalGoals'] ?? null,
+									'awardAutomatically' => $activity['awardAutomatically'] ?? null,
+								];
+							}, $campaign['extraCreditActivities']);
+						}
 					
 						return $campaign;
 					}
@@ -6740,6 +6755,21 @@ class UserAPI extends AbstractAPI {
 						$m['rewardImage'] = $milestone->rewardImage ?? null;
 						return $m;
 					}, $campaign->milestones);
+				}
+				if (!empty($campaign->extraCreditActivities) && is_array($campaign->extraCreditActivities)) {
+					$base['extraCreditActivities'] = array_map(function ($activity) {
+
+						$eca = get_object_vars($activity);
+						$eca['completedGoals'] = $activity->completedGoals ?? null;
+						$eca['totalGoals'] = $activity->totalGoals ?? null;
+						$eca['rewardName'] = $activity->rewardName ?? null;
+						$eca['displayName'] = $activity->displayName ?? null;
+						$eca['rewardType'] = $activity->rewardType ?? null;
+						$eca['rewardImage'] = $activity->rewardImage ?? null;
+						$eca['rewardExists'] = $activity->rewardExists ?? null;
+						$eca['awardAutomatically'] = $activity->awardAutomatically ?? null;
+						return $eca;
+					}, $campaign->extraCreditActivities);
 				}
 				return $base;
 		}, $paginated);
