@@ -6624,6 +6624,7 @@ class UserAPI extends AbstractAPI {
 						$campaign['id'] = $campaign['campaignId'];
 						$campaign['enrolled'] = $campaign['isEnrolled'];
 						$campaign['canEnroll'] = $campaign['canEnroll'];
+						
 						if (isset($campaign['campaignReward'])) {
 							$campaign['rewardName'] = $campaign['campaignReward']['rewardName'];
 							$campaign['displayName'] = $campaign['campaignReward']['displayName'];
@@ -6747,6 +6748,8 @@ class UserAPI extends AbstractAPI {
 				$base['canEnroll'] = $campaign->canEnroll ?? false;
 				$base['optInToCampaignEmailNotifications'] = $campaign->optInToCampaignEmailNotifications ?? false;
 				$base['optInToCampaignLeaderboard'] = $campaign->optInToCampaignLeaderboard ?? false;
+				$base['campaignIsComplete'] = $campaign->isComplete;
+				$base['campaignRewardGiven'] = $campaign->campaignRewardGiven;
 
 				if (!empty($campaign->milestones) && is_array($campaign->milestones)) {
 					$base['milestones'] = array_map(function ($milestone) {
@@ -6760,6 +6763,8 @@ class UserAPI extends AbstractAPI {
 						$m['displayName'] = $milestone->displayName ?? null;
 						$m['awardAutomatically'] = $milestone->awardAutomatically ?? null;
 						$m['rewardImage'] = $milestone->rewardImage ?? null;
+						$m['milestoneIsComplete'] = $milestone->milestoneComplete ?? null;
+						$m['milestoneRewardGiven'] = $milestone->rewardGiven ?? null;
 						return $m;
 					}, $campaign->milestones);
 				}
