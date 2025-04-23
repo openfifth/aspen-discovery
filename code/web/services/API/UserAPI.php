@@ -106,7 +106,9 @@ class UserAPI extends AbstractAPI {
 					'getUserCampaigns',
 					'enrollUserInCampaign',
 					'unenrollUserFromCampaign',
-					'optUserIntoCampaignEmails'
+					'optUserIntoCampaignEmails',
+					'enrollUserInCampaignLeaderboard',
+					'unenrollUserFromCampaignLeaderboard'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -6622,7 +6624,6 @@ class UserAPI extends AbstractAPI {
 						$campaign['id'] = $campaign['campaignId'];
 						$campaign['enrolled'] = $campaign['isEnrolled'];
 						$campaign['canEnroll'] = $campaign['canEnroll'];
-						$campaign['optInToCampaignEmailNotifications'] = $campaign['optInToCampaignEmailNotifications'];
 						if (isset($campaign['campaignReward'])) {
 							$campaign['rewardName'] = $campaign['campaignReward']['rewardName'];
 							$campaign['displayName'] = $campaign['campaignReward']['displayName'];
@@ -6745,6 +6746,7 @@ class UserAPI extends AbstractAPI {
 				$base['isPast'] = $campaign->isPast ?? false;
 				$base['canEnroll'] = $campaign->canEnroll ?? false;
 				$base['optInToCampaignEmailNotifications'] = $campaign->optInToCampaignEmailNotifications ?? false;
+				$base['optInToCampaignLeaderboard'] = $campaign->optInToCampaignLeaderboard ?? false;
 
 				if (!empty($campaign->milestones) && is_array($campaign->milestones)) {
 					$base['milestones'] = array_map(function ($milestone) {
@@ -6990,6 +6992,115 @@ class UserAPI extends AbstractAPI {
 		$_GET = $originalGet;
 
 		return $response;
+	}
+
+	function enrollUserInCampaignLeaderboard() {
+		require_once ROOT_DIR . '/services/CommunityEngagement/AJAX.php';
+
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
+		if (empty($campaignId)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+				]),
+			];
+		}
+
+		if ($filter == 'linkedUserCampaigns') {
+			$userId = $_REQUEST['linkedUserId'];
+		} else {
+			$user = $this->getUserForApiCall();
+			$userId = $user->id;
+		}
+
+		if (!$userId) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'User not found.',
+				]),
+			];
+		}
+
+		$originalGet = $_GET;
+
+		$_GET['campaignId'] = $campaignId;
+		$_GET['userId'] = $userId;
+
+		$leaderboardAjaxHandler = new CommunityEngagement_AJAX();
+
+		$response = $leaderboardAjaxHandler->campaignLeaderboardOptIn();
+
+		$_GET = $originalGet;
+
+		return $response;
+
+	}
+
+	function unenrollUserFromCampaignLeaderboard() {
+		require_once ROOT_DIR . '/services/CommunityEngagement/AJAX.php';
+
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
+		if (empty($campaignId)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+				]),
+			];
+		}
+
+		if ($filter == 'linkedUserCampaigns') {
+			$userId = $_REQUEST['linkedUserId'];
+		} else {
+			$user = $this->getUserForApiCall();
+			$userId = $user->id;
+		}
+
+		if (!$userId) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'User not found.',
+				]),
+			];
+		}
+
+		$originalGet = $_GET;
+
+		$_GET['campaignId'] = $campaignId;
+		$_GET['userId'] = $userId;
+
+		$leaderboardAjaxHandler = new CommunityEngagement_AJAX();
+
+		$response = $leaderboardAjaxHandler->campaignLeaderboardOptOut();
+
+		$_GET = $originalGet;
+
+		return $response;
+
+
 	}
 
 }
