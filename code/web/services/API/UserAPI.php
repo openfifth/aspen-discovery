@@ -6620,6 +6620,7 @@ class UserAPI extends AbstractAPI {
 						$campaign['name'] = $campaign['campaignName'];
 						$campaign['id'] = $campaign['campaignId'];
 						$campaign['enrolled'] = $campaign['isEnrolled'];
+						$campaign['canEnroll'] = $campaign['canEnroll'];
 						if (isset($campaign['campaignReward'])) {
 							$campaign['rewardName'] = $campaign['campaignReward']['rewardName'];
 							$campaign['displayName'] = $campaign['campaignReward']['displayName'];
@@ -6740,6 +6741,7 @@ class UserAPI extends AbstractAPI {
 				$base['awardAutomatically'] = $campaign->awardAutomatically ?? null;
 				$base['enrolled'] = $campaign->enrolled ?? false;
 				$base['isPast'] = $campaign->isPast ?? false;
+				$base['canEnroll'] = $campaign->canEnroll ?? false;
 
 				if (!empty($campaign->milestones) && is_array($campaign->milestones)) {
 					$base['milestones'] = array_map(function ($milestone) {
