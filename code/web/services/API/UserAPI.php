@@ -105,7 +105,8 @@ class UserAPI extends AbstractAPI {
 					'deleteAspenUser',
 					'getUserCampaigns',
 					'enrollUserInCampaign',
-					'unenrollUserFromCampaign'
+					'unenrollUserFromCampaign',
+					'optUserIntoCampaignEmails'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -6621,6 +6622,7 @@ class UserAPI extends AbstractAPI {
 						$campaign['id'] = $campaign['campaignId'];
 						$campaign['enrolled'] = $campaign['isEnrolled'];
 						$campaign['canEnroll'] = $campaign['canEnroll'];
+						$campaign['optInToCampaignEmailNotifications'] = $campaign['optInToCampaignEmailNotifications'];
 						if (isset($campaign['campaignReward'])) {
 							$campaign['rewardName'] = $campaign['campaignReward']['rewardName'];
 							$campaign['displayName'] = $campaign['campaignReward']['displayName'];
@@ -6742,6 +6744,7 @@ class UserAPI extends AbstractAPI {
 				$base['enrolled'] = $campaign->enrolled ?? false;
 				$base['isPast'] = $campaign->isPast ?? false;
 				$base['canEnroll'] = $campaign->canEnroll ?? false;
+				$base['optInToCampaignEmailNotifications'] = $campaign->optInToCampaignEmailNotifications ?? false;
 
 				if (!empty($campaign->milestones) && is_array($campaign->milestones)) {
 					$base['milestones'] = array_map(function ($milestone) {
@@ -6918,6 +6921,75 @@ class UserAPI extends AbstractAPI {
 		return $response;
 
 
+	}
+
+	function optUserIntoCampaignEmails() {
+		require_once ROOT_DIR . '/services/CommunityEngagement/AJAX.php';
+
+		global $logger;
+		$logger->log("entered optuserinto function", Logger::LOG_ERROR);
+
+		global $offlineMode;
+		if ($offlineMode) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'System is offline',
+				]),
+			];
+		}
+		$filter = $_REQUEST['filter'] ?? 'enrolled';
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+		$optIn = $_REQUEST['optIn'] ?? false;
+
+		$logger->log("filter: " . $filter, Logger::LOG_ERROR);
+		$logger->log("campaignId: " . $campaignId, Logger::LOG_ERROR);
+		$logger->log("optin: " . $optIn, Logger::LOG_ERROR);
+
+		if (empty($campaignId)) {
+			$logger->log("NO CAMPAIGN ID", Logger::LOG_ERROR);
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Campaign ID is missing.',
+				]),
+			];
+		}
+
+		if ($filter == 'linkedUserCampaigns') {
+			$logger->log("in linked user filter", Logger::LOG_ERROR);
+			$userId = $_REQUEST['linkedUserId'];
+		} else {
+			$logger->log("in OTHER filter", Logger::LOG_ERROR);
+
+			$user = $this->getUserForApiCall();
+			$userId = $user->id;
+		}
+
+		if (!$userId) {
+			$logger->log("No user or user ID", Logger::LOG_ERROR);
+
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'User not found.',
+				]),
+			];
+		}
+
+		$originalGet = $_GET;
+
+		$_GET['campaignId'] = $campaignId;
+		$_GET['userId'] = $userId;
+		$_GET['optIn'] = $optIn;
+
+		$notificationAjaxHandler = new CommunityEngagement_AJAX();
+
+		$response = $notificationAjaxHandler->saveCampaignEmailOptInToggle();
+
+		$_GET = $originalGet;
+
+		return $response;
 	}
 
 }

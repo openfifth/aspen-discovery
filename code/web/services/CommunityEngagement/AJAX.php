@@ -603,6 +603,9 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
     public function saveCampaignEmailOptInToggle() {
         require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+        global $logger;
+
+        $logger->log("In save campaign email toggle function", Logger::LOG_ERROR);
 
         $campaignId = $_GET['campaignId'] ?? null;
         $userId = $_GET['userId'] ?? null;
