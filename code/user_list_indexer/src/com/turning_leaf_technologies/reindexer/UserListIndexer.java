@@ -37,7 +37,6 @@ class UserListIndexer {
 	private HashMap<Long, String> locationCodesByHomeLocation = new HashMap<>();
 	private HashSet<Long> usersThatCanShareLists = new HashSet<>();
 	private Http2SolrClient openArchivesServer;
-	private PreparedStatement getListDisplayNameAndAuthorStmt;
 	private final String serverName;
 	private final String baseUrl;
 
@@ -46,14 +45,35 @@ class UserListIndexer {
 		this.dbConn = dbConn;
 		this.logger = logger;
 		this.baseUrl = configIni.get("Site", "url");
-		//Load a list of all list publishers
+		// Load a list of all list publishers, including those with permissions via patron type.
 		try {
-			PreparedStatement listPublishersStmt = dbConn.prepareStatement("SELECT userId FROM user_roles INNER JOIN roles on user_roles.roleId = roles.roleId inner join role_permissions on role_permissions.roleId = roles.roleId where permissionId = (select id from permissions where name = 'Include Lists In Search Results')");
+			String listPublishersSQL =
+				"SELECT DISTINCT userId " +
+					"FROM ( " +
+						// Users with the permission via directly assigned roles.
+						"    SELECT ur.userId " +
+						"    FROM user_roles ur " +
+						"    INNER JOIN roles r ON ur.roleId = r.roleId " +
+						"    INNER JOIN role_permissions rp ON r.roleId = rp.roleId " +
+						"    INNER JOIN permissions p ON rp.permissionId = p.id " +
+						"    WHERE p.name = 'Include Lists In Search Results' " +
+						"    UNION " +
+						// Users with the permission via patron type assigned roles.
+						"    SELECT u.id as userId " +
+						"    FROM user u " +
+						"    INNER JOIN ptype pt ON u.patronType = pt.pType " +
+						"    INNER JOIN roles r ON pt.assignedRoleId = r.roleId " +
+						"    INNER JOIN role_permissions rp ON r.roleId = rp.roleId " +
+						"    INNER JOIN permissions p ON rp.permissionId = p.id " +
+						"    WHERE p.name = 'Include Lists In Search Results' AND pt.assignedRoleId > 0 " +
+					") AS list_publishers";
+			PreparedStatement listPublishersStmt = dbConn.prepareStatement(listPublishersSQL);
 			ResultSet listPublishersRS = listPublishersStmt.executeQuery();
 			while (listPublishersRS.next()){
 				usersThatCanShareLists.add(listPublishersRS.getLong(1));
 			}
-			getListDisplayNameAndAuthorStmt = dbConn.prepareStatement("SELECT title, displayName FROM user_list inner join user on user_id = user.id where user_list.id = ?");
+			listPublishersRS.close();
+			listPublishersStmt.close();
 		}catch (Exception e){
 			logger.error("Error loading a list of users with the listPublisher role");
 		}
@@ -271,6 +291,7 @@ class UserListIndexer {
 				//Get information about all the list titles.
 				getTitlesForListStmt.setLong(1, listId);
 				ResultSet allTitlesRS = getTitlesForListStmt.executeQuery();
+				PreparedStatement getListDisplayNameAndAuthorStmt = dbConn.prepareStatement("SELECT title, displayName FROM user_list INNER JOIN user ON user_id = user.id WHERE user_list.id = ?");
 				while (allTitlesRS.next()) {
 					String source = allTitlesRS.getString("source");
 					String sourceId = allTitlesRS.getString("sourceId");
@@ -357,6 +378,7 @@ class UserListIndexer {
 						}
 					}
 				}
+				getListDisplayNameAndAuthorStmt.close();
 				if (userListSolr.getNumTitles() >= 3) {
 					// Index in the solr catalog
 					SolrInputDocument document = userListSolr.getSolrDocument();
