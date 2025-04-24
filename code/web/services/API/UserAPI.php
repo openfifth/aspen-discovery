@@ -6695,22 +6695,6 @@ class UserAPI extends AbstractAPI {
 			$today = date('Y-m-d');
 			$campaign->isPast = ($campaign->endDate && $campaign->endDate < $today);
 
-			// $rewardDetails = $campaign->getRewardDetails();
-			// if ($rewardDetails) {
-			// 	$logger->log("yes reward details", Logger::LOG_ERROR);
-
-			// 	$campaign->rewardName = $rewardDetails['name'];
-			// 	$logger->log("reward name: " . $campaign->rewardName, Logger::LOG_ERROR);
-
-			// 	$campaign->rewardId = $rewardDetails['id'];
-			// 	$campaign->rewardType = $rewardDetails['rewardType'];
-			// 	$campaign->badgeImage = $rewardDetails['badgeImage'];
-			// 	$campaign->rewardExists = $rewardDetails['rewardExists'];
-			// 	$campaign->displayName = $rewardDetails['displayName'];
-			// 	$campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
-			// } else {
-			// 	$logger->log("no reward details", Logger::LOG_ERROR);
-			// }
 		}
 
 		$campaigns = array_filter($campaigns, function($campaign) use ($filter) {
@@ -6812,11 +6796,9 @@ class UserAPI extends AbstractAPI {
 		}
 		$filter = $_REQUEST['filter'] ?? 'enrolled';
 		$campaignId = $_REQUEST['campaignId'] ?? null;
-		$logger->log("Filter: " . $filter, Logger::LOG_ERROR);
-		$logger->log("Campaign ID: " . $campaignId, Logger::LOG_ERROR);
+		
 
 		if (empty($campaignId)) {
-			$logger->log("NO CAMPAIGN ID", Logger::LOG_ERROR);
 			return [
 				'success' => false,
 				'message' => translate([
@@ -6827,17 +6809,12 @@ class UserAPI extends AbstractAPI {
 
 		if ($filter == 'linkedUserCampaigns') {
 			$userId = $_REQUEST['linkedUserId'];
-			$logger->log("user id: " . $userId, Logger::LOG_ERROR);
 		} else {
-			$logger->log("in corect check", Logger::LOG_ERROR);
 			$user = $this->getUserForApiCall();
 			$userId = $user->id;
-			$logger->log("User: " . print_r($user, true), Logger::LOG_ERROR);
-			$logger->log("User class: " . (is_object($user) ? get_class($user) : gettype($user)), Logger::LOG_ERROR);
 		}
 
 		if (!$userId) {
-			$logger->log("NO user or user ID", Logger::LOG_ERROR);
 
 			return [
 				'success' => false,
@@ -6867,7 +6844,6 @@ class UserAPI extends AbstractAPI {
 	function unenrollUserFromCampaign() {
 		require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
 		global $logger;
-		$logger->log("inside unenrill from campaign", Logger::LOG_ERROR);
 
 		global $offlineMode;
 		global $logger;
@@ -6883,7 +6859,6 @@ class UserAPI extends AbstractAPI {
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 
 		if (empty($campaignId)) {
-			$logger->log("no campaing id", Logger::LOG_ERROR);
 			return [
 				'success' => false,
 				'message' => translate([
@@ -6893,18 +6868,15 @@ class UserAPI extends AbstractAPI {
 		}
 
 		if ($filter == 'linkedUserCampaigns') {
-			$logger->log("filter by linked", Logger::LOG_ERROR);
 
 			$userId = $_REQUEST['linkedUserId'];
 		} else {
-			$logger->log("dont filter by linked", Logger::LOG_ERROR);
 
 			$user = $this->getUserForApiCall();
 			$userId = $user->id;
 		}
 
 		if (!$userId) {
-			$logger->log("no user id", Logger::LOG_ERROR);
 
 			return [
 				'success' => false,
@@ -6934,7 +6906,6 @@ class UserAPI extends AbstractAPI {
 		require_once ROOT_DIR . '/services/CommunityEngagement/AJAX.php';
 
 		global $logger;
-		$logger->log("entered optuserinto function", Logger::LOG_ERROR);
 
 		global $offlineMode;
 		if ($offlineMode) {
@@ -6949,12 +6920,8 @@ class UserAPI extends AbstractAPI {
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 		$optIn = $_REQUEST['optIn'] ?? false;
 
-		$logger->log("filter: " . $filter, Logger::LOG_ERROR);
-		$logger->log("campaignId: " . $campaignId, Logger::LOG_ERROR);
-		$logger->log("optin: " . $optIn, Logger::LOG_ERROR);
 
 		if (empty($campaignId)) {
-			$logger->log("NO CAMPAIGN ID", Logger::LOG_ERROR);
 			return [
 				'success' => false,
 				'message' => translate([
@@ -6964,18 +6931,14 @@ class UserAPI extends AbstractAPI {
 		}
 
 		if ($filter == 'linkedUserCampaigns') {
-			$logger->log("in linked user filter", Logger::LOG_ERROR);
 			$userId = $_REQUEST['linkedUserId'];
 		} else {
-			$logger->log("in OTHER filter", Logger::LOG_ERROR);
 
 			$user = $this->getUserForApiCall();
 			$userId = $user->id;
 		}
 
 		if (!$userId) {
-			$logger->log("No user or user ID", Logger::LOG_ERROR);
-
 			return [
 				'success' => false,
 				'message' => translate([
