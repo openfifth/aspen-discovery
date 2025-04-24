@@ -6764,6 +6764,8 @@ class UserAPI extends AbstractAPI {
 						$eca['rewardImage'] = $activity->rewardImage ?? null;
 						$eca['rewardExists'] = $activity->rewardExists ?? null;
 						$eca['awardAutomatically'] = $activity->awardAutomatically ?? null;
+						$eca['rewardGiven'] = $activity->rewardGiven ?? null;
+						$eca['extraCreditActivityComplete'] = $activity->extraCreditActivityComplete ?? null;
 						return $eca;
 					}, $campaign->extraCreditActivities);
 				}
