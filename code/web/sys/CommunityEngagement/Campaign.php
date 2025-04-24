@@ -1080,6 +1080,8 @@ class Campaign extends DataObject {
 					$extraCreditActivity->totalGoals = CampaignExtraCredit::getExtraCreditGoalCountByCampaign($campaignId, $extraCreditActivityId);
 					$extraCreditActivity->completedGoals = $extraCreditActivityProgress['completed'];
 					$extraCreditActivity->progress = $extraCreditActivityProgress['progress'];
+					$extraCreditActivity->rewardGiven = CampaignExtraCreditActivityUsersProgress::getRewardGivenForExtraCreditActivity($extraCreditActivity->id, $userId, $campaign->id);
+
 
 					if ($extraCreditActivity->completedGoals >= $extraCreditActivity->totalGoals) {
 						$extraCreditActivity->extraCreditActivityComplete = true;
