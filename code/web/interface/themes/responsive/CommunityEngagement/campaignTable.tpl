@@ -40,18 +40,16 @@
                                 </div>
                                 {else}
                                     <div>
-                                        {if $userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['milestoneType'] === 'manual'}
-                                            <button class="btn btn-primary set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}" onclick="AspenDiscovery.CommunityEngagement.manuallyProgressMilestone({$milestone->id}, {$user->id}, {$campaign->id});">
-                                            {translate text="Add Progress" isAdminFacing=true}
-                                            </button>
-                                        {/if}
                                         {translate text="Incomplete" isAdminFacing=true}<br>
                                         <div class="progress" style="width:100%; border:1px solid black; border-radius:4px;height:20px;">
-                                        <div class="progress-bar" role="progressbar" aria-valuenow="{$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}" aria-valuemin="0"
-                                         aria-valuemax="100" style="width: {$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}%; line-height: 20px; text-align: center; color: #fff;background-color:blue;">
-                                            {$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}%
-                                        </div>
-                                    </div>
+                                            <div class="progress-bar" role="progressbar" aria-valuenow="{$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}" aria-valuemin="0"
+                                            aria-valuemax="100" style="width: {$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}%; line-height: 20px; text-align: center; color: #fff;background-color:blue;">
+                                                {$userCampaigns[$campaign->id][$user->id]['milestones'][$milestone->id]['percentageProgress']}%
+                                            </div>
+                                       </div>
+                                        <button class="btn btn-primary set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-milestone-id="{$milestone->id}" onclick="AspenDiscovery.CommunityEngagement.manuallyProgressMilestone({$milestone->id}, {$user->id}, {$campaign->id});">
+                                            {translate text="Add Progress" isAdminFacing=true}
+                                        </button>
                                     </div>
                                 {/if}
                             </td>
