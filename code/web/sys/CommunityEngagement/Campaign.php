@@ -1059,6 +1059,7 @@ class Campaign extends DataObject {
                 //Add completed milestones count to campaign object
                 // $campaign->numCompletedMilestones = $completedMilestonesCount;
                 $campaign->numCampaignMilestones = $numCampaignMilestones;
+				$numCampaignExtraCreditActivities = 0;
 
 				$extraCreditActivities = CampaignExtraCredit::getExtraCreditByCampaign($campaignId);
 				foreach ($extraCreditActivities as $extraCreditActivity) {
