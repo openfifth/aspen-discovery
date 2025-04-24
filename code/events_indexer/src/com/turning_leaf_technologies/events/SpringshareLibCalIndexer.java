@@ -16,7 +16,6 @@ import org.apache.http.util.EntityUtils;
 import org.apache.logging.log4j.Logger;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -101,12 +100,19 @@ class SpringshareLibCalIndexer {
 
 		loadExistingEvents();
 
-		logEntry.addNote("There are " + existingEvents.size() + " events for setting " + settingsId);
+		// Count active (non-deleted) events for reporting.
+		int activeEvents = 0;
+		for (SpringshareLibCalEvent event : existingEvents.values()) {
+			if (!event.isDeleted()) {
+				activeEvents++;
+			}
+		}
+		logEntry.addNote("There are " + activeEvents + " active events for setting " + settingsId + ".");
 	}
 
 	private void loadExistingEvents() {
 		try {
-			PreparedStatement eventsStmt = aspenConn.prepareStatement("SELECT * from springshare_libcal_events WHERE settingsId = ? and deleted = 0");
+			PreparedStatement eventsStmt = aspenConn.prepareStatement("SELECT * FROM springshare_libcal_events WHERE settingsId = ?");
 			eventsStmt.setLong(1, this.settingsId);
 			ResultSet existingEventsRS = eventsStmt.executeQuery();
 			while (existingEventsRS.next()) {
@@ -318,6 +324,7 @@ class SpringshareLibCalIndexer {
 						updateEventStmt.setString(3, rawResponse);
 						updateEventStmt.setLong(4, settingsId);
 						updateEventStmt.setString(5, eventId);
+						updateEventStmt.executeUpdate();
 					} catch (SQLException e) {
 						logEntry.incErrors("Error updating event in database " , e);
 					}
@@ -396,18 +403,21 @@ class SpringshareLibCalIndexer {
 
 		for (SpringshareLibCalEvent eventInfo : existingEvents.values()){
 			try {
-				deleteEventStmt.setLong(1, eventInfo.getId());
-				deleteEventStmt.executeUpdate();
+				// Only mark for deletion if it's not already deleted.
+				if (!eventInfo.isDeleted()) {
+					deleteEventStmt.setLong(1, eventInfo.getId());
+					deleteEventStmt.executeUpdate();
+
+					try {
+						solrUpdateServer.deleteById("libcal_" + settingsId + "_" + eventInfo.getExternalId());
+					} catch (Exception e) {
+						logEntry.incErrors("Error deleting event by id ", e);
+					}
+					logEntry.incDeleted();
+				}
 			} catch (SQLException e) {
 				logEntry.incErrors("Error deleting event ", e);
 			}
-			try {
-				// TODO: set the delete ID correctly after I figure out what the solr id should be James 2022 03 17
-				solrUpdateServer.deleteById("libcal_" + settingsId + "_" + eventInfo.getExternalId());
-			} catch (Exception e) {
-				logEntry.incErrors("Error deleting event by id ", e);
-			}
-			logEntry.incDeleted();
 		}
 
 		try {
@@ -630,7 +640,7 @@ class SpringshareLibCalIndexer {
 			PreparedStatement deleteOrphans = aspenConn.prepareStatement("UPDATE springshare_libcal_events SET deleted = 1 where settingsId = ?");
 			ResultSet eventsSitesRS = getEventsSitesToIndexStmt.executeQuery();
 			while (eventsSitesRS.next()) {
-				long settingsId = eventsSitesRS.getLong("settingsId");	
+				long settingsId = eventsSitesRS.getLong("settingsId");
 				deleteOrphans.setLong(1, settingsId);
 				int deletedEvents = deleteOrphans.executeUpdate();
 				logEntry.incDeletedByNum(deletedEvents);
