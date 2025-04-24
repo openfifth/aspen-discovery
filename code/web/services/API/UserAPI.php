@@ -1736,13 +1736,14 @@ class UserAPI extends AbstractAPI {
 	}
 
 	function renewItem(): array {
+		global $library;
 		$source = $_REQUEST['itemSource'] ?? null;
 		$itemBarcode = $_REQUEST['itemBarcode'] ?? null;
 		$recordId = $_REQUEST['recordId'] ?? null;
 
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
-			if ($source == 'ils' || $source == null) {
+			if ($source == 'ils' || $source == null || $source == $library->interLibraryLoanName) {
 				$result = $user->renewCheckout($recordId, $itemBarcode);
 
 				if(isset($result['confirmRenewalFee']) && $result['confirmRenewalFee']) {
