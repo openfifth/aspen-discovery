@@ -99,11 +99,15 @@
                                                     </button>
                                                 </td>
                                                 <td>
-                                                    {if $userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['extraCreditRewardGiven'] == 0}
-                                                        <button class="btn btn-primary set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-extraCreditActivity-id="{$extraCreditActivity->id}" onclick="AspenDiscovery.CommunityEngagement.extraCreditRewardGiven({$user->id}, {$campaign->id}, {$extraCreditActivity->id});">
-                                                            {translate text="Give Reward" isAdminFacing=true}
-                                                        </button>
-                                                    {else}
+                                                   {if $userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['extraCreditRewardGiven'] == 0}
+                                                        {if $extraCreditActivity->rewardType == 1 && $extraCreditActivity->awardAutomatically == 1 && $userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['extraCreditComplete'] == 1}
+                                                            {translate text="Awarded Automatically" isAdminFacing=true}
+                                                        {else}
+                                                            <button class="btn btn-primary set-reward-btn-milestone" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-extraCreditActivity-id="{$extraCreditActivity->id}" onclick="AspenDiscovery.CommunityEngagement.extraCreditRewardGiven({$user->id}, {$campaign->id}, {$extraCreditActivity->id});">
+                                                                {translate text="Give Reward" isAdminFacing=true}
+                                                            </button>
+                                                        {/if}
+                                                    {elseif $userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['extraCreditRewardGiven'] == 1}
                                                         {translate text="Reward Given" isAdminFacing=true}
                                                     {/if}
                                                 </td>
