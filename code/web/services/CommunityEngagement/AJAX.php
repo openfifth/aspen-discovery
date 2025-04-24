@@ -516,6 +516,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
         require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
         require_once ROOT_DIR . '/sys/Account/User.php';
         require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+        global $interface;
 
         $campaignId = $_GET['campaignId'];
         $userId = $_GET['userId'];
@@ -583,6 +584,14 @@ class CommunityEngagement_AJAX extends JSON_Action {
             ]);
         }
 
+        $interface->assign('campaignId', $campaignId);
+        $interface->assign('userId', $userId);
+        $interface->assign('user', $user);
+        $interface->assign('campaignName', $campaignName ?? '');
+        $interface->assign('isOptedIn', $isOptedIn);
+        $interface->assign('emailReminder', $emailReminder);
+        $interface->assign('sliderState', $sliderState);
+
 
         return [
             'success' => true,
@@ -590,10 +599,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
                 'text' => 'Campaign Notification Options',
                 'isPublicFacing' => true
             ]),
-            'modalBody' => translate([
-                'text' => 'Opt in to campaign email updates for ' .$campaignName . ':',
-                'isPublicFacing' => true,
-            ]) . '<label class="switch"><input type="checkbox" id="emailOptInSlider"' . $sliderState . '><span class="slider"></span></label><br>' . $emailReminder,
+            'modalBody' => $interface->fetch('CommunityEngagement/campaignEmailOptInForm.tpl'),
             'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.CommunityEngagement.handleCampaignEnrollment($campaignId, $userId, $(\"#emailOptInSlider\").prop(\"checked\") ? 1 : 0)'>" . translate([
                 'text' => 'Submit',
                 'isPublicFacing' => true,
@@ -606,6 +612,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
         global $logger;
 
         $logger->log("In save campaign email toggle function", Logger::LOG_ERROR);
+        global $interface;
 
         $campaignId = $_GET['campaignId'] ?? null;
         $userId = $_GET['userId'] ?? null;
@@ -624,6 +631,11 @@ class CommunityEngagement_AJAX extends JSON_Action {
                 ]),
             ];
         }
+        $campaign = new Campaign();
+        $campaign->id = $campaignId;
+        if ($campaign->find(true)) {
+            $campaignName = $campaign->name;
+        }
 
 
         $userCampaign = new UserCampaign();
@@ -636,11 +648,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
         }
         if ($success) {
             if ($userCampaign->optInToCampaignEmailNotifications == 1) {
-                $campaign = new Campaign();
-                $campaign->id = $campaignId;
-                if ($campaign->find(true)) {
-                    $campaignName = $campaign->name;
-                }
+               
 
                 $user = new User();
                 $user->id = $userId;
@@ -651,6 +659,8 @@ class CommunityEngagement_AJAX extends JSON_Action {
             }
             $userCampaign->checkAndHandleCampaignCompletion($userId, $campaignId);
 
+            $interface->assign('campaignName', $campaignName);
+
     
             return [
                 'success' => true,
@@ -658,10 +668,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
                     'text' => 'Success',
                     'isPublicFacing' => true,
                 ]),
-                'message' => translate([
-                    'text' => 'You have updated your campaign notification preferences.',
-                    'isPublicFacing' => true,
-                ])
+                'message' => $interface->fetch('CommunityEngagement/saveCampaignEmailOptInForm.tpl'),
             ];
         } else {
             return [
