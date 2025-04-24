@@ -80,7 +80,7 @@
 							</div>
 						</div>
 					</div>
-					{if array_key_exists('Community Engagement', $enabledModules)}
+					{if array_key_exists('Community Engagement', $enabledModules) && !$highlightCommunityEngagement}
 						<div class="row">
 							<div class="col-sm-12">&nbsp;</div>
 						</div>
