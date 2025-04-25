@@ -93,11 +93,27 @@ fi
 dataDir="/data/aspen-discovery/$SITE_NAME"
 localDir="/usr/local/aspen-discovery/code/web"
 
-directories=(images files fonts)
+directories=(files images fonts)
 for dir in "${directories[@]}"; do
 
-	ln -sfn "$dataDir/$dir" "$localDir/$dir"
-	echo "%   * Created symlink: $dataDir/$dir -> $localDir/$dir"
+	source="$localDir/$dir"
+    dest="$dataDir/$dir"
+
+    # Ensure persistent target directory exists
+    mkdir -p "$dest"
+
+    # Move original data only if target is empty
+    if [ -d "$source" ] && [ "$(ls -A "$dest")" == "" ]; then
+        mv "$source"/* "$dest"/
+    fi
+
+    # Remove the source directory or symlink
+	rm -rf "$source"
+
+    # Create symlink
+    ln -s "$dest" "$source"
+
+	echo "%   * Created symlink: $source → $dest"
 done
 
 echo "%   * Starting Apache"
