@@ -14,14 +14,25 @@ $mysqlConnectionCommand = "mariadb -u$databaseUser -p$databasePassword -h$databa
 	$databasePort != "3306" ?? $mysqlConnectionCommand .= " --port=$databasePort";
 
 //Check if aspen database has already been initialized
-try {
-	$statement = 'SELECT libraryId FROM library LIMIT 1;';
-	$aspenDatabase = new PDO($databaseDsn, $databaseUser, $databasePassword);
-	$updateUserStmt = $aspenDatabase->prepare($statement);
-} catch (PDOException $e) {
-	echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
-	echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
-	die(1);
+
+$tries = 0;
+$databaseIsDown = true;
+
+while ($databaseIsDown) {
+	try {
+		$statement = 'SELECT libraryId FROM library LIMIT 1;';
+		$aspenDatabase = new PDO($databaseDsn, $databaseUser, $databasePassword);
+		$updateUserStmt = $aspenDatabase->prepare($statement);
+		$databaseIsDown = false;
+	} catch (PDOException $e) {
+			if ($tries == 5){
+				echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
+				echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
+				die(1);
+			}
+			sleep(5);
+			$tries++;
+	}
 }
 
 try {
