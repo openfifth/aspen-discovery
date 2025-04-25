@@ -49,6 +49,7 @@ Disallow: /Record/*/Search/
 Disallow: /Record/AJAX
 Disallow: /Record/Search/
 Disallow: /Search/AJAX
+Disallow: /Talpa/*
 Disallow: /SideLoads/*/AJAX*
 Disallow: /SideLoads/AJAX
 Disallow: /SnapPay/Complete
