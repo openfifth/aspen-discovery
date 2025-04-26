@@ -6177,7 +6177,7 @@ class Koha extends AbstractIlsDriver {
 
 				$result = [
 					'success' => true,
-					'message' => 'Updated Succeeded!',
+					'message' => 'Update Succeeded!',
 				];
 			} else {
 				$result = [
