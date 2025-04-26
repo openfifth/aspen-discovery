@@ -2137,8 +2137,13 @@ class Sierra extends Millennium {
 				} else {
 					$parts = preg_split('/\s+/', $line2);
 					if (count($parts) >= 3) {
-						$user->_zip = array_pop($parts);
-						$user->_state = array_pop($parts);
+						$lastpart = array_pop($parts);
+						if (is_numeric($lastpart)) {
+							$user->_zip = $lastpart;
+							$user->_state = array_pop($parts);
+						} else {
+							$user->_state = $lastpart;
+						}
 						$user->_city = implode(' ', $parts);
 					} else {
 						$user->_city = $line2;
