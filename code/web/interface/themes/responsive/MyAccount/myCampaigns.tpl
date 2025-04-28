@@ -477,7 +477,7 @@
                                                 <td>{$milestone->name}</td>
                                                 <td>
                                                     {if $milestone->displayName}
-                                                        {$milestone->rewardName}
+                                                        {$milestone->rewardName}<br>
                                                     {/if}
                                                     {if $milestone->rewardType == 1 && $milestone->rewardExists}
                                                         <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
