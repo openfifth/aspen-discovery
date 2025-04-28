@@ -200,9 +200,11 @@
                                                         {/if}
                                                     </td>
                                                    <td style="position: relative; text-align: center; vertical-align: middle;">
-                                                        <div class="progress" style="width:100%; border:1px solid black; border-radius:4px; height:20px;">
+                                                        <div class="progress" style="width:100%; border:1px solid black; border-radius:4px; height:20px; position: relative; box-sizing: border-box;">
                                                             <div class="progress-bar" role="progressbar" aria-valuenow="{$extraCreditActivity->progress}" aria-valuemin="0"
-                                                                aria-valuemax="100" style="width: {$extraCreditActivity->progress}%; line-height: 20px; text-align: center; color: #fff;">
+                                                                aria-valuemax="100" style="width: {$extraCreditActivity->progress}%; height: 100%; line-height: 20px; text-align: center; color: #fff;">
+                                                            </div>
+                                                            <div class="progress-text" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 12px; line-height: 20px;">
                                                                 {$extraCreditActivity->progress}%
                                                             </div>
                                                         </div>
