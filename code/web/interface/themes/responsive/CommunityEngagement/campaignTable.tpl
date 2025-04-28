@@ -93,7 +93,9 @@
                                             <tr>
                                                 <td>{$extraCreditActivity->name}</td>
                                                 <td>
-                                                    {$userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['percentageProgress']}%
+                                                    <span style="margin-right: 10px">
+                                                        {$userCampaigns[$campaign->id][$user->id]['extraCreditActivities'][$extraCreditActivity->id]['percentageProgress']}%
+                                                    </span>
                                                      <button class="btn btn-primary set-reward-btn-extra-credit" data-user-id="{$user->id}" data-campaign-id="{$campaign->id}" data-extraCreditActivity-id="{$extraCreditActivity->id}" onclick="AspenDiscovery.CommunityEngagement.addProgressToExtraCreditActivity({$extraCreditActivity->id}, {$user->id}, {$campaign->id});">
                                                         {translate text="Add Progress" isAdminFacing=true}
                                                     </button>
