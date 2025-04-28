@@ -1219,7 +1219,7 @@ class Campaign extends DataObject {
                     }
 
 					foreach ($extraCreditActivities as $extraCreditActivity) {
-						$extraCreditActivityProgress = CampaignExtraCredit::getExtraCreditActivityProgress($campain->id, $linkedUser->id, $extraCreditActivity->id);
+						$extraCreditActivityProgress = CampaignExtraCredit::getExtraCreditActivityProgress($campaign->id, $linkedUser->id, $extraCreditActivity->id);
 						$completedExtraCreditGoals = $extraCreditActivityProgress['completed'];
 						$totalExtraCreditGoals = CampaignExtraCredit::getExtraCreditGoalCountByCampaign($campaign->id, $extraCreditActivity->id);
 						if ($extraCreditActivityProgress['progress'] >= 100) {
