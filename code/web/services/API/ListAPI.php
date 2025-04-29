@@ -1819,31 +1819,29 @@ class ListAPI extends AbstractAPI {
 			if (!empty($titleResult->isbns)) {
 				foreach ($titleResult->isbns as $isbns) {
 					$isbn = empty($isbns->isbn13) ? $isbns->isbn10 : $isbns->isbn13;
-					if ($isbn) {
-						//look the title up by ISBN
-						/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
-						$searchObject = SearchObjectFactory::initSearchObject(); // QUESTION: Does this need to be done within the Loop??
-						$searchObject->init();
-						$searchObject->clearFacets();
-						$searchObject->clearFilters();
-						$searchObject->setBasicQuery($isbn, "ISN");
-						$result = $searchObject->processSearch(true, false);
-						if ($result && $searchObject->getResultTotal() >= 1) {
-							$recordSet = $searchObject->getResultRecordSet();
-							foreach ($recordSet as $recordKey => $record) {
-								if (!empty($record['id'])) {
-									$aspenID = $record['id'];
-									break;
-								}
-							}
-						}
+					if (!empty($isbn)) {
+						$aspenID = $this->_getGroupedWorkIdForISBN($isbn);
 					}
-					//break if we found a aspen id for the title
+					//break if we found an aspen id for the title
 					if ($aspenID != null) {
 						break;
 					}
 				}
-			}//Done checking ISBNs
+			} else {
+				//No ISBNs provided this may happen if the title only has an ISBN 13
+				if (!empty($titleResult->book_details)) {
+					$firstBookDetail = reset($titleResult->book_details);
+					$isbn = null;
+					if (!empty($firstBookDetail->primary_isbn13)) {
+						$isbn = $firstBookDetail->primary_isbn13;
+					}else if (!empty($firstBookDetail->primary_isbn10)){
+						$isbn = $firstBookDetail->primary_isbn10;
+					}
+					if ($isbn) {
+						$aspenID = $this->_getGroupedWorkIdForISBN($isbn);
+					}
+				}
+			}
 			if ($aspenID != null) {
 				$note = "#{$titleResult->rank} on the {$titleResult->display_name} list for {$titleResult->published_date}.";
 				if ($titleResult->rank_last_week != 0) {
@@ -1886,6 +1884,28 @@ class ListAPI extends AbstractAPI {
 		}
 
 		return $results;
+	}
+
+	private function _getGroupedWorkIdForISBN($isbn) : ?string{
+		$aspenID = null;
+		//look the title up by ISBN
+		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
+		$searchObject = SearchObjectFactory::initSearchObject(); // QUESTION: Does this need to be done within the Loop??
+		$searchObject->init();
+		$searchObject->clearFacets();
+		$searchObject->clearFilters();
+		$searchObject->setBasicQuery($isbn, "ISN");
+		$result = $searchObject->processSearch(true, false);
+		if ($result && $searchObject->getResultTotal() >= 1) {
+			$recordSet = $searchObject->getResultRecordSet();
+			foreach ($recordSet as $recordKey => $record) {
+				if (!empty($record['id'])) {
+					$aspenID = $record['id'];
+					break;
+				}
+			}
+		}
+		return $aspenID;
 	}
 
 	function getBreadcrumbs(): array {
