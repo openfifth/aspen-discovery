@@ -306,6 +306,7 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%library.email%', $library->contactEmail, $text);
 			$text = str_ireplace('%user.firstname%', $user->firstname, $text);
 			$text = str_ireplace('%user.lastname%', $user->lastname, $text);
+			$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName, $text);
 			$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode, $text);
 		} elseif ($this->templateType == 'campaignStart' || $this->templateType == 'campaignEnroll' || $this->templateType == 'campaignComplete' || $this->templateType == 'milestoneComplete' || $this->templateType == 'campaignEnding' || $this->templateType == 'staffCampaignComplete') {
 			$user = $parameters['user'];
@@ -323,6 +324,7 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%library.email%', $library->contactEmail, $text);
 			$text = str_ireplace('%user.firstname%', $user->firstname, $text);
 			$text = str_ireplace('%user.lastname%', $user->lastname, $text);
+			$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName, $text);
 			$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode, $text);
 			$text = str_replace('%campaign.name%', $parameters['campaignName'], $text);
 			$text = str_replace('%milestone.name%', $parameters['milestoneName'], $text);
