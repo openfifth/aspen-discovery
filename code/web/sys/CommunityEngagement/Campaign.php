@@ -67,6 +67,7 @@ class Campaign extends DataObject {
 				'property' => 'availableMilestones',
 				'type' => 'oneToMany',
 				'label' => 'Milestones',
+				'note' => 'Each milestone can only be used once per campaign',
 				'renderAsHeading' => true,
 				'description' => 'The Milestones to be linked to this campaign',
 				'keyThis' => 'campaignId',
