@@ -43,6 +43,14 @@ function getUpdates25_06_00(): array {
                 "ALTER TABLE library MODIFY COLUMN patronNameDisplayStyle ENUM('firstinitial_lastname','lastinitial_firstname','firstinitial_middleinitial_lastname','firstname_middleinitial_lastinitial', 'preferredname_lastinitial') DEFAULT 'firstinitial_lastname'",
             ]
         ], //add_preferred_name_option_to_dropdown
+        'allow_replacement_of_all_instances_of_first_name' => [
+            'title' => 'Allow Replacement Of All Instances Of First Name',
+            'description' => 'Allow replacement of all instances of first name with the patron\'s preferred name from the ILS id set',
+            'continueOnError' => false,
+            'sql' => [
+                "ALTER TABLE library ADD COLUMN replaceAllFirstNameWithPreferredName TINYINT(1) DEFAULT 0",
+            ]
+        ], //allow_replacement_of_all_instances_of_first_name
 
 		//chloe - Open Fifth
 
