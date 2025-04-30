@@ -320,7 +320,7 @@ class EventType extends DataObject {
 			return $type->archived;
 		}else{
 			//This has been deleted, treat it as archived
-			return false;
+			return true;
 		}
 
 	}
