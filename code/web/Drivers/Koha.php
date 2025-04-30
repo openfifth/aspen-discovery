@@ -1112,7 +1112,7 @@ class Koha extends AbstractIlsDriver {
 		global $logger;
 
 		/** @noinspection SqlResolve */
-		$sql = "SELECT *, borrowernumber, cardnumber, surname, firstname, streetnumber, streettype, address, address2, city, state, zipcode, country, email, phone, mobile, categorycode, dateexpiry, password, userid, branchcode, opacnote, privacy, dateofbirth from borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patronId) . "';";
+		$sql = "SELECT *, borrowernumber, cardnumber, surname, firstname, preferred_name, streetnumber, streettype, address, address2, city, state, zipcode, country, email, phone, mobile, categorycode, dateexpiry, password, userid, branchcode, opacnote, privacy, dateofbirth from borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patronId) . "';";
 
 		$userExistsInDB = false;
 		$lookupUserResult = mysqli_query($this->dbConnection, $sql, MYSQLI_USE_RESULT);
@@ -1186,6 +1186,17 @@ class Koha extends AbstractIlsDriver {
 					$forceDisplayNameUpdate = true;
 				}
 			}
+			$userPreferredName = $userFromDb['preferred_name'];
+			if ($user->userPreferredName != $userPreferredName) {
+				$user->userPreferredName = $userPreferredName ?? '';
+				$forceDisplayNameUpdate = true;
+			} else {
+				if (!$user->userPreferredName) {
+					$user->userPreferredName = '';
+					$forceDisplayNameUpdate = true;
+				}
+			}
+
 			if ($forceDisplayNameUpdate) {
 				$user->displayName = '';
 			}
