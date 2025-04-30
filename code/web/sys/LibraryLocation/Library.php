@@ -1649,11 +1649,13 @@ class Library extends DataObject {
 									'firstinitial_lastname' => 'First Initial. Last Name',
 									'lastinitial_firstname' => 'First Name Last Initial.',
 									'firstinitial_middleinitial_lastname' => 'First Initial. Middle Initial. Last Name',
-									'firstname_middleinitial_lastinitial' => 'First Name Middle Initial. Last Initial.'
+									'firstname_middleinitial_lastinitial' => 'First Name Middle Initial. Last Initial.',
+									'preferredname_lastinitial' => 'Preferred Name Last Initial.'
 								],
 								'label' => 'Patron Display Name Style',
 								'description' => 'How to generate the patron display name',
 								'permissions' => ['Library ILS Options'],
+								'note' => 'Preferred Name Last Initial currently applies to Koha only',
 							],
 							'allowProfileUpdates' => [
 								'property' => 'allowProfileUpdates',
