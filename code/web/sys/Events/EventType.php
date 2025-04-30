@@ -149,6 +149,9 @@ class EventType extends DataObject {
 		$event->eventTypeId = $this->id;
 		$event->deleted = 0;
 		if ($event->count() == 0) {
+			//Delete links to libraries and locations as well
+			$this->clearLocations();
+			$this->clearLibraries();
 			return parent::delete($useWhere);
 		}
 		return 0;
@@ -313,8 +316,13 @@ class EventType extends DataObject {
 	public static function isArchived(string $typeId): bool {
 		$type = new EventType();
 		$type->id = $typeId;
-		$type->find(true);
-		return $type->archived;
+		if ($type->find(true)) {
+			return $type->archived;
+		}else{
+			//This has been deleted, treat it as archived
+			return false;
+		}
+
 	}
 
 	public function getFieldSetFields() {
