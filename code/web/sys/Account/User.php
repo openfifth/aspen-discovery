@@ -17,6 +17,7 @@ class User extends DataObject {
 	public $password;
 	public $firstname;
 	public $lastname;
+	public $userPreferredName;
 	public $email;
 	public $phone;
 	public $patronType;
@@ -170,6 +171,7 @@ class User extends DataObject {
 			'overdriveEmail',
 			'alternateLibraryCardPassword',
 			'axis360Email',
+			'userPreferredName',
 		];
 	}
 
@@ -1224,6 +1226,12 @@ class User extends DataObject {
 				'type' => 'label',
 				'label' => 'Last Name',
 				'description' => 'The last name of the user.',
+			],
+			'userPreferredName' => [
+				'property' => 'userPreferredName',
+				'type' => 'label',
+				'label' => 'User Preferred Name',
+				'description' => 'The preferred name of the user.',
 			],
 			'displayName' => [
 				'property' => 'displayName',
@@ -5309,6 +5317,10 @@ class User extends DataObject {
 					for ($i = 1; $i < count($firstNames); $i++) {
 						$displayName .= ' ' . substr($firstNames[$i], 0, 1) . '.';
 					}
+					$displayName .= ' ' . substr($this->lastname, 0, 1) . '.';
+					$this->__set('displayName', trim($displayName));
+				} elseif ($homeLibrary->patronNameDisplayStyle == 'preferredname_lastinitial') {
+					$displayName = !empty($this->userPreferredName) ? $this->userPreferredName : $this->firstname;
 					$displayName .= ' ' . substr($this->lastname, 0, 1) . '.';
 					$this->__set('displayName', trim($displayName));
 				}
