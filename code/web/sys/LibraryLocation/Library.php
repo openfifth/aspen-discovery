@@ -243,6 +243,7 @@ class Library extends DataObject {
 	public $restrictOwningBranchesAndSystems;
 	public $allowNameUpdates;
 	public $setUsePreferredNameInIlsOnUpdate;
+	public $replaceAllFirstNameWithPreferredName;
 	public $allowDateOfBirthUpdates;
 	public $allowPatronAddressUpdates;
 	public $cityStateField;
@@ -1706,6 +1707,17 @@ class Library extends DataObject {
 								'note' => 'Applies to Symphony Only',
 								'hideInLists' => true,
 								'default' => 1,
+								'readOnly' => false,
+								'permissions' => ['Library ILS Connection'],
+							],
+							'replaceAllFirstNameWithPreferredName' => [
+								'property' => 'replaceAllFirstNameWithPreferredName',
+								'type' => 'checkbox',
+								'label' => 'Use Preferred Name In Place of First Name',
+								'description' => 'Use the user\'s preferred name from their ILS in place of their first name in all instances',
+								'note' => 'Applies to Koha Only',
+								'hideInLists' => true,
+								'default' => 0,
 								'readOnly' => false,
 								'permissions' => ['Library ILS Connection'],
 							],
