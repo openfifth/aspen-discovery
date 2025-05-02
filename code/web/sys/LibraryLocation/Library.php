@@ -1714,7 +1714,7 @@ class Library extends DataObject {
 								'property' => 'replaceAllFirstNameWithPreferredName',
 								'type' => 'checkbox',
 								'label' => 'Use Preferred Name In Place of First Name',
-								'description' => 'Use the user\'s preferred name from their ILS in place of their first name in all instances',
+								'description' => 'Use the user\'s preferred name from their ILS in place of their first name in all instances where their first name would be used e.g. email templates',
 								'note' => 'Applies to Koha Only',
 								'hideInLists' => true,
 								'default' => 0,
