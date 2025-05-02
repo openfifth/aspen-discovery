@@ -11,10 +11,10 @@
 	{else}
 		{if is_array($renew_message_data.message)}
 			{foreach from=$renew_message_data.message item=msg}
-				<div class="alert alert-danger">{translate text=$msg}</div>
+				<div class="alert alert-danger">{translate text=$msg isPublicFacing=true}</div>
 			{/foreach}
 		{else}
-			<div class="alert alert-danger">{translate text=$renew_message_data.message}</div>
+			<div class="alert alert-danger">{translate text=$renew_message_data.message isPublicFacing=true}</div>
 		{/if}
 	{/if}
 	{if !empty($renewResults.Total)}
