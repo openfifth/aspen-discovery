@@ -2856,8 +2856,8 @@ class Library extends DataObject {
 						'type' => 'enum',
 						'values' => [
 							0 => 'No Lists',
-							'1' => 'Lists from this library',
-							'3' => 'Lists from library list publishers Only',
+							'1' => 'Lists from this library', // no NYT
+							'3' => 'Lists from library list publishers Only', //includes NYT
 							'4' => 'Lists from all list publishers',
 							'2' => 'All Lists',
 						],

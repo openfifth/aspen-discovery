@@ -951,13 +951,23 @@ class UserList extends DataObject {
 								//Include no lists
 								/** @noinspection PhpConditionAlreadyCheckedInspection */
 								$okToShow = false;
-							}elseif ($searchLocation->publicListsToInclude == 1 || $searchLocation->publicListsToInclude == 4) {
-								//Lists from this location
+							}elseif ($searchLocation->publicListsToInclude == 2) {
+								//Lists from this location (no NYT)
+								$owningLocationId = $userList->getOwningLocationId();
+								$okToShow = $owningLocationId == $searchLocation->locationId;
+								$ownedByLibrary = $owningLocationId == $searchLocation->locationId;
+							}elseif ($searchLocation->publicListsToInclude == 5) {
+								//Lists from list publishers at this location Only (includes NYT)
 								$owningLocationId = $userList->getOwningLocationId();
 								$okToShow = $owningLocationId == null || $owningLocationId == -1 || $owningLocationId == $searchLocation->locationId;
 								$ownedByLibrary = $owningLocationId == $searchLocation->locationId;
-							}elseif ($searchLocation->publicListsToInclude == 2 || $searchLocation->publicListsToInclude == 5) {
-								//Lists from this library
+							}elseif ($searchLocation->publicListsToInclude == 1) {
+								//Lists from this library (no NYT)
+								$owningLibraryId = $userList->getOwningLibraryId();
+								$okToShow = $owningLibraryId == $searchLibrary->libraryId;
+								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
+							}elseif ($searchLocation->publicListsToInclude == 4) {
+								//Lists from library list publishers Only (includes NYT)
 								$owningLibraryId = $userList->getOwningLibraryId();
 								$okToShow = $owningLibraryId == null || $owningLibraryId == -1 || $owningLibraryId == $searchLibrary->libraryId;
 								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
@@ -972,8 +982,13 @@ class UserList extends DataObject {
 								//Include no lists
 								/** @noinspection PhpConditionAlreadyCheckedInspection */
 								$okToShow = false;
-							}else if ($searchLibrary->publicListsToInclude == 1 || $searchLibrary->publicListsToInclude == 3) {
-								//Lists from this library (these 2 options are equivalent since we restrict to only searchable lists)
+							}else if ($searchLibrary->publicListsToInclude == 1) {
+								//Lists from this library (no NYT)
+								$owningLibraryId = $userList->getOwningLibraryId();
+								$okToShow = $owningLibraryId == $searchLibrary->libraryId;
+								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;
+							}else if ($searchLibrary->publicListsToInclude == 3) {
+								//Lists from this library (includes NYT)
 								$owningLibraryId = $userList->getOwningLibraryId();
 								$okToShow = $owningLibraryId == null || $owningLibraryId == -1 || $owningLibraryId == $searchLibrary->libraryId;
 								$ownedByLibrary = $owningLibraryId == $searchLibrary->libraryId;

@@ -773,10 +773,10 @@ class Location extends DataObject {
 						'type' => 'enum',
 						'values' => [
 							0 => 'No Lists',
-							'1' => 'Lists from this library',
-							'4' => 'Lists from library list publishers Only',
-							'2' => 'Lists from this location',
-							'5' => 'Lists from list publishers at this location Only',
+							'1' => 'Lists from this library', //Does not include NYT
+							'4' => 'Lists from library list publishers Only', //Includes NYT
+							'2' => 'Lists from this location', //Does not include NYT
+							'5' => 'Lists from list publishers at this location Only', //Includes NYT
 							'6' => 'Lists from all list publishers',
 							'3' => 'All Lists',
 						],
