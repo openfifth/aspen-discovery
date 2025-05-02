@@ -101,6 +101,18 @@ class Campaign extends DataObject {
 				'description' => 'The reward given for completing the campaign.',
 				'required' => true,
 			],
+			'enrollmentStartDate' => [
+                'property' => 'enrollmentStartDate',
+                'type' => 'date',
+                'label' => 'Enrollment Period Start Date',
+                'description' => 'The date from which patrons can enroll in the campaign',
+            ],
+            'enrollmentEndDate' => [
+                'property' => 'enrollmentEndDate',
+                'type' => 'date',
+                'label' => 'Enrollment Period End Date',
+                'description' => 'The date patrons can enroll in the campaign until',
+            ],
 			'allowPatronTypeAccess' => [
 				'property' => 'allowPatronTypeAccess',
 				'type' => 'multiSelect',
