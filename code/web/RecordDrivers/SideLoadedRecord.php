@@ -145,7 +145,7 @@ class SideLoadedRecord extends BaseEContentDriver {
 					'isAdminEnteredData' => true,
 				]);
 			}
-			$action = $configArray['Site']['url'] . '/' . $this->getModule() . '/' . $this->id . "/AccessOnline?index=$i";
+			$action = $configArray['Site']['url'] . '/' . $this->getModule() . '/AccessOnline?id=' . $this->id . "&index=$i";
 			if ($itemInfo != null) {
 				$action .= '&itemId=' . $itemInfo->itemId;
 			}
