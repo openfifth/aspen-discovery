@@ -3736,7 +3736,7 @@ class Library extends DataObject {
 					'campaignLeaderboardDisplay' => [
 						'property' => 'campaignLeaderboardDisplay',
 						'type' => 'enum',
-						'label' => 'Campaign Leaderbaord Display',
+						'label' => 'Campaign Leaderboard Display',
 						'description' => 'Whether to display the rank on the leaderboard by branch or by user',
 						'values' => [
 							'displayBranch' => 'Display Branch',
