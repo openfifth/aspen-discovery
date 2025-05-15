@@ -218,7 +218,7 @@ class Translator {
 						if ($escape) {
 							$translation->translated = htmlentities( $translation->translation);
 						}
-						if ($translationMode) {
+						if ($translationMode && !$inAttribute) {
 							if ($translation->translated) {
 								$translationStatus = 'translated';
 							} else {
