@@ -29,14 +29,14 @@
                 </thead>
                 <tbody>
                 {foreach from=$campaignList item="campaign" key="resultIndex"}
-                    {capture name="unenrollLabel"}{translate text="Unenroll from {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="enrollLabel"}{translate text="Enroll in {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="campaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="toggleLabel"}{translate text="Toggle Manage Campaign Options for {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="joinLeaderboard"}{translate text="Join Leaderboard for {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="leaveLeaderboard"}{translate text="Leave Leaderboard for {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="emailOptOut"}{translate text="Opt Out of Emails for {$campaign->name}" isPublicFacing=true}{/capture}
-                    {capture name="emailOptIn"}{translate text="Opt Into Emails for {$campaign->name}" isPublicFacing=true}{/capture}
+                    {capture name="unenrollLabel"}{translate text="Unenroll from {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="enrollLabel"}{translate text="Enroll in {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="campaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="toggleLabel"}{translate text="Toggle Manage Campaign Options for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="joinLeaderboard"}{translate text="Join Leaderboard for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="leaveLeaderboard"}{translate text="Leave Leaderboard for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="emailOptOut"}{translate text="Opt Out of Emails for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                    {capture name="emailOptIn"}{translate text="Opt Into Emails for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
                     {if $campaign->enrolled && ($campaign->isActive || $campaign->isUpcoming)}
                         <tr>
                             <td>{$campaign->name}</td>
@@ -189,9 +189,9 @@
                         </thead>
                         <tbody>
                             {foreach from=$linkedUser.campaigns item="campaign" key="resultIndex"}
-                                {capture name="linkedUnenrollLabel"}{translate text="Unenroll from {$campaign.campaignName}" isPublicFacing=true}{/capture}
-                                {capture name="linkedEnrollLabel"}{translate text="Enroll in {$campaign.campaignName}" isPublicFacing=true}{/capture}
-                                {capture name="linkedCampaignInfoLabel"}{translate text="See data for {$campaign.campaignName}" isPublicFacing=true}{/capture}
+                                {capture name="linkedUnenrollLabel"}{translate text="Unenroll from {$campaign.campaignName}" isPublicFacing=true inAttribute=true}{/capture}
+                                {capture name="linkedEnrollLabel"}{translate text="Enroll in {$campaign.campaignName}" isPublicFacing=true inAttribute=true}{/capture}
+                                {capture name="linkedCampaignInfoLabel"}{translate text="See data for {$campaign.campaignName}" isPublicFacing=true inAttribute=true}{/capture}
                                 {assign var="showLinkedUserAddProgressColumn" value=false}
                                     {foreach from=$campaign.milestones item="milestone"}
                                         {if $milestone.allowPatronProgressInput && $campaign.isEnrolled}
@@ -313,9 +313,9 @@
                 </thead>
                 <tbody>
                 {foreach from=$campaignList item="campaign" key="resultIndex"}
-                {capture name="activeCampaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true}{/capture}
-                {capture name="activeUnenrollLabel"}{translate text="Unenroll from {$campaign->name}" isPublicFacing=true}{/capture}
-                {capture name="activeEnrollLabel"}{translate text="Enroll in {$campaign->name}" isPublicFacing=true}{/capture}
+                {capture name="activeCampaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                {capture name="activeUnenrollLabel"}{translate text="Unenroll from {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
+                {capture name="activeEnrollLabel"}{translate text="Enroll in {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
 
                     {if $campaign->isActive}
                         <tr>
@@ -504,7 +504,7 @@
                 </thead>
                 <tbody>
                 {foreach from=$pastCampaigns item="campaign" key="resultIndex"}
-                {capture name="pastCampaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true}{/capture}
+                {capture name="pastCampaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
 
                     <tr>
                         <td>{$campaign->name}</td>
@@ -575,7 +575,7 @@
                 </thead>
                 <tbody>
                 {foreach from=$pastCampaigns item="campaign" key="resultIndex"}
-                {capture name="pastCampaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true}{/capture}
+                {capture name="pastCampaignInfoLabel"}{translate text="See data for {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
 
                     {if $campaign->enrolled}
                             <tr>
