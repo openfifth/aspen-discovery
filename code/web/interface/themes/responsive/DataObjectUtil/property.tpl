@@ -132,6 +132,13 @@
 				{/if}
 			{/if}
 		{/if}
+		{if !empty($property.infoBullets)}
+			<ul class="propertyInfoBullets">
+				{foreach from=$property.infoBullets item=bullet}
+					<li>{$bullet}</li>
+				{/foreach}
+			</ul>
+		{/if}
 		{if !empty($property.showDescription)}
 			<div class='propertyDescription'><em>{$property.description}</em></div>
 		{/if}
