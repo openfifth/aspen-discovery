@@ -36,6 +36,13 @@ function getUpdates25_06_00(): array {
 				"ALTER TABLE ce_reward ALTER awardAutomatically SET DEFAULT 0",
 			]
 		], //update_award_reward_automatically_to_false_by_default
+		'add_admin_control_over_campaign_leaderboard' => [
+			'title' => 'Add Admin Control Over Campaign Leaderboard',
+			'description' => 'Add ability for admin to control whether leaderbaord displays',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN displayCampaignLeaderboard TINYINT(1) DEFAULT 0",
+			]
+		], //add_admin_control_over_campaign_leaderboard
 
 		//chloe - Open Fifth
 
