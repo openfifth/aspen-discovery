@@ -1,6 +1,6 @@
 {strip}
     <h1>{translate text="Campaigns" isPublicFacing=true}</h1>
-    {if $webBuilderEnabled}
+    {if $webBuilderEnabled && $displayCampaignLeaderboard}
         <h3><a href="/CommunityEngagement/Leaderboard">See the Leaderboard</a></h3>
     {/if}
     {if empty($campaignList)}

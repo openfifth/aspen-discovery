@@ -44,6 +44,9 @@ class MyCampaigns extends MyAccount {
         $userCanAdvertise = $this->userCanAdvertise();
         $interface->assign('userCanAdvertise', $userCanAdvertise);
 
+        $displayCampaignLeaderboard = $library->displayCampaignLeaderboard;
+        $interface->assign('displayCampaignLeaderboard', $displayCampaignLeaderboard);
+
 		$this->display('../MyAccount/myCampaigns.tpl', 'My Campaigns');
 	}
 
