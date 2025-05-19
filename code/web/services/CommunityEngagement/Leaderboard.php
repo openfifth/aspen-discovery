@@ -9,6 +9,11 @@ class CommunityEngagement_Leaderboard extends Action {
 		$campaigns = $campaign->getAllCampaigns();
 		$interface->assign('campaigns', $campaigns);
 
+		if (!$library->displayCampaignLeaderboard && !$userIsAdmin) {
+			$this->display('../Admin/noPermission.tpl', 'Access Denied');
+			return;
+		}
+
 		$user = userAccount::getActiveUserObj();
 		$userIsAdmin = $user->isUserAdmin();
 		if ($user->getHomeLibrary() != null) {
