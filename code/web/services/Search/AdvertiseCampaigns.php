@@ -22,8 +22,10 @@ class AdvertiseCampaigns extends Action {
 				$campaignRewardImage = $campaignReward->getDisplayUrl();
 				$campaignRewardType = $campaignReward->rewardType;
 				$campaignRewardExists = !empty($campaignReward->badgeImage);
+				$campaignRewardDescription = $campaignReward->getTextBlockTranslation('description', $activeLanguageCode);
 			}
 			$campaignMilestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+			// var_dump($campaignMilestones);
 
 		}
 
@@ -34,6 +36,7 @@ class AdvertiseCampaigns extends Action {
 		$interface->assign('campaignRewardImage', $campaignRewardImage);
 		$interface->assign('campaignRewardType', $campaignRewardType);
 		$interface->assign('campaignRewardExists', $campaignRewardExists);
+		$interface->Assign('campaignRewardDescription', $campaignRewardDescription);
 
 		$this->display('/advertise-campaigns.tpl', 'Advertise Campaigns');
 	}

@@ -79,6 +79,8 @@ class CampaignMilestone extends DataObject {
 
 
 	public static function getMilestoneByCampaign($campaignId) {
+	global $activeLanguageCode;
+
 	  $milestones = [];
 	  $campaignMilestone = new CampaignMilestone();
 	  $campaignMilestone->whereAdd('campaignId = ' . $campaignId);
@@ -112,6 +114,7 @@ class CampaignMilestone extends DataObject {
 				$milestoneObj->rewardId = $reward->id;
 				$milestoneObj->awardAutomatically = $reward->awardAutomatically;
 				$milestoneObj->rewardImage = $reward->getDisplayUrl();
+				$milestoneObj->rewardDescription = $reward->getTextBlockTranslation('description', $activeLanguageCode);
 				if (!empty($reward->badgeImage)) {
 					$milestoneObj->rewardExists = true;
 				} else {

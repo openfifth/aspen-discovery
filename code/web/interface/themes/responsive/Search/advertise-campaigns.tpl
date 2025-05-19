@@ -17,9 +17,10 @@
 									<span style="font-weight: bold;">{$milestone->name}</span>
 									<div style="display: flex; flex-direction: column; align-items: center;">
 										<span>{$milestone->rewardName}</span><br/>
-										{if $milestone->rewardExists && $milestone->rewardType ==1}
+										{if $milestone->rewardExists}
 											<img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
 										{/if}
+										<p>{$milestone->rewardDescription}</p>
 									</div>
 								</li>
 							{/foreach}
@@ -29,9 +30,10 @@
 							<span style="font-weight: bold">{translate text="Campaign Reward: " isPublicFacing=true}</span>
 							<div>
 								<span>{$campaignRewardName}</span><br/>
-								{if $campaignRewardType == 1 && $campaignRewardExists}
+								{if $campaignRewardExists}
 									<img src="{$campaignRewardImage}" alt="{$campaignRewardName}" style="max-width:100px; max-height:100px;" />
 								{/if}
+								<p>{$campaignRewardDescription}</p>
 							</div>
 						</div>
 					</div>
