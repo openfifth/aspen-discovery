@@ -295,7 +295,7 @@
             {/if}
         {assign var="hasActiveCampaigns" value=false}
         {foreach from=$campaignList item="campaign" key="resultIndex"}
-            {if $campaign->isActive}
+            {if $campaign->isActive && !$campaign->enrolled}
                 {assign var="hasActiveCampaigns" value=true}
                 {break}
             {/if}
@@ -317,7 +317,7 @@
                 {capture name="activeUnenrollLabel"}{translate text="Unenroll from {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
                 {capture name="activeEnrollLabel"}{translate text="Enroll in {$campaign->name}" isPublicFacing=true inAttribute=true}{/capture}
 
-                    {if $campaign->isActive}
+                    {if $campaign->isActive  && !$campaign->enrolled}
                         <tr>
                             <td>
                                 {$campaign->name}
@@ -398,7 +398,7 @@
         {/if}
         {assign var="hasUpcomingCampaigns" value=false}
         {foreach from=$campaignList item="campaign" key="resultIndex"}
-            {if $campaign->isUpcoming}
+            {if $campaign->isUpcoming && !$campaign->enrolled}
                 {assign var="hasUpcomingCampaigns" value=true}
                 {break}
             {/if}
@@ -417,7 +417,7 @@
                 <tbody>
                 </tbody>
                 {foreach from=$campaignList item="campaign" key="resultIndex"}
-                    {if $campaign->isUpcoming}
+                    {if $campaign->isUpcoming && !$campaign->enrolled}
                         <tr>
                             <td>
                                 {$campaign->name}
