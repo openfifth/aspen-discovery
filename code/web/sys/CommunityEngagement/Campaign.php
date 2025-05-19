@@ -296,6 +296,8 @@ class Campaign extends DataObject {
 	}
 
 	public function getRewardDetails() {
+		global $activeLanguageCode;
+
 		$reward = new Reward();
 		$reward->id = $this->campaignReward;
 		if ($reward->find(true)) {
@@ -307,6 +309,7 @@ class Campaign extends DataObject {
 				'rewardExists' => !empty($reward->badgeImage),
 				'displayName' => $reward->displayName,
 				'awardAutomatically' =>$reward->awardAutomatically,
+				'rewardDescription' => $reward->getTextBlockTranslation('description', $activeLanguageCode),
 			];
 		}
 		return null;
@@ -970,6 +973,7 @@ class Campaign extends DataObject {
 				$campaign->rewardExists = $rewardDetails['rewardExists'];
                 $campaign->displayName = $rewardDetails['displayName'];
                 $campaign->awardAutomatically = $rewardDetails['awardAutomatically'];
+				$campaign->rewardDescription = $rewardDetails['rewardDescription'];
 			}
 
 				//Fetch milestones for this campaign
@@ -1086,6 +1090,7 @@ class Campaign extends DataObject {
                             'badgeImage' => $rewardDetails['badgeImage'],
                             'rewardExists' => $rewardDetails['rewardExists'],
                             'displayName' => $rewardDetails['displayName'],
+							'rewardDescription' => $rewardDetails['rewardDescription'],
                         ];
                     }
 
@@ -1124,6 +1129,7 @@ class Campaign extends DataObject {
                             'displayName' => $milestone->displayName,
                             'badgeImage' => $milestone->rewardImage,
                             'rewardExists' => $milestone->rewardExists,
+							'rewardDescription' => $milestone->rewardDescription,
                             'progress' => $milestoneProgress['progress'],
                             'extraProgress' => $milestoneProgress['extraProgress'],
                             'completedGoals' => $completedGoals,

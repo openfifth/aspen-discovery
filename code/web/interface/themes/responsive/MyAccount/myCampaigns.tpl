@@ -48,6 +48,9 @@
                                         </a>
                                     {/if}
                                 {/if}
+                                <div style="margin-top:20px;">
+                                    {$campaign->rewardDescription}
+                                </div>
                             </td>
                             <td>{$campaign->numCompletedMilestones} / {$campaign->numCampaignMilestones}</td>
                             <td>
@@ -117,6 +120,9 @@
                                                             {translate text="Share on Social Media" isPublicFacing=true}
                                                         </a>
                                                     {/if}
+                                                    <div style="margin-top:10px;">
+                                                        {$milestone->rewardDescription}
+                                                    </div>
                                                 </td>
                                                 <td>
                                                     {if $milestone->completedGoals <= $milestone->totalGoals}
@@ -198,6 +204,9 @@
                                     {if $campaign.campaignReward.rewardExists}
                                             <img src="{$campaign.campaignReward.badgeImage}" alt="{$campaign.reward.rewardName}" width="100" height="100" />
                                     {/if}
+                                    <div style="margin-top:20px;">
+                                        {$campaign.campaignReward.rewardDescription}
+                                    </div>
                                     </td>
                                     <td>{$campaign.numCompletedMilestones} / {$campaign.numCampaignMilestones}</td>
                                     <td>
@@ -238,6 +247,9 @@
                                                         {if $milestone.rewardExists}
                                                             <img src="{$milestone.badgeImage}" alt="{$milestone.rewardName}" width="100" height="100" />
                                                         {/if}
+                                                        <div style="margin-top:10px;">
+                                                            {$milestone.rewardDescription}
+                                                        </div>
                                                     </td>
                                                     <td>
                                                         {if $milestone.completedGoals <= $milestone.totalGoals}
@@ -317,6 +329,9 @@
                                 {if $campaign->rewardExists}
                                     <img src="{$campaign->badgeImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
                                 {/if}
+                                <div style="margin-top:20px;">
+                                    {$campaign->rewardDescription}
+                                </div>
                             </td>
                             <td>{$campaign->endDate}</td>
                             {if $campaign->enrolled}
@@ -363,6 +378,9 @@
                                                     {if $milestone->rewardExists}
                                                         <img src="{$milestone->rewardImage}" alt="{$milestone->rewardName}" style="max-width:100px; max-height:100px;" />
                                                     {/if}
+                                                    <div style="margin-top:10px;">
+                                                        {$milestone->rewardDescription}
+                                                    </div>
                                                 </td>
                                             </tr>                                 
                                         {/foreach}
@@ -411,6 +429,9 @@
                                 {if $campaign->rewardExists}
                                     <img src="{$campaign->badgeImage}" alt="{$campaign->rewardName}" style="max-width:100px; max-height:100px;" />
                                 {/if}
+                                <div style="margin-top:20px;">
+                                    {$campaign->rewardDescription}
+                                </div>
                             </td>
                             <td>{$campaign->startDate}</td>
                             {if $campaign->enrolled}
