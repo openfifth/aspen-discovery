@@ -157,7 +157,7 @@ class CommunityEngagement_Dashboard extends Admin_Dashboard {
 				$user->id = $userId;
 				if ($user->find(true)) {
 					$user->loadContactInformation();
-					$userCampaignData[$userId]['dateOfBirth'] = $user->dateOfBirth ?? 'N/A';
+					$userCampaignData[$userId]['dateOfBirth'] = $user->_dateOfBirth ?? 'N/A';
 					$userCampaignData[$userId]['homeBranch'] = $user->getHomeLibrary() ->displayName ?? 'N/A';
 					$userCampaignData[$userId]['zip'] = $user->_zip ?? 'N/A';
 				}
