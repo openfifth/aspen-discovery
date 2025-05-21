@@ -57,7 +57,7 @@ class Reward extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Award Automatically',
 				'description' => 'Whether or not to give this award automatically upon campaign or milestone completion',
-				'default' => true,
+				'default' => false,
 			],
 			'badgeImage' => [
 				'property' => 'badgeImage',
