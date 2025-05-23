@@ -114,6 +114,7 @@ class SMTPSetting extends DataObject {
 
 		$mail->From = $this->from_address;
 		$mail->FromName = $this->from_name;
+		$mail->Charset = 'UTF-8';
 
 		$toAddresses = explode(';', $to);
 		foreach ($toAddresses as $toAddress) {
@@ -124,6 +125,10 @@ class SMTPSetting extends DataObject {
 			for ($i = 0; $i < sizeof($attachments['name']); $i++) {
 				$mail->addAttachment($attachments['tmp_name'][$i], $attachments['name'][0]);
 			}
+		}
+
+		if (!mb_check_encoding($subject, 'ASCII')) {
+			$subject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 		}
 
 		$mail->Subject = $subject;
