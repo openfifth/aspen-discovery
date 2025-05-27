@@ -40,6 +40,7 @@ class SystemVariables extends DataObject {
 	public $useOriginalCoverUrls;
 	public $lidaGitHubRepository;
 	public $numBoundlessSettingsToProcessInParallel;
+	public $disable_user_agent_logging;
 
 
 	static function getObjectStructure($context = ''): array {
@@ -362,6 +363,13 @@ class SystemVariables extends DataObject {
 				'label' => 'Use Original Cover URLs',
 				'description' => 'Determine whether or not original cover URLs should be used.',
 				'note' => "After changing this setting, users should clear their browser's cache to ensure updated cover URLs take effect immediately. Existing cached covers may otherwise remain visible until the cache expires.",
+				'default' => false,
+			],
+			'disable_user_agent_logging' => [
+				'property' => 'disable_user_agent_logging',
+				'type' => 'checkbox',
+				'label' => 'Disable User Agent Tracking',
+				'description' => 'When enabled, disables all user agent tracking including logging, spam detection, and blocking.',
 				'default' => false,
 			],
 		];
