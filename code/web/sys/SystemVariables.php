@@ -450,6 +450,13 @@ class SystemVariables extends DataObject {
 			$usageByIP = new UsageByIPAddress();
 			$usageByIP->delete(true);
 		}
+		if ($this->disable_user_agent_logging == 1) {
+			//Delete all previously stored user agent stats
+			$usageByUserAgent = new UsageByUserAgent();
+			$usageByUserAgent->delete(true);
+			$userAgent = new UserAgent();
+			$userAgent->delete(true);
+		}
 		return parent::update($context);
 	}
 }
