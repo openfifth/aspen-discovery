@@ -11,7 +11,7 @@ class Admin_ReleaseNotes extends Action {
 		$releaseNoteFiles = scandir($releaseNotesPath);
 		$releaseNotes = [];
 		foreach ($releaseNoteFiles as $releaseNoteFile) {
-			if (preg_match('/\d{2}\.[Q\d]{2}\.\d{2}\.MD/', $releaseNoteFile)) {
+			if (preg_match('/\d{2}\.\d{2}\.\d{2}\.MD/', $releaseNoteFile)) {
 				$releaseNoteFile = str_replace('.MD', '', $releaseNoteFile);
 				$releaseNotes[$releaseNoteFile] = $releaseNoteFile;
 			}
