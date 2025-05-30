@@ -38,6 +38,15 @@ function getUpdates25_06_00(): array {
 				"UPDATE cloud_library_settings set name = concat('Setting ', id)",
 			]
 		], //cloud_library_setting_name
+		'indexing_profile_status_alt' => [
+			'title' => 'Indexing Profile Status Alt',
+			'description' => 'Add the ability to define a second item status field for use while indexing symphony records',
+			'sql' => [
+				"ALTER TABLE indexing_profiles ADD COLUMN statusAlt CHAR(1) DEFAULT ' '",
+				"ALTER TABLE status_map_values ADD COLUMN appliesToStatusSubfield TINYINT(1) DEFAULT 1",
+				"ALTER TABLE status_map_values ADD COLUMN appliesToStatusAltSubfield TINYINT(1) DEFAULT 0",
+			]
+		], //indexing_profile_status_alt
 
 		//katherine - Grove
 
@@ -85,6 +94,21 @@ function getUpdates25_06_00(): array {
 				"ALTER TABLE cloud_library_export_log ADD COLUMN IF NOT EXISTS numRegrouped int(11) DEFAULT 0 AFTER settingId",
 			]
 		], //add_num_regrouped_to_cloudlibrary_extract_logs
+		'increase_size_of_collection_codes_to_exclude' => [
+			'title' => 'Increase the Size of the collectionCodesToExclude Column',
+			'description' => 'Increases the size of the collectionCodesToExclude column from VARCHAR(100) to VARCHAR(500).',
+			'sql' => [
+				"ALTER TABLE `library_records_to_include` MODIFY COLUMN `collectionCodesToExclude` varchar(500) NOT NULL DEFAULT ''",
+				"ALTER TABLE `location_records_to_include` MODIFY COLUMN `collectionCodesToExclude` varchar(500) NOT NULL DEFAULT ''"
+			]
+		], //increase_size_of_collection_codes_to_exclude
+		'add_static_location_id_to_portal_cell' => [
+			'title' => 'Add staticLocationId Column to Web Builder Portal Cells',
+			'description' => 'Adds a staticLocationId column to the web_builder_portal_cell table to represent the location ID of the static location chosen.',
+			'sql' => [
+				"ALTER TABLE web_builder_portal_cell ADD COLUMN IF NOT EXISTS staticLocationId int(11) NOT NULL DEFAULT -1",
+			]
+		], //add_static_location_id_to_portal_cell
 
 		// Laura Escamilla - ByWater Solutions
 
