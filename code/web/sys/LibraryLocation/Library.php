@@ -3738,7 +3738,7 @@ class Library extends DataObject {
 						'property' => 'displayCampaignLeaderboard',
 						'type' => 'checkbox',
 						'label' => 'Include Campaign Leaderboard',
-						'description' => 'Whether or not to include a campaign leaderboard',
+						'description' => 'Whether or not to include a campaign leaderboard. Note: Web Builder must be enabled.',
 						'hideInLists' => true,
 						'default' => 0,
 					],
