@@ -247,9 +247,39 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 		$queryString = $this->buildQueryString();
 		$headers = $this->getHeaders();
 		$responseData= $this->sendHttpRequest($baseApiUrl, $queryString, $headers)['monograph'];
+
 		$this->resultsTotal = $responseData['total'];
 		$this->lastSearchResults = $responseData['results'];
+		
+		// assign interface variables required for breadcrumbs
+		global $interface;
+		$interface->assign('recordCount', $this->resultsTotal);
+		if (empty($this->resultsTotal)) {
+			return $responseData;
+		}
+
+		$summary = $this->getResultSummary();
+		$interface->assign('recordStart', $summary['startRecord']);
+		$interface->assign('recordEnd', $summary['endRecord']);
+
 		return $responseData;
+	}
+
+	public function getResultSummary(): array {
+		$summary = [];
+		$summary['page'] = $this->page;
+		$summary['perPage'] = $this->limit;
+		$summary['resultTotal'] = (int)$this->resultsTotal;
+		$summary['startRecord'] = (($this->page - 1) * $this->limit) + 1;
+		
+		if ($this->resultsTotal < $this->limit) {
+			$summary['endRecord'] = $this->resultsTotal;
+		} elseif (($this->page * $this->limit) > $this->resultsTotal) {
+			$summary['endRecord'] = $this->resultsTotal;
+		} else {
+			$summary['endRecord'] = $this->page * $this->limit;
+		}
+		return $summary;
 	}
 
 	public function __destruct() {
