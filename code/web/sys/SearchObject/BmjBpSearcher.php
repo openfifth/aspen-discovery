@@ -140,7 +140,7 @@ class SearchObject_BmjBpSearcher extends SearchObject_BaseSearcher{
 			'searchTerm'=> $this->searchTerms[0]['lookfor'],
 			'language' => $this->language,
 			'type' => $this->type,
-			'from' => $this->page - 1,
+			'from' => ($this->page - 1) * $this->limit,
 			'size' => $this->limit,
 		];
 	}
