@@ -4,13 +4,15 @@ require_once ROOT_DIR . '/sys/SystemLogging/ExternalRequestLogEntry.php';
 
 class KohaApiUserAgent {
 	private AccountProfile $accountProfile;
-	private $oAuthToken;
 	private $basicAuthToken;
+	private $oAuthToken;
 	private CurlWrapper $apiCurlWrapper;
 	private $baseURL;
 	private $defaultHeaders;
 	private $authenticationMethod;
-	private $expiresAt;
+
+	const memCacheKey = 'koha_api_access_token';
+
 
 	public function __construct($accountProfile) {
 		$this->accountProfile = $accountProfile;
@@ -309,14 +311,68 @@ class KohaApiUserAgent {
 	/**
 	 * Get open authorization token
 	 *
-	 * Makes an API call and returns a new OAuth token if successful or
-	 * false if not
+	 * Check if there is a cached valid token and return it.
+	 * Otherwise, get a new one from the API.
 	 *
-	 * @return  mixed           Authorization token if successful, otherwise returns false.
+	 * @return  mixed	A valid token, otherwise false.
 	 * @access  private
 	 */
 	private function getOAuthToken(): mixed {
-		// Preparing request
+
+		if (empty($this->oAuthToken)){
+
+			/** @var Memcache $memCache */ global $memCache;
+
+			// Get the value from DB
+			$oAuthToken = $memCache->get(self::memCacheKey);
+
+			if(!empty($oAuthToken)){
+				$this->oAuthToken = $oAuthToken;
+				return $this->oAuthToken;
+			}
+
+			// Get a new value from the API
+			$tokenData = $this->getNewOAuthToken();
+
+			// If the API call fails then return false
+			if (!$tokenData){
+				return false;
+			}
+
+			$accessToken = $tokenData['access_token'];
+			$expiration = $tokenData['expiration'];
+
+			// Store the new value
+			if($memCache->set(self::memCacheKey,$accessToken,$expiration)){
+				$this->oAuthToken = $accessToken;
+			} else {
+				return false;
+			}
+
+		}
+		return $this->oAuthToken;
+	}
+
+	/**
+	 * Get a **new** open authorization token.
+	 *
+	 * Makes an API call and returns an associate array that contains:
+	 *
+	 * - 'access_token' => The value of a new Open Authorization token
+	 * - 'expiration' => The token lifetime segment
+	 *
+	 * If the request to get the new token fails, then return false.
+	 *
+	 *
+	 * @return  mixed	An associative array with the token and the expiration date, otherwise false.
+	 *
+	 * @access  private
+	 */
+	private function getNewOAuthToken(): mixed {
+
+		$content = [];
+
+		// Prepare request
 		$apiUrl = $this->baseURL . "/api/v1/oauth/token";
 		$params = [
 			'grant_type' => 'client_credentials',
@@ -327,23 +383,20 @@ class KohaApiUserAgent {
 			'Accept: application/json',
 			'Content-Type: application/x-www-form-urlencoded',
 		], false);
-		//Getting response body
+
+		// Get response body
 		$response = $this->apiCurlWrapper->curlPostPage($apiUrl, $params);
 		$jsonResponse = json_decode($response);
 		$responseCode = $this->apiCurlWrapper->getResponseCode();
 		ExternalRequestLogEntry::logRequest('koharestapiclient.getOAuthToken', 'POST', $apiUrl, $this->apiCurlWrapper->getHeaders(), json_encode($params), $responseCode, $response, ['client_secret' => $this->accountProfile->oAuthClientSecret]);
 
 		if (!empty($jsonResponse->access_token)) {
-			$oAuthToken = $jsonResponse->access_token;
+			$content['access_token'] = $jsonResponse->access_token;
+			$content['expiration'] = $jsonResponse->expires_in;
+			return $content;
 		} else {
-			$oAuthToken = false;
+			return false;
 		}
-
-		if (!empty($jsonResponse->expires_in)) {
-			$this->expiresAt = time() + $jsonResponse->expires_in;
-		}
-
-		return $oAuthToken;
 	}
 
 	private function isExpiredToken(): bool {
