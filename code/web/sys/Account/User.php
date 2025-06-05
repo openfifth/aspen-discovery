@@ -3294,6 +3294,7 @@ class User extends DataObject {
 		if ($result['success']) {
 			if ($this->hasIlsConnection()) {
 				$this->__set('cat_password', $newPin);
+				$this->__set('ils_password', $newPin);
 			}
 			$this->__set('password', $newPin);
 			$this->update();
