@@ -268,11 +268,12 @@ class KohaApiUserAgent {
 	}
 
 	/**
-	 * Get authorization header
+	 * Get the current authorization header.
 	 *
-	 * Checks the authentication method used and returns a string with the corresponding header
+	 * Checks the authentication method that will be use to make the call to the API
+	 * and returns a string with the appropiate header.
 	 *
-	 * @return  string|bool           Authorization header if successful, otherwise returns false.
+	 * @return  string|bool	An authorization header, otherwise returns false.
 	 * @access  private
 	 */
 	private function getAuthorizationHeader($caller): string|bool {
@@ -280,31 +281,26 @@ class KohaApiUserAgent {
 			$basicToken = $this->getBasicAuthToken();
 			$header = 'Authorization: Basic ' . $basicToken;
 		} else {
-			if ($this->isExpiredToken()) {
-				$oAuthToken = $this->getOAuthToken();
-				if ($oAuthToken) {
-					$this->oAuthToken = $oAuthToken;
-					$header = 'Authorization: Bearer ' . $this->oAuthToken;
-				} else {
-					global $logger;
-					//Special message case for patronLogin
-					if (stripos($caller, "koha.patronLogin") !== false) {
-						$logger->log("Unable to authenticate with the ILS from koha.patronLogin", Logger::LOG_ERROR);
-					} else {
-						$logger->log("Unable to retrieve OAuth2 token from " . $caller, Logger::LOG_ERROR);
-					}
-					$result['messages'][] = translate([
-						'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
-						'isPublicFacing' => true,
-					]);
-					$result['api']['messages'] = translate([
-						'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
-						'isPublicFacing' => true,
-					]);
-					return $oAuthToken;
-				}
+			$oAuthToken = $this->getOAuthToken();
+			if ($oAuthToken) {
+				$header = 'Authorization: Bearer ' . $oAuthToken;
 			} else {
-				$header = 'Authorization: Bearer ' . $this->oAuthToken;
+				global $logger;
+				//Special message case for patronLogin
+				if (stripos($caller, "koha.patronLogin") !== false) {
+					$logger->log("Unable to authenticate with the ILS from koha.patronLogin", Logger::LOG_ERROR);
+				} else {
+					$logger->log("Unable to retrieve OAuth2 token from " . $caller, Logger::LOG_ERROR);
+				}
+				$result['messages'][] = translate([
+					'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
+					'isPublicFacing' => true,
+				]);
+				$result['api']['messages'] = translate([
+					'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
+					'isPublicFacing' => true,
+				]);
+				return $oAuthToken;
 			}
 		}
 		return $header;
