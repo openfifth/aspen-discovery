@@ -305,7 +305,7 @@ class MaterialsRequestFormat extends DataObject {
 	function delete($useWhere = false) : int {
 
 		$materialRequest = new MaterialsRequest();
-		$materialRequest->format = $this->format;
+		$materialRequest->formatId = $this->id;
 		$materialRequest->libraryId = $this->libraryId;
 		if ($materialRequest->count() == 0) {
 			return parent::delete($useWhere);
