@@ -399,13 +399,6 @@ class KohaApiUserAgent {
 		}
 	}
 
-	private function isExpiredToken(): bool {
-		if ( time() > $this->expiresAt) {
-			return true;
-		}
-		return false;
-	}
-
 	/**
 	 * Get basic authorization token
 	 *
