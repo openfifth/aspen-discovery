@@ -71,7 +71,7 @@ class WebBuilderIndexer {
 
 	private void loadLibrarySubdomains() {
 		try{
-			PreparedStatement getLibrarySubdomainsStmt = aspenConn.prepareStatement("SELECT libraryId, subdomain, baseUrl from library", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getLibrarySubdomainsStmt = aspenConn.prepareStatement("SELECT libraryId, subdomain, baseUrl from library WHERE enableWebBuilder = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			ResultSet getLibrarySubdomainsRS = getLibrarySubdomainsStmt.executeQuery();
 			while (getLibrarySubdomainsRS.next()){
 				String scopeName = getLibrarySubdomainsRS.getString("subdomain");
@@ -122,7 +122,7 @@ class WebBuilderIndexer {
 		try{
 			PreparedStatement getAudiencesForResourceStmt = aspenConn.prepareStatement("SELECT audienceId FROM web_builder_resource_audience where webResourceId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getCategoriesForResourceStmt = aspenConn.prepareStatement("SELECT categoryId FROM web_builder_resource_category where webResourceId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-			PreparedStatement getLibrariesForResourceStmt = aspenConn.prepareStatement("SELECT libraryId FROM library_web_builder_resource where webResourceId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getLibrariesForResourceStmt = aspenConn.prepareStatement("SELECT library.libraryId FROM library_web_builder_resource INNER JOIN library ON library_web_builder_resource.libraryId = library.libraryId WHERE webResourceId = ? AND library.enableWebBuilder = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getResourcesStmt = aspenConn.prepareStatement("SELECT * from web_builder_resource", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			ResultSet getResourcesRS = getResourcesStmt.executeQuery();
 			while (getResourcesRS.next()){
@@ -202,7 +202,7 @@ class WebBuilderIndexer {
 		try{
 			PreparedStatement getAudiencesForBasicPageStmt = aspenConn.prepareStatement("SELECT audienceId FROM web_builder_basic_page_audience where basicPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getCategoriesForBasicPageStmt = aspenConn.prepareStatement("SELECT categoryId FROM web_builder_basic_page_category where basicPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-			PreparedStatement getLibrariesForBasicPageStmt = aspenConn.prepareStatement("SELECT libraryId FROM library_web_builder_basic_page where basicPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getLibrariesForBasicPageStmt = aspenConn.prepareStatement("SELECT library.libraryId FROM library_web_builder_basic_page INNER JOIN  library ON library_web_builder_basic_page.libraryId = library.libraryId WHERE basicPageId = ? AND library.enableWebBuilder = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getBasicPagesStmt = aspenConn.prepareStatement("SELECT * from web_builder_basic_page", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			ResultSet getBasicPagesRS = getBasicPagesStmt.executeQuery();
 			while (getBasicPagesRS.next()){
@@ -270,7 +270,7 @@ class WebBuilderIndexer {
 		try{
 			PreparedStatement getAudiencesForPortalPageStmt = aspenConn.prepareStatement("SELECT audienceId FROM web_builder_portal_page_audience where portalPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getCategoriesForPortalPageStmt = aspenConn.prepareStatement("SELECT categoryId FROM web_builder_portal_page_category where portalPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-			PreparedStatement getLibrariesForPortalPageStmt = aspenConn.prepareStatement("SELECT libraryId FROM library_web_builder_portal_page where portalPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getLibrariesForPortalPageStmt = aspenConn.prepareStatement("SELECT library.libraryId FROM library_web_builder_portal_page INNER JOIN library ON library_web_builder_portal_page.libraryId = library.libraryId WHERE portalPageId = ? AND library.enableWebBuilder = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getPortalPagesStmt = aspenConn.prepareStatement("SELECT * from web_builder_portal_page", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			ResultSet getPortalPagesRS = getPortalPagesStmt.executeQuery();
 			while (getPortalPagesRS.next()){
@@ -364,7 +364,7 @@ class WebBuilderIndexer {
 
 	private void indexGrapesPages() {
 		try {
-			PreparedStatement getLibrariesForGrapesPageStmt = aspenConn.prepareStatement("SELECT libraryId from library_web_builder_grapes_page WHERE grapesPageId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getLibrariesForGrapesPageStmt = aspenConn.prepareStatement("SELECT library.libraryId FROM library_web_builder_grapes_page INNER JOIN library ON library_web_builder_grapes_page.libraryId = library.libraryId WHERE grapesPageId = ? AND library.enableWebBuilder = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getGrapesPagesStmt = aspenConn.prepareStatement("SELECT * FROM grapes_web_builder", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
 			ResultSet getGrapesPagesRS = getGrapesPagesStmt.executeQuery();
@@ -450,7 +450,7 @@ class WebBuilderIndexer {
 			PreparedStatement getTitleOfCustomPageStmt = aspenConn.prepareStatement("SELECT title FROM web_builder_custom_web_resource_page WHERE id = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getDescriptionForPageStmt = aspenConn.prepareStatement("SELECT translation FROM text_block_translation WHERE objectId = ? AND objectType = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement getWebResourcePagesToIndexStmt = aspenConn.prepareStatement("SELECT * from web_builder_web_resources_to_index", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-			PreparedStatement getLibrariesForPageStmt = aspenConn.prepareStatement("SELECT DISTINCT library.libraryId from library INNER JOIN web_builder_web_resources_to_index ON web_builder_web_resources_to_index.webResourcesSettingId = library.webResourcesSettingId WHERE library.webResourcesSettingId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getLibrariesForPageStmt = aspenConn.prepareStatement("SELECT DISTINCT library.libraryId from library INNER JOIN web_builder_web_resources_to_index ON web_builder_web_resources_to_index.webResourcesSettingId = library.webResourcesSettingId WHERE library.webResourcesSettingId = ? AND library.enableWebBuilder = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
 
 			ResultSet getWebResourcePagesToIndexRS = getWebResourcePagesToIndexStmt.executeQuery();
@@ -459,7 +459,26 @@ class WebBuilderIndexer {
 				SolrInputDocument solrDocument = new SolrInputDocument();
 				String type = getWebResourcePagesToIndexRS.getString("webResourcePageType");
 				String settingId = getWebResourcePagesToIndexRS.getString("webResourcesSettingId");
+				
+				getLibrariesForPageStmt.setString(1, settingId);
+				ResultSet getLibrariesForPageRS = getLibrariesForPageStmt.executeQuery();
+				boolean hasEnabledLibrary = false;
+				long firstLibraryId = -1;
 
+				while(getLibrariesForPageRS.next()) {
+					hasEnabledLibrary = true;
+					if (firstLibraryId == -1) {
+						long tmpFirstLibraryId = getLibrariesForPageRS.getLong("libraryId");
+						if (libraryBaseUrls.containsKey(tmpFirstLibraryId)) {
+							firstLibraryId = tmpFirstLibraryId;
+						}
+					}
+					solrDocument.addField("scope_has_related_records", librarySubdomains.get(getLibrariesForPageRS.getLong("libraryId")));
+				}
+
+				if (!hasEnabledLibrary || firstLibraryId == -1) {
+					continue;
+				}
 				//handle custom resource pages
 				if (type.equals("custom")) {
 					String id = getWebResourcePagesToIndexRS.getString("customWebResourcePageId");
@@ -553,27 +572,6 @@ class WebBuilderIndexer {
 				solrDocument.addField("search_category", "Website");
 				String url = getWebResourcePagesToIndexRS.getString("webResourcePageURL");
 				solrDocument.addField("source_url", url);
-
-				//Load libraries to scope to
-				getLibrariesForPageStmt.setString(1, settingId);
-				ResultSet getLibrariesForPageRS = getLibrariesForPageStmt.executeQuery();
-				long firstLibraryId = -1;
-				while (getLibrariesForPageRS.next()){
-					if (firstLibraryId == -1){
-						//We have some cases where a library was deleted, but the connections to the pages were not cleaned up.
-						//Make sure that the library id is valid.
-						long tmpFirstLibraryId = getLibrariesForPageRS.getLong("libraryId");
-						if (libraryBaseUrls.containsKey(tmpFirstLibraryId)) {
-							firstLibraryId = tmpFirstLibraryId;
-						}
-					}
-					solrDocument.addField("scope_has_related_records", librarySubdomains.get(getLibrariesForPageRS.getLong("libraryId")));
-				}
-
-				if (firstLibraryId == -1){
-					//The page is not attached to any library
-					continue;
-				}
 
 				logEntry.incNumPages();
 				try {
