@@ -157,23 +157,34 @@ class SpringshareLibCalIndexer {
 			return;
 		}
 
+		// Build a map of unique events (last-wins) to dedupe the LibCal feed.
+		LinkedHashMap<String, JSONObject> uniqueEvents = new LinkedHashMap<>();
+		for (int i = 0; i < libCalEvents.length(); i++) {
+			try {
+				JSONObject evt = libCalEvents.getJSONObject(i);
+				String id = Integer.toString(evt.getInt("id"));
+				if (uniqueEvents.containsKey(id)) {
+					logEntry.addNote("Duplicate event in LibCal feed; using most recent data for event with external ID: " + id + ".");
+				}
+				uniqueEvents.put(id, evt);
+			} catch (JSONException e) {
+				logEntry.incErrors("Error parsing JSON from LibCal feed at index " + i + ": ", e);
+			}
+		}
+
 		Date lastDateToIndex = new Date();
 		long numberOfDays = numberOfDaysToIndex * 24L;
 		lastDateToIndex.setTime(lastDateToIndex.getTime() + (numberOfDays * 60 * 60 * 1000));
 
-		for (int i = 0; i < libCalEvents.length(); i++){
+		for (Map.Entry<String, JSONObject> entry : uniqueEvents.entrySet()) {
 			try {
-				JSONObject curEvent = libCalEvents.getJSONObject(i);
+				String eventId = entry.getKey();
+				JSONObject curEvent = entry.getValue();
 				checksumCalculator.reset();
 				String rawResponse = curEvent.toString();
 				checksumCalculator.update(rawResponse.getBytes());
 				long checksum = checksumCalculator.getValue();
-
-				int eventIdRaw = curEvent.getInt("id");
-				String eventId = Integer.toString(eventIdRaw);
-
 				boolean eventExists = existingEvents.containsKey(eventId);
-
 				String sourceId = "libcal_" + settingsId + "_" + eventId;
 
 				//Add the event to solr
