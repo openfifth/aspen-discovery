@@ -1033,9 +1033,14 @@ class UserAPI extends AbstractAPI {
 				$userData->yearInReviewName = translate(['text' => $yearInReviewName, 'isPublicFacing' => true]);
 			}
 
-            $userData->holdSortAvailable = $user->holdSortAvailable;
-            $userData->holdSortUnavailable = $user->holdSortUnavailable;
-            $userData->checkoutSort = $user->checkoutSort;
+			$aspenToLiDAAvailableHoldSortMapping = array_flip(User::$lidaToAspenAvailableHoldSortMapping);
+			$userData->holdSortAvailable = array_key_exists($user->holdSortAvailable, $aspenToLiDAAvailableHoldSortMapping) ? $aspenToLiDAAvailableHoldSortMapping[$user->holdSortAvailable] : $user->holdSortAvailable;
+
+			$aspenToLiDAUnavailableHoldSortMapping = array_flip(User::$lidaToAspenUnavailableHoldSortMapping);
+			$userData->holdSortUnavailable = array_key_exists($user->holdSortUnavailable, $aspenToLiDAUnavailableHoldSortMapping) ? $aspenToLiDAUnavailableHoldSortMapping[$user->holdSortUnavailable] : $user->holdSortUnavailable;
+
+			$aspenToLiDACheckoutSortMapping = array_flip(User::$lidaToAspenCheckoutSortMapping);
+			$userData->checkoutSort = array_key_exists($user->checkoutSort, $aspenToLiDACheckoutSortMapping) ? $aspenToLiDACheckoutSortMapping[$user->checkoutSort] : $user->checkoutSort;
 
 			return [
 				'success' => true,

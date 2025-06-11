@@ -3105,7 +3105,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$source = $_REQUEST['source'];
 		$user = UserAccount::getActiveUserObj();
 		$allCheckedOut = $user->getCheckouts(true, $source);
-		$selectedSortOption = $this->setSort('sort', 'checkout');
+		$selectedSortOption = $this->setSortByUserObj('sort', 'checkout', $user);
 		if ($selectedSortOption == null) {
 			$selectedSortOption = 'dueDate';
 		}
@@ -3252,8 +3252,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$showPosition = $user->showHoldPosition();
 		$showExpireTime = $user->showHoldExpirationTime();
-		$selectedAvailableSortOption = $this->setSort('availableHoldSort', 'availableHold');
-		$selectedUnavailableSortOption = $this->setSort('unavailableHoldSort', 'unavailableHold');
+		$selectedAvailableSortOption = $this->setSortByUserObj('availableHoldSort', 'availableHold', $user);
+		$selectedUnavailableSortOption = $this->setSortByUserObj('unavailableHoldSort', 'unavailableHold', $user);
 		if ($selectedAvailableSortOption == null) {
 			$selectedAvailableSortOption = 'expire';
 		}
@@ -3713,16 +3713,20 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 
 				$interface->assign('renewableCheckouts', $renewableCheckouts);
-				$selectedSortOption = $this->setSort('sort', 'checkout');
+				$selectedSortOption = $this->setSortByUserObj('sort', 'checkout', $user);
 
-				$user->updateSortPreferences();
-
-				if ($selectedSortOption == null || !array_key_exists($selectedSortOption, $sortOptions)) {
+				//Map LiDA Sort Options to Aspen
+				if ($selectedSortOption == null) {
 					$selectedSortOption = 'dueDate';
+				}elseif (!array_key_exists($selectedSortOption, $sortOptions)) {
+					if (array_key_exists($selectedSortOption, User::$lidaToAspenCheckoutSortMapping)) {
+						$selectedSortOption = User::$lidaToAspenCheckoutSortMapping[$selectedSortOption];
+					}else{
+						$selectedSortOption = 'dueDate';
+					}
 				}
-
-				if (array_key_exists($user->checkoutSort, $sortOptions)) {
-					$selectedSortOption = $user->checkoutSort;
+				if (isset($_REQUEST['sort'])) {
+					$user->updateSortPreferences();
 				}
 
 				$interface->assign('defaultSortOption', $selectedSortOption);
@@ -3954,8 +3958,6 @@ class MyAccount_AJAX extends JSON_Action {
 			$source = $_REQUEST['source'];
 			$interface->assign('source', $source);
 			$this->setShowCovers();
-			$selectedAvailableSortOption = $this->setSort('availableHoldSort', 'availableHold');
-			$selectedUnavailableSortOption = $this->setSort('unavailableHoldSort', 'unavailableHold');
 
 			$user = UserAccount::getActiveUserObj();
 			if (UserAccount::isLoggedIn() == false || empty($user)) {
@@ -3965,7 +3967,7 @@ class MyAccount_AJAX extends JSON_Action {
 				]);
 			} else {
 				$selectedUser = $this->setFilterLinkedUser();
-				$user->updateSortPreferences();
+
 				if ($user->getHomeLibrary() != null) {
 					$allowSelectingHoldsToExport = $user->getHomeLibrary()->allowSelectingHoldsToExport;
 				} else {
@@ -4040,20 +4042,29 @@ class MyAccount_AJAX extends JSON_Action {
 					'unavailable' => $unavailableHoldSortOptions,
 				]);
 
-				if ($selectedAvailableSortOption == null || !array_key_exists($selectedAvailableSortOption, $availableHoldSortOptions)) {
+				$selectedAvailableSortOption = $this->setSortByUserObj('availableHoldSort', 'availableHold', $user);
+				$selectedUnavailableSortOption = $this->setSortByUserObj('unavailableHoldSort', 'unavailableHold', $user);
+
+				if ($selectedAvailableSortOption == null) {
 					$selectedAvailableSortOption = 'expire';
+				}elseif (!array_key_exists($selectedAvailableSortOption, $availableHoldSortOptions)) {
+					if (array_key_exists($selectedAvailableSortOption, User::$lidaToAspenAvailableHoldSortMapping)) {
+						$selectedAvailableSortOption = User::$lidaToAspenAvailableHoldSortMapping[$selectedAvailableSortOption];
+					}else{
+						$selectedAvailableSortOption = 'expire';
+					}
 				}
-				if ($selectedUnavailableSortOption == null || !array_key_exists($selectedUnavailableSortOption, $unavailableHoldSortOptions)) {
-					$selectedUnavailableSortOption = ($showPosition ? 'position' : 'title');
+				if ($selectedUnavailableSortOption == null) {
+					$selectedAvailableSortOption = ($showPosition ? 'position' : 'title');
+				}elseif (!array_key_exists($selectedUnavailableSortOption, $unavailableHoldSortOptions)) {
+					if (array_key_exists($selectedUnavailableSortOption, User::$lidaToAspenUnavailableHoldSortMapping)) {
+						$selectedUnavailableSortOption = User::$lidaToAspenUnavailableHoldSortMapping[$selectedUnavailableSortOption];
+					}else{
+						$selectedUnavailableSortOption = ($showPosition ? 'position' : 'title');
+					}
 				}
 
-				if (array_key_exists($user->holdSortAvailable, $availableHoldSortOptions)) {
-					$selectedAvailableSortOption = $user->holdSortAvailable;
-				}
-
-				if (array_key_exists($user->holdSortUnavailable, $unavailableHoldSortOptions)) {
-					$selectedUnavailableSortOption = $user->holdSortUnavailable;
-				}
+				$user->updateSortPreferences();
 
 				$interface->assign('defaultSortOption', [
 					'available' => $selectedAvailableSortOption,
@@ -4343,8 +4354,6 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	function setSort($requestParameter, $sortType) {
-		// Hide Covers when the user has set that setting on a Search Results Page
-		// this is the same setting as used by the MyAccount Pages for now.
 		$sort = null;
 		if (isset($_REQUEST[$requestParameter])) {
 			$sort = $_REQUEST[$requestParameter];
@@ -4353,6 +4362,22 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		} elseif (isset($_SESSION['sort_' . $sortType])) {
 			$sort = $_SESSION['sort_' . $sortType];
+		}
+		return $sort;
+	}
+
+	function setSortByUserObj(string $requestParameter, string $sortType, User $user) : ?string {
+		$sort = null;
+		if (isset($_REQUEST[$requestParameter])) {
+			$sort = $_REQUEST[$requestParameter];
+		} else {
+			if ($sortType == 'checkout') {
+				$sort = $user->checkoutSort;
+			}elseif ($sortType == 'availableHold') {
+				$sort = $user->holdSortAvailable;
+			}elseif ($sortType == 'unavailableHold') {
+				$sort = $user->holdSortUnavailable;
+			}
 		}
 		return $sort;
 	}

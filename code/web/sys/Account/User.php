@@ -153,6 +153,37 @@ class User extends DataObject {
 	public $holdSortUnavailable;
 	public $checkoutSort;
 
+	public static $lidaToAspenCheckoutSortMapping = [
+		'sortTitle' => 'title',
+		'author' => 'author',
+		'dueAsc' => 'dueDate',
+		'dueDesc' => 'dueDateDesc',
+		'format' => 'format',
+		'libraryAccount' => 'libraryAccount',
+		'timesRenewed' => 'renewed'
+	];
+
+	public static $lidaToAspenAvailableHoldSortMapping = [
+		'sortTitle' => 'title',
+		'author' => 'author',
+		'format' => 'format',
+		'libraryAccount' => 'libraryAccount',
+		'placed' => 'placed',
+		'location' => 'location',
+		'expire' => 'expire'
+	];
+
+	public static $lidaToAspenUnavailableHoldSortMapping = [
+		'sortTitle' => 'title',
+		'author' => 'author',
+		'format' => 'format',
+		'status' => 'status',
+		'libraryAccount' => 'libraryAccount',
+		'location' => 'location',
+		'position' => 'position',
+		'placed' => 'placed',
+	];
+
 	function getNumericColumnNames(): array {
 		return [
 			'id',
@@ -6193,18 +6224,37 @@ class User extends DataObject {
 		if (isset($_REQUEST['availableHoldSort'])) {
 			if ($this->holdSortAvailable !== $_REQUEST['availableHoldSort']) {
 				$this->holdSortAvailable = $_REQUEST['availableHoldSort'];
+				//We will always store this using the Aspen terminology
+				if (array_key_exists($_REQUEST['availableHoldSort'], User::$lidaToAspenAvailableHoldSortMapping)) {
+					$this->holdSortAvailable = User::$lidaToAspenAvailableHoldSortMapping[$_REQUEST['availableHoldSort']];
+					//Validate that the sort is valid
+				}elseif (in_array($_REQUEST['availableHoldSort'], User::$lidaToAspenAvailableHoldSortMapping)) {
+					$this->holdSortAvailable = $_REQUEST['availableHoldSort'];
+				}
 			}
 		}
 
 		if (isset($_REQUEST['unavailableHoldSort'])) {
 			if ($this->holdSortUnavailable !== $_REQUEST['unavailableHoldSort']) {
-				$this->holdSortUnavailable = $_REQUEST['unavailableHoldSort'];
+				//We will always store this using the Aspen terminology
+				if (array_key_exists($_REQUEST['unavailableHoldSort'], User::$lidaToAspenUnavailableHoldSortMapping)) {
+					$this->holdSortUnavailable = User::$lidaToAspenUnavailableHoldSortMapping[$_REQUEST['unavailableHoldSort']];
+					//Validate that the sort is valid
+				}elseif (in_array($_REQUEST['unavailableHoldSort'], User::$lidaToAspenUnavailableHoldSortMapping)) {
+					$this->holdSortUnavailable = $_REQUEST['unavailableHoldSort'];
+				}
 			}
 		}
 
 		if (isset($_REQUEST['sort'])) {
 			if ($this->checkoutSort !== $_REQUEST['sort']) {
-				$this->checkoutSort = $_REQUEST['sort'];
+				//We will always store this using the Aspen terminology
+				if (array_key_exists($_REQUEST['sort'], User::$lidaToAspenCheckoutSortMapping)) {
+					$this->checkoutSort = User::$lidaToAspenCheckoutSortMapping[$_REQUEST['sort']];
+				//Validate that the sort is valid
+				}elseif (in_array($_REQUEST['sort'], User::$lidaToAspenCheckoutSortMapping)) {
+					$this->checkoutSort = $_REQUEST['sort'];
+				}
 			}
 		}
 
