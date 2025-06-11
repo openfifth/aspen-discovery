@@ -14,6 +14,7 @@ class SSOSetting extends DataObject {
     public $forceReAuth;
 	public $restrictByIP;
 	public $updateAccount;
+	public $createUserInIls;
 
 	//oAuth
 	public $clientId;
@@ -233,7 +234,15 @@ class SSOSetting extends DataObject {
 				'label' => 'Update users ILS account information with data from the IdP when logging in using the data mapping provided',
 				'description' => 'Whether or not users ILS account information is updated each time they log in using the data mapping provided',
 				'default' => 0,
-			],
+			  ],
+			  'createUserInIls' => [
+				'property' => 'createUserInIls',
+				'type' => 'checkbox',
+				'label' => 'Create ILS users when a matching user is not found from the IdP data in the ILS',
+				'description' => 'Whether or not to automatically create the ILS user if no match is found between IdP data and the ILS.',
+				'default' => 1,
+				'note' => 'If the user does not exist in the ILS when we sign in to Aspen with SSO, whether we can create that user in the ILS'
+			  ],
 			'oAuthConfigSection' => [
 				'property' => 'oAuthConfigSection',
 				'type' => 'section',
