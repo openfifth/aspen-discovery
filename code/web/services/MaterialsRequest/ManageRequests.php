@@ -40,7 +40,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 			$statusesToShow = $_REQUEST['statusFilter'];
 			//add filters that have been checked to default filters table for sticky filters
 			foreach ($statusesToShow as $status) {
-				$stickyFilter = new StickyFilter;
+				$stickyFilter = new StickyFilter();
 				$stickyFilter->userId = $user->id;
 				$stickyFilter->filterValue = $status;
 				$stickyFilter->filterFor = "MaterialsRequest_Status";
@@ -49,7 +49,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 				}
 			}
 			//remove filters that have been unchecked
-			$stickyFilterDeletions = new StickyFilter;
+			$stickyFilterDeletions = new StickyFilter();
 			$stickyFilterDeletions->userId = $user->id;
 			$stickyFilterDeletions->filterFor = "MaterialsRequest_Status";
 			$stickyFilterDeletions->find();
@@ -60,7 +60,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 			}
 		}
 		//check for sticky filter values saved for admin account
-		$adminStickyFilter = new StickyFilter;
+		$adminStickyFilter = new StickyFilter();
 		$adminStickyFilter->userId = $user->id;
 		$adminStickyFilter->filterFor = "MaterialsRequest_Status";
 		if ($adminStickyFilter->find()) {
@@ -77,7 +77,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 			$assigneesToShow = $_REQUEST['assigneesFilter'];
 			//add filters that have been checked to default filters table for sticky filters
 			foreach ($assigneesToShow as $assignee) {
-				$stickyFilter = new StickyFilter;
+				$stickyFilter = new StickyFilter();
 				$stickyFilter->userId = $user->id;
 				$stickyFilter->filterValue = $assignee;
 				$stickyFilter->filterFor = "MaterialsRequest_Assignee";
@@ -86,7 +86,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 				}
 			}
 			//remove filters that have been unchecked
-			$stickyFilterDeletions = new StickyFilter;
+			$stickyFilterDeletions = new StickyFilter();
 			$stickyFilterDeletions->userId = $user->id;
 			$stickyFilterDeletions->filterFor = "MaterialsRequest_Assignee";
 			$stickyFilterDeletions->find();
@@ -101,7 +101,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 		//if no filter values are passed for status/assignee Aspen defaults are used
 		if (!empty($_REQUEST['submit']) && $_REQUEST['submit'] == 'Update Filters' ) {
 			$showUnassigned = isset($_REQUEST['showUnassigned']) ? 1 : 0;
-			$stickyFilter = new StickyFilter;
+			$stickyFilter = new StickyFilter();
 			$stickyFilter->userId = $user->id;
 			$stickyFilter->filterFor = "MaterialsRequest_ShowUnassigned";
 			if (!$stickyFilter->find(true)) {
@@ -113,7 +113,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 			}
 
 			if (!isset($_REQUEST['statusFilter'])) {
-				$stickyFilterDeletions = new StickyFilter;
+				$stickyFilterDeletions = new StickyFilter();
 				$stickyFilterDeletions->userId = $user->id;
 				$stickyFilterDeletions->filterFor = "MaterialsRequest_Status";
 				$stickyFilterDeletions->find();
@@ -121,8 +121,8 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 					$stickyFilterDeletions->delete();
 				}
 			}
-			if (!isset($_REQUEST['assigneeFilter'])) {
-				$stickyFilterDeletions = new StickyFilter;
+			if (!isset($_REQUEST['assigneesFilter'])) {
+				$stickyFilterDeletions = new StickyFilter();
 				$stickyFilterDeletions->userId = $user->id;
 				$stickyFilterDeletions->filterFor = "MaterialsRequest_Assignee";
 				$stickyFilterDeletions->find();
@@ -135,7 +135,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 
 
 		//check for sticky filter values saved for admin account
-		$adminStickyFilter = new StickyFilter;
+		$adminStickyFilter = new StickyFilter();
 		$adminStickyFilter->userId = $user->id;
 		$adminStickyFilter->filterFor = "MaterialsRequest_Assignee";
 		if ($adminStickyFilter->find()) {
@@ -143,7 +143,7 @@ class MaterialsRequest_ManageRequests extends Admin_Admin {
 				$assigneesToShow[] = $adminStickyFilter->filterValue;
 			}
 		}
-		$adminStickyFilter = new StickyFilter;
+		$adminStickyFilter = new StickyFilter();
 		$adminStickyFilter->userId = $user->id;
 		$adminStickyFilter->filterFor = "MaterialsRequest_ShowUnassigned";
 		if ($adminStickyFilter->find()) {
