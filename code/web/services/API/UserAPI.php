@@ -6671,10 +6671,19 @@ class UserAPI extends AbstractAPI {
 		];
 	}
 
-	function updateSortPreferences() {
+	/**
+	 * Updates the active account sort method for a user for account related functionality.
+	 *
+	 * @return array
+	 * @noinspection PhpUnused
+	 */
+	function updateSortPreferences() : array {
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$user->updateSortPreferences();
+			return [
+				'success' => true,
+			];
 		} else {
 			return [
 				'success' => false,
