@@ -10,8 +10,6 @@ class Translator {
 	var $langCode;
 	var $words = [];
 	var $debug = false;
-	/** @var bool Tracks whether DB translations have been loaded into $this->words. */
-	private $dbTranslationsLoaded = false;
 
 	/**
 	 * Constructor
@@ -57,6 +55,7 @@ class Translator {
 
 	//Cache any translations that have already been loaded.
 	private $cachedTranslations = [];
+	private ?PDOStatement $dbPhraseStmt = null;
 
 	private $communityContentCurlWrapper = null;
 
@@ -186,12 +185,14 @@ class Translator {
 						}
 					}
 					else {
-						// Non-translation mode: Merge .ini file + DB overrides into memory, then lookup.
+						// Non-translation mode: check DB override first, then .ini defaults.
 						if (empty($this->words)) {
 							$this->loadTranslationsFromIniFile();
-							$this->loadDatabaseTranslations();
-						};
-						if (isset($this->words[$phrase])) {
+						}
+						$dbTranslation = $this->loadDbOverride($phrase);
+						if ($dbTranslation !== null) {
+							$returnString = $dbTranslation;
+						} elseif (isset($this->words[$phrase])) {
 							$returnString = $this->words[$phrase];
 						} elseif (!empty($defaultText)) {
 							$returnString = $defaultText;
@@ -466,25 +467,18 @@ class Translator {
 		return trim($translation);
 	}
 
-	/**
-	 * Bulk-load all translations for the active language from the DB into words.
-	 */
-	private function loadDatabaseTranslations(): void {
+	private function loadDbOverride(string $phrase): ?string {
 		global $aspen_db, $activeLanguage;
-		if ($this->dbTranslationsLoaded || empty($activeLanguage)) {
-			return;
+		if ($this->dbPhraseStmt === null) {
+			$this->dbPhraseStmt = $aspen_db->prepare(
+				"SELECT tr.translation
+				 FROM translations AS tr
+				 JOIN translation_terms AS tt ON tr.termId = tt.id
+				 WHERE tt.term = ? AND tr.languageId = ?"
+			);
 		}
-
-		$stmt = $aspen_db->prepare(
-			"SELECT tt.term, tr.translation
-			 FROM translations AS tr
-			 JOIN translation_terms AS tt ON tr.termId = tt.id
-			 WHERE tr.languageId = ?"
-		);
-		$stmt->execute([$activeLanguage->id]);
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$this->words[$row['term']] = $row['translation'];
-		}
-		$this->dbTranslationsLoaded = true;
+		$this->dbPhraseStmt->execute([$phrase, $activeLanguage->id]);
+		$row = $this->dbPhraseStmt->fetch(PDO::FETCH_ASSOC);
+		return $row !== false ? $row['translation'] : null;
 	}
 }
