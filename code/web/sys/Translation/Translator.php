@@ -184,7 +184,15 @@ class Translator {
 						}
 					}
 					else {
-						$returnString = !empty($defaultText) ? $defaultText : $phrase;
+						// In non-translation mode, load translations directly from .ini and skip DB lookups.
+						$this->loadTranslationsFromIniFile();
+						if (isset($this->words[$phrase])) {
+							$returnString = $this->words[$phrase];
+						} elseif (!empty($defaultText)) {
+							$returnString = $defaultText;
+						} else {
+							$returnString = $phrase;
+						}
 						if (count($replacementValues) > 0) {
 							foreach ($replacementValues as $index => $replacementValue) {
 								if ($translateParameters) {
@@ -192,6 +200,9 @@ class Translator {
 								}
 								$returnString = str_replace('%' . $index . '%', $replacementValue, $returnString);
 							}
+						}
+						if ($escape) {
+							$returnString = htmlentities($returnString);
 						}
 						$this->cachedTranslations[$translationKey] = $returnString;
 						return $returnString;
