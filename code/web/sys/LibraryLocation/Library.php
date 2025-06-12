@@ -460,6 +460,7 @@ class Library extends DataObject {
 	public $sendStaffEmailOnCampaignCompletion;
 	public $campaignCompletionNewEmail;
 	public $displayCampaignLeaderboard;
+	public $communityEngagementAdminUserSelect;
 
 	//SHAREit
 	public $repeatInShareIt;
@@ -3805,6 +3806,17 @@ class Library extends DataObject {
 							'displayUser' => 'Display User',
 						],
 						'default' => 'displayBranch',
+					],
+					'communityEngagementAdminUserSelect' => [
+						'property' => 'communityEngagementAdminUserSelect',
+						'type' => 'enum',
+						'label' => 'Admin View User Select',
+						'description' => 'Whether to use a dropdown or a search bar to select users in the Community Engagement Admin View section',
+						'values' => [
+							'dropdown' => 'Dropdown',
+							'searchbar' => 'Search bar',
+						],
+						'default' => 'dropdown',
 					],
 					'sendStaffEmailOnCampaignCompletion' => [
 						'property' => 'sendStaffEmailOnCampaignCompletion',
