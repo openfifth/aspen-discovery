@@ -10,6 +10,8 @@ class Translator {
 	var $langCode;
 	var $words = [];
 	var $debug = false;
+	/** @var bool Tracks whether DB translations have been loaded into $this->words. */
+	private $dbTranslationsLoaded = false;
 
 	/**
 	 * Constructor
@@ -184,8 +186,11 @@ class Translator {
 						}
 					}
 					else {
-						// In non-translation mode, load translations directly from .ini and skip DB lookups.
-						$this->loadTranslationsFromIniFile();
+						// Non-translation mode: Merge .ini file + DB overrides into memory, then lookup.
+						if (empty($this->words)) {
+							$this->loadTranslationsFromIniFile();
+							$this->loadDatabaseTranslations();
+						};
 						if (isset($this->words[$phrase])) {
 							$returnString = $this->words[$phrase];
 						} elseif (!empty($defaultText)) {
@@ -459,5 +464,27 @@ class Translator {
 			$translation = ucfirst($translation);
 		}
 		return trim($translation);
+	}
+
+	/**
+	 * Bulk-load all translations for the active language from the DB into words.
+	 */
+	private function loadDatabaseTranslations(): void {
+		global $aspen_db, $activeLanguage;
+		if ($this->dbTranslationsLoaded || empty($activeLanguage)) {
+			return;
+		}
+
+		$stmt = $aspen_db->prepare(
+			"SELECT tt.term, tr.translation
+			 FROM translations AS tr
+			 JOIN translation_terms AS tt ON tr.termId = tt.id
+			 WHERE tr.languageId = ?"
+		);
+		$stmt->execute([$activeLanguage->id]);
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			$this->words[$row['term']] = $row['translation'];
+		}
+		$this->dbTranslationsLoaded = true;
 	}
 }
