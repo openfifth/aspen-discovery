@@ -3,7 +3,7 @@
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 
 class MyAccount_Fines extends MyAccount {
-	function launch() {
+	function launch() : void {
 		global $interface;
 		global $configArray;
 
@@ -28,12 +28,12 @@ class MyAccount_Fines extends MyAccount {
 				// Get My Fines
 				$user = UserAccount::getLoggedInUser();
 				$interface->assign('profile', $user);
-				$userLibrary = $user->getHomeLibrary();
+				$paymentLibrary = $user->getHomeLibrary();
 
 				$systemVariables = SystemVariables::getSystemVariables();
 				if ($systemVariables->libraryToUseForPayments == 1) {
 					global $library;
-					$userLibrary = $library;
+					$paymentLibrary = $library;
 				}
 
 				$fines = $user->getFines();
@@ -41,10 +41,10 @@ class MyAccount_Fines extends MyAccount {
 				$interface->assign('showOutstanding', $useOutstanding);
 
 				//PayPal
-				if ($userLibrary->finePaymentType == 2) {
+				if ($paymentLibrary->finePaymentType == 2) {
 					require_once ROOT_DIR . '/sys/ECommerce/PayPalSetting.php';
 					$settings = new PayPalSetting();
-					$settings->id = $userLibrary->payPalSettingId;
+					$settings->id = $paymentLibrary->payPalSettingId;
 					if ($settings->find(true)) {
 						$interface->assign('payPalClientId', $settings->clientId);
 						$interface->assign('showPayLater', $settings->showPayLater);
@@ -52,7 +52,7 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// MSB payment result message
-				if ($userLibrary->finePaymentType == 3) {
+				if ($paymentLibrary->finePaymentType == 3) {
 					if (!empty($_REQUEST['id'])) {
 						require_once ROOT_DIR . '/sys/Account/UserPayment.php';
 						$payment = new UserPayment();
@@ -90,14 +90,13 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// FIS WorldPay data
-				if ($userLibrary->finePaymentType == 7) {
+				if ($paymentLibrary->finePaymentType == 7) {
 					$aspenUrl = $configArray['Site']['url'];
 					$interface->assign('aspenUrl', $aspenUrl);
 
-					global $library;
 					require_once ROOT_DIR . '/sys/ECommerce/WorldPaySetting.php';
 					$worldPaySettings = new WorldPaySetting();
-					$worldPaySettings->id = $library->worldPaySettingId;
+					$worldPaySettings->id = $paymentLibrary->worldPaySettingId;
 
 					$merchantCode = 0;
 					$settleCode = 0;
@@ -118,14 +117,13 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// ACI Speedpay data
-				if ($userLibrary->finePaymentType == 8) {
+				if ($paymentLibrary->finePaymentType == 8) {
 					$aspenUrl = $configArray['Site']['url'];
 					$interface->assign('aspenUrl', $aspenUrl);
 
-					global $library;
 					require_once ROOT_DIR . '/sys/ECommerce/ACISpeedpaySetting.php';
 					$aciSpeedpaySettings = new ACISpeedpaySetting();
-					$aciSpeedpaySettings->id = $library->aciSpeedpaySettingId;
+					$aciSpeedpaySettings->id = $paymentLibrary->aciSpeedpaySettingId;
 
 					if ($aciSpeedpaySettings->find(true)) {
 						$baseUrl = 'https://api.acispeedpay.com';
@@ -190,11 +188,10 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// Certified Payments by Deluxe
-				if($userLibrary->finePaymentType == 10) {
-					global $library;
+				if($paymentLibrary->finePaymentType == 10) {
 					require_once ROOT_DIR . '/sys/ECommerce/CertifiedPaymentsByDeluxeSetting.php';
 					$deluxeSettings = new CertifiedPaymentsByDeluxeSetting();
-					$deluxeSettings->id = $library->deluxeCertifiedPaymentsSettingId;
+					$deluxeSettings->id = $paymentLibrary->deluxeCertifiedPaymentsSettingId;
 					if($deluxeSettings->find(true)) {
 						// connection URL to payment portal
 						$url = 'https://www.velocitypayment.com/vrelay/verify.do';
@@ -213,11 +210,10 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// Square
-				if($userLibrary->finePaymentType == 12) {
-					global $library;
+				if($paymentLibrary->finePaymentType == 12) {
 					require_once ROOT_DIR . '/sys/ECommerce/SquareSetting.php';
 					$squareSetting = new SquareSetting();
-					$squareSetting->id = $library->squareSettingId;
+					$squareSetting->id = $paymentLibrary->squareSettingId;
 					if($squareSetting->find(true)) {
 						$cdnUrl = 'https://web.squarecdn.com/v1/square.js';
 						if($squareSetting->sandboxMode == 1 || $squareSetting->sandboxMode == '1') {
@@ -234,11 +230,10 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// Stripe
-				if($userLibrary->finePaymentType == 13) {
-					global $library;
+				if($paymentLibrary->finePaymentType == 13) {
 					require_once ROOT_DIR . '/sys/ECommerce/StripeSetting.php';
 					$stripeSetting = new StripeSetting();
-					$stripeSetting->id = $library->stripeSettingId;
+					$stripeSetting->id = $paymentLibrary->stripeSettingId;
 					if($stripeSetting->find(true)) {
 						//$baseUrl = 'https://api.stripe.com';
 						$interface->assign('stripePublicKey', $stripeSetting->stripePublicKey);
@@ -247,12 +242,11 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// SnapPay
-				if($userLibrary->finePaymentType == 15) {
+				if($paymentLibrary->finePaymentType == 15) {
 					// Set SNapPay URL for production vs. sandbox
-					global $library;
 					require_once ROOT_DIR . '/sys/ECommerce/SnapPaySetting.php';
 					$snapPaySetting = new SnapPaySetting();
-					$snapPaySetting->id = $library->snapPaySettingId;
+					$snapPaySetting->id = $paymentLibrary->snapPaySettingId;
 					if ($snapPaySetting->find(true)) {
 						$paymentRequestUrl = "https://www.snappayglobal.com/Interop/HostedPaymentPage";
 						if ($snapPaySetting->sandboxMode == 1 || $snapPaySetting->sandboxMode == '1') {
@@ -273,17 +267,13 @@ class MyAccount_Fines extends MyAccount {
 							if ($payment->find(true)) {
 								if ($payment->completed == 1) {
 									$finePaymentResult->success = true;
-									$finePaymentResult->message = translate([
-										'text' => $payment->message,
-										'isPublicFacing' => true,
-									]);
 								} else { // i.e., $payment->completed == 0
 									$finePaymentResult->success = false;
-									$finePaymentResult->message = translate([
-										'text' => $payment->message,
-										'isPublicFacing' => true,
-									]);
 								}
+								$finePaymentResult->message = translate([
+									'text' => $payment->message,
+									'isPublicFacing' => true,
+								]);
 								$interface->assign('finePaymentResult', $finePaymentResult);
 							}
 						}
@@ -291,12 +281,12 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// HeyCentric result message
-				if($userLibrary->finePaymentType == 16) {
-					$rc = isset($_REQUEST['Rc']) ? $_REQUEST['Rc'] : null;
+				if($paymentLibrary->finePaymentType == 16) {
+					$rc = $_REQUEST['Rc'] ?? null;
 					$finePaymentResult = (object)[];
 
 					if (!empty($rc)) {
-						$pmt = isset($_REQUEST['Pmt']) ? $_REQUEST['Pmt'] : null;;
+						$pmt = $_REQUEST['Pmt'] ?? null;
 						if ($rc == 'A') {
 							$recNo = $_REQUEST['RecNo'];
 							$finePaymentResult->success = true;
@@ -316,14 +306,14 @@ class MyAccount_Fines extends MyAccount {
 					}
 				}
 
-				$interface->assign('finesToPay', $userLibrary->finesToPay);
+				$interface->assign('finesToPay', $paymentLibrary->finesToPay);
 				$interface->assign('userFines', $fines);
 
 				$termsOfService = null;
 				$convenienceFee = 0.00;
 				try {
-					$termsOfService = $userLibrary->eCommerceTerms;
-					$convenienceFee = $userLibrary->eCommerceFee;
+					$termsOfService = $paymentLibrary->eCommerceTerms;
+					$convenienceFee = $paymentLibrary->eCommerceFee;
 				} catch (Exception $e) {
 					// fields don't exist;
 				}
