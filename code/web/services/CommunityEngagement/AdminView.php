@@ -81,7 +81,7 @@ class CommunityEngagement_AdminView extends Admin_Dashboard {
 		}
 		$interface->assign('userCampaigns', $userCampaigns);
 		$interface->assign('campaignMilestones', $campaignMilestones);
-		$interface->assign('allowAdminToEnrollUsers', $library->allowAdminToEnrollUsersInAdminView);
+		$interface->assign('library', $library);
 		$this->display('adminView.tpl', 'Admin View');
 	}
 
