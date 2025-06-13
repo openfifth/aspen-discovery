@@ -17,5 +17,12 @@ function getUpdates25_07_00(): array {
 				"ALTER TABLE library ADD COLUMN displayOnlyUsersForLocationInUserAdmin TINYINT(1) DEFAULT 0",
 			],
 		], //display_only_users_from_current_library_in_user_search_admin_view
+        'allow_admin_to_enroll_users_via_admin_view' => [
+			'title' => 'Allow Admin To Enroll Users Via Admin View',
+			'description' => 'Add control over whether admin can enroll users via the admin view page',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN allowAdminToEnrollUsersInAdminView TINYINT(1) DEFAULT 0",
+			],
+		], //allow_admin_to_enroll_users_via_admin_view
 	];
 }
