@@ -81,6 +81,7 @@
 	</div>
 {/strip}
 <script type="text/javascript">
+	const allowAdminToEnroll = {$allowAdminToEnrollUsers|@json_encode};
 	document.addEventListener('click', function(e) {
 		if (!e.target.closest('#userDropdown')) {
 			document.getElementById('user_search_results').style.display = 'none';
