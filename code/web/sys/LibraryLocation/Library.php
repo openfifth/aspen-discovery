@@ -462,6 +462,7 @@ class Library extends DataObject {
 	public $displayCampaignLeaderboard;
 	public $communityEngagementAdminUserSelect;
 	public $displayOnlyUsersForLocationInuserAdmin;
+	public $allowAdminToEnrollUsersInAdminView;
 
 	//SHAREit
 	public $repeatInShareIt;
@@ -3805,6 +3806,14 @@ class Library extends DataObject {
 							'displayUser' => 'Display User',
 						],
 						'default' => 'displayBranch',
+					],
+					'allowAdminToEnrollUsersInAdminView' => [
+						'property' => 'allowAdminToEnrollUsersInAdminView',
+						'type' => 'checkbox',
+						'label' => 'Allow Admin to Enroll Users in Admin View',
+						'description' => 'Allow admin to enroll users via the admin view page',
+						'default' => 0,
+						'hideInLists'=> true,
 					],
 					'communityEngagementAdminUserSelect' => [
 						'property' => 'communityEngagementAdminUserSelect',
