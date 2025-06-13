@@ -987,6 +987,88 @@ class CommunityEngagement_AJAX extends JSON_Action {
         ]);
         exit;
     }
+
+    public function fetchLibraryUsers($enrolledOnly = false) {
+        global $library;
+        
+        require_once ROOT_DIR . '/sys/Account/User.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+
+        $users = [];
+        $libraryId = $library->libraryId;
+
+        if ($enrolledOnly) {
+            $campaign = new Campaign();
+            $rawUsers = $campaign->getAllUsersInCampaigns();
+
+            foreach($rawUsers as $user) {
+                if ($library->displayOnlyUsersForLocationInuserAdmin && $user->homeLocationId != $libraryId) {
+                    continue;
+                }
+                $users[] = [
+                            'id' => $user->id,
+                            'displayName' => $user->displayName,
+                ];
+            }
+        } else {
+            $user = new User();
+
+            if ($library->displayOnlyUsersForLocationInuserAdmin) {
+                $user->whereAdd('homeLocationId = ' . $libraryId);
+            }
+
+            $user->orderBy('displayname ASC');
+            $user->limit(0, 500);
+
+            $users = array();
+
+            if($user->find()) {
+                while ($user->fetch()) {
+                    $users[] = array(
+                        'id' => $user->id,
+                        'displayName' => $user->displayName,
+                    );
+                } 
+            }
+        }
+        return $users;
+    }
+
+    public function getLibraryUsers() {
+        try {
+            $enrolledOnly = !empty($_REQUEST['enrolledOnly']) && $_REQUEST['enrolledOnly'] == 1;
+            $users = $this->fetchLibraryUsers($enrolledOnly);
+
+             echo json_encode([
+                'success' => true, 
+                'users' => $users, 
+                'title' => translate([
+                    'text' => 'Users Loaded',
+                    'isPublicFacing' => true,
+                ]),
+                'message' => translate([
+                    'text' => count($users) . ' users found',
+                    'isPublicFacing' => true,
+                ]),
+            ]);
+
+        } catch (Exception $e){
+            echo json_encode([
+                'success' => false,
+                'users' => [],
+                'title' => translate([
+                    'text' => 'Error', 
+                    'isPublicFacing' => true,
+                ]),
+                'message' => translate([
+                    'text' => 'Error loading users: ' . $e->getMessage(),
+                    'isPublicFacing' => true,
+                ]),
+            ]);
+        }
+        exit;
+    }
+
        
 
 }
