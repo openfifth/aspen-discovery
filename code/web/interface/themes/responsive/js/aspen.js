@@ -18498,8 +18498,10 @@ AspenDiscovery.CommunityEngagement = function() {
 				});
 		},
 		filterDropdownOptions: function(filterType) {
+			let selectedId = null;
+
 			if (filterType === 'campaign') {
-				document.getElementById("campaign_id").value
+				selectedId = document.getElementById("campaign_id").value
 			} else {
 				const userSelect = document.getElementById("user_id");
 				const userInput = document.getElementById("selected_user_id");
@@ -18909,7 +18911,6 @@ AspenDiscovery.CommunityEngagement = function() {
 			var url = Globals.path + "/CommunityEngagement/AJAX";
 			var params = {
 				method: 'getLibraryUsers',
-				enrolledOnly: !allowAdminToEnroll ? 1 : 0
 			};
 
 			$.getJSON(url, params, function (data) {
@@ -18963,7 +18964,41 @@ AspenDiscovery.CommunityEngagement = function() {
 				);
 				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
 			});
-		}, 
+		},
+		adminEnrollPatron: function(campaignId, userId) {
+			console.log("Admin enroll");
+			AspenDiscovery.Account.reloadHolds();
+			AspenDiscovery.Account.reloadCheckouts();
+
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				method: 'enrollCampaign',
+				campaignId: campaignId,
+				userId: userId, 
+			};
+			console.log("Campaign: ", campaignId);
+			console.log("User: ", userId);
+
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					const emailOptIn = userEmailOptInSetting === 1 ? 1 : 0;
+					console.log("emialoptin: ", emailOptIn);
+
+					AspenDiscovery.CommunityEngagement.toggleCampaignEmailOptIn(
+						campaignId,
+						userId,
+						emailOptIn
+					);
+
+					AspenDiscovery.showMessage(data.title, data.message);
+				} else {
+					console.log("Not success");
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function (jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		}
 	}
 	
 }(AspenDiscovery.CommunityEngagement || {});

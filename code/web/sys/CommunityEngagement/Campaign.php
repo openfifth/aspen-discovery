@@ -969,17 +969,25 @@ class Campaign extends DataObject {
         return $leaderboard;
     }
 
-	function getCampaigns() {
+	function getCampaigns($userId = null) {
 		global $activeLanguage;
 
 		$campaign = new Campaign();
 		$campaignList = [];
 
-		if (!UserAccount::isLoggedIn()) {
-			return $campaignList;
+		if ($userId === null) {
+			if (!UserAccount::isLoggedIn()) {
+				return $campaignList;
+			}
+			$user = UserAccount::getLoggedInUser();
+			$userId = $user->id;
+		} else {
+			$user = new User();
+			$user->id = $userId;
+			if (!$user->find(true)) {
+				return $campaignList;
+			}
 		}
-		$user = UserAccount::getLoggedInUser();
-		$userId = $user->id;
 
 		//Get active campaigns
 		$activeCampaigns = Campaign::getActiveCampaignsList();

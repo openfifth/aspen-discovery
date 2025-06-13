@@ -1,5 +1,7 @@
 {strip}
 	<div id="main-content" class="col-sm-12">
+				here: {$library->communityEngagementAdminUserSelect}
+
 		<h1>{translate text="Admin View" isAdminFacing=true}</h1>
 		{*Filtered Results*}
 		<div>
@@ -22,7 +24,7 @@
 						<select id="user_id" class="form-control-sm" style="margin-bottom: 3px;" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
 							<option value="">All Users</option>
 							{foreach from=$users item=$user}
-									<option value="{$user->id}">{$user->displayName}</option>
+									<option value="{$user.id}">{$user.displayName}</option>
 							{/foreach}
 						</select>
 				</div>
@@ -81,7 +83,6 @@
 	</div>
 {/strip}
 <script type="text/javascript">
-	const allowAdminToEnroll = {$allowAdminToEnrollUsers|@json_encode};
 	document.addEventListener('click', function(e) {
 		if (!e.target.closest('#userDropdown')) {
 			document.getElementById('user_search_results').style.display = 'none';

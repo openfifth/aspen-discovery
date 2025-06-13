@@ -61,6 +61,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 	}
 
 	function filterCampaigns() {
+        global $library;
 
 		$campaignId = isset($_REQUEST['campaignId']) ? intval($_REQUEST['campaignId']) : 0;
 		$userId = isset($_REQUEST['userId']) ? intval($_REQUEST['userId']) : 0;
@@ -126,35 +127,92 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		} elseif ($filterType === 'user') {
 			if ($userId > 0) {
 				// Fetch user campaigns
-				$userCampaigns = Campaign::getUserEnrolledCampaigns($userId);
+				//$userCampaigns = Campaign::getUserEnrolledCampaigns($userId);
+                $campaign = new Campaign();
+                $currentCampaigns = $campaign->getcampaigns($userId);
+                $pastCampaigns = $campaign->getPastCampaigns($userId);
+                $allCampaigns = array_merge($currentCampaigns, $pastCampaigns);
+				// if (!empty($userCampaigns)) {
+				// 	$html = '';
+				// 	foreach ($userCampaigns as $campaign) {
+				// 		$campaign->completedUsersCount = $campaign->getCompletedUsersCount();
+				// 		$html .= '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
+				// 		$html .= '<div class="col-sm-12">';
+				// 		$html .= "<h5 style=\"font-weight:bold;\"><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
+				// 		$html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
+				// 		$html .= '<div class="dashboardLabel">Number of Patrons Enrolled: </div>';
+				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
+				// 		$html .= '<div class="dashboardLabel">Number of Enrollments: </div>';
+				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
+				// 		$html .= '<div class="dashboardLabel">Number of UnEnrollments: </div>';
+				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
+				// 		$html .= '<div class="dashboardLabel">Number of Users Who Have Completed the Campaign:</div>';
+				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->completedUsersCount) . '</div>';
+				// 		$html .= '</div>';
+				// 		$html .= '</div>';
+				// 		$html .= '</div>';
+				// 	}
 	
-				if (!empty($userCampaigns)) {
-					$html = '';
-					foreach ($userCampaigns as $campaign) {
-						$campaign->completedUsersCount = $campaign->getCompletedUsersCount();
-						$html .= '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
-						$html .= '<div class="col-sm-12">';
-						$html .= "<h5 style=\"font-weight:bold;\"><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
-						$html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
-						$html .= '<div class="dashboardLabel">Number of Patrons Enrolled: </div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
-						$html .= '<div class="dashboardLabel">Number of Enrollments: </div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
-						$html .= '<div class="dashboardLabel">Number of UnEnrollments: </div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
-						$html .= '<div class="dashboardLabel">Number of Users Who Have Completed the Campaign:</div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->completedUsersCount) . '</div>';
-						$html .= '</div>';
-						$html .= '</div>';
-						$html .= '</div>';
-					}
-	
-					$response['html'] = $html;
-					$response['success'] = true;
-				} else {
-					$response['message'] = 'User not found.';
-				}
-	
+				// 	$response['html'] = $html;
+				// 	$response['success'] = true;
+				// } else {
+				// 	$response['message'] = 'User not found.';
+				// }
+                if (!empty($allCampaigns)) {
+                    $html = '';
+                    foreach ($allCampaigns as $campaign) {
+	                    $html .= '<div class="dashboardCategory" style="border: 1px solid #3174AF; padding: 15px; margin-bottom: 20px;">';
+
+                        $html .= "<h5><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
+
+                        $campaignComplete = !empty($campaign->isComplete) ? 'Yes' : 'No';
+                        $rewardGiven = !empty($campaign->campaignRewardGiven) ? 'Yes' : 'No';
+
+                        $html .= "<p><strong>Campaign Complete:</strong> {$campaignComplete}</p>";
+                        $html .= "<p><strong>Reward Given:</strong> {$rewardGiven}</p>";
+
+                        $html .= '<table class="table table-bordered table-sm">';
+                        $html .= '<thead><tr>';
+                        $html .= '<th>Milestone</th>';
+                        $html .= '<th>Progress</th>';
+                        $html .= '<th>Status</th>';
+                        $html .= '<th>Reward Given</th>';
+                        $html .= '</tr></thead><tbody>';
+
+                        if (!empty($campaign->milestones)) {
+                            foreach ($campaign->milestones as $milestone) {
+                                $progress = (int)($milestone->completedGoals ?? 0) . ' / ' . (int)($milestone->totalGoals ?? 0);
+                                $status = !empty($milestone->milestoneComplete) ? 'Complete' : 'In Progress';
+                                $milestoneRewardGiven = !empty($milestone->rewardGiven) ? 'Yes' : 'No';
+
+                                $html .= "<tr>
+                                    <td>" . htmlspecialchars($milestone->name) . "</td>
+                                    <td>{$progress}</td>
+                                    <td>{$status}</td>
+                                    <td>{$milestoneRewardGiven}</td>
+                                </tr>";
+                            }
+                        } else {
+                            $html .= '<tr><td colspan="4">No milestones defined for this campaign.</td></tr>';
+                        }
+
+	                    $html .= '</tbody></table>';
+
+                        if (($campaign->isActive || $campaign->isUpcoming) && $library->allowAdminToEnrollUsersInAdminView && $campaign->canEnroll) {
+                            if ($campaign->enrolled) {
+                                $html .= "<button class=\"btn btn-danger\" onclick=\"AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});\">Unenroll</button>";
+                            } else {
+                                $html .= "<button class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId});\">Enroll</button>";
+                            }
+                        }
+
+	                    $html .= '</div>'; 
+                    }
+                    $response['html'] = $html;
+                    $response['success'] = true;
+                } else {
+                    $response['message'] = 'No campaigns found for this user.';
+                }
 			} else {
 				// Get all users in campaigns if no specific user is selected
 				$userCampaigns = Campaign::getAllCampaignsWithEnrolledUsers();
@@ -990,54 +1048,39 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
     public function fetchLibraryUsers($enrolledOnly = false) {
         global $library;
-        
+        global $logger;
+
         require_once ROOT_DIR . '/sys/Account/User.php';
         require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
         $users = [];
-        $libraryId = $library->libraryId;
+        $libraryId = $library->libraryId;      
+        $user = new User();
 
-        if ($enrolledOnly) {
-            $campaign = new Campaign();
-            $rawUsers = $campaign->getAllUsersInCampaigns();
+        if ($library->displayOnlyUsersForLocationInuserAdmin) {
+            $user->whereAdd('homeLocationId = ' . $libraryId);
+        }
 
-            foreach($rawUsers as $user) {
-                if ($library->displayOnlyUsersForLocationInuserAdmin && $user->homeLocationId != $libraryId) {
-                    continue;
-                }
-                $users[] = [
-                            'id' => $user->id,
-                            'displayName' => $user->displayName,
-                ];
-            }
-        } else {
-            $user = new User();
+        $user->orderBy('displayname ASC');
+        $user->limit(0, 500);
 
-            if ($library->displayOnlyUsersForLocationInuserAdmin) {
-                $user->whereAdd('homeLocationId = ' . $libraryId);
-            }
+        $users = array();
 
-            $user->orderBy('displayname ASC');
-            $user->limit(0, 500);
-
-            $users = array();
-
-            if($user->find()) {
-                while ($user->fetch()) {
-                    $users[] = array(
-                        'id' => $user->id,
-                        'displayName' => $user->displayName,
-                    );
-                } 
-            }
+        if($user->find()) {
+            while ($user->fetch()) {
+                $users[] = array(
+                    'id' => $user->id,
+                    'displayName' => $user->displayName,
+                );
+            } 
         }
         return $users;
     }
 
     public function getLibraryUsers() {
+        global $library;
         try {
-            $enrolledOnly = !empty($_REQUEST['enrolledOnly']) && $_REQUEST['enrolledOnly'] == 1;
-            $users = $this->fetchLibraryUsers($enrolledOnly);
+            $users = $this->fetchLibraryUsers();
 
              echo json_encode([
                 'success' => true, 
@@ -1068,7 +1111,4 @@ class CommunityEngagement_AJAX extends JSON_Action {
         }
         exit;
     }
-
-       
-
 }

@@ -9641,7 +9641,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$campaignId = $_GET['campaignId'] ?? null;
 		$userId = $_GET['userId'] ?? null;
 
-
 		if (!$campaignId || !$userId) {
 			return[
 				'success' => false,
