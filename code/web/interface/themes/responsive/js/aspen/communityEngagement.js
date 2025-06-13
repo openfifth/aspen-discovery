@@ -41,8 +41,19 @@ AspenDiscovery.CommunityEngagement = function() {
 				});
 		},
 		filterDropdownOptions: function(filterType) {
+			if (filterType === 'campaign') {
+				document.getElementById("campaign_id").value
+			} else {
+				const userSelect = document.getElementById("user_id");
+				const userInput = document.getElementById("selected_user_id");
 
-			var selectedId = (filterType === 'campaign') ? document.getElementById("campaign_id").value : document.getElementById("user_id").value;
+				if (userSelect) {
+					selectedId = userSelect.value;
+				} else {
+					selectedId = userInput.value;
+				}
+			}
+
 			var url = Globals.path + "/CommunityEngagement/AJAX?method=filterCampaigns";
 			var params = {
 				campaignId: filterType === "campaign" ? selectedId : null,
@@ -430,8 +441,72 @@ AspenDiscovery.CommunityEngagement = function() {
 				isLikeOption.style.display = (conditionalField.value === 'user_list') ? 'none' : '';
 			}
 			
-		}
+		},
+		usersCache: null,
+		getLibraryUsers: function (callback) {
+			if (AspenDiscovery.CommunityEngagement.usersCache) {
+				callback(this.usersCache);
+				return;
+			}
 
+			var url = Globals.path + "/CommunityEngagement/AJAX";
+			var params = {
+				method: 'getLibraryUsers',
+				enrolledOnly: !allowAdminToEnroll ? 1 : 0
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success && data.users) {
+					AspenDiscovery.CommunityEngagement.usersCache = data.users;
+					callback(data.users);
+				} else{
+					callback([]);
+				}
+			}).fail (function(xhr, status, error) {
+				console.log('AJAX error loading users:', error);
+				callback([]);
+			});
+		},
+		displaySearchResults: function (users) {
+			const resultsDiv = document.getElementById('user_search_results');
+
+			if (users.length === 0) {
+				resultsDiv.innerHTML = '<div class="search-result-item">No users found</div>';
+			} else {
+				resultsDiv.innerHTML = users.map(user =>
+					`<div class="search-result-item" onclick="AspenDiscovery.CommunityEngagement.selectUser('${user.id}', '${user.displayName.replace(/'/g, "\\'")}')">
+						${user.displayName}
+					</div>`
+				).join('');
+			}
+			resultsDiv.style.display = 'block';
+		},
+		selectUser: function (userId, userName) {
+			document.getElementById('user_search').value = userName;
+			document.getElementById('selected_user_id').value = userId;
+			document.getElementById('user_search_results').style.display = 'none';
+
+			AspenDiscovery.CommunityEngagement.filterDropdownOptions('user');
+
+		},
+		searchUsers: function (query) {
+			const resultsDiv = document.getElementById('user_search_results');
+			const hiddenInput = document.getElementById('selected_user_id');
+
+			if (query.length < 2) {
+				resultsDiv.style.display = 'none';
+				hiddenInput.value = '';
+				return;
+			}
+
+			hiddenInput.value = '';
+			AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
+				const filteredUsers = users.filter(user =>
+					user.displayName.toLowerCase().includes(query.toLowerCase())
+				);
+				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
+			});
+		}, 
 	}
 	
 }(AspenDiscovery.CommunityEngagement || {});
