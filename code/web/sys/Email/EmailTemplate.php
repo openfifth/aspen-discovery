@@ -297,47 +297,26 @@ class EmailTemplate extends DataObject {
 				$baseUrl = $library->baseUrl;
 		}
 
+		$text = str_replace('%library.displayName%', $library->displayName ?? '', $text);
+		$text = str_replace('%library.baseUrl%', $baseUrl, $text);
+		$text = str_replace('%library.email%', $library->contactEmail ?? '', $text);
+		$text = str_ireplace('%user.firstname%', $user->firstname ?? '', $text);
+		$text = str_ireplace('%user.lastname%', $user->lastname ?? '', $text);
+		$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName ?? '', $text);
+		$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode ?? '', $text);
 
-		if ($this->templateType == 'welcome') {
-			$text = str_replace('%library.displayName%', $library->displayName, $text);
-			$text = str_replace('%library.baseUrl%', $baseUrl, $text);
-			$text = str_replace('%library.email%', $library->contactEmail, $text);
-			$text = str_ireplace('%user.firstname%', $user->firstname, $text);
-			$text = str_ireplace('%user.lastname%', $user->lastname, $text);
-			$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName, $text);
-			$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode, $text);
-		} elseif ($this->templateType == 'campaignStart' || $this->templateType == 'campaignEnroll' || $this->templateType == 'campaignComplete' ||  $this->templateType == 'campaignEnding') {
-			$text = str_replace('%library.displayName%', $library->displayName, $text);
-			$text = str_replace('%library.baseUrl%', $baseUrl, $text);
-			$text = str_replace('%library.email%', $library->contactEmail, $text);
-			$text = str_ireplace('%user.firstname%', $user->firstname, $text);
-			$text = str_ireplace('%user.lastname%', $user->lastname, $text);
-			$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName, $text);
-			$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode, $text);
-			$text = str_replace('%campaign.name%', $parameters['campaignName'], $text);
-			$text = str_replace('%milestone.name%', $parameters['milestoneName'], $text);
-			$text = str_replace('%campaign.reward%', $parameters['campaignReward'], $text);
-			$text = str_replace('%milestoneSummary%', $parameters['milestoneSummary'], $text);
+
+		if ($this->templateType == 'campaignStart' || $this->templateType == 'campaignEnroll' || $this->templateType == 'campaignComplete' ||  $this->templateType == 'campaignEnding') {
+			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);
+			$text = str_replace('%milestone.name%', $parameters['milestoneName'] ?? '', $text);
+			$text = str_replace('%campaign.reward%', $parameters['campaignReward'] ?? '', $text);
+			$text = str_replace('%milestoneSummary%', $parameters['milestoneSummary'] ?? '', $text);
 		} elseif ($this->templateType == 'staffCampaignComplete') {
-			$text = str_replace('%library.displayName%', $library->displayName, $text);
-			$text = str_replace('%library.baseUrl%', $baseUrl, $text);
-			$text = str_replace('%library.email%', $library->contactEmail, $text);
-			$text = str_ireplace('%user.firstname%', $user->firstname, $text);
-			$text = str_ireplace('%user.lastname%', $user->lastname, $text);
-			$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName, $text);
-			$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode, $text);
-			$text = str_replace('%campaign.name%', $parameters['campaignName'], $text);
+			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);
 		} elseif ($this->templateType == 'milestoneComplete') {
-			$text = str_replace('%library.displayName%', $library->displayName, $text);
-			$text = str_replace('%library.baseUrl%', $baseUrl, $text);
-			$text = str_replace('%library.email%', $library->contactEmail, $text);
-			$text = str_ireplace('%user.firstname%', $user->firstname, $text);
-			$text = str_ireplace('%user.lastname%', $user->lastname, $text);
-			$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName, $text);
-			$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode, $text);
-			$text = str_replace('%campaign.name%', $parameters['campaignName'], $text);
-			$text = str_replace('%milestone.name%', $parameters['milestoneName'], $text);
-			$text = str_replace('%milestone.reward%', $parameters['milestoneReward'], $text);
+			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);
+			$text = str_replace('%milestone.name%', $parameters['milestoneName'] ?? '', $text);
+			$text = str_replace('%milestone.reward%', $parameters['milestoneReward'] ?? '', $text);
 		}
 		return $text;
 	}
