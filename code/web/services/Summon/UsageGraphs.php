@@ -1,6 +1,6 @@
 <?php
 
-require_once ROOT_DIR . '/services/Admin/bstractUsageGraphs.php';
+require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
 require_once ROOT_DIR . '/sys/Summon/UserSummonUsage.php';
 require_once ROOT_DIR . '/sys/Summon/SummonRecordUsage.php';
