@@ -642,7 +642,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
                 $user = new User();
                 $user->id = $userId;
                 if ($user->find(true) && !empty($user->email)) {
-                    $this->sendEnrollmentEmail($user, $campaignName);
+                    $this->sendEnrollmentEmail($user, $campaignId);
                 }
 
             }
@@ -675,28 +675,34 @@ class CommunityEngagement_AJAX extends JSON_Action {
         }
     }
 
-    private function sendEnrollmentEmail($user, $campaignName) {
+    private function sendEnrollmentEmail($user, $campaignId) {
         require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
        global $logger;
    
        $emailTemplate = EmailTemplate::getActiveTemplate('campaignEnroll');
-   
-       if ($emailTemplate) {
-   
-           $parameters = [
-               'user' => $user,
-               'campaignName' => $campaignName,
-               'library' => $user->getHomeLibrary(),
-           ];
+       if (!$emailTemplate) {
+            return;
+       }
 
-   
-           try {
-               $emailTemplate->sendEmail($user->email, $parameters);
+       $campaign = new Campaign();
+       $campaign->id = $campaignId;
 
-           } catch (Exception $e) {
-               $logger->log("Exception while sending email to {$user->email}: " . $e->getMessage(), Logger::LOG_ERROR);
-           }
+       if (!$campaign->find(true)) {
+            $logger->log("Campaign with ID $campaignId not found.", Logger::LOG_ERROR);
+            return;
+       }
+
+       $parameters = $campaign->getCampaignEmailParameters($user, $campaignId);
+       if (empty($parameters)) {
+        return;
+       }
+
+       try {
+        $emailTemplate->sendEmail($user->email, $parameters);
+       } catch (Exception $e) {
+            $logger->log("Exception while sending email to {$user->email}: " . $e->getMessage(), Logger::LOG_ERROR);
        }
    }
 

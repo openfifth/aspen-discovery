@@ -27,7 +27,7 @@ if ($campaign->find()) {
 					$user->id = $userCampaign->userId;
 
 					if ($user->find(true) && !empty($user->email)) {
-						sendCampaignEmail($user, $campaignName);
+						sendCampaignEmail($user, $campaignId);
 					}
 
 				}
@@ -37,14 +37,20 @@ if ($campaign->find()) {
 	}
 }
 
-function sendCampaignEmail($user, $campaignName) {
+function sendCampaignEmail($user, $campaignId) {
+	require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+
 	$emailTemplate = EmailTemplate::getActiveTemplate('campaignStart');
 	if ($emailTemplate) {
-		$parameters = [
-			'user' => $user,
-			'campaignName' => $campaignName,
-			'library' => $user->getHomeLibrary(),
-		];
+
+		$campaign = new Campaign();
+		$campaign->id = $campaignId;
+		if (!$campaign->find(true)) {
+			return;
+		}
+
+		$parameters = $campaign->getCampaignEmailParameters($user, $campaignId);
+		
 		$emailTemplate->sendEmail($user->email, $parameters);
 	}
 }

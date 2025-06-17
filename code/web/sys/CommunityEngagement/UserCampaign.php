@@ -172,6 +172,7 @@ class UserCampaign extends DataObject {
 
     public function checkAndHandleCampaignCompletion($userId, $campaignId) {
         require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
         global $logger;
 
         $userCampaign = new UserCampaign();
@@ -223,11 +224,7 @@ class UserCampaign extends DataObject {
                     if ($userCampaign->optInToCampaignEmailNotifications == 1 && $userCampaign->campaignCompleteEmailSent == 0) {
                         $emailTemplate = EmailTemplate::getActiveTemplate('campaignComplete');
                         if ($emailTemplate) {
-                            $parameters = [
-                                'user' => $user,
-                                'campaignName' => $campaignName,
-                                'library' => $user->getHomeLibrary(),
-                            ];
+                            $parameters = $campaign->getCampaignEmailParameters($user, $campaignId);
                             try {
                                 $emailTemplate->sendEmail($user->email, $parameters);
                                 $userCampaign->campaignCompleteEmailSent = 1;
