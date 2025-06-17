@@ -248,6 +248,21 @@ class UserCampaign extends DataObject {
                         $milestoneObj->id = $milestone->milestoneId;
                         if ($milestoneObj->find(true)) {
                             $milestone->name = $milestoneObj->name;
+
+                           if (!empty($milestone->reward)) {
+                                require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
+
+                                $reward = new Reward();
+                                $reward->id = $milestone->reward;
+
+                                if ($reward->find(true)) {
+                                    $milestone->rewardName = $reward->name;
+                                } else {
+                                    $milestone->rewardName = '';
+                                }
+                           } else {
+                            $milestone->rewardName = '';
+                           }
                         }
                         $milestones[] = clone $milestone;
                     }
@@ -269,6 +284,7 @@ class UserCampaign extends DataObject {
                                     'user' => $user,
                                     'campaignName' => $campaign->name,
                                     'milestoneName' => $milestone->name,
+                                    'milestoneReward' => $milestone->rewardName,
                                     'library' => $user->getHomeLibrary(),
                                 ];
 
