@@ -27,7 +27,7 @@ if ($campaign->find()) {
 					$user->id = $userCampaign->userId;
 
 					if ($user->find(true) && !empty($user->email)) {
-						sendCampaignEmail($user, $campaignId);
+						sendCampaignEndingEmail($user, $campaignId);
 					}
 
 				}
@@ -37,7 +37,7 @@ if ($campaign->find()) {
 	}
 }
 
-function sendCampaignEmail($user, $campaignId) {
+function sendCampaignEndingEmail($user, $campaignId) {
 	require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
 	$emailTemplate = EmailTemplate::getActiveTemplate('campaignEnding');
