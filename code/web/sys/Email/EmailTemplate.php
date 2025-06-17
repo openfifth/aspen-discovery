@@ -308,7 +308,6 @@ class EmailTemplate extends DataObject {
 
 		if ($this->templateType == 'campaignStart' || $this->templateType == 'campaignEnroll' || $this->templateType == 'campaignComplete' ||  $this->templateType == 'campaignEnding') {
 			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);
-			$text = str_replace('%milestone.name%', $parameters['milestoneName'] ?? '', $text);
 			$text = str_replace('%campaign.reward%', $parameters['campaignReward'] ?? '', $text);
 			$text = str_replace('%milestoneSummary%', $parameters['milestoneSummary'] ?? '', $text);
 		} elseif ($this->templateType == 'staffCampaignComplete') {
