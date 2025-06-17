@@ -130,8 +130,9 @@ class SMTPSetting extends DataObject {
 		$mail->Body    = $htmlBody ?: $body;
 
 		if(!$mail->send()) {
-			echo 'Message could not be sent.';
-			echo 'Mailer Error: ' . $mail->ErrorInfo;
+			global $logger;
+			$logger->log('Message could not be sent.', Logger::LOG_ERROR);
+			$logger->log('Mailer Error: ' . $mail->ErrorInfo, Logger::LOG_ERROR);
 			return false;
 		} else {
 		//	echo 'Message has been sent';
