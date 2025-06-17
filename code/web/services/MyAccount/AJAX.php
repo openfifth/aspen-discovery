@@ -4328,8 +4328,11 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	function renderReadingHistoryPaginationLink($page, $options) {
-		return "<a class='page-link btn btn-default btn-sm' onclick='AspenDiscovery.Account.loadReadingHistory(\"{$options['patronId']}\", \"{$options['sort']}\", \"{$page}\", undefined, \"{$options['filter']}\");AspenDiscovery.goToAnchor(\"topOfList\")'>";
+	/** @noinspection PhpUnused */
+	function renderReadingHistoryPaginationLink(int $page, array $options): string {
+		$currentPage = isset($_REQUEST['page']) && is_numeric($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+		$activeClass = ($currentPage == $page) ? ' active' : '';
+		return "<a class='page-link btn btn-default btn-sm{$activeClass}' onclick='AspenDiscovery.Account.loadReadingHistory(\"{$options['patronId']}\", \"{$options['sort']}\", \"{$page}\", undefined, \"{$options['filter']}\");AspenDiscovery.goToAnchor(\"topOfList\")'>";
 	}
 
 	private function isValidTimeStamp($timestamp) {
