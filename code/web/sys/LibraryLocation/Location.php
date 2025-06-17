@@ -722,7 +722,7 @@ class Location extends DataObject {
 				],
 			],
 
-			$structure['hoursSection'] = [
+			'hoursSection' => [
 				'property' => 'hoursSection',
 				'type' => 'section',
 				'label' => 'Library Hours',
