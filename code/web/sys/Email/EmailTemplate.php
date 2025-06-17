@@ -271,15 +271,11 @@ class EmailTemplate extends DataObject {
 	}
 
 	public function sendEmail($toEmail, $parameters) {
-		global $logger;
-
 		if (empty($toEmail)) {
 			return false;
 		}
 		$plainTextBody = $this->plainTextBody;
 		$updatedBody = $this->applyParameters($this->plainTextBody, $parameters);
-		$logger->log("PLAIN BODY: " . $plainTextBody, Logger::LOG_ERROR);
-		$logger->log("SUBJECT: " . $this->subject, Logger::LOG_ERROR);
 
 		$updatedSubject = $this->applyParameters($this->subject, $parameters);
 
