@@ -722,6 +722,46 @@ class Location extends DataObject {
 				],
 			],
 
+			$structure['hoursSection'] = [
+				'property' => 'hoursSection',
+				'type' => 'section',
+				'label' => 'Library Hours',
+				'hideInLists' => true,
+				'renderAsHeading' => false,
+				'permissions' => [
+					'Location ILS Connection',
+					'Location Address and Hours Settings'
+				],
+				'properties' => [
+					'allowUpdatingHoursFromILS' => [
+						'property' => 'allowUpdatingHoursFromILS',
+						'type' => 'checkbox',
+						'label' => 'Automatically update hours from the ILS',
+						'description' => 'Whether closures should be automatically updated (Koha Only).',
+						'hideInLists' => true,
+						'default' => 1,
+						'permissions' => ['Location ILS Connection'],
+					],
+
+					'hours' => [
+						'property' => 'hours',
+						'type' => 'oneToMany',
+						'keyThis' => 'locationId',
+						'keyOther' => 'locationId',
+						'subObjectType' => 'LocationHours',
+						'structure' => $hoursStructure,
+						'label' => 'Hours',
+						'renderAsHeading' => true,
+						'description' => 'Library Hours',
+						'sortable' => false,
+						'storeDb' => true,
+						'permissions' => ['Location Address and Hours Settings'],
+						'canAddNew' => true,
+						'canDelete' => true,
+					],
+				],
+			],
+
 			// Catalog Enrichment //
 			'enrichmentSection' => [
 				'property' => 'enrichmentSection',
@@ -1282,46 +1322,6 @@ class Location extends DataObject {
 				],
 			];
 		}
-
-		$structure['hoursSection'] = [
-			'property' => 'hoursSection',
-			'type' => 'section',
-			'label' => 'Library Hours',
-			'hideInLists' => true,
-			'renderAsHeading' => false,
-			'permissions' => [
-				'Location ILS Connection',
-				'Location Address and Hours Settings'
-			],
-			'properties' => [
-				'allowUpdatingHoursFromILS' => [
-					'property' => 'allowUpdatingHoursFromILS',
-					'type' => 'checkbox',
-					'label' => 'Automatically update hours from the ILS',
-					'description' => 'Whether closures should be automatically updated (Koha Only).',
-					'hideInLists' => true,
-					'default' => 1,
-					'permissions' => ['Location ILS Connection'],
-				],
-
-				'hours' => [
-					'property' => 'hours',
-					'type' => 'oneToMany',
-					'keyThis' => 'locationId',
-					'keyOther' => 'locationId',
-					'subObjectType' => 'LocationHours',
-					'structure' => $hoursStructure,
-					'label' => 'Hours',
-					'renderAsHeading' => true,
-					'description' => 'Library Hours',
-					'sortable' => false,
-					'storeDb' => true,
-					'permissions' => ['Location Address and Hours Settings'],
-					'canAddNew' => true,
-					'canDelete' => true,
-				],
-			],
-		];
 
 		$structure['recordsToInclude'] = [
 			'property' => 'recordsToInclude',
