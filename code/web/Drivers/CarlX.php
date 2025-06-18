@@ -2570,7 +2570,7 @@ EOT;
 
 		if(!property_exists($result, "Patron"))
 		{
-			return false;
+			return true;
 		}
 
 		$selfServeActivityDate = strtotime($result->Patron->SelfServeActivityDate);
