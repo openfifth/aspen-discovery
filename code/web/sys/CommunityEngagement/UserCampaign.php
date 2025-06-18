@@ -261,7 +261,7 @@ class UserCampaign extends DataObject {
 
 					if ($milestoneProgress->find(true)) {
 
-						if ($milestoneProgress->progress >= $milestone->goal && !$milestoneProgress->milestoneCompleteEmailSent){
+						if ($milestoneProgress->progress >= $milestone->goal && !$milestoneProgress->milestoneCompleteEmailSent && $userCampaign->optInToCampaignEmailNotifications == 1){
 
 							$emailTemplate = EmailTemplate::getActiveTemplate('milestoneComplete');
 
