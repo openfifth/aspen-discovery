@@ -33,10 +33,12 @@ if (!$nytSettings->find(true)) {
 		if ($nytUpdateLog != null) {
 			$nytUpdateLog->addError("Did not get a good response from the API");
 		}
-	}
+	} else{
+		//Record the number of lists to be processed
+		$nytUpdateLog->numLists = count($availableLists);
+		$nytUpdateLog->update();
 
-	$listAPI = new ListAPI();
-	if (!empty($availableLists)) {
+		$listAPI = new ListAPI();
 		foreach ($availableLists as $list) {
 			$listName = $list->display_name;
 			try {
@@ -46,8 +48,7 @@ if (!$nytSettings->find(true)) {
 			}
 			$nytUpdateLog->lastUpdate = time();
 			$nytUpdateLog->update();
-			//Make sure we don't hit our quota.  Wait between updates
-			sleep(7);
+			//We now get all information in a single call, so there is no need to wait between calls
 		}
 	}
 
