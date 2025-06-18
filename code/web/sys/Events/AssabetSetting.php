@@ -55,8 +55,10 @@ class AssabetSetting extends DataObject {
 				'type' => 'integer',
 				'label' => 'Number of Days To Index',
 				'description' => 'The number of days into the future to index',
-				'default' => 365,
-				'minimum' => 30,
+				'default' => 30,
+				'min' => 1,
+				'max' => 30,
+				'note' => 'Currently, Assabet only returns events data up to 30 days. They plan to implement the ability to retrieve events data beyond 30 days.',
 			],
 			'eventsInLists' => [
 				'property' => 'eventsInLists',
