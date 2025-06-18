@@ -222,7 +222,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					$response['campaignName'] = $campaignName;
 					$response['html'] = 'There are currently no users to display.';
 				}
-			  
 			} else {
 				$leaderboard = $campaign->getOverallLeaderboard();
 				if ($leaderboard) {
@@ -239,7 +238,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					$response['campaignName'] = 'All Campaigns';
 					$response['html'] = 'There are currently no users to display.';
 				}
-			   
 			}
 			header('Content-Type: application/json');
 			echo json_encode($response);
@@ -365,7 +363,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			exit;
 		}
 
-	   
 		$campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
 		$campaignMilestoneUsersProgress->ce_milestone_id = $milestoneId;
 		$campaignMilestoneUsersProgress->userId = $userId;
@@ -382,7 +379,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
 		$userCampaign = new UserCampaign();
 		$userCampaign->checkAndHandleCampaignCompletion($userId, $campaignId);
-		
+
 		echo json_encode([
 			'title' => translate([
 					'text' => 'Progress Added',
@@ -683,7 +680,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
 		global $logger;
-   
 		$emailTemplate = EmailTemplate::getActiveTemplate('campaignEnroll');
 		if (!$emailTemplate) {
 			return;
@@ -749,21 +745,21 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
 		ob_end_clean();
 		if ($leaderboardData) {
-		echo json_encode([
-			'success' => true,
-			'title' => translate([
-				'text' => 'Success',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Leaderboard changes saved successfully',
-				'isPublicFacing' => true,
-			]),
-			'updatedHTML' => $leaderboardData['html'],
-			'updatedCSS' => $leaderboardData['css']
-		]);
-		exit;
-	   }
+			echo json_encode([
+				'success' => true,
+				'title' => translate([
+					'text' => 'Success',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Leaderboard changes saved successfully',
+					'isPublicFacing' => true,
+				]),
+				'updatedHTML' => $leaderboardData['html'],
+				'updatedCSS' => $leaderboardData['css']
+			]);
+			exit;
+		}
 	}
 
 	private function saveLeaderboardToDatabase($templateName, $html, $css) {
@@ -990,5 +986,4 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		exit;
 	}
 	
-
 }
