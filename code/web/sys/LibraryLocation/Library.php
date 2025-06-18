@@ -461,7 +461,7 @@ class Library extends DataObject {
 	public $campaignCompletionNewEmail;
 	public $displayCampaignLeaderboard;
 	public $communityEngagementAdminUserSelect;
-	public $displayOnlyUsersForLocationInuserAdmin;
+	public $displayOnlyUsersForLocationInUserAdmin;
 	public $allowAdminToEnrollUsersInAdminView;
 
 	//SHAREit
@@ -3828,8 +3828,8 @@ class Library extends DataObject {
 						],
 						'default' => 'dropdown',
 					],
-					'displayOnlyUsersForLocationInuserAdmin' => [
-						'property' => 'displayOnlyUsersForLocationInuserAdmin',
+					'displayOnlyUsersForLocationInUserAdmin' => [
+						'property' => 'displayOnlyUsersForLocationInUserAdmin',
 						'type' => 'checkbox',
 						'label' => 'Display only users for current library location in user admin view.',
 						'description' => 'Whether to display only the users who have their home location set to the current library when searching bu user in the admin view',

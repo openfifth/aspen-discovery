@@ -1057,7 +1057,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
         $libraryId = $library->libraryId;      
         $user = new User();
 
-        if ($library->displayOnlyUsersForLocationInuserAdmin) {
+        if ($library->displayOnlyUsersForLocationInUserAdmin) {
             $user->whereAdd('homeLocationId = ' . $libraryId);
         }
 
