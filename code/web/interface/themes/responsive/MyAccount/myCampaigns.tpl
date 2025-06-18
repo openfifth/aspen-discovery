@@ -159,7 +159,7 @@
 													</div>
 													{if $milestone->progressBeyondOneHundredPercent && $milestone->extraProgress > 0}
 														<div class="extra-progress" aria-valuenow="{$milestone->extraProgress}" style="margin-top: 10px; font-weight: bold; display: flex; justify-content: center; align-items: center;">
-															<span style="background-color: #3174AF;  color: white; border-radius: 50%; width: 60px; height: 60px; text-align: center; display: flex; align-items: center; justify-content: center;">
+															<span style="background-color: #3174AF; color: white; border-radius: 50%; width: 60px; height: 60px; text-align: center; display: flex; align-items: center; justify-content: center;">
 																{$milestone->extraProgress}%
 															</span>
 														</div>
@@ -291,7 +291,7 @@
 
 														{if $milestone.progressBeyondOneHundredPercent && $milestone.extraProgress > 0}
 															<div class="extra-progress" aria-valuenow="{$milestone.extraProgress}" style="margin-top: 10px; font-weight: bold; display: flex; justify-content: center; align-items: center;">
-																<span style="background-color: #3174AF;  color: white; border-radius: 50%; width: 60px; height: 60px; text-align: center; display: flex; align-items: center; justify-content: center;">
+																<span style="background-color: #3174AF; color: white; border-radius: 50%; width: 60px; height: 60px; text-align: center; display: flex; align-items: center; justify-content: center;">
 																	{$milestone.extraProgress}%
 																</span>
 															</div>
@@ -674,7 +674,7 @@
 
 												{if $milestone->progressBeyondOneHundredPercent && $milestone->extraProgress > 0}
 													<div class="extra-progress" aria-valuenow="{$milestone->extraProgress}" style="margin-top: 10px; font-weight: bold; display: flex; justify-content: center; align-items: center;">
-														<span style="background-color: #3174AF;  color: white; border-radius: 50%; width: 60px; height: 60px; text-align: center; display: flex; align-items: center; justify-content: center;">
+														<span style="background-color: #3174AF; color: white; border-radius: 50%; width: 60px; height: 60px; text-align: center; display: flex; align-items: center; justify-content: center;">
 															{$milestone->extraProgress}%
 														</span>
 													</div>
