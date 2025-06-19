@@ -22,7 +22,7 @@
 			{if $library->communityEngagementAdminUserSelect == 'dropdown'}
 				<div id="userDropdown" style="display:none;">
 						<select id="user_id" class="form-control-sm" style="margin-bottom: 3px;" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
-							<option value="">All Users</option>
+							<option value="">-</option>
 							{foreach from=$users item=$user}
 									<option value="{$user.id}">{$user.displayName}</option>
 							{/foreach}
@@ -103,6 +103,10 @@
 		} else {
 			campaignDropdown.style.display = "none";
 			userDropdown.style.display = "none";
+		}
+
+		if (filterBy === "campaign" || filterBy === "user") {
+			AspenDiscovery.CommunityEngagement.filterDropdownOptions(filterBy);
 		}
 	}
 </script>
