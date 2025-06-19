@@ -240,7 +240,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					$response['html'] = $html;
 					$response['success'] = true;
 				} else {
-					$response['message'] = 'No users found';
+					$response['message'] = 'No enrolled campaigns found';
 				}
 			}
 		} else {
