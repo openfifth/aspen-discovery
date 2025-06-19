@@ -129,7 +129,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				// Fetch user campaigns
 				//$userCampaigns = Campaign::getUserEnrolledCampaigns($userId);
                 $campaign = new Campaign();
-                $currentCampaigns = $campaign->getCampaigns($userId);
+                $currentCampaigns = $campaign->getCampaigns($userId, true);
                 $pastCampaigns = $campaign->getPastCampaigns($userId);
                 $allEligibleCampaigns = array_merge($currentCampaigns, $pastCampaigns);
 				// if (!empty($userCampaigns)) {
