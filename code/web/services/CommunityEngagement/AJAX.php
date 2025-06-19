@@ -214,34 +214,8 @@ class CommunityEngagement_AJAX extends JSON_Action {
                     $response['message'] = 'No campaigns found for this user.';
                 }
 			} else {
-				// Get all users in campaigns if no specific user is selected
-				$userCampaigns = Campaign::getAllCampaignsWithEnrolledUsers();
-				if (!empty($userCampaigns)) {
-					$html = '';
-					foreach ($userCampaigns as $campaign) {
-						$campaign->completedUsersCount = $campaign->getCompletedUsersCount();
-						$html .= '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
-						$html .= '<div class="col-sm-12">';
-						$html .= "<h5 style=\"font-weight:bold;\"><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($user->name) . "</a></h5>";
-						$html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
-						$html .= '<div class="dashboardLabel">Number of Patrons Enrolled: </div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
-						$html .= '<div class="dashboardLabel">Number of Enrollments: </div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
-						$html .= '<div class="dashboardLabel">Number of UnEnrollments: </div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
-						$html .= '<div class="dashboardLabel">Number of Users Who Have Completed the Campaign:</div>';
-						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->completedUsersCount) . '</div>';
-						$html .= '</div>';
-						$html .= '</div>';
-						$html .= '</div>';
-					}
-	
-					$response['html'] = $html;
-					$response['success'] = true;
-				} else {
-					$response['message'] = 'No enrolled campaigns found';
-				}
+				$response['html'] = '<div class="alert alert-info" style="margin: 10px 0;">Please select a user.</div>';
+				$response['success'] = true;
 			}
 		} else {
 			$response['message'] = 'Invalid filter type.';
