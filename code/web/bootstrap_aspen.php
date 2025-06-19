@@ -178,6 +178,9 @@ function aspen_autoloader($class) {
 		} elseif (file_exists('sys/' . $class . '.php')) {
 			$className = ROOT_DIR . '/sys/' . $class . '.php';
 			require_once $className;
+		} elseif (file_exists('sys/Account/' . $class . '.php')) {
+			$className = ROOT_DIR . '/sys/Account/' . $class . '.php';
+			require_once $className;
 		} elseif (file_exists('Drivers/' . $class . '.php')) {
 			$className = ROOT_DIR . '/Drivers/' . $class . '.php';
 			require_once $className;
