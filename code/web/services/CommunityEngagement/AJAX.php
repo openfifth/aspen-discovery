@@ -129,9 +129,9 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				// Fetch user campaigns
 				//$userCampaigns = Campaign::getUserEnrolledCampaigns($userId);
                 $campaign = new Campaign();
-                $currentCampaigns = $campaign->getcampaigns($userId);
+                $currentCampaigns = $campaign->getCampaigns($userId);
                 $pastCampaigns = $campaign->getPastCampaigns($userId);
-                $allCampaigns = array_merge($currentCampaigns, $pastCampaigns);
+                $allEligibleCampaigns = array_merge($currentCampaigns, $pastCampaigns);
 				// if (!empty($userCampaigns)) {
 				// 	$html = '';
 				// 	foreach ($userCampaigns as $campaign) {
@@ -158,9 +158,9 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				// } else {
 				// 	$response['message'] = 'User not found.';
 				// }
-                if (!empty($allCampaigns)) {
+                if (!empty($allEligibleCampaigns)) {
                     $html = '';
-                    foreach ($allCampaigns as $campaign) {
+                    foreach ($allEligibleCampaigns as $campaign) {
 	                    $html .= '<div class="dashboardCategory" style="border: 1px solid #3174AF; padding: 15px; margin-bottom: 20px;">';
 
                         $html .= "<h5><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
