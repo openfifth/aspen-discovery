@@ -207,9 +207,9 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
                         if (($campaign->isActive || $campaign->isUpcoming) && $library->allowAdminToEnrollUsersInAdminView && $campaign->canEnroll) {
                             if ($campaign->enrolled) {
-                                $html .= "<button class=\"btn btn-danger\" onclick=\"AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});\">Unenroll</button>";
+                                $html .= "<button type=\"button\" class=\"btn btn-danger\" onclick=\"AspenDiscovery.CommunityEngagement.adminUnenroll({$campaign->id}, {$userId}); return false;\">Unenroll</button>";
                             } else {
-                                $html .= "<button class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting});\">Enroll</button>";
+                                $html .= "<button type=\"button\" class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting}); return false;\">Enroll</button>";
                             }
                         }
 
