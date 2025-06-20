@@ -61,7 +61,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 	}
 
 	function filterCampaigns() {
-        global $library;
+		global $library;
 
 		$campaignId = isset($_REQUEST['campaignId']) ? intval($_REQUEST['campaignId']) : 0;
 		$userId = isset($_REQUEST['userId']) ? intval($_REQUEST['userId']) : 0;
@@ -126,10 +126,10 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			}
 		} elseif ($filterType === 'user') {
 			if ($userId > 0) {
-                $campaign = new Campaign();
-                $currentCampaigns = $campaign->getCampaigns($userId, true);
-                $pastCampaigns = $campaign->getPastCampaigns($userId);
-                $allEligibleCampaigns = array_merge($currentCampaigns, $pastCampaigns);
+				$campaign = new Campaign();
+				$currentCampaigns = $campaign->getCampaigns($userId, true);
+				$pastCampaigns = $campaign->getPastCampaigns($userId);
+				$allEligibleCampaigns = array_merge($currentCampaigns, $pastCampaigns);
 				$user = new User();
 				$user->id = $userId;
 				if($user->find(true)) {
@@ -137,61 +137,61 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				} else {
 					$userEmailOptInSetting = 0;
 				}
-                if (!empty($allEligibleCampaigns)) {
-                    $html = '';
-                    foreach ($allEligibleCampaigns as $campaign) {
-	                    $html .= '<div class="dashboardCategory" style="border: 1px solid #3174AF; padding: 15px; margin-bottom: 20px;">';
+				if (!empty($allEligibleCampaigns)) {
+					$html = '';
+					foreach ($allEligibleCampaigns as $campaign) {
+						$html .= '<div class="dashboardCategory" style="border: 1px solid #3174AF; padding: 15px; margin-bottom: 20px;">';
 
-                        $html .= "<h5><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
+						$html .= "<h5><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
 
-                        $campaignComplete = !empty($campaign->isComplete) ? 'Yes' : 'No';
-                        $rewardGiven = !empty($campaign->campaignRewardGiven) ? 'Yes' : 'No';
+						$campaignComplete = !empty($campaign->isComplete) ? 'Yes' : 'No';
+						$rewardGiven = !empty($campaign->campaignRewardGiven) ? 'Yes' : 'No';
 
-                        $html .= "<p><strong>Campaign Complete:</strong> {$campaignComplete}</p>";
-                        $html .= "<p><strong>Reward Given:</strong> {$rewardGiven}</p>";
+						$html .= "<p><strong>Campaign Complete:</strong> {$campaignComplete}</p>";
+						$html .= "<p><strong>Reward Given:</strong> {$rewardGiven}</p>";
 
-                        $html .= '<table class="table table-bordered table-sm">';
-                        $html .= '<thead><tr>';
-                        $html .= '<th>Milestone</th>';
-                        $html .= '<th>Progress</th>';
-                        $html .= '<th>Status</th>';
-                        $html .= '<th>Reward Given</th>';
-                        $html .= '</tr></thead><tbody>';
+						$html .= '<table class="table table-bordered table-sm">';
+						$html .= '<thead><tr>';
+						$html .= '<th>Milestone</th>';
+						$html .= '<th>Progress</th>';
+						$html .= '<th>Status</th>';
+						$html .= '<th>Reward Given</th>';
+						$html .= '</tr></thead><tbody>';
 
-                        if (!empty($campaign->milestones)) {
-                            foreach ($campaign->milestones as $milestone) {
-                                $progress = (int)($milestone->completedGoals ?? 0) . ' / ' . (int)($milestone->totalGoals ?? 0);
-                                $status = !empty($milestone->milestoneComplete) ? 'Complete' : 'In Progress';
-                                $milestoneRewardGiven = !empty($milestone->rewardGiven) ? 'Yes' : 'No';
+						if (!empty($campaign->milestones)) {
+							foreach ($campaign->milestones as $milestone) {
+								$progress = (int)($milestone->completedGoals ?? 0) . ' / ' . (int)($milestone->totalGoals ?? 0);
+								$status = !empty($milestone->milestoneComplete) ? 'Complete' : 'In Progress';
+								$milestoneRewardGiven = !empty($milestone->rewardGiven) ? 'Yes' : 'No';
 
-                                $html .= "<tr>
-                                    <td>" . htmlspecialchars($milestone->name) . "</td>
-                                    <td>{$progress}</td>
-                                    <td>{$status}</td>
-                                    <td>{$milestoneRewardGiven}</td>
-                                </tr>";
-                            }
-                        } else {
-                            $html .= '<tr><td colspan="4">No milestones defined for this campaign.</td></tr>';
-                        }
+								$html .= "<tr>
+									<td>" . htmlspecialchars($milestone->name) . "</td>
+									<td>{$progress}</td>
+									<td>{$status}</td>
+									<td>{$milestoneRewardGiven}</td>
+								</tr>";
+							}
+						} else {
+							$html .= '<tr><td colspan="4">No milestones defined for this campaign.</td></tr>';
+						}
 
-	                    $html .= '</tbody></table>';
+						$html .= '</tbody></table>';
 
-                        if (($campaign->isActive || $campaign->isUpcoming) && $library->allowAdminToEnrollUsersInAdminView && $campaign->canEnroll) {
-                            if ($campaign->enrolled) {
-                                $html .= "<button type=\"button\" class=\"btn btn-danger\" onclick=\"AspenDiscovery.CommunityEngagement.adminUnenroll({$campaign->id}, {$userId}); return false;\">Unenroll</button>";
-                            } else {
-                                $html .= "<button type=\"button\" class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting}); return false;\">Enroll</button>";
-                            }
-                        }
+						if (($campaign->isActive || $campaign->isUpcoming) && $library->allowAdminToEnrollUsersInAdminView && $campaign->canEnroll) {
+							if ($campaign->enrolled) {
+								$html .= "<button type=\"button\" class=\"btn btn-danger\" onclick=\"AspenDiscovery.CommunityEngagement.adminUnenroll({$campaign->id}, {$userId}); return false;\">Unenroll</button>";
+							} else {
+								$html .= "<button type=\"button\" class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting}); return false;\">Enroll</button>";
+							}
+						}
 
-	                    $html .= '</div>'; 
-                    }
-                    $response['html'] = $html;
-                    $response['success'] = true;
-                } else {
-                    $response['message'] = 'No campaigns found for this user.';
-                }
+						 $html .= '</div>'; 
+					}
+					$response['html'] = $html;
+					$response['success'] = true;
+				} else {
+					$response['message'] = 'No campaigns found for this user.';
+				}
 			} else {
 				$response['html'] = '<div class="alert alert-info" style="margin: 10px 0;">Please select a user.</div>';
 				$response['success'] = true;
@@ -200,10 +200,10 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			$response['message'] = 'Invalid filter type.';
 		}
 	
-        header('Content-Type: application/json');
-        echo json_encode($response);
-        exit;
-    }
+		header('Content-Type: application/json');
+		echo json_encode($response);
+		exit;
+	}
 	
 
     public function filterLeaderboardCampaigns() {
