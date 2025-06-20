@@ -18968,7 +18968,6 @@ AspenDiscovery.CommunityEngagement = function() {
 			});
 		},
 		adminEnrollPatron: function(campaignId, userId, userEmailOptInSetting) {
-			console.log("Admin enroll");
 			AspenDiscovery.Account.reloadHolds();
 			AspenDiscovery.Account.reloadCheckouts();
 
@@ -18978,14 +18977,10 @@ AspenDiscovery.CommunityEngagement = function() {
 				campaignId: campaignId,
 				userId: userId, 
 			};
-			console.log("Campaign: ", campaignId);
-			console.log("User: ", userId);
-			console.log("User emil opt in : ", userEmailOptInSetting);
 
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
 					const emailOptIn = userEmailOptInSetting === 1 ? 1 : 0;
-					console.log("emialoptin: ", emailOptIn);
 
 					AspenDiscovery.CommunityEngagement.toggleCampaignEmailOptIn(
 						campaignId,
@@ -19007,9 +19002,7 @@ AspenDiscovery.CommunityEngagement = function() {
 						}
 					});
 
-					// AspenDiscovery.showMessage(data.title, data.message);
 				} else {
-					console.log("Not success");
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			}).fail(function (jqXHR, textStatus, errorThrown) {

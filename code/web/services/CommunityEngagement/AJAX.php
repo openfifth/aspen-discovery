@@ -126,8 +126,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			}
 		} elseif ($filterType === 'user') {
 			if ($userId > 0) {
-				// Fetch user campaigns
-				//$userCampaigns = Campaign::getUserEnrolledCampaigns($userId);
                 $campaign = new Campaign();
                 $currentCampaigns = $campaign->getCampaigns($userId, true);
                 $pastCampaigns = $campaign->getPastCampaigns($userId);
@@ -139,32 +137,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				} else {
 					$userEmailOptInSetting = 0;
 				}
-				// if (!empty($userCampaigns)) {
-				// 	$html = '';
-				// 	foreach ($userCampaigns as $campaign) {
-				// 		$campaign->completedUsersCount = $campaign->getCompletedUsersCount();
-				// 		$html .= '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
-				// 		$html .= '<div class="col-sm-12">';
-				// 		$html .= "<h5 style=\"font-weight:bold;\"><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
-				// 		$html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
-				// 		$html .= '<div class="dashboardLabel">Number of Patrons Enrolled: </div>';
-				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
-				// 		$html .= '<div class="dashboardLabel">Number of Enrollments: </div>';
-				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->enrollmentCounter) . '</div>';
-				// 		$html .= '<div class="dashboardLabel">Number of UnEnrollments: </div>';
-				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->unenrollmentCounter) . '</div>';
-				// 		$html .= '<div class="dashboardLabel">Number of Users Who Have Completed the Campaign:</div>';
-				// 		$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->completedUsersCount) . '</div>';
-				// 		$html .= '</div>';
-				// 		$html .= '</div>';
-				// 		$html .= '</div>';
-				// 	}
-	
-				// 	$response['html'] = $html;
-				// 	$response['success'] = true;
-				// } else {
-				// 	$response['message'] = 'User not found.';
-				// }
                 if (!empty($allEligibleCampaigns)) {
                     $html = '';
                     foreach ($allEligibleCampaigns as $campaign) {
