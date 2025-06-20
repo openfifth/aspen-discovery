@@ -18443,7 +18443,7 @@ AspenDiscovery.CommunityEngagement = function() {
 				console.error("AJAX Error: ", textStatus, errorThrown);
 			});
 		},
-		toggleCampaignEmailOptIn: function (campaignId, userId, optIn) {
+		toggleCampaignEmailOptIn: function (campaignId, userId, optIn, showMessage = true) {
 			var url = Globals.path + "/CommunityEngagement/AJAX?method=saveCampaignEmailOptInToggle";
 			var params = {
 				campaignId: campaignId, 
@@ -18453,7 +18453,9 @@ AspenDiscovery.CommunityEngagement = function() {
 
 			$.getJSON(url, params, function(data) {
 				if (data.success) {
-					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+					if (showMessage) {
+						AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
+					}
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
@@ -18760,10 +18762,24 @@ AspenDiscovery.CommunityEngagement = function() {
 					AspenDiscovery.CommunityEngagement.toggleCampaignEmailOptIn(
 						campaignId,
 						userId,
-						emailOptIn
+						emailOptIn, 
+						false
 					);
 
-					AspenDiscovery.showMessage(data.title, data.message);
+					const refreshurl = Globals.path + "/CommunityEngagement/AJAX";
+					const refreshParams = {
+						method: 'filterCampaigns',
+						filterType: 'user',
+						userId: userId
+					};
+
+					$.getJSON(refreshurl, refreshParams, function(refreshData) {
+						if (refreshData.success && refreshData.html) {
+							$("#filteredCampaign").html(refreshData.html);
+						}
+					});
+
+					// AspenDiscovery.showMessage(data.title, data.message);
 				} else {
 					console.log("Not success");
 					AspenDiscovery.showMessage(data.title, data.message);
@@ -18771,7 +18787,36 @@ AspenDiscovery.CommunityEngagement = function() {
 			}).fail(function (jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
-		}
+		},
+		adminUnenroll: function (campaignId, userId) {
+				var url = Globals.path + "/MyAccount/AJAX";
+				var params = {
+					method: 'unenrollCampaign',
+					campaignId: campaignId,
+					userId: userId,
+				};
+
+				$.getJSON(url, params, function(data) {
+					if (data.success) {
+						const refreshUrl = Globals.path + "/CommunityEngagement/AJAX";
+						const refreshParams = {
+							method: 'filterCampaigns',
+							filterType: 'user',
+							userId: userId
+						};
+
+						$.getJSON(refreshUrl, refreshParams, function(refreshData) {
+							if (refreshData.success && refreshData.html) {
+								$("#filteredCampaign").html(refreshData.html);
+							}
+						});
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+				});
+		},
 	}
 	
 }(AspenDiscovery.CommunityEngagement || {});
