@@ -1,6 +1,5 @@
 {strip}
 	<div id="main-content" class="col-sm-12">
-				here: {$library->communityEngagementAdminUserSelect}
 
 		<h1>{translate text="Admin View" isAdminFacing=true}</h1>
 		{*Filtered Results*}
