@@ -521,6 +521,7 @@ AspenDiscovery.CommunityEngagement = function() {
 			};
 			console.log("Campaign: ", campaignId);
 			console.log("User: ", userId);
+			console.log("User emil opt in : ", userEmailOptInSetting);
 
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
