@@ -132,6 +132,13 @@ class CommunityEngagement_AJAX extends JSON_Action {
                 $currentCampaigns = $campaign->getCampaigns($userId, true);
                 $pastCampaigns = $campaign->getPastCampaigns($userId);
                 $allEligibleCampaigns = array_merge($currentCampaigns, $pastCampaigns);
+				$user = new User();
+				$user->id = $userId;
+				if($user->find(true)) {
+					$userEmailOptInSetting = $user->campaignNotificationsByEmail;
+				} else {
+					$userEmailOptInSetting = 0;
+				}
 				// if (!empty($userCampaigns)) {
 				// 	$html = '';
 				// 	foreach ($userCampaigns as $campaign) {
@@ -202,7 +209,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
                             if ($campaign->enrolled) {
                                 $html .= "<button class=\"btn btn-danger\" onclick=\"AspenDiscovery.Account.unenroll({$campaign->id}, {$userId});\">Unenroll</button>";
                             } else {
-                                $html .= "<button class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId});\">Enroll</button>";
+                                $html .= "<button class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting});\">Enroll</button>";
                             }
                         }
 
