@@ -142,8 +142,8 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
 						$html .= "<h5><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
 
-						$campaignComplete = !empty($campaign->isComplete) ? 'Yes' : 'No';
-						$rewardGiven = !empty($campaign->campaignRewardGiven) ? 'Yes' : 'No';
+						$campaignComplete = $campaign->isComplete == 1 ? 'Yes' : 'No';
+						$rewardGiven = $campaign->campaignRewardGiven == 1 ? 'Yes' : 'No';
 
 						$html .= "<p><strong>Campaign Complete:</strong> {$campaignComplete}</p>";
 						$html .= "<p><strong>Reward Given:</strong> {$rewardGiven}</p>";
@@ -159,8 +159,8 @@ class CommunityEngagement_AJAX extends JSON_Action {
 						if (!empty($campaign->milestones)) {
 							foreach ($campaign->milestones as $milestone) {
 								$progress = (int)($milestone->completedGoals ?? 0) . ' / ' . (int)($milestone->totalGoals ?? 0);
-								$status = !empty($milestone->milestoneComplete) ? 'Complete' : 'In Progress';
-								$milestoneRewardGiven = !empty($milestone->rewardGiven) ? 'Yes' : 'No';
+								$status = $milestone->milestoneComplete == 1 ? 'Complete' : 'In Progress';
+								$milestoneRewardGiven = $milestone->rewardGiven == 1 ? 'Yes' : 'No';
 
 								$html .= "<tr>
 									<td>" . htmlspecialchars($milestone->name) . "</td>
