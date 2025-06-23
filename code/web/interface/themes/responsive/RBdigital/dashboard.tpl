@@ -6,7 +6,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Active Users" isAdminFacing=true}
+							{' '}
+							<a href="/RBdigital/UsageGraphs?stat=activeUsers&instance={$selectedInstance}" title="{translate text="Show Active Users Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -32,7 +35,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Records With Usage" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Records With Usage" isAdminFacing=true}
+							{' '}
+							<a href="/RBdigital/UsageGraphs?stat=recordsUsed&instance={$selectedInstance}" title="{translate text="Show Records With Usage Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -58,7 +64,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Loans" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Loans" isAdminFacing=true}
+							{' '}
+							<a href="/RBdigital/UsageGraphs?stat=totalCheckouts&instance={$selectedInstance}" title="{translate text="Show Loans Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -84,7 +93,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Holds" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Holds" isAdminFacing=true}
+							{' '}
+							<a href="/RBdigital/UsageGraphs?stat=totalHolds&instance={$selectedInstance}" title="{translate text="Show Holds Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -110,7 +122,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Magazines With Usage" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Magazines With Usage" isAdminFacing=true}
+							{' '}
+							<a href="/RBdigital/UsageGraphs?stat=activeMagazines&instance={$selectedInstance}" title="{translate text="Show Magazines With Usage Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">
@@ -136,7 +151,10 @@
 			<div class="dashboardCategory col-sm-6">
 				<div class="row">
 					<div class="col-sm-10 col-sm-offset-1">
-						<h2 class="dashboardCategoryLabel">{translate text="Magazine Checkouts" isAdminFacing=true}</h2>
+						<h2 class="dashboardCategoryLabel">{translate text="Magazine Checkouts" isAdminFacing=true}
+							{' '}
+							<a href="/RBdigital/UsageGraphs?stat=magazineLoans&instance={$selectedInstance}" title="{translate text="Show Magazine Checkouts Graph" inAttribute="true" isAdminFacing=true}"><i class="fas fa-chart-line"></i></a>
+						</h2>
 					</div>
 				</div>
 				<div class="row">

@@ -542,4 +542,10 @@ class CloudLibrary_AJAX extends JSON_Action {
 		$titleId = $_REQUEST['id'];
 		return $this->getAlternateLibraryCardPrompts($type, $patronId, $titleId);
 	}
+
+	public function exportUsageData() {
+		require_once ROOT_DIR . '/services/CloudLibrary/UsageGraphs.php';
+		$CloudLibraryUsageGraph = new CloudLibrary_UsageGraphs(); 
+		$CloudLibraryUsageGraph->buildCSV('CloudLibrary');
+	}
 }
