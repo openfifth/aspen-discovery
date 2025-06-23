@@ -37,7 +37,7 @@
 						autocomplete="off"
 						oninput="AspenDiscovery.CommunityEngagement.searchUsers(this.value)">
 					
-					<div id="user_search_results" class="search-results" style="display:none; position:absolute; background:white; border:1px solid #ccc; max-height:200px; overflow-y:auto; z-index:1000;">
+					<div id="user_search_results" class="search-results" style="display:none; position:absolute; background:white; border:1px solid #ccc; max-height:200px; overflow-y:auto; z-index:1000; min-width:250px; font-size:14px; padding:5px; font-size:20px;">
 					</div>
 					
 					<input type="hidden" id="selected_user_id" value="">
