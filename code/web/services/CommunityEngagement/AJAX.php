@@ -104,7 +104,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 						$campaign->completedUsersCount = $campaign->getCompletedUsersCount();
 						$html .= '<div class="dashboardCategory row" style="border: 1px solid #3174AF; padding: 0 10px 10px 10px; margin-bottom: 10px;">';
 						$html .= '<div class="col-sm-12">';
-						$html .= "<h2 class=\"dashboardCategoryLabel\"><a href=\"/CommunityEngagement/CampaignTable?id={$campaignId}\">" . htmlspecialchars($campaign->name) . "</a></h2>";
+						$html .= "<h2 class=\"dashboardCategoryLabel\"><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h2>";
 						$html .= '<div style="border-bottom: 2px solid #3174AF; padding: 10px; margin-bottom: 10px;">';
 						$html .= '<div class="dashboardLabel">Number of Patrons Enrolled:</div>';
 						$html .= '<div class="dashboardValue">' . htmlspecialchars($campaign->currentEnrollments) . '</div>';
