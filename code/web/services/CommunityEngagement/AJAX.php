@@ -127,9 +127,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		} elseif ($filterType === 'user') {
 			if ($userId > 0) {
 				$campaign = new Campaign();
-				$currentCampaigns = $campaign->getCampaigns($userId, true);
-				$pastCampaigns = $campaign->getPastCampaigns($userId);
-				$allEligibleCampaigns = array_merge($currentCampaigns, $pastCampaigns);
+				$allEligibleCampaigns = $campaign->getCampaigns($userId, true);
 				$user = new User();
 				$user->id = $userId;
 				if($user->find(true)) {
