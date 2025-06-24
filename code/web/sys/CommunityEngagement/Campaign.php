@@ -1168,5 +1168,36 @@ class Campaign extends DataObject {
         }
        return $groupedLinkedCampaigns;
     }
-    
+
+	public function getCampaignEmailParameters($user, $campaignId) {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+
+		$campaign = new Campaign();
+		$campaign->id = $campaignId;
+		if (!$campaign->find(true)) {
+			return [];
+		}
+
+		$rewardDetails = $campaign->getRewardDetails();
+		$campaignReward = $rewardDetails['name'] ?? 'None';
+
+		$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+		$milestoneSummaryLines = [];
+
+		foreach ($milestones as $milestone) {
+			$name = $milestone->name;
+			$reward = $milestone->rewardName ?? 'None';
+			$milestoneSummaryLines[] = "$name -> $reward";
+		}
+
+		$milestoneSummary = implode("\n", $milestoneSummaryLines);
+
+		return [
+			'user' => $user,
+			'campaignName' => $campaign->name,
+			'library' => $user->getHomeLibrary(),
+			'campaignReward' => $campaignReward,
+			'milestoneSummary' => $milestoneSummary,
+		];
+	}
 }
