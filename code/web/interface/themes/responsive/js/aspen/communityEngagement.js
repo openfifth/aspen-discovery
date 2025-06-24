@@ -581,6 +581,93 @@ AspenDiscovery.CommunityEngagement = function() {
 					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 				});
 		},
+		adminManuallyProgressMilestone: function (milestoneId, userId, campaignId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=manuallyProgressUserMilestone";
+			const params = {
+				milestoneId: milestoneId,
+				userId: userId,
+				campaignId: campaignId
+			};
+			
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					const refreshUrl = Globals.path + "/CommunityEngagement/AJAX";
+					const refreshParams = {
+						method: 'filterCampaigns',
+						filterType: 'user',
+						userId: userId
+					};
+
+					$.getJSON(refreshUrl, refreshParams, function (refreshData) {
+						if (refreshData.success && refreshData.html) {
+							$("#filteredCampaign").html(refreshData.html);
+						}
+					});
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail (function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			})
+		},
+		adminCampaignRewardGiven: function (userId, campaignId) {
+				var url = Globals.path + "/CommunityEngagement/AJAX?method=campaignRewardGivenUpdate";
+				const params = {
+					userId: userId,
+					campaignId: campaignId
+				};
+
+				$.getJSON(url, params, function (data) {
+				if (data.success) {
+					const refreshUrl = Globals.path + "/CommunityEngagement/AJAX";
+					const refreshParams = {
+						method: 'filterCampaigns',
+						filterType: 'user',
+						userId: userId
+					};
+
+					$.getJSON(refreshUrl, refreshParams, function (refreshData) {
+						if (refreshData.success && refreshData.html) {
+							$("#filteredCampaign").html(refreshData.html);
+						}
+					});
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function (jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
+		adminMilestoneRewardGiven: function (userId, campaignId, milestoneId) {
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=milestoneRewardGivenUpdate";
+			const params = {
+				userId: userId,
+				campaignId: campaignId,
+				milestoneId: milestoneId
+			};
+
+				$.getJSON(url, params, function (data) {
+				if (data.success) {
+					const refreshUrl = Globals.path + "/CommunityEngagement/AJAX";
+					const refreshParams = {
+						method: 'filterCampaigns',
+						filterType: 'user',
+						userId: userId
+					};
+
+					$.getJSON(refreshUrl, refreshParams, function (refreshData) {
+						if (refreshData.success && refreshData.html) {
+							$("#filteredCampaign").html(refreshData.html);
+						}
+					});
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function (jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		}
+
 	}
 	
 }(AspenDiscovery.CommunityEngagement || {});

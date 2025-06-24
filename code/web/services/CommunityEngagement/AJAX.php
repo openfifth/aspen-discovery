@@ -138,7 +138,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				$allEligibleCampaigns = $campaign->getCampaigns($userId, true);
 				$user = new User();
 				$user->id = $userId;
-				if($user->find(true)) {
+				if ($user->find(true)) {
 					$userEmailOptInSetting = $user->campaignNotificationsByEmail;
 				} else {
 					$userEmailOptInSetting = 0;
@@ -150,48 +150,84 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
 						$html .= "<h5><a href=\"/CommunityEngagement/CampaignTable?id={$campaign->id}\">" . htmlspecialchars($campaign->name) . "</a></h5>";
 
-						$campaignComplete = $campaign->isComplete == 1 ? 'Yes' : 'No';
-						$rewardGiven = $campaign->campaignRewardGiven == 1 ? 'Yes' : 'No';
-
-						$html .= "<p><strong>Campaign Complete:</strong> {$campaignComplete}</p>";
-						$html .= "<p><strong>Reward Given:</strong> {$rewardGiven}</p>";
-
-						$html .= '<table class="table table-bordered table-sm">';
-						$html .= '<thead><tr>';
-						$html .= '<th>Milestone</th>';
-						$html .= '<th>Progress</th>';
-						$html .= '<th>Status</th>';
-						$html .= '<th>Reward Given</th>';
-						$html .= '</tr></thead><tbody>';
+						$html .= "<table class='table table-bordered table-sm'>";
+						$html .= "<thead><tr>
+									<th>Milestone</th>
+									<th>Progress</th>
+									<th>Status</th>
+									<th>Reward</th>
+								</tr></thead><tbody>";
 
 						if (!empty($campaign->milestones)) {
 							foreach ($campaign->milestones as $milestone) {
-								$progress = (int)($milestone->completedGoals ?? 0) . ' / ' . (int)($milestone->totalGoals ?? 0);
-								$status = $milestone->milestoneComplete == 1 ? 'Complete' : 'In Progress';
-								$milestoneRewardGiven = $milestone->rewardGiven == 1 ? 'Yes' : 'No';
+								$completed = (int)($milestone->completedGoals ?? 0);
+								$total = (int)($milestone->totalGoals ?? 0);
+								$progress = "$completed / $total";
+								$percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
+								$isComplete = $milestone->milestoneComplete == 1;
+								$rewardGiven = $milestone->rewardGiven == 1;
 
-								$html .= "<tr>
-									<td>" . htmlspecialchars($milestone->name) . "</td>
-									<td>{$progress}</td>
-									<td>{$status}</td>
-									<td>{$milestoneRewardGiven}</td>
-								</tr>";
+								$html .= "<tr><td>" . htmlspecialchars($milestone->name) . "</td>";
+
+								// Progress bar
+								$html .= "<td>
+									{$progress}
+									<div class='progress' style='width:100%; border:1px solid black; border-radius:4px;height:20px;'>
+										<div class='progress-bar' role='progressbar' aria-valuenow='{$percentage}' aria-valuemin='0' aria-valuemax='100' style='width: {$percentage}%; background-color: blue; color: white; text-align: center;'>
+											{$percentage}%
+										</div>
+									</div>
+								</td>";
+
+								// Status and manual progress
+								$html .= "<td>";
+								if ($isComplete) {
+									$html .= "Complete";
+								} else {
+									$html .= "Incomplete";
+									if ($milestone->milestoneType === 'manual') {
+										$html .= "<br><button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminManuallyProgressMilestone({$milestone->id}, {$userId}, {$campaign->id}); return false;'>Add Progress</button>";
+									}
+								}
+								$html .= "</td>";
+
+								// Reward button
+								$html .= "<td>";
+								if (($milestone->rewardType == 0 || ($milestone->rewardType == 1 && $milestone->awardAutomatically == 0)) && $isComplete && !$rewardGiven) {
+									$html .= "<button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminMilestoneRewardGiven({$userId}, {$campaign->id}, {$milestone->id}); return false;'>Give Reward</button>";
+								} elseif ($rewardGiven) {
+									$html .= "Reward Given";
+								}
+								$html .= "</td></tr>";
 							}
 						} else {
-							$html .= '<tr><td colspan="4">No milestones defined for this campaign.</td></tr>';
+							$html .= "<tr><td colspan='4'>No milestones defined for this campaign.</td></tr>";
 						}
 
-						$html .= '</tbody></table>';
+						$html .= "</tbody></table>";
 
+						// Campaign complete / reward section
+						$campaignComplete = $campaign->isComplete == 1;
+						$campaignRewardGiven = $campaign->campaignRewardGiven == 1;
+						$html .= "<p><strong>Campaign Complete:</strong> " . ($campaignComplete ? "Yes" : "No") . "</p>";
+						$html .= "<p><strong>Reward Given:</strong> " . ($campaignRewardGiven ? "Yes" : "No") . "</p>";
+
+						if ($campaign->rewardType == 1 && $campaign->awardAutomatically == 1 && $campaignComplete) {
+							$html .= "<p>Rewarded Automatically</p>";
+						} elseif (!$campaignRewardGiven && $campaignComplete) {
+							$html .= "<button class='btn btn-primary' onclick='AspenDiscovery.CommunityEngagement.adminCampaignRewardGiven({$userId}, {$campaign->id}); return false;'>Give Campaign Reward</button>";
+						}
+
+						// Enrollment buttons
 						if (($campaign->isActive || $campaign->isUpcoming) && $library->allowAdminToEnrollUsersInAdminView && $campaign->canEnroll) {
 							if ($campaign->enrolled) {
-								$html .= "<button type=\"button\" class=\"btn btn-danger\" onclick=\"AspenDiscovery.CommunityEngagement.adminUnenroll({$campaign->id}, {$userId}); return false;\">Unenroll</button>";
+								$html .= "<button type='button' class='btn btn-danger' onclick='AspenDiscovery.CommunityEngagement.adminUnenroll({$campaign->id}, {$userId}); return false;'>Unenroll</button>";
 							} else {
-								$html .= "<button type=\"button\" class=\"btn btn-success\" onclick=\"AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting}); return false;\">Enroll</button>";
+								$html .= "<button type='button' class='btn btn-success' onclick='AspenDiscovery.CommunityEngagement.adminEnrollPatron({$campaign->id}, {$userId}, {$userEmailOptInSetting}); return false;'>Enroll</button>";
 							}
 						}
 
-						 $html .= '</div>'; 
+						$html .= "</div>"; // end campaign box
 					}
 					$response['html'] = $html;
 					$response['success'] = true;
