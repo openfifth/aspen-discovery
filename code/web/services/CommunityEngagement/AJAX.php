@@ -219,7 +219,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
 						if ($campaign->rewardType == 1 && $campaign->awardAutomatically == 1 && $campaignComplete) {
 							$html .= "<p>Rewarded Automatically</p>";
-						} elseif (!$campaignRewardGiven && $campaignComplete) {
+						} elseif (!$campaignRewardGiven) {
 							$html .= "<button class='btn btn-primary' onclick='AspenDiscovery.CommunityEngagement.adminCampaignRewardGiven({$userId}, {$campaign->id}); return false;'>Give Campaign Reward</button>";
 						}
 
