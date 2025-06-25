@@ -680,7 +680,19 @@ AspenDiscovery.CommunityEngagement = function() {
 				success: function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.message);
-						AspenDiscovery.CommunityEngagement.getLibraryUsers();
+						AspenDiscovery.CommunityEngagement.usersCache = null;
+						// AspenDiscovery.CommunityEngagement.getLibraryUsers();
+						AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
+							if ($('#user_id').length > 0) {
+								const $dropdown = $('#user_id');
+								const currentValue = $dropdown.val();
+								$dropdown.empty().append('<option value="">-</option>');
+								users.forEach(function(user) {
+									const selected = user.id == currentValue ? 'selected' : '';
+									$dropdown.append(`<option value="${user.id}" ${selected}>${user.displayName}</option>`);
+								});
+							}
+						});
 						$('#addUserByBarcodeModal').modal('hide');
 						$('#newUserBarcode').val('');
 					} else {
