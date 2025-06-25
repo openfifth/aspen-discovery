@@ -38,7 +38,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			$campaignMilestoneProgress = new CampaignMilestoneUsersProgress();
 			$campaignMilestoneProgress->userId = $userId;
 			$campaignMilestoneProgress->ce_milestone_id = $milestoneId;
-            $campaignMilestoneProgress->ce_campaign_id = $campaignId;
+			$campaignMilestoneProgress->ce_campaign_id = $campaignId;
 
 			if ($campaignMilestoneProgress->find(true)) {
 				$campaignMilestoneProgress->rewardGiven = 1;
@@ -167,6 +167,11 @@ class CommunityEngagement_AJAX extends JSON_Action {
 								$isComplete = $milestone->milestoneComplete == 1;
 								$rewardGiven = $milestone->rewardGiven == 1;
 
+								if ($milestone->rewardType == 1 && $milestone->awardAutomatically && $isComplete && !$rewardGiven) {
+									$milestone->rewardGiven = 1;
+									$rewardGiven = 1;
+								}
+
 								$html .= "<tr><td>" . htmlspecialchars($milestone->name) . "</td>";
 
 								// Progress bar
@@ -248,190 +253,190 @@ class CommunityEngagement_AJAX extends JSON_Action {
 	}
 	
 
-    public function filterLeaderboardCampaigns() {
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
-        $campaignId = $_GET['campaignId'] ?? null;
-        $response = [];
-        $campaign = new Campaign();
-        $html = '';
-        try {
-            if ($campaignId) { 
-                $campaign->id = $campaignId;
-                if ($campaign->find(true)) {
-                    $campaignName = $campaign->name;
-                }
-                $leaderboard = $campaign->getLeaderboardByCampaign($campaignId);
-                if ($leaderboard) {
-                    $html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>User</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
-                    foreach ($leaderboard as $entry) {
-                        $html .= "<tr><td>{$entry['user']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
-                    }
-                    $html .= '</tbody></table>';
-                    $response['html'] = $html;
-                    $response['campaignName'] = $campaignName;
-                    $response['success'] = true;
-                } else {
-                    $response['success'] = false;
-                    $response['campaignName'] = $campaignName;
-                    $response['html'] = 'There are currently no users to display.';
-                }
-              
-            } else {
-                $leaderboard = $campaign->getOverallLeaderboard();
-                if ($leaderboard) {
-                    $html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>User</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
-                    foreach ($leaderboard as $entry) {
-                        $html .= "<tr><td>{$entry['user']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
-                    }
-                    $html .= '</tbody></table>';
-                    $response['html'] = $html;
-                    $response['campaignName'] = 'All Campaigns';
-                    $response['success'] = true;
-                } else {
-                    $response['success'] = false;
-                    $response['campaignName'] = 'All Campaigns';
-                    $response['html'] = 'There are currently no users to display.';
-                }
-               
-            }
-            header('Content-Type: application/json');
-            echo json_encode($response);
-            exit;
-        } catch (Exception $e) {
-            error_log('Error: ' . $e->getMessage());
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error retrieving campaign information'
-            ]);
-        }
-    }
+	public function filterLeaderboardCampaigns() {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		$campaignId = $_GET['campaignId'] ?? null;
+		$response = [];
+		$campaign = new Campaign();
+		$html = '';
+		try {
+			if ($campaignId) { 
+				$campaign->id = $campaignId;
+				if ($campaign->find(true)) {
+					$campaignName = $campaign->name;
+				}
+				$leaderboard = $campaign->getLeaderboardByCampaign($campaignId);
+				if ($leaderboard) {
+					$html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>User</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
+					foreach ($leaderboard as $entry) {
+						$html .= "<tr><td>{$entry['user']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
+					}
+					$html .= '</tbody></table>';
+					$response['html'] = $html;
+					$response['campaignName'] = $campaignName;
+					$response['success'] = true;
+				} else {
+					$response['success'] = false;
+					$response['campaignName'] = $campaignName;
+					$response['html'] = 'There are currently no users to display.';
+				}
+			  
+			} else {
+				$leaderboard = $campaign->getOverallLeaderboard();
+				if ($leaderboard) {
+					$html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>User</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
+					foreach ($leaderboard as $entry) {
+						$html .= "<tr><td>{$entry['user']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
+					}
+					$html .= '</tbody></table>';
+					$response['html'] = $html;
+					$response['campaignName'] = 'All Campaigns';
+					$response['success'] = true;
+				} else {
+					$response['success'] = false;
+					$response['campaignName'] = 'All Campaigns';
+					$response['html'] = 'There are currently no users to display.';
+				}
+			   
+			}
+			header('Content-Type: application/json');
+			echo json_encode($response);
+			exit;
+		} catch (Exception $e) {
+			error_log('Error: ' . $e->getMessage());
+			echo json_encode([
+				'success' => false,
+				'message' => 'Error retrieving campaign information'
+			]);
+		}
+	}
 
-    public function filterBranchLeaderboardCampaigns() {
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
-        $campaignId = $_GET['campaignId'] ?? null;
-        $response = [];
-        $campaign = new Campaign();
-        $html = '';
+	public function filterBranchLeaderboardCampaigns() {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		$campaignId = $_GET['campaignId'] ?? null;
+		$response = [];
+		$campaign = new Campaign();
+		$html = '';
 
-        try {
-            if ($campaignId) {
-                $campaign->id = $campaignId;
-                if ($campaign->find(true)) {
-                    $campaignName = $campaign->name;
-                }
-                $branchLeaderboard = $campaign->getLeaderboardByBranchForCampaign($campaign);
-                if ($branchLeaderboard) {
-                    $html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>Branch</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
-                    foreach ($branchLeaderboard as $entry) {
-                        $html .= "<tr><td>{$entry['branch']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
-                    }
-                    $html .= '</tbody></table>';
-                    $response['html'] = $html;
-                    $response['campaignName'] = $campaignName;
-                    $response['success'] = true;
-                } else {
-                    $response['success'] = false;
-                    $response['campaignName'] = $campaignName;
-                    $response['html'] = 'There are currently no users enrolled in this campaign.';
-                }
-            } else {
-                $branchLeaderboard = $campaign->getOverallLeaderboardByBranch();
-                if ($branchLeaderboard){
-                    $html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>Branch</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
-                    foreach ($branchLeaderboard as $entry) {
-                        $html .= "<tr><td>{$entry['branch']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
-                    }
-                    $html .= '</tbody></table>';
-                    $response['html'] = $html;
-                    $response['campaignName'] = 'All Campaigns';
-                    $response['success'] = true;
-                } else {
-                    $response['success'] = false;
-                    $response['message'] = 'No leaderboard data found.';
-                }
-            }
-            
-        header('Content-Type: application/json');
-        echo json_encode($response);
-        exit;
-        } catch (Exception $e) {
-            error_log('Error: ' . $e->getMessage());
-            echo json_encode([
-                'success' => false,
-                'message' => 'Error retrieving campaign information'
-            ]);
-        }
-    }
+		try {
+			if ($campaignId) {
+				$campaign->id = $campaignId;
+				if ($campaign->find(true)) {
+					$campaignName = $campaign->name;
+				}
+				$branchLeaderboard = $campaign->getLeaderboardByBranchForCampaign($campaign);
+				if ($branchLeaderboard) {
+					$html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>Branch</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
+					foreach ($branchLeaderboard as $entry) {
+						$html .= "<tr><td>{$entry['branch']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
+					}
+					$html .= '</tbody></table>';
+					$response['html'] = $html;
+					$response['campaignName'] = $campaignName;
+					$response['success'] = true;
+				} else {
+					$response['success'] = false;
+					$response['campaignName'] = $campaignName;
+					$response['html'] = 'There are currently no users enrolled in this campaign.';
+				}
+			} else {
+				$branchLeaderboard = $campaign->getOverallLeaderboardByBranch();
+				if ($branchLeaderboard){
+					$html .='<table class="leaderboard-table" style="width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 16px;"><thead><tr><th>Branch</th><th>Rank</th><th>Completed Milestones</th></tr></thead><tbody>';
+					foreach ($branchLeaderboard as $entry) {
+						$html .= "<tr><td>{$entry['branch']}</td><td>{$entry['rankDisplayed']}</td><td>{$entry['completedMilestones']}</td></tr>";
+					}
+					$html .= '</tbody></table>';
+					$response['html'] = $html;
+					$response['campaignName'] = 'All Campaigns';
+					$response['success'] = true;
+				} else {
+					$response['success'] = false;
+					$response['message'] = 'No leaderboard data found.';
+				}
+			}
+			
+		header('Content-Type: application/json');
+		echo json_encode($response);
+		exit;
+		} catch (Exception $e) {
+			error_log('Error: ' . $e->getMessage());
+			echo json_encode([
+				'success' => false,
+				'message' => 'Error retrieving campaign information'
+			]);
+		}
+	}
 
-    public function manuallyProgressUserMilestone() {
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
+	public function manuallyProgressUserMilestone() {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
 
-        $milestoneId = $_GET['milestoneId'] ?? null;
-        $userId = $_GET['userId'] ?? null;
-        $campaignId = $_GET['campaignId'] ?? null;
+		$milestoneId = $_GET['milestoneId'] ?? null;
+		$userId = $_GET['userId'] ?? null;
+		$campaignId = $_GET['campaignId'] ?? null;
 
-        if (!isset($milestoneId) || $milestoneId <=0) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid milestone ID.',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (!isset($milestoneId) || $milestoneId <=0) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid milestone ID.',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        if (!isset($userId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid user ID.',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (!isset($userId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid user ID.',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        if (!isset($campaignId)){
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid campaign ID.',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (!isset($campaignId)){
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid campaign ID.',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-       
-        $campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
-        $campaignMilestoneUsersProgress->ce_milestone_id = $milestoneId;
-        $campaignMilestoneUsersProgress->userId = $userId;
-        $campaignMilestoneUsersProgress->ce_campaign_id = $campaignId;
+	   
+		$campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
+		$campaignMilestoneUsersProgress->ce_milestone_id = $milestoneId;
+		$campaignMilestoneUsersProgress->userId = $userId;
+		$campaignMilestoneUsersProgress->ce_campaign_id = $campaignId;
 
 
-        if ($campaignMilestoneUsersProgress->find(true)) {
-            $campaignMilestoneUsersProgress->progress++;
-            $campaignMilestoneUsersProgress->update();
-        } else {
-            $campaignMilestoneUsersProgress->progress++;
-            $campaignMilestoneUsersProgress->insert();
-        }
+		if ($campaignMilestoneUsersProgress->find(true)) {
+			$campaignMilestoneUsersProgress->progress++;
+			$campaignMilestoneUsersProgress->update();
+		} else {
+			$campaignMilestoneUsersProgress->progress++;
+			$campaignMilestoneUsersProgress->insert();
+		}
 
 		$userCampaign = new UserCampaign();
 		$userCampaign->userId = $userId;
@@ -453,378 +458,378 @@ class CommunityEngagement_AJAX extends JSON_Action {
         ]);
         exit;
  
-    }
+	}
 
-    public function campaignLeaderboardOptIn() {
-        if (!UserAccount::isLoggedIn()) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'User not logged in.',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+	public function campaignLeaderboardOptIn() {
+		if (!UserAccount::isLoggedIn()) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'User not logged in.',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        $userId = $_GET['userId'];
-        $campaignId = $_GET['campaignId'];
+		$userId = $_GET['userId'];
+		$campaignId = $_GET['campaignId'];
 
-        if (empty($campaignId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid Campaign ID',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (empty($campaignId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid Campaign ID',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        $userCampaign = new UserCampaign();
-        $userCampaign->userId = $userId;
-        $userCampaign->campaignId = $campaignId;
-        $userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
-
-
-        $userCampaign->optInToCampaignLeaderboard = 1;
-        $userCampaign->update();
-
-        echo json_encode([
-            'success' => true,
-            'title' => translate([
-                    'text' => 'Joined Leaderboard',
-                    'isPublicFacing' => true,
-                ]),
-            'message' => translate([
-                'text' => 'You have successfully joined the leaderboard for this campaign',
-                'isPublicFacing' => true,
-            ]),
-        ]);
-        exit;
-    }
-
-    public function campaignLeaderboardOptOut() {
-
-        if (!UserAccount::isLoggedIn()) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'User not logged in.',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
-
-        $userId = $_GET['userId'];
-        $campaignId = $_GET['campaignId'];
-
-        if (empty($campaignId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid Campaign ID',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
-
-        $userCampaign = new UserCampaign();
-        $userCampaign->userId = $userId;
-        $userCampaign->campaignId = $campaignId;
-
-        $userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
+		$userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
 
 
-        $userCampaign->optInToCampaignLeaderboard = 0;
-        $userCampaign->update();
+		$userCampaign->optInToCampaignLeaderboard = 1;
+		$userCampaign->update();
 
-        echo json_encode([
-            'success' => true,
-            'title' => translate([
-                    'text' => 'Opted Out of Leaderboard',
-                    'isPublicFacing' => true,
-                ]),
-            'message' => translate([
-                'text' => 'You have successfully opted out of the leaderboard for this campaign',
-                'isPublicFacing' => true,
-            ]),
-        ]);
-        exit;
+		echo json_encode([
+			'success' => true,
+			'title' => translate([
+					'text' => 'Joined Leaderboard',
+					'isPublicFacing' => true,
+				]),
+			'message' => translate([
+				'text' => 'You have successfully joined the leaderboard for this campaign',
+				'isPublicFacing' => true,
+			]),
+		]);
+		exit;
+	}
 
-    }
+	public function campaignLeaderboardOptOut() {
 
-    public function getCampaignEmailOptInForm() {
-        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
-        require_once ROOT_DIR . '/sys/Account/User.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		if (!UserAccount::isLoggedIn()) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'User not logged in.',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        $campaignId = $_GET['campaignId'];
-        $userId = $_GET['userId'];
+		$userId = $_GET['userId'];
+		$campaignId = $_GET['campaignId'];
 
+		if (empty($campaignId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid Campaign ID',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        if (!$campaignId || !$userId) {
-            return [
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Campaign or User information is missing.',
-                    'isPublicFacing' => true
-                ]),
-            ];
-        }
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
 
-        $user = new User();
-        $user->id = $userId;
-        if(!$user->find(true)) {
-            return [
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true
-                ]),
-                'message' => translate([
-                    'text' => 'User not found',
-                    'isPublicFacing' => true
-                ])
-                ];
-        }
-
-        $optInToAllCampaignEmails = $user->campaignNotificationsByEmail;
-
-        $userCampaign = new UserCampaign();
-        $userCampaign->userId = $userId;
-        $userCampaign->campaignId = $campaignId;
-
-        $campaign = new Campaign();
-        $campaign->id = $campaignId;
-        if ($campaign->find(true)) {
-            $campaignName = $campaign->name;
-        }
-
-        $optInToCampaignSpecificEmails = null;
-        if ($userCampaign->find(true)) {
-            $optInToCampaignSpecificEmails = $userCampaign->optInToCampaignEmailNotifications;
-        }
-
-        $isOptedIn = ($optInToCampaignSpecificEmails !== null) ? $optInToCampaignSpecificEmails : $optInToAllCampaignEmails;
-        $sliderState = $isOptedIn ? ' checked' : '';
-
-        if (!empty($user->email)) {
-            $emailReminder = translate([
-                'text' => 'Emails will be sent to: ' . $user->email,
-                'isPublicFacing' => true,
-            ]);
-        } else {
-            $emailReminder = translate([
-                'text' => 'Please update your email address in your contact information.',
-                'isPublicFacing' => true,
-            ]);
-        }
+		$userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
 
 
-        return [
-            'success' => true,
-            'title' => translate([
-                'text' => 'Campaign Notification Options',
-                'isPublicFacing' => true
-            ]),
-            'modalBody' => translate([
-                'text' => 'Opt in to campaign email updates for ' .$campaignName . ':',
-                'isPublicFacing' => true,
-            ]) . '<label class="switch"><input type="checkbox" id="emailOptInSlider"' . $sliderState . '><span class="slider"></span></label><br>' . $emailReminder,
-            'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.CommunityEngagement.handleCampaignEnrollment($campaignId, $userId, $(\"#emailOptInSlider\").prop(\"checked\") ? 1 : 0)'>" . translate([
-                'text' => 'Submit',
-                'isPublicFacing' => true,
-                ]) . "</button>",
-        ];
-    }
+		$userCampaign->optInToCampaignLeaderboard = 0;
+		$userCampaign->update();
 
-    public function saveCampaignEmailOptInToggle() {
-        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+		echo json_encode([
+			'success' => true,
+			'title' => translate([
+					'text' => 'Opted Out of Leaderboard',
+					'isPublicFacing' => true,
+				]),
+			'message' => translate([
+				'text' => 'You have successfully opted out of the leaderboard for this campaign',
+				'isPublicFacing' => true,
+			]),
+		]);
+		exit;
 
-        $campaignId = $_GET['campaignId'] ?? null;
-        $userId = $_GET['userId'] ?? null;
-        $optIn = $_GET['optIn'] ?? null;
+	}
 
-        if (!$campaignId || !$userId || $optIn === null) {
-            return [
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true
-                ]),
-                'message' => translate([
-                    'text' => 'Campaign, user or opt in information is missing',
-                    'isPublicFacing' => true,
-                ]),
-            ];
-        }
+	public function getCampaignEmailOptInForm() {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+
+		$campaignId = $_GET['campaignId'];
+		$userId = $_GET['userId'];
 
 
-        $userCampaign = new UserCampaign();
-        $userCampaign->userId = $userId;
-        $userCampaign->campaignId = $campaignId;
+		if (!$campaignId || !$userId) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Campaign or User information is missing.',
+					'isPublicFacing' => true
+				]),
+			];
+		}
 
-        if ($userCampaign->find(true)) {
-            $userCampaign->optInToCampaignEmailNotifications = (int)$optIn;
-            $success = $userCampaign->update();
-        }
-        if ($success) {
-            if ($userCampaign->optInToCampaignEmailNotifications == 1) {
-                $campaign = new Campaign();
-                $campaign->id = $campaignId;
-                if ($campaign->find(true)) {
-                    $campaignName = $campaign->name;
-                }
+		$user = new User();
+		$user->id = $userId;
+		if(!$user->find(true)) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'User not found',
+					'isPublicFacing' => true
+				])
+				];
+		}
 
-                $user = new User();
-                $user->id = $userId;
-                if ($user->find(true) && !empty($user->email)) {
-                    $this->sendEnrollmentEmail($user, $campaignName);
-                }
+		$optInToAllCampaignEmails = $user->campaignNotificationsByEmail;
 
-            }
-            $userCampaign->checkAndHandleCampaignCompletion($userId, $campaignId);
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
 
-    
-            return [
-                'success' => true,
-                'title' => translate([
-                    'text' => 'Success',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'You have updated your campaign notification preferences.',
-                    'isPublicFacing' => true,
-                ])
-            ];
-        } else {
-            return [
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => false,
-                ]),
-                'message' => translate([
-                    'text' => 'Failed to update your campaign notification preferences.',
-                    'isPublicFacing' => true,
-                ])
-            ];
-        }
-    }
+		$campaign = new Campaign();
+		$campaign->id = $campaignId;
+		if ($campaign->find(true)) {
+			$campaignName = $campaign->name;
+		}
 
-    private function sendEnrollmentEmail($user, $campaignName) {
-        require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+		$optInToCampaignSpecificEmails = null;
+		if ($userCampaign->find(true)) {
+			$optInToCampaignSpecificEmails = $userCampaign->optInToCampaignEmailNotifications;
+		}
 
-       global $logger;
+		$isOptedIn = ($optInToCampaignSpecificEmails !== null) ? $optInToCampaignSpecificEmails : $optInToAllCampaignEmails;
+		$sliderState = $isOptedIn ? ' checked' : '';
+
+		if (!empty($user->email)) {
+			$emailReminder = translate([
+				'text' => 'Emails will be sent to: ' . $user->email,
+				'isPublicFacing' => true,
+			]);
+		} else {
+			$emailReminder = translate([
+				'text' => 'Please update your email address in your contact information.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+
+		return [
+			'success' => true,
+			'title' => translate([
+				'text' => 'Campaign Notification Options',
+				'isPublicFacing' => true
+			]),
+			'modalBody' => translate([
+				'text' => 'Opt in to campaign email updates for ' .$campaignName . ':',
+				'isPublicFacing' => true,
+			]) . '<label class="switch"><input type="checkbox" id="emailOptInSlider"' . $sliderState . '><span class="slider"></span></label><br>' . $emailReminder,
+			'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.CommunityEngagement.handleCampaignEnrollment($campaignId, $userId, $(\"#emailOptInSlider\").prop(\"checked\") ? 1 : 0)'>" . translate([
+				'text' => 'Submit',
+				'isPublicFacing' => true,
+				]) . "</button>",
+		];
+	}
+
+	public function saveCampaignEmailOptInToggle() {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+
+		$campaignId = $_GET['campaignId'] ?? null;
+		$userId = $_GET['userId'] ?? null;
+		$optIn = $_GET['optIn'] ?? null;
+
+		if (!$campaignId || !$userId || $optIn === null) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Campaign, user or opt in information is missing',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
+
+		if ($userCampaign->find(true)) {
+			$userCampaign->optInToCampaignEmailNotifications = (int)$optIn;
+			$success = $userCampaign->update();
+		}
+		if ($success) {
+			if ($userCampaign->optInToCampaignEmailNotifications == 1) {
+				$campaign = new Campaign();
+				$campaign->id = $campaignId;
+				if ($campaign->find(true)) {
+					$campaignName = $campaign->name;
+				}
+
+				$user = new User();
+				$user->id = $userId;
+				if ($user->find(true) && !empty($user->email)) {
+					$this->sendEnrollmentEmail($user, $campaignName);
+				}
+
+			}
+			$userCampaign->checkAndHandleCampaignCompletion($userId, $campaignId);
+
+	
+			return [
+				'success' => true,
+				'title' => translate([
+					'text' => 'Success',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'You have updated your campaign notification preferences.',
+					'isPublicFacing' => true,
+				])
+			];
+		} else {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => false,
+				]),
+				'message' => translate([
+					'text' => 'Failed to update your campaign notification preferences.',
+					'isPublicFacing' => true,
+				])
+			];
+		}
+	}
+
+	private function sendEnrollmentEmail($user, $campaignName) {
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+
+	   global $logger;
    
-       $emailTemplate = EmailTemplate::getActiveTemplate('campaignEnroll');
+	   $emailTemplate = EmailTemplate::getActiveTemplate('campaignEnroll');
    
-       if ($emailTemplate) {
+	   if ($emailTemplate) {
    
-           $parameters = [
-               'user' => $user,
-               'campaignName' => $campaignName,
-               'library' => $user->getHomeLibrary(),
-           ];
+		   $parameters = [
+			   'user' => $user,
+			   'campaignName' => $campaignName,
+			   'library' => $user->getHomeLibrary(),
+		   ];
 
    
-           try {
-               $emailTemplate->sendEmail($user->email, $parameters);
+		   try {
+			   $emailTemplate->sendEmail($user->email, $parameters);
 
-           } catch (Exception $e) {
-               $logger->log("Exception while sending email to {$user->email}: " . $e->getMessage(), Logger::LOG_ERROR);
-           }
-       }
+		   } catch (Exception $e) {
+			   $logger->log("Exception while sending email to {$user->email}: " . $e->getMessage(), Logger::LOG_ERROR);
+		   }
+	   }
    }
 
-    public function saveLeaderboardChanges() {
-        header('Content-Type: application/json');
-        ob_start();
-       $data = json_decode(file_get_contents('php://input'), true);
+	public function saveLeaderboardChanges() {
+		header('Content-Type: application/json');
+		ob_start();
+	   $data = json_decode(file_get_contents('php://input'), true);
 
-       $html = $data['html'];
-       $css = $data['css'];
-       $templateName = $data['templateName'];
+	   $html = $data['html'];
+	   $css = $data['css'];
+	   $templateName = $data['templateName'];
 
-       if (empty($html) || empty($templateName) || empty($css)) {
-        ob_end_clean();
-            echo json_encode([
-                'success' => false, 
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid html, css or template name',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            return;
-       }
+	   if (empty($html) || empty($templateName) || empty($css)) {
+		ob_end_clean();
+			echo json_encode([
+				'success' => false, 
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid html, css or template name',
+					'isPublicFacing' => true,
+				]),
+			]);
+			return;
+	   }
 
-       $this->saveLeaderboardToDatabase($templateName, $html, $css);
-       $leaderboardData = $this->getLeaderboardData();
+	   $this->saveLeaderboardToDatabase($templateName, $html, $css);
+	   $leaderboardData = $this->getLeaderboardData();
 
-       if (empty($leaderboardData) || empty($leaderboardData['html']) || empty($leaderboardData['css'])) {
-        echo json_encode([
-            'success' => false,
-            'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
-            'message' => translate(['text' => 'Failed to retrieve updated leaderboard data', 'isPublicFacing' => true]),
-        ]);
-        exit;
-    }
-    
+	   if (empty($leaderboardData) || empty($leaderboardData['html']) || empty($leaderboardData['css'])) {
+		echo json_encode([
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+			'message' => translate(['text' => 'Failed to retrieve updated leaderboard data', 'isPublicFacing' => true]),
+		]);
+		exit;
+	}
+	
 
-       ob_end_clean();
-       if ($leaderboardData) {
-        echo json_encode([
-            'success' => true,
-            'title' => translate([
-                'text' => 'Success',
-                'isPublicFacing' => true,
-            ]),
-            'message' => translate([
-                'text' => 'Leaderboard changes saved successfully',
-                'isPublicFacing' => true,
-            ]),
-            'updatedHTML' => $leaderboardData['html'],
-            'updatedCSS' => $leaderboardData['css']
-        ]);
-        exit;
-       }
-    }
+	   ob_end_clean();
+	   if ($leaderboardData) {
+		echo json_encode([
+			'success' => true,
+			'title' => translate([
+				'text' => 'Success',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Leaderboard changes saved successfully',
+				'isPublicFacing' => true,
+			]),
+			'updatedHTML' => $leaderboardData['html'],
+			'updatedCSS' => $leaderboardData['css']
+		]);
+		exit;
+	   }
+	}
 
-    private function saveLeaderboardToDatabase($templateName, $html, $css) {
-        require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
-        global $logger;
+	private function saveLeaderboardToDatabase($templateName, $html, $css) {
+		require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
+		global $logger;
 
-        $activeUser = UserAccount::getActiveUserObj();
+		$activeUser = UserAccount::getActiveUserObj();
 
-        if (!$activeUser) {
-            return [
+		if (!$activeUser) {
+			return [
 				'success' => false,
 				'title' => translate([
 					'text' =>'Error',
@@ -835,12 +840,12 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					'isPublicFacing' => true
 				])
 			];
-        }
-        $userIsAspenAdmin = UserAccount::getActiveUserObj()->isAspenAdminUser();
-        $userIsAdmin = UserAccount::getActiveUserObj()->isUserAdmin();
+		}
+		$userIsAspenAdmin = UserAccount::getActiveUserObj()->isAspenAdminUser();
+		$userIsAdmin = UserAccount::getActiveUserObj()->isUserAdmin();
 
-        if (!$userIsAspenAdmin || !$userIsAdmin) {
-            return [
+		if (!$userIsAspenAdmin || !$userIsAdmin) {
+			return [
 				'success' => false,
 				'title' => translate([
 					'text' =>'Error',
@@ -851,259 +856,259 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					'isPublicFacing' => true
 				])
 			];
-        }
+		}
 
-        $grapesTemplate = new GrapesTemplate();
-        $grapesTemplate->templateName = $templateName;
-        
-        if ($grapesTemplate->find(true)) {
+		$grapesTemplate = new GrapesTemplate();
+		$grapesTemplate->templateName = $templateName;
+		
+		if ($grapesTemplate->find(true)) {
 
-            $grapesTemplate->htmlData = $html;
-            $grapesTemplate->templateContent = $html;
-            $grapesTemplate->cssData = $css;
-            $success = $grapesTemplate->update();
-        } else {
+			$grapesTemplate->htmlData = $html;
+			$grapesTemplate->templateContent = $html;
+			$grapesTemplate->cssData = $css;
+			$success = $grapesTemplate->update();
+		} else {
 
-            $grapesTemplate = new GrapesTemplate();
-            $grapesTemplate->htmlData = $html;
-            $grapesTemplate->templateName = $templateName;
-            $grapesTemplate->templateContent = $html;
-            $grapesTemplate->cssData = $css;
-            $success = $grapesTemplate->insert();
-        }
+			$grapesTemplate = new GrapesTemplate();
+			$grapesTemplate->htmlData = $html;
+			$grapesTemplate->templateName = $templateName;
+			$grapesTemplate->templateContent = $html;
+			$grapesTemplate->cssData = $css;
+			$success = $grapesTemplate->insert();
+		}
 
-        if (!$success) {
-            $logger->log("Failed to save template: " . print_r($grapesTemplate->getLastError(), true), LOGGER::LOG_ERROR);
-        }
-        return $success;
-    }
+		if (!$success) {
+			$logger->log("Failed to save template: " . print_r($grapesTemplate->getLastError(), true), LOGGER::LOG_ERROR);
+		}
+		return $success;
+	}
 
-    public function getLeaderboardData() {
-        require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
+	public function getLeaderboardData() {
+		require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
 
-        $grapesTemplate = new GrapesTemplate();
-        $grapesTemplate->templateName = 'leaderboard_template';
+		$grapesTemplate = new GrapesTemplate();
+		$grapesTemplate->templateName = 'leaderboard_template';
 
-        if ($grapesTemplate->find(true)) {
-            return [
-                "html" => $grapesTemplate->htmlData,
-                "css" => $grapesTemplate->cssData
-            ];
-        }
-        return null;
-    }
+		if ($grapesTemplate->find(true)) {
+			return [
+				"html" => $grapesTemplate->htmlData,
+				"css" => $grapesTemplate->cssData
+			];
+		}
+		return null;
+	}
 
-    public function resetLeaderboardDisplay() {
-        require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
-        $grapesTemplate = new GrapesTemplate();
-        $grapesTemplate->templateName = 'leaderboard_template';
-        if ($grapesTemplate->find(true)) {
-            $grapesTemplate->delete();
-            echo json_encode([
-                'success' => true,
-                'title' => translate([
-                    'text' => 'Success',
-                    'isPublicFacing' => true
-                ]),
-                'message' => translate([
-                    'text' => 'The leaderboard template has been successfully reset.',
-                    'isPublicFacing' => true
-                ])
-            ]);
-        }else {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true
-                ]),
-                'message' => translate([
-                    'text' => 'No leaderboard template to reset.',
-                    'isPublicFacing' => true
-                ])
-            ]);
-        }
-        exit;
-    }
+	public function resetLeaderboardDisplay() {
+		require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
+		$grapesTemplate = new GrapesTemplate();
+		$grapesTemplate->templateName = 'leaderboard_template';
+		if ($grapesTemplate->find(true)) {
+			$grapesTemplate->delete();
+			echo json_encode([
+				'success' => true,
+				'title' => translate([
+					'text' => 'Success',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'The leaderboard template has been successfully reset.',
+					'isPublicFacing' => true
+				])
+			]);
+		}else {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'No leaderboard template to reset.',
+					'isPublicFacing' => true
+				])
+			]);
+		}
+		exit;
+	}
 
-    public function campaignEmailOptIn() {
-        $userId = $_GET['userId'];
-        $campaignId = $_GET['campaignId'];
+	public function campaignEmailOptIn() {
+		$userId = $_GET['userId'];
+		$campaignId = $_GET['campaignId'];
 
-        if (empty($campaignId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid Campaign ID',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
-        if (empty($userId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid User ID',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (empty($campaignId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid Campaign ID',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
+		if (empty($userId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid User ID',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        $userCampaign = new UserCampaign();
-        $userCampaign->userId = $userId;
-        $userCampaign->campaignId = $campaignId;
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
 
-        $userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
+		$userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
 
 
-        $userCampaign->optInToCampaignEmailNotifications = 1;
-        $userCampaign->update();
+		$userCampaign->optInToCampaignEmailNotifications = 1;
+		$userCampaign->update();
 
-        echo json_encode([
-            'success' => true,
-            'title' => translate([
-                'text' => 'Success',
-                'isPublicFacing' => true,
-            ]),
-            'message' => translate([
-                'text' => 'You have successfully opted in to notification emails for this campaign',
-                'isPublicFacing' => true,
-            ]),
-        ]);
-        exit;
-    }
+		echo json_encode([
+			'success' => true,
+			'title' => translate([
+				'text' => 'Success',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'You have successfully opted in to notification emails for this campaign',
+				'isPublicFacing' => true,
+			]),
+		]);
+		exit;
+	}
 
-    public function campaignEmailOptOut() {
+	public function campaignEmailOptOut() {
 
-        $userId = $_GET['userId'];
-        $campaignId = $_GET['campaignId'];
+		$userId = $_GET['userId'];
+		$campaignId = $_GET['campaignId'];
 
-        if (empty($campaignId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid Campaign ID',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (empty($campaignId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid Campaign ID',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        if (empty($userId)) {
-            echo json_encode([
-                'success' => false,
-                'title' => translate([
-                    'text' => 'Error',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Invalid User ID',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-            exit;
-        }
+		if (empty($userId)) {
+			echo json_encode([
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Invalid User ID',
+					'isPublicFacing' => true,
+				]),
+			]);
+			exit;
+		}
 
-        $userCampaign = new UserCampaign();
-        $userCampaign->userId = $userId;
-        $userCampaign->campaignId = $campaignId;
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->campaignId = $campaignId;
 
-        $userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
+		$userCampaign->find(['userId' => $userId, 'campaignId' => $campaignId]);
 
-        $userCampaign->optInToCampaignEmailNotifications = 0;
-        $userCampaign->update();
+		$userCampaign->optInToCampaignEmailNotifications = 0;
+		$userCampaign->update();
 
-        echo json_encode([
-            'success' => true,
-            'title' => translate([
-                'text' => 'Success',
-                'isPublicFacing' => true,
-            ]),
-            'message' => translate([
-                'text' => 'You have successfully opted out of email notifications for this campaign',
-                'isPublicFacing' => true,
-            ]),
-        ]);
-        exit;
-    }
+		echo json_encode([
+			'success' => true,
+			'title' => translate([
+				'text' => 'Success',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'You have successfully opted out of email notifications for this campaign',
+				'isPublicFacing' => true,
+			]),
+		]);
+		exit;
+	}
 
-    public function fetchLibraryUsers($enrolledOnly = false) {
-        global $library;
-        global $logger;
+	public function fetchLibraryUsers($enrolledOnly = false) {
+		global $library;
+		global $logger;
 
-        require_once ROOT_DIR . '/sys/Account/User.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
-        $users = [];
-        $libraryId = $library->libraryId;      
-        $user = new User();
+		$users = [];
+		$libraryId = $library->libraryId;      
+		$user = new User();
 
-        if ($library->displayOnlyUsersForLocationInUserAdmin) {
-            $user->whereAdd('homeLocationId = ' . $libraryId);
-        }
+		if ($library->displayOnlyUsersForLocationInUserAdmin) {
+			$user->whereAdd('homeLocationId = ' . $libraryId);
+		}
 
-        $user->orderBy('displayname ASC');
-        $user->limit(0, 500);
+		$user->orderBy('displayname ASC');
+		$user->limit(0, 500);
 
-        $users = array();
+		$users = array();
 
-        if($user->find()) {
-            while ($user->fetch()) {
-                $users[] = array(
-                    'id' => $user->id,
-                    'displayName' => $user->displayName,
-                );
-            } 
-        }
-        return $users;
-    }
+		if($user->find()) {
+			while ($user->fetch()) {
+				$users[] = array(
+					'id' => $user->id,
+					'displayName' => $user->displayName,
+				);
+			} 
+		}
+		return $users;
+	}
 
-    public function getLibraryUsers() {
-        global $library;
-        try {
-            $users = $this->fetchLibraryUsers();
+	public function getLibraryUsers() {
+		global $library;
+		try {
+			$users = $this->fetchLibraryUsers();
 
-             echo json_encode([
-                'success' => true, 
-                'users' => $users, 
-                'title' => translate([
-                    'text' => 'Users Loaded',
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => count($users) . ' users found',
-                    'isPublicFacing' => true,
-                ]),
-            ]);
+			 echo json_encode([
+				'success' => true, 
+				'users' => $users, 
+				'title' => translate([
+					'text' => 'Users Loaded',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => count($users) . ' users found',
+					'isPublicFacing' => true,
+				]),
+			]);
 
-        } catch (Exception $e){
-            echo json_encode([
-                'success' => false,
-                'users' => [],
-                'title' => translate([
-                    'text' => 'Error', 
-                    'isPublicFacing' => true,
-                ]),
-                'message' => translate([
-                    'text' => 'Error loading users: ' . $e->getMessage(),
-                    'isPublicFacing' => true,
-                ]),
-            ]);
-        }
-        exit;
-    }
+		} catch (Exception $e){
+			echo json_encode([
+				'success' => false,
+				'users' => [],
+				'title' => translate([
+					'text' => 'Error', 
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Error loading users: ' . $e->getMessage(),
+					'isPublicFacing' => true,
+				]),
+			]);
+		}
+		exit;
+	}
 }
