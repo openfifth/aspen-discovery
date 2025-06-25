@@ -26,6 +26,7 @@
 									<option value="{$user.id}">{$user.displayName}</option>
 							{/foreach}
 						</select>
+						<button class="btn btn-sm btn-primary" onclick="$('#addUserByBarcodeModal').modal('show')">Add User by Barcode</button>
 				</div>
 			{else}
 				<div id="userDropdown" style="display:none;">
@@ -41,6 +42,7 @@
 					</div>
 					
 					<input type="hidden" id="selected_user_id" value="">
+					<button class="btn btn-sm btn-primary" onclick="$('#addUserByBarcodeModal').modal('show')">Add User by Barcode</button>
 				</div>
 			{/if}
 		</div>
@@ -80,8 +82,51 @@
 		 
 		</div>
 	</div>
+
+	<div class="modal fade" id="addUserByBarcodeModal" tabindex="-1" role="dialog" aria-labelledby="addUserByBarcodeModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content p-3">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addUserByBarcodeModalLabel">Add User</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span>&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="addUserByBarcodeModalBody">
+        <input type="text" id="newUserBarcode" class="form-control" placeholder="Enter Barcode">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        <button class="btn btn-primary" onclick="AspenDiscovery.CommunityEngagement.addUserByBarcode()">Add User</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 {/strip}
 <script type="text/javascript">
+$(document).ready(function () {
+    $('#addUserByBarcodeModal').on('show.bs.modal', function () {
+        $('#newUserBarcode').val('');
+		$('#addUserByBarcodeModalBody').html('<input type="text" id="newUserBarcode" class="form-control" placeholder="Enter Barcode">');
+
+    });
+});
+// $(document).ready(function () {
+// 	// When your "Add User by Barcode" button is clicked
+// 	$(document).on('click', '[data-target="#addUserModal"], [onclick*=addUserByBarcode]', function () {
+// 		// Restore the modal content fresh each time
+// 		$('#addUserModal .modal-body').html(`
+// 			<input type="text" id="newUserBarcode" class="form-control" placeholder="Enter Barcode">
+// 		`);
+// 		$('#addUserModal .modal-footer').html(`
+// 			<button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+// 			<button class="btn btn-primary" onclick="AspenDiscovery.CommunityEngagement.addUserByBarcode()">Add User</button>
+// 		`);
+// 	});
+// });
+
 	document.addEventListener('click', function(e) {
 		if (!e.target.closest('#userDropdown')) {
 			document.getElementById('user_search_results').style.display = 'none';
