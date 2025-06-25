@@ -188,6 +188,9 @@ class CommunityEngagement_AJAX extends JSON_Action {
 								$html .= "<td>";
 								if ($isComplete) {
 									$html .= "Complete";
+									if ($milestone->milestoneType === 'manual' && $milestone->progressBeyondOneHundredPercent) {
+										$html .= "<br><button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminManuallyProgressMilestone({$milestone->id}, {$userId}, {$campaign->id}); return false;'>Add Progress</button>";
+									}
 								} else {
 									$html .= "Incomplete";
 									if ($milestone->milestoneType === 'manual') {
