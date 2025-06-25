@@ -198,10 +198,18 @@ class CommunityEngagement_AJAX extends JSON_Action {
 
 								// Reward button
 								$html .= "<td>";
-								if ($isComplete && !$rewardGiven) {
-									$html .= "<button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminMilestoneRewardGiven({$userId}, {$campaign->id}, {$milestone->id}); return false;'>Give Reward</button>";
-								} elseif ($rewardGiven) {
+								$canGiveReward = $isComplete && !$rewardGiven;
+
+								if ($rewardGiven) {
 									$html .= "Reward Given";
+								} else {
+									$disabled = $canGiveReward ? '' : 'disabled';
+									$tooltip = !$canGiveReward ? 'title="Milestone not complete or reward already given."' : '';
+									$onclick = $canGiveReward
+										? "onclick='AspenDiscovery.CommunityEngagement.adminMilestoneRewardGiven({$userId}, {$campaign->id}, {$milestone->id}); return false;'"
+										: '';
+
+									$html .= "<button class='btn btn-primary btn-sm' {$disabled} {$tooltip} {$onclick}>Give Reward</button>";
 								}
 								$html .= "</td></tr>";
 							}
