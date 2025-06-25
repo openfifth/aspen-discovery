@@ -18675,13 +18675,7 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 			
 		},
-		usersCache: null,
 		getLibraryUsers: function (callback) {
-			if (AspenDiscovery.CommunityEngagement.usersCache) {
-				callback(this.usersCache);
-				return;
-			}
-
 			var url = Globals.path + "/CommunityEngagement/AJAX";
 			var params = {
 				method: 'getLibraryUsers',
@@ -18689,7 +18683,6 @@ AspenDiscovery.CommunityEngagement = function() {
 
 			$.getJSON(url, params, function (data) {
 				if (data.success && data.users) {
-					AspenDiscovery.CommunityEngagement.usersCache = data.users;
 					callback(data.users);
 				} else{
 					callback([]);
@@ -18909,8 +18902,6 @@ AspenDiscovery.CommunityEngagement = function() {
 				success: function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.message);
-						AspenDiscovery.CommunityEngagement.usersCache = null;
-						// AspenDiscovery.CommunityEngagement.getLibraryUsers();
 						AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
 							if ($('#user_id').length > 0) {
 								const $dropdown = $('#user_id');
