@@ -460,6 +460,9 @@ class Library extends DataObject {
 	public $sendStaffEmailOnCampaignCompletion;
 	public $campaignCompletionNewEmail;
 	public $displayCampaignLeaderboard;
+	public $communityEngagementAdminUserSelect;
+	public $displayOnlyUsersForLocationInUserAdmin;
+	public $allowAdminToEnrollUsersInAdminView;
 
 	//SHAREit
 	public $repeatInShareIt;
@@ -3803,6 +3806,33 @@ class Library extends DataObject {
 							'displayUser' => 'Display User',
 						],
 						'default' => 'displayBranch',
+					],
+					'allowAdminToEnrollUsersInAdminView' => [
+						'property' => 'allowAdminToEnrollUsersInAdminView',
+						'type' => 'checkbox',
+						'label' => 'Allow Admin to Enroll Users in Admin View',
+						'description' => 'Allow admin to enroll users via the admin view page',
+						'default' => 0,
+						'hideInLists'=> true,
+					],
+					'communityEngagementAdminUserSelect' => [
+						'property' => 'communityEngagementAdminUserSelect',
+						'type' => 'enum',
+						'label' => 'Admin View User Select',
+						'description' => 'Whether to use a dropdown or a search bar to select users in the Community Engagement Admin View section',
+						'values' => [
+							'dropdown' => 'Dropdown',
+							'searchbar' => 'Search bar',
+						],
+						'default' => 'dropdown',
+					],
+					'displayOnlyUsersForLocationInUserAdmin' => [
+						'property' => 'displayOnlyUsersForLocationInUserAdmin',
+						'type' => 'checkbox',
+						'label' => 'Display only users for current library location in user admin view.',
+						'description' => 'Whether to display only the users who have their home location set to the current library when searching bu user in the admin view',
+						'default' => 0,
+						'hideInLists' => true,
 					],
 					'sendStaffEmailOnCampaignCompletion' => [
 						'property' => 'sendStaffEmailOnCampaignCompletion',

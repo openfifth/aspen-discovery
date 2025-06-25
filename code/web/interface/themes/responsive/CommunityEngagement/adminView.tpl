@@ -1,5 +1,6 @@
 {strip}
 	<div id="main-content" class="col-sm-12">
+
 		<h1>{translate text="Admin View" isAdminFacing=true}</h1>
 		{*Filtered Results*}
 		<div>
@@ -17,14 +18,31 @@
 					{/foreach}
 				</select>
 			</div>
-			<div id="userDropdown" style="display:none;">
-					<select id="user_id" class="form-control-sm" style="margin-bottom: 3px;" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
-						<option value="">All Users</option>
-						{foreach from=$users item=$user}
-								<option value="{$user->id}">{$user->displayName}</option>
-						{/foreach}
-					</select>
-			</div>
+			{if $library->communityEngagementAdminUserSelect == 'dropdown'}
+				<div id="userDropdown" style="display:none;">
+						<select id="user_id" class="form-control-sm" style="margin-bottom: 3px;" onchange="AspenDiscovery.CommunityEngagement.filterDropdownOptions('user')">
+							<option value="">-</option>
+							{foreach from=$users item=$user}
+									<option value="{$user.id}">{$user.displayName}</option>
+							{/foreach}
+						</select>
+				</div>
+			{else}
+				<div id="userDropdown" style="display:none;">
+					<input type="text" 
+						id="user_search" 
+						class="form-control-sm" 
+						style="margin-bottom: 3px;" 
+						placeholder="Search users..." 
+						autocomplete="off"
+						oninput="AspenDiscovery.CommunityEngagement.searchUsers(this.value)">
+					
+					<div id="user_search_results" class="search-results" style="display:none; position:absolute; background:white; border:1px solid #ccc; max-height:200px; overflow-y:auto; z-index:1000; min-width:250px; font-size:14px; padding:5px; font-size:20px;">
+					</div>
+					
+					<input type="hidden" id="selected_user_id" value="">
+				</div>
+			{/if}
 		</div>
 		<div id="campaignsList">
 			<div class="dashboardCategory row" style="border: 1px solid #3174AF;padding:0 10px 10px 10px; margin-bottom: 10px;">
@@ -64,6 +82,12 @@
 	</div>
 {/strip}
 <script type="text/javascript">
+	document.addEventListener('click', function(e) {
+		if (!e.target.closest('#userDropdown')) {
+			document.getElementById('user_search_results').style.display = 'none';
+		}
+	});
+
 	function toggleFilterOptions() {
 		var filterBy = document.getElementById("filterBy").value;
 		var campaignDropdown = document.getElementById("campaignDropdown");
@@ -78,6 +102,10 @@
 		} else {
 			campaignDropdown.style.display = "none";
 			userDropdown.style.display = "none";
+		}
+
+		if (filterBy === "campaign" || filterBy === "user") {
+			AspenDiscovery.CommunityEngagement.filterDropdownOptions(filterBy);
 		}
 	}
 </script>
