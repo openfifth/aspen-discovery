@@ -666,6 +666,33 @@ AspenDiscovery.CommunityEngagement = function() {
 			}).fail(function (jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
+		},
+		addUserByBarcode: function () {
+			const barcode = $('#newUserBarcode').val();
+			var url = Globals.path + "/CommunityEngagement/AJAX?method=addUserByBarcode";
+
+			$.ajax({
+				method: 'POST',
+				url: url,
+				data: {
+					barcode: barcode
+				},
+				success: function (data) {
+					if (data.success) {
+						AspenDiscovery.showMessage(data.title, data.message);
+						AspenDiscovery.CommunityEngagement.getLibraryUsers();
+						$('#addUserByBarcodeModal').modal('hide');
+						$('#newUserBarcode').val('');
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+						$('#addUserByBarcodeModal').modal('hide');
+						$('#newUserBarcode').val('');
+					}
+				},
+				error: function () {
+					alert('Error communicating with server.');
+				}
+			});
 		}
 
 	}

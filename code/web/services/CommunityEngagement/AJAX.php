@@ -1122,4 +1122,41 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		}
 		exit;
 	}
+
+
+	public function addUserByBarcode() {
+    $barcode = $_POST['barcode'] ?? '';
+    
+    if (empty($barcode)) {
+        return ['success' => false, 'title' => 'Error','message' => 'Barcode is required'];
+    }
+    
+    require_once ROOT_DIR . '/sys/Account/User.php';
+    global $library;
+    global $logger;
+    $accountProfile = new AccountProfile();
+    $accountProfile->id = $library->accountProfileId;
+    $accountProfile->find(true);
+    $user = new User();
+    
+    // Check if user already exists
+    $user->ils_barcode = $barcode;
+    if ($user->find(true)) {
+        return ['success' => false, 'title' => 'Error', 'message' => 'User already exists'];
+    }
+    
+    // Try to load from ILS (Koha)
+    require_once ROOT_DIR . '/Drivers/Koha.php';
+    $koha = new Koha($accountProfile);
+    $newUser = $koha->findNewUser($barcode, '');
+    
+    if ($newUser && !($newUser instanceof AspenError)) {
+        $newUser->getDisplayName();
+		$newUser->update();
+        
+        return ['success' => true, 'title' => 'User Added', 'message' => 'User Added to Aspen'];
+    }
+    
+    return ['success' => false, 'title' => 'Error', 'message' => 'User not found in ILS or could not be loaded'];
+}
 }
