@@ -189,12 +189,20 @@ class CommunityEngagement_AJAX extends JSON_Action {
 								if ($isComplete) {
 									$html .= "Complete";
 									if ($milestone->milestoneType === 'manual' && $milestone->progressBeyondOneHundredPercent) {
-										$html .= "<br><button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminManuallyProgressMilestone({$milestone->id}, {$userId}, {$campaign->id}); return false;'>Add Progress</button>";
+										if ($campaign->enrolled) {
+											$html .= "<br><button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminManuallyProgressMilestone({$milestone->id}, {$userId}, {$campaign->id}); return false;'>Add Progress</button>";
+										} else {
+											$html .= "<br><button class='btn btn-secondary btn-sm' disabled>Add Progress</button>";
+										}
 									}
 								} else {
 									$html .= "Incomplete";
 									if ($milestone->milestoneType === 'manual') {
-										$html .= "<br><button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminManuallyProgressMilestone({$milestone->id}, {$userId}, {$campaign->id}); return false;'>Add Progress</button>";
+										if ($campaign->enrolled) {
+											$html .= "<br><button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.adminManuallyProgressMilestone({$milestone->id}, {$userId}, {$campaign->id}); return false;'>Add Progress</button>";
+										} else {
+											$html .= "<br><button class='btn btn-secondary btn-sm' disabled>Add Progress</button>";
+										}
 									}
 								}
 								$html .= "</td>";
