@@ -71,7 +71,7 @@ public class OaiIndexerMain {
 		String processName = "oai_indexer";
 
 		logger = LoggingUtil.setupLogging(serverName, processName);
-        logger.info("Starting {}: {}", processName, startTime);
+		logger.info("Starting {}: {}", processName, startTime);
 
 		// Read the base INI file to get information about the server (current directory/cron/config.ini)
 		configIni = ConfigUtil.loadConfigFile("config.ini", serverName, logger);
@@ -88,10 +88,10 @@ public class OaiIndexerMain {
 			disconnectDatabase();
 		}
 
-        logger.info("Finished {}", new Date());
+		logger.info("Finished {}", new Date());
 		long endTime = new Date().getTime();
 		long elapsedTime = endTime - startTime.getTime();
-        logger.info("Elapsed Minutes {}", elapsedTime / 60000);
+		logger.info("Elapsed Minutes {}", elapsedTime / 60000);
 
 		System.exit(0);
 	}
@@ -266,7 +266,7 @@ public class OaiIndexerMain {
 			if (indexAllSets) {
 				String listSetsUrl = baseUrl + "?verb=ListSets";
 
-                logger.info("Loading sets from {}", listSetsUrl);
+				logger.info("Loading sets from {}", listSetsUrl);
 				HashMap<String, String> headers = new HashMap<>();
 				headers.put("Accept", "text/xml,text/html,application/xhtml+xml,application/xml");
 				headers.put("Accept-Encoding", "gzip");
@@ -311,7 +311,7 @@ public class OaiIndexerMain {
 			logEntry.addNote("Found " + oaiSets.size() + " OAI set(s) to process.");
 
 			for (String oaiSet : oaiSets) {
-                logger.info("Loading set {}", oaiSet);
+				logger.info("Loading set {}", oaiSet);
 				//To improve performance, load records for a month at a time
 				GregorianCalendar now = new GregorianCalendar();
 				//Protocol was invented in 2002, so we are safe starting in 2000 to cover anything from OA version 1
@@ -343,7 +343,7 @@ public class OaiIndexerMain {
 							for (int j = 0; j < 3; j++) {
 								WebServiceResponse oaiResponse = null;
 								try {
-                                    logger.info("Loading from {}", oaiUrl);
+									logger.info("Loading from {}", oaiUrl);
 									HashMap<String, String> headers = new HashMap<>();
 									headers.put("Accept", "text/xml,text/html,application/xhtml+xml,application/xml");
 									headers.put("Accept-Encoding", "gzip");
@@ -512,7 +512,7 @@ public class OaiIndexerMain {
 		long earliestLogToKeep = (startTime.getTime() / 1000) - (60 * 60 * 24 * 45);
 		try {
 			int numDeletions = aspenConn.prepareStatement("DELETE from open_archives_export_log WHERE startTime < " + earliestLogToKeep).executeUpdate();
-            logger.info("Deleted {} old log entries", numDeletions);
+			logger.info("Deleted {} old log entries", numDeletions);
 		} catch (SQLException e) {
 			logger.error("Error deleting old log entries", e);
 		}
