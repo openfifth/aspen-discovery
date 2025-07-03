@@ -18915,8 +18915,8 @@ AspenDiscovery.CommunityEngagement = function() {
 				} else{
 					callback([]);
 				}
-			}).fail (function(xhr, status, error) {
-				console.log('AJAX error loading users:', error);
+			}).fail (function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 				callback([]);
 			});
 		},
