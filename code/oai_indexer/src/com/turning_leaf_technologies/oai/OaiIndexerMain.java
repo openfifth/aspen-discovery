@@ -257,6 +257,8 @@ public class OaiIndexerMain {
 
 			int numRecordsLoaded = 0;
 			int numRecordsSkipped = 0;
+			// This commit batch size should be fine as the average Solr document for OA is ~21 KB.
+			final int commitBatchSize = 500;
 
 			TreeSet<String> allExistingCollectionSubjects = new TreeSet<>();
 
@@ -365,6 +367,13 @@ public class OaiIndexerMain {
 													Element curRecordElement = (Element) curRecordNode;
 													if (indexElement(curRecordElement, collectionId, collectionName, subjectFilters, dateFormatting, allExistingCollectionSubjects, logEntry, scopesToInclude, startTime)) {
 														numRecordsLoaded++;
+														if (numRecordsLoaded % commitBatchSize == 0) {
+															try {
+																updateServer.commit(false, false, true);
+															} catch (SolrServerException | IOException e) {
+																logEntry.incErrors("Error posting periodic commit to Solr: ", e);
+															}
+														}
 													} else {
 														numRecordsSkipped++;
 													}
