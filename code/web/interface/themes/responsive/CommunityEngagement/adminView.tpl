@@ -35,6 +35,9 @@
 						class="form-control-sm" 
 						style="margin-bottom: 3px;" 
 						placeholder="Search users..." 
+						data-toggle="tooltip"
+						data-placement="top"
+						title="Enter at least 2 characters to search"
 						autocomplete="off"
 						oninput="AspenDiscovery.CommunityEngagement.searchUsers(this.value)">
 					
