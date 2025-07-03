@@ -83,7 +83,7 @@
 		</div>
 	</div>
 
-	<div class="modal fade" id="addUserByBarcodeModal" tabindex="-1" role="dialog" aria-labelledby="addUserByBarcodeModalLabel" aria-hidden="true">
+<div class="modal fade" id="addUserByBarcodeModal" tabindex="-1" role="dialog" aria-labelledby="addUserByBarcodeModalLabel" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content p-3">
       <div class="modal-header">
@@ -106,26 +106,13 @@
 
 {/strip}
 <script type="text/javascript">
-$(document).ready(function () {
-    $('#addUserByBarcodeModal').on('show.bs.modal', function () {
-        $('#newUserBarcode').val('');
-		$('#addUserByBarcodeModalBody').html('<input type="text" id="newUserBarcode" class="form-control" placeholder="Enter Barcode">');
+	$(document).ready(function () {
+		$('#addUserByBarcodeModal').on('show.bs.modal', function () {
+			$('#newUserBarcode').val('');
+			$('#addUserByBarcodeModalBody').html('<input type="text" id="newUserBarcode" class="form-control" placeholder="Enter Barcode">');
 
-    });
-});
-// $(document).ready(function () {
-// 	// When your "Add User by Barcode" button is clicked
-// 	$(document).on('click', '[data-target="#addUserModal"], [onclick*=addUserByBarcode]', function () {
-// 		// Restore the modal content fresh each time
-// 		$('#addUserModal .modal-body').html(`
-// 			<input type="text" id="newUserBarcode" class="form-control" placeholder="Enter Barcode">
-// 		`);
-// 		$('#addUserModal .modal-footer').html(`
-// 			<button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-// 			<button class="btn btn-primary" onclick="AspenDiscovery.CommunityEngagement.addUserByBarcode()">Add User</button>
-// 		`);
-// 	});
-// });
+		});
+	});
 
 	document.addEventListener('click', function(e) {
 		if (!e.target.closest('#userDropdown')) {
