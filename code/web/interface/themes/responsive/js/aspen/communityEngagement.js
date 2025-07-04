@@ -503,7 +503,7 @@ AspenDiscovery.CommunityEngagement = function() {
 				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
 			});
 		},
-		loadCheckoutsForUser: function(userId) {
+		loadCheckoutsForUser: function(userId, callback) {
 			let url = Globals.path + "/MyAccount/AJAX";
 			var params = {
 				method: 'getUserCheckouts',
@@ -514,11 +514,13 @@ AspenDiscovery.CommunityEngagement = function() {
 				if (!data.success) {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
+				if (callback) callback();
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+				if (callback) callback();
 			});
 		},
-		loadHoldsForUser: function(userId) {
+		loadHoldsForUser: function(userId, callback) {
 			let url = Globals.path + "/MyAccount/AJAX";
 			var params = {
 				method: 'getUserHolds',
@@ -529,50 +531,56 @@ AspenDiscovery.CommunityEngagement = function() {
 				if (!data.success) {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
+				if (callback) callback();
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+				if (callback) callback();
 			});
 		},
 		adminEnrollPatron: function(campaignId, userId, userEmailOptInSetting) {
-			AspenDiscovery.CommunityEngagement.loadHoldsForUser(userId);
-			AspenDiscovery.CommunityEngagement.loadCheckoutsForUser(userId);
 
-			var url = Globals.path + "/MyAccount/AJAX";
-			var params = {
-				method: 'enrollCampaign',
-				campaignId: campaignId,
-				userId: userId, 
-			};
+			Promise.all([
+				new Promise(resolve => AspenDiscovery.CommunityEngagement.loadCheckoutsForUser(userId, resolve)),
+				new Promise(resolve => AspenDiscovery.CommunityEngagement.loadHoldsForUser(userId, resolve))
+			]).then(() => {
+				const url = Globals.path + "/MyAccount/AJAX";
+				const params = {
+					method: 'enrollCampaign',
+					campaignId: campaignId,
+					userId: userId, 
+				};
 
-			$.getJSON(url, params, function (data) {
-				if (data.success) {
-					const emailOptIn = userEmailOptInSetting === 1 ? 1 : 0;
+				$.getJSON(url, params).done(function (data) {
+					if (data.success) {
+						const emailOptIn = userEmailOptInSetting === 1 ? 1 : 0;
 
-					AspenDiscovery.CommunityEngagement.toggleCampaignEmailOptIn(
-						campaignId,
-						userId,
-						emailOptIn, 
-						false
-					);
+						AspenDiscovery.CommunityEngagement.toggleCampaignEmailOptIn(
+							campaignId,
+							userId,
+							emailOptIn,
+							false
+						);
 
-					const refreshurl = Globals.path + "/CommunityEngagement/AJAX";
-					const refreshParams = {
-						method: 'filterCampaigns',
-						filterType: 'user',
-						userId: userId
-					};
+						const refreshurl = Globals.path + "/CommunityEngagement/AJAX";
+						const refreshParams = {
+							method: 'filterCampaigns',
+							filterType: 'user',
+							userId: userId
+						};
 
-					$.getJSON(refreshurl, refreshParams, function(refreshData) {
-						if (refreshData.success && refreshData.html) {
-							$("#filteredCampaign").html(refreshData.html);
-						}
-					});
-
-				} else {
-					AspenDiscovery.showMessage(data.title, data.message);
-				}
-			}).fail(function (jqXHR, textStatus, errorThrown) {
-				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+						setTimeout(() => {
+							$.getJSON(refreshurl, refreshParams, function(refreshData) {
+								if (refreshData.success && refreshData.html) {
+									$("#filteredCampaign").html(refreshData.html);
+								}
+							});
+						}, 300);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(function (jqXHR, textStatus, errorThrown) {
+					AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+				});
 			});
 		},
 		adminUnenroll: function (campaignId, userId) {
