@@ -18960,9 +18960,39 @@ AspenDiscovery.CommunityEngagement = function() {
 				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
 			});
 		},
+		loadCheckoutsForUser: function(userId) {
+			let url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				method: 'getUserCheckouts',
+				userId: userId, 
+			}
+
+			$.getJSON(url, params, function(data) {
+				if (!data.success) {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
+		loadHoldsForUser: function(userId) {
+			let url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				method: 'getUserHolds',
+				userId: userId, 
+			}
+
+			$.getJSON(url, params, function(data) {
+				if (!data.success) {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
 		adminEnrollPatron: function(campaignId, userId, userEmailOptInSetting) {
-			AspenDiscovery.Account.reloadHolds();
-			AspenDiscovery.Account.reloadCheckouts();
+			AspenDiscovery.CommunityEngagement.loadHoldsForUser(userId);
+			AspenDiscovery.CommunityEngagement.loadCheckoutsForUser(userId);
 
 			var url = Globals.path + "/MyAccount/AJAX";
 			var params = {

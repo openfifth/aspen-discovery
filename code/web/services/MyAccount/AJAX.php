@@ -11,6 +11,11 @@ class MyAccount_AJAX extends JSON_Action {
 			case 'renewItem':
 				$method = 'renewCheckout';
 				break;
+			case 'getUserCheckouts':
+				$method = 'getUserCheckouts';
+				break;
+			case 'getUserHolds':
+				$method = 'getUserHolds';
 		}
 		if (method_exists($this, $method)) {
 			parent::launch($method);
@@ -10125,4 +10130,81 @@ class MyAccount_AJAX extends JSON_Action {
 			'selectHtml' => $html
 		];
 	}
+
+	public function getUserCheckouts(): array {
+
+		$userId = $_REQUEST['userId'] ?? null;
+		if (empty($userId)) {
+			return ['success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => 'No User Id',
+						'isPublicFacing' => true,
+					]),
+			];
+		}
+
+		$user = new User();
+		$user->id = $userId;
+		if (!$user->find(true)){
+			return ['success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => 'User not found',
+						'isPublicFacing' => true,
+					]),
+			];
+		}
+		$_REQUEST['refreshCheckouts'] = true;
+		$user->getCheckouts(true, 'all');
+
+		return [
+			'success' => true,
+		];
+	}
+
+	public function getUserHolds(): array {
+		$userId = $_REQUEST['userId'] ?? null;
+		if (empty($userId)) {
+			return ['success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => 'No User Id',
+						'isPublicFacing' => true,
+					]),
+			];
+		}
+
+		$user = new User();
+		$user->id = $userId;
+		if (!$user->find(true)){
+			return ['success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => 'User not found',
+						'isPublicFacing' => true,
+					]),
+			];
+		}
+
+		$_REQUEST['refreshHolds'] = true;
+		$user->getHolds(true, 'sortTitle', 'expire', 'all');
+
+		return [
+			'success' => true,
+		];
+	}
+
 }
