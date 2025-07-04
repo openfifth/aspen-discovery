@@ -164,6 +164,11 @@ class CommunityEngagement_AJAX extends JSON_Action {
 							foreach ($campaign->milestones as $milestone) {
 								$completed = (int)($milestone->completedGoals ?? 0);
 								$total = (int)($milestone->totalGoals ?? 0);
+								$progressBeyondLimit = $milestone->progressBeyondOneHundredPercent ?? false;
+								if (!$progressBeyondLimit && $completed > $total) {
+									$completed = $total;
+								}
+
 								$progress = "$completed / $total";
 								$percentage = $total > 0 ? round(($completed / $total) * 100) : 0;
 								$isComplete = $milestone->milestoneComplete == 1;
