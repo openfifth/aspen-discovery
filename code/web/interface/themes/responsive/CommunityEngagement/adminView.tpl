@@ -119,7 +119,10 @@
 
 	document.addEventListener('click', function(e) {
 		if (!e.target.closest('#userDropdown')) {
-			document.getElementById('user_search_results').style.display = 'none';
+			const userSearchResults = document.getElementById('user_search_results');
+			if (userSearchResults) {
+				userSearchResults.style.display = 'none';
+			}
 		}
 	});
 
