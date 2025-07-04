@@ -145,6 +145,8 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				}
 				if (!empty($allEligibleCampaigns)) {
 					$html = '';
+					$html .= "<button class='btn btn-primary btn-sm' onclick='AspenDiscovery.CommunityEngagement.refreshCurrentUserStats($userId); return false;' style='margin: 5px 0;'>Refresh Campaign Progress</button>";
+
 					foreach ($allEligibleCampaigns as $campaign) {
 						$html .= '<div class="dashboardCategory" style="border: 1px solid #3174AF; padding: 15px; margin-bottom: 20px;">';
 
