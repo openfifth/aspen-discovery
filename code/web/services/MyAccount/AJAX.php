@@ -10161,7 +10161,10 @@ class MyAccount_AJAX extends JSON_Action {
 					]),
 			];
 		}
-		$_REQUEST['refreshCheckouts'] = true;
+
+		$user->checkoutInfoLastLoaded = 0;
+		$user->update();
+
 		$user->getCheckouts(true, 'all');
 
 		return [
@@ -10199,7 +10202,8 @@ class MyAccount_AJAX extends JSON_Action {
 			];
 		}
 
-		$_REQUEST['refreshHolds'] = true;
+		$user->holdInfoLastLoaded = 0;
+		$user->update();
 		$user->getHolds(true, 'sortTitle', 'expire', 'all');
 
 		return [
