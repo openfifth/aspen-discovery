@@ -13,14 +13,14 @@ AspenDiscovery.SideLoads = (() => {
 				'Delete',
 				'Cancel',
 				true,
-				`AspenDiscovery.closeLightbox();AspenDiscovery.SideLoads.deleteMarcConfirmed(${sideLoadId}, \"${fileNameHtmlSafe}\", ${fileIndex});`,
+				`AspenDiscovery.closeLightbox();AspenDiscovery.SideLoads.doDeleteMarc(${sideLoadId}, \"${fileNameHtmlSafe}\", ${fileIndex});`,
 				'btn-danger'
 			);
 
 			return false;
 		},
 
-		deleteMarcConfirmed(sideLoadId, fileName, fileIndex) {
+		doDeleteMarc(sideLoadId, fileName, fileIndex) {
 			const params = {
 				method : 'deleteMarc',
 				id: sideLoadId,
