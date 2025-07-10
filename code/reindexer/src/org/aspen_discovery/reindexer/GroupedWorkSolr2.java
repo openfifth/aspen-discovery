@@ -651,9 +651,37 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 			if (curItem.getGroupedStatus().equals("Under Consideration")) {
 				daysSinceAdded = (long)Integer.MAX_VALUE;
 			} else if (curItem.getGroupedStatus().equals("In Processing")) {
-				daysSinceAdded = -2L;
+				daysSinceAdded = -1000L;
 			} else {
-				daysSinceAdded = -1L;
+				//copying the code below but adding a few steps, if we copy a 3rd time 
+				//consider extracting a separate function instead
+				//Date Added To Catalog needs to be the earliest date added for the catalog.
+				Date dateAdded = curItem.getDateAdded();
+				//See if we need to override based on publication date if not provided.
+				//Should be set by individual driver though.
+				if (dateAdded == null) {
+					if (earliestPublicationDate != null) {
+						if (daysAddedSincePubDate == null) {
+							//Return number of days since the given year
+							Calendar publicationDate = GregorianCalendar.getInstance();
+							//We don't know when in the year it is published, so assume January 1st which could be wrong
+							publicationDate.set(earliestPublicationDate.intValue(), Calendar.JANUARY, 1);
+							daysAddedSincePubDate = DateUtils.getDaysSinceAddedForDate(publicationDate.getTime());
+						}
+						daysSinceAdded = daysAddedSincePubDate;
+					} else {
+						//this is still okay because if we get this
+						//the end value will get clamped and end up as -1
+						daysSinceAdded = Long.MAX_VALUE;
+					}
+				} else {
+					daysSinceAdded = DateUtils.getDaysSinceAddedForDate(dateAdded);
+				}
+				//in order to make this appear before anything else we are going to shift it by -999
+				daysSinceAdded += -999L;
+				//clamping to -1 in case we get a value > 998 
+				//worst case scenario we are getting the previous behavior. 
+				daysSinceAdded = Math.clamp(daysSinceAdded, -999L, -1L);
 			}
 		} else {
 			//Date Added To Catalog needs to be the earliest date added for the catalog.
