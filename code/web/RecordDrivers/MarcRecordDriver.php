@@ -123,6 +123,31 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	/**
+	 * overriding getLinkUrl from RecordInterface to check
+	 * the conditions which cause us to load the invalidRecord.tpl
+	 * template when viewing a record. 
+	 * 
+	 * @param bool $absolutePath if true prepend site url from config to the result
+	 * @return string url for the record or an empty string 
+	 */
+	public function getLinkUrl($absolutePath = false) {
+		if(!$this->isValid())
+		{
+			return "";
+		}
+		$groupedWork = $this->getGroupedWorkDriver();
+		if(empty($groupedWork) || !$groupedWork->isValid())
+		{
+			$parentRecords = $this->getParentRecords();
+			if(count($parentRecords) == 0)
+			{
+				return "";
+			}
+		}
+		return parent::getLinkUrl($absolutePath);
+	}
+
+	/**
 	 * Return the unique identifier of this record within the Solr index;
 	 * useful for retrieving additional information (like tags and user
 	 * comments) from the external MySQL database.
