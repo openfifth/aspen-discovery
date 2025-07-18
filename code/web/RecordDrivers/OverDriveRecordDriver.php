@@ -668,6 +668,16 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 			];
 		}
 
+		$accessibilityStatements = $this->getAccessibilityStatements();
+		if (!empty($accessibilityStatements)) {
+			$interface->assign('accessibilityStatements', $accessibilityStatements);
+			$moreDetailsOptions['accessibilityStatements'] = [
+				'label' => 'Accessibility Statements',
+				'body' => $interface->fetch('OverDrive/view-accessibility.tpl'),
+				'openByDefault' => false,
+			];
+		}
+
 		return $this->filterAndSortMoreDetailsOptions($moreDetailsOptions);
 	}
 
@@ -1174,4 +1184,130 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	}
+
+	public function getAccessibilityStatements(): array
+	{
+		$accessibilityStatements = [];
+		$rawData = $this->getOverDriveMetaData()->getDecodedRawData();
+		if (isset($rawData->accessibilityStatements) && is_array($rawData->accessibilityStatements)) {
+			foreach ($rawData->accessibilityStatements as $statement) {
+				$accessibilityStatements[] = $this->formatAccessibilityStatement($statement);
+			}
+		}
+
+		return $accessibilityStatements;
+	}
+
+	private function getAccessibilityMappings(): array
+	{
+		return [
+			'waysOfReading' => [
+				'ModifiableDisplay' => 'Appearance of the text and page layout can be modified according to the capabilities of the reading system (font family and font size, spaces between paragraphs, sentences, words, and letters, as well as color of background and text)',
+				'FullNonVisualReadingSupport' => 'All content can be read as read aloud speech or dynamic braille',
+				'AlternativeText' => 'Has alternative text descriptions for images',
+			],
+			'navigation' => [
+				'TableOfContents' => 'Table of contents to all chapters of the text via links',
+				'IndexProvided' => 'Index with links to referenced entries',
+				'StructuredNavigation' => 'Elements such as headings, tables, etc for structured navigation',
+			],
+			'richContent' => [
+				'MathDescriptions' => 'Text descriptions of math are provided.',
+			],
+			'conformance' => [
+				'MeetsStandards' => 'The publication contains a conformance statement that it meets the EPUB Accessibility and WCAG 2 Level {wcagLevel} standard.',
+				'CertifiedBy' => 'The publication was certified by {certifiedBy}.',
+				'CertifierCredential' => 'The certifier\'s credential is {certifierCredential}.',
+			],
+			'hazards' => [
+				'NoHazards' => 'The publication contains no hazards',
+			],
+			'additionalInformation' => [
+				'HighContrastText' => 'High contrast between text and background', 
+			],
+		];
+	}
+
+	private function mapAccessibilityItems($items, $mappings): array
+	{
+		$descriptions = [];
+		foreach ($items as $item) {
+			if (isset($mappings[$item])) {
+				$descriptions[] = $mappings[$item];
+			}
+		}
+		return $descriptions;
+	}
+
+	private function formatAccessibilityStatement($statement): array
+	{
+		$formatted = [
+			'summaryStatement' => $statement->summaryStatement ?? '',
+			'waysOfReading' => $this->formatWaysOfReading($statement->waysOfReading ?? []),
+			'conformance' => $this->formatConformance($statement),
+			'navigation' => $this->formatNavigation($statement->navigation ?? []),
+			'richContent' => $this->formatRichContent($statement->richContent ?? []),
+			'hazards' => $this->formatHazards($statement->hazards ?? []),
+			'additionalInformation' => $this->formatAdditionalInformation($statement->additionalInformation ?? [])
+		];
+		return $formatted;
+	}
+
+	private function formatWaysOfReading($waysOfReading): array
+	{
+		$mappings = $this->getAccessibilityMappings()['waysOfReading'];
+		return $this->mapAccessibilityItems($waysOfReading, $mappings);
+	}
+
+	private function formatConformance($statement): array
+	{
+		$conformance = [];
+		$mappings = $this->getAccessibilityMappings()['conformance'];
+
+		if (isset($statement->conformance)) {
+			foreach ($statement->conformance as $item) {
+				if (isset($mappings[$item])) {
+					$text = $mappings[$item];
+					if (isset($statement->wcagLevel)) {
+						$text = str_replace('{wcagLevel}', $statement->wcagLevel, $text);
+					}
+					$conformance[] = $text;
+				}
+			}
+		}
+
+		if (isset($statement->certifiedBy) && isset($mappings['CertifiedBy'])) {
+			$conformance[] = str_replace('{certifiedBy}', $statement->certifiedBy, $mappings['CertifiedBy']);
+		}
+
+		if (isset($statement->certifierCredential) && isset($mappings['CertifierCredential'])) {
+			$conformance[] = str_replace('{certifierCredential}', $statement->certifierCredential, $mappings['CertifierCredential']);
+		}
+		return $conformance;
+	}
+
+	private function formatNavigation($navigation): array
+	{
+		$mappings = $this->getAccessibilityMappings()['navigation'];
+		return $this->mapAccessibilityItems($navigation, $mappings);
+	}
+
+	private function formatRichContent($richContent): array
+	{
+		$mappings = $this->getAccessibilityMappings()['richContent'];
+		return $this->mapAccessibilityItems($richContent, $mappings);
+	}
+
+	private function formatHazards($hazards): array
+	{
+		$mappings = $this->getAccessibilityMappings()['hazards'];
+		return $this->mapAccessibilityItems($hazards, $mappings);
+	}
+
+	private function formatAdditionalInformation($additionalInformation): array
+	{
+		$mappings = $this->getAccessibilityMappings()['additionalInformation'];
+		return $this->mapAccessibilityItems($additionalInformation, $mappings);
+	}
 }
