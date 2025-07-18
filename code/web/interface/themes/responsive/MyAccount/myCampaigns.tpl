@@ -218,7 +218,7 @@
                                                 {$campaign.campaignReward.rewardName}
                                             {/if}
                                             {if $campaign.campaignReward.rewardExists}
-                                                    <img src="{$campaign.campaignReward.badgeImage}" alt="{$campaign.reward.rewardName}" style="max-width:100px; max-height:100px; padding:10px;" />
+                                                    <img src="{$campaign.campaignReward.badgeImage}" alt="{$campaign.campaignReward.rewardName}" style="max-width:100px; max-height:100px; padding:10px;" />
                                             {/if}
                                             <div style="margin-top:20px;">
                                                 {$campaign.campaignReward.rewardDescription}
