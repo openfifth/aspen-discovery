@@ -142,12 +142,17 @@
                                                     {else}
                                                         {$milestone->totalGoals} / {$milestone->totalGoals}
                                                     {/if}
+                                                    {assign var="goalLimit" value=$milestone->totalGoals}
+                                                    {assign var="goalCount" value=0}
                                                     {foreach from=$milestone->progressData item="progressData"}
-                                                    <div style="padding:10px;">
-                                                        {if isset($progressData['title'])}
-                                                            {$progressData['title']}
+                                                        {if $goalCount < $goalLimit || $milestone->progressBeyondOneHundredPercent}
+                                                        <div style="padding:10px;">
+                                                            {if isset($progressData['title'])}
+                                                                {$progressData['title']}
+                                                            {/if}
+                                                        </div>
+                                                        {assign var="goalCount" value=$goalCount+1}
                                                         {/if}
-                                                    </div>
                                                     {/foreach}
                                                 </td>
                                                 <td style="position: relative; text-align: center; vertical-align: middle;">
@@ -276,10 +281,15 @@
                                                         {else}
                                                             {$milestone.totalGoals} / {$milestone.totalGoals}
                                                         {/if}
+                                                        {assign var="goalLimit" value=$milestone.totalGoals}
+                                                        {assign var="goalCount" value=0}
                                                         {foreach from=$milestone.progressData item="progressData"}
-                                                            <div style="padding:10px;">
-                                                                {$progressData['title']}
-                                                            </div>
+                                                            {if $goalCount < $goalLimit || $milestone.progressBeyondOneHundredPercent}
+                                                                <div style="padding:10px;">
+                                                                    {$progressData['title']}
+                                                                </div>
+                                                                {assign var="goalCount" value=$goalCount+1}
+                                                            {/if}
                                                         {/foreach}
                                                     </td>
                                                     <td style="position: relative; text-align: center; vertical-align: middle;">
