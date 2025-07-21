@@ -179,6 +179,8 @@ class CommunityEngagement_AJAX extends JSON_Action {
 									$rewardGiven = 1;
 								}
 
+								$progressData = $milestone->progressData;
+
 								$html .= "<tr><td>" . htmlspecialchars($milestone->name) . "</td>";
 
 								// Progress bar
@@ -188,8 +190,23 @@ class CommunityEngagement_AJAX extends JSON_Action {
 										<div class='progress-bar' role='progressbar' aria-valuenow='{$percentage}' aria-valuemin='0' aria-valuemax='100' style='width: {$percentage}%; background-color: blue; color: white; text-align: center;'>
 											{$percentage}%
 										</div>
-									</div>
-								</td>";
+									</div>";
+
+								if (!empty($progressData)) {
+									$goalCount = 0;
+
+									foreach ($progressData as $progressDataItem) {
+										if ($goalCount < $total || $milestone->progressBeyondOneHundredPercent) {
+											$html .= "<div styel='padding:10px;'>";
+											if (isset($progressDataItem['title'])) {
+												$html .= htmlspecialchars($progressDataItem['title']);
+											}
+											$html .= "</div>";
+											$goalCount++;
+										}
+									}
+								}
+								$html .= "</td>";
 
 								// Status and manual progress
 								$html .= "<td>";
