@@ -123,7 +123,7 @@ class LibraryCalendarEventRecordDriver extends IndexRecordDriver {
 		return 'RecordDrivers/Events/library_calendar_result.tpl';
 	}
 
-	public function getBookcoverUrl($size = 'small', $absolutePath = false) {
+	public function getBookcoverUrl($size = 'small', $absolutePath = false): string {
 		global $configArray;
 
 		if ($absolutePath) {
