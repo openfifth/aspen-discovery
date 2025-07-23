@@ -670,11 +670,10 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 
 		$accessibilityStatements = $this->getAccessibilityStatements();
 		if (!empty($accessibilityStatements)) {
-			$interface->assign('accessibilityStatements', $accessibilityStatements);
+			$interface->assign('overdriveAccessibilityStatements', $accessibilityStatements);
 			$moreDetailsOptions['accessibilityStatements'] = [
 				'label' => 'Accessibility Statements',
 				'body' => $interface->fetch('OverDrive/view-accessibility.tpl'),
-				'openByDefault' => false,
 			];
 		}
 

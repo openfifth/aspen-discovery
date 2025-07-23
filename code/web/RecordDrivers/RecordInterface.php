@@ -344,7 +344,7 @@ abstract class RecordInterface {
 			'citations' => 'Citations',
 			'copyDetails' => 'Copy Details (OverDrive)',
 			'staff' => 'Staff View',
-			'accessibilityStatements' => 'Accessibility Statements',
+			'accessibilityStatements' => 'Accessibility Statements (OverDrive)',
 		];
 	}
 
