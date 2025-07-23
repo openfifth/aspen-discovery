@@ -8360,6 +8360,13 @@ class MyAccount_AJAX extends JSON_Action {
 									$title = $recordDriver->getTitle();
 									$userListEntry->title = mb_substr($title, 0, 50);
 								}
+							} elseif (preg_match('`^aspenEvent_`', $userListEntry->sourceId)) {
+								require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+								$recordDriver = new AspenEventRecordDriver($userListEntry->sourceId);
+								if ($recordDriver->isValid()) {
+									$title = $recordDriver->getTitle();
+									$userListEntry->title = mb_substr($title, 0, 50);
+								}
 							}
 						} elseif ($userListEntry->source == 'OpenArchives') {
 							require_once ROOT_DIR . '/RecordDrivers/OpenArchivesRecordDriver.php';
