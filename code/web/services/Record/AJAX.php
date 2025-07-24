@@ -759,17 +759,12 @@ class Record_AJAX extends Action {
 				];
 			}
 
-			//Get a list of volumes for the record
-			require_once ROOT_DIR . '/sys/ILS/IlsVolumeInfo.php';
+			// Get a list of volumes with unsuppressed items for the record.
 			$volumeData = [];
-			$volumeDataDB = new IlsVolumeInfo();
-			$volumeDataDB->recordId = $marcRecord->getIdWithSource();
-			$volumeDataDB->orderBy('displayOrder ASC, displayLabel ASC');
-			if ($volumeDataDB->find()) {
-				while ($volumeDataDB->fetch()) {
-					$volumeData[$volumeDataDB->volumeId] = clone($volumeDataDB);
-					$volumeData[$volumeDataDB->volumeId]->setHasLocalItems(false);
-				}
+			$unsuppressedVolumeData = $relatedRecord->getUnsuppressedVolumeData();
+			foreach ($unsuppressedVolumeData as $volumeInfo) {
+				$volumeData[$volumeInfo->volumeId] = clone($volumeInfo);
+				$volumeData[$volumeInfo->volumeId]->setHasLocalItems(false);
 			}
 
 			$numItemsWithVolumes = 0;
