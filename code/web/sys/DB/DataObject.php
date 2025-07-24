@@ -834,7 +834,7 @@ abstract class DataObject implements JsonSerializable {
 		$properties = get_object_vars($this);
 		$where = '';
 		foreach ($properties as $name => $value) {
-			if ($value != null && $name[0] != '_') {
+			if ($value !== null && $name[0] != '_') {
 				if (strlen($where) != 0) {
 					$where .= ' AND ';
 				}

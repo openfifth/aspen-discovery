@@ -884,9 +884,15 @@ class OverDriveDriver extends AbstractEContentDriver {
 		}
 		$settings = $librarySettings->getOverDriveSettings();
 
-		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $recordId;
+		$overDriveId = $recordId;
+		if (str_contains($recordId, ':')) {
+			$parts = explode(':', $recordId);
+			$overDriveId = end($parts);
+		}
+
+		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $overDriveId;
 		$params = [
-			'reserveId' => $recordId,
+			'reserveId' => $overDriveId,
 			'emailAddress' => trim((empty($patron->overdriveEmail) ? $patron->email : $patron->overdriveEmail)),
 		];
 		$response = $this->_callPatronUrl($settings, $patron, $url, "placeHold", $params);
@@ -950,7 +956,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 			$patron->forceReloadOfHolds();
 		} else {
 			$holdResult['message'] = translate([
-				'text' => 'Sorry, but we could not place a hold for you on this title.',
+				'text' => 'Sorry, but we could not place a hold for you on this Overdrive title.',
 				'isPublicFacing' => true,
 			]);
 			if (isset($response->message)) {
@@ -963,7 +969,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 			$holdResult['api']['message'] = translate([
-				'text' => 'Sorry, but we could not place a hold for you on this title.',
+				'text' => 'Sorry, but we could not place a hold for you on this Overdrive title.',
 				'isPublicFacing' => true,
 			]);
 
