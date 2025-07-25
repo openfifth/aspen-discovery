@@ -1,9 +1,12 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/DB/DataObject.php';
 
 class LocationHours extends DataObject {
-	public $__table = 'location_hours';   // table name
+	public $__table = 'location_hours';
+	public $__displayNameColumn = 'display_name';
+	public $display_name;
 	public $id;                           // int(11)  not_null primary_key auto_increment
 	public $locationId;                   // int(11)
 	public $day;                          // int(11)
@@ -98,5 +101,16 @@ class LocationHours extends DataObject {
 				'maxLength' => 255,
 			],
 		];
+	}
+
+	public function fetch(): bool|DataObject|null {
+		$result = parent::fetch();
+		$dayName = self::$dayNames[$this->day] ?? 'Unknown';
+		if ($this->closed) {
+			$this->display_name = $dayName . ': Closed';
+		} else {
+			$this->display_name = $dayName . ': ' . $this->open . ' - ' . $this->close;
+		}
+		return $result;
 	}
 }

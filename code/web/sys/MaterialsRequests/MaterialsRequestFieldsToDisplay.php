@@ -1,9 +1,10 @@
 <?php
-
+/** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/DB/DataObject.php';
 
 class MaterialsRequestFieldsToDisplay extends DataObject {
 	public $__table = 'materials_request_fields_to_display';
+	public $__displayNameColumn = 'labelForColumnToDisplay';
 	public $id;
 	public $libraryId;
 	public $columnNameToDisplay;

@@ -1,7 +1,10 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class LocationTheme extends DataObject {
 	public $__table = 'location_themes';
+	public $__displayNameColumn = 'themeName';
+	public $themeName;
 	public $id;
 	public $locationId;
 	public $themeId;
@@ -53,6 +56,19 @@ class LocationTheme extends DataObject {
 				'permissions' => ['Library Theme Configuration'],
 			],
 		];
+	}
+
+	public function fetch(): bool|DataObject|null {
+		$result = parent::fetch();
+		require_once ROOT_DIR . '/sys/Theming/Theme.php';
+		$theme = new Theme();
+		$theme->id = $this->themeId;
+		if ($theme->find(true)) {
+			$this->themeName = $theme->themeName;
+		} else {
+			$this->themeName = '';
+		}
+		return $result;
 	}
 
 	public function canActiveUserEdit() : bool {

@@ -1,9 +1,12 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/DB/DataObject.php';
 
 class Holiday extends DataObject {
-	public $__table = 'holiday';   // table name
+	public $__table = 'holiday';
+	public $__displayNameColumn = 'displayName';
+	public $displayName;
 	public $id;                    // int(11)  not_null primary_key auto_increment
 	public $libraryId;             // int(11)
 	public $date;                  // date
@@ -48,5 +51,15 @@ class Holiday extends DataObject {
 			],
 		];
 		return $structure;
+	}
+
+	public function fetch(): bool|DataObject|null {
+		$result = parent::fetch();
+		if (!empty($this->name)) {
+			$this->displayName = $this->name . ' (' . $this->date . ')';
+		} else {
+			$this->displayName = $this->date;
+		}
+		return $result;
 	}
 }

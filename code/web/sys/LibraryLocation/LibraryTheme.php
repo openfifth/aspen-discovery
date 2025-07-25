@@ -1,7 +1,10 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class LibraryTheme extends DataObject {
 	public $__table = 'library_themes';
+	public $__displayNameColumn = 'themeName';
+	public $themeName;
 	public $id;
 	public $libraryId;
 	public $themeId;
@@ -66,6 +69,19 @@ class LibraryTheme extends DataObject {
 		}else {
 			return true;
 		}
+	}
+
+	public function fetch(): bool|DataObject|null {
+		$result = parent::fetch();
+		require_once ROOT_DIR . '/sys/Theming/Theme.php';
+		$theme = new Theme();
+		$theme->id = $this->themeId;
+		if ($theme->find(true)) {
+			$this->themeName = $theme->themeName;
+		} else {
+			$this->themeName = '';
+		}
+		return $result;
 	}
 
 	function getEditLink($context): string {

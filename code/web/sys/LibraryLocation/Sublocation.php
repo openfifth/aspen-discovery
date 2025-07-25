@@ -1,9 +1,11 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/LibraryLocation/SublocationPatronType.php';
 
 
 class Sublocation extends DataObject {
 	public $__table = 'sublocation';
+	public $__displayNameColumn = 'name';
 	public $id;
 	public $ilsId;
 	public $name;

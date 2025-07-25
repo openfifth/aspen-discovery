@@ -1,9 +1,11 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryLinkAccess.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryLinkLanguage.php';
 
 class LibraryLink extends DataObject {
 	public $__table = 'library_links';
+	public $__displayNameColumn = 'linkText';
 	public $id;
 	public $libraryId;
 	public $category;

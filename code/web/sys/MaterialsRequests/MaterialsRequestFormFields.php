@@ -1,14 +1,16 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/DB/DataObject.php';
 
 class MaterialsRequestFormFields extends DataObject {
 	public $__table = 'materials_request_form_fields';
+	public $__displayNameColumn = 'fieldLabel';
 	public $id;
 	public $libraryId;
 	public $weight;
 	public $formCategory;
-	public $fieldLabel; // unique
+	public $fieldLabel;
 	public $fieldType;
 
 	static $fieldTypeOptions = [

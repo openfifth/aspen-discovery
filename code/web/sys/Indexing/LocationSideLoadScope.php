@@ -1,8 +1,10 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class LocationSideLoadScope extends DataObject {
 	public $__table = 'location_sideload_scopes';
-
+	public $__displayNameColumn = 'scope_name';
+	public $scope_name;
 	public $id;
 	public $locationId;
 	public $sideLoadScopeId;
@@ -48,6 +50,19 @@ class LocationSideLoadScope extends DataObject {
 				'required' => true,
 			],
 		];
+	}
+
+	public function fetch(): bool|DataObject|null {
+		$result = parent::fetch();
+		require_once ROOT_DIR . '/sys/Indexing/SideLoadScope.php';
+		$scope = new SideLoadScope();
+		$scope->id = $this->sideLoadScopeId;
+		if ($scope->find(true)) {
+			$this->scope_name = $scope->name;
+		} else {
+			$this->scope_name = (string)$this->sideLoadScopeId;
+		}
+		return $result;
 	}
 
 	function getEditLink($context): string {

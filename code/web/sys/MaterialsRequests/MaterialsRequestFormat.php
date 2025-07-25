@@ -1,15 +1,17 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/DB/DataObject.php';
 
 class MaterialsRequestFormat extends DataObject {
 	public $__table = 'materials_request_formats';
+	public $__displayNameColumn = 'formatLabel';
 	public $id;
 	public $libraryId;
 	public $format;
 	public $formatLabel;
 	public $authorLabel;
-	public $specialFields;   // SET Data type, possible values: 'Abridged/Unabridged', 'Article Field', 'Eaudio format', 'Ebook format', 'Season'
+	public $specialFields;
 	public $activeForNewRequests;
 	public $weight;
 
@@ -21,8 +23,6 @@ class MaterialsRequestFormat extends DataObject {
 		'Season',
 	];
 
-
-	/** @noinspection PhpUnusedParameterInspection */
 	static function getObjectStructure($context = ''): array {
 		return [
 			'id' => [

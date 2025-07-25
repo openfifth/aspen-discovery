@@ -1,9 +1,11 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/Indexing/RecordToInclude.php';
 
 class LocationRecordToInclude extends RecordToInclude {
-	public $__table = 'location_records_to_include';    // table name
+	public $__table = 'location_records_to_include';
+	public $__displayNameColumn = 'location';
 	public $locationId;
 
 	static function getObjectStructure($context = ''): array {
