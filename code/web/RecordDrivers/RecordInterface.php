@@ -236,11 +236,11 @@ abstract class RecordInterface {
 				'label' => 'Published Reviews',
 				'body' => "<div id='syndicatedReviewPlaceholder'></div>",
 			];
+
 			if ($interface->getVariable('showGoodReadsReviews')) {
 				$moreDetailsOptions['goodreadsReviews'] = [
 					'label' => 'Reviews from GoodReads',
-					'onShow' => "AspenDiscovery.GroupedWork.getGoodReadsComments('$isbn');",
-					'body' => '<div id="goodReadsPlaceHolder">Loading GoodReads Reviews.</div>',
+					'body' => '<div id="goodReadsPlaceHolder">Loading GoodReads Reviews...</div>',
 				];
 			}
 
@@ -251,6 +251,7 @@ abstract class RecordInterface {
 					'hideByDefault' => true,
 				];
 			}
+
 			if ($interface->getVariable('showSimilarAuthors')) {
 				$moreDetailsOptions['similarAuthors'] = [
 					'label' => 'Similar Authors From NoveList',
@@ -258,6 +259,7 @@ abstract class RecordInterface {
 					'hideByDefault' => true,
 				];
 			}
+			
 			if ($interface->getVariable('showSimilarTitles')) {
 				$moreDetailsOptions['similarSeries'] = [
 					'label' => 'Similar Series From NoveList',
