@@ -306,6 +306,8 @@ class MyAccount_Fines extends MyAccount {
 					}
 				}
 
+				// TODO: handle Pay360 result message
+
 				$interface->assign('finesToPay', $paymentLibrary->finesToPay);
 				$interface->assign('userFines', $fines);
 

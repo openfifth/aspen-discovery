@@ -7643,6 +7643,102 @@ class MyAccount_AJAX extends JSON_Action {
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
 	}
 
+		function createPay360Order(){
+		global $configArray;
+
+		$transactionType = $_REQUEST['type'];
+		if ($transactionType == 'donation') {
+			$result = $this->createGenericDonation('Pay360');
+		} else {
+			$result = $this->createGenericOrder('Pay360');
+		}
+
+		if (array_key_exists('success', $result) && $result['success'] === false) {
+			return $result;
+		}
+
+		if ($transactionType == 'donation') {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+				$tempDonation,
+			] = $result;
+		} else {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+			] = $result;
+		}
+
+		require_once ROOT_DIR . '/sys/ECommerce/Pay360Setting.php';
+		$pay360Settings = new Pay360Setting();
+		$homeLocationPay360SettingId = $patron->getHomeLocation()->pay360SettingId;
+		$pay360Settings->id = $homeLocationPay360SettingId != -1 ? $homeLocationPay360SettingId : $paymentLibrary->pay360SettingId;
+
+		if (!$pay360Settings->find(true)) {
+			return [
+				'success' => false,
+				'message' => 'Pay360 was not properly configured',
+			];
+		}
+
+		$finesSelected = [];
+
+		foreach(explode(',', $payment->finesPaid) as $fineSelected) {
+			$finesSelected[] = ['id' => explode('|', $fineSelected)[0], 'amount' => explode('|', $fineSelected)[1]];
+		}
+
+		$locationDetails = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getAdditionalLocationDetails($patron->getHomeLocationCode()) : [];
+
+		// TODO: format the query
+		// TODO: send the query
+		return [
+			'success' => true,
+			'message' => 'Redirecting to payment processor',
+			'paymentRequestUrl' => $paymentRequestUrl,
+		];
+	}
+
+	function completePay360Order(): void {
+		global $configArray;
+		$paymentId = $_REQUEST['paymentId'];
+		$rc = $_REQUEST['Rc'];
+		$pmt = $_REQUEST['Pmt'];
+		$recNo = $_REQUEST['RecNo'] ?? "";
+
+		require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
+
+		$updateDebtInIls = false;
+
+		// TODO: check the relevant Pay360 endpoint for updates until we get the payment outcome 
+	
+		// TODO: only do this if payment successful, else handle unsuccessful payment
+		$payment->completed = true;
+		if ($recNo) {
+			$payment->pay360PaymentReferenceNumber = $recNo;
+		}
+		$updateDebtInIls = true;
+
+		$payment->update(); // update user payment status in Aspen db
+
+		$params = "Rc=$rc&Pmt=$pmt";
+		if ($updateDebtInIls) {
+			$params .= "&RecNo=$recNo";
+			$payment->find(true);
+			$patron = UserAccount::getActiveUserObj();
+			$patron->completeFinePayment($payment); // updated debt status in ILS
+		}
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
+	}
+
 	/** @noinspection PhpUnused */
 	function dismissBrowseCategory() {
 		$patronId = UserAccount::getActiveUserId();

@@ -1755,6 +1755,9 @@ AspenDiscovery.Account = (function () {
 							orderInfo = response;
 						} else if (paymentType === 'HeyCentric') {
 							orderInfo = response.paymentRequestUrl;
+						} else if (paymentType === 'Pay360') {
+							// FIXME: select appropriate property
+							orderInfo = response.paymentRequestUrl;
 						}
 					}
 				}
@@ -2031,6 +2034,16 @@ AspenDiscovery.Account = (function () {
 
 		createHeyCentricOrder: function (finesFormId, transactionType) {
 			const url = this.createGenericOrder(finesFormId, 'HeyCentric', transactionType, null);
+			if (!url) {
+				// Do nothing; there was an error that should be displayed
+			} else {
+				window.location.href = url;
+			}
+		},
+
+		// FIXME: select appropriate property
+		createPay360Order: function (finesFormId, transactionType) {
+			const url = this.createGenericOrder(finesFormId, 'Pay360', transactionType, null);
 			if (!url) {
 				// Do nothing; there was an error that should be displayed
 			} else {
