@@ -81,9 +81,7 @@ class MaterialsRequest_HoldCandidateGenerationLog extends ObjectEditor {
 		return false;
 	}
 
-	function showHistory() : bool {
-		return false;
-	}
+	function showHistory() : void {}
 
 	function showHistoryLinks() : bool {
 		return false;
