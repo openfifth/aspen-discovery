@@ -1,4 +1,19 @@
-<h1 id="pageTitle">{translate text="Compare Objects" isAdminFacing=true}</h1>
+<div class="col-xs-12">
+	<div class="row">
+		<div class="col-xs-12 col-md-9">
+			<h1 id="pageTitle">{translate text="Compare Objects" isAdminFacing=true}</h1>
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="btn-group">
+				{if !empty($showReturnToList)}
+					<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+				{/if}
+			</div>
+		</div>
+	</div>
+</div>
 
 {if !empty($error)}
 	<div class="alert alert-danger">

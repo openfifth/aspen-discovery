@@ -1047,12 +1047,12 @@ AspenDiscovery.Admin = (function () {
 
 			return false;
 		},
-		validateCompare: function () {
-			var selectedObjects = $('.selectedObject:checked');
+		validateCompare() {
+			const selectedObjects = $('.selectedObject:checked');
 			if (selectedObjects.length === 2) {
 				return true;
 			} else {
-				AspenDiscovery.showMessage("Error", "Please select only two objects to compare");
+				AspenDiscovery.showMessage("Failed to Compare Objects", "Please select only two objects to compare.");
 				return false;
 			}
 		},

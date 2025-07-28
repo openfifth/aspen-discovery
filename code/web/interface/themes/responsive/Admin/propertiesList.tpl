@@ -236,7 +236,7 @@
 	<input type='hidden' name='objectAction' id='objectAction' value='' />
 	{if !empty($canCompare)}
 		<div class="btn-group">
-			<button type='submit' value='compare' class="btn btn-default" onclick="$('#objectAction').val('compare');return AspenDiscovery.Admin.validateCompare();">{translate text='Compare' isAdminFacing=true}</button>
+			<button type='submit' value='compare' id='compareButton' class="btn btn-default" disabled onclick="$('#objectAction').val('compare');return AspenDiscovery.Admin.validateCompare();">{translate text='Compare' isAdminFacing=true}</button>
 		</div>
 	{/if}
 	{if !empty($canBatchUpdate)}
@@ -293,6 +293,26 @@
 <script type="text/javascript">
 	{literal}
 	$("#adminTable").tablesorter({cssAsc: 'sortAscHeader', cssDesc: 'sortDescHeader', cssHeader: 'unsortedHeader', widgets:['zebra', 'filter'] });
+	{/literal}
+</script>
+{/if}
+
+{if !empty($canCompare)}
+<script type="text/javascript">
+	{literal}
+	const updateCompareButton = () => {
+		$('#compareButton').prop('disabled', $('.selectedObject:checked').length < 2);
+	};
+
+	$(() => {
+		$('.selectedObject').on('change', updateCompareButton);
+		$('button:contains("Select All"), button:contains("Deselect All")').on('click', () => {
+			setTimeout(updateCompareButton, 10);
+		});
+		updateCompareButton();
+	});
+	// Update for when the browser back button is used.
+	$(window).on('pageshow', updateCompareButton);
 	{/literal}
 </script>
 {/if}
