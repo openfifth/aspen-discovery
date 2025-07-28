@@ -91,7 +91,7 @@ class Pay360Setting extends DataObject {
 		if ($name == "libraries" && !isset($this->_libraries) && $this->id) {
 			$this->_libraries = [];
 			$obj = new Library();
-			$obj->heyCentricSettingId = $this->id;
+			$obj->pay360SettingId = $this->id;
 			$obj->find();
 			while ($obj->fetch()) {
 				$this->_libraries[$obj->libraryId] = $obj->libraryId;
@@ -102,7 +102,7 @@ class Pay360Setting extends DataObject {
 		if ($name == "locations" && !isset($this->_locations) && $this->id) {
 			$this->_locations = [];
 			$obj = new Location();
-			$obj->heyCentricSettingId = $this->id;
+			$obj->pay360SettingId = $this->id;
 			$obj->find();
 			while ($obj->fetch()) {
 				$this->_locations[$obj->locationId] = $obj->locationId;
@@ -153,17 +153,17 @@ class Pay360Setting extends DataObject {
 			$library->libraryId = $libraryId;
 			$library->find(true);
 			if (in_array($libraryId, $this->_libraries)) {
-				if ($library->heyCentricSettingId != $this->id) {
+				if ($library->pay360SettingId != $this->id) {
 					$library->finePaymentType = 16;
-					$library->heyCentricSettingId = $this->id;
+					$library->pay360SettingId = $this->id;
 					$library->update();
 				}
 			} else {
-				if ($library->heyCentricSettingId == $this->id) {
+				if ($library->pay360SettingId == $this->id) {
 					if ($library->finePaymentType == 16) {
 						$library->finePaymentType = 0;
 					}
-					$library->heyCentricSettingId = -1;
+					$library->pay360SettingId = -1;
 					$library->update();
 				}
 			}
@@ -181,15 +181,15 @@ class Pay360Setting extends DataObject {
 			$location->locationId = $locationId;
 			$location->find(true);
 			if (in_array($locationId, $this->_locations)) {
-				if ($location->heyCentricSettingId != $this->id) {
-					$location->heyCentricSettingId = $this->id;
+				if ($location->pay360SettingId != $this->id) {
+					$location->pay360SettingId = $this->id;
 					$location->update();
 				}
 			} else {
-				if ($location->heyCentricSettingId == $this->id) {
+				if ($location->pay360SettingId == $this->id) {
 					if ($location->finePaymentType == 16) {
 					}
-					$location->heyCentricSettingId = -1;
+					$location->pay360SettingId = -1;
 					$location->update();
 				}
 			}

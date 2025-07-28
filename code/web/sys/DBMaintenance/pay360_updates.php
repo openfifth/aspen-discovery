@@ -35,7 +35,7 @@ function getPay360Updates() {
 			'title' => 'Create Pay360 Permissions',
 			'description' => 'Add an Pay360 permission section containing the permissions to do with this module',
 			'sql' => [
-				"INSERT INTO permissions (name, sectionName, weight, description) VALUES ( 'Administer Pay360 Settings','eCommerce', 10, 'Allows the user to administer the integration with Pay360')",
+				"INSERT INTO permissions (name, sectionName, weight, description) VALUES ( 'Administer Pay360','eCommerce', 10, 'Allows the user to administer the integration with Pay360')",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Pay360 Settings'))",
 			],
 		], // add_pay360_permissions
