@@ -183,7 +183,7 @@ class AspenEvent {
 
 		public String getFacetName() {
 			switch (this.facet) {
-                case 1:
+				case 1:
 					return "age_group_facet";
 				case 2:
 					return "program_type_facet";
