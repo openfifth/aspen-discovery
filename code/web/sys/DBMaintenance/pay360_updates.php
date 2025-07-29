@@ -23,11 +23,21 @@ function getPay360Updates() {
 			'description' => 'Pay360 settings are stored so they can be administered and assigned to libraries',
 			'continueOnError' => false,
 			'sql' => [
+				// TODO: check data types
 				"CREATE TABLE pay360_setting (
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
 				name VARCHAR(50) NOT NULL UNIQUE,		
-				baseUrl VARCHAR(50) NOT NULL,
-				privateKey VARCHAR(255) NOT NULL
+				baseUrl VARCHAR(255) NOT NULL,
+				returnUrl VARCHAR(255),
+				backUrl VARCHAR(255),
+				privateKey VARCHAR(255) NOT NULL,
+				scpId INT,
+				hmacKeyId INT,
+				algorithm VARCHAR(50),
+				siteId INT,
+				subjectType VARCHAR(50),
+				identifier VARCHAR(50),
+				systemCode VARCHAR(50),
 				)"
 			]
 		], // add_pay360_setting_table

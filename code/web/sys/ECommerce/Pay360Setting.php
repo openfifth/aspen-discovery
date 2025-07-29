@@ -34,32 +34,116 @@ class Pay360Setting extends DataObject {
 				'description' => 'A name for the settings',
 				'maxLength' => 50,
 			],
-			'baseUrl' => [
-				'property' => 'baseUrl',
-				'type' => 'text',
-				'hideInLists' => true,
-				'label' => 'Pay360 base URL',
-				'description' => 'The base URL that links to the Pay360 platform where patrons can make payments',
-				'maxLength' => 50,
-				'required' => true,
-			],
 			'privateKey' => [
 				'property' => 'privateKey',
 				'hideInLists' => true,
 				'type' => 'storedPassword',
 				'label' => 'Pay360 Private Key',
-				'description' => 'The Pay360 Private Key for your site',
+				'description' => 'The Pay360 Private Key (provided by Capita)',
 				'maxLength' => 50,
 			],
-			// 'requestParameters' => [
-			// 	'property' => 'requestParameters',
-			// 	'type' => 'section',
+			'urlSection' => [
+				'property' => 'urlSection',
+				'type' => 'section',
+				'label' => 'URLS',
+				'hideInLists' => true,
+				'expandByDefault' => true,
+				'properties' => [
+					'baseUrl' => [
+						'property' => 'baseUrl',
+						'type' => 'text',
+						'hideInLists' => true,
+						'label' => 'Pay360 base URL',
+						'description' => 'The base URL that links to the Pay360 platform where patrons can make payments',
+						'maxLength' => 50,
+						'required' => true,
+					],
+					'returnUrl' => [
+						'property' => 'returnUrl',
+						'hideInLists' => true,
+						'type' => 'text',
+						'label' => 'Aspen Return URL',
+						'description' => 'The URL to which the user is redirected after their payment attempt',
+						'maxLength' => 50,
+					],
+					'backUrl' => [
+						'property' => 'backUrl',
+						'hideInLists' => true,
+						'type' => 'text',
+						'label' => 'Aspen Back URL',
+						'description' => 'The URL to which the user is redirected upon using the "Back" SCP button',
+						'maxLength' => 50,
+					],
+				],
+			],
+			'scpId' => [
+				'property' => 'scpId',
+				'hideInLists' => true,
+				'type' => 'integer',
+				'label' => 'Pay360 SCP ID',
+				'description' => 'The Pay360 SCP ID (provided by Capita)',
+				'maxLength' => 50,
+			],
+			'hmacKeyId' => [
+				'property' => 'hmacKeyId',
+				'hideInLists' => true,
+				'type' => 'integer',
+				'label' => 'Pay360 HMAC Key ID',
+				'description' => 'The Pay360 HMAC Key ID (provided by Capita)',
+				'maxLength' => 50,
+			],
+			'siteId' => [
+				'property' => 'siteId',
+				'hideInLists' => true,
+				'type' => 'integer',
+				'label' => 'Pay360 Site Id',
+				'description' => 'The Pay360 Site Id (provided by Capita)',
+				'maxLength' => 50,
+			],
+			'algorithm' => [
+				'property' => 'algorithm',
+				'hideInLists' => true,
+				'type' => 'text',
+				'label' => 'Pay360 algorithm',
+				'description' => 'The Pay360 HMAC Algorithm (provided by Capita)',
+				'readOnly' => true,
+				'maxLength' => 50,
+			],
+			'subjectType' => [
+				'property' => 'subjectType',
+				'hideInLists' => true,
+				'type' => 'text',
+				'label' => 'Pay360 Subject Type',
+				'description' => 'The Pay360 Subject Type',
+				'readOnly' => true,
+				'maxLength' => 50,
+			],
+			'identifier' => [
+				'property' => 'identifier',
+				'hideInLists' => true,
+				'type' => 'text',
+				'label' => 'Pay360 Identifier',
+				'description' => 'The Pay360 Identifier',
+				'readOnly' => true,
+				'maxLength' => 50,
+			],
+			'systemCode' => [
+				'property' => 'systemCode',
+				'hideInLists' => true,
+				'type' => 'text',
+				'label' => 'Pay360 System Code',
+				'description' => 'The Pay360 System Code',
+				'readOnly' => true,
+				'maxLength' => 50,
+			],
+			// RESERVED FOR FUTURE USE
+			// 'errorUrl' => [
+			// 	'property' => 'errorUrl',
 			// 	'hideInLists' => true,
-			// 	'label' => 'Pay360 URL Parameter Settings',
-			// 	'description' => 'The parameters to include when forming the Pay360 payment URL and/or its hash',
+			// 	'type' => 'text',
+			// 	'label' => 'Pay360 Error URL',
+			// 	'description' => '',
 			// 	'maxLength' => 50,
-			// 	'required' => true,
-			// 	'properties' => $_requestParameters,
 			// ],
 			'libraries' => [
 				'property' => 'libraries',
@@ -79,6 +163,16 @@ class Pay360Setting extends DataObject {
 				'values' => $locationList,
 				'hideInLists' => true,
 			],
+			// 'requestParameters' => [
+			// 	'property' => 'requestParameters',
+			// 	'type' => 'section',
+			// 	'hideInLists' => true,
+			// 	'label' => 'Pay360 URL Parameter Settings',
+			// 	'description' => 'The parameters to include when forming the Pay360 payment URL and/or its hash',
+			// 	'maxLength' => 50,
+			// 	'required' => true,
+			// 	'properties' => $_requestParameters,
+			// ],
 		];
 
 		if (!UserAccount::userHasPermission('Library eCommerce Options')) {
@@ -154,13 +248,13 @@ class Pay360Setting extends DataObject {
 			$library->find(true);
 			if (in_array($libraryId, $this->_libraries)) {
 				if ($library->pay360SettingId != $this->id) {
-					$library->finePaymentType = 16;
+					$library->finePaymentType = 17;
 					$library->pay360SettingId = $this->id;
 					$library->update();
 				}
 			} else {
 				if ($library->pay360SettingId == $this->id) {
-					if ($library->finePaymentType == 16) {
+					if ($library->finePaymentType == 17) {
 						$library->finePaymentType = 0;
 					}
 					$library->pay360SettingId = -1;
