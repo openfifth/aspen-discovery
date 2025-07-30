@@ -650,6 +650,14 @@ class Polaris extends AbstractIlsDriver {
 				$curHold->holdQueueLength = $holdInfo->QueueTotal;
 				$curHold->volume = $holdInfo->VolumeNumber;
 
+				// Set createDate using activation date when Community Engagement module is enabled
+				// because Polaris does not return a creation date to be used.
+				// Ironically, their API does return CreationDate for ILL requests (below).
+				global $enabledModules;
+				if (array_key_exists('Community Engagement', $enabledModules)) {
+					$curHold->createDate = $this->parsePolarisDate($holdInfo->ActivationDate);
+				}
+
 				require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 				$recordDriver = new MarcRecordDriver((string)$curHold->recordId);
 				if ($recordDriver->isValid()) {
@@ -737,6 +745,13 @@ class Polaris extends AbstractIlsDriver {
 				$curHold->volume = $illRequestInfo->VolumeAndIssue;
 				$curHold->format = $illRequestInfo->Format;
 				$curHold->isIll = true;
+
+				global $enabledModules;
+				if (array_key_exists('Community Engagement', $enabledModules)) {
+					if (!empty($illRequestInfo->CreationDate)) {
+						$curHold->createDate = $this->parsePolarisDate($illRequestInfo->CreationDate);
+					}
+				}
 
 				$curHold->available = $isAvailable;
 				if ($curHold->available) {
