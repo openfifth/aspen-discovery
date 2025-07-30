@@ -1115,6 +1115,9 @@ class Campaign extends DataObject {
 
             if ($campaign->find()) {
                 while ($campaign->fetch()) {
+					if (empty($campaign->startDate) || empty($campaign->endDate)) {
+						continue;
+					}
                     $userCampaign = new UserCampaign();
                     $userCampaign->userId = $linkedUser->id;
                     $userCampaign->campaignId = $campaign->id;
