@@ -37,7 +37,7 @@ function getPay360Updates() {
 				siteId INT,
 				subjectType VARCHAR(50),
 				identifier VARCHAR(50),
-				systemCode VARCHAR(50),
+				systemCode VARCHAR(50)
 				)"
 			]
 		], // add_pay360_setting_table
