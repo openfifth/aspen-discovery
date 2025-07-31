@@ -4148,7 +4148,6 @@ class User extends DataObject {
 		$sections['system_admin']->addAction(new AdminAction('USPS Settings', 'Settings to allow Aspen Discovery to validate addresses via USPS API.', '/Admin/USPS'), 'Administer System Variables');
 		$sections['system_admin']->addAction(new AdminAction('Variables', 'Variables set by the Aspen Discovery itself as part of background processes.', '/Admin/Variables'), 'Administer System Variables');
 		$sections['system_admin']->addAction(new AdminAction('System Variables', 'Settings for Aspen Discovery that apply to all libraries on this installation.', '/Admin/SystemVariables'), 'Administer System Variables');
-		$sections['system_admin']->addAction(new AdminAction('Object Restorations', 'Restore soft-deleted objects from the recycle bin.', '/Admin/ObjectRestorations'), 'Administer Object Restoration');
 
 		$sections['system_reports'] = new AdminSection('System Reports');
 		$sections['system_reports']->addAction(new AdminAction('Site Status', 'View Status of Aspen Discovery.', '/Admin/SiteStatus'), 'View System Reports');
