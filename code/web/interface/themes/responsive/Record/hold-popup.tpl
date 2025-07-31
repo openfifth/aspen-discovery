@@ -74,6 +74,11 @@
 {*						{/if}*}
 						<input type="hidden" name="user" id="user" value="{$user->id}">
 					{else}
+						{if !empty($pickupLocationInvalidMessage)}
+							<div class="alert alert-warning">
+								{$pickupLocationInvalidMessage}
+							</div>
+						{/if}
 						<div id="pickupLocationOptions" class="form-group">
 							<label class="control-label" for="pickupBranch">{translate text="I want to pick this up at" isPublicFacing=true} </label>
 							<div class="controls">

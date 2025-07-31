@@ -377,7 +377,7 @@ class Record_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getPlaceHoldForm() {
+	function getPlaceHoldForm(): array {
 		global $interface;
 		global $library;
 		if (UserAccount::isLoggedIn()) {
@@ -518,14 +518,12 @@ class Record_AJAX extends Action {
 			$interface->assign('items', $items);
 			$interface->assign('holdType', $holdType);
 
-			//See if we can bypass the holds form.  We can do this if the user wants to automatically use their home location
-			//And it's a valid pickup location
+			// If the pickup location is valid, bypass the prompt to select a pickup location.
 			$bypassHolds = false;
 			if ($rememberHoldPickupLocation) {
-				//This was done in the case of temporary/permanent branch closures to ensure users pick a new location.
-				//TODO: This should maybe be their selected pickup location rather than their home location?
-				$homeLocation = $user->getHomeLocation();
-				if ($homeLocation != null && $homeLocation->validHoldPickupBranch != 2) {
+				$pickupLocation = $user->getPickupLocation();
+				// If the pickup location defaults to the user's home location, its validity must still be checked.
+				if ($pickupLocation != null && $pickupLocation->validHoldPickupBranch != 2) {
 					if ($holdType == 'bib') {
 						$bypassHolds = true;
 					} elseif ($holdType != 'none' && count($items) == 1) {
@@ -533,8 +531,7 @@ class Record_AJAX extends Action {
 					}
 				} else {
 					$rememberHoldPickupLocation = false;
-					/** @noinspection PhpConditionAlreadyCheckedInspection */
-					$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
+					$interface->assign('rememberHoldPickupLocation', false);
 				}
 			}
 
@@ -1884,9 +1881,33 @@ class Record_AJAX extends Action {
 				$rememberHoldPickupLocation = $user->rememberHoldPickupLocation;
 			} else {
 				$rememberHoldPickupLocation = false;
+				if (!$preferredPickupLocationIsValid) {
+					$interface->assign('pickupLocationInvalidMessage', translate([
+						'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. Please select a pickup location.',
+						'isPublicFacing' => true,
+					]));
+				} elseif (!$preferredPickupSublocationIsValid) {
+					$interface->assign('pickupLocationInvalidMessage', translate([
+						'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
+						'isPublicFacing' => true,
+					]));
+				}
 			}
 		} else {
 			$rememberHoldPickupLocation = false;
+			if ($multipleAccountPickupLocations) {
+				$interface->assign('pickupLocationInvalidMessage', translate([
+					'text' => 'You have linked accounts with different pickup locations. Please select which location and account to use for this hold.',
+					'isPublicFacing' => true,
+				]));
+			} elseif ($promptForHoldNotifications) {
+				$interface->assign('pickupLocationInvalidMessage', translate([
+					'text' => 'Your library system requires you to choose notification preferences for each hold.',
+					'isPublicFacing' => true,
+				]));
+			}
+			// If the Library System does not allow remembering pickup location (i.e., !$library->allowRememberPickupLocation),
+			// then no need to display a message because the patron cannot choose a preferred pickup location anyway.
 		}
 		$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
 
