@@ -24,6 +24,10 @@ class CloudLibraryEventHandler extends DefaultHandler {
 	private final long startTimeForLogging;
 	private String nodeContents = "";
 
+	private String currentItemId = "";
+	private String currentEventType = "";
+	private String lastEventDateTimeInUTC = "";
+
 	private static final CRC32 checksumCalculator = new CRC32();
 
 	CloudLibraryEventHandler(CloudLibraryExporter exporter, boolean doFullReload, Long startTimeForLogging, Connection aspenConn, RecordGroupingProcessor recordGroupingProcessor, GroupedWorkIndexer groupedWorkIndexer, CloudLibraryExtractLogEntry logEntry, Logger logger) {
@@ -55,10 +59,47 @@ class CloudLibraryEventHandler extends DefaultHandler {
 	}
 
 	public void endElement(String uri, String localName, String qName) {
-		if (qName.equals("ItemId")){
-			updateAvailabilityForTitle(nodeContents.trim());
+		switch (qName) {
+			case "ItemId":
+				currentItemId = nodeContents.trim();
+				break;
+			case "EventType":
+				currentEventType = nodeContents.trim();
+				break;
+			case "CloudLibraryEvent":
+				// Process the complete event when we reach the end of the event element
+				processCloudLibraryEvent(currentItemId, currentEventType);
+				// Reset for next event
+				currentItemId = "";
+				currentEventType = "";
+				break;
+			case "LastEventDateTimeInUTC":
+				if (nodeContents != null && !nodeContents.trim().isEmpty()) {
+					lastEventDateTimeInUTC = nodeContents.trim();
+					logger.warn("LastEventDateTimeInUTC: " + lastEventDateTimeInUTC);
+				} else {
+					lastEventDateTimeInUTC = null;
+					logger.warn("LastEventDateTimeInUTC is empty, no more events");
+				}
+				break;
 		}
 		nodeContents = "";
+	}
+
+	public String getLastEventDateTimeInUTC() {
+		return lastEventDateTimeInUTC;
+	}
+
+	private void processCloudLibraryEvent(String cloudLibraryId, String eventType) {
+		if (cloudLibraryId.isEmpty()) {
+			return;
+		}
+		if ("REMOVED".equals(eventType)) {
+			// Delete expired titles
+			exporter.deleteRecords(cloudLibraryId);
+		} else {
+			updateAvailabilityForTitle(cloudLibraryId);
+		}
 	}
 
 	private void updateAvailabilityForTitle(String cloudLibraryId) {

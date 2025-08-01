@@ -1,3 +1,4 @@
+
 package com.turning_leaf_technologies.cloud_library;
 
 import org.aspen_discovery.grouping.RecordGroupingProcessor;
@@ -91,10 +92,9 @@ public class CloudLibraryExporter {
 		boolean moreRecords = true;
 		while (moreRecords) {
 			moreRecords = false;
-			//Get a list of eBooks and eAudiobooks to process
+			//Get MARC for all records purchased from the start date
 			String apiPath = "/cirrus/library/" + settings.getLibraryId() + "/data/marc?offset=" + curOffset + "&limit=50&startdate=" + startDate;
 
-			//noinspection ConstantConditions
 			for (int curTry = 1; curTry <= 4; curTry++) {
 				WebServiceResponse response = callCloudLibrary(apiPath);
 				if (response == null) {
@@ -143,48 +143,63 @@ public class CloudLibraryExporter {
 
 		//Handle events to determine status changes when the bibs don't change.
 		if (!settings.isDoFullReload()) {
-			//noinspection SpellCheckingInspection
-			String eventsApiPath = "/cirrus/library/" + settings.getLibraryId() + "/data/cloudevents?startdate=" + startDate;
 			CloudLibraryEventHandler eventHandler = new CloudLibraryEventHandler(this, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger);
-			//noinspection ConstantConditions
-			for (int curTry = 1; curTry <= 4; curTry++) {
-				WebServiceResponse response = callCloudLibrary(eventsApiPath);
-				if (response == null) {
-					//Something bad happened, we're done.
-					return numChanges;
-				} else if (!response.isSuccess()) {
-					if (response.getResponseCode() != 502) {
-						logEntry.incErrors("Error " + response.getResponseCode() + " calling " + eventsApiPath + ": " + response.getMessage());
-						break;
-					} else {
-						if (curTry == 4) {
+
+			String currentStartDate = startDate;
+
+			while (true) {
+				String eventsApiPath = "/cirrus/library/" + settings.getLibraryId() + "/data/cloudevents?startdate=" + currentStartDate;
+
+				logger.warn("url ----> " + eventsApiPath);
+
+				for (int curTry = 1; curTry <= 4; curTry++) {
+					WebServiceResponse response = callCloudLibrary(eventsApiPath);
+					if (response == null) {
+						// Something bad happened, we're done.
+						return numChanges;
+					} else if (!response.isSuccess()) {
+						if (response.getResponseCode() != 502) {
 							logEntry.incErrors("Error " + response.getResponseCode() + " calling " + eventsApiPath + ": " + response.getMessage());
 							break;
 						} else {
-							try {
-								Thread.sleep(1000);
-							} catch (InterruptedException e) {
-								logger.error("Thread was interrupted while waiting to retry for cloudLibrary");
+							if (curTry == 4) {
+								logEntry.incErrors("Error " + response.getResponseCode() + " calling " + eventsApiPath + ": " + response.getMessage());
+								break;
+							} else {
+								try {
+									Thread.sleep(1000);
+								} catch (InterruptedException e) {
+									logger.error("Thread was interrupted while waiting to retry for cloudLibrary");
+								}
 							}
 						}
-					}
-				} else {
-					try {
-						SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
-						SAXParser saxParser = saxParserFactory.newSAXParser();
-						saxParser.parse(new ByteArrayInputStream(response.getMessage().getBytes(StandardCharsets.UTF_8)), eventHandler);
+					} else {
+						try {
+							SAXParserFactory saxParserFactory = SAXParserFactory.newInstance();
+							SAXParser saxParser = saxParserFactory.newSAXParser();
+							saxParser.parse(new ByteArrayInputStream(response.getMessage().getBytes(StandardCharsets.UTF_8)),eventHandler);
 
-						if (handler.getNumDocuments() > 0) {
-							numChanges += handler.getNumDocuments();
+							if (handler.getNumDocuments() > 0) {
+								numChanges += handler.getNumDocuments();
+							}
+							logEntry.saveResults();
+						} catch (SAXException | ParserConfigurationException | IOException e) {
+							logger.error("Error parsing response", e);
+							logEntry.addNote("Error parsing response: " + e);
 						}
-						logEntry.saveResults();
-					} catch (SAXException | ParserConfigurationException | IOException e) {
-						logger.error("Error parsing response", e);
-						logEntry.addNote("Error parsing response: " + e);
+						break;
 					}
+				}
+
+				String lastEventDateTime = eventHandler.getLastEventDateTimeInUTC();
+				if (lastEventDateTime != null && !lastEventDateTime.isEmpty() && !lastEventDateTime.equals(currentStartDate)) {
+					currentStartDate = lastEventDateTime;
+				} else {
+					logger.warn("No more events available");
 					break;
 				}
 			}
+			logger.warn("Events processing completed");
 		}
 
 		if (settings.isDoFullReload() && !logEntry.hasErrors()) {
@@ -198,7 +213,7 @@ public class CloudLibraryExporter {
 			}
 
 			//Mark any records that no longer exist in search results as deleted, but only if we are doing a full update
-			numChanges += deleteItems();
+			numChanges += deleteRemainingItems();
 		}
 
 		//Update the last time we ran the update in settings.  This is always done since cloudLibrary has some expected errors.
@@ -340,53 +355,75 @@ public class CloudLibraryExporter {
 		logEntry = new CloudLibraryExtractLogEntry(aspenConn, settings.getSettingsId(), logger);
 	}
 
-	private int deleteItems() {
+	private int deleteRemainingItems() {
 		int numDeleted = 0;
-		try {
-			for (CloudLibraryTitle cloudLibraryTitle : existingRecords.values()) {
-				if (!cloudLibraryTitle.isDeleted()) {
-					//Make sure that the title does not have copies in another collection
-					if (cloudLibraryTitle.getAvailabilityId() != null){
-						deleteCloudLibraryAvailabilityStmt.setLong(1, cloudLibraryTitle.getAvailabilityId());
-						deleteCloudLibraryAvailabilityStmt.executeUpdate();
-					}
-					cloudLibraryTitleHasAvailabilityStmt.setLong(1, cloudLibraryTitle.getId());
-					ResultSet cloudLibraryTitleHasAvailabilityRS = cloudLibraryTitleHasAvailabilityStmt.executeQuery();
-					boolean deleteTitle = true;
-					if (cloudLibraryTitleHasAvailabilityRS.next()){
-						int numAvailability = cloudLibraryTitleHasAvailabilityRS.getInt("numAvailability");
-						if (numAvailability > 0){
-							deleteTitle = false;
-						}
-					}
-
-					if (deleteTitle) {
-						deleteCloudLibraryItemStmt.setLong(1, cloudLibraryTitle.getId());
-						deleteCloudLibraryItemStmt.executeUpdate();
-						RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("cloud_library", cloudLibraryTitle.getCloudLibraryId());
-						if (result.reindexWork) {
-							getGroupedWorkIndexer().processGroupedWork(result.permanentId);
-						} else if (result.deleteWork) {
-							//Delete the work from solr and the database
-							getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
-						}
-					//else
-						//We need to reindex the record to make sure that the availability changes?.
-					}
-
-					numDeleted++;
-					logEntry.incDeleted();
-				}
+		for (CloudLibraryTitle cloudLibraryTitle : existingRecords.values()) {
+			if (!cloudLibraryTitle.isDeleted()) {
+				deleteRecords(cloudLibraryTitle.getCloudLibraryId());
+				numDeleted++;
 			}
-			if (numDeleted > 0) {
-				logEntry.saveResults();
-				logger.warn("Deleted " + numDeleted + " old titles");
-			}
-		} catch (SQLException e) {
-			logger.error("Error deleting items", e);
-			logEntry.addNote("Error deleting items " + e);
+		}
+		if (numDeleted > 0) {
+			logEntry.saveResults();
+			logger.warn("Deleted " + numDeleted + " old titles");
 		}
 		return numDeleted;
+	}
+
+	public void deleteRecords(String cloudLibraryId) {
+		CloudLibraryTitle cloudLibraryTitle = existingRecords.get(cloudLibraryId);
+		if (cloudLibraryTitle == null) {
+			logger.warn("Title " + cloudLibraryId + " not found in existing records");
+			return;
+		}
+		try {
+			if (!cloudLibraryTitle.isDeleted()) {
+				//Make sure that the title does not have copies in another collection
+				//Delete the availability record if it exists for this setting
+				if (cloudLibraryTitle.getAvailabilityId() != null){
+					deleteCloudLibraryAvailabilityStmt.setLong(1, cloudLibraryTitle.getAvailabilityId());
+					deleteCloudLibraryAvailabilityStmt.executeUpdate();
+				}
+
+				//Check if the title has any availability records in other settings
+				cloudLibraryTitleHasAvailabilityStmt.setLong(1, cloudLibraryTitle.getId());
+				ResultSet cloudLibraryTitleHasAvailabilityRS = cloudLibraryTitleHasAvailabilityStmt.executeQuery();
+				boolean deleteTitle = true;
+				if (cloudLibraryTitleHasAvailabilityRS.next()){
+					//If the title has any availability records in other settings, do not delete it
+					int numAvailability = cloudLibraryTitleHasAvailabilityRS.getInt("numAvailability");
+					if (numAvailability > 0){
+						deleteTitle = false;
+					}
+				}
+
+				if (deleteTitle) {
+					//Delete the title from the database
+					deleteCloudLibraryItemStmt.setLong(1, cloudLibraryTitle.getId());
+					deleteCloudLibraryItemStmt.executeUpdate();
+					logEntry.incDeleted();
+					RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("cloud_library", cloudLibraryId);
+					logger.warn("Delete record " + cloudLibraryId);
+					if (result.reindexWork) {
+						getGroupedWorkIndexer().processGroupedWork(result.permanentId);
+					} else if (result.deleteWork) {
+						//Delete the work from solr and the database
+						getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
+					}
+					logger.warn("Deleted " + cloudLibraryId);
+				} else {
+					//Reindex the record to make sure the availability changes are reflected in the grouped work
+					String groupedWorkId = getRecordGroupingProcessor().getPermanentIdForRecord("cloud_library", cloudLibraryId);
+					if (groupedWorkId != null) {
+						getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
+					}
+					logger.warn("Reindexing " + cloudLibraryId);
+				}
+			}
+		} catch (SQLException e) {
+			logger.error("Error deleting items " + cloudLibraryId, e);
+			logEntry.addNote("Error deleting items " + e);
+		}
 	}
 
 	private void loadExistingTitles(long settingId) {
