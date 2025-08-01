@@ -23,6 +23,10 @@ class CommunityEngagement_ViewImage extends Action {
 			$actionClass->launch();
 			die();
 		}
+		// Check if reward has an image
+		if (empty($this->uploadedImage->badgeImage)) {
+			die();
+		}
 
 		//Construct the full path to the image
 		global $serverName;
