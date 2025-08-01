@@ -67,19 +67,17 @@ class CloudLibraryEventHandler extends DefaultHandler {
 				currentEventType = nodeContents.trim();
 				break;
 			case "CloudLibraryEvent":
-				// Process the complete event when we reach the end of the event element
+				//Process the complete event when we reach the end of the event element
 				processCloudLibraryEvent(currentItemId, currentEventType);
-				// Reset for next event
+				//Reset for next event
 				currentItemId = "";
 				currentEventType = "";
 				break;
 			case "LastEventDateTimeInUTC":
 				if (nodeContents != null && !nodeContents.trim().isEmpty()) {
 					lastEventDateTimeInUTC = nodeContents.trim();
-					logger.warn("LastEventDateTimeInUTC: " + lastEventDateTimeInUTC);
 				} else {
 					lastEventDateTimeInUTC = null;
-					logger.warn("LastEventDateTimeInUTC is empty, no more events");
 				}
 				break;
 		}
@@ -95,7 +93,7 @@ class CloudLibraryEventHandler extends DefaultHandler {
 			return;
 		}
 		if ("REMOVED".equals(eventType)) {
-			// Delete expired titles
+			//Delete expired titles
 			exporter.deleteRecords(cloudLibraryId);
 		} else {
 			updateAvailabilityForTitle(cloudLibraryId);

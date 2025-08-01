@@ -1,4 +1,3 @@
-
 package com.turning_leaf_technologies.cloud_library;
 
 import org.aspen_discovery.grouping.RecordGroupingProcessor;
@@ -142,6 +141,8 @@ public class CloudLibraryExporter {
 		}
 
 		//Handle events to determine status changes when the bibs don't change.
+		//Events status can be CHECKIN, CHECKOUT, HOLD, REMOVED, RESERVED, 
+		//and PURCHASE(this could be another copy of the currently owned item)
 		if (!settings.isDoFullReload()) {
 			CloudLibraryEventHandler eventHandler = new CloudLibraryEventHandler(this, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger);
 
@@ -150,12 +151,10 @@ public class CloudLibraryExporter {
 			while (true) {
 				String eventsApiPath = "/cirrus/library/" + settings.getLibraryId() + "/data/cloudevents?startdate=" + currentStartDate;
 
-				logger.warn("url ----> " + eventsApiPath);
-
 				for (int curTry = 1; curTry <= 4; curTry++) {
 					WebServiceResponse response = callCloudLibrary(eventsApiPath);
 					if (response == null) {
-						// Something bad happened, we're done.
+						//Something bad happened, we're done.
 						return numChanges;
 					} else if (!response.isSuccess()) {
 						if (response.getResponseCode() != 502) {
@@ -184,8 +183,8 @@ public class CloudLibraryExporter {
 							}
 							logEntry.saveResults();
 						} catch (SAXException | ParserConfigurationException | IOException e) {
-							logger.error("Error parsing response", e);
-							logEntry.addNote("Error parsing response: " + e);
+							logger.error("Error parsing response for events", e);
+							logEntry.addNote("Error parsing response for events: " + e);
 						}
 						break;
 					}
@@ -195,11 +194,10 @@ public class CloudLibraryExporter {
 				if (lastEventDateTime != null && !lastEventDateTime.isEmpty() && !lastEventDateTime.equals(currentStartDate)) {
 					currentStartDate = lastEventDateTime;
 				} else {
-					logger.warn("No more events available");
+					//No more events available, we're done.
 					break;
 				}
 			}
-			logger.warn("Events processing completed");
 		}
 
 		if (settings.isDoFullReload() && !logEntry.hasErrors()) {
@@ -213,7 +211,7 @@ public class CloudLibraryExporter {
 			}
 
 			//Mark any records that no longer exist in search results as deleted, but only if we are doing a full update
-			numChanges += deleteRemainingItems();
+			numChanges += deleteRemainingRecords();
 		}
 
 		//Update the last time we ran the update in settings.  This is always done since cloudLibrary has some expected errors.
@@ -355,7 +353,7 @@ public class CloudLibraryExporter {
 		logEntry = new CloudLibraryExtractLogEntry(aspenConn, settings.getSettingsId(), logger);
 	}
 
-	private int deleteRemainingItems() {
+	private int deleteRemainingRecords() {
 		int numDeleted = 0;
 		for (CloudLibraryTitle cloudLibraryTitle : existingRecords.values()) {
 			if (!cloudLibraryTitle.isDeleted()) {
@@ -373,7 +371,7 @@ public class CloudLibraryExporter {
 	public void deleteRecords(String cloudLibraryId) {
 		CloudLibraryTitle cloudLibraryTitle = existingRecords.get(cloudLibraryId);
 		if (cloudLibraryTitle == null) {
-			logger.warn("Title " + cloudLibraryId + " not found in existing records");
+			logger.debug("Title " + cloudLibraryId + " not found in existing records");
 			return;
 		}
 		try {
@@ -403,21 +401,18 @@ public class CloudLibraryExporter {
 					deleteCloudLibraryItemStmt.executeUpdate();
 					logEntry.incDeleted();
 					RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("cloud_library", cloudLibraryId);
-					logger.warn("Delete record " + cloudLibraryId);
 					if (result.reindexWork) {
 						getGroupedWorkIndexer().processGroupedWork(result.permanentId);
 					} else if (result.deleteWork) {
 						//Delete the work from solr and the database
 						getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
 					}
-					logger.warn("Deleted " + cloudLibraryId);
 				} else {
 					//Reindex the record to make sure the availability changes are reflected in the grouped work
 					String groupedWorkId = getRecordGroupingProcessor().getPermanentIdForRecord("cloud_library", cloudLibraryId);
 					if (groupedWorkId != null) {
 						getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
 					}
-					logger.warn("Reindexing " + cloudLibraryId);
 				}
 			}
 		} catch (SQLException e) {
