@@ -158,80 +158,90 @@ class SeriesIndexer {
 	}
 
 	private boolean updateSolrForSeries(boolean fullReindex, ConcurrentUpdateHttp2SolrClient updateServer, PreparedStatement getTitlesForSeriesStmt, ResultSet allSeriesRS, long lastReindexTime, SeriesLogEntry logEntry) throws SQLException, SolrServerException, IOException {
-		SeriesSolr seriesSolr = new SeriesSolr(this);
-		long seriesId = allSeriesRS.getLong("id");
-		int deleted = allSeriesRS.getInt("deleted");
-		int isIndexed = allSeriesRS.getInt("isIndexed");
-		boolean indexed = false;
-		if (!fullReindex && (deleted == 1 || isIndexed == 0)) {
-			updateServer.deleteByQuery("id:" + seriesId);
-			logEntry.incDeleted();
-		} else {
-			logger.info("Processing series " + seriesId + " " + allSeriesRS.getString("displayName"));
-			seriesSolr.setId(seriesId);
-			seriesSolr.setTitle(allSeriesRS.getString("displayName"));
-			seriesSolr.setDescription(allSeriesRS.getString("description"));
-			String audience = allSeriesRS.getString("audience");
-			if (audience.charAt(0) == '[') {
-				String[] audiences = audience.substring(1, audience.length() - 1).split(",");
-				seriesSolr.setAudiences(audiences);
-			}else{
-				seriesSolr.setAudience(audience);
-			}
+		try {
+			SeriesSolr seriesSolr = new SeriesSolr(this);
+			long seriesId = allSeriesRS.getLong("id");
+			int deleted = allSeriesRS.getInt("deleted");
+			int isIndexed = allSeriesRS.getInt("isIndexed");
+			boolean indexed = false;
+			if (!fullReindex && (deleted == 1 || isIndexed == 0)) {
+				updateServer.deleteByQuery("id:" + seriesId);
+				logEntry.incDeleted();
+			} else {
+				logger.info("Processing series " + seriesId + " " + allSeriesRS.getString("displayName"));
+				seriesSolr.setId(seriesId);
+				seriesSolr.setTitle(allSeriesRS.getString("displayName"));
+				seriesSolr.setDescription(allSeriesRS.getString("description"));
+				String audience = allSeriesRS.getString("audience");
+				if (audience != null && !audience.isEmpty()) {
+					if (audience.charAt(0) == '[') {
+						String[] audiences = audience.substring(1, audience.length() - 1).split(",");
+						seriesSolr.setAudiences(audiences);
+					}else{
+						seriesSolr.setAudience(audience);
+					}
+				}else{
+					logger.debug("No audience for series " + seriesId);
+				}
 
-			long created = allSeriesRS.getLong("created");
-			long dateUpdated = allSeriesRS.getLong("dateUpdated");
-			seriesSolr.setCreated(created);
-			seriesSolr.setDateUpdated(dateUpdated);
-			try {
-				//Get information about all series titles
-				getTitlesForSeriesStmt.setLong(1, seriesId);
-				ResultSet allTitlesRS = getTitlesForSeriesStmt.executeQuery();
-				while (allTitlesRS.next()) {
-					String groupedWorkPermanentId = allTitlesRS.getString("groupedWorkPermanentId");
-					if (!allTitlesRS.wasNull()) {
-						if (!groupedWorkPermanentId.isEmpty()) {
-							SolrQuery query = new SolrQuery();
-							query.setQuery("id:" + groupedWorkPermanentId);
-							query.setFields("title_display", "author_display", "language", "subject", "literary_form", "format", "format_category", "econtent_source");
+				long created = allSeriesRS.getLong("created");
+				long dateUpdated = allSeriesRS.getLong("dateUpdated");
+				seriesSolr.setCreated(created);
+				seriesSolr.setDateUpdated(dateUpdated);
+				try {
+					//Get information about all series titles
+					getTitlesForSeriesStmt.setLong(1, seriesId);
+					ResultSet allTitlesRS = getTitlesForSeriesStmt.executeQuery();
+					while (allTitlesRS.next()) {
+						String groupedWorkPermanentId = allTitlesRS.getString("groupedWorkPermanentId");
+						if (!allTitlesRS.wasNull()) {
+							if (!groupedWorkPermanentId.isEmpty()) {
+								SolrQuery query = new SolrQuery();
+								query.setQuery("id:" + groupedWorkPermanentId);
+								query.setFields("title_display", "author_display", "language", "subject", "literary_form", "format", "format_category", "econtent_source");
 
-							try {
-								QueryResponse response = groupedWorkServer.query(query);
-								SolrDocumentList results = response.getResults();
-								//Should only ever get one response
-								if (!results.isEmpty()) {
-									SolrDocument curWork = results.get(0);
-									seriesSolr.addListTitle("grouped_work", groupedWorkPermanentId, curWork.getFieldValue("title_display"), curWork.getFieldValue("author_display"), curWork);
+								try {
+									QueryResponse response = groupedWorkServer.query(query);
+									SolrDocumentList results = response.getResults();
+									//Should only ever get one response
+									if (!results.isEmpty()) {
+										SolrDocument curWork = results.get(0);
+										seriesSolr.addListTitle("grouped_work", groupedWorkPermanentId, curWork.getFieldValue("title_display"), curWork.getFieldValue("author_display"), curWork);
+									}
+								} catch (Exception e) {
+									logger.error("Error loading information about title " + groupedWorkPermanentId);
 								}
-							} catch (Exception e) {
-								logger.error("Error loading information about title " + groupedWorkPermanentId);
 							}
 						}
 					}
-				}
-				allTitlesRS.close();
-				// Index in the solr catalog
-				SolrInputDocument document = seriesSolr.getSolrDocument();
-				if (document != null) {
-					updateServer.add(document);
-					if (created > lastReindexTime) {
-						logEntry.incAdded();
+					allTitlesRS.close();
+					// Index in the solr catalog
+					SolrInputDocument document = seriesSolr.getSolrDocument();
+					if (document != null) {
+						updateServer.add(document);
+						if (created > lastReindexTime) {
+							logEntry.incAdded();
+						} else {
+							logEntry.incUpdated();
+						}
+						indexed = true;
 					} else {
-						logEntry.incUpdated();
+						updateServer.deleteByQuery("id:" + seriesId);
+						logEntry.incSkipped();
 					}
-					indexed = true;
-				} else {
+				} catch (Exception e) {
 					updateServer.deleteByQuery("id:" + seriesId);
+					logEntry.addNote("Could not get title information for " + seriesId + " - " + e);
 					logEntry.incSkipped();
 				}
-			} catch (Exception e) {
-				updateServer.deleteByQuery("id:" + seriesId);
-				logEntry.addNote("Could not get title information for " + seriesId + " - " + e);
-				logEntry.incSkipped();
-			}
 
+			}
+			return indexed;
+		}catch (Exception e) {
+			logEntry.incErrors("Error indexing series ", e);
+			return false;
 		}
-		return indexed;
+
 	}
 	TreeSet<Scope> getScopes() {
 		return this.scopes;
