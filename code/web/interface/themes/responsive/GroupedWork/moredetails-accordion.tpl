@@ -32,18 +32,24 @@
 		{/foreach}
 	</div> {* End of tabs*}
 {/strip}
-{literal}
 <script type="text/javascript">
-	$(function(){
-		$('#excerptPanel').on('show.bs.collapse', function (e) {
+	{literal}
+	$(() => {
+		$('#excerptPanel').on('show.bs.collapse', () => {
 			AspenDiscovery.GroupedWork.getGoDeeperData({/literal}'{$recordDriver->getPermanentId()}'{literal}, 'excerpt');
 		});
-		$('#tableOfContentsPanel').on('show.bs.collapse', function (e) {
+		$('#tableOfContentsPanel').on('show.bs.collapse', () => {
 			AspenDiscovery.GroupedWork.getGoDeeperData({/literal}'{$recordDriver->getPermanentId()}'{literal}, 'tableOfContents');
 		});
-		$('#authornotesPanel').on('show.bs.collapse', function (e) {
+		$('#authornotesPanel').on('show.bs.collapse', () => {
 			AspenDiscovery.GroupedWork.getGoDeeperData({/literal}'{$recordDriver->getPermanentId()}'{literal}, 'authornotes');
-		})
+		});
 	})
+	{/literal}
+
+	{foreach from=$moreDetailsOptions key="moreDetailsKey" item="moreDetailsOption"}
+		{if !empty($moreDetailsOption.openByDefault) && !empty($moreDetailsOption.onShow)}
+			{$moreDetailsOption.onShow}
+		{/if}
+	{/foreach}
 </script>
-{/literal}
