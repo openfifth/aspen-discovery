@@ -84,7 +84,7 @@ class Axis360Setting extends DataObject {
 				'property' => 'lastUpdateOfAllRecords',
 				'type' => 'timestamp',
 				'label' => 'Last Update of All Records',
-				'description' => 'The timestamp when just changes were loaded',
+				'description' => 'The timestamp when all records were loaded',
 				'default' => 0,
 			],
 			'scopes' => [
