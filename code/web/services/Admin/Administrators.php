@@ -110,6 +110,7 @@ class Admin_Administrators extends ObjectEditor {
 							// Try searching by username field for admin_sso users.
 							$newAdmin = new User();
 							$newAdmin->username = $login;
+							$newAdmin->source = 'admin_sso';
 							$newAdmin->find();
 							$numResults = $newAdmin->getNumResults();
 							if($numResults == 0) {
