@@ -3735,8 +3735,6 @@ class MyAccount_AJAX extends JSON_Action {
 				$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
 				$recordsPerPage = 100; // Could be made configurable in the future if requested.
 				$totalCheckouts = count($allCheckedOut);
-				global $logger;
-				$logger->log("Total checkouts: $totalCheckouts", Logger::LOG_ERROR);
 				if ($recordsPerPage != -1) {
 					$interface->assign('page', $page);
 					$link = $_SERVER['REQUEST_URI'];
