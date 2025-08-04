@@ -350,6 +350,7 @@ class Location extends DataObject {
 				'forcesReindex' => true,
 				'canBatchUpdate' => false,
 				'editPermissions' => ['Location Domain Settings'],
+				'maxLength' => 100,
 			],
 			'locationImage' => [
 				'property' => 'locationImage',
