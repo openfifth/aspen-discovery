@@ -202,9 +202,18 @@ class Hoopla_AJAX extends Action {
 					'buttons' => '<button class="btn btn-primary" onclick="' . $buttonOnClick . '">' . translate(['text' => 'Place Hold', 'isPublicFacing' => true]) . '</button>'
 				];
 			} else {
+				$invalidAccountMessage = translate([
+					'text' => 'The barcode or library for this account is not valid for Hoopla. Please contact your local library for more information.',
+					'isPublicFacing' => true,
+				]);
 				return [
 					'success' => false,
-					'message' => translate(['text' => 'No valid Hoopla account found.', 'isPublicFacing' => true])
+					'title' => translate([
+						'text' => 'Invalid Hoopla Account',
+						'isPublicFacing' => true,
+					]),
+					'body' => '<p class="alert alert-danger">' . $invalidAccountMessage . '</p>',
+					'buttons' => '',
 				];
 			}
 		}
@@ -216,7 +225,7 @@ class Hoopla_AJAX extends Action {
 	function placeHold() {
 		$user = UserAccount::getLoggedInUser();
 		if ($user) {
-			$patronId = $_REQUEST['patronId'];
+			$patronId = !empty($_REQUEST['patronId']) ? $_REQUEST['patronId'] : $user->id;
 			$id = $_REQUEST['id'];
 			$patron = $user->getUserReferredTo($patronId);
 

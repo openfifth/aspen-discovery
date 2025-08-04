@@ -95,6 +95,8 @@ AspenDiscovery.Hoopla = (function(){
 					result = data;
 					if (data.promptNeeded) {
 						AspenDiscovery.showMessageWithButtons(data.promptTitle, data.prompts, data.buttons);
+					} else if (!data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons);
 					}
 				},
 				dataType: 'json',
@@ -109,7 +111,7 @@ AspenDiscovery.Hoopla = (function(){
 		placeHold: function(id) {
 			if (Globals.loggedIn) {
 				var promptInfo = AspenDiscovery.Hoopla.getHoldPrompts(id);
-				if (!promptInfo.promptNeeded){
+				if (promptInfo.success && !promptInfo.promptNeeded){
 					AspenDiscovery.Hoopla.doHold(promptInfo.patronId, id);
 				}
 			} else {
