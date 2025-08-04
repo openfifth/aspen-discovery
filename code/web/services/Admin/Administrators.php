@@ -107,11 +107,27 @@ class Admin_Administrators extends ObjectEditor {
 					if($numResults == 0) {
 						$newAdmin = UserAccount::findNewUser('', $login);
 						if ($newAdmin === false) {
-							$newAdmin = false;
-							$errors[$login] = translate([
-								'text' => 'Could not find a user with that barcode or username.',
-								'isAdminFacing' => true,
-							]);
+							// Try searching by username field for admin_sso users.
+							$newAdmin = new User();
+							$newAdmin->username = $login;
+							$newAdmin->find();
+							$numResults = $newAdmin->getNumResults();
+							if($numResults == 0) {
+								$newAdmin = false;
+								$errors[$login] = translate([
+									'text' => 'Could not find a user with that barcode or username.',
+									'isAdminFacing' => true,
+								]);
+							} elseif ($numResults == 1) {
+								$newAdmin->fetch();
+							} elseif ($numResults > 1) {
+								$newAdmin = false;
+								$errors[$login] = translate([
+									'text' => 'Found multiple (%1%) users with that username. (The database needs to be cleaned up.)',
+									'1' => $numResults,
+									'isAdminFacing' => true,
+								]);
+							}
 						}
 					} elseif ($numResults == 1) {
 						$newAdmin->fetch();
