@@ -135,12 +135,14 @@ function _campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMil
 	if ($campaignMilestoneProgressEntryCheck->find()) {
 		while ($campaignMilestoneProgressEntryCheck->fetch()) {
 			$decoded_object = json_decode($campaignMilestoneProgressEntryCheck->object);
-			if (
-				$decoded_object->sourceId == $value->sourceId &&
-				$decoded_object->recordId == $value->recordId &&
-				$decoded_object->userId == $value->userId
-			) {
-				return true;
+			if ($value instanceof UserWorkReview) {
+				if ($decoded_object->groupedRecordPermanentId == $value->groupedRecordPermanentId && $decoded_object->userId == $value->userId) {
+					return true;
+				}
+			}else{
+				if ($decoded_object->sourceId == $value->sourceId && $decoded_object->recordId == $value->recordId && $decoded_object->userId == $value->userId) {
+					return true;
+				}
 			}
 		}
 	}
