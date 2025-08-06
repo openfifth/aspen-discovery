@@ -15538,6 +15538,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 AspenDiscovery.Record = (function () {
 	// noinspection JSUnusedGlobalSymbols
 	return {
+		volumeHoldInProgress: false,
 		showPlaceHold: function (module, source, id, volume, variationId) {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
@@ -15553,10 +15554,15 @@ AspenDiscovery.Record = (function () {
 				targetButton.prop('disabled', true);
 				targetButton.addClass('disabled');
 
+				const spinner = $('<i class="fas fa-spinner fa-spin" style="margin-right: 3px;"></i>');
+				targetButton.prepend(spinner);
+
 				$.getJSON(url, function (data) {
 					document.body.style.cursor = "default";
 					targetButton.prop('disabled', false);
 					targetButton.removeClass('disabled');
+
+					targetButton.find('.fa-spinner').remove();
 					if (data.holdFormBypassed) {
 						if (data.success) {
 							if (data.needsItemLevelHold) {
@@ -15588,7 +15594,13 @@ AspenDiscovery.Record = (function () {
 						}
 					}
 					AspenDiscovery.Account.reloadHolds();
-				}).fail(AspenDiscovery.ajaxFail);
+				}).fail(function() {
+					document.body.style.cursor = "default";
+					targetButton.prop('disabled', false);
+					targetButton.removeClass('disabled');
+					targetButton.find('.fa-spinner').remove();
+					AspenDiscovery.ajaxFail.apply(this, arguments);
+				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
 					AspenDiscovery.Record.showPlaceHold(module, source, id, volume);
@@ -15736,16 +15748,34 @@ AspenDiscovery.Record = (function () {
 
 		showPlaceHoldEditions: function (module, source, id, volume, variationId) {
 			if (Globals.loggedIn) {
-				var url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldEditionsForm&recordSource=" + source;
+				document.body.style.cursor = "wait";
+				let url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldEditionsForm&recordSource=" + source;
 				if (volume !== undefined) {
 					url += "&volume=" + volume;
 				}
 				if (variationId !== undefined) {
 					url += "&variationId=" + variationId;
 				}
+
+				const targetButton = $('#actionButton' + id);
+				targetButton.prop('disabled', true);
+				targetButton.addClass('disabled');
+				const spinner = $('<i class="fas fa-spinner fa-spin" style="margin-right: 3px;"></i>');
+				targetButton.prepend(spinner);
+
 				$.getJSON(url, function (data) {
+					document.body.style.cursor = "default";
+					targetButton.prop('disabled', false);
+					targetButton.removeClass('disabled');
+					targetButton.find('.fa-spinner').remove();
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
-				}).fail(AspenDiscovery.ajaxFail);
+				}).fail(function() {
+					document.body.style.cursor = "default";
+					targetButton.prop('disabled', false);
+					targetButton.removeClass('disabled');
+					targetButton.find('.fa-spinner').remove();
+					AspenDiscovery.ajaxFail.apply(this, arguments);
+				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
 					AspenDiscovery.Record.showPlaceHoldEditions(module, source, id, volume);
@@ -15756,10 +15786,28 @@ AspenDiscovery.Record = (function () {
 
 		showPlaceHoldVolumes: function (module, source, id) {
 			if (Globals.loggedIn) {
-				var url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldVolumesForm&recordSource=" + source;
+				document.body.style.cursor = "wait";
+				const url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldVolumesForm&recordSource=" + source;
+
+				const targetButton = $('#actionButton' + id);
+				targetButton.prop('disabled', true);
+				targetButton.addClass('disabled');
+				const spinner = $('<i class="fas fa-spinner fa-spin" style="margin-right: 3px;"></i>');
+				targetButton.prepend(spinner);
+
 				$.getJSON(url, function (data) {
+					document.body.style.cursor = "default";
+					targetButton.prop('disabled', false);
+					targetButton.removeClass('disabled');
+					targetButton.find('.fa-spinner').remove();
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
-				}).fail(AspenDiscovery.ajaxFail);
+				}).fail(function() {
+					document.body.style.cursor = "default";
+					targetButton.prop('disabled', false);
+					targetButton.removeClass('disabled');
+					targetButton.find('.fa-spinner').remove();
+					AspenDiscovery.ajaxFail.apply(this, arguments);
+				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
 					AspenDiscovery.Record.showPlaceHoldVolumes(module, source, id);
@@ -15774,7 +15822,7 @@ AspenDiscovery.Record = (function () {
 			requestTitleButton.addClass('disabled');
 
 			document.body.style.cursor = "wait";
-			document.querySelector('.fa-spinner').classList.remove('hidden');
+			requestTitleButton.find('.fa-spinner').removeClass('hidden');
 			var id = $('#id').val();
 
 			var targetButton = $('#actionButton' + id);
@@ -15822,14 +15870,14 @@ AspenDiscovery.Record = (function () {
 					requestTitleButton.prop('disabled', false);
 					requestTitleButton.removeClass('disabled');
 					document.body.style.cursor = "pointer";
-					document.querySelector('.fa-spinner').classList.add('hidden');
+					requestTitleButton.find('.fa-spinner').addClass('hidden');
 					return false;
 				} else if (holdType.val() === 'volume' && volume.val().length === 0) {
 					alert("Please select a volume to place your hold on");
 					requestTitleButton.prop('disabled', false);
 					requestTitleButton.removeClass('disabled');
 					document.body.style.cursor = "pointer";
-					document.querySelector('.fa-spinner').classList.add('hidden');
+					requestTitleButton.find('.fa-spinner').addClass('hidden');
 					return false;
 				}
 			} else {
@@ -15842,7 +15890,7 @@ AspenDiscovery.Record = (function () {
 						requestTitleButton.prop('disabled', false);
 						requestTitleButton.removeClass('disabled');
 						document.body.style.cursor = "pointer";
-						document.querySelector('.fa-spinner').classList.add('hidden');
+						requestTitleButton.find('.fa-spinner').addClass('hidden');
 						return false;
 					}
 				}
@@ -15859,7 +15907,7 @@ AspenDiscovery.Record = (function () {
 					requestTitleButton.prop('disabled', false);
 					requestTitleButton.removeClass('disabled');
 					document.body.style.cursor = "pointer";
-					document.querySelector('.fa-spinner').classList.add('hidden');
+					requestTitleButton.find('.fa-spinner').addClass('hidden');
 					return false;
 				} else {
 					$("#cancelHoldDateHelpBlock").hide();
@@ -15880,7 +15928,7 @@ AspenDiscovery.Record = (function () {
 
 						$("#placeHoldForm").show();
 						$("#placingHoldMessage").hide();
-						document.querySelector('.fa-spinner').classList.add('hidden');
+						requestTitleButton.find('.fa-spinner').addClass('hidden');
 						$('.modal-body').html(data.message);
 					} else if (data.needsIllRequest) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
@@ -15945,6 +15993,17 @@ AspenDiscovery.Record = (function () {
 		},
 
 		placeVolumeHold: function () {
+			// Prevent multiple volume hold submissions; button state alone is insufficient.
+			if (this.volumeHoldInProgress) {
+				return false;
+			}
+			this.volumeHoldInProgress = true;
+
+			const $placeHoldButton = $('.modal-footer .btn-primary');
+			$placeHoldButton.prop('disabled', true);
+			$placeHoldButton.addClass('disabled');
+			$placeHoldButton.find('.fa-spinner').removeClass('hidden');
+			
 			const $volumeSelect = $("#selectedVolume");
 			const selectedVolume = $volumeSelect.find("option:selected").val();
 			const $holdTypeBib = $("#holdTypeBib");
@@ -15967,19 +16026,24 @@ AspenDiscovery.Record = (function () {
 					</div>
 				`;
 				$('#volumeSelection').prepend(errorHtml);
+
+				this.volumeHoldInProgress = false;
+				$placeHoldButton.prop('disabled', false);
+				$placeHoldButton.removeClass('disabled');
+				$placeHoldButton.find('.fa-spinner').addClass('hidden');
 				return false;
 			}
 
-			var requestTitleButton = $('#requestTitleButton');
+			const requestTitleButton = $('#requestTitleButton');
 			requestTitleButton.prop('disabled', true);
 			requestTitleButton.addClass('disabled');
-			document.querySelector('.fa-spinner').classList.remove('hidden');
+			requestTitleButton.find('.fa-spinner').removeClass('hidden');
 
-			var id = $('#id').val();
-			var autoLogOut = $('#autologout').prop('checked');
-			var module = $('#module').val();
+			const id = $('#id').val();
+			const autoLogOut = $('#autologout').prop('checked');
+			const module = $('#module').val();
 
-			var params = {
+			let params = {
 				'method': 'placeHold',
 				pickupBranch: $('#pickupBranch').val(),
 				selectedUser: $('#user').val(),
@@ -15996,9 +16060,13 @@ AspenDiscovery.Record = (function () {
 			}
 			if (params['pickupBranch'] === 'undefined') {
 				alert("Please select a location to pick up your hold when it is ready.");
+				this.volumeHoldInProgress = false;
+				$placeHoldButton.prop('disabled', false);
+				$placeHoldButton.removeClass('disabled');
+				$placeHoldButton.find('.fa-spinner').addClass('hidden');
 				return false;
 			}
-			var holdType = $('#holdType');
+			const holdType = $('#holdType');
 			if (holdType.length > 0) {
 				params['holdType'] = holdType.val();
 			} else {
@@ -16015,24 +16083,31 @@ AspenDiscovery.Record = (function () {
 			$.getJSON(Globals.path + "/" + module + "/" + id + "/AJAX", params, function (data) {
 				if (data.success) {
 					if (data.needsItemLevelHold) {
-						var requestTitleButton = $('#requestTitleButton');
+						AspenDiscovery.Record.volumeHoldInProgress = false;
+						const requestTitleButton = $('#requestTitleButton');
 						requestTitleButton.prop('disabled', false);
 						requestTitleButton.removeClass('disabled');
 
 						$("#placeHoldForm").show();
 						$("#placingHoldMessage").hide();
-						document.querySelector('.fa-spinner').classList.add('hidden');
+						requestTitleButton.find('.fa-spinner').addClass('hidden');
 						$('.modal-body').html(data.message);
 					} else if (data.needsIllRequest) {
+						AspenDiscovery.Record.volumeHoldInProgress = false;
 						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 					} else {
+						AspenDiscovery.Record.volumeHoldInProgress = false;
 						AspenDiscovery.showMessage(data.title, data.message, false, autoLogOut);
 						AspenDiscovery.Account.loadMenuData();
 					}
 				} else {
+					AspenDiscovery.Record.volumeHoldInProgress = false;
 					AspenDiscovery.showMessage(data.title, data.message, false, autoLogOut);
 				}
-			}).fail(AspenDiscovery.ajaxFail);
+			}).fail(function() {
+				AspenDiscovery.Record.volumeHoldInProgress = false;
+				AspenDiscovery.ajaxFail.apply(this, arguments);
+			});
 		},
 
 		confirmHold: function (module, bibId, confirmationId) {
@@ -16046,7 +16121,7 @@ AspenDiscovery.Record = (function () {
 						var requestTitleButton = $('#requestTitleButton');
 						requestTitleButton.prop('disabled', false);
 						requestTitleButton.removeClass('disabled');
-						document.querySelector('.fa-spinner').classList.add('hidden');
+						requestTitleButton.find('.fa-spinner').addClass('hidden');
 						$('.modal-body').html(data.message);
 					} else {
 						AspenDiscovery.showMessage(data.title, data.message, false);
@@ -16820,29 +16895,46 @@ AspenDiscovery.Series = (function(){
 
 	};
 }(AspenDiscovery.Series || {}));
-AspenDiscovery.SideLoads = (function(){
+AspenDiscovery.SideLoads = (() => {
 	return {
-		deleteMarc: function (sideLoadId, fileName, fileIndex) {
-			if (!confirm('Are you sure you want to delete this ' + fileName + '?')){
-				return false;
-			}
-			var params = {
+		deleteMarc(sideLoadId, fileName, fileIndex) {
+			/*
+				Because the modal button’s onclick attribute is enclosed in single quotes,
+				removing literal apostrophes prevents the attribute from being prematurely closed,
+				and the entity is decoded back to an apostrophe when the JavaScript runs.
+			 */
+			const fileNameHtmlSafe = fileName.replace(/'/g, "&#39;");
+			AspenDiscovery.confirm(
+				'Confirm Delete',
+				`Are you sure you want to delete this <strong>${fileName}</strong>?`,
+				'Delete',
+				'Cancel',
+				true,
+				`AspenDiscovery.closeLightbox();AspenDiscovery.SideLoads.doDeleteMarc(${sideLoadId}, \"${fileNameHtmlSafe}\", ${fileIndex});`,
+				'btn-danger'
+			);
+
+			return false;
+		},
+
+		doDeleteMarc(sideLoadId, fileName, fileIndex) {
+			const params = {
 				method : 'deleteMarc',
 				id: sideLoadId,
 				file: fileName
 			};
-
-			$.getJSON(Globals.path + "/SideLoads/AJAX",params, function(data){
-				if (data.success){
+			$.getJSON(Globals.path + "/SideLoads/AJAX", params, function(data) {
+				const { success, message } = data;
+				if (success){
 					$("#file" + fileIndex).hide();
 				}else{
-					AspenDiscovery.showMessage('Delete Failed', data.message, false, autoLogOut);
+					AspenDiscovery.showMessage('Delete Failed', message, false);
 				}
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		}
 	}
-}(AspenDiscovery.SideLoads || {}));
+})();
 AspenDiscovery.Summon = (function(){
 	return {
 		getSummonResults: function(searchTerm){
