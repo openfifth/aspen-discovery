@@ -131,7 +131,7 @@ public class UpdateReadingHistoryTask implements Runnable {
 			hadError = true;
 		} catch (IOException e) {
 			String errorMessage = e.getMessage();
-            errorMessage = errorMessage.replaceAll(ilsPassword, "XXXX");
+			errorMessage = errorMessage.replaceAll(ilsPassword, "XXXX");
 			processLog.incErrors("Unable to retrieve information from patron API for " + ilsBarcode + "; base URL is " + aspenUrl + ": " + errorMessage);
 			hadError = true;
 		}
