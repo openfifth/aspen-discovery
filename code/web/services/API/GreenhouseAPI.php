@@ -608,9 +608,9 @@ class GreenhouseAPI extends AbstractAPI {
 		return $thisLibrary;
 	}
 
-	public function setLibraryCache($aspenSite) {
+	public function setLibraryCache($aspenSite): void {
 		$fetchLibraryUrl = $aspenSite->baseUrl . '/API/GreenhouseAPI?method=getLibrary';
-		if ($data = file_get_contents($fetchLibraryUrl)) {
+		if ($data = @file_get_contents($fetchLibraryUrl)) {
 			$searchData = json_decode($data);
 			$libraryLocation = new AspenSiteCache();
 			$libraryLocation->siteId = $aspenSite->id;
