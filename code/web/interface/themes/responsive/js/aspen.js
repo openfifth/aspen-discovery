@@ -5443,19 +5443,11 @@ var AspenDiscovery = (function(){
 			}
 		},
 
-		scrollToTop: function () {
-			// Let's set a variable for the number of pixels we are from the top of the document.
-			var c = document.documentElement.scrollTop || document.body.scrollTop;
-
-			// If that number is greater than 0, we'll scroll back to 0, or the top of the document.
-			// We'll also animate that scroll with requestAnimationFrame:
-			// https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
-			if (c > 0) {
-				window.requestAnimationFrame(AspenDiscovery.scrollToTop);
-				// ScrollTo takes an x and a y coordinate.
-				// Increase the '10' value to get a smoother/slower scroll!
-				window.scrollTo(0, c - c / 10);
-			}
+		scrollToTop() {
+			window.scrollTo({
+				top: 0,
+				behavior: 'smooth'
+			});
 		},
 
 		showDisplaySettings: function () {
@@ -9819,28 +9811,105 @@ AspenDiscovery.Admin = (function () {
 			window.location.href = url + "?release=" + selectedRelease;
 			return false;
 		},
-		updateBrowseSearchForSource: function () {
-			var selectedSource = $('#sourceSelect').val();
-			if (selectedSource === 'List') {
-				$("#propertyRowsearchTerm").hide();
-				$("#propertyRowdefaultFilter").hide();
-				$("#propertyRowdefaultSort").hide();
-				$("#propertyRowsourceListId").show();
-				$("#propertyRowsourceCourseReserveId").hide();
-			} else if (selectedSource === 'CourseReserve') {
-				$("#propertyRowsearchTerm").hide();
-				$("#propertyRowdefaultFilter").hide();
-				$("#propertyRowdefaultSort").hide();
-				$("#propertyRowsourceListId").hide();
-				$("#propertyRowsourceCourseReserveId").show();
+
+		updateBrowseSearchForSource() {
+			const selectedSource = $('#sourceSelect').val();
+
+			const rowsToHide = [
+				"#propertyRowsearchTerm",
+				"#propertyRowdefaultFilter",
+				"#propertyRowdefaultSort",
+				"#propertyRowsourceListId",
+				"#propertyRowsourceCourseReserveId"
+			];
+			rowsToHide.forEach(selector => $(selector).hide());
+
+			switch (selectedSource) {
+				case 'List':
+					$("#propertyRowsourceListId").show();
+					break;
+				case 'CourseReserve':
+					$("#propertyRowsourceCourseReserveId").show();
+					break;
+				default:
+					[
+						"#propertyRowsearchTerm",
+						"#propertyRowdefaultFilter",
+						"#propertyRowdefaultSort"
+					].forEach(selector => $(selector).show());
+					break;
+			}
+
+			this.updateSortOptionsForSource(selectedSource);
+			return false;
+		},
+
+		updateSortOptionsForSource(selectedSource) {
+			if (selectedSource === 'List' || selectedSource === 'CourseReserve') return;
+
+			const sortOptionsBySource = {
+				GroupedWork: {
+					relevance: 'Best Match',
+					popularity: 'Popularity',
+					newest_to_oldest: 'Date Added',
+					author: 'Author',
+					title: 'Title',
+					user_rating: 'Rating',
+					holds: 'Number of Holds',
+					publication_year_desc: 'Publication Year Desc',
+					publication_year_asc: 'Publication Year Asc'
+				},
+				Events: {
+					relevance: 'Best Match',
+					event_date: 'Event Date',
+					title: 'Title'
+				},
+				OpenArchives: {
+					relevance: 'Best Match',
+					title: 'Title'
+				},
+				Genealogy: {
+					relevance: 'Best Match',
+					title: 'Title'
+				},
+				EbscoEds: {
+					relevance: 'Best Match'
+				},
+				Websites: {
+					relevance: 'Best Match',
+					title: 'Title'
+				},
+				CourseReserves: {
+					relevance: 'Best Match',
+					title: 'Title'
+				},
+				Lists: {
+					relevance: 'Best Match',
+					title: 'Title',
+					newest_to_oldest: 'Date Added',
+					oldest_to_newest: 'Date Added (Oldest First)',
+					newest_updated_to_oldest: 'Date Updated',
+					oldest_updated_to_newest: 'Date Updated (Oldest First)'
+				}
+			};
+
+			const $sortSelect = $('#defaultSortSelect');
+			const currentValue = $sortSelect.val();
+			$sortSelect.empty();
+
+			const sortOptions = sortOptionsBySource[selectedSource] || sortOptionsBySource.GroupedWork;
+			Object.entries(/** @type {{ [key: string]: string }} */ sortOptions).forEach(([value, label]) => {
+				$sortSelect.append(new Option(label, value));
+			});
+
+
+			if (sortOptions.hasOwnProperty(currentValue)) {
+				$sortSelect.val(currentValue);
 			} else {
-				$("#propertyRowsearchTerm").show();
-				$("#propertyRowdefaultFilter").show();
-				$("#propertyRowdefaultSort").show();
-				$("#propertyRowsourceListId").hide();
-				$("#propertyRowsourceCourseReserveId").hide();
+				$sortSelect.prop('selectedIndex', 0);
 			}
 		},
+
 		updateCollectionSpotlightFields() {
 			const collSpotStyle = $("#styleSelect option:selected").val();
 			const rowsToHide = [
@@ -12012,16 +12081,16 @@ AspenDiscovery.Browse = (function(){
 		},
 
 		updateBrowseCategory: function(){
-			var url = Globals.path + "/Browse/AJAX";
-			var	params = {
-				method:'updateBrowseCategory'
-				,categoryName:$('#updateBrowseCategorySelect').val()
+			const url = Globals.path + "/Browse/AJAX";
+			const params = {
+				method: 'updateBrowseCategory'
+				, categoryName: $('#updateBrowseCategorySelect').val()
 			};
-			var searchId = $("#searchId");
+			const searchId = $("#searchId");
 			if (searchId){
 				params['searchId'] = searchId.val()
 			}
-			var listId = $("#listId");
+			const listId = $("#listId");
 			if (listId){
 				params['listId'] = listId.val()
 			}
@@ -12056,9 +12125,9 @@ AspenDiscovery.Browse = (function(){
 			}
 			$.getJSON(url, params, function (data) {
 				if (data.success === false) {
-					AspenDiscovery.showMessage("Unable to create category", data.message);
+					AspenDiscovery.showMessage("Unable to Create Browse Category", data.message);
 				} else {
-					AspenDiscovery.showMessage("Successfully added", data.message, true);
+					AspenDiscovery.showMessage("Successfully Added Browse Category", data.message, true);
 				}
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
