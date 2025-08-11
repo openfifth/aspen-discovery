@@ -356,27 +356,27 @@ class CatalogConnection {
 								$smsResponse = $twilioSetting->sendMessage($body, $phone);
 								if ($smsResponse['success']) {
 									$result['message'] = translate([
-										'text' => 'An message containing your library card was sent to %1%.',
+										'text' => 'A message containing your library card was sent to %1%.',
 										'isPublicFacing' => true,
 										1 => $phone
 									]);
 								} else {
 									$result['message'] = translate([
-										'text' => 'We could not send a message to %1%, please contact the library to retrieve your library card.',
+										'text' => 'We could not send a message to %1%. Please contact the library to retrieve your library card.',
 										'isPublicFacing' => true,
 										1 => $phone
 									]);
 								}
 							} else {
 								$result['message'] = translate([
-									'text' => 'We could not send a message to %1%, please contact the library to retrieve your library card.',
+									'text' => 'We could not send a message to %1%. Please contact the library to retrieve your library card.',
 									'isPublicFacing' => true,
 									1 => $phone
 								]);
 							}
 						} else {
 							$result['message'] = translate([
-								'text' => 'We could not send a message to %1%, please contact the library to retrieve your library card.',
+								'text' => 'We could not send a message to %1%. Please contact the library to retrieve your library card.',
 								'isPublicFacing' => true,
 								1 => $phone
 							]);

@@ -555,6 +555,7 @@ class SirsiDynixROA extends HorizonAPI {
 			$selfRegistrationForm = null;
 			$formFields = null;
 			if ($library->selfRegistrationFormId > 0){
+				require_once ROOT_DIR . '/sys/SelfRegistrationForms/SelfRegistrationForm.php';
 				$selfRegistrationForm = new SelfRegistrationForm();
 				$selfRegistrationForm->id = $library->selfRegistrationFormId;
 				if ($selfRegistrationForm->find(true)) {

@@ -136,23 +136,28 @@ class TwilioSetting extends DataObject {
 		}
 	}
 
-	public function validatePhoneNumber($phoneNumber) {
+	public function validatePhoneNumber($phoneNumber): bool {
 		$curlWrapper = new CurlWrapper();
 		$headers = [
-			"Authorization: Basic " . base64_encode($this->accountSid . ':' . $this->authToken),
-			"Accept: application/xml"
+			"Authorization: Basic " . base64_encode($this->accountSid . ':' . $this->authToken)
 		];
 		$curlWrapper->addCustomHeaders($headers, false);
 		$result = $curlWrapper->curlGetPage("https://lookups.twilio.com/v2/PhoneNumbers/" . urlencode($phoneNumber));
-		$xmlResponse = new SimpleXMLElement($result);
-		if ($curlWrapper->getResponseCode() == 200) {
-			return (bool)$xmlResponse->valid;
+		if ($curlWrapper->getResponseCode() == 200 && !empty($result)) {
+			$jsonResponse = json_decode($result, true);
+			global $logger;
+			$logger->log("[TWILIO] Validate Phone Response: " . print_r($jsonResponse, true), Logger::LOG_DEBUG);
+			if ($jsonResponse !== null && isset($jsonResponse['valid'])) {
+				return (bool)$jsonResponse['valid'];
+			} else {
+				return false;
+			}
 		} else {
 			return false;
 		}
 	}
 
-	public function sendMessage($messageBody, $phoneNumber){
+	public function sendMessage($messageBody, $phoneNumber): array {
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$curlWrapper = new CurlWrapper();
 		$headers = [
@@ -167,15 +172,17 @@ class TwilioSetting extends DataObject {
 		];
 		$result = $curlWrapper->curlPostPage("https://api.twilio.com/2010-04-01/Accounts/$this->accountSid/Messages.json", $postVariables);
 		$jsonResponse = json_decode($result);
+		global $logger;
+		$logger->log("[TWILIO] SMS Response Code: " . $curlWrapper->getResponseCode() . ", Response: " . print_r($jsonResponse, true), Logger::LOG_DEBUG);
 		if ($curlWrapper->getResponseCode() == 201) {
 			return [
 				'success' => true,
-				'message' => 'The message was sent successfully'
+				'message' => 'The message was sent successfully.'
 			];
 		} else {
 			return [
 				'success' => false,
-				'message' => $jsonResponse->message
+				'message' => $jsonResponse->message ?? 'Unknown error occurred.'
 			];
 		}
 	}
