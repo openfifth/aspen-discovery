@@ -24,6 +24,7 @@ class WebBuilder_SubmitForm extends Action {
 
 		global $interface;
 		$interface->assign('formTitle', $this->form->title);
+		$interface->assign('id', $id);
 		if (isset($_REQUEST['submit'])) {
 			$processForm = true;
 			if (!UserAccount::isLoggedIn()) {
