@@ -192,6 +192,7 @@ class SeriesIndexer {
 					//Get information about all series titles
 					getTitlesForSeriesStmt.setLong(1, seriesId);
 					ResultSet allTitlesRS = getTitlesForSeriesStmt.executeQuery();
+					int numTitles = 0;
 					while (allTitlesRS.next()) {
 						String groupedWorkPermanentId = allTitlesRS.getString("groupedWorkPermanentId");
 						if (!allTitlesRS.wasNull()) {
@@ -207,6 +208,7 @@ class SeriesIndexer {
 									if (!results.isEmpty()) {
 										SolrDocument curWork = results.get(0);
 										seriesSolr.addListTitle("grouped_work", groupedWorkPermanentId, curWork.getFieldValue("title_display"), curWork.getFieldValue("author_display"), curWork);
+										numTitles++;
 									}
 								} catch (Exception e) {
 									logger.error("Error loading information about title " + groupedWorkPermanentId);
@@ -215,9 +217,10 @@ class SeriesIndexer {
 						}
 					}
 					allTitlesRS.close();
-					// Index in the solr catalog
+					// Index in the solr catalog. This will only be indexed if the series has valid titles and
+					// is valid for one or more scopes.
 					SolrInputDocument document = seriesSolr.getSolrDocument();
-					if (document != null) {
+					if (numTitles > 0 && document != null) {
 						updateServer.add(document);
 						if (created > lastReindexTime) {
 							logEntry.incAdded();
