@@ -905,11 +905,11 @@ class Evergreen extends AbstractIlsDriver {
 				$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $params);
 
 				ExternalRequestLogEntry::logRequest('evergreen.getReadingHistory', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $params, $this->apiCurlWrapper->getResponseCode(), $apiResponse, []);
-				global $logger;
 				if ($this->apiCurlWrapper->getResponseCode() == 200) {
 					$circHistoryDecoded = json_decode($apiResponse);
 					if ($circHistoryDecoded === null) {
 						$hasMoreHistory = false;
+						global $logger;
 						$logger->log("Could not decode Evergreen reading history response for $patron->ils_barcode.", Logger::LOG_ERROR);
 						break;
 					}
@@ -972,6 +972,7 @@ class Evergreen extends AbstractIlsDriver {
 					}
 					$offset += 100;
 				} else {
+					global $logger;
 					$logger->log("API call failed for getting the Evergreen reading history for $patron->ils_barcode.", Logger::LOG_ERROR);
 					$hasMoreHistory = false;
 					break;
