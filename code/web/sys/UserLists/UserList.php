@@ -36,7 +36,14 @@ class UserList extends DataObject {
 		while ($userLists->fetch()) {
 			$numItems = $userLists->numValidListItems();
 			if ($numItems > 0) {
-				$sourceLists[$userLists->id] = "($userLists->id) $userLists->title - $numItems entries";
+				$sortLabel = '';
+				if (!empty($userLists->defaultSort) && $userLists->defaultSort !== 'dateAdded') {
+					$sortOptions = self::getSortOptions();
+					if (isset($sortOptions[$userLists->defaultSort])) {
+						$sortLabel = ' [' . $sortOptions[$userLists->defaultSort] . ']';
+					}
+				}
+				$sourceLists[$userLists->id] = "($userLists->id) $userLists->title - $numItems entries$sortLabel";
 			}
 		}
 		return $sourceLists;
@@ -54,7 +61,6 @@ class UserList extends DataObject {
 		];
 	}
 
-
 	// Used by FavoriteHandler as well//
 	private static $__userListSortOptions = [
 		// URL_value => SQL code for Order BY clause
@@ -63,7 +69,32 @@ class UserList extends DataObject {
 		'recentlyAdded' => 'dateAdded DESC',
 		'custom' => 'weight ASC', // Puts items with no set weight towards the end of the list.
 		'author' => '',
+		'publication_date' => '',
+		'publication_date_desc' => '',
+		'call_number' => '',
+		'availability' => '',
+		'availability_desc' => '',
+		'copies_available' => '',
+		'copies_available_asc' => '',
 	];
+
+
+	public static function getSortOptions(): array {
+		return [
+			'title' => 'Title',
+			'author' => 'Author',
+			'dateAdded' => 'Date Added (Oldest First)',
+			'recentlyAdded' => 'Date Added (Newest First)',
+			'publication_date' => 'Publication Date (Oldest First)',
+			'publication_date_desc' => 'Publication Date (Newest First)',
+			'call_number' => 'Call Number',
+			'availability' => 'Availability (Available First)',
+			'availability_desc' => 'Availability (Unavailable First)',
+			'copies_available' => 'Number of Copies (Most First)',
+			'copies_available_asc' => 'Number of Copies (Least First)',
+			'custom' => 'User Defined Order',
+		];
+	}
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -235,8 +266,123 @@ class UserList extends DataObject {
 					$seriesInfo = new Series();
 					$listEntry->joinAdd($seriesInfo, "LEFT", 'series', 'sourceId', 'id');
 					$listEntry->orderBy("CASE WHEN ItemAuthor IS NULL THEN 1 ELSE 0 END ASC, ItemAuthor");
-				} else {
-					$listEntry->orderBy($sortOptions[$sort]);
+					// Publication date sort: Extracts clean 4-digit years from messy publication date strings.
+					// Joins through grouped_work -> grouped_work_records -> indexed_publication_date tables.
+					// Uses regex to find first valid year (0001-2999), filters out obviously invalid entries.
+					// Records without valid years are sorted to the end.
+				} elseif ($sort == "publication_date" || $sort == "publication_date_desc") {
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+					$groupedWorkInfo = new GroupedWork();
+					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
+					$gwRecords = new GroupedWorkRecord();
+					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
+
+					$indexedPubDate = new class extends DataObject {
+						public $__table = 'indexed_publication_date';
+						public $id;
+						public $publicationDate;
+					};
+					$listEntry->joinAdd($indexedPubDate, "LEFT", 'indexedPubDate', 'gwRecords.publicationDateId', 'id');
+
+					$listEntry->selectAdd('CASE 
+						WHEN user_list_entry.source = "GroupedWork" AND indexedPubDate.publicationDate IS NOT NULL THEN
+							CASE 
+								WHEN indexedPubDate.publicationDate REGEXP "^[^0-9]*$" THEN NULL
+								WHEN indexedPubDate.publicationDate REGEXP "^[a-zA-Z]+[0-9]*$" THEN NULL
+								WHEN indexedPubDate.publicationDate REGEXP "[0-9]{4}" THEN 
+									CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, "[0-9]{4}") AS UNSIGNED)
+								ELSE NULL 
+							END
+						ELSE NULL 
+					END AS NormalizedYear');
+					$listEntry->groupBy('user_list_entry.id');
+
+					$order = $sort == "publication_date" ? "ASC" : "DESC";
+					$listEntry->orderBy("CASE WHEN NormalizedYear IS NULL THEN 1 ELSE 0 END ASC, NormalizedYear $order");
+
+					// Call number sort: Only sorts ILS records by call number; places all other record types at bottom.
+					// Joins through grouped_work -> grouped_work_records -> grouped_work_record_items -> indexed_call_number.
+					// Uses grouped_work_variation.eContentSourceId to distinguish ILS (-1,NULL,0) from e-content (>0).
+					// Sort order: ILS with call numbers (0) -> ILS without call numbers (1) -> e-content (2) -> non-GroupedWork (3).
+					// Groups by list entry ID to prevent duplicates when multiple items have different call numbers.
+				} elseif ($sort == "call_number") {
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+					$groupedWorkInfo = new GroupedWork();
+					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
+					$gwRecords = new GroupedWorkRecord();
+					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkItem.php';
+					$gwItems = new GroupedWorkItem();
+					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
+
+					$gwVariation = new class extends DataObject {
+						public $__table = 'grouped_work_variation';
+						public $id;
+						public $groupedWorkId;
+						public $eContentSourceId;
+					};
+					$listEntry->joinAdd($gwVariation, "LEFT", 'gwVariation', 'gwItems.groupedWorkVariationId', 'id');
+
+					$indexedCallNumber = new class extends DataObject {
+						public $__table = 'indexed_call_number';
+						public $id;
+						public $callNumber;
+					};
+					$listEntry->joinAdd($indexedCallNumber, "LEFT", 'indexedCallNumber', 'gwItems.callNumberId', 'id');
+
+					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0) AND indexedCallNumber.callNumber IS NOT NULL THEN MIN(indexedCallNumber.callNumber) ELSE NULL END AS CallNumber');
+					$listEntry->groupBy('user_list_entry.id');
+					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 3 WHEN (gwVariation.eContentSourceId IS NOT NULL AND gwVariation.eContentSourceId > 0) THEN 2 WHEN CallNumber IS NULL THEN 1 ELSE 0 END ASC, CallNumber ASC");
+
+					// Availability sort: Sorts by item availability status.
+					// Uses MAX(available) to get best availability status when multiple items exist.
+					// Groups by list entry to prevent duplicates; non-GroupedWork records fall to bottom.
+				} elseif ($sort == "availability" || $sort == "availability_desc") {
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+					$groupedWorkInfo = new GroupedWork();
+					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
+					$gwRecords = new GroupedWorkRecord();
+					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkItem.php';
+					$gwItems = new GroupedWorkItem();
+					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
+
+					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN COALESCE(MAX(gwItems.available), 0) ELSE 0 END AS MaxAvailable');
+					$listEntry->groupBy('user_list_entry.id');
+					$order = $sort == "availability" ? "DESC" : "ASC";
+					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, MaxAvailable $order");
+
+					// Copies available sort: Sorts by total number of available copies across all items.
+					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
+					// Non-GroupedWork records are assigned 0 copies and sorted to bottom.
+				} elseif ($sort == "copies_available" || $sort == "copies_available_asc") {
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+					$groupedWorkInfo = new GroupedWork();
+					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
+					$gwRecords = new GroupedWorkRecord();
+					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
+
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkItem.php';
+					$gwItems = new GroupedWorkItem();
+					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
+
+					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN COALESCE(SUM(CASE WHEN gwItems.available = 1 THEN gwItems.numCopies ELSE 0 END), 0) ELSE 0 END AS TotalAvailableCopies');
+					$listEntry->groupBy('user_list_entry.id');
+					$order = $sort == "copies_available" ? "DESC" : "ASC";
+					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, TotalAvailableCopies $order");
+
+				} elseif (isset(self::$__userListSortOptions[$sort]) && !empty(self::$__userListSortOptions[$sort])) {
+					$listEntry->orderBy(self::$__userListSortOptions[$sort]);
 				}
 			}
 		}
@@ -949,13 +1095,6 @@ class UserList extends DataObject {
 			}
 		}
 		return $html;
-	}
-
-	/**
-	 * @return array
-	 */
-	public static function getSortOptions(): array {
-		return UserList::$__userListSortOptions;
 	}
 
 	public function getSpotlightTitles(CollectionSpotlight $collectionSpotlight): array {

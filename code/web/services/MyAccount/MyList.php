@@ -276,33 +276,15 @@ class MyAccount_MyList extends MyAccount {
 				}
 			}
 		}
-		$sortOptions = [
-			'title' => [
-				'desc' => 'Title',
-				'selected' => $sortName == 'title',
-				'sortUrl' => "/MyAccount/MyList/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'title'])),
-			],
-			'author' => [
-				'desc' => 'Author',
-				'selected' => $sortName == 'author',
-				'sortUrl' => "/MyAccount/MyList/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'author'])),
-			],
-			'dateAdded' => [
-				'desc' => 'Date Added',
-				'selected' => $sortName == 'dateAdded',
-				'sortUrl' => "/MyAccount/MyList/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'dateAdded'])),
-			],
-			'recentlyAdded' => [
-				'desc' => 'Recently Added',
-				'selected' => $sortName == 'recentlyAdded',
-				'sortUrl' => "/MyAccount/MyList/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'recentlyAdded'])),
-			],
-			'custom' => [
-				'desc' => 'User Defined',
-				'selected' => $sortName == 'custom',
-				'sortUrl' => "/MyAccount/MyList/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'custom'])),
-			],
-		];
+		$availableSortOptions = UserList::getSortOptions();
+		$sortOptions = [];
+		foreach ($availableSortOptions as $sortKey => $sortLabel) {
+			$sortOptions[$sortKey] = [
+				'desc' => $sortLabel,
+				'selected' => $sortName == $sortKey,
+				'sortUrl' => "/MyAccount/MyList/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => $sortKey])),
+			];
+		}
 
 		$interface->assign('sortList', $sortOptions);
 		$interface->assign('userSort', ($sortName == 'custom')); // switch for when users can sort their list
