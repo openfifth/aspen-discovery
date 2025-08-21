@@ -49,13 +49,13 @@ class HooplaSetting extends DataObject {
 				'property' => 'apiUsername',
 				'type' => 'text',
 				'label' => 'API Username',
-				'description' => 'The API Username provided by Hoopla when registering',
+				'description' => 'The API Username provided by your Aspen support vendor (or Hoopla when registering if not using third-party support or hosting)',
 			],
 			'apiPassword' => [
 				'property' => 'apiPassword',
 				'type' => 'storedPassword',
 				'label' => 'API Password',
-				'description' => 'The API Password provided by Hoopla when registering',
+				'description' => 'The API Password provided by your Aspen support vendor (or Hoopla when registering if not using third-party support or hosting)',
 				'hideInLists' => true,
 			],
 			'regroupAllRecords' => [
