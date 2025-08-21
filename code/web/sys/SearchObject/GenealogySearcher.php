@@ -481,10 +481,9 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * Get an array of strings to attach to a base URL in order to reproduce the
 	 * current search.
 	 *
-	 * @access  protected
-	 * @return  array    Array of URL parameters (key=url_encoded_value format)
+	 * @return array Array of URL parameters (key=url_encoded_value format).
 	 */
-	protected function getSearchParams() {
+	protected function getSearchParams(): array {
 		$params = parent::getSearchParams();
 
 		if (isset($_REQUEST['searchIndex'])) {

@@ -481,12 +481,11 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	 * Get an array of strings to attach to a base URL in order to reproduce the
 	 * current search.
 	 *
-	 * Note: Can't store this for future use since it gets rewritten by spelling suggestions etc.
+	 * Note: Can't store this for future use because it is rewritten by spelling suggestions, etc.
 	 *
-	 * @access  protected
-	 * @return  array    Array of URL parameters (key=url_encoded_value format)
+	 * @return array Array of URL parameters (key=url_encoded_value format).
 	 */
-	protected function getSearchParams() {
+	protected function getSearchParams(): array {
 		$params = [];
 		switch ($this->searchType) {
 			// Author Home screen

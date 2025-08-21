@@ -220,7 +220,7 @@ class CollectionSpotlightList extends BaseBrowsable {
 			// Set Sorting, this is actually slightly mangled from the category to Solr.
 			$searchObject->setSort($this->getSolrSort());
 			if ($this->searchTerm != '') {
-				$searchObject->setSearchTerm($this->searchTerm);
+				SearchObject_BaseSearcher::parseAndSetAdvancedSearchTerms($searchObject, $this->searchTerm);
 			}
 
 			//Get titles for the list
