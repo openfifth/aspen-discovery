@@ -73,17 +73,7 @@ abstract class BaseBrowsable extends DataObject {
 		//Search terms
 		$searchTerms = $searchObj->getSearchTerms();
 		if (is_array($searchTerms)) {
-			if (count($searchTerms) > 1) {
-				return false;
-			} else {
-				if (!isset($searchTerms[0]['index'])) {
-					$this->searchTerm = $searchObj->displayQuery();
-				} elseif ($searchTerms[0]['index'] == $searchObj->getDefaultIndex()) {
-					$this->searchTerm = $searchTerms[0]['lookfor'];
-				} else {
-					$this->searchTerm = $searchTerms[0]['index'] . ':' . $searchTerms[0]['lookfor'];
-				}
-			}
+			$this->searchTerm = $searchObj->displayQuery();
 		} else {
 			$this->searchTerm = $searchTerms;
 		}

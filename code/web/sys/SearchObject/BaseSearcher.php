@@ -721,15 +721,15 @@ abstract class SearchObject_BaseSearcher {
 		return $this->isAdvanced;
 	}
 
+	// TODO: Are #1 and #3 even used?
 	/**
 	 * Initialize the object's search settings for an advanced search found in the
-	 * $_REQUEST super global.  Advanced searches have numeric subscripts on the
-	 * lookfor and type parameters -- this is how they are distinguished from basic
-	 * searches.
-	 *
-	 * @access  protected
+	 * $_REQUEST super global. Advanced searches can be identified by:
+	 * 1. Array format from popup forms: $_REQUEST['lookfor'] as array.
+	 * 2. Complex field syntax: strings with field prefixes and parentheses.
+	 * 3. Numeric subscripts: lookfor0[], type0[] parameters.
 	 */
-	protected function initAdvancedSearch() {
+	protected function initAdvancedSearch(): void {
 		$this->isAdvanced = true;
 		$this->searchType = $this->advancedSearchType;
 		if (isset($_REQUEST['lookfor'])) {
@@ -793,27 +793,74 @@ abstract class SearchObject_BaseSearcher {
 							'join' => 'AND',
 						];
 					} else {
-						//TODO: This needs to create multiple groups for the search.
-						preg_match_all('~((\w+?):("?.+?"?)(AND|OR|\)|$))~', $_REQUEST['lookfor'], $matches, PREG_SET_ORDER);
-						if (!empty($matches)) {
-							foreach ($matches as $match) {
+						// Parse complex grouped searches with parentheses and AND/OR operators.
+						$lookfor = $_REQUEST['lookfor'];
+						
+						// Check if this looks like a grouped search with parentheses..
+						if (preg_match('/\([^)]+\)\s+(AND|OR)\s+\([^)]+\)/', $lookfor)) {
+							preg_match_all('/\(([^)]+)\)(?:\s+(AND|OR)\s+|$)/', $lookfor, $groupMatches, PREG_SET_ORDER);
+							
+							// Extract join operators between groups.
+							$joinOperators = [];
+							foreach ($groupMatches as $groupMatch) {
+								if (isset($groupMatch[2])) {
+									$joinOperators[] = $groupMatch[2];
+								}
+							}
+							
+							foreach ($groupMatches as $groupIndex => $groupMatch) {
+								$groupContent = $groupMatch[1];
+								
+								// Parse individual terms within this group.
+								$group = [];
+								preg_match_all('/(\w+):([^)]+?)(?:\s+(OR|AND)\s+|$)/', $groupContent, $termMatches, PREG_SET_ORDER);
+								
+								foreach ($termMatches as $termMatch) {
+									$field = $termMatch[1];
+									$term = trim($termMatch[2]);
+									$bool = $termMatch[3] ?? 'OR';
+									
+									$group[] = [
+										'field' => $field,
+										'lookfor' => str_replace(':', ' ', $term),
+										'bool' => $bool,
+									];
+								}
+								
+								if (!empty($group)) {
+									// Use the appropriate join operator for this group.
+									$joinOperator = $joinOperators[$groupIndex] ?? 'AND';
+									
+									$this->searchTerms[] = [
+										'group' => $group,
+										'join' => $joinOperator,
+									];
+								}
+							}
+						} else {
+							// Fallback to original regex for simpler cases.
+							$group = [];
+							preg_match_all('~((\w+?):("?.+?"?)(AND|OR|\)|$))~', $lookfor, $matches, PREG_SET_ORDER);
+							if (!empty($matches)) {
+								foreach ($matches as $match) {
+									$group[] = [
+										'field' => $match[2],
+										'lookfor' => str_replace(':', ' ', $match[3]),
+										'bool' => ($match[4] == ')') ? 'AND' : $match[4],
+									];
+								}
+							} else {
 								$group[] = [
-									'field' => $match[2],
-									'lookfor' => str_replace(':', ' ', $match[3]),
-									'bool' => ($match[4] == ')') ? 'AND' : $match[4],
+									'field' => $this->getDefaultIndex(),
+									'lookfor' => str_replace(':', ' ', $lookfor),
+									'bool' => 'AND',
 								];
 							}
-						}else{
-							$group[] = [
-								'field' => $this->getDefaultIndex(),
-								'lookfor' => str_replace(':', ' ', $_REQUEST['lookfor']),
-								'bool' => 'AND',
+							$this->searchTerms[] = [
+								'group' => $group,
+								'join' => 'AND',
 							];
 						}
-						$this->searchTerms[] = [
-							'group' => $group,
-							'join' => 'AND',
-						];
 					}
 				}
 			}
@@ -886,29 +933,74 @@ abstract class SearchObject_BaseSearcher {
 	 */
 	public static function parseAndSetAdvancedSearchTerms(SearchObject_BaseSearcher $searchObject, string $searchTerm): void {
 		if (strpos($searchTerm, ':') > 0) {
-			// Use the exact regex from initAdvancedSearch() to handle all cases.
-			$group = [];
-			preg_match_all('~((\w+?):("?.+?"?)(AND|OR|\)|$))~', $searchTerm, $matches, PREG_SET_ORDER);
-			if (!empty($matches)) {
-				foreach ($matches as $match) {
-					$group[] = [
-						'field' => $match[2],
-						'lookfor' => str_replace(':', ' ', $match[3]),
-						'bool' => ($match[4] == ')') ? 'AND' : $match[4],
-					];
+			$searchObject->searchTerms = [];
+			
+			// Check if this looks like a grouped search with parentheses.
+			if (preg_match('/\([^)]+\)\s+(AND|OR)\s+\([^)]+\)/', $searchTerm)) {
+				preg_match_all('/\(([^)]+)\)(?:\s+(AND|OR)\s+|$)/', $searchTerm, $groupMatches, PREG_SET_ORDER);
+				
+				// Extract join operators between groups.
+				$joinOperators = [];
+				foreach ($groupMatches as $groupMatch) {
+					if (isset($groupMatch[2])) {
+						$joinOperators[] = $groupMatch[2];
+					}
+				}
+				
+				foreach ($groupMatches as $groupIndex => $groupMatch) {
+					$groupContent = $groupMatch[1];
+					
+					// Parse individual terms within this group.
+					$group = [];
+					preg_match_all('/(\w+):([^)]+?)(?:\s+(OR|AND)\s+|$)/', $groupContent, $termMatches, PREG_SET_ORDER);
+					
+					foreach ($termMatches as $termMatch) {
+						$field = $termMatch[1];
+						$term = trim($termMatch[2]);
+						$bool = $termMatch[3] ?? 'OR';
+						
+						$group[] = [
+							'field' => $field,
+							'lookfor' => str_replace(':', ' ', $term),
+							'bool' => $bool,
+						];
+					}
+					
+					if (!empty($group)) {
+						// Use the appropriate join operator for this group.
+						$joinOperator = $joinOperators[$groupIndex] ?? 'AND';
+						
+						$searchObject->searchTerms[] = [
+							'group' => $group,
+							'join' => $joinOperator,
+						];
+					}
 				}
 			} else {
-				// Fallback for cases that don't match the regex.
-				$group[] = [
-					'field' => $searchObject->getDefaultIndex(),
-					'lookfor' => str_replace(':', ' ', $searchTerm),
-					'bool' => 'AND',
+				// Fallback to original regex for simpler cases.
+				$group = [];
+				preg_match_all('~((\w+?):("?.+?"?)(AND|OR|\)|$))~', $searchTerm, $matches, PREG_SET_ORDER);
+				if (!empty($matches)) {
+					foreach ($matches as $match) {
+						$group[] = [
+							'field' => $match[2],
+							'lookfor' => str_replace(':', ' ', $match[3]),
+							'bool' => ($match[4] == ')') ? 'AND' : $match[4],
+						];
+					}
+				} else {
+					// Fallback for cases that don't match the regex.
+					$group[] = [
+						'field' => $searchObject->getDefaultIndex(),
+						'lookfor' => str_replace(':', ' ', $searchTerm),
+						'bool' => 'AND',
+					];
+				}
+				$searchObject->searchTerms[] = [
+					'group' => $group,
+					'join' => 'AND',
 				];
 			}
-			$searchObject->setSearchTerms([
-				'group' => $group,
-				'join' => 'AND',
-			]);
 			$searchObject->advancedSearchType = true;
 		} else {
 			$searchObject->setSearchTerm($searchTerm);
@@ -2306,13 +2398,12 @@ abstract class SearchObject_BaseSearcher {
 
 	/**
 	 * Get a human-readable presentation version of the advanced search query
-	 * stored in the object.  This will not work if $this->searchType is not
+	 * stored in the object. This will not work if $this->searchType is not
 	 * 'advanced.'
 	 *
-	 * @access  protected
 	 * @return  string
 	 */
-	protected function buildAdvancedDisplayQuery() {
+	protected function buildAdvancedDisplayQuery(): string {
 		// Groups and exclusions. This mirrors some logic in Solr.php
 		$groups = [];
 		$excludes = [];
