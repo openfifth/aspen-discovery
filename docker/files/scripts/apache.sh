@@ -1,65 +1,88 @@
 #!/bin/bash
 
-echo "%   * Starting Apache"
+# Function to log with timestamp
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [APACHE] $1"
+}
+
+log "Starting Apache initialization"
 
 export CONFIG_DIRECTORY="/usr/local/aspen-discovery/sites/${SITE_NAME}"
 
+# Function to handle shutdown signals
+shutdown_handler() {
+    log "Received shutdown signal, stopping Apache gracefully..."
+    if [ -n "$APACHE_PID" ]; then
+        kill -TERM "$APACHE_PID" 2>/dev/null || true
+        wait "$APACHE_PID" 2>/dev/null || true
+    fi
+    log "Apache stopped"
+    exit 0
+}
+
+# Set up signal handlers for graceful shutdown
+trap shutdown_handler SIGTERM SIGINT SIGQUIT
+
 # Check if site configuration exists
 apacheConfFile="$CONFIG_DIRECTORY/httpd-${SITE_NAME}.conf"
+log "Waiting for site configuration: $apacheConfFile"
 
 tries=0
+MAX_TRIES=10
 
 while [ ! -f "$apacheConfFile" ]; do
-	sleep 5
-	((tries++))
+    sleep 5
+    ((tries++))
+    log "Waiting for configuration file... (attempt $tries/$MAX_TRIES)"
 
-	if [ $tries -eq 10 ] ; then
-		echo "%   ERROR: Site configuration not initialized. Skipping apache startup and waiting"
-		exit 1
-	fi
-
+    if [ $tries -eq $MAX_TRIES ]; then
+        log "ERROR: Site configuration not found after $MAX_TRIES attempts. Exiting."
+        exit 1
+    fi
 done
 
+log "Configuration file found: $apacheConfFile"
+
+# Prepare Apache environment
+log "Preparing Apache environment"
 mkdir -p /var/run/apache2
 chown -R www-data:www-data /var/run/apache2
-source /etc/apache2/envvars
 
-# Move to docker directory
-cd "/usr/local/aspen-discovery/docker/files/apache2/" || exit
-
-# Set Apache configurations 
-echo "%   * Setting Apache configurations";
-if ! php setApacheConf.php $apacheConfFile ; then
-	echo "%   ERROR: Apache initialization failed"
-	exit 1
+# Source environment variables
+if [ -f /etc/apache2/envvars ]; then
+    source /etc/apache2/envvars
+    log "Apache environment variables loaded"
+else
+    log "WARNING: /etc/apache2/envvars not found"
 fi
 
-# Start Apache in the background
-apache2 -D FOREGROUND &
+# Move to docker directory
+cd "/usr/local/aspen-discovery/docker/files/apache2/" || {
+    log "ERROR: Cannot change to docker directory"
+    exit 1
+}
 
-# Wait for Apache to be ready
-tries=0
-until curl -sf http://"$SITE_NAME" > /dev/null; do
-  echo "%   * Waiting for Apache..."
-  sleep 5
-	((tries++))
+# Set Apache configurations
+log "Setting Apache configurations"
+if ! php setApacheConf.php "$apacheConfFile"; then
+    log "ERROR: Apache configuration failed"
+    exit 1
+fi
 
-	if [ $tries -eq 10 ] ; then
-		echo "ERROR: Apache could not initialize correctly"
-		exit 1
-	fi
-done
+log "Apache configuration completed successfully"
 
-# Run any pending database updates
-echo "%   * Triggering pending database updates"
-curl -k http://"$SITE_NAME"/API/SystemAPI?method=runPendingDatabaseUpdates
+# Validate Apache configuration
+log "Validating Apache configuration"
+if ! apache2 -t; then
+    log "ERROR: Apache configuration test failed"
+    exit 1
+fi
 
-echo "%"
-echo "%   Aspen Discovery ready to use!"
-echo "%"
-echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
+log "Apache configuration is valid"
 
-# Bring Apache to the foreground
-wait
+
+# Start Apache and capture its PID
+log "Starting Apache in foreground mode..."
+exec apache2 -D FOREGROUND
 
 
