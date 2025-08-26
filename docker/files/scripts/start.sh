@@ -1,6 +1,10 @@
 #!/bin/bash
 set -e
 
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') [BACKEND] $1"
+}
+
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%#+*#%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -57,32 +61,32 @@ cd "/usr/local/aspen-discovery/docker/files/scripts" || exit
 # Check if site configuration exists
 confSiteFile="$CONFIG_DIRECTORY/conf/config.ini"
 if [ ! -f "$confSiteFile" ] ; then
-	echo "%   * $confSiteFile not found, generating"
+	log "$confSiteFile not found. Generating..."
 	mkdir -p "$CONFIG_DIRECTORY"
 	if ! php createConfig.php "$CONFIG_DIRECTORY" ; then
-		echo "%   ERROR: Failed to create instance config"
+		log "ERROR: Failed to create instance config"
 		exit 1
 	fi
 fi
 
 # Initialize Aspen database
-echo "%   * Initializing database";
+log "Initializing database";
 if ! php initDatabase.php ; then
-	echo "%   ERROR: Database initialization failed"
+	log "ERROR: Database initialization failed"
 	exit 1
 fi
 
 # Initialize Koha Connection
-echo "%   * Initializing Koha link";
+log "Initializing Koha link";
 if ! php initKohaLink.php ; then
-	echo "%   ERROR: Koha link error"
+	log "ERROR: Koha link error"
 	exit 1
 fi
 
 # Create missing dirs and fix ownership and permissions if needed
-echo "%   * Setting up data and log directories";
+log "Setting up data and log directories";
 if ! php createDirs.php ; then
-	echo "%   ERROR: Directories creation and permission fixes failed"
+	log "ERROR: Directories creation and permission fixes failed"
 	exit 1
 fi
 
@@ -113,10 +117,14 @@ for dir in "${directories[@]}"; do
     # Create symlink
     ln -s "$dest" "$source"
 
-	echo "%   * Created symlink: $source → $dest"
+	log "Created symlink: $source → $dest"
 done
+
+# Run pending database updates
+log "Running pending database updates..."
+php updateDatabase.php
 
 sudo -u www-data	php /usr/local/aspen-discovery/docker/files/cron/checkBackgroundProcessesDocker.php $SITE_NAME >/proc/1/fd/1 2>/proc/1/fd/2
 
-echo "Starting PHP-FPM..."
+log "Starting PHP-FPM in foreground mode..."
 php-fpm8.4 --test && exec php-fpm8.4 -F
