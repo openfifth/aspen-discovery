@@ -1029,6 +1029,26 @@ class Campaign extends DataObject {
 					//Calculate milestone progress
 					$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaignId, $userId, $milestone->id);
 					$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId, $campaignId);
+					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+					require_once ROOT_DIR . '/sys/LocalEnrichment/UserWorkReview.php';
+					foreach ($progressData as &$entry) {
+					if (empty($entry['title']) && !empty($entry['groupedRecordPermanentId'])) {
+							$driver = new GroupedWorkDriver($entry['groupedRecordPermanentId']);
+							if ($driver && $driver->isValid()) {
+								$entry['title'] = $driver->getTitle();
+
+								$review = new UserWorkReview();
+								$review->groupedRecordPermanentId = $entry['groupedRecordPermanentId'];
+								$review->userId = $entry['userId'];
+								if ($review->find(true)) {
+									$review->title = $entry['title'];
+									$review->update();
+								}
+							}
+						}
+					}
+					unset($entry);
+
 					usort($progressData, function ($a, $b) {
 						$aDate = $a['checkoutDate'] ?? '';
 						$bDate = $b['checkoutDate'] ?? '';
@@ -1156,6 +1176,26 @@ class Campaign extends DataObject {
                         $completedGoals = $milestoneProgress['completed'];
                         $totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
 						$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($linkedUser->id, $milestone->id, $campaign->id);
+						require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+						require_once ROOT_DIR . '/sys/LocalEnrichment/UserWorkReview.php';
+						foreach ($progressData as &$entry) {
+							if (empty($entry['title']) && !empty($entry['groupedRecordPermanentId'])) {
+								$driver = new GroupedWorkDriver($entry['groupedRecordPermanentId']);
+								if ($driver && $driver->isValid()) {
+									$entry['title'] = $driver->getTitle();
+
+									$review = new UserWorkReview();
+									$review->groupedRecordPermanentId = $entry['groupedRecordPermanentId'];
+									$review->userId = $entry['userId'];
+									if ($review->find(true)) {
+										$review->title = $entry['title'];
+										$review->update();
+									}
+								}
+							}
+						}
+						unset($entry);
+
 						usort($progressData, function ($a, $b) {
 							$aDate = $a['checkoutDate'] ?? '';
 							$bDate = $b['checkoutDate'] ?? '';
