@@ -3880,11 +3880,16 @@ class SirsiDynixROA extends HorizonAPI {
 		}
 
 		//For patrons that have fines, but that are not at the fine threshold, we need to add an override.
-		$totalFines = $patron->getTotalFines(false);
+		$this->getFines($patron);
+		$totalFines = $patron->getAccountSummary()->totalFines;
+		global $logger;
+		$logger->log('User fines are ' . $totalFines, Logger::LOG_DEBUG);
 		if ($totalFines > 0) {
 			$userProfileResponse = $this->getWebServiceResponse('getUserProfile', $webServiceURL . '/policy/userProfile/key/' . $patron->patronType, null, $sessionToken);
 			if ($userProfileResponse) {
+				$logger->log('Billing threshold is ' . $userProfileResponse->fields->billThreshold->amount, Logger::LOG_DEBUG);
 				if ($totalFines < $userProfileResponse->fields->billThreshold->amount) {
+					$logger->log('User fines are under billing threshold', Logger::LOG_DEBUG);
 					$addOverrideCode = true;
 				}else{
 					$result['message'] = translate([
@@ -3897,7 +3902,11 @@ class SirsiDynixROA extends HorizonAPI {
 					]);
 					$doCheckout = false;
 				}
+			}else{
+				$logger->log('Could not get user profile', Logger::LOG_DEBUG);
 			}
+		}else{
+			$logger->log('User fines are less than or equal to 0', Logger::LOG_DEBUG);
 		}
 
 		if ($doCheckout) {
