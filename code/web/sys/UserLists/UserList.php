@@ -339,9 +339,9 @@ class UserList extends DataObject {
 					$listEntry->groupBy('user_list_entry.id');
 					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 3 WHEN (gwVariation.eContentSourceId IS NOT NULL AND gwVariation.eContentSourceId > 0) THEN 2 WHEN CallNumber IS NULL THEN 1 ELSE 0 END ASC, CallNumber ASC");
 
-					// Availability sort: Sorts by item availability status.
-					// Uses MAX(available) to get best availability status when multiple items exist.
-					// Groups by list entry to prevent duplicates; non-GroupedWork records fall to bottom.
+					// Availability sort: Sorts by total number of available copies.
+					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
+					// Items with more available copies appear first; non-GroupedWork records fall to bottom.
 				} elseif ($sort == "availability" || $sort == "availability_desc") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
@@ -355,10 +355,10 @@ class UserList extends DataObject {
 					$gwItems = new GroupedWorkItem();
 					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
 
-					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN COALESCE(MAX(gwItems.available), 0) ELSE 0 END AS MaxAvailable');
+					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN COALESCE(SUM(CASE WHEN gwItems.available = 1 THEN gwItems.numCopies ELSE 0 END), 0) ELSE 0 END AS TotalAvailableCopies');
 					$listEntry->groupBy('user_list_entry.id');
 					$order = $sort == "availability" ? "DESC" : "ASC";
-					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, MaxAvailable $order");
+					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, TotalAvailableCopies $order");
 
 					// Copies available sort: Sorts by total number of available copies across all items.
 					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
