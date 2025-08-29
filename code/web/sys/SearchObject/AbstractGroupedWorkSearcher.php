@@ -330,7 +330,8 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 					unset($current['explain']);
 					unset($current['score']);
 				}
-				$interface->assign('recordIndex', $x + 1);
+				// Use absolute positioning for navigation links to display on grouped works spanning across pages.
+				$interface->assign('recordIndex', $x + 1 + (($this->page - 1) * $this->limit));
 				$interface->assign('resultIndex', $x + 1 + (($this->page - 1) * $this->limit));
 				if ($isSaved || $alwaysFlagNewTitles) {
 					if (isset($current["local_time_since_added_$solrScope"])) {
