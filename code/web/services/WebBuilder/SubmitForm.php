@@ -25,7 +25,12 @@ class WebBuilder_SubmitForm extends Action {
 		global $interface;
 		$interface->assign('formTitle', $this->form->title);
 		$interface->assign('id', $id);
-		if (isset($_REQUEST['submit'])) {
+		
+		if (isset($_SESSION['formSubmissionSuccess'])) {
+			$interface->assign('submissionResultText', $_SESSION['submissionResultText']);
+			unset($_SESSION['formSubmissionSuccess']);
+			unset($_SESSION['submissionResultText']);
+		} elseif (isset($_REQUEST['submit'])) {
 			$processForm = true;
 			if (!UserAccount::isLoggedIn()) {
 				if (!$this->form->requireLogin) {
@@ -108,21 +113,24 @@ class WebBuilder_SubmitForm extends Action {
 					$emailBody = $interface->fetch('WebBuilder/customFormSubmissionEmail.tpl');
 					$emailResult = $mail->send($this->form->emailResultsTo, $this->form->title . ' Submission', null, null, $emailBody);
 					global $logger;
-					if (($emailResult instanceof AspenError)) {
-						$logger->log("Could not email form submission: {$emailResult->getMessage()}.", Logger::LOG_ERROR);
-					} elseif ($emailResult === false) {
+					if ($emailResult === false) {
 						$logger->log('Could not email form submission due to an unknown error.', Logger::LOG_ERROR);
 					}
 				}
+
+				$_SESSION['formSubmissionSuccess'] = true;
 				if (empty($this->form->submissionResultText)) {
-					$interface->assign('submissionResultText', 'Thank you for your response.');
+					$_SESSION['submissionResultText'] = 'Thank you for your response.';
 				} else {
-					$interface->assign('submissionResultText', $this->form->submissionResultText);
+					$_SESSION['submissionResultText'] = $this->form->submissionResultText;
 				}
+
+				header('Location: /WebBuilder/SubmitForm?id=' . $this->form->id);
+				exit();
 			}
 		} else {
 			$interface->assign('submissionError', translate([
-				'text' => 'The form was not submitted correctly.',
+				'text' => 'This form submission is invalid: it was either filled out incorrectly or resubmitted.',
 				'isPublicFacing' => true,
 			]));
 		}
