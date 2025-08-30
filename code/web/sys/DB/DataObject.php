@@ -1031,7 +1031,7 @@ abstract class DataObject implements JsonSerializable {
 	 * @noinspection PhpUnused
 	 */
 	public function setProperty(string $propertyName, $newValue, ?array $propertyStructure): bool {
-		$propertyChanged = $this->$propertyName != $newValue || (is_null($this->$propertyName) && !is_null($newValue));
+		$propertyChanged = $this->$propertyName !== $newValue || (is_null($this->$propertyName) && !is_null($newValue));
 		if ($propertyChanged) {
 			$this->_changedFields[] = $propertyName;
 			$oldValue = $this->$propertyName;
