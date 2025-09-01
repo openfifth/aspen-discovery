@@ -221,9 +221,14 @@ class UserList extends DataObject {
 
 	/**
 	 * @param null $sort optional SQL for the query's ORDER BY clause
-	 * @return array      of list entries
+	 * @param bool $forLiDA
+	 * @param int $appVersion
+	 * @param int $start
+	 * @param int $numItems
+	 * @param array $activeFilters optional filters to apply to the list
+	 * @return array
 	 */
-	function getListEntries($sort = null, $forLiDA = false, $appVersion = 0, $start = 0, $numItems = 0) : array {
+	function getListEntries($sort = null, $forLiDA = false, $appVersion = 0, $start = 0, $numItems = 0, array $activeFilters = []) : array {
 		global $interface;
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$listEntry = new UserListEntry();
@@ -234,7 +239,16 @@ class UserList extends DataObject {
 			}
 		}
 
-		//Sort the list appropriately
+		$formatFilterEnabled = !empty($activeFilters) && !empty($activeFilters['format']) && is_array($activeFilters['format']);
+		$formatInClause = '';
+		if ($formatFilterEnabled) {
+			$escapedFormats = [];
+			foreach ($activeFilters['format'] as $format) {
+				$escapedFormats[] = $listEntry->escape($format);
+			}
+			$formatInClause = '(' . implode(',', $escapedFormats) . ')';
+		}
+
 		if (!empty($sort)) {
 			$sortOptions = UserList::getSortOptions();
 			if (array_key_exists($sort, $sortOptions)) {
@@ -279,34 +293,41 @@ class UserList extends DataObject {
 					$gwRecords = new GroupedWorkRecord();
 					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
 
+					$indexedFormat = new class extends DataObject {
+						public $__table = 'indexed_format';
+						public $id;
+						public $format;
+					};
+					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
+
 					$indexedPubDate = new class extends DataObject {
 						public $__table = 'indexed_publication_date';
 						public $id;
 						public $publicationDate;
 					};
 					$listEntry->joinAdd($indexedPubDate, "LEFT", 'indexedPubDate', 'gwRecords.publicationDateId', 'id');
-
-					$listEntry->selectAdd('CASE 
-						WHEN user_list_entry.source = "GroupedWork" AND indexedPubDate.publicationDate IS NOT NULL THEN
-							CASE 
-								WHEN indexedPubDate.publicationDate REGEXP "^[^0-9]*$" THEN NULL
-								WHEN indexedPubDate.publicationDate REGEXP "^[a-zA-Z]+[0-9]*$" THEN NULL
-								WHEN indexedPubDate.publicationDate REGEXP "[0-9]{4}" THEN 
-									CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, "[0-9]{4}") AS UNSIGNED)
-								ELSE NULL 
-							END
-						ELSE NULL 
-					END AS NormalizedYear');
+					
+					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
+					$listEntry->selectAdd("CASE 
+					WHEN user_list_entry.source = 'GroupedWork' $fmtGate AND indexedPubDate.publicationDate IS NOT NULL THEN
+						CASE 
+							WHEN indexedPubDate.publicationDate REGEXP '^[^0-9]*$' THEN NULL
+							WHEN indexedPubDate.publicationDate REGEXP '^[a-zA-Z]+[0-9]*$' THEN NULL
+							WHEN indexedPubDate.publicationDate REGEXP '[0-9]{4}' THEN CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, '[0-9]{4}') AS UNSIGNED)
+							ELSE NULL 
+						END
+					ELSE NULL 
+				END AS NormalizedYear");
 					$listEntry->groupBy('user_list_entry.id');
 
 					$order = $sort == "publication_date" ? "ASC" : "DESC";
 					$listEntry->orderBy("CASE WHEN NormalizedYear IS NULL THEN 1 ELSE 0 END ASC, NormalizedYear $order");
 
-					// Call number sort: Only sorts ILS records by call number; places all other record types at bottom.
-					// Joins through grouped_work -> grouped_work_records -> grouped_work_record_items -> indexed_call_number.
+					// Call number sort: Sorts ILS records by shelf location then call number; places other record types at bottom.
+					// Joins through grouped_work -> grouped_work_records -> grouped_work_record_items -> indexed_call_number + indexed_shelf_location.
 					// Uses grouped_work_variation.eContentSourceId to distinguish ILS (-1,NULL,0) from e-content (>0).
-					// Sort order: ILS with call numbers (0) -> ILS without call numbers (1) -> e-content (2) -> non-GroupedWork (3).
-					// Groups by list entry ID to prevent duplicates when multiple items have different call numbers.
+					// Sort order: ILS records grouped by shelf location, then by call number within each location -> e-content/non-GroupedWork.
+					// Groups by list entry ID to prevent duplicates when multiple items have different call numbers/locations.
 				} elseif ($sort == "call_number") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
@@ -328,6 +349,13 @@ class UserList extends DataObject {
 					};
 					$listEntry->joinAdd($gwVariation, "LEFT", 'gwVariation', 'gwItems.groupedWorkVariationId', 'id');
 
+					$indexedFormat = new class extends DataObject {
+						public $__table = 'indexed_format';
+						public $id;
+						public $format;
+					};
+					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
+
 					$indexedCallNumber = new class extends DataObject {
 						public $__table = 'indexed_call_number';
 						public $id;
@@ -335,13 +363,43 @@ class UserList extends DataObject {
 					};
 					$listEntry->joinAdd($indexedCallNumber, "LEFT", 'indexedCallNumber', 'gwItems.callNumberId', 'id');
 
-					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0) AND indexedCallNumber.callNumber IS NOT NULL THEN MIN(indexedCallNumber.callNumber) ELSE NULL END AS CallNumber');
+					$shelfLocation = new class extends DataObject {
+						public $__table = 'indexed_shelf_location';
+						public $id;
+						public $shelfLocation;
+					};
+					$listEntry->joinAdd($shelfLocation, "LEFT", 'shelfLoc', 'gwItems.shelfLocationId', 'id');
+
+					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
+
+					$listEntry->selectAdd("
+						MIN(
+							CASE 
+								WHEN user_list_entry.source = 'GroupedWork'
+									AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0)
+									$fmtGate
+									AND indexedCallNumber.callNumber IS NOT NULL
+								THEN indexedCallNumber.callNumber
+								ELSE NULL
+							END
+						) AS CallNumber,
+						MIN(shelfLoc.shelfLocation) AS ShelfLocation
+					");
 					$listEntry->groupBy('user_list_entry.id');
-					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 3 WHEN (gwVariation.eContentSourceId IS NOT NULL AND gwVariation.eContentSourceId > 0) THEN 2 WHEN CallNumber IS NULL THEN 1 ELSE 0 END ASC, CallNumber ASC");
+					$listEntry->orderBy("
+						CASE 
+							WHEN user_list_entry.source != 'GroupedWork' THEN 1
+							WHEN (gwVariation.eContentSourceId IS NOT NULL AND gwVariation.eContentSourceId > 0) THEN 1
+							ELSE 0
+						END ASC,
+						MIN(shelfLoc.shelfLocation) ASC,
+						MIN(indexedCallNumber.callNumber) ASC
+					");
 
 					// Availability sort: Sorts by total number of available copies.
 					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
 					// Items with more available copies appear first; non-GroupedWork records fall to bottom.
+					// Respects format filtering by only counting copies that match selected formats.
 				} elseif ($sort == "availability" || $sort == "availability_desc") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
@@ -355,7 +413,19 @@ class UserList extends DataObject {
 					$gwItems = new GroupedWorkItem();
 					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
 
-					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN COALESCE(SUM(CASE WHEN gwItems.available = 1 THEN gwItems.numCopies ELSE 0 END), 0) ELSE 0 END AS TotalAvailableCopies');
+					$indexedFormat = new class extends DataObject {
+						public $__table = 'indexed_format';
+						public $id;
+						public $format;
+					};
+					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
+
+					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
+					$listEntry->selectAdd("
+					CASE WHEN user_list_entry.source = 'GroupedWork' THEN
+						COALESCE(SUM(CASE WHEN gwItems.available = 1 $fmtGate THEN gwItems.numCopies ELSE 0 END), 0)
+					ELSE 0 END AS TotalAvailableCopies
+				");
 					$listEntry->groupBy('user_list_entry.id');
 					$order = $sort == "availability" ? "DESC" : "ASC";
 					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, TotalAvailableCopies $order");
@@ -363,6 +433,7 @@ class UserList extends DataObject {
 					// Copies available sort: Sorts by total number of available copies across all items.
 					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
 					// Non-GroupedWork records are assigned 0 copies and sorted to bottom.
+					// Respects format filtering by only counting copies that match selected formats.
 				} elseif ($sort == "copies_available" || $sort == "copies_available_asc") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
@@ -376,7 +447,19 @@ class UserList extends DataObject {
 					$gwItems = new GroupedWorkItem();
 					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
 
-					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN COALESCE(SUM(CASE WHEN gwItems.available = 1 THEN gwItems.numCopies ELSE 0 END), 0) ELSE 0 END AS TotalAvailableCopies');
+					$indexedFormat = new class extends DataObject {
+						public $__table = 'indexed_format';
+						public $id;
+						public $format;
+					};
+					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
+
+					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
+					$listEntry->selectAdd("
+					CASE WHEN user_list_entry.source = 'GroupedWork' THEN
+						COALESCE(SUM(CASE WHEN gwItems.available = 1 $fmtGate THEN gwItems.numCopies ELSE 0 END), 0)
+					ELSE 0 END AS TotalAvailableCopies
+				");
 					$listEntry->groupBy('user_list_entry.id');
 					$order = $sort == "copies_available" ? "DESC" : "ASC";
 					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, TotalAvailableCopies $order");
@@ -385,6 +468,20 @@ class UserList extends DataObject {
 					$listEntry->orderBy(self::$__userListSortOptions[$sort]);
 				}
 			}
+		}
+
+		// Drop grouped works with no matching formats.
+		if ($formatFilterEnabled) {
+			$filterConditions = [];
+			$filterConditions[] = "user_list_entry.source != 'GroupedWork'";
+			$filterConditions[] = "(user_list_entry.source = 'GroupedWork' AND EXISTS (
+				SELECT 1 FROM grouped_work gw2
+				JOIN grouped_work_records gwr2 ON gw2.id = gwr2.groupedWorkId
+				JOIN indexed_format if2 ON gwr2.formatId = if2.id
+				WHERE gw2.permanent_id = user_list_entry.sourceId
+				AND if2.format IN $formatInClause
+			))";
+			$listEntry->whereAdd('(' . implode(' OR ', $filterConditions) . ')');
 		}
 
 		if ($numItems > 0) {
@@ -581,7 +678,7 @@ class UserList extends DataObject {
 	 */
 	public function getListRecords(
 		int $start, int $numItems, bool $allowEdit, string $format, string $citationFormat = null,
-		string $sortName = null, bool $forLiDA = false, float|int $appVersion = 0
+		string $sortName = null, bool $forLiDA = false, float|int $appVersion = 0, array $activeFilters = []
 	): array {
 		if ($sortName == null) {
 			$sortName = $this->defaultSort;
@@ -626,7 +723,7 @@ class UserList extends DataObject {
 				$filteredListEntries = $allEntries;
 			}
 		} else {*/
-			$listEntryInfo = $this->getListEntries($sortName, $forLiDA, $appVersion, $start, $numItems);
+			$listEntryInfo = $this->getListEntries($sortName, $forLiDA, $appVersion, $start, $numItems, $activeFilters);
 			$filteredListEntries = $listEntryInfo['listEntries'];
 		//}
 
@@ -647,7 +744,7 @@ class UserList extends DataObject {
 			} else {
 				$records = $searchObject->getRecords($sourceIds);
 				if ($format == 'html') {
-					$listResults = $listResults + $this->getResultListHTML($records, $filteredListEntries, $allowEdit, $start);
+					$listResults = $listResults + $this->getResultListHTML($records, $filteredListEntries, $allowEdit, $start, $activeFilters);
 				} elseif ($format == 'summary') {
 					$listResults = $listResults + $this->getResultListSummary($records, $filteredListEntries);
 				} elseif ($format == 'recordDrivers') {
@@ -722,9 +819,10 @@ class UserList extends DataObject {
 	 * @param bool $allowEdit
 	 * @param array $allListEntryIds optional list of IDs to re-order the records by (ie User List sorts)
 	 * @param int $startRecord The first record being displayed
+	 * @param array $activeFilters Active format filters to apply to manifestations
 	 * @return array Array of HTML chunks for individual records.
 	 */
-	private function getResultListHTML($records, $allListEntryIds, $allowEdit, $startRecord = 0): array {
+	private function getResultListHTML($records, $allListEntryIds, $allowEdit, $startRecord = 0, $activeFilters = []): array {
 		global $interface;
 		$html = [];
 		//Reorder the documents based on the list of id's
@@ -750,6 +848,11 @@ class UserList extends DataObject {
 				$interface->assign('listEntryId', $current->getListEntryId());
 				$interface->assign('listEntryWeight', $current->getListEntryWeight());
 				$interface->assign('listEditAllowed', $allowEdit);
+
+				// Pass active filters to the record driver for manifestation filtering
+				if (!empty($activeFilters)) {
+					$current->setActiveFilters($activeFilters);
+				}
 
 				$interface->assign('recordDriver', $current);
 				$html[$listPosition] = $interface->fetch($current->getListEntry($this->id, $allowEdit));
@@ -1418,6 +1521,97 @@ class UserList extends DataObject {
 		if ($changeMade) {
 			$this->update();
 		}
+	}
+
+	/**
+	 * Get available filter options based on the actual contents of this list
+	 * @return array Array of available filters with counts
+	 */
+	public function getAvailableFilters(): array {
+		global $memCache;
+		
+		// Check cache first
+		$cacheKey = 'list_available_filters_' . $this->id;
+		$cachedFilters = $memCache->get($cacheKey);
+		if ($cachedFilters !== false) {
+			return $cachedFilters;
+		}
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+		
+		// Get all GroupedWork entries from this list
+		$listEntry = new UserListEntry();
+		$listEntry->listId = $this->id;
+		$listEntry->source = 'GroupedWork';
+		
+		$groupedWorkPermanentIds = [];
+		$listEntry->find();
+		while ($listEntry->fetch()) {
+			$groupedWorkPermanentIds[] = $listEntry->sourceId;
+		}
+		
+		
+		$formatFilters = [];
+		if (!empty($groupedWorkPermanentIds)) {
+			// First get the internal grouped work IDs from permanent IDs
+			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+			$groupedWork = new GroupedWork();
+			// Don't use escape with quotes - escape already adds quotes
+			$whereClause = "permanent_id IN (" . implode(", ", array_map([$groupedWork, 'escape'], $groupedWorkPermanentIds)) . ")";
+			$groupedWork->whereAdd($whereClause);
+			
+			$groupedWorkInternalIds = [];
+			$groupedWork->find();
+			while ($groupedWork->fetch()) {
+				$groupedWorkInternalIds[] = $groupedWork->id;
+			}
+			
+			
+			if (!empty($groupedWorkInternalIds)) {
+				// Now get format information for these grouped works
+				require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
+				$gwRecord = new GroupedWorkRecord();
+				$gwRecord->whereAdd("groupedWorkId IN (" . implode(", ", $groupedWorkInternalIds) . ")");
+				
+				// Get unique format IDs
+				$formatIds = [];
+				$gwRecord->find();
+				while ($gwRecord->fetch()) {
+					if (!empty($gwRecord->formatId)) {
+						$formatIds[] = $gwRecord->formatId;
+					}
+				}
+				
+				
+				if (!empty($formatIds)) {
+					// Get format names and count occurrences
+					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
+					$formatCounts = [];
+					
+					foreach (array_count_values($formatIds) as $formatId => $count) {
+						$indexedFormat = new IndexedFormat();
+						$indexedFormat->id = $formatId;
+						if ($indexedFormat->find(true)) {
+							$formatCounts[$indexedFormat->format] = $count;
+						}
+					}
+					
+					// Sort formats alphabetically
+					ksort($formatCounts);
+					$formatFilters = $formatCounts;
+					
+				}
+			}
+		}
+
+		$filters = [
+			'format' => $formatFilters
+		];
+
+		// Cache for 5 minutes
+		$memCache->set($cacheKey, $filters, 300);
+		
+		return $filters;
 	}
 
 	/**

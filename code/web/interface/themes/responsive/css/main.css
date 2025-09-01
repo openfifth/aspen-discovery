@@ -9878,6 +9878,23 @@ a.browse-thumbnail.active {
   border-width: 0 1px 1px 1px;
   border-style: solid;
 }
+.user-list-format-filter-option {
+  display: block !important;
+  padding: 3px 20px;
+  margin: 0;
+  font-weight: normal;
+  color: #333;
+  cursor: pointer;
+}
+.user-list-format-filter-option:hover {
+  background-color: #f5f5f5;
+}
+.user-list-format-filter-option input {
+  margin-right: 8px;
+}
+#user-list-format-filter-dropdown .dropdown-header {
+  font-weight: bold;
+}
 /**
  * Additional Styling related to the help system
  */
