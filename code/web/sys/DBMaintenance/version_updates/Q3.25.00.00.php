@@ -103,6 +103,13 @@ function getUpdatesQ3_25_00_00(): array {
 				'ALTER TABLE location MODIFY displayName VARCHAR(100) NOT NULL'
 			],
 		], // increase_location_display_name_allowed_length
+		'add_title_to_user_work_review' => [
+			'title' => 'Add Title To user Work Review',
+			'description' => 'Add title of reviewed work to table',
+			'sql' => [
+				"ALTER TABLE user_work_review ADD COLUMN title VARCHAR(512) DEFAULT ''",
+			]
+		], //add_title_to_user_work_review
 
 		//chloe - Open Fifth
 		'move_heycentric_permission' => [
