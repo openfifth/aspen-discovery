@@ -681,7 +681,17 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 				daysSinceAdded += -999L;
 				//clamping to -1 in case we get a value > 998 
 				//worst case scenario we are getting the previous behavior. 
-				daysSinceAdded = Math.clamp(daysSinceAdded, -999L, -1L);
+				if(daysSinceAdded < -999L)
+				{
+					daysSinceAdded = -999L;
+				}
+				else if(daysSinceAdded > -1L)
+				{
+					daysSinceAdded = -1L;
+				}
+				//removing this because we need to support back to Java 11.
+				// If we ever get up to java 21 we can simplify the above to this statement
+				//daysSinceAdded = Math.clamp(daysSinceAdded, -999L, -1L);
 			}
 		} else {
 			//Date Added To Catalog needs to be the earliest date added for the catalog.
