@@ -388,12 +388,22 @@ class UserList extends DataObject {
 					$listEntry->groupBy('user_list_entry.id');
 					$listEntry->orderBy("
 						CASE 
-							WHEN user_list_entry.source != 'GroupedWork' THEN 1
-							WHEN (gwVariation.eContentSourceId IS NOT NULL AND gwVariation.eContentSourceId > 0) THEN 1
+							WHEN user_list_entry.source != 'GroupedWork' THEN 3
+							-- Use MIN() so bucket assignment is deterministic per list entry.
+       						-- Without it, grouping by user_list_entry.id could pick random eContentSourceId values.
+							WHEN MIN(COALESCE(gwVariation.eContentSourceId, 0)) > 0 THEN 3
+							WHEN MIN(indexedCallNumber.callNumber) IS NULL THEN 3
+							WHEN MIN(indexedCallNumber.callNumber) REGEXP '^[0-9]' THEN 1
+							ELSE 2
+						END ASC,
+						CASE 
+							WHEN MIN(indexedCallNumber.callNumber) REGEXP '^[0-9]' THEN
+								CAST(REGEXP_SUBSTR(MIN(indexedCallNumber.callNumber), '^[0-9]+(\\\.[0-9]+)?') AS DECIMAL(10,3))
 							ELSE 0
 						END ASC,
-						MIN(shelfLoc.shelfLocation) ASC,
-						MIN(indexedCallNumber.callNumber) ASC
+						-- Sort by call number first, then by shelf location.
+						MIN(indexedCallNumber.callNumber) ASC,
+						MIN(shelfLoc.shelfLocation) ASC
 					");
 
 					// Availability sort: Sorts by total number of available copies.
