@@ -1934,10 +1934,7 @@ abstract class SearchObject_BaseSearcher {
 	 * @var string $searchSource
 	 */
 	public function init($searchSource = null) {
-		// Start the timer
-		$mtime = explode(' ', microtime());
-		$this->initTime = $mtime[1] . $mtime[0];
-
+		$this->initTime = time();
 		$this->searchSource = $searchSource;
 		return true;
 	}
