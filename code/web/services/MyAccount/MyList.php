@@ -308,6 +308,29 @@ class MyAccount_MyList extends MyAccount {
 			$totalRecords = $list->numValidListItems();
 		}
 		$page = $_REQUEST['page'] ?? 1;
+		
+		// When filtering is applied, automatically adjust page if current page has no results.
+		if (!empty($activeFilters) && $totalRecords > 0) {
+			$maxPage = ceil($totalRecords / $pageSize);
+			if ($page > $maxPage) {
+				$originalPage = $page;
+				$page = $maxPage;
+				$currentUrl = $_SERVER['REQUEST_URI'];
+				if (preg_match('/[&?]page=\d+/', $currentUrl)) {
+					$newUrl = preg_replace('/([&?])page=\d+/', '$1page=' . $page, $currentUrl);
+				} elseif (str_contains($currentUrl, '?')) {
+					$newUrl = $currentUrl . '&page=' . $page;
+				} else {
+					$newUrl = $currentUrl . '?page=' . $page;
+				}
+				
+				if ($newUrl !== $currentUrl) {
+					header("Location: $newUrl");
+					exit();
+				}
+			}
+		}
+		
 		$startRecord = ($page - 1) * $pageSize;
 		if ($startRecord < 0) {
 			$startRecord = 0;

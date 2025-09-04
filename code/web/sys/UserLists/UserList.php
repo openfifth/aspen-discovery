@@ -323,12 +323,13 @@ class UserList extends DataObject {
 					$order = $sort == "publication_date" ? "ASC" : "DESC";
 					$listEntry->orderBy("CASE WHEN NormalizedYear IS NULL THEN 1 ELSE 0 END ASC, NormalizedYear $order");
 
-					// Call number sort: Sorts ILS records by shelf location then call number; places other record types at bottom.
+					// Call number sort: Sorts ILS records by call number then shelf location; places other record types at bottom.
 					// Joins through grouped_work -> grouped_work_records -> grouped_work_record_items -> indexed_call_number + indexed_shelf_location.
 					// Uses grouped_work_variation.eContentSourceId to distinguish ILS (-1,NULL,0) from e-content (>0).
 					// Sort order: ILS records grouped by shelf location, then by call number within each location -> e-content/non-GroupedWork.
 					// Groups by list entry ID to prevent duplicates when multiple items have different call numbers/locations.
 				} elseif ($sort == "call_number") {
+					// Set up joins for call number sorting
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
 					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
@@ -385,6 +386,8 @@ class UserList extends DataObject {
 						) AS CallNumber,
 						MIN(shelfLoc.shelfLocation) AS ShelfLocation
 					");
+
+					$listEntry->whereAdd("indexedCallNumber.callNumber != 'Libby' OR indexedCallNumber.callNumber IS NULL");
 					$listEntry->groupBy('user_list_entry.id');
 					$listEntry->orderBy("
 						CASE 
