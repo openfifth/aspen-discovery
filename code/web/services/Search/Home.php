@@ -214,10 +214,15 @@ class Search_Home extends Action {
 				if ($browseCategory->isValidForDisplay()) {
 					$textId = $browseCategory->textId;
 					$subCatResult = $searchAPI->getSubCategories($textId);
+					require_once ROOT_DIR . '/services/Browse/AJAX.php';
+					$browseAJAX = new Browse_AJAX();
+					$browseAJAX->textId = $textId;
+					$categoryResults = $browseAJAX->getBrowseCategoryResults();
+					$searchUrl = $categoryResults['searchUrl'] ?? '#';
 					$browseCategories[] = [
 						'textId' => $textId,
 						'label' => $browseCategory->label,
-						'searchUrl' => '#',
+						'searchUrl' => $searchUrl,
 						'hasSubcategories' => !empty($subCatResult['subCategories']),
 					];
 				}
