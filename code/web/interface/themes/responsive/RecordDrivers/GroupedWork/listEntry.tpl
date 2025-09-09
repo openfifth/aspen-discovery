@@ -46,7 +46,7 @@
 				</div>
 			{/if}
 
-			{if (!empty($summSeries) && $printInterface === false) || (!empty($summSeries) && $printInterface === true && $printEntrySeries === true)}
+			{if (!empty($summSeries) && !empty($summSeries.seriesTitle)) && ($printInterface === false || ($printInterface === true && $printEntrySeries === true))}
 				{* If the series has an ISBN, use it to make the class unique to this series *}
 				<div class="series{$summISBN} row">
 					<div class="result-label col-xs-3">{translate text="Series" isPublicFacing=true} </div>
