@@ -124,6 +124,13 @@ function getUpdates25_09_00(): array {
 				'ALTER TABLE system_variables ADD COLUMN removeTheWordSeriesFromEndOfSeries TINYINT DEFAULT 1',
 			]
 		], //add_removeTheWordSeriesFromEndOfSeries
+		'force_regrouping_all_works_25_09' => [
+			'title' => 'Force Regrouping All Works 25.09',
+			'description' => 'Force Regrouping All Works',
+			'sql' => [
+				"UPDATE system_variables set regroupAllRecordsDuringNightlyIndex = 1",
+			],
+		], //force_regrouping_all_works_25_09
 
 		//katherine - Grove
 
