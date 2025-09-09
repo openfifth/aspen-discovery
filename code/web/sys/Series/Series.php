@@ -194,7 +194,7 @@ class Series extends DataObject {
 	}
 
 	public function reindexMembers() : void {
-		$seriesMembers = $this->getSeriesMembers();
+		$seriesMembers = $this->_seriesMembers;
 		foreach ($seriesMembers as $seriesMember) {
 			if (!empty($seriesMember->groupedWorkPermanentId)) {
 				require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
