@@ -1719,7 +1719,7 @@ AspenDiscovery.Account = (function () {
 				dataType: 'json',
 				async: false,
 				method: 'GET'
-			}).success(
+			}).done(
 				function (response) {
 					if (response.success === false) {
 						AspenDiscovery.showMessage("Error", response.message);
@@ -1808,7 +1808,9 @@ AspenDiscovery.Account = (function () {
 				$.each(formData, function (key, value) {
 					form += '<input type="hidden" name="' + key + '" value="' + value + '">';
 				});
-				$('<form action="' + url + '" method="POST">' + form + '</form>').appendTo($(document.body)).trigger('submit');
+				var $form = $('<form action="' + url + '" method="POST">' + form + '</form>');
+				$form.appendTo(document.body);
+				$form[0].submit();
 			}
 		},
 
