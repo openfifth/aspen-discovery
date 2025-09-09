@@ -48,7 +48,7 @@
 				{/if}
 			{/if}
 		{/if}
-		{if !empty($talpaSearchLink) && $tryThisSearchInTalpaNoResultsSwitch ==1 }
+		{if !empty($talpaSearchLink) && !empty($tryThisSearchInTalpaNoResultsSwitch) && $tryThisSearchInTalpaNoResultsSwitch ==1 }
 			{include file="Search/tryThisSearchOnTalpa.tpl"}
 		{/if}
 
