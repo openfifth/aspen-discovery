@@ -4366,7 +4366,7 @@ class User extends DataObject {
 			'Administer All Grouped Work Display Settings',
 			'Administer Library Grouped Work Display Settings',
 		]);
-		$sections['cataloging']->addAction(new AdminAction('Manual Grouping Title/Author Variants', 'View a list of all title/author variants that have been added to Aspen to merge works.', '/Admin/AlternateTitles'), 'Manually Group and Ungroup Works');
+		$sections['cataloging']->addAction(new AdminAction('Manually Grouped Title/Author Variants', 'View a list of all title/author variants that have been added to Aspen to merge works.', '/Admin/AlternateTitles'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Author Authorities', 'Create and edit authorities for authors.', '/Admin/AuthorAuthorities'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Records To Not Group', 'Lists records that should not be grouped.', '/Admin/NonGroupedRecords'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Replacement Costs', 'Define default replacement costs by format.', '/Admin/ReplacementCosts'), 'Administer Replacement Costs');

@@ -13,7 +13,7 @@ class Admin_AlternateTitles extends ObjectEditor {
 	}
 
 	function getPageTitle(): string {
-		return 'Manual Grouping Title/Author Variants';
+		return 'Manually Grouped Title/Author Variants';
 	}
 
 	function getAllObjects($page, $recordsPerPage): array {
@@ -53,7 +53,7 @@ class Admin_AlternateTitles extends ObjectEditor {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#cataloging', 'Catalog / Grouped Works');
-		$breadcrumbs[] = new Breadcrumb('/Admin/AlternateTitles', 'Manual Grouping Title/Author Variants');
+		$breadcrumbs[] = new Breadcrumb('/Admin/AlternateTitles', 'Manually Grouped Title/Author Variants');
 		return $breadcrumbs;
 	}
 
