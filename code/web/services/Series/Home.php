@@ -19,13 +19,13 @@ class Series_Home extends Action {
 
 		require_once ROOT_DIR . '/sys/Covers/BookCoverInfo.php';
 		$bookCoverInfo = new BookCoverInfo();
-		$bookCoverInfo->recordType = 'series';
-		$bookCoverInfo->recordId = $series->id;
+		$bookCoverInfo->setRecordType('series');
+		$bookCoverInfo->setRecordId($series->id);
 		if ($bookCoverInfo->find(true)) {
-			$bookCoverInfo->imageSource = '';
-			$bookCoverInfo->thumbnailLoaded = 0;
-			$bookCoverInfo->mediumLoaded = 0;
-			$bookCoverInfo->largeLoaded = 0;
+			$bookCoverInfo->setImageSource('');
+			$bookCoverInfo->setThumbnailLoaded(0);
+			$bookCoverInfo->setMediumLoaded(0);
+			$bookCoverInfo->setLargeLoaded(0);
 			$bookCoverInfo->update();
 		}
 
@@ -54,6 +54,10 @@ class Series_Home extends Action {
 		}
 
 		if ($series->find(true)) {
+			global $library;
+			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+			$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+
 			// Send list to template so title/description can be displayed:
 			$interface->assign('series', $series);
 			$authors = explode("|", $series->author);
@@ -70,7 +74,7 @@ class Series_Home extends Action {
 			$template = 'invalidSeries.tpl';
 		}
 
-		$this->display($template, isset($series->displayName) ? $series->displayName : translate([
+		$this->display($template, $series->displayName ?? translate([
 			'text' => 'Series',
 			'isPublicFacing' => true,
 		]), '', false);
@@ -78,11 +82,12 @@ class Series_Home extends Action {
 
 	/**
 	 * Assign all necessary values to the interface.
+	 * @param Series $list
+	 * @param string $sortName
 	 *
 	 * @access  public
-	 * @param Series $list
 	 */
-	public function buildListForDisplay(Series $list, $sortName = "volume asc") {
+	public function buildListForDisplay(Series $list, string $sortName = "volume asc") : void {
 		global $interface;
 
 		$queryParams = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
@@ -108,7 +113,7 @@ class Series_Home extends Action {
 
 		$recordsPerPage = isset($_REQUEST['pageSize']) && (is_numeric($_REQUEST['pageSize'])) ? $_REQUEST['pageSize'] : 20;
 		$totalRecords = $list->numTitlesInSeries();
-		$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+		$page = $_REQUEST['page'] ?? 1;
 		$startRecord = ($page - 1) * $recordsPerPage;
 		if ($startRecord < 0) {
 			$startRecord = 0;
@@ -145,22 +150,22 @@ class Series_Home extends Action {
 			'displayName' => [
 				'desc' => 'Title',
 				'selected' => $sortName == 'displayName',
-				'sortUrl' => "/Series/{$list->id}?" . http_build_query(array_merge($queryParams, ['sort' => 'displayName'])),
+				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'displayName'])),
 			],
 			'pubDate' => [
 				'desc' => 'Publication Date',
 				'selected' => $sortName == 'pubDate',
-				'sortUrl' => "/Series/{$list->id}?" . http_build_query(array_merge($queryParams, ['sort' => 'pubDate'])),
+				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'pubDate'])),
 			],
 			'volumeAsc' => [
 				'desc' => 'Volume Number Ascending',
 				'selected' => $sortName == 'volume asc',
-				'sortUrl' => "/Series/{$list->id}?" . http_build_query(array_merge($queryParams, ['sort' => 'volume asc'])),
+				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'volume asc'])),
 			],
 			'volumeDesc' => [
 				'desc' => 'Volume Number Descending',
 				'selected' => $sortName == 'volumed desc',
-				'sortUrl' => "/Series/{$list->id}?" . http_build_query(array_merge($queryParams, ['sort' => 'volume desc'])),
+				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'volume desc'])),
 			],
 		];
 

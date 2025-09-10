@@ -11,7 +11,7 @@
 					{$firstRecord->publicationDate} {$firstRecord->publisher}
 				{/if}
 				{if !empty($firstRecord->edition)} {$firstRecord->edition}{/if}
-				{if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if}
+				{* {if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if} *}
 				{if !empty($firstRecord->physical)} {$firstRecord->physical} {if $firstRecord->closedCaptioned}<i class="fas fa-closed-captioning"></i> {/if}{/if}
 				{if !empty($firstRecord->languageNote)} {$firstRecord->languageNote}{/if}
 			</div>

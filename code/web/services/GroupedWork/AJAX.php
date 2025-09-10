@@ -484,6 +484,9 @@ class GroupedWork_AJAX extends JSON_Action {
 	/** @noinspection PhpUnused */
 	function getWorkInfo() : array {
 		global $interface;
+		global $library;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
 
 		//Indicate we are showing search results, so we don't get hold buttons
 		$interface->assign('displayingSearchResults', true);
