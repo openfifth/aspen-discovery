@@ -285,6 +285,7 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 	 */
 	function getAvailabilityInformation() : array {
 		if ($this->availability == null) {
+			require_once ROOT_DIR . '/sys/OverDrive/OverDriveAPIProductAvailability.php';
 			$this->availability = OverDriveAPIProductAvailability::getOverDriveAvailabilityForId($this->id);
 		}
 		return $this->availability;
