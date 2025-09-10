@@ -3,7 +3,8 @@
 		<div class="col-tn-8">
 			<div class="row">
 				{capture assign=statusIndicator}{include file='GroupedWork/statusIndicator.tpl' statusInformation=$firstRecord->getStatusInformation() viewingIndividualRecord=0 applyColors=false}{/capture}
-				<div class="result-label col-tn-12">{translate text="This %1% is currently %2%" 1=$firstRecord->getFormat() 2=$statusIndicator isPublicFacing=true}</div>
+				{capture assign=formatWithLink}<a href="{$firstRecord->getUrl()}">{translate text=$firstRecord->getFormat() isPublicFacing=true inAttribute=true}</a>{/capture}
+				<div class="result-label col-tn-12">{translate text="This %1% is currently %2%" 1=$formatWithLink 2=$statusIndicator isPublicFacing=true}</div>
 			</div>
 			<div style="margin-bottom: 3px; font-size: smaller">
 				{if !empty($firstRecord->publicationDate) || !empty($firstRecord->publisher)}

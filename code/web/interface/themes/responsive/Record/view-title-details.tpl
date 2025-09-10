@@ -99,7 +99,6 @@
 			</div>
 		</div>
 	{/if}
-
 	{if !empty($showISBNs) && count($recordDriver->getISBNs()) > 0}
 		<div class="row">
 			<div class="result-label col-sm-4 col-xs-12">{translate text='ISBN' isPublicFacing=true}</div>
