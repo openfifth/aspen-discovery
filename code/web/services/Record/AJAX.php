@@ -1887,10 +1887,12 @@ class Record_AJAX extends Action {
 						'isPublicFacing' => true,
 					]));
 				} elseif (!$preferredPickupSublocationIsValid) {
-					$interface->assign('pickupLocationInvalidMessage', translate([
-						'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
-						'isPublicFacing' => true,
-					]));
+					if ($user->pickupSublocationId > 0) {
+						$interface->assign('pickupLocationInvalidMessage', translate([
+							'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
+							'isPublicFacing' => true,
+						]));
+					}
 				}
 			}
 		} else {
