@@ -142,6 +142,13 @@ function getUpdates25_09_00(): array {
 				"UPDATE system_variables set regroupAllRecordsDuringNightlyIndex = 1",
 			],
 		], //force_regrouping_all_works_25_09
+		'increase_series_member_priority_score_length' => [
+			'title' => 'Increase series priority score length',
+			'description' => 'Increase series priority score length',
+			'sql' => [
+				"ALTER TABLE series_member CHANGE COLUMN priorityScore priorityScore INT NOT NULL DEFAULT 1;",
+			]
+		], //increase_series_member_priority_score_length
 
 		//katherine - Grove
 
