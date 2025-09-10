@@ -30,57 +30,67 @@
 		{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
 	</div>
 {else}
-	<div class="col-xs-12 formatDisplayHorizontal" id="relatedManfiestations{$summId|escape}" style="margin-top: 3px;margin-bottom: 5px;">
-		<div class="horizontalSliders"><div class="row horizontalFormatSelector">
-			<div class="col-xs-12">
-				<div class="slider-container" role="region" id="slider-{$summId|escape}">
-					<div class="slider-button slider-button-prev" id="slider-prev-{$summId|escape}"></div>
-					<div class="slider-wrapper" role="listbox" aria-activedescendant="slide-{$summId|escape}-0">
-                        {assign var=firstFormat value=""}
-                        {foreach from=$relatedManifestations item=$manifestation name=manifestations}
-                            {if $smarty.foreach.manifestations.index ==0}
-                                {assign var=firstFormat value=$manifestation->format}
-                            {/if}
-							<div role="option" tabindex="0" class="slider-slide horizontal-format-button{if $smarty.foreach.manifestations.index == 0} active{/if}"
-							     data-workId="{$summId|escape}" data-format="{$manifestation->format}" data-cleanedWorkId="{$summId|regex_replace:"/-/" : ""}" aria-selected="{if $smarty.foreach.manifestations.index == 0}true{else}false{/if}">
-									<div class="horizontal-format-button-format">{$manifestation->format}</div>
-                                    {include file='GroupedWork/statusIndicator.tpl' statusInformation=$manifestation->getStatusInformation() viewingIndividualRecord=0 applyColors=false}
-							</div>
-                        {/foreach}
+	{if count($relatedManifestations) == 0}
+		<div class="col-xs-12 formatDisplayHorizontal" id="relatedManfiestations{$summId|escape}" style="margin-top: 1.5em;margin-bottom: 1em;">
+			<div class="row related-manifestation">
+				<div class="col-xs-12">
+					<span class="noCopiesOwnedMessage">{translate text="The library does not own any copies of this title." isPublicFacing=true}</span>
+				</div>
+			</div>
+		</div>
+	{else}
+		<div class="col-xs-12 formatDisplayHorizontal" id="relatedManfiestations{$summId|escape}" style="margin-top: 3px;margin-bottom: 5px;">
+			<div class="horizontalSliders"><div class="row horizontalFormatSelector">
+				<div class="col-xs-12">
+					<div class="slider-container" role="region" id="slider-{$summId|escape}">
+						<div class="slider-button slider-button-prev" id="slider-prev-{$summId|escape}"></div>
+						<div class="slider-wrapper" role="listbox" aria-activedescendant="slide-{$summId|escape}-0">
+	                        {assign var=firstFormat value=""}
+	                        {foreach from=$relatedManifestations item=$manifestation name=manifestations}
+	                            {if $smarty.foreach.manifestations.index ==0}
+	                                {assign var=firstFormat value=$manifestation->format}
+	                            {/if}
+								<div role="option" tabindex="0" class="slider-slide horizontal-format-button{if $smarty.foreach.manifestations.index == 0} active{/if}"
+								     data-workId="{$summId|escape}" data-format="{$manifestation->format}" data-cleanedWorkId="{$summId|regex_replace:"/-/" : ""}" aria-selected="{if $smarty.foreach.manifestations.index == 0}true{else}false{/if}">
+										<div class="horizontal-format-button-format">{$manifestation->format}</div>
+	                                    {include file='GroupedWork/statusIndicator.tpl' statusInformation=$manifestation->getStatusInformation() viewingIndividualRecord=0 applyColors=false}
+								</div>
+	                        {/foreach}
+						</div>
+						<div class="slider-button slider-button-next" id="slider-next-{$summId|escape}"></div>
 					</div>
-					<div class="slider-button slider-button-next" id="slider-next-{$summId|escape}"></div>
+					<script>
+						$(document).ready(function(){ldelim}
+							AspenDiscovery.GroupedWork.initializeHorizontalFormatSwipers('{$summId}');
+							AspenDiscovery.GroupedWork.showManifestation('{$summId|escape}', '{$firstFormat}', '{$summId|regex_replace:"/-/" : ""}');
+						{rdelim});
+						AspenDiscovery.GroupedWork.groupedWorks['{$summId|regex_replace:"/-/" : ""}'] = {ldelim}
+						{foreach $relatedManifestations as $manifestation}
+							'{$manifestation->format}': '{$manifestation->getHorizontalFormatDisplayInfo()}',
+						{/foreach}
+						{rdelim};
+					</script>
+
 				</div>
-				<script>
-					$(document).ready(function(){ldelim}
-						AspenDiscovery.GroupedWork.initializeHorizontalFormatSwipers('{$summId}');
-						AspenDiscovery.GroupedWork.showManifestation('{$summId|escape}', '{$firstFormat}', '{$summId|regex_replace:"/-/" : ""}');
-					{rdelim});
-					AspenDiscovery.GroupedWork.groupedWorks['{$summId|regex_replace:"/-/" : ""}'] = {ldelim}
-					{foreach $relatedManifestations as $manifestation}
-						'{$manifestation->format}': '{$manifestation->getHorizontalFormatDisplayInfo()}',
-					{/foreach}
-					{rdelim};
-				</script>
-
 			</div>
-		</div>
-		<div class="row variationsInfo">
-			<div class="col-xs-12">
-				<div role="region" class="slider-container variations" id="variationsInfo_{$summId|escape}" style="display: none;">
-					<div class="slider-button slider-button-prev" id="slider-prev-{$summId|escape}"></div>
-					<div role="listbox" class="slider-wrapper" id="slider-variations-{$summId|escape}" aria-activedescendant="slide-{$summId|escape}-0">
+			<div class="row variationsInfo">
+				<div class="col-xs-12">
+					<div role="region" class="slider-container variations" id="variationsInfo_{$summId|escape}" style="display: none;">
+						<div class="slider-button slider-button-prev" id="slider-prev-{$summId|escape}"></div>
+						<div role="listbox" class="slider-wrapper" id="slider-variations-{$summId|escape}" aria-activedescendant="slide-{$summId|escape}-0">
 
+						</div>
+						<div class="slider-button slider-button-next" id="slider-next-{$summId|escape}"></div>
 					</div>
-					<div class="slider-button slider-button-next" id="slider-next-{$summId|escape}"></div>
+				</div>
+			</div>
+			</div>
+			<div class="row variationInfo">
+				<div class="col-xs-12">
+					<div id="variationInfo_{$summId|escape}">
+					</div>
 				</div>
 			</div>
 		</div>
-		</div>
-		<div class="row variationInfo">
-			<div class="col-xs-12">
-				<div id="variationInfo_{$summId|escape}">
-				</div>
-			</div>
-		</div>
-	</div>
+	{/if}
 {/if}

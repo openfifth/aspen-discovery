@@ -36,6 +36,10 @@ class MyAccount_MyList extends MyAccount {
 	function launch() : void {
 		global $interface;
 
+		global $library;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+
 		// Fetch the List object
 		$listId = $_REQUEST['id'];
 		$_SESSION['returnToModule'] = 'MyAccount';
@@ -255,7 +259,7 @@ class MyAccount_MyList extends MyAccount {
 	private function buildListForDisplay(UserList $list, bool $allowEdit, string $sortName, int $pageSize) : void {
 		global $interface;
 
-		$printInterface = isset($_REQUEST['print']) ? filter_var($_REQUEST['print'], FILTER_VALIDATE_BOOLEAN) : false;
+		$printInterface = isset($_REQUEST['print']) && filter_var($_REQUEST['print'], FILTER_VALIDATE_BOOLEAN);
 		$queryParams = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
 		if ($queryParams == null) {
 			$queryParams = [];
