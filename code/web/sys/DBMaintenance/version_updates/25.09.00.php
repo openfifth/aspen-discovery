@@ -75,6 +75,17 @@ function getUpdates25_09_00(): array {
 				'DROP TABLE claim_authorship_requests'
 			]
 		], //remove_archives_tables
+		'remove_archives_permissions' => [
+			'title' => 'Remove Archives Permissions',
+			'description' => 'Remove Unused Archives Permissions',
+			'continueOnError' => false,
+			'sql' => [
+				"DELETE FROM role_permissions where permissionId = (SELECT id from permissions where name = 'Administer Islandora Archive')",
+				"DELETE FROM permissions where name = 'Administer Islandora Archive'",
+				"DELETE FROM role_permissions where permissionId = (SELECT id from permissions where name = 'Library Islandora Archive Options')",
+				"DELETE FROM permissions where name = 'Library Islandora Archive Options'",
+			]
+		], //remove_archives_tables
 		'remove_development_tracking_tables' => [
 			'title' => 'Remove Development Tracking tables',
 			'description' => 'Remove Development Tracking Tables',
