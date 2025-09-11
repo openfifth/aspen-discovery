@@ -6,8 +6,8 @@
 {/strip}
          allow-spec-file-load="false" 
          default-schema-tab="schema" 
-         show-curl-before-try="true"
-         style="width:100%;" 
+         allow-try="false"
+         allow-authentication="false"
          theme="light" 
          bg-color="{$bodyBackgroundColor}" 
          header-color="{$bodyBackgroundColor}" 
