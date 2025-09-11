@@ -246,15 +246,8 @@ class GreenhouseAPI extends AbstractAPI {
 				}
 			}
 
-			//Store stats
-
-
-			//We won't send slack alerts for anything that is a test site or still in implementation
-			if (($sites->implementationStatus == 0) || ($sites->implementationStatus == 1) || ($sites->implementationStatus == 4)) {
-				//The site is installing, implementing, or retired, don't alert
-				$sendAlert = false;
-			} elseif ($sites->siteType != 0 ) {
-				//The site is not a library partner
+			//Check to see if we do not want to have any alerts sent for the site
+			if (!$sites->isSendSlackAlerts()) {
 				$sendAlert = false;
 			}
 
