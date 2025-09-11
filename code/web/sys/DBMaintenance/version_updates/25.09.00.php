@@ -149,6 +149,14 @@ function getUpdates25_09_00(): array {
 				"ALTER TABLE series_member CHANGE COLUMN priorityScore priorityScore INT NOT NULL DEFAULT 1;",
 			]
 		], //increase_series_member_priority_score_length
+		'add_switch_for_sending_slack_alerts' => [
+			'title' => 'Add a switch for sending slack alerts',
+			'description' => 'Update Aspen Sites in the Greenhouse to have a switch for which sites should have alerts sent for them',
+			'sql' => [
+				'ALTER TABLE aspen_sites ADD COLUMN sendSlackAlerts TINYINT DEFAULT 1',
+				'UPDATE aspen_sites SET sendSlackAlerts = 0 WHERE NOT ((implementationStatus = 2 or implementationStatus = 3) AND siteType = 0)'
+			]
+		], //add_switch_for_sending_slack_alerts
 
 		//katherine - Grove
 
