@@ -49,6 +49,15 @@ function getUpdates25_09_00(): array {
 				"DELETE FROM permissions where name = 'Administer RBdigital'",
 			]
 		], //remove_rbdigital_tables
+		'remove_rbdigital_tables_2' => [
+			'title' => 'Remove additional RBdigital tables',
+			'description' => 'Remove Additional Unused RBdigital Tables',
+			'continueOnError' => false,
+			'sql' => [
+				'DROP TABLE rbdigital_availability',
+				'DROP TABLE rbdigital_magazine_issue_availability',
+			]
+		], //remove_rbdigital_tables_2
 		'remove_redwood_tables' => [
 			'title' => 'Remove Redwood tables',
 			'description' => 'Remove Unused Redwood Table',
@@ -64,6 +73,17 @@ function getUpdates25_09_00(): array {
 			'sql' => [
 				'DROP TABLE archive_requests',
 				'DROP TABLE claim_authorship_requests'
+			]
+		], //remove_archives_tables
+		'remove_archives_permissions' => [
+			'title' => 'Remove Archives Permissions',
+			'description' => 'Remove Unused Archives Permissions',
+			'continueOnError' => false,
+			'sql' => [
+				"DELETE FROM role_permissions where permissionId = (SELECT id from permissions where name = 'Administer Islandora Archive')",
+				"DELETE FROM permissions where name = 'Administer Islandora Archive'",
+				"DELETE FROM role_permissions where permissionId = (SELECT id from permissions where name = 'Library Islandora Archive Options')",
+				"DELETE FROM permissions where name = 'Library Islandora Archive Options'",
 			]
 		], //remove_archives_tables
 		'remove_development_tracking_tables' => [
@@ -115,6 +135,28 @@ function getUpdates25_09_00(): array {
 				'ALTER TABLE system_variables ADD COLUMN removeTheWordSeriesFromEndOfSeries TINYINT DEFAULT 1',
 			]
 		], //add_removeTheWordSeriesFromEndOfSeries
+		'force_regrouping_all_works_25_09' => [
+			'title' => 'Force Regrouping All Works 25.09',
+			'description' => 'Force Regrouping All Works',
+			'sql' => [
+				"UPDATE system_variables set regroupAllRecordsDuringNightlyIndex = 1",
+			],
+		], //force_regrouping_all_works_25_09
+		'increase_series_member_priority_score_length' => [
+			'title' => 'Increase series priority score length',
+			'description' => 'Increase series priority score length',
+			'sql' => [
+				"ALTER TABLE series_member CHANGE COLUMN priorityScore priorityScore INT NOT NULL DEFAULT 1;",
+			]
+		], //increase_series_member_priority_score_length
+		'add_switch_for_sending_slack_alerts' => [
+			'title' => 'Add a switch for sending slack alerts',
+			'description' => 'Update Aspen Sites in the Greenhouse to have a switch for which sites should have alerts sent for them',
+			'sql' => [
+				'ALTER TABLE aspen_sites ADD COLUMN sendSlackAlerts TINYINT DEFAULT 1',
+				'UPDATE aspen_sites SET sendSlackAlerts = 0 WHERE NOT ((implementationStatus = 2 or implementationStatus = 3) AND siteType = 0)'
+			]
+		], //add_switch_for_sending_slack_alerts
 
 		//katherine - Grove
 

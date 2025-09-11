@@ -8850,9 +8850,10 @@ class Koha extends AbstractIlsDriver {
 	 *
 	 * @param User $user - the user to update notifications for
 	 * @param ILSNotificationSetting $ilsNotificationSetting - the settings to base notifications on
+	 * @param ?CronLogEntry $cronLogEntry - an optional log entry to record information to
 	 * @return array
 	 */
-	public function updateAccountNotifications(User $user, ILSNotificationSetting $ilsNotificationSetting): array {
+	public function updateAccountNotifications(User $user, ILSNotificationSetting $ilsNotificationSetting, ?CronLogEntry $cronLogEntry): array {
 		$this->initDatabaseConnection();
 
 		//Get a list of all messages that have been queued in the last 24 hours for the user

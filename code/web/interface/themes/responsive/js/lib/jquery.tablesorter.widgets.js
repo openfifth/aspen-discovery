@@ -1983,9 +1983,8 @@
 							} else {
 								showRow = val;
 							}
-							$row
-								.toggleClass(wo.filter_filteredRow, !showRow)[0]
-								.display = showRow ? '' : 'none';
+							$row.toggleClass(wo.filter_filteredRow, !showRow);
+							$row[0].style.display = showRow ? '' : 'none';
 						}
 					}
 					c.filteredRows += $rows.not('.' + wo.filter_filteredRow).length;

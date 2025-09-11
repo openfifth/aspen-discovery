@@ -68,7 +68,7 @@ class GroupedWork_Home extends Action {
 		// (needs to be set before moreDetailsOptions)
 		global $library;
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
-		foreach ($groupedWorkDisplaySettings->showInSearchResultsMainDetails as $detailOption) {
+		foreach ($groupedWorkDisplaySettings->showInMainDetails as $detailOption) {
 			$interface->assign($detailOption, true);
 		}
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);

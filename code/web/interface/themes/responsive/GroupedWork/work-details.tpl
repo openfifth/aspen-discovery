@@ -53,6 +53,6 @@
 				</div>
 			</div>
 		{/if}
-		{include file="GroupedWork/relatedManifestations.tpl" relatedManifestations=$recordDriver->getRelatedManifestations() inPopUp=true id=$recordDriver->getPermanentId() summTitle=$recordDriver->getTitle()}
+		{include file="GroupedWork/allManifestations.tpl" relatedManifestations=$recordDriver->getRelatedManifestations() inPopUp=true summId=$recordDriver->getPermanentId() id=$recordDriver->getPermanentId() summTitle=$recordDriver->getTitle() isSearchResults=true}
 	</div>
 {/strip}

@@ -2622,7 +2622,7 @@ class SearchAPI extends AbstractAPI {
 								$endDate = new DateTime($record['end_date']);
 								$items[$recordKey]['end_date'] = $endDate->setTimezone(new DateTimeZone(date_default_timezone_get()));
 
-								$items[$recordKey]['url'] = $record['url'];
+								$items[$recordKey]['url'] = $record['url'] ?? null;
 								$items[$recordKey]['bypass'] = $bypass;
 								$items[$recordKey]['canAddToList'] = false;
 
@@ -3329,7 +3329,7 @@ class SearchAPI extends AbstractAPI {
 					$endDate = new DateTime($record['end_date']);
 					$items[$recordKey]['end_date'] = $endDate->setTimezone(new DateTimeZone(date_default_timezone_get()));
 
-					$items[$recordKey]['url'] = $record['url'];
+					$items[$recordKey]['url'] = $record['url'] ?? null;
 					$items[$recordKey]['bypass'] = $bypass;
 					$items[$recordKey]['canAddToList'] = false;
 
