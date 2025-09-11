@@ -709,7 +709,7 @@ $interface->assign('searchSource', $searchSource);
 //Does have a slight performance advantage.
 global $isAJAX;
 $isAJAX = false;
-if ($action == "AJAX" || $action == "JSON" || $module == 'API') {
+if ($action == "AJAX" || $action == "JSON" || ($module == 'API' && $action !== 'Documentation')) {
 	$isAJAX = true;
 	$interface->assign('showTopSearchBox', 0);
 	$interface->assign('showBreadcrumbs', 0);
