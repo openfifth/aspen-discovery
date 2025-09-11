@@ -790,11 +790,12 @@ class Grouping_Record {
 	/**
 	 * @return IlsVolumeInfo[]
 	 */
-	public function getUnsuppressedVolumeData() : array{
+	public function getUnsuppressedVolumeData(bool $excludeNonHoldableItems = false) : array {
 		if (is_null($this->_unsuppressedVolumeData)) {
 			$this->_unsuppressedVolumeData = [];
 			foreach ($this->_volumeData as $key => $volumeInfo) {
 				foreach ($this->_items as $item) {
+					if ($excludeNonHoldableItems && !$item->holdable) continue;
 					if ($item->volumeId == $volumeInfo->volumeId) {
 						$this->_unsuppressedVolumeData[$key] = $volumeInfo;
 						break;
