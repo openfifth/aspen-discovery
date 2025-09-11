@@ -8,6 +8,7 @@ class Admin_CronRunner extends Admin_Admin {
 		global $interface;
 		//Get a list of cron processes that can be run manually
 		$availableCronProcesses = [
+			'checkSolrForDeletedWorks' => 'Check Solr for Deleted Works',
 			'cleanupSharedSessions' => 'Cleanup Shared Sessions',
 			'createSitemaps' => 'Create Sitemaps',
 			'dismissYearInReviewMessages' => 'Dismiss Year-in-Review Messages',

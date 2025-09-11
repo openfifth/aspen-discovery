@@ -756,12 +756,18 @@ class Record_AJAX extends Action {
 				];
 			}
 
-			// Get a list of volumes with unsuppressed items for the record.
+			// Get a list of volumes with unsuppressed items for the record's variations.
 			$volumeData = [];
-			$unsuppressedVolumeData = $relatedRecord->getUnsuppressedVolumeData();
-			foreach ($unsuppressedVolumeData as $volumeInfo) {
-				$volumeData[$volumeInfo->volumeId] = clone($volumeInfo);
-				$volumeData[$volumeInfo->volumeId]->setHasLocalItems(false);
+			foreach ($relatedRecord->recordVariations as $variation) {
+				foreach ($variation->getRecords() as $record) {
+					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData();
+					foreach ($unsuppressedVolumeData as $volumeInfo) {
+						if (!isset($volumeData[$volumeInfo->volumeId])) {
+							$volumeData[$volumeInfo->volumeId] = clone($volumeInfo);
+							$volumeData[$volumeInfo->volumeId]->setHasLocalItems(false);
+						}
+					}
+				}
 			}
 
 			$numItemsWithVolumes = 0;
@@ -1934,10 +1940,12 @@ class Record_AJAX extends Action {
 						'isPublicFacing' => true,
 					]));
 				} elseif (!$preferredPickupSublocationIsValid) {
-					$interface->assign('pickupLocationInvalidMessage', translate([
-						'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
-						'isPublicFacing' => true,
-					]));
+					if ($user->pickupSublocationId > 0) {
+						$interface->assign('pickupLocationInvalidMessage', translate([
+							'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
+							'isPublicFacing' => true,
+						]));
+					}
 				}
 			}
 		} else {

@@ -212,16 +212,18 @@ class GroupedWorksSolrConnector2 extends Solr {
 		}
 		
 		$scopingFilters = $this->getScopingFilters($searchLibrary, $searchLocation);
-		$editionLimiter = "edition_info:$solrScope#*";
-		if (isset($format) && $limitFormat) {
-			$editionLimiter .= "#" . str_replace(' ', '_', $format);
-		}else{
-			$editionLimiter .= "#*";
-		}
-		if ($availableOnly) {
-			$options['fq'][] = "($editionLimiter#available#*) OR ($editionLimiter#available_online#*)";
-		}else{
-			$options['fq'][] = "$editionLimiter#$selectedAvailabilityToggle#*";
+		if (!$this->editionLimitersAreDisabled()) {
+			$editionLimiter = "edition_info:$solrScope#*";
+			if (isset($format) && $limitFormat) {
+				$editionLimiter .= "#" . str_replace(' ', '_', $format);
+			} else {
+				$editionLimiter .= "#*";
+			}
+			if ($availableOnly) {
+				$options['fq'][] = "($editionLimiter#available#*) OR ($editionLimiter#available_online#*)";
+			} else {
+				$options['fq'][] = "$editionLimiter#$selectedAvailabilityToggle#*";
+			}
 		}
 
 		foreach ($scopingFilters as $filter) {
@@ -388,6 +390,9 @@ class GroupedWorksSolrConnector2 extends Solr {
 		global $activeLanguage;
 
 		$boostFactors = [];
+		if ($this->boostingDisabled) {
+			return $boostFactors;
+		}
 
 		if (UserAccount::isLoggedIn()) {
 			$searchPreferenceLanguage = UserAccount::getActiveUserObj()->searchPreferenceLanguage;
@@ -454,15 +459,17 @@ class GroupedWorksSolrConnector2 extends Solr {
 		$filter = [];
 
 		//Simplify detecting which works are relevant to our scope
-		if (!$solrScope) {
-			//MDN: This does happen when called within migration tools
-			if (isset($searchLocation)) {
-				$filter[] = "edition_info:$searchLocation->code#*";
-			} elseif (isset($searchLibrary)) {
-				$filter[] = "edition_info:$searchLibrary->subdomain#*";
+		if (!$this->editionLimitersAreDisabled()) {
+			if (!$solrScope) {
+				//MDN: This does happen when called within migration tools
+				if (isset($searchLocation)) {
+					$filter[] = "edition_info:$searchLocation->code#*";
+				} elseif (isset($searchLibrary)) {
+					$filter[] = "edition_info:$searchLibrary->subdomain#*";
+				}
+			} else {
+				$filter[] = "edition_info:$solrScope#*";
 			}
-		} else {
-			$filter[] = "edition_info:$solrScope#*";
 		}
 
 		global $activeLanguage;

@@ -99,8 +99,8 @@ class DefaultCoverImageBuilder {
 		}
 	}
 
-	public function getCover($title, $author, $filename, $image = null): void {
-		$script = $this->detectScript($title . $author);
+	public function getCover($title, ?string $author, $filename, $image = null): void {
+		$script = $this->detectScript($title . ($author ?? ''));
 		$this->selectFontForScript($script);
 
 		$this->setForegroundAndBackgroundColors($title, $author);
@@ -118,7 +118,7 @@ class DefaultCoverImageBuilder {
 		imagefilledrectangle($imageCanvas, 0, 0, $this->imageWidth, $this->topMargin, $backgroundColor);
 
 		$artworkHeight = $this->drawArtwork($imageCanvas, $backgroundColor, $foregroundColor, $title);
-		if ($script === 'arabic') {
+		if ($script === 'arabic' && $author !== null) {
 			$author = $this->transliterateToArabic($author);
 		}
 		$this->drawText($imageCanvas, $title, $author, $artworkHeight);
@@ -164,7 +164,7 @@ class DefaultCoverImageBuilder {
 		}
 	}
 
-	private function drawText(GdImage|bool $imageCanvas, string $title, string $author, float $artworkHeight): void {
+	private function drawText(GdImage|bool $imageCanvas, string $title, ?string $author, float $artworkHeight): void {
 		$textColor = imagecolorallocate($imageCanvas, 50, 50, 50);
 		$title_font_size = $this->imageWidth * 0.07;
 		$x = 10;
@@ -187,7 +187,7 @@ class DefaultCoverImageBuilder {
 
 		$author_font_size = $this->imageWidth * 0.055;
 		$width = $this->imageWidth - (2 * $this->imageHeight * $this->topMargin / 100);
-		$author = StringUtils::trimStringToLengthAtWordBoundary($author, 40, true);
+		$author = $author ? StringUtils::trimStringToLengthAtWordBoundary($author, 40, true) : '';
 		[$authorHeight, $authorLines] = wrapTextForDisplay($this->authorFont, $author, $author_font_size, $author_font_size * .1, $width);
 
 		// Ensure author does not overlap artwork section.

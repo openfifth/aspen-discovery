@@ -310,6 +310,7 @@ class EventAPI extends AbstractAPI {
 		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 		$aspenEventDriver = new AspenEventRecordDriver($_REQUEST['id']);
 		if($aspenEventDriver->isValid()) {
+			global $configArray;
 			$registrationInformation = null;
 
 			$itemData['success'] = true;
@@ -324,7 +325,7 @@ class EventAPI extends AbstractAPI {
 			$itemData['inUserEvents'] = false;
 			$itemData['registrationBody'] = $registrationInformation;
 			$itemData['bypass'] = (bool)$aspenEventDriver->getBypassSetting();
-			$itemData['cover'] = $aspenEventDriver->getEventCoverUrl();
+			$itemData['cover'] = $configArray['Site']['url'] . $aspenEventDriver->getEventCoverUrl();
 			$itemData['url'] = $aspenEventDriver->getExternalUrl();
 			$itemData['audiences'] = $aspenEventDriver->getAudiences();
 			$itemData['categories'] = null;
@@ -498,6 +499,22 @@ class EventAPI extends AbstractAPI {
 					if ($recordDriver->isRegistrationRequired()){
 						$regRequired = 1;
 						$regModal = $recordDriver->getRegistrationModalBodyForAPI();
+					}
+					$userEventsEntry->regRequired = $regRequired;
+					$userEventsEntry->location = $recordDriver->getBranch();
+					$externalUrl = $recordDriver->getExternalUrl();
+				}
+			} elseif (str_starts_with($id, 'aspenEvent')) {
+				require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+				$recordDriver = new AspenEventRecordDriver($id);
+				if ($recordDriver->isValid()) {
+					$title = $recordDriver->getTitle();
+					$userEventsEntry->title = substr($title, 0, 50);
+					$eventDate = $recordDriver->getStartDate();
+					$userEventsEntry->eventDate = $eventDate->getTimestamp();
+					if ($recordDriver->isRegistrationRequired()) {
+						$regRequired = 1;
+						$regModal = null;
 					}
 					$userEventsEntry->regRequired = $regRequired;
 					$userEventsEntry->location = $recordDriver->getBranch();

@@ -119,6 +119,7 @@ class Series extends DataObject {
 		$this->dateUpdated = time();
 		$ret = parent::update();
 		if ($ret !== FALSE) {
+			$this->reindexMembers();
 			$this->saveSeriesMembers();
 			if (in_array('cover', $this->_changedFields)) {
 				$this->reloadCover();
@@ -192,6 +193,20 @@ class Series extends DataObject {
 		}
 	}
 
+	public function reindexMembers() : void {
+		$seriesMembers = $this->_seriesMembers;
+		foreach ($seriesMembers as $seriesMember) {
+			if (!empty($seriesMember->groupedWorkPermanentId)) {
+				require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+				$groupedWork = new GroupedWork();
+				$groupedWork->permanent_id = $seriesMember->groupedWorkPermanentId;
+				if ($groupedWork->find(true)) {
+					$groupedWork->forceReindex();
+				}
+			}
+		}
+	}
+
 	function numTitlesInSeries() {
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
 		$members = new SeriesMember();
@@ -259,7 +274,7 @@ class Series extends DataObject {
 	}
 
 	/**
-	 * @return array      of series members
+	 * @return SeriesMember[]      array of series members
 	 */
 	function getSeriesMembers($showExcluded = true) : array {
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';

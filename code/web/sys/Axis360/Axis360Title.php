@@ -52,7 +52,7 @@ class Axis360Title extends DataObject {
 		}else{
 			$axis360Product = new Axis360Title();
 			$axis360Product->axis360Id = $identifier;
-			if ($axis360Product->fetch()) {
+			if ($axis360Product->find(true)) {
 				return $axis360Product;
 			}else{
 				return null;
