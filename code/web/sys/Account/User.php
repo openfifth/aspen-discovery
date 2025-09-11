@@ -5907,7 +5907,7 @@ class User extends DataObject {
 			}
 
 			//Determine if we need to show a message
-			require_once ROOT_DIR . '/sys/AspenLIDA/SelfCheckCompletionMessage.php';
+			require_once ROOT_DIR . '/sys/AspenLiDA/SelfCheckCompletionMessage.php';
 			$selfCheckCompletionMessage = new SelfCheckCompletionMessage();
 			$escapedFormat = $selfCheckCompletionMessage->escape($format);
 			$escapedOwningLocationCode = $selfCheckCompletionMessage->escape($result['itemData']['owningLocationCode']);
