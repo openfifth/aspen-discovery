@@ -14,7 +14,7 @@
          regular-font="{$bodyFont}" 
          mono-font="'Consolas', monospace" 
          text-color="{$bodyTextColor}" 
-         primary-color="{$primaryButtonBackgroundColor}" 
+         primary-color="{$linkColor}" 
          nav-bg-color="{$secondaryBackgroundColor}">
 {strip}
             <img slot="logo" src="" alt="" />
