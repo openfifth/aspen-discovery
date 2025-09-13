@@ -35,6 +35,14 @@
 					{/foreach}
 				</select>
 			</div>
+			<div class="form-group property-row">
+				<div class="checkbox">
+					<label for="separateEventTypes">
+						<input class="form-check-inline" type="checkbox" id="separateEventTypes" name="separateEventTypes" {if $separateEventTypes}checked="checked"{/if}">
+						Graph each Event Type on a separate line
+					</label>
+				</div>
+			</div>
 			<div class="form-group">
 				<label for="type">Location:</label>
 				<select name="location" id="location" class="form-control">
@@ -115,7 +123,7 @@
 		</div>
 		{if !empty($showCSVExportButton)}
 			<div>
-				<a id="UsageGraphExport" class="btn btn-sm btn-default" href="/{$section}/AJAX?method=exportUsageData&stat={$stat}{if !empty($profileName)}&profileName={$profileName}{/if}&instance={if !empty($instance)}{$instance}{/if}">{translate text='Export To CSV' isAdminFacing=true}</a>
+				<a id="UsageGraphExport" class="btn btn-sm btn-default" href="/{$section}/AJAX?method=exportUsageData&stat={$stat}{if !empty($profileName)}&profileName={$profileName}{/if}&instance={if !empty($instance)}{$instance}{/if}{if !empty($timeframe)}&timeframe={$timeframe}{/if}{if !empty($eventTypeValue)}&eventTypeValue={$eventTypeValue}{/if}{if !empty($locationValue)}&locationValue={$locationValue}{/if}{if !empty($sublocationValue)}&sublocationValue={$sublocationValue}{/if}{if !empty($fromDate)}&fromDate={$fromDate}{/if}{if !empty($toDate)}&toDate={$toDate}{/if}{if !empty($separateEventTypes)}&separateEventTypes={$separateEventTypes}{/if}">{translate text='Export To CSV' isAdminFacing=true}</a>
 				<div id="exportToCSVHelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Exporting will retrieve the latest data. To see it on screen, refresh this page." isAdminFacing=true}</small></div>
 			</div>
 		{/if}
