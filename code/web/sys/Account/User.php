@@ -5898,7 +5898,7 @@ class User extends DataObject {
 				// Get all the related records, use for covers since we don't need actions
 				foreach ($groupedWorkDriver->getRelatedRecords(true) as $record) {
 					foreach ($record->getItems() as $item) {
-						if ($item->itemId == $result['itemData']['itemId']) {
+						if ($item->itemId == $result['itemData']['itemId'] || $item->itemId == $result['itemData']['barcode']) {
 							$format = $record->getFormat();
 							break;
 						}
