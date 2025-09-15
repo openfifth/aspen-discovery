@@ -2774,6 +2774,118 @@ AspenDiscovery.Admin = (function () {
 				} else {
 					highlightOpenToEnrollCampaigns.hide();
 				}
+		},
+
+		initializeScrollPositioning() {
+			// Check if the scrollToId parameter is in the URL.
+			const urlParams = new URLSearchParams(window.location.search);
+			const scrollToId = urlParams.get('scrollToId');
+			if (!scrollToId) return;
+
+			const findTargetRow = () => {
+				return $('#adminTable tbody tr').filter((index, row) => {
+					const $row = $(row);
+					const $editLink = $row.find(`a[href*="objectAction=edit"][href*="id=${scrollToId}"]`);
+					return $editLink.length > 0;
+				}).first();
+			};
+
+			const scrollPageToTable = () => {
+				const $tableContainer = $('.adminTableRegion');
+				if ($tableContainer.length === 0) return;
+
+				const containerOffset = $tableContainer.offset();
+				const windowHeight = $(window).height();
+				const windowScrollTop = $(window).scrollTop();
+				const containerTop = containerOffset.top;
+				const containerBottom = containerTop + $tableContainer.outerHeight();
+
+				// Check if the container needs to be scrolled into view.
+				const containerNotVisible = containerTop < windowScrollTop || containerBottom > (windowScrollTop + windowHeight);
+				if (containerNotVisible) {
+					window.scrollTo(0, containerTop - 100);
+				}
+			};
+
+			const scrollTableToRow = ($targetRow) => {
+				const $tableContainer = $('.adminTableRegion');
+				const $table = $('#adminTable');
+
+				if ($tableContainer.length === 0 || $table.length === 0 || $targetRow.length === 0) {
+					return false;
+				}
+
+				const rowOffsetTop = $targetRow.position().top;
+				const tableOffsetTop = $table.position().top;
+				const currentScroll = $tableContainer.scrollTop();
+				const containerHeight = $tableContainer.height();
+				const targetScroll = currentScroll + rowOffsetTop + tableOffsetTop - (containerHeight / 2);
+				$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+				return true;
+			};
+
+			const cleanupUrl = () => {
+				if (history.replaceState) {
+					urlParams.delete('scrollToId');
+					const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+					history.replaceState({}, '', newUrl);
+				}
+			};
+
+			const $targetRow = findTargetRow();
+			if ($targetRow.length === 0) {
+				return;
+			}
+
+			// Always scroll page immediately.
+			scrollPageToTable();
+
+			// Check if there are images in the table that might still be loading.
+			const $images = $('#adminTable img');
+			if ($images.length > 0) {
+				const $indicator = $('<div class="scroll-loading-indicator" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 9999; font-size: 14px;"><i class="fas fa-spinner fa-spin"></i> Positioning content...</div>');
+				$('body').append($indicator);
+
+				const initialRowHeight = $targetRow.outerHeight();
+				// Wait for all images to load before scrolling to specific row.
+				let loadedCount = 0;
+				const totalImages = $images.length;
+
+				const checkAllImagesLoaded = () => {
+					loadedCount++;
+					if (loadedCount >= totalImages) {
+						setTimeout(() => {
+							// Calculate position change due to image loading.
+							const finalRowTop = $targetRow.position().top;
+							const finalRowHeight = $targetRow.outerHeight();
+							const heightChange = finalRowHeight - initialRowHeight;
+							const $tableContainer = $('.adminTableRegion');
+							const containerHeight = $tableContainer.height();
+							const currentScroll = $tableContainer.scrollTop();
+
+							const targetScroll = currentScroll + finalRowTop - (containerHeight / 3) - Math.max(0, heightChange / 2);
+							$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+							$indicator.remove();
+							cleanupUrl();
+						}, 100);
+					}
+				};
+
+				$images.each(function() {
+					const img = this;
+					if (img.complete && img.naturalWidth > 0) {
+						checkAllImagesLoaded();
+					} else {
+						$(img).on('load error', checkAllImagesLoaded);
+					}
+				});
+			} else {
+				// No images, scroll to row immediately.
+				scrollTableToRow($targetRow);
+				cleanupUrl();
+			}
 		}
 	};
 }(AspenDiscovery.Admin || {}));

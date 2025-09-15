@@ -10,7 +10,11 @@
 				<div class="btn-toolbar" role="toolbar">
 					<div class="btn-group" role="group">
 						{if !empty($showReturnToList)}
-							<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+							{if !empty($returnToListUrl)}
+								<a class="btn btn-default" href='{$returnToListUrl}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+							{else}
+								<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+							{/if}
 						{/if}
 						{if !empty($id)}
 							<a class="btn btn-default" href='/{$module}/{$toolName}?id={$id}&amp;objectAction=edit'><i class="fas fa-edit" role="presentation"></i> {translate text="Edit" isAdminFacing=true}</a>

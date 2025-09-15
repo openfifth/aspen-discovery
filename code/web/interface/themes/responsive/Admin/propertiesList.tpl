@@ -316,3 +316,11 @@
 	{/literal}
 </script>
 {/if}
+
+<script type="text/javascript">
+	{literal}
+	$(() => {
+		AspenDiscovery.Admin.initializeScrollPositioning();
+	});
+	{/literal}
+</script>
