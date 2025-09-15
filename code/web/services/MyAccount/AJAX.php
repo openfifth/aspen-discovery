@@ -4727,8 +4727,9 @@ class MyAccount_AJAX extends JSON_Action {
 
 		// check for a minimum value to donate
 		// for now we will use minimumFineAmount and decide later if donations should be separate
+		global $activeLanguage;
 		$minimumAmountToProcess = $paymentLibrary->minimumFineAmount;
-		$setupCurrencyFormat = numfmt_create($currencyCode, NumberFormatter::CURRENCY);
+		$setupCurrencyFormat = numfmt_create($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
 		$currencyFormat = numfmt_format_currency($setupCurrencyFormat, $minimumAmountToProcess, $currencyCode);
 
 		// check for good values
@@ -5637,7 +5638,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function completeSquareOrder() {
+	function completeSquareOrder(): array {
 		global $configArray;
 
 		$patronId = $_REQUEST['patronId'];
@@ -5647,11 +5648,11 @@ class MyAccount_AJAX extends JSON_Action {
 		global $library;
 		$paymentLibrary = $library;
 
+		require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+		$payment = new UserPayment();
+		$payment->squareToken = $paymentToken;
 		if ($transactionType == 'donation') {
 			//Get the order information
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			$payment = new UserPayment();
-			$payment->squareToken = $paymentToken;
 			$payment->transactionType = 'donation';
 			if ($payment->find(true)) {
 				$paymentId = $payment->id;
@@ -5666,9 +5667,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		} else {
 			//Get the order information
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			$payment = new UserPayment();
-			$payment->squareToken = $paymentToken;
 			$payment->userId = $patronId;
 			if ($payment->find(true)) {
 				$paymentId = $payment->id;
@@ -5767,7 +5765,7 @@ class MyAccount_AJAX extends JSON_Action {
 								$user = UserAccount::getActiveUserObj();
 								$patron = $user->getUserReferredTo($patronId);
 								$result = $patron->completeFinePayment($payment);
-								if ($result['success'] == false) {
+								if (!$result['success']) {
 									$payment->message .= 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt. ' . $result['message'];
 									$payment->update();
 									$result['message'] = $payment->message;
@@ -5776,6 +5774,11 @@ class MyAccount_AJAX extends JSON_Action {
 								return $result;
 							}
 						}
+					} else {
+						return [
+							'success' => false,
+							'message' => 'Payment status is ' . ($paymentResults->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.'
+						];
 					}
 				} else {
 					$error = $decodedPaymentRequestResults->error;
@@ -5789,6 +5792,10 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			}
 		}
+		return [
+			'success' => false,
+			'message' => 'Your payment with Square could not be completed. Please contact library staff for assistance.'
+		];
 	}
 
 	/** @noinspection PhpUnused */
