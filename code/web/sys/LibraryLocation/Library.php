@@ -824,6 +824,11 @@ class Library extends DataObject {
 			$hooplaScopes[$hooplaScope->id] = $hooplaScope->name;
 		}
 
+		require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSettings.php';
+		$libraryHooplaSettingsStructure = LibraryHooplaSettings::getObjectStructure($context);
+		unset($libraryHooplaSettingsStructure['libraryId']);
+		unset($libraryHooplaSettingsStructure['weight']);
+
 		require_once ROOT_DIR . '/sys/Axis360/Axis360Scope.php';
 		$axis360Scope = new Axis360Scope();
 		$axis360Scope->orderBy('name');
@@ -4138,13 +4143,22 @@ class Library extends DataObject {
 				'renderAsHeading' => true,
 				'permissions' => ['Library Records included in Catalog'],
 				'properties' => [
-					'hooplaLibraryID' => [
-						'property' => 'hooplaLibraryID',
-						'type' => 'integer',
-						'label' => 'Hoopla Library ID',
-						'description' => 'The ID Number Hoopla uses for this library',
-						'note' => 'Set to 0 to replace the "Check Out" and "Place Hold" buttons with the "Access Online" button.',
-						'hideInLists' => true,
+					'hooplaSettings' => [
+						'property' => 'hooplaSettings',
+						'type' => 'oneToMany',
+						'label' => "Hoopla Settings",
+						'description' => "Additional Settings information for Hoopla",
+						'keyThis' => 'libraryId',
+						'keyOther' => 'libraryId',
+						'subObjectType' => 'LibraryHooplaSettings',
+						'structure' => $libraryHooplaSettingsStructure,
+						'sortable' => true,
+						'storeDb' => true,
+						'allowEdit' => true,
+						'canEdit' => true,
+						'canAddNew' => true,
+						'canDelete' => true,
+						'forcesReindex' => true,
 					],
 					'hooplaScopeId' => [
 						'property' => 'hooplaScopeId',

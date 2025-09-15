@@ -1,5 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/Hoopla/HooplaScope.php';
+require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSettings.php';
 
 class HooplaSetting extends DataObject {
 	public $__table = 'hoopla_settings';    // table name
@@ -40,18 +41,16 @@ class HooplaSetting extends DataObject {
 		$hooplaScopeStructure = HooplaScope::getObjectStructure($context);
 		unset($hooplaScopeStructure['settingId']);
 
+		$libraryHooplaSettingsStructure = LibraryHooplaSettings::getObjectStructure($context);
+		unset($libraryHooplaSettingsStructure['settingId']);
+		unset($libraryHooplaSettingsStructure['weight']);
+
 		$structure = [
 			'id' => [
 				'property' => 'id',
 				'type' => 'label',
 				'label' => 'Id',
 				'description' => 'The unique id',
-			],
-			'libraryId' => [
-				'property' => 'libraryId',
-				'type' => 'integer',
-				'label' => 'Library Id',
-				'description' => 'The Library Id to use with the API',
 			],
 			'apiConnectionSection' => [
 				'property' => 'apiConnectionSection',
@@ -124,13 +123,6 @@ class HooplaSetting extends DataObject {
 				'label' => 'Hoopla Instant',
 				'expandByDefault' => false,
 				'properties' => [
-					'hooplaInstantEnabled' => [
-						'property' => 'hooplaInstantEnabled',
-						'type' => 'checkbox',
-						'label' => 'Hoopla Instant Enabled',
-						'description' => 'Whether or not to use Hoopla Instant Records',
-						'default' => 1,
-					],
 					'runFullUpdateInstant' => [
 						'property' => 'runFullUpdateInstant',
 						'type' => 'checkbox',
@@ -160,13 +152,6 @@ class HooplaSetting extends DataObject {
 				'label' => 'Hoopla Flex',
 				'expandByDefault' => false,
 				'properties' => [
-					'hooplaFlexEnabled' => [
-						'property' => 'hooplaFlexEnabled',
-						'type' => 'checkbox',
-						'label' => 'Hoopla Flex Enabled',
-						'description' => 'Whether or not to use Hoopla Flex',
-						'default' => 0,
-					],
 					'runFullUpdateFlex' => [
 						'property' => 'runFullUpdateFlex',
 						'type' => 'checkbox',
@@ -187,6 +172,32 @@ class HooplaSetting extends DataObject {
 						'label' => 'Last Update of All Flex Records',
 						'description' => 'The timestamp when all records were loaded',
 						'default' => 0,
+					],
+				],
+			],
+			'librarySettingsSection' => [
+				'property' => 'librarySettingsSection',
+				'type' => 'section',
+				'label' => 'Hoopla Information',
+				'expandByDefault' => true,
+				'properties' => [
+					'librarySettings' => [
+						'property' => 'librarySettings',
+						'type' => 'oneToMany',
+						'label' => '',
+						'description' => '',
+						'note' => 'Define Hoopla information for each library that uses this collection.',
+						'keyThis' => 'id',
+						'keyOther' => 'settingId',
+						'subObjectType' => 'LibraryHooplaSettings',
+						'structure' => $libraryHooplaSettingsStructure,
+						'sortable' => false,
+						'storeDb' => true,
+						'allowEdit' => true,
+						'canEdit' => false,
+						'additionalOneToManyActions' => [],
+						'canAddNew' => true,
+						'canDelete' => true,
 					],
 				],
 			],
