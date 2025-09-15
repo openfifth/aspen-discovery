@@ -185,6 +185,14 @@ function getUpdates25_09_00(): array {
 				'ALTER TABLE browse_category MODIFY label VARCHAR(100) NOT NULL'
 			],
 		], // increase_browse_category_label_length
+		'increase_browse_category_textId_length' => [
+			'title' => 'Increase Browse Category TextId Length',
+			'description' => 'Increase the allowed length for browse category textId from 50 to 150 characters to accommodate longer generated textIds.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE browse_category MODIFY textId VARCHAR(150) NOT NULL'
+			],
+		], // increase_browse_category_textId_length
 
 		//alexander - Open Fifth
 		'increase_location_display_name_allowed_length' => [

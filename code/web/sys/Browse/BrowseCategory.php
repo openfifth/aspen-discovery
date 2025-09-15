@@ -264,7 +264,7 @@ class BrowseCategory extends BaseBrowsable {
 				'label' => 'textId',
 				'description' => 'A textual id to identify the category',
 				'serverValidation' => 'validateTextId',
-				'maxLength' => 50,
+				'maxLength' => 150,
 			],
 			'userId' => [
 				'property' => 'userId',
@@ -424,9 +424,7 @@ class BrowseCategory extends BaseBrowsable {
 		return '/Admin/BrowseCategories?objectAction=edit&id=' . $this->id;
 	}
 
-	/** @noinspection PhpUnused */
 	function validateTextId() : array {
-		//Setup validation return array
 		$validationResults = [
 			'validatedOk' => true,
 			'errors' => [],
@@ -444,15 +442,12 @@ class BrowseCategory extends BaseBrowsable {
 			}
 		}
 
-		//First convert the text id to all lower case
 		$this->textId = strtolower($this->textId);
-
-		//Next convert any non word characters to an underscore
+		// Convert any non-word characters to an underscore.
 		$this->textId = preg_replace('/\W/', '_', $this->textId);
-
-		//Make sure the length is less than 50 characters
-		if (strlen($this->textId) > 50) {
-			$this->textId = substr($this->textId, 0, 50);
+		// Ensure the length is 150 or fewer characters.
+		if (strlen($this->textId) > 150) {
+			$this->textId = substr($this->textId, 0, 150);
 		}
 
 		return $validationResults;
