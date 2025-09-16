@@ -2815,11 +2815,12 @@ AspenDiscovery.Admin = (function () {
 					return false;
 				}
 
-				const rowOffsetTop = $targetRow.position().top;
-				const tableOffsetTop = $table.position().top;
-				const currentScroll = $tableContainer.scrollTop();
+				// Calculate position relative to the table container only.
+				const containerOffset = $tableContainer.offset();
+				const rowOffset = $targetRow.offset();
+				const relativeRowTop = rowOffset.top - containerOffset.top;
 				const containerHeight = $tableContainer.height();
-				const targetScroll = currentScroll + rowOffsetTop + tableOffsetTop - (containerHeight / 2);
+				const targetScroll = relativeRowTop - (containerHeight / 2);
 				$tableContainer.scrollTop(Math.max(0, targetScroll));
 
 				return true;
@@ -2839,39 +2840,56 @@ AspenDiscovery.Admin = (function () {
 				const $indicator = $('<div class="scroll-loading-indicator" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 9999; font-size: 14px;"><i class="fas fa-spinner fa-spin"></i> Positioning content...</div>');
 				$('body').append($indicator);
 
-				const initialRowHeight = $targetRow.outerHeight();
-				// Wait for all images to load before scrolling to specific row.
 				let loadedCount = 0;
 				const totalImages = $images.length;
+				let isCompleted = false;
+
+				const finalizeScrolling = () => {
+					if (isCompleted) return;
+					isCompleted = true;
+
+					// Calculate position relative to container only.
+					const $tableContainer = $('.adminTableRegion');
+					const containerOffset = $tableContainer.offset();
+					const rowOffset = $targetRow.offset();
+					const relativeRowTop = rowOffset.top - containerOffset.top;
+					const containerHeight = $tableContainer.height();
+					const targetScroll = relativeRowTop - (containerHeight / 2);
+					$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+					$indicator.remove();
+				};
 
 				const checkAllImagesLoaded = () => {
 					loadedCount++;
 					if (loadedCount >= totalImages) {
-						setTimeout(() => {
-							// Calculate position change due to image loading.
-							const finalRowTop = $targetRow.position().top;
-							const finalRowHeight = $targetRow.outerHeight();
-							const heightChange = finalRowHeight - initialRowHeight;
-							const $tableContainer = $('.adminTableRegion');
-							const containerHeight = $tableContainer.height();
-							const currentScroll = $tableContainer.scrollTop();
-
-							const targetScroll = currentScroll + finalRowTop - (containerHeight / 3) - Math.max(0, heightChange / 2);
-							$tableContainer.scrollTop(Math.max(0, targetScroll));
-
-							$indicator.remove();
-						}, 100);
+						setTimeout(finalizeScrolling, 100);
 					}
 				};
+
+				// Set a timeout fallback in case images don't load properly.
+				const timeoutId = setTimeout(() => {
+					console.warn('Image loading timeout - proceeding with scroll positioning.');
+					finalizeScrolling();
+				}, 5000);
 
 				$images.each(function() {
 					const img = this;
 					if (img.complete && img.naturalWidth > 0) {
 						checkAllImagesLoaded();
 					} else {
-						$(img).on('load error', checkAllImagesLoaded);
+						$(img).on('load error', () => {
+							checkAllImagesLoaded();
+							if (loadedCount >= totalImages) {
+								clearTimeout(timeoutId);
+							}
+						});
 					}
 				});
+
+				if (loadedCount >= totalImages) {
+					clearTimeout(timeoutId);
+				}
 			} else {
 				// No images, scroll to row immediately.
 				scrollTableToRow($targetRow);

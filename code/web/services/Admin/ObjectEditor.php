@@ -252,6 +252,33 @@ abstract class ObjectEditor extends Admin_Admin {
 	function viewExistingObjects($structure) {
 		global $interface;
 		$user = UserAccount::getActiveUserObj();
+		// Assign all context parameters for edit links.
+		$contextParams = [];
+		$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+		foreach ($preservedParams as $param) {
+			if (!empty($_REQUEST[$param])) {
+				$contextParams[$param] = $_REQUEST[$param];
+				$interface->assign($param, $_REQUEST[$param]);
+			}
+		}
+
+		// Build context parameter string for edit links.
+		$contextQueryString = '';
+		if (!empty($contextParams)) {
+			$queryParts = [];
+			foreach ($contextParams as $param => $value) {
+				if (is_array($value)) {
+					foreach ($value as $key => $val) {
+						$queryParts[] = urlencode($param) . '[' . urlencode($key) . ']=' . urlencode($val);
+					}
+				} else {
+					$queryParts[] = urlencode($param) . '=' . urlencode($value);
+				}
+			}
+			$contextQueryString = '&' . implode('&', $queryParts);
+		}
+		$interface->assign('contextParams', $contextQueryString);
+
 		$interface->assign('instructions', $this->getListInstructions());
 		$interface->assign('sortableFields', $this->getSortableFields($structure));
 		$interface->assign('sort', $this->getSort());
@@ -261,7 +288,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('hiddenFields', $this->getHiddenFields());
 
 		$numObjects = $this->getNumObjects();
-		$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+		$page = $_REQUEST['page'] ?? 1;
 		if (!is_numeric($page)) {
 			$page = 1;
 		}
@@ -540,6 +567,32 @@ abstract class ObjectEditor extends Admin_Admin {
 		} else {
 			unset($_SESSION['redirect_location']);
 		}
+		// Capture and assign all context parameters for preserving list state.
+		$contextParams = [];
+		$preservedParams = ['returnPage', 'page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+		foreach ($preservedParams as $param) {
+			if (!empty($_REQUEST[$param])) {
+				$contextParams[$param] = $_REQUEST[$param];
+				$interface->assign($param, $_REQUEST[$param]);
+			}
+		}
+		// Build context parameter string for edit links.
+		$contextQueryString = '';
+		if (!empty($contextParams)) {
+			$queryParts = [];
+			foreach ($contextParams as $param => $value) {
+				if (is_array($value)) {
+					foreach ($value as $key => $val) {
+						$queryParts[] = urlencode($param) . '[' . urlencode($key) . ']=' . urlencode($val);
+					}
+				} else {
+					$queryParts[] = urlencode($param) . '=' . urlencode($value);
+				}
+			}
+			$contextQueryString = '&' . implode('&', $queryParts);
+		}
+		$interface->assign('contextParams', $contextQueryString);
+
 		if (isset($_REQUEST['id'])) {
 			$id = $_REQUEST['id'];
 			$existingObject = $this->getExistingObjectById($id);
@@ -548,7 +601,7 @@ abstract class ObjectEditor extends Admin_Admin {
 					$interface->assign('id', $id);
 					$user = UserAccount::getActiveUserObj();
 					$interface->assign('patronIdCheck', $user->id);
-;					if (method_exists($existingObject, 'label')) {
+					if (method_exists($existingObject, 'label')) {
 						$interface->assign('objectName', $existingObject->label());
 					}
 					$this->activeObject = $existingObject;
@@ -721,7 +774,19 @@ abstract class ObjectEditor extends Admin_Admin {
 				header("Location: /{$this->getModule()}/{$this->getToolName()}");
 			}
 		} elseif (isset($_REQUEST['submitStay']) || $errorOccurred) {
-			header("Location: /{$this->getModule()}/{$this->getToolName()}?objectAction=edit&id=$id");
+			$editUrl = "/{$this->getModule()}/{$this->getToolName()}?objectAction=edit&id=$id";
+			// Preserve all context parameters for submitStay to maintain list context.
+			$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+			$contextParams = [];
+			foreach ($preservedParams as $param) {
+				if (!empty($_REQUEST[$param])) {
+					$contextParams[$param] = $_REQUEST[$param];
+				}
+			}
+			if (!empty($contextParams)) {
+				$editUrl .= '&' . http_build_query($contextParams);
+			}
+			header("Location: " . $editUrl);
 		} elseif (isset($_REQUEST['submitAddAnother'])) {
 			header("Location: /{$this->getModule()}/{$this->getToolName()}?objectAction=addNew");
 		} else {
@@ -1526,35 +1591,43 @@ abstract class ObjectEditor extends Admin_Admin {
 
 
 	/**
-	 * Builds a return URL that preserves the user's list context (e.g., page number, filters,
-	 * sort order) by extracting parameters from the HTTP referer, along with a scrollToId
-	 * parameter to maintain scroll position when returning to the list.
+	 * Builds a return URL that preserves the user's complete list context including page number,
+	 * page size, sorting, and filters. Context parameters are primarily obtained from the current
+	 * request for form submissions and direct navigation, with HTTP referer parsing as fallback.
+	 * Includes scrollToId parameter to maintain scroll position when returning to the list.
 	 *
 	 * @return string The constructed return URL with preserved context parameters.
 	 */
 	public function getReturnToListUrl(): string {
 		$baseUrl = '/' . $this->getModule() . '/' . $this->getToolName() . '?objectAction=list';
+		$listParams = [];
+		$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
 
-		if (!empty($_SERVER['HTTP_REFERER'])) {
+		// First priority: use parameters from current request for form submissions and direct navigation.
+		foreach ($preservedParams as $param) {
+			if (!empty($_REQUEST[$param])) {
+				$listParams[$param] = $_REQUEST[$param];
+			}
+		}
+
+		// If no context parameters found in request, fall back to HTTP referer parsing.
+		if (empty($listParams) && !empty($_SERVER['HTTP_REFERER'])) {
 			$refererUrl = parse_url($_SERVER['HTTP_REFERER']);
 			if (!empty($refererUrl['query'])) {
 				parse_str($refererUrl['query'], $refererParams);
-				$listParams = [];
-				$preservedParams = ['page', 'pageSize', 'sort', 'filter', 'filterType', 'filterValue', 'filterValue2'];
-
 				foreach ($preservedParams as $param) {
 					if (isset($refererParams[$param])) {
 						$listParams[$param] = $refererParams[$param];
 					}
 				}
-
-				if (!empty($listParams)) {
-					$baseUrl .= '&' . http_build_query($listParams);
-				}
 			}
 		}
 
-		// Always add scroll ID to return to the object, regardless of referer.
+		if (!empty($listParams)) {
+			$baseUrl .= '&' . http_build_query($listParams);
+		}
+
+		// Always add scroll ID to return to the object.
 		$currentParams = parse_url($baseUrl, PHP_URL_QUERY);
 		parse_str($currentParams ?: '', $existingParams);
 
@@ -1565,7 +1638,6 @@ abstract class ObjectEditor extends Admin_Admin {
 				$baseUrl .= (!str_contains($baseUrl, '?') ? '?' : '&') . 'scrollToId=' . $_REQUEST['id'];
 			}
 		}
-
 		return $baseUrl;
 	}
 }
