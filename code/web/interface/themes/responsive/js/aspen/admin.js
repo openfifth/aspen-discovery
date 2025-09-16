@@ -2825,14 +2825,6 @@ AspenDiscovery.Admin = (function () {
 				return true;
 			};
 
-			const cleanupUrl = () => {
-				if (history.replaceState) {
-					urlParams.delete('scrollToId');
-					const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
-					history.replaceState({}, '', newUrl);
-				}
-			};
-
 			const $targetRow = findTargetRow();
 			if ($targetRow.length === 0) {
 				return;
@@ -2868,7 +2860,6 @@ AspenDiscovery.Admin = (function () {
 							$tableContainer.scrollTop(Math.max(0, targetScroll));
 
 							$indicator.remove();
-							cleanupUrl();
 						}, 100);
 					}
 				};
@@ -2884,7 +2875,6 @@ AspenDiscovery.Admin = (function () {
 			} else {
 				// No images, scroll to row immediately.
 				scrollTableToRow($targetRow);
-				cleanupUrl();
 			}
 		}
 	};
