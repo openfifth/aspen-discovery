@@ -119,14 +119,23 @@ function getUpdates25_09_00(): array {
 			'description' => 'Add configuration table for self check completion messages',
 			'continueOnError' => false,
 			'sql' => [
-				'CREATE TABLE self_check_completion_message (
+				"CREATE TABLE self_check_completion_message (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					formats VARCHAR(500),
 					owningLocations VARCHAR(500),
 					checkoutLocations VARCHAR(500)
-				) ENGINE INNODB',
+				) ENGINE INNODB",
 			]
 		], //add_self_check_completion_message
+		'set_defaults_for_self_check_completion_message' => [
+			'title' => 'Set Defaults for Self Check Completion Message',
+			'description' => 'Set default values for self check completion messages',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE self_check_completion_message CHANGE COLUMN owningLocations owningLocations VARCHAR(500) DEFAULT '.*'",
+				"ALTER TABLE self_check_completion_message CHANGE COLUMN checkoutLocations checkoutLocations VARCHAR(500) DEFAULT '.*'",
+			]
+		], //set_defaults_for_self_check_completion_message
 		'add_removeTheWordSeriesFromEndOfSeries' => [
 			'title' => 'Add Remove the word series from the end of series option',
 			'description' => 'Add Remove the word series from the end of series option',
