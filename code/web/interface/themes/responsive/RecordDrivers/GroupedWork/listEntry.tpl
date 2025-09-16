@@ -65,7 +65,9 @@
 				</div>
 			{/if}
 
-			{include file="GroupedWork/allManifestations.tpl" isSearchResults=true}
+			<div class="row">
+				{include file="GroupedWork/allManifestations.tpl" isSearchResults=true}
+			</div>
 
 			{* Description Section *}
 			{if !empty($summDescription) && $printInterface === false}
@@ -85,7 +87,6 @@
 					</div>
 				</div>
 			{/if}
-
 
 			{if $printInterface === false}
 			<div class="resultActions row">

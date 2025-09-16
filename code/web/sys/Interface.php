@@ -493,8 +493,7 @@ class UInterface extends Smarty {
 				$this->assign('secondaryForegroundColor', $primaryTheme->secondaryForegroundColor);
 				$this->assign('tertiaryBackgroundColor', $primaryTheme->tertiaryBackgroundColor);
 				$this->assign('tertiaryForegroundColor', $primaryTheme->tertiaryForegroundColor);
-				$this->assign('primaryButtonBackgroundColor', $primaryTheme->primaryButtonBackgroundColor);
-				$this->assign('primaryButtonForegroundColor', $primaryTheme->primaryButtonForegroundColor);
+				$this->assign('linkColor', $primaryTheme->linkColor);
 				$this->assign('bodyFont', $primaryTheme->bodyFont);
 			}
 		} catch (PDOException $e) {
@@ -1142,8 +1141,7 @@ class UInterface extends Smarty {
 			$this->assign('secondaryForegroundColor', $primaryTheme->secondaryForegroundColor);
 			$this->assign('tertiaryBackgroundColor', $primaryTheme->tertiaryBackgroundColor);
 			$this->assign('tertiaryForegroundColor', $primaryTheme->tertiaryForegroundColor);
-			$this->assign('primaryButtonBackgroundColor', $primaryTheme->primaryButtonBackgroundColor);
-			$this->assign('primaryButtonForegroundColor', $primaryTheme->primaryButtonForegroundColor);
+			$this->assign('linkColor', $primaryTheme->linkColor);
 			$this->assign('bodyFont', $primaryTheme->bodyFont);
 		}
 	}

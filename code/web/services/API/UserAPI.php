@@ -2259,14 +2259,18 @@ class UserAPI extends AbstractAPI {
 		$patron = $this->getUserForApiCall();
 		if ($patron && !($patron instanceof AspenError)) {
 			if ($patron->hasIlsConnection()) {
+				$preferredPickupLocationIsValid = false;
 				$tmpPickupLocations = $patron->getValidPickupBranches($patron->getAccountProfile()->recordSource);
 				$pickupLocations = [];
 				foreach ($tmpPickupLocations as $pickupLocation) {
 					if (!is_string($pickupLocation)) {
-						$pickupLocationArray = $pickupLocation->toArray();
-						$pickupLocationArray['locationId'] = (string)$pickupLocationArray['locationId'];
-						$pickupLocationArray['libraryId'] = (string)$pickupLocationArray['libraryId'];
-						$pickupLocationArray['locationCode'] = (string)$pickupLocationArray['code'];
+						//$pickupLocationArray = $pickupLocation->toArray();
+						$pickupLocationArray = [];
+						$pickupLocationArray['locationId'] = (string)$pickupLocation->locationId;
+						$pickupLocationArray['libraryId'] = (string)$pickupLocation->libraryId;
+						$pickupLocationArray['locationCode'] = (string)$pickupLocation->code;
+						$pickupLocationArray['code'] = (string)$pickupLocation->code;
+						$pickupLocationArray['displayName'] = (string)$pickupLocation->displayName;
 						$pickupLocations[] = $pickupLocationArray;
 					}
 				}
@@ -2303,10 +2307,31 @@ class UserAPI extends AbstractAPI {
 						}
 					}
 				}
+				$preferredPickupLocationIsValid = false;
+				foreach ($pickupLocations as $pickupLocation) {
+					if ($pickupLocation['locationId'] == $patron->pickupLocationId) {
+						$preferredPickupLocationIsValid = true;
+						break;
+					}
+				}
+				$preferredPickupLocationWarning = '';
+				if (!$preferredPickupLocationIsValid && $pickupLocations == 1) {
+					$preferredPickupLocationWarning = translate([
+						'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. The item must be picked up at the following location.',
+						'isPublicFacing' => true,
+					]);
+				} elseif (!$preferredPickupLocationIsValid) {
+					$preferredPickupLocationWarning = translate([
+						'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. Please select a pickup location.',
+						'isPublicFacing' => true,
+					]);
+				}
 				return [
 					'success' => true,
 					'pickupLocations' => $pickupLocations,
 					'pickupLocationsFromILS' => $validLocationCodesFromILS ?? [],
+					'preferredPickupLocationIsValid' => $preferredPickupLocationIsValid,
+					'preferredPickupLocationWarning' => $preferredPickupLocationWarning
 				];
 			} else {
 				return [

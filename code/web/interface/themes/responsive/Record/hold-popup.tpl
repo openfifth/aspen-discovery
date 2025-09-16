@@ -54,13 +54,7 @@
 						{/foreach}
 					{/if}
 					{assign var="onlyOnePickupSublocation" value=false}
-{*					{if count($pickupSublocations) == 1}*}
-{*						{foreach from=$pickupSublocations item=firstSublocation}*}
-{*							{if !is_string($firstSublocation) && ($firstSublocation->code == $user->getPickupSublocationCode())}*}
-{*								{assign var="onlyOnePickupSublocation" value=true}*}
-{*							{/if}*}
-{*						{/foreach}*}
-{*					{/if}*}
+
 					{if ($rememberHoldPickupLocation && $allowRememberPickupLocation) || $onlyOnePickupLocation}
 						<input type="hidden" name="pickupBranch" id="pickupBranch" value="{$user->getPickupLocationCode()}">
 						{if ($rememberHoldPickupLocation && $allowRememberPickupLocation)}
@@ -69,9 +63,6 @@
 							<input type="hidden" name="rememberHoldPickupLocation" id="rememberHoldPickupLocation" value="off">
 						{/if}
 
-{*						{if $onlyOnePickupSublocation}*}
-{*							<input type="hidden" name="pickupSublocation" id="pickupSublocation" value="{$user->getPickupSublocationCode()}">*}
-{*						{/if}*}
 						<input type="hidden" name="user" id="user" value="{$user->id}">
 					{else}
 						{if !empty($pickupLocationInvalidMessage)}
