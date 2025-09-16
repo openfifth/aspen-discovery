@@ -285,11 +285,16 @@ abstract class ObjectEditor extends Admin_Admin {
 		} else { // Export Selected to CSV OR Display on screen
 			$allObjects = $this->getAllObjects($page, $recordsPerPage);
 			if ($this->supportsPagination()) {
+				// Build clean URL for pagination without scrollToId parameter.
+				$cleanUrl = $_SERVER['REQUEST_URI'];
+				$cleanUrl = preg_replace("/scrollToId=\d+&|[?&]scrollToId=\d+/", '', $cleanUrl);
+
 				$options = [
 					'totalItems' => $numObjects,
 					'perPage' => $recordsPerPage,
 					'canChangeRecordsPerPage' => true,
 					'canJumpToPage' => true,
+					'fileName' => $cleanUrl,
 				];
 				$pager = new Pager($options);
 				$interface->assign('pageLinks', $pager->getLinks());
@@ -320,7 +325,6 @@ abstract class ObjectEditor extends Admin_Admin {
 		global $interface;
 		if ($this->canCopy()) {
 			//Viewing an individual record, get the id to show
-			$this->storeListContext();
 			if (isset($_SERVER['HTTP_REFERER'])) {
 				$_SESSION['redirect_location'] = $_SERVER['HTTP_REFERER'];
 			} else {
@@ -357,7 +361,7 @@ abstract class ObjectEditor extends Admin_Admin {
 			$interface->assign('contentType', $contentType);
 
 			$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($existingObject));
-			$interface->assign('returnToListUrl', $this->getReturnToListUrl($existingObject));
+			$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 			$interface->setTemplate('../Admin/objectEditor.tpl');
 		}else {
 			$interface->setTemplate('../Admin/noPermission.tpl');
@@ -408,7 +412,6 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	function showShareForm($structure) {
 		global $interface;
-		$this->storeListContext();
 		if (isset($_REQUEST['sourceId'])) {
 			$id = $_REQUEST['sourceId'];
 			$existingObject = $this->getExistingObjectById($id);
@@ -417,7 +420,7 @@ abstract class ObjectEditor extends Admin_Admin {
 
 					$interface->assign('objectName', $existingObject->__toString());
 					$interface->assign('id', $id);
-					$interface->assign('returnToListUrl', $this->getReturnToListUrl($existingObject));
+					$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 					$interface->setTemplate('../Admin/shareForm.tpl');
 				} else {
 					$interface->setTemplate('../Admin/noPermission.tpl');
@@ -432,7 +435,6 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	function shareToCommunity($structure) {
 		global $interface;
-		$this->storeListContext();
 		if (UserAccount::userHasPermission('Share Content with Community')) {
 			if (isset($_REQUEST['sourceId'])) {
 				$id = $_REQUEST['sourceId'];
@@ -483,7 +485,6 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	function importFromCommunity($structure) {
 		global $interface;
-		$this->storeListContext();
 		if (UserAccount::userHasPermission('Import Content from Community')) {
 			if (isset($_REQUEST['sourceId'])) {
 				$sourceId = $_REQUEST['sourceId'];
@@ -517,7 +518,7 @@ abstract class ObjectEditor extends Admin_Admin {
 						$interface->assign('contentType', $contentType);
 
 						$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($newObject));
-						$interface->assign('returnToListUrl', $this->getReturnToListUrl($newObject));
+						$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 						$interface->setTemplate('../Admin/objectEditor.tpl');
 					} else {
 						$interface->setTemplate('../Admin/invalidObject.tpl');
@@ -533,7 +534,6 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	function viewIndividualObject($structure) {
 		global $interface;
-		$this->storeListContext();
 		//Viewing an individual record, get the id to show
 		if (isset($_SERVER['HTTP_REFERER'])) {
 			$_SESSION['redirect_location'] = $_SERVER['HTTP_REFERER'];
@@ -593,7 +593,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		}
 
 		$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($existingObject));
-		$interface->assign('returnToListUrl', $this->getReturnToListUrl($existingObject));
+		$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 		$interface->setTemplate('../Admin/objectEditor.tpl');
 	}
 
@@ -613,7 +613,6 @@ abstract class ObjectEditor extends Admin_Admin {
 	}
 
 	function editObject($objectAction, $structure) {
-		$this->storeListContext();
 		$errorOccurred = false;
 		$user = UserAccount::getLoggedInUser();
 		$samePatron = true;
@@ -729,7 +728,7 @@ abstract class ObjectEditor extends Admin_Admin {
 			$redirectLocation = $this->getRedirectLocation($objectAction, $curObject);
 			if (is_null($redirectLocation)) {
 				// Try to use context-aware return URL first.
-				$returnToListUrl = $this->getReturnToListUrl($curObject);
+				$returnToListUrl = $this->getReturnToListUrl();
 				if (!empty($returnToListUrl) && $objectAction != 'delete') {
 					header("Location: " . $returnToListUrl);
 				} elseif (isset($_SESSION['redirect_location']) && $objectAction != 'delete') {
@@ -876,7 +875,6 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	function compareObjects($structure) {
 		global $interface;
-		$this->storeListContext();
 		$object1 = null;
 		$object2 = null;
 		if (count($_REQUEST['selectedObject']) == 2) {
@@ -1055,7 +1053,6 @@ abstract class ObjectEditor extends Admin_Admin {
 	}
 
 	function showHistory(): void {
-		$this->storeListContext();
 		$id = $_REQUEST['id'] ?? '';
 		if (empty($id) || $id < 0) {
 			AspenError::raiseError('Please select an object to display its history.');
@@ -1097,7 +1094,7 @@ abstract class ObjectEditor extends Admin_Admin {
 			$interface->assign('showEditButtonsInCompareAndHistoryViews', $this->showEditButtonsInCompareAndHistoryViews());
 			$interface->assign('module', $this->getModule());
 			$interface->assign('toolName', $this->getToolName());
-			$interface->assign('returnToListUrl', $this->getReturnToListUrl($curObject));
+			$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 			$this->display('../Admin/objectHistory.tpl', $title);
 			exit();
 		}
@@ -1527,83 +1524,46 @@ abstract class ObjectEditor extends Admin_Admin {
 		return false;
 	}
 
-	/**
-	 * Store the current list context (page, filters, sort, row position) for returning to the same position
-	 */
-	private function storeListContext(): void {
-		$listContext = [];
-
-		if (isset($_SERVER['HTTP_REFERER'])) {
-			$refererUrl = $_SERVER['HTTP_REFERER'];
-			$parsedUrl = parse_url($refererUrl);
-
-			// Only store context if the referer is from the same tool with objectAction=list.
-			if (isset($parsedUrl['query'])) {
-				parse_str($parsedUrl['query'], $queryParams);
-				if (isset($queryParams['objectAction']) && $queryParams['objectAction'] === 'list') {
-					// Store relevant pagination and filter parameters.
-					$contextParams = ['page', 'pageSize', 'sort'];
-					foreach ($contextParams as $param) {
-						if (isset($queryParams[$param])) {
-							$listContext[$param] = $queryParams[$param];
-						}
-					}
-
-					// Store filter parameters.
-					if (isset($queryParams['filterType'])) {
-						$listContext['filterType'] = $queryParams['filterType'];
-					}
-					if (isset($queryParams['filterValue'])) {
-						$listContext['filterValue'] = $queryParams['filterValue'];
-					}
-					if (isset($queryParams['filterValue2'])) {
-						$listContext['filterValue2'] = $queryParams['filterValue2'];
-					}
-				}
-			}
-		}
-
-		// Store the ID of the object being edited for scroll positioning.
-		if (!empty($_REQUEST['id'])) {
-			$listContext['scrollToId'] = $_REQUEST['id'];
-		} elseif (!empty($_REQUEST['sourceId'])) {
-			$listContext['scrollToId'] = $_REQUEST['sourceId'];
-		}
-
-		$sessionKey = 'listContext_' . $this->getModule() . '_' . $this->getToolName();
-		$_SESSION[$sessionKey] = $listContext;
-	}
 
 	/**
-	 * Get the URL to return to the list with preserved context
+	 * Builds a return URL that preserves the user's list context (e.g., page number, filters,
+	 * sort order) by extracting parameters from the HTTP referer, along with a scrollToId
+	 * parameter to maintain scroll position when returning to the list.
+	 *
+	 * @return string The constructed return URL with preserved context parameters.
 	 */
-	public function getReturnToListUrl($object = null): string {
-		$sessionKey = 'listContext_' . $this->getModule() . '_' . $this->getToolName();
-		$listContext = $_SESSION[$sessionKey] ?? [];
+	public function getReturnToListUrl(): string {
 		$baseUrl = '/' . $this->getModule() . '/' . $this->getToolName() . '?objectAction=list';
 
-		$queryParams = [];
-		foreach ($listContext as $key => $value) {
-			// Skip scrollToId as it's used for JavaScript, not URL parameters.
-			if ($key === 'scrollToId') {
-				continue;
-			}
+		if (!empty($_SERVER['HTTP_REFERER'])) {
+			$refererUrl = parse_url($_SERVER['HTTP_REFERER']);
+			if (!empty($refererUrl['query'])) {
+				parse_str($refererUrl['query'], $refererParams);
+				$listParams = [];
+				$preservedParams = ['page', 'pageSize', 'sort', 'filter', 'filterType', 'filterValue', 'filterValue2'];
 
-			if (is_array($value)) {
-				foreach ($value as $subKey => $subValue) {
-					$queryParams[$key . '[' . $subKey . ']'] = $subValue;
+				foreach ($preservedParams as $param) {
+					if (isset($refererParams[$param])) {
+						$listParams[$param] = $refererParams[$param];
+					}
 				}
-			} else {
-				$queryParams[$key] = $value;
+
+				if (!empty($listParams)) {
+					$baseUrl .= '&' . http_build_query($listParams);
+				}
 			}
 		}
 
-		if (!empty($listContext['scrollToId'])) {
-			$queryParams['scrollToId'] = $listContext['scrollToId'];
-		}
+		// Always add scroll ID to return to the object, regardless of referer.
+		$currentParams = parse_url($baseUrl, PHP_URL_QUERY);
+		parse_str($currentParams ?: '', $existingParams);
 
-		if (!empty($queryParams)) {
-			$baseUrl .= '&' . http_build_query($queryParams);
+		if (empty($existingParams['scrollToId'])) {
+			if (!empty($_REQUEST['scrollToId'])) {
+				$baseUrl .= (!str_contains($baseUrl, '?') ? '?' : '&') . 'scrollToId=' . $_REQUEST['scrollToId'];
+			} elseif (!empty($_REQUEST['id'])) {
+				$baseUrl .= (!str_contains($baseUrl, '?') ? '?' : '&') . 'scrollToId=' . $_REQUEST['id'];
+			}
 		}
 
 		return $baseUrl;
