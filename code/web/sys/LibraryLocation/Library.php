@@ -1411,7 +1411,6 @@ class Library extends DataObject {
 						],
 						'label' => 'Show While You Wait',
 						'description' => 'Whether or not the user should be shown suggestions of other titles they might like.',
-						'note' => 'To use this setting effectively you should include',
 						'hideInLists' => true,
 						'default' => 1,
 						'permissions' => ['Library ILS Options'],
