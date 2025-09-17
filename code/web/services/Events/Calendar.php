@@ -11,20 +11,30 @@ class Events_Calendar extends Action {
 
 		$today = new DateTime();
 		$useWeek = 0;
-		if (isset($_REQUEST['week'])) {
+		if (!empty($_REQUEST['week'])) {
 			$week = $_REQUEST['week'];
+			$interface->assign("weekNumber", $week);
+			$interface->assign("monthNumber", '');
 			$useWeek = 1;
-		} else if (isset($_REQUEST['month'])) {
+		} else if (!empty($_REQUEST['month'])) {
 			$month = $_REQUEST['month'];
+			$interface->assign("monthNumber", $month);
+			$interface->assign("weekNumber", '');
 		} else {
 			$month = $today->format('m');
 		}
-		if (isset($_REQUEST['year'])) {
+		if (!empty($_REQUEST['year'])) {
 			$year = $_REQUEST['year'];
 		} else {
 			$year = $today->format('Y');
 		}
+		$interface->assign("yearNumber", $year);
 		$interface->assign("useWeek", $useWeek);
+		//Print settings
+		$printEndTime = isset($_REQUEST['endTime']) ? filter_var($_REQUEST['endTime'], FILTER_VALIDATE_BOOLEAN) : false;
+		$interface->assign("printEndTime", $printEndTime);
+		$printDescriptionAgenda = isset($_REQUEST['descriptionAgenda']) ? filter_var($_REQUEST['descriptionAgenda'], FILTER_VALIDATE_BOOLEAN) : false;
+		$interface->assign("printDescriptionAgenda", $printDescriptionAgenda);
 		if ($useWeek) {
 			$paddedWeek = str_pad($week, 2, '0', STR_PAD_LEFT);
 			$weekFilter = $year . '-' . $paddedWeek;
@@ -195,7 +205,12 @@ class Events_Calendar extends Action {
 					if (in_array($eventDay, $result['event_day'])) {
 						$startDate = new DateTime($result['start_date']);
 						$startDate->setTimezone($defaultTimezone);
-						$formattedTime = date_format($startDate, "h:iA");
+						if ($printEndTime) {
+							// Save space by leaving off AM/PM from start time
+							$formattedTime = date_format($startDate, "h:i");
+						} else {
+							$formattedTime = date_format($startDate, "h:iA");
+						}
 						$endDate = new DateTime($result['end_date']);
 						$endDate->setTimezone($defaultTimezone);
 						$formattedTime .= '<span class="end-time"> - ' . date_format($endDate, "h:iA") . "</span>";
@@ -222,12 +237,14 @@ class Events_Calendar extends Action {
 						elseif (preg_match('`^aspen`', $result['id'])){
 							$url = '/AspenEvents/' . $result['id'] . '/Event';
 						}
+						$description = $result['description'];
 						$eventDayObj['events'][] = [
 							'id' => $result['id'],
 							'title' => $result['title'],
 							'link' => $url,
 							'formattedTime' => $formattedTime,
 							'isCancelled' => $isCancelled,
+							'description' => $description,
 						];
 					}
 				}

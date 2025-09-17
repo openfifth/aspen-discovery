@@ -10199,6 +10199,56 @@ AspenDiscovery.Events = (function(){
 				}
 			).fail(AspenDiscovery.ajaxFail);
 			return false;
+		},
+		getPrintListOptions: function (week, month, year) {
+			AspenDiscovery.Account.ajaxLightbox(Globals.path + '/Events/AJAX?method=getListPrintOptions&week=' + week + '&month=' + month + "&year=" + year);
+			return false;
+		},
+		buildAndOpenPrintUrl: function () {
+			const print = document.getElementById('print').value;
+			const week = document.getElementById('week').value;
+			const month = document.getElementById('month').value;
+			const year = document.getElementById('year').value;
+
+			const baseUrl = Globals.path + '/Events/Calendar';
+
+
+			// Checkbox names (in order as in the form)
+			const checkboxIds = [
+				'endTime',
+				'descriptionAgenda'
+			];
+
+			// Build URL params object
+			const params = {
+				print,
+				week,
+				month,
+				year
+			};
+
+			checkboxIds.forEach(id => {
+				const el = document.getElementById(id);
+				if (el) {
+					// Only include if checked, send value "true" (or customize as needed)
+					params[id] = el.checked ? 'true' : 'false';
+				}
+			});
+
+			// Build search string
+			const urlSearchParams = new URLSearchParams(params).toString();
+
+			// Final URL
+			const printUrl = `${baseUrl}?${urlSearchParams}`;
+
+			// Open print window and prompt print dialog once loaded
+			const win = window.open(printUrl, '_blank', 'width=900,height=900');
+			if (win) {
+				// Wait for the new window to load content, then trigger print
+				win.onload = function () {
+					win.print();
+				};
+			}
 		}
 	};
 }(AspenDiscovery.Events || {}));
