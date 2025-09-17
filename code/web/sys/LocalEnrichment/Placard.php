@@ -599,7 +599,7 @@ class Placard extends DB_LibraryLocationLinkedObject {
 		$location = $locationSingleton->getActiveLocation();
 		if ($location != null) {
 			$placardLocation = new PlacardLocation();
-			$placardLocation->locationId = $locationSingleton->locationId;
+			$placardLocation->locationId = $location->locationId;
 			$placard->joinAdd($placardLocation, 'INNER', 'placardLocation', 'id', 'placardId');
 		}else{
 			$placardLibrary = new PlacardLibrary();
