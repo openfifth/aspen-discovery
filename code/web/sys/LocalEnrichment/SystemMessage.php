@@ -408,7 +408,7 @@ class SystemMessage extends DB_LibraryLocationLinkedObject {
 		$location = $locationSingleton->getActiveLocation();
 		if ($location != null) {
 			$systemMessageLocation = new SystemMessageLocation();
-			$systemMessageLocation->locationId = $locationSingleton->locationId;
+			$systemMessageLocation->locationId = $location->locationId;
 			$customSystemMessage->joinAdd($systemMessageLocation, 'INNER', 'messageLocation', 'id', 'systemMessageId');
 		}else{
 			$systemMessageLibrary = new SystemMessageLibrary();
