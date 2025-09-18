@@ -60,7 +60,13 @@ class Series_Home extends Action {
 			$interface->assign('authors', $authors);
 
 			$seriesRecordDriver = new SeriesRecordDriver($listId);
-			$interface->assign('cover', $seriesRecordDriver->getBookcoverUrl('medium'));
+			if ($seriesRecordDriver->isValid()) {
+				$interface->assign('cover', $seriesRecordDriver->getBookcoverUrl('medium'));
+			}else{
+				//This series has not been indexed yet
+				$bookCoverUrl = "/bookcover.php?type=series&id={$listId}&size=medium";
+				$interface->assign('cover', $bookCoverUrl);
+			}
 
 			$this->buildListForDisplay($series, $activeSort);
 
