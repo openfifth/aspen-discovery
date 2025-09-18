@@ -2030,6 +2030,18 @@ class Koha extends AbstractIlsDriver {
 		return  $chargeOnCollect ? "You will be charged a hold fee of $fee when you collect this item." : "You will be charged a hold fee of $fee for placing this hold." ;
 	}
 
+	private function formatFee($rawFee): string|null {
+		global $activeLanguage;
+		$currencyCode = 'USD';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+		$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
+		return $currencyFormatter->formatCurrency($rawFee, $currencyCode);
+	}
+
+
 	private function getReserveFee(): string|null {
 
 		$patron = UserAccount::getActiveUserObj();
