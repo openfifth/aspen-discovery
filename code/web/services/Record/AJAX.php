@@ -2171,6 +2171,16 @@ class Record_AJAX extends Action {
 		$interface->assign('userHoldPromptForEditionPreference', $user->holdPromptForEdition);
 		$interface->assign('onlyValidPickupLocation', $onlyValidPickupLocation ?? null);
 
+
+		/** @var Koha $catalogDriver */
+		$catalogDriver = $marcRecord->getCatalogDriver();
+		if ($catalogDriver->hasHoldFeeMessage()) {
+			$reserveFeeMessage = $catalogDriver->getPreHoldSubmissionFeeMessage();
+			if ($reserveFeeMessage) {
+				$interface->assign('reserveFeeMessage', $reserveFeeMessage);
+			}
+		}
+
 		$interface->assign('pickupLocations', $locations);
 		$interface->assign('pickupSublocations', $pickupSublocations);
 
