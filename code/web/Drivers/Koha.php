@@ -2020,6 +2020,18 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
+	public function getPreHoldSubmissionFeeMessage(): string|null {
+		if (!UserAccount::isLoggedIn()) {
+			return "You must be logged in to place holds.";
+		}
+		$chargeOnCollect = $this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected';
+		$fee = $this->getReserveFee();
+		if (!$fee || $fee == "0.000000"){
+			return null;
+		}
+		return  $chargeOnCollect ? "You will be charged a hold fee of $fee when you collect this item." : "You will be charged a hold fee of $fee for placing this hold." ;
+	}
+
 	private function getReserveFee(): string|null {
 
 		$patron = UserAccount::getActiveUserObj();
