@@ -1994,6 +1994,26 @@ class Koha extends AbstractIlsDriver {
 	}
 
 
+	private function getReserveFee(): string|null {
+
+		$patron = UserAccount::getActiveUserObj();
+		$this->initDatabaseConnection();
+
+		/** @noinspection SqlResolve */
+		$sql = "SELECT reservefee FROM borrowers LEFT JOIN categories ON borrowers.categorycode = categories.categorycode WHERE borrowernumber =" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . ";";
+		$results = mysqli_query($this->dbConnection, $sql);
+
+		if ($results === false) {
+			global $logger;
+			$logger->log("Error getting reserve fee " . mysqli_error($this->dbConnection), Logger::LOG_ERROR);
+			return false;
+		}
+		while ($curRow = $results->fetch_assoc()) {
+			$reserveFee = $curRow['reservefee'];
+		}
+		$results->close();
+		return $reserveFee;
+	}
 
 	/**
 	 * @param User $patron
