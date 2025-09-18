@@ -2263,6 +2263,16 @@ class Record_AJAX extends JSON_Action {
 		$interface->assign('promptToFreezeHoldsImmediately', $user->promptToFreezeHoldsImmediately);
 		$interface->assign('onlyValidPickupLocation', $onlyValidPickupLocation ?? null);
 
+
+		/** @var Koha $catalogDriver */
+		$catalogDriver = $marcRecord->getCatalogDriver();
+		if ($catalogDriver->hasHoldFeeMessage()) {
+			$reserveFeeMessage = $catalogDriver->getPreHoldSubmissionFeeMessage();
+			if ($reserveFeeMessage) {
+				$interface->assign('reserveFeeMessage', $reserveFeeMessage);
+			}
+		}
+
 		$interface->assign('pickupLocations', $locations);
 		$interface->assign('pickupSublocations', $pickupSublocations);
 
