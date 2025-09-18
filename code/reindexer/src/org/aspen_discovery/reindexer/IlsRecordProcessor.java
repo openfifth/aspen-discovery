@@ -123,6 +123,19 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 			loadTranslationMapsForProfile(dbConn, indexingProfileRS.getLong("id"));
 
 			loadTimeToReshelve(dbConn, indexingProfileRS.getLong("id"));
+
+			if (settings.isIndex896asSeries()) {
+				seriesFieldsToIndexWith800.add(896);
+			}
+			if (settings.isIndex897asSeries()) {
+				seriesFieldsToIndexWith800.add(897);
+			}
+			if (settings.isIndex898asSeries()) {
+				seriesFieldsToIndexWith800.add(898);
+			}
+			if (settings.isIndex899asSeries()) {
+				seriesFieldsToIndexWith830.add(899);
+			}
 		}catch (Exception e){
 			indexer.getLogEntry().incErrors("Error loading indexing profile information from database", e);
 		}
