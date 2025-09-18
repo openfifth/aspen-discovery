@@ -2027,6 +2027,18 @@ class Koha extends AbstractIlsDriver {
 		$fee = $this->formatFee($rawFee);
 		return  $this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected' ? "You will be charged a hold fee of $fee when you collect this item." : "You will be charged a hold fee of $fee for placing this hold." ;
 	}
+		
+	public function getPostHoldSubmissionFeeMessage(): string|null {
+		if (!UserAccount::isLoggedIn()) {
+			return "You must be logged in to place holds.";
+		}
+		$rawFee = $this->getRawReserveFee();
+		if (!$rawFee || $rawFee == "0.000000"){
+			return null;
+		}
+		$fee = $this->formatFee($rawFee);
+		return  $this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected' ? "You will be charged a hold fee of $fee when you collect this item." : "You have been charged a hold fee of $fee for placing this hold." ;
+	}
 
 	private function formatFee($rawFee): string|null {
 		global $activeLanguage;
