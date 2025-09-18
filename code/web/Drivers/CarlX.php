@@ -931,9 +931,8 @@ class CarlX extends AbstractIlsDriver {
 		return $result;
 	}
 
-	// TODO: DON'T FORGET DATABASE MAINTENANCE UPDATE!
 	/**
-	 * Update a patron's user defined fields for third-party SMS notifications
+	 * Update a patron's user defined fields for third-party SMS notifications.
 	 *
 	 * @param User $patron
 	 * @param boolean $enableThirdPartySMS
@@ -953,8 +952,6 @@ class CarlX extends AbstractIlsDriver {
 		$request->UserDefinedRestrictedField->Type = 'Patron Statistic';
 		// 1 to receive 3rd Party SMS notices, 2 to not receive them.
 		$request->UserDefinedRestrictedField->NumberCode = $enableThirdPartySMS ? 1 : 2;
-
-		// Set up modifiers
 		$request->Modifiers = new stdClass();
 		$request->Modifiers->ReportMode = false;
 		$request->Modifiers->Projection = 'Brief';
@@ -996,7 +993,7 @@ class CarlX extends AbstractIlsDriver {
 	}
 
 	/**
-	 * Get the current third-party SMS opt-in status for a patron from user defined fields
+	 * Get the current third-party SMS opt-in status for a patron from user defined fields.
 	 *
 	 * @param User $patron
 	 * @return boolean
