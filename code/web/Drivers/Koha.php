@@ -2016,6 +2016,9 @@ class Koha extends AbstractIlsDriver {
 		return $hold_result;
 	}
 
+	public function hasHoldFeeMessage(): bool {
+		return true;
+	}
 
 	/**
 	 * @param User $patron
