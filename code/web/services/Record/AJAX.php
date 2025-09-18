@@ -1177,6 +1177,15 @@ class Record_AJAX extends Action {
 							$interface->assign('whileYouWaitTitles', []);
 						}
 
+						/** @var Koha $catalogDriver */
+						$catalogDriver = $user->getCatalogDriver();
+						if ($catalogDriver->hasHoldFeeMessage()) {
+							$reserveFeeMessage = $catalogDriver->getPostHoldSubmissionFeeMessage();
+							if ($reserveFeeMessage) {
+								$interface->assign('reserveFeeMessage', $reserveFeeMessage);
+							}
+						}
+
 						$results = [
 							'success' => $return['success'],
 							'message' => $interface->fetch('Record/hold-success-popup.tpl'),
