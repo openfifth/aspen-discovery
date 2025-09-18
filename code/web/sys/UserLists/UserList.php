@@ -391,7 +391,7 @@ class UserList extends DataObject {
 						CASE 
 							WHEN user_list_entry.source != 'GroupedWork' THEN 3
 							-- Use MIN() so bucket assignment is deterministic per list entry.
-       						-- Without it, grouping by user_list_entry.id could pick random eContentSourceId values.
+							-- Without it, grouping by user_list_entry.id could pick random eContentSourceId values.
 							WHEN MIN(COALESCE(gwVariation.eContentSourceId, 0)) > 0 THEN 3
 							WHEN MIN(indexedCallNumber.callNumber) IS NULL THEN 3
 							WHEN MIN(indexedCallNumber.callNumber) REGEXP '^[0-9]' THEN 1
