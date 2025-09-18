@@ -220,12 +220,12 @@ class UserList extends DataObject {
 	private $listTitles = [];
 
 	/**
-	 * @param null $sort optional SQL for the query's ORDER BY clause
+	 * @param null $sort Optional SQL for the query's ORDER BY clause.
 	 * @param bool $forLiDA
 	 * @param int $appVersion
 	 * @param int $start
 	 * @param int $numItems
-	 * @param array $activeFilters optional filters to apply to the list
+	 * @param array $activeFilters Optional format filters to apply to the list.
 	 * @return array
 	 */
 	function getListEntries($sort = null, $forLiDA = false, $appVersion = 0, $start = 0, $numItems = 0, array $activeFilters = []) : array {
@@ -233,8 +233,8 @@ class UserList extends DataObject {
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
-		if ($forLiDA){
-			if($appVersion < 24.02) {
+		if ($forLiDA) {
+			if ($appVersion < 24.02) {
 				$listEntry->whereAdd("source <> 'Events'");
 			}
 		}
@@ -255,7 +255,6 @@ class UserList extends DataObject {
 				$listEntry->selectAdd();
 				$listEntry->selectAdd("user_list_entry.*");
 				if ($sort == "title") {
-					//set cases for what to use as sorting title
 					$listEntry->selectAdd('CASE WHEN user_list_entry.source = "GroupedWork" THEN groupedWork.full_title WHEN user_list_entry.source = "Lists" THEN userList.title WHEN user_list_entry.source = "Series" THEN series.groupedWorkSeriesTitle ELSE user_list_entry.title END AS ItemTitle');
 
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
@@ -329,7 +328,6 @@ class UserList extends DataObject {
 					// Sort order: ILS records grouped by shelf location, then by call number within each location -> e-content/non-GroupedWork.
 					// Groups by list entry ID to prevent duplicates when multiple items have different call numbers/locations.
 				} elseif ($sort == "call_number") {
-					// Set up joins for call number sorting
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
 					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
@@ -412,7 +410,6 @@ class UserList extends DataObject {
 					// Availability sort: Sorts by total number of available copies.
 					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
 					// Items with more available copies appear first; non-GroupedWork records fall to bottom.
-					// Respects format filtering by only counting copies that match selected formats.
 				} elseif ($sort == "availability" || $sort == "availability_desc") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
@@ -446,7 +443,6 @@ class UserList extends DataObject {
 					// Copies available sort: Sorts by total number of available copies across all items.
 					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
 					// Non-GroupedWork records are assigned 0 copies and sorted to bottom.
-					// Respects format filtering by only counting copies that match selected formats.
 				} elseif ($sort == "copies_available" || $sort == "copies_available_asc") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
