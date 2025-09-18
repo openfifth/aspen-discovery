@@ -1537,13 +1537,12 @@ class UserList extends DataObject {
 	}
 
 	/**
-	 * Get available filter options based on the actual contents of this list
-	 * @return array Array of available filters with counts
+	 * Get available format filter options based on the actual contents of this list.
+	 *
+	 * @return array Array of available filters with counts.
 	 */
-	public function getAvailableFilters(): array {
+	public function getAvailableFormatFilters(): array {
 		global $memCache;
-		
-		// Check cache first
 		$cacheKey = 'list_available_filters_' . $this->id;
 		$cachedFilters = $memCache->get($cacheKey);
 		if ($cachedFilters !== false) {
@@ -1551,12 +1550,9 @@ class UserList extends DataObject {
 		}
 
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
-		
-		// Get all GroupedWork entries from this list
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
 		$listEntry->source = 'GroupedWork';
-		
 		$groupedWorkPermanentIds = [];
 		$listEntry->find();
 		while ($listEntry->fetch()) {
@@ -1566,10 +1562,8 @@ class UserList extends DataObject {
 		
 		$formatFilters = [];
 		if (!empty($groupedWorkPermanentIds)) {
-			// First get the internal grouped work IDs from permanent IDs
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 			$groupedWork = new GroupedWork();
-			// Don't use escape with quotes - escape already adds quotes
 			$whereClause = "permanent_id IN (" . implode(", ", array_map([$groupedWork, 'escape'], $groupedWorkPermanentIds)) . ")";
 			$groupedWork->whereAdd($whereClause);
 			
@@ -1581,12 +1575,10 @@ class UserList extends DataObject {
 			
 			
 			if (!empty($groupedWorkInternalIds)) {
-				// Now get format information for these grouped works
+				// Obtain format information for these grouped works.
 				require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
 				$gwRecord = new GroupedWorkRecord();
 				$gwRecord->whereAdd("groupedWorkId IN (" . implode(", ", $groupedWorkInternalIds) . ")");
-				
-				// Get unique format IDs
 				$formatIds = [];
 				$gwRecord->find();
 				while ($gwRecord->fetch()) {
@@ -1597,7 +1589,7 @@ class UserList extends DataObject {
 				
 				
 				if (!empty($formatIds)) {
-					// Get format names and count occurrences
+					// Get format names and count occurrences.
 					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
 					$formatCounts = [];
 					
@@ -1608,11 +1600,8 @@ class UserList extends DataObject {
 							$formatCounts[$indexedFormat->format] = $count;
 						}
 					}
-					
-					// Sort formats alphabetically
 					ksort($formatCounts);
 					$formatFilters = $formatCounts;
-					
 				}
 			}
 		}
@@ -1621,7 +1610,7 @@ class UserList extends DataObject {
 			'format' => $formatFilters
 		];
 
-		// Cache for 5 minutes
+		// Cache for 5 minutes.
 		$memCache->set($cacheKey, $filters, 300);
 		
 		return $filters;

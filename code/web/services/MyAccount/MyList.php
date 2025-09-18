@@ -234,7 +234,7 @@ class MyAccount_MyList extends MyAccount {
 			$list->update();
 		}
 
-		$availableFilters = $list->getAvailableFilters();
+		$availableFilters = $list->getAvailableFormatFilters();
 		$interface->assign('availableFilters', $availableFilters);
 		$activeFilters = [];
 		if (!empty($_REQUEST['filters'])) {
