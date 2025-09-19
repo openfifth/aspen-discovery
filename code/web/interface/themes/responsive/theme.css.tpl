@@ -932,7 +932,15 @@ color: {$bodyTextColor};
         font-size: 85%;
     {rdelim}
 {/if}
-/* cookieConsent */
+
+{* Color modes *}
+{if $themeIsDarkColorScheme}
+    :root{ldelim}
+		color-scheme: dark;
+	{rdelim}
+{/if}
+
+{* cookieConsent *}
 .stripPopup {ldelim}
   background-color: {$cookieConsentBackgroundColor};
 {rdelim}
