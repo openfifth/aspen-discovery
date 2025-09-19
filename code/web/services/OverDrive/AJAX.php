@@ -352,19 +352,12 @@ class OverDrive_AJAX extends JSON_Action {
 					]);
 				} else {
 					$overDriveId = $_REQUEST['overDriveId'];
-					$reactivationDate = $_REQUEST['reactivationDate'] ?? null;
-					$result = $patronOwningHold->freezeOverDriveHold($overDriveId, $reactivationDate);
-					if ($result['success']) {
-						$message = '<div class="alert alert-success">' . $result['message'] . '</div>';
-						$result['message'] = $message;
-					}
+					$result = $patronOwningHold->freezeOverDriveHold($overDriveId);
 
 					if (!$result['success'] && is_array($result['message'])) {
 						/** @var string[] $messageArray */
 						$messageArray = $result['message'];
 						$result['message'] = implode('; ', $messageArray);
-						// Millennium Holds assumes there can be more than one item processed. Here we know only one got processed,
-						// but call the implode function just in case
 					}
 				}
 			}
@@ -379,37 +372,6 @@ class OverDrive_AJAX extends JSON_Action {
 		}
 
 		return $result;
-	}
-
-	/** @noinspection PhpUnused */
-	function getReactivationDateForm() : array {
-		global $interface;
-
-		$user = UserAccount::getLoggedInUser();
-		$patronId = $_REQUEST['patronId'];
-		$patronOwningHold = $user->getUserReferredTo($patronId);
-		if ($patronOwningHold !== false) {
-			$interface->assign('patronId', $patronId);
-			$interface->assign('overDriveId', $_REQUEST['overDriveId']);
-
-			$title = translate([
-				'text' => 'Freeze Hold',
-				'isPublicFacing' => true,
-			]); // language customization
-			return [
-				'title' => $title,
-				'modalBody' => $interface->fetch("OverDrive/reactivationDate.tpl"),
-				'modalButtons' => "<button class='tool btn btn-primary' id='doFreezeHoldWithReactivationDate' onclick='$(\".form\").submit(); return false;'>$title</button>",
-			];
-		} else {
-			return [
-				'success' => false,
-				'message' => translate([
-					'text' => 'Sorry, you do not have access to freeze holds for the supplied user.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
 	}
 
 	function thawHold(): array {
