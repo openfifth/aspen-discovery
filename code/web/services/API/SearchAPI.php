@@ -2530,7 +2530,7 @@ class SearchAPI extends AbstractAPI {
 						//Set Sorting, this is actually slightly mangled from the category to Solr
 						$searchObject->setSort($browseCategory->getSolrSort());
 						if ($browseCategory->searchTerm != '') {
-							$searchObject->setSearchTerm($browseCategory->searchTerm);
+							SearchObject_BaseSearcher::parseAndSetAdvancedSearchTerms($searchObject, $browseCategory->searchTerm);
 						}
 
 						//Get titles for the list
