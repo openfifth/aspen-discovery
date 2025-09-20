@@ -711,8 +711,8 @@ class Theme extends DataObject {
 				'property' => 'isDarkColorScheme',
 				'type' => 'checkbox',
 				'label' => 'Dark Mode Theme',
-				'description' => 'Enabling this option will add some styling enhancements.',
-                'note' => 'Enabling this option will add styling enhancements for dark themes. Not recommended for your default/primary theme unless it is a dark color scheme.',
+				'description' => 'Adds enhancements to base stylesheet that better compliment themes with a dark color scheme.',
+                'note' => 'Enabling this option will add styling enhancements for dark themes.',
 				'required' => false,
 			],
 			'logoName' => [

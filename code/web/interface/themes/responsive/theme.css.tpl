@@ -881,7 +881,7 @@ pre a{ldelim}
 }
 
 .formatCategoryLabel, .share-tools-label{ldelim}
-color: {$bodyTextColor};
+    color: {$bodyTextColor};
 {rdelim}
 
 {* Calendar *}
@@ -933,11 +933,33 @@ color: {$bodyTextColor};
     {rdelim}
 {/if}
 
-{* Color modes *}
+{* Dark color mode *}
 {if $themeIsDarkColorScheme}
     :root{ldelim}
 		color-scheme: dark;
 	{rdelim}
+
+    .table-striped > tbody > tr:nth-child(2n+1) > td,
+    .table-striped > tbody > tr:nth-child(2n+1) > th{ldelim}
+        background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 5%);
+    {rdelim}
+
+    .form-switch .form-check-input{ldelim}
+        background-color: {$bodyBackgroundColor};
+        border-color: #585b5e;
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20viewBox%3D'-4%20-4%208%208'%3E%3Ccircle%20r%3D'3'%20fill%3D'%23585b5e'/%3E%3C/svg%3E");
+    {rdelim}
+
+    .form-switch .form-check-input:checked{ldelim}
+        background-color: {$linkColor};
+        border-color: {$linkColor};
+        background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20viewBox%3D'-4%20-4%208%208'%3E%3Ccircle%20r%3D'3'%20fill%3D'%23212529'/%3E%3C/svg%3E");
+    {rdelim}
+
+    .help-block:not(.alert),
+    .text-muted{ldelim}
+        color: color-mix(in srgb, {$bodyTextColor}, black 25%);
+    {rdelim}
 {/if}
 
 {* cookieConsent *}
@@ -945,19 +967,19 @@ color: {$bodyTextColor};
   background-color: {$cookieConsentBackgroundColor};
 {rdelim}
 .stripPopup .btnWrap a.button {ldelim}
-background-color: {$cookieConsentButtonColor};
-color: {$cookieConsentButtonTextColor};
-border: 1px solid {$cookieConsentButtonBorderColor};
+    background-color: {$cookieConsentButtonColor};
+    color: {$cookieConsentButtonTextColor};
+    border: 1px solid {$cookieConsentButtonBorderColor};
 {rdelim}
 .stripPopup .btnWrap a.button:hover {ldelim}
-background-color: {$cookieConsentButtonHoverColor};
-color: {$cookieConsentButtonHoverTextColor};
+    background-color: {$cookieConsentButtonHoverColor};
+    color: {$cookieConsentButtonHoverTextColor};
 {rdelim}
 .stripPopup .cookieContainer .contentWrap span {ldelim}
-  color: {$cookieConsentTextColor};
+    color: {$cookieConsentTextColor};
 {rdelim}
 .stripPopup .cookieContainer .contentWrap abbr {ldelim}
-  color: {$cookieConsentTextColor};
+    color: {$cookieConsentTextColor};
 {rdelim}
 {$additionalCSS}
 </style>
