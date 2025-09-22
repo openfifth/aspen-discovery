@@ -9,6 +9,7 @@ class HooplaSettings {
 	private final int libraryId;
 	private final String apiUsername;
 	private final String apiPassword;
+	private final int recordExtractionBatchSize;
 
 	// Instant settings
 	private final boolean hooplaInstantEnabled;
@@ -35,6 +36,8 @@ class HooplaSettings {
 		apiUsername = settingsRS.getString("apiUsername");
 		apiPassword = settingsRS.getString("apiPassword");
 
+		recordExtractionBatchSize = settingsRS.getInt("recordExtractionBatchSize");
+
 		hooplaInstantEnabled = settingsRS.getBoolean("hooplaInstantEnabled");
 		runFullUpdateInstant = settingsRS.getBoolean("runFullUpdateInstant");
 		lastUpdateOfChangedRecordsInstant = settingsRS.getLong("lastUpdateOfChangedRecordsInstant");
@@ -45,7 +48,7 @@ class HooplaSettings {
 		lastUpdateOfChangedRecordsFlex = settingsRS.getLong("lastUpdateOfChangedRecordsFlex");
 		lastUpdateOfAllRecordsFlex = settingsRS.getLong("lastUpdateOfAllRecordsFlex");
 
-		accessToken = settingsRS.getString("accessToken");  
+		accessToken = settingsRS.getString("accessToken");
 		tokenExpirationTime = settingsRS.getLong("tokenExpirationTime");
 
 		regroupAllRecords = settingsRS.getBoolean("regroupAllRecords");
@@ -117,5 +120,9 @@ class HooplaSettings {
 
 	public boolean isRegroupAllRecords() {
 		return regroupAllRecords;
+	}
+
+	public int getRecordExtractionBatchSize() {
+		return recordExtractionBatchSize;
 	}
 }
