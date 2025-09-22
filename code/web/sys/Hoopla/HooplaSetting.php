@@ -26,6 +26,7 @@ class HooplaSetting extends DataObject {
 	/** @noinspection PhpUnused */
 	public $lastUpdateOfAllRecordsFlex;
 	public $hooplaFlexEnabled;
+	public $recordExtractionBatchSize;
 
 	private $_scopes;
 
@@ -45,43 +46,74 @@ class HooplaSetting extends DataObject {
 				'label' => 'Id',
 				'description' => 'The unique id',
 			],
-			'apiUrl' => [
-				'property' => 'apiUrl',
-				'type' => 'url',
-				'label' => 'url',
-				'description' => 'The URL to the API',
-			],
 			'libraryId' => [
 				'property' => 'libraryId',
 				'type' => 'integer',
 				'label' => 'Library Id',
 				'description' => 'The Library Id to use with the API',
 			],
-			'apiUsername' => [
-				'property' => 'apiUsername',
-				'type' => 'text',
-				'label' => 'API Username',
-				'description' => 'The API Username provided by your Aspen support vendor (or Hoopla when registering if not using third-party support or hosting)',
+			'apiConnectionSection' => [
+				'property' => 'apiConnectionSection',
+				'type' => 'section',
+				'label' => 'API Connection Settings',
+				'expandByDefault' => false,
+				'properties' => [
+					'apiUrl' => [
+						'property' => 'apiUrl',
+						'type' => 'url',
+						'label' => 'url',
+						'description' => 'The URL to the API',
+					],
+					'apiUsername' => [
+						'property' => 'apiUsername',
+						'type' => 'text',
+						'label' => 'API Username',
+						'description' => 'The API Username provided by your Aspen support vendor (or Hoopla when registering if not using third-party support or hosting)',
+					],
+					'apiPassword' => [
+						'property' => 'apiPassword',
+						'type' => 'storedPassword',
+						'label' => 'API Password',
+						'description' => 'The API Password provided by your Aspen support vendor (or Hoopla when registering if not using third-party support or hosting)',
+						'hideInLists' => true,
+					],
+				],
 			],
-			'apiPassword' => [
-				'property' => 'apiPassword',
-				'type' => 'storedPassword',
-				'label' => 'API Password',
-				'description' => 'The API Password provided by your Aspen support vendor (or Hoopla when registering if not using third-party support or hosting)',
-				'hideInLists' => true,
-			],
-			'regroupAllRecords' => [
-				'property' => 'regroupAllRecords',
-				'type' => 'checkbox',
-				'label' => 'Regroup all Records',
-				'description' => 'Whether or not all existing records should be regrouped',
-				'default' => 0,
+			'indexingSettingsSection' => [
+				'property' => 'indexingSettingsSection',
+				'type' => 'section',
+				'label' => 'General Indexing Settings',
+				'expandByDefault' => false,
+				'properties' => [
+					'regroupAllRecords' => [
+						'property' => 'regroupAllRecords',
+						'type' => 'checkbox',
+						'label' => 'Regroup all Records',
+						'description' => 'Whether or not all existing records should be regrouped',
+						'default' => 0,
+					],
+					'recordExtractionBatchSize' => [
+						'property' => 'recordExtractionBatchSize',
+						'type' => 'enum',
+						'label' => 'Record Extraction Batch Size',
+						'description' => 'The number of records that should be extracted at once.',
+						'note' => 'This normally does not need changes unless requested by Hoopla',
+						'values' => [
+							'100' => '100',
+							'200' => '200',
+							'300' => '300',
+							'400' => '400',
+							'500' => '500',
+						],
+						'default' => '500',
+					]
+				]
 			],
 			'hooplaInstantRecords' => [
 				'property' => 'hooplaInstantRecords',
 				'type' => 'section',
 				'label' => 'Hoopla Instant',
-				'expandByDefault' => true,
+				'expandByDefault' => false,
 				'properties' => [
 					'hooplaInstantEnabled' => [
 						'property' => 'hooplaInstantEnabled',
@@ -117,7 +149,7 @@ class HooplaSetting extends DataObject {
 				'property' => 'hooplaFlexRecords',
 				'type' => 'section',
 				'label' => 'Hoopla Flex',
-				'expandByDefault' => true,
+				'expandByDefault' => false,
 				'properties' => [
 					'hooplaFlexEnabled' => [
 						'property' => 'hooplaFlexEnabled',
