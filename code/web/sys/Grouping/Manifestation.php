@@ -336,19 +336,11 @@ class Grouping_Manifestation {
 			foreach ($this->_variations as $variation) {
 				$itemSummary = mergeItemSummary($itemSummary, $variation->getItemSummary());
 			}
+			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
 			if ($this->isPeriodical()) {
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($itemSummary, $sorter);
+				$itemSummary = sortPeriodicalItemsByShelfLocationAndCallNumber($itemSummary);
 			} else {
-				ksort($itemSummary, SORT_NATURAL);
+				$itemSummary = sortItemsByShelfLocationAndCallNumber($itemSummary);
 			}
 			$this->_itemSummary = $itemSummary;
 			$timer->logTime("Got item summary for manifestation");
@@ -369,49 +361,45 @@ class Grouping_Manifestation {
 				}
 			}
 			//sort things alphabetically and newest first for periodicals/serials
+			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
 			if ($this->isPeriodical()) {
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($itemsDisplayedByDefault, $sorter);
-			} else {
-				ksort($itemsDisplayedByDefault, SORT_NATURAL);
+				$itemsDisplayedByDefault = sortPeriodicalItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
+			}else{
+				$itemsDisplayedByDefault = sortItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
 			}
 			$this->_itemsDisplayedByDefault = $itemsDisplayedByDefault;
 		}
 		return $this->_itemsDisplayedByDefault;
 	}
 
+	private ?bool $_isPeriodical = null;
 	function isPeriodical(): bool {
-		global $library;
-		$ils = 'Unknown';
-		if ($library->getAccountProfile() != null) {
-			$ils = $library->getAccountProfile()->ils;
+		if ($this->_isPeriodical === null) {
+			global $library;
+			$ils = 'Unknown';
+			if ($library->getAccountProfile() != null) {
+				$ils = $library->getAccountProfile()->ils;
 
-		}
-		//If this is a periodical we may have additional information
-		$isPeriodical = false;
-		$format = $this->format;
-		require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
-		if ($ils == 'sierra' || $ils == 'millennium') {
-			$formatValue = new FormatMapValue();
-			$formatValue->format = $format;
-			$formatValue->displaySierraCheckoutGrid = 1;
-			if ($formatValue->find(true)) {
-				$isPeriodical = true;
 			}
-		} else {
-			if ($format == 'Journal' || $format == 'Newspaper' || $format == 'Print Periodical' || $format == 'Magazine') {
-				$isPeriodical = true;
+			//If this is a periodical we may have additional information
+			$isPeriodical = false;
+			$format = $this->format;
+			require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
+			if ($ils == 'sierra' || $ils == 'millennium') {
+				$formatValue = new FormatMapValue();
+				$formatValue->format = $format;
+				$formatValue->displaySierraCheckoutGrid = 1;
+				if ($formatValue->find(true)) {
+					$isPeriodical = true;
+				}
+			} else {
+				if ($format == 'Journal' || $format == 'Newspaper' || $format == 'Print Periodical' || $format == 'Magazine') {
+					$isPeriodical = true;
+				}
 			}
+			$this->_isPeriodical = $isPeriodical;
 		}
-		return $isPeriodical;
+		return $this->_isPeriodical;
 	}
 
 	/**
