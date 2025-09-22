@@ -2721,6 +2721,7 @@ class GroupedWork_AJAX extends JSON_Action {
 
 			if ($foundVariation) {
 				$relatedRecords = $variation->getRelatedRecords();
+				/** @var Grouping_Record $firstRecord */
 				$firstRecord = reset($relatedRecords);
 				$interface->assign('firstRecord', $firstRecord);
 				$interface->assign('isEContent', $firstRecord->isEContent());

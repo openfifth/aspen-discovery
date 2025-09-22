@@ -2445,10 +2445,9 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	 * @param IlsVolumeInfo[] $volumeData
 	 * @return array
 	 */
-	function getVolumeHolds($volumeData) {
-		$holdInfo = null;
+	function getVolumeHolds(array $volumeData) : array {
+		$holdInfo = [];
 		if (count($volumeData) > 0) {
-			$holdInfo = [];
 			foreach ($volumeData as $volumeInfo) {
 				$ilsHoldInfo = new IlsHoldSummary();
 				$ilsHoldInfo->ilsId = $volumeInfo->volumeId;
@@ -2554,13 +2553,14 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $notes;
 	}
 
-	private $holdings;
-	private $copiesInfoLoaded = false;
-	private $holdingSections;
-	private $statusSummary;
-	private $holdingsHaveUrls = false;
+	private ?array $holdings;
+	private bool $copiesInfoLoaded = false;
+	private ?array $holdingSections;
+	//Looks like this can be null, a Grouping_Record or an empty Array?
+	private null|Grouping_Record|array $statusSummary;
+	private bool $holdingsHaveUrls = false;
 
-	private function loadCopies() {
+	private function loadCopies() : void {
 		if (!$this->copiesInfoLoaded) {
 			$this->copiesInfoLoaded = true;
 			$indexingProfile = $this->getIndexingProfile();
@@ -2695,10 +2695,20 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 								}
 							}
 						}
-						//if ($copyInfo['shelfLocation'] != '') {
 						$this->holdingSections[$sectionName]['holdings'][] = $copyInfo;
-						//}
+					}
 
+					//Sort each holding section
+					$isPeriodical = $this->isPeriodical();
+					foreach ($this->holdingSections as $sectionName => $sectionInfo) {
+						$holdings = $sectionInfo['holdings'];
+						require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
+						if ($isPeriodical) {
+							$holdings = sortPeriodicalItemsByShelfLocationAndCallNumber($holdings);
+						}else{
+							$holdings = sortItemsByShelfLocationAndCallNumber($holdings);
+						}
+						$this->holdingSections[$sectionName]['holdings'] = $holdings;
 					}
 
 					$this->statusSummary = $recordFromIndex;
@@ -2713,7 +2723,6 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 				}
 			} else {
 				//This will happen for linked records where we are not indexing the grouped work
-
 				$this->holdings = [];
 				$this->holdingSections = [];
 				$this->statusSummary = [];
@@ -2721,7 +2730,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
-	public function assignCopiesInformation() {
+	public function assignCopiesInformation() : void {
 		$this->loadCopies();
 		global $interface;
 		$hasLastCheckinData = false;
@@ -2754,37 +2763,41 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		$timer->logTime("Assigned copy information");
 	}
 
-	public function getCopies() {
+	public function getCopies() : array {
 		$this->loadCopies();
 		return $this->holdings;
 	}
 
-	public function isPeriodical() {
-		$ils = 'Unknown';
-		if ($this->getIndexingProfile()->getAccountProfile() != null) {
-			$ils = $this->getIndexingProfile()->getAccountProfile()->ils;
+	private ?bool $_isPeriodical = null;
+	public function isPeriodical() : bool {
+		if ($this->_isPeriodical === null) {
+			$ils = 'Unknown';
+			if ($this->getIndexingProfile()->getAccountProfile() != null) {
+				$ils = $this->getIndexingProfile()->getAccountProfile()->ils;
 
-		}
-		//If this is a periodical we may have additional information
-		$isPeriodical = false;
-		require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
-		foreach ($this->getFormats() as $format) {
-			if ($ils == 'sierra' || $ils == 'millennium') {
-				$formatValue = new FormatMapValue();
-				$formatValue->format = $format;
-				$formatValue->displaySierraCheckoutGrid = 1;
-				if ($formatValue->find(true)) {
-					$isPeriodical = true;
-					break;
-				}
-			}else{
-				if ($format == 'Journal' || $format == 'Newspaper' || $format == 'Print Periodical' || $format == 'Magazine') {
-					$isPeriodical = true;
-					break;
+			}
+			//If this is a periodical we may have additional information
+			$isPeriodical = false;
+			require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
+			foreach ($this->getFormats() as $format) {
+				if ($ils == 'sierra' || $ils == 'millennium') {
+					$formatValue = new FormatMapValue();
+					$formatValue->format = $format;
+					$formatValue->displaySierraCheckoutGrid = 1;
+					if ($formatValue->find(true)) {
+						$isPeriodical = true;
+						break;
+					}
+				} else {
+					if ($format == 'Journal' || $format == 'Newspaper' || $format == 'Print Periodical' || $format == 'Magazine') {
+						$isPeriodical = true;
+						break;
+					}
 				}
 			}
+			$this->_isPeriodical = $isPeriodical;
 		}
-		return $isPeriodical;
+		return $this->_isPeriodical;
 	}
 
 	public function loadPeriodicalInformation() {
