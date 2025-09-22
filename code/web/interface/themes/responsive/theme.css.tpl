@@ -939,9 +939,14 @@ pre a{ldelim}
 		color-scheme: dark;
 	{rdelim}
 
-    .table-striped > tbody > tr:nth-child(2n+1) > td,
-    .table-striped > tbody > tr:nth-child(2n+1) > th{ldelim}
+    .table-striped > tbody > tr:nth-child(odd) > td,
+    .table-striped > tbody > tr:nth-child(odd) > th,
+    .striped > .row:nth-child(odd){ldelim}
         background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 5%);
+    {rdelim}
+
+    .bg-overdue{ldelim}
+        background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 15%) !important;
     {rdelim}
 
     .form-switch .form-check-input{ldelim}
