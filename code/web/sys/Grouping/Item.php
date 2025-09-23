@@ -7,7 +7,7 @@ class Grouping_Item {
 	public string $recordId;
 	public string $variationId;
 	public string $shelfLocation;
-	public string $callNumber;
+	public ?string $callNumber;
 	public int $numCopies;
 	public bool $isOrderItem;
 	public bool $isEContent;
