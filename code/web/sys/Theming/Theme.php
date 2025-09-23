@@ -712,7 +712,7 @@ class Theme extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Dark Mode Theme',
 				'description' => 'Adds enhancements to base stylesheet that better compliment themes with a dark color scheme.',
-                'note' => 'Enabling this option will add styling enhancements for dark themes.',
+				'note' => 'Enabling this option will add styling enhancements for dark themes.',
 				'required' => false,
 			],
 			'logoName' => [
