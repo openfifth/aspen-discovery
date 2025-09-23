@@ -4,7 +4,7 @@ require_once ROOT_DIR . '/sys/Grouping/StatusInformation.php';
 
 class Grouping_Variation {
 	public string $id;
-	public string|int $databaseId;
+	public null|string|int $databaseId;
 	public string $label;
 	public string $language;
 	public bool $isEContent = false;
@@ -36,6 +36,7 @@ class Grouping_Variation {
 			$this->isEContent = $record->isEContent();
 			$this->econtentSource = $record->getEContentSource();
 			$this->language = $record->language;
+
 		}
 		if (!empty($this->econtentSource)) {
 			$this->label = trim(translate([
