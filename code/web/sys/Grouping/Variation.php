@@ -20,7 +20,7 @@ class Grouping_Variation {
 	/**
 	 * @var ?Grouping_Manifestation
 	 */
-	public ?Grouping_Manifestation $manifestation;
+	public ?Grouping_Manifestation $manifestation = null;
 
 	/**
 	 * Grouping_Variation constructor.
