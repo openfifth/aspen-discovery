@@ -1097,7 +1097,7 @@ class Evergreen extends AbstractIlsDriver {
 									$curHold->recordId = $volumeInfo->recordId;
 								}
 							}
-						} elseif ($holdInfo['hold_type'] == 'C') {
+						} elseif ($holdInfo['hold_type'] == 'C' || $holdInfo['hold_type'] == 'F' || $holdInfo['hold_type'] == 'R') {
 							//This is a copy level hold, need to look it up by the item number
 							$modsInfo = $this->getModsForCopy($holdInfo['target']);
 							$curHold->recordId = (string)$modsInfo['doc_id'];
