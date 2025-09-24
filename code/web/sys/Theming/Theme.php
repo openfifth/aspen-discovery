@@ -2940,6 +2940,9 @@ class Theme extends DataObject {
 		require_once ROOT_DIR . '/sys/Utils/ColorUtils.php';
 		$additionalCSS = '';
 		$appendCSS = true;
+
+		// Clear all template variables to prevent cross-contamination between themes during batch processing.
+		$interface->clearAllAssign();
 		$this->applyDefaults();
 		$interface->assign('headerBackgroundColor', $this->headerBackgroundColor);
 		$interface->assign('headerForegroundColor', $this->headerForegroundColor);
