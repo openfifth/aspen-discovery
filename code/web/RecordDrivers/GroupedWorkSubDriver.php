@@ -529,10 +529,10 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 
 	/**
 	 * @param IlsVolumeInfo[] $volumeData
-	 * @return int
+	 * @return array
 	 */
-	function getVolumeHolds(/** @noinspection PhpUnusedParameterInspection */ $volumeData) {
-		return 0;
+	function getVolumeHolds(/** @noinspection PhpUnusedParameterInspection */ array $volumeData) : array {
+		return [];
 	}
 
 	static $groupedWorks = [];
