@@ -98,6 +98,7 @@ class HooplaSetting extends DataObject {
 						'type' => 'integer',
 						'label' => 'Indexing Time',
 						'description' => 'In 24 hour format, the hour of the day when the indexing should be run',
+						'note' => '24 hour format, please enter a value between 0 and 23, default is 1',
 						'default' => 1,
 					],
 					'recordExtractionBatchSize' => [
@@ -217,6 +218,10 @@ class HooplaSetting extends DataObject {
 	}
 
 	public function update(string $context = '') : int|bool {
+		if ($this->indexingTime < 0 || $this->indexingTime > 23) {
+			$this->indexingTime = 1;
+		}
+
 		$ret = parent::update();
 		if ($ret !== FALSE) {
 			$this->saveScopes();

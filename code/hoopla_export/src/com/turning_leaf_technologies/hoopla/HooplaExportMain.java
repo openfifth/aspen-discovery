@@ -439,10 +439,6 @@ public class HooplaExportMain {
 		String accessToken = settings.getAccessToken();
 		long tokenExpirationTime = settings.getTokenExpirationTime();
 		int indexingTime = settings.getIndexingTime();
-		if (indexingTime < 0 || indexingTime > 23){
-			indexingTime = 1;
-			logEntry.addNote("Invalid indexing time " + indexingTime + " setting to 1");
-		}
 
 		if (accessToken == null || tokenExpirationTime < (System.currentTimeMillis() / 1000)) {
 			accessToken = getAccessToken(settings);
