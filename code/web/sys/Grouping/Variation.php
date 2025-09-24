@@ -288,7 +288,8 @@ class Grouping_Variation {
 				}
 			}
 			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
-			if ($this->manifestation->isPeriodical()) {
+			$isPeriodical = !($this->manifestation == null) && $this->manifestation->isPeriodical();
+			if ($isPeriodical) {
 				$itemsDisplayedByDefault = sortPeriodicalItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
 			}else{
 				$itemsDisplayedByDefault = sortItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
