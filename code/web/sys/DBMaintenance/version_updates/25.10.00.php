@@ -44,6 +44,14 @@ function getUpdates25_10_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'add_num_total_entries_to_show_in_more_to_grouped_work_facet' => [
+			'title' => 'Add Total Num Entries To Show In More To Grouped Work Facet',
+			'description' => 'Add configurable field to control how many facet values show in the "More..." popup/expansion.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE grouped_work_facet ADD COLUMN numTotalEntriesToShowInMore INT(11) NOT NULL DEFAULT 30',
+			]
+		], // add_num_total_entries_to_show_in_more_to_grouped_work_facet
 
 		//alexander - Open Fifth
 
