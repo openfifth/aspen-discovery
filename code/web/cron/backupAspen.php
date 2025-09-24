@@ -8,6 +8,12 @@ global $serverName;
 
 global $aspen_db;
 
+require_once ROOT_DIR . '/sys/CronLogEntry.php';
+$cronLogEntry = new CronLogEntry();
+$cronLogEntry->startTime = time();
+$cronLogEntry->name = 'Backup Aspen';
+$cronLogEntry->insert();
+
 $debug = false;
 
 $dbUser = $configArray['Database']['database_user'];
@@ -23,6 +29,7 @@ if (!file_exists($backupDir)) {
 }
 
 //Remove any backups older than 2 days
+$cronLogEntry->notes .= date('g:i:s A') . " Removing old backups.<br/>";
 $currentFilesInBackup = scandir($backupDir);
 $earliestTimeToKeep = time() - (2 * 24 * 60 * 60);
 foreach ($currentFilesInBackup as $file) {
@@ -50,10 +57,18 @@ foreach ($currentFilesInBackup as $file) {
 
 //Create the tar file
 $curDateTime = date('ymdHis');
-$backupFile = "$backupDir/aspen.$serverName.$curDateTime.tar";
-//exec("tar -cf $backupFile");
+$todaysBackupDir = $backupDir . '/' . $curDateTime;
+if (!file_exists($todaysBackupDir)) {
+	mkdir($todaysBackupDir, 700, true);
+}
+
+$backupFile = "$backupDir/aspen.$serverName.$curDateTime.tar.gz";
+$compressCommand = '';
+$dumpScript = 'mysqldump';
 if ($configArray['System']['operatingSystem'] != 'windows') {
 	exec_advanced("cd $backupDir", $debug);
+	$compressCommand = '| pigz';
+	$dumpScript = 'mariadb-dump';
 }
 
 //Create the export files
@@ -67,28 +82,44 @@ foreach ($allTables as $table) {
 	}
 
 	$exportFile = "$serverName.$curDateTime.$table.sql";
+
+	$tableExtension = '.sql';
+	if ($configArray['System']['operatingSystem'] != 'windows') {
+		$exportFile .= '.gz';
+	}
 	$fullExportFilePath = "$backupDir/$exportFile";
+	$cronLogEntry->notes .= date('g:i:s A') . " Exporting $table.<br/>";
+	$cronLogEntry->update();
 	if ($exportData) {
-		$dumpCommand = "mariadb-dump -u$dbUser -p$dbPassword -h$dbHost -P$dbPort $dbName $table > $fullExportFilePath";
+		$dumpCommand = "$dumpScript -u$dbUser -p$dbPassword -h$dbHost -P$dbPort  --single-transaction --quick $dbName $table $compressCommand > $todaysBackupDir/$exportFile";
 	}else{
-		$dumpCommand = "mariadb-dump -u$dbUser -p$dbPassword -h$dbHost -P$dbPort --no-data $dbName $table > $fullExportFilePath";
+		$dumpCommand = "$dumpScript -u$dbUser -p$dbPassword -h$dbHost -P$dbPort --no-data $dbName $table $compressCommand > $todaysBackupDir/$exportFile";
 	}
 	exec_advanced($dumpCommand, $debug);
 
-	//Add the file to the archive
-	if (file_exists($fullExportFilePath)) {
-		if ($configArray['System']['operatingSystem'] != 'windows') {
-			exec_advanced("cd $backupDir; tar -rf $backupFile $exportFile", $debug);
-
-			unlink($fullExportFilePath);
-		}
-	}
+	//Do not add the file to the archive now, we will compress them all later
 }
 $listTablesStmt->closeCursor();
+$cronLogEntry->notes .= date('g:i:s A') . " All tables have been exported<br/>";
+$cronLogEntry->update();
 
 //zip up the archive
+$cronLogEntry->notes .= date('g:i:s A') . " Creating tarball.<br/>";
+$cronLogEntry->update();
 if ($configArray['System']['operatingSystem'] != 'windows') {
-	exec_advanced("gzip $backupFile", $debug);
+	exec_advanced("tar -cf - -C $todaysBackupDir . $compressCommand > $backupFile", $debug);
+}else{
+	exec_advanced("tar -czf $backupFile -C $todaysBackupDir .", $debug);
+}
+$cronLogEntry->notes .= date('g:i:s A') . " Finished creating tarball.<br/>";
+$cronLogEntry->update();
+
+//Clean up exported files
+if (file_exists($todaysBackupDir)) {
+	require_once ROOT_DIR . '/sys/Utils/SystemUtils.php';
+	SystemUtils::recursive_rmdir($todaysBackupDir);
+	$cronLogEntry->notes .= date('g:i:s A') . " Cleaned up individual backup files.<br/>";
+	$cronLogEntry->update();
 }
 
 //Optionally, move the file to the Google backup bucket
@@ -99,9 +130,14 @@ $systemVariables = new SystemVariables();
 // See if we have a bucket to back up to
 if ($systemVariables->find(true) && !empty($systemVariables->googleBucket)) {
 	//Perform the backup
+	$cronLogEntry->notes .= date('g:i:s A') . " Sending backup to Google bucket.<br/>";
 	$bucketName = $systemVariables->googleBucket;
-	exec_advanced("gsutil cp $backupFile.gz gs://$bucketName/", $debug);
+	exec_advanced("gsutil cp $backupFile gs://$bucketName/", $debug);
 }
+
+$cronLogEntry->notes .= date('g:i:s A') . " Finished backup.";
+$cronLogEntry->endTime = time();
+$cronLogEntry->update();
 
 $aspen_db = null;
 $configArray = null;
