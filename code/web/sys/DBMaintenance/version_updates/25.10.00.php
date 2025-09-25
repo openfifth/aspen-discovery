@@ -88,6 +88,14 @@ function getUpdates25_10_00(): array {
 		// Myranda - Grove
 
 		//Yanjun Li - ByWater
+		'add_hoopla_configurable_indexing_time' => [
+			'title' => 'Add Configurable Hoopla Indexing Time',
+			'description' => 'Add Hoopla Indexing Time',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE hoopla_settings ADD COLUMN indexingTime INT DEFAULT 1',
+			]
+		], //add_hoopla_configurable_indexing_time
 
 		// Leo Stoyanov - BWS
 
