@@ -36,6 +36,15 @@ function getUpdates25_10_00(): array {
 		//katherine - Grove
 
 		//kirstien - Grove
+		'addEditionPromptSettingForLocation' => [
+			'title' => 'Add Option For Prompting For Edition When Placing Hold',
+			'description' => 'Add Option For Prompting For Edition When Placing Hold at the Location Level',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE location ADD COLUMN holdPromptForEditions INT DEFAULT 0',
+			]
+		],
+		//addEditionPromptSettingForLocation
 
 		//kodi - Grove
 
