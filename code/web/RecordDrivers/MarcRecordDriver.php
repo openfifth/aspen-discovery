@@ -1273,7 +1273,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $records;
 	}
 
-	function getFormatCategory() {
+	function getFormatCategory() : string|array|null {
 		return $this->getGroupedWorkDriver()->getFormatCategory();
 	}
 
