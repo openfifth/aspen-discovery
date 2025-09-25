@@ -2648,6 +2648,55 @@ class SirsiDynixROA extends HorizonAPI {
 		return 'sirsiROAEmailResetPinLink.tpl';
 	}
 
+	function updateHomeLibrary(User $patron, string $homeLibraryCode): array {
+		$result = [
+			'success' => false,
+			'messages' => [],
+		];
+
+		$sessionToken = $this->getStaffSessionToken();
+		if ($sessionToken) {
+			$webServiceURL = $this->getWebServiceURL();
+			if ($userID = $patron->unique_ils_id) {
+				$updatePatronInfoParametersClass = $this->getWebServiceResponse('getPatronInfo', $this->getWebServiceURL() . '/user/patron/key/' . $userID, null, $sessionToken);
+				if ($updatePatronInfoParametersClass) {
+					$updatePatronInfoParameters = json_decode(json_encode($updatePatronInfoParametersClass), true);
+					if (isset($updatePatronInfoParameters['resource']) && $updatePatronInfoParameters['resource'] == '/user/patron') {
+						$homeLibraryLocation = new Location();
+						if ($homeLibraryLocation->get('code', $homeLibraryCode)) {
+							$homeBranchCode = strtoupper($homeLibraryLocation->code);
+							$updatePatronInfoParameters['fields']['library'] = [
+								'key' => $homeBranchCode,
+								'resource' => '/policy/library',
+							];
+						}
+
+						$updateAccountInfoResponse = $this->getWebServiceResponse('updateHomeLibrary', $webServiceURL . '/user/patron/key/' . $userID, $updatePatronInfoParameters, $sessionToken, 'PUT');
+						if (isset($updateAccountInfoResponse->messageList)) {
+							$result['messages'][] = (string)$updateAccountInfoResponse->messageList[0]->message;
+						} else {
+							$result['success'] = true;
+							$result['messages'][] = '&bull; Your home library was updated successfully.';
+
+							$patron->homeLocationId = $homeLibraryLocation->locationId;
+							$patron->update();
+						}
+					} else {
+						$result['messages'][] = 'Could not find your account in the system, please contact the library.';
+					}
+				} else {
+					$result['messages'][] = 'Could not find your account in the system, please contact the library.';
+				}
+			} else {
+				$result['messages'][] = 'Could not find your account in the system, please contact the library.';
+			}
+		} else {
+			$result['messages'][] = 'Sorry, we could not connect to Symphony.';
+		}
+
+		return $result;
+	}
+
 	function translateFineMessageType($code) {
 		switch ($code) {
 
