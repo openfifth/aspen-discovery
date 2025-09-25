@@ -411,37 +411,40 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 	}
 
-	private ?GroupedWorkFormatSortingGroup $_formatSorting = null;
+	private static ?GroupedWorkFormatSortingGroup $_formatSorting = null;
+
 	/**
-	 * @param Grouping_Record $a
-	 * @param Grouping_Record $b
+	 * @param Grouping_Manifestation $a
+	 * @param Grouping_Manifestation $b
 	 * @return int
 	 */
-	function compareRelatedManifestations($a, $b) {
-		if ($this->_formatSorting == null) {
+	function compareRelatedManifestations(Grouping_Manifestation $a, Grouping_Manifestation $b): int {
+		if (self::$_formatSorting == null) {
 			global $library;
 			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
-			$this->_formatSorting = $groupedWorkDisplaySettings->getFormatSortingGroup();
+			self::$_formatSorting = $groupedWorkDisplaySettings->getFormatSortingGroup();
 		}
 
+
 		//Format sorting can still be null before the format sorting is fully setup
-		if ($this->_formatSorting == null) {
+		if (self::$_formatSorting == null) {
 			$sortMethod = 1;
-		}else{
+		} else {
 			$groupedWork = $this->getGroupedWorkObject();
 			if ($groupedWork->grouping_category == 'book') {
-				$sortMethod = $this->_formatSorting->bookSortMethod;
-			}elseif ($groupedWork->grouping_category == 'comic') {
-				$sortMethod = $this->_formatSorting->comicSortMethod;
-			}elseif ($groupedWork->grouping_category == 'movie') {
-				$sortMethod = $this->_formatSorting->movieSortMethod;
-			}elseif ($groupedWork->grouping_category == 'music') {
-				$sortMethod = $this->_formatSorting->musicSortMethod;
-			}else{
-				$sortMethod = $this->_formatSorting->otherSortMethod;
+				$sortMethod = self::$_formatSorting->bookSortMethod;
+			} elseif ($groupedWork->grouping_category == 'comic') {
+				$sortMethod = self::$_formatSorting->comicSortMethod;
+			} elseif ($groupedWork->grouping_category == 'movie') {
+				$sortMethod = self::$_formatSorting->movieSortMethod;
+			} elseif ($groupedWork->grouping_category == 'music') {
+				$sortMethod = self::$_formatSorting->musicSortMethod;
+			} else {
+				$sortMethod = self::$_formatSorting->otherSortMethod;
 			}
 		}
 
+		$formatComparison = 0;
 		if ($sortMethod == 1) {
 			//First sort by format
 			$format1 = trim($a->format);
@@ -455,24 +458,24 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					return 1;
 				}
 			}
-		}else{
+		} else {
 			$weight1 = 999;
 			$weight2 = 999;
 			$format1 = trim($a->format);
 			$format2 = trim($b->format);
 
-			$sortFormats = $this->_formatSorting->getSortedFormats($groupedWork->grouping_category);
+			$sortFormats = self::$_formatSorting->getSortedFormats($groupedWork->grouping_category);
 			foreach ($sortFormats as $format) {
 				if ($format->format == $format1) {
 					$weight1 = $format->weight;
-				}elseif ($format->format == $format2) {
+				} elseif ($format->format == $format2) {
 					$weight2 = $format->weight;
 				}
 			}
 
-			if ($weight1 < $weight2){
+			if ($weight1 < $weight2) {
 				$formatComparison = -1;
-			}elseif ($weight1 == $weight2){
+			} elseif ($weight1 == $weight2) {
 				$format1 = trim($a->format);
 				$format2 = trim($b->format);
 				$formatComparison = strcasecmp($format1, $format2);
@@ -484,7 +487,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						$formatComparison = 1;
 					}
 				}
-			}elseif ($weight1 > $weight2){
+			} elseif ($weight1 > $weight2) {
 				$formatComparison = 1;
 			}
 		}
@@ -2946,17 +2949,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	static false|int|string $atNearbyLocation2 = false;
 	static false|int|string $homeLocationScopeId = false;
 
-	private function loadRelatedRecords() : void{
+	private function loadRelatedRecords(): void {
 		global $timer;
-		global $memoryWatcher;
 		if ($this->relatedRecords == null || isset($_REQUEST['reload'])) {
 			$timer->logTime("Starting to load related records for {$this->getUniqueID()}");
 
-			$this->relatedItemsByRecordId = [];
-
 			global $solrScope;
 			global $library;
-			$scopingInfoFieldName = 'scoping_details_' . $solrScope;
 			$relatedRecords = [];
 			$childRecords = [];
 			$searchLocation = Location::getSearchLocation();
@@ -3192,6 +3191,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				//Sort Records within each manifestation and variation
 				foreach ($this->_relatedManifestations as $manifestationKey => $manifestation) {
 					$relatedRecordsForManifestation = $manifestation->getRelatedRecords();
+					$manifestation->sortVariations();
 					if (count($relatedRecordsForManifestation) >= 1) {
 						uasort($relatedRecordsForManifestation, [
 							$this,
