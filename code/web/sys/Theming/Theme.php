@@ -2935,6 +2935,10 @@ class Theme extends DataObject {
 	 * @return string the resulting css
 	 */
 	public function generateCss($saveChanges = false) : string {
+		// Clear cached theme hierarchy to prevent cross-contamination during batch processing.
+		$this->_allAppliedThemes = null;
+		$this->_themeHierarchy = null;
+
 		$allAppliedThemes = $this->getAllAppliedThemes();
 		global $interface;
 		require_once ROOT_DIR . '/sys/Utils/ColorUtils.php';
