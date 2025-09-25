@@ -428,16 +428,7 @@ class Record_AJAX extends Action {
 			$items = $marcRecord->getCopies();
 			//sort things alphabetically and newest first for periodicals/serials
 			if ($marcRecord->isPeriodical()){
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($items, $sorter);
+				$items = sortPeriodicalItemsByShelfLocationAndCallNumber($items);
 			} else {
 				array_multisort(array_column($items, 'description'), SORT_NATURAL, $items);
 			}

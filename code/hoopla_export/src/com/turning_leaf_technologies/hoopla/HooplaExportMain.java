@@ -448,6 +448,9 @@ public class HooplaExportMain {
 			return true;
 		}
 
+		logEntry.addNote("Starting " + hooplaType + " content extraction using a batch size of " + settings.getRecordExtractionBatchSize());
+		logEntry.saveResults();
+
 		try {
 			if (doFullReload){
 				//Unset that a full update needs to be done
@@ -501,9 +504,9 @@ public class HooplaExportMain {
 				//Give a 2-minute buffer for the extract
 				lastUpdate -= 120;
 				logEntry.addNote("Extracting records since " + new Date(lastUpdate * 1000));
-				url += "?startTime=" + lastUpdate + "&limit=500&purchaseModel=" + purchaseModel;
+				url += "?startTime=" + lastUpdate + "&limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
 			} else {
-				url += "?limit=500&purchaseModel=" + purchaseModel;
+				url += "?limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
 			}
 
 			HashMap<String, String> headers = new HashMap<>();
@@ -532,9 +535,9 @@ public class HooplaExportMain {
 					int numTries = 0;
 					while (startToken != null) {
 						if (!doFullReload && lastUpdate > 0) {
-							url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content?startTime=" + lastUpdate + "&startToken=" + startToken + "&limit=500&purchaseModel=" + purchaseModel;
+							url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content?startTime=" + lastUpdate + "&startToken=" + startToken + "&limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
 						}else {
-							url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content?startToken=" + startToken + "&limit=500&purchaseModel=" + purchaseModel;
+							url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content?startToken=" + startToken + "&limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
 						}
 						response = NetworkUtils.getURL(url, logger, headers);
 						if (response.isSuccess()){

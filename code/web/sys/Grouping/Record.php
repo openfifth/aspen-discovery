@@ -4,59 +4,58 @@ require_once ROOT_DIR . '/sys/Grouping/StatusInformation.php';
 require_once ROOT_DIR . '/sys/Grouping/Item.php';
 
 class Grouping_Record {
-	public $id;
-	public $databaseId;
+	public string $id;
+	public string|int $databaseId;
 
-	public $format;
-	public $formatCategory;
-	public $edition;
-	public $audience;
-	public $language;
-	public $publisher;
-	public $publicationDate;
-	public $placeOfPublication;
-	public $physical;
-	public $closedCaptioned;
-	public $variationFormat;
-	public $variationId;
+	public string $format;
+	public string $formatCategory;
+	public ?string $edition;
+	public ?string $audience;
+	public string $language;
+	public ?string $publisher;
+	public ?string $publicationDate;
+	public ?string $placeOfPublication;
+	public ?string $physical;
+	public bool|string $closedCaptioned;
+	public string $variationFormat;
+	public string|int $variationId;
 	/** @var Grouping_Variation[] */
-	public $recordVariations;
-	public $hasParentRecord;
-	public $hasChildRecord;
+	public ?array $recordVariations;
+	public bool $hasParentRecord;
+	public bool $hasChildRecord;
 
-	protected $_driver;
-	protected $_url;
-	protected $_callNumber = '';
+	protected ?GroupedWorkSubDriver $_driver;
+	protected string $_url;
+	protected string $_callNumber = '';
 
 	/** @var Grouping_StatusInformation */
-	protected $_statusInformation;
+	protected Grouping_StatusInformation $_statusInformation;
 
-	protected $_isEContent = false;
-	public $_eContentSource;
-	public $_volumeHolds;
-	public $_hasLocalItem = false;
-	public $_holdRatio = 0;
-	public $_shelfLocation = '';
-	public $_holdable = false;
-	public $_locallyHoldable = false;
-	public $_itemSummary = [];
-	public $_itemsDisplayedByDefault = null;
-	public $_itemDetails = [];
+	protected bool $_isEContent = false;
+	public ?string $_eContentSource = null;
+	public array $_volumeHolds;
+	public bool $_hasLocalItem = false;
+	public string $_shelfLocation = '';
+	public bool $_holdable = false;
+	public bool $_locallyHoldable = false;
+	public array $_itemSummary = [];
+	public ?array $_itemsDisplayedByDefault = null;
+	public array $_itemDetails = [];
 
-	public $source;
-	public $_class = '';
-	public $_actions = [];
+	public string $source;
+	public string $_class = '';
+	public array $_actions = [];
 	/** @var Grouping_Item[] */
-	private $_items;
+	private array $_items;
 
 	/** @var  IlsVolumeInfo[] */
-	private $_volumeData;
-	private $_unsuppressedVolumeData = null;
-	private $_unsuppressedLocalVolumeData = null;
+	private array $_volumeData;
+	private ?array $_unsuppressedVolumeData = null;
+	private ?array $_unsuppressedLocalVolumeData = null;
 
 	//Is the record an OverDrive record?
 	//If so, the number of owned and available copies are already set.
-	private $_isOverDrive = false;
+	private bool $_isOverDrive = false;
 
 	/**
 	 * Grouping_Record constructor.
@@ -66,10 +65,11 @@ class Grouping_Record {
 	 * @param IlsVolumeInfo[] $volumeData
 	 * @param string $source
 	 * @param bool $useAssociativeArray
+	 * @param ?Grouping_Variation $variation
 	 */
-	public function __construct(string $recordId, array $recordDetails, GroupedWorkSubDriver $recordDriver, array $volumeData, string $source, bool $useAssociativeArray = false, $variation = null) {
+	public function __construct(string $recordId, array $recordDetails, GroupedWorkSubDriver $recordDriver, array $volumeData, string $source, bool $useAssociativeArray = false, ?Grouping_Variation $variation = null) {
 		$this->_driver = $recordDriver;
-		$this->_url = $recordDriver != null ? $recordDriver->getRecordUrl() : '';
+		$this->_url = $recordDriver->getRecordUrl();
 		$this->id = $recordId;
 		if ($useAssociativeArray) {
 			//Loaded from Database
@@ -121,7 +121,7 @@ class Grouping_Record {
 			$this->_statusInformation->setAvailableOnline($statusSummary['available']);
 			$this->_isOverDrive = true;
 		}
-		$this->_volumeHolds = $recordDriver != null ? $recordDriver->getVolumeHolds($volumeData) : null;
+		$this->_volumeHolds = $recordDriver->getVolumeHolds($volumeData);
 		$this->_volumeData = $volumeData;
 		if (!empty($volumeData)) {
 			$this->_volumeData = [];
@@ -131,7 +131,7 @@ class Grouping_Record {
 				}
 			}
 		}
-		if ($recordDriver != null && $recordDriver instanceof SideLoadedRecord) {
+		if ($recordDriver instanceof SideLoadedRecord) {
 			$this->_statusInformation->setIsShowStatus($recordDriver->isShowStatus());
 		} else {
 			$this->_statusInformation->setIsShowStatus(true);
@@ -177,7 +177,7 @@ class Grouping_Record {
 			$this->_statusInformation->addHoldableCopies($item->numCopies);
 		}
 
-		if ($this->_isOverDrive == false) {
+		if (!$this->_isOverDrive) {
 			if ($item->isOrderItem) {
 				$this->addOnOrderCopies($item->numCopies);
 			} else {
@@ -220,7 +220,7 @@ class Grouping_Record {
 
 		if (!empty($this->_volumeData)) {
 			foreach ($this->_volumeData as $volumeInfo) {
-				if ((strlen($volumeInfo->relatedItems) != 0) && (strpos($volumeInfo->relatedItems, $item->itemId) !== false)) {
+				if ((strlen($volumeInfo->relatedItems) != 0) && (str_contains($volumeInfo->relatedItems, $item->itemId))) {
 					$item->volume = $volumeInfo->displayLabel;
 					$item->volumeId = $volumeInfo->volumeId;
 					$item->volumeOrder = $volumeInfo->displayOrder;
@@ -229,99 +229,27 @@ class Grouping_Record {
 		}
 	}
 
-	function getSchemaOrgBookFormat() {
-		switch ($this->format) {
-			case 'Book':
-			case 'Large Print':
-			case 'Manuscript':
-				return 'Hardcover';
-
-			case 'Audio':
-			case 'Audio Cassette':
-			case 'Audio CD':
-			case 'CD':
-			case 'eAudiobook':
-			case 'Playaway':
-				return 'AudiobookFormat';
-
-			case 'eBook':
-			case 'eMagazine':
-				return 'EBook';
-
-			case 'Graphic Novel':
-			case 'Journal':
-				return 'Paperback';
-
-			default:
-				return '';
-		}
+	function getSchemaOrgBookFormat() : string {
+		return match ($this->format) {
+			'Book', 'Large Print', 'Manuscript' => 'Hardcover',
+			'Audio', 'Audio Cassette', 'Audio CD', 'CD', 'eAudiobook', 'Playaway' => 'AudiobookFormat',
+			'eBook', 'eMagazine' => 'EBook',
+			'Graphic Novel', 'Journal' => 'Paperback',
+			default => '',
+		};
 	}
 
-	function getSchemaOrgType() {
-		switch ($this->format) {
-			case 'Audio':
-			case 'Audio Book':
-			case 'Audio Cassette':
-			case 'Audio CD':
-			case 'Book':
-			case 'Book Club Kit':
-			case 'eAudiobook':
-			case 'eBook':
-			case 'eMagazine':
-			case 'CD':
-			case 'Journal':
-			case 'Large Print':
-			case 'Manuscript':
-			case 'Musical Score':
-			case 'Newspaper':
-			case 'Playaway':
-			case 'Serial':
-				return 'Book';
-
-			case 'eComic':
-			case 'Graphic Novel':
-				return 'ComicStory';
-
-			case 'eMusic':
-			case 'Music Recording':
-			case 'Phonograph':
-				return 'MusicRecording';
-
-			case 'Blu-ray':
-			case 'DVD':
-			case 'eVideo':
-			case 'VHS':
-			case 'Video':
-				return 'Movie';
-
-			case 'Map':
-				return 'Map';
-
-			case 'Nintendo 3DS':
-			case 'Nintendo DS':
-			case 'Nintendo Switch':
-			case 'Nintendo Switch 2':
-			case 'Nintendo Wii':
-			case 'Nintendo Wii U':
-			case 'PlayStation':
-			case 'PlayStation 2':
-			case 'PlayStation 3':
-			case 'PlayStation 4':
-			case 'PlayStation 5':
-			case 'PlayStation Vita':
-			case 'Windows Game':
-			case 'Xbox 360':
-			case 'Xbox 360 Kinect':
-			case 'Xbox One':
-			case 'Xbox Series X':
-				return 'Game';
-
-			case 'Web Content':
-				return 'WebPage';
-
-			default:
-				return 'CreativeWork';
-		}
+	function getSchemaOrgType() : string {
+		return match ($this->format) {
+			'Audio', 'Audio Book', 'Audio Cassette', 'Audio CD', 'Book', 'Book Club Kit', 'eAudiobook', 'eBook', 'eMagazine', 'CD', 'Journal', 'Large Print', 'Manuscript', 'Musical Score', 'Newspaper', 'Playaway', 'Serial' => 'Book',
+			'eComic', 'Graphic Novel' => 'ComicStory',
+			'eMusic', 'Music Recording', 'Phonograph' => 'MusicRecording',
+			'Blu-ray', 'DVD', 'eVideo', 'VHS', 'Video' => 'Movie',
+			'Map' => 'Map',
+			'Nintendo 3DS', 'Nintendo DS', 'Nintendo Switch', 'Nintendo Switch 2', 'Nintendo Wii', 'Nintendo Wii U', 'PlayStation', 'PlayStation 2', 'PlayStation 3', 'PlayStation 4', 'PlayStation 5', 'PlayStation Vita', 'Windows Game', 'Xbox 360', 'Xbox 360 Kinect', 'Xbox One', 'Xbox Series X' => 'Game',
+			'Web Content' => 'WebPage',
+			default => 'CreativeWork',
+		};
 	}
 
 	/**
@@ -329,13 +257,6 @@ class Grouping_Record {
 	 */
 	public function getAvailableCopies(): int {
 		return $this->_statusInformation->getAvailableCopies();
-	}
-
-	/**
-	 * @param int $availableCopies
-	 */
-	public function addAvailableCopies(int $availableCopies): void {
-		$this->_statusInformation->addAvailableCopies($availableCopies);
 	}
 
 	/**
@@ -360,13 +281,6 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @param bool $holdable
-	 */
-	public function setHoldable(bool $holdable): void {
-		$this->_holdable = $holdable;
-	}
-
-	/**
 	 * @return bool
 	 */
 	public function isLocallyHoldable(): bool {
@@ -374,31 +288,10 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @param bool $locallyHoldable
-	 */
-	public function setLocallyHoldable(bool $locallyHoldable): void {
-		$this->_locallyHoldable = $locallyHoldable;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getClass(): string {
-		return $this->_class;
-	}
-
-	/**
 	 * @param string $class
 	 */
 	public function setClass(string $class): void {
 		$this->_class = $class;
-	}
-
-	/**
-	 * @return int
-	 */
-	public function getLocalCopies(): int {
-		return $this->_statusInformation->getLocalCopies();
 	}
 
 	/**
@@ -423,9 +316,10 @@ class Grouping_Record {
 	}
 
 	/**
+	 * @param string $variationId The variation to get the item summary for
 	 * @return array
 	 */
-	public function getItemSummary($variationId = '') : array {
+	public function getItemSummary(string $variationId = '') : array {
 		if ($variationId == '') {
 			$variationId = 'any';
 		}
@@ -510,26 +404,19 @@ class Grouping_Record {
 				$isPeriodical = true;
 			}
 		}
+		require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
 		if ($isPeriodical) {
-			$sorter = function ($a, $b){
-				if ($a['shelfLocation'] == $b['shelfLocation']) {
-					if ($a['callNumber'] == $b['callNumber']) {
-						return 0;
-					}
-					return strnatcasecmp($b['callNumber'], $a['callNumber']);
-				}
-				return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-			};
-			uasort($this->_itemSummary[$variationId], $sorter);
-		} else {
-			ksort($this->_itemSummary[$variationId], SORT_NATURAL);
+			$this->_itemSummary[$variationId] = sortPeriodicalItemsByShelfLocationAndCallNumber($this->_itemSummary[$variationId]);
+		}else{
+			$this->_itemSummary[$variationId] = sortItemsByShelfLocationAndCallNumber($this->_itemSummary[$variationId]);
 		}
 	}
 
 	/**
-	 * @return Grouping_Item
+	 * @param string $itemId The ID to return
+	 * @return ?Grouping_Item
 	 */
-	public function getItemById($itemId = ''): ?Grouping_Item {
+	public function getItemById(string $itemId = ''): ?Grouping_Item {
 		if ($this->_items != null) {
 			foreach ($this->_items as $item) {
 				if ($item->itemId == $itemId) {
@@ -541,9 +428,10 @@ class Grouping_Record {
 	}
 
 	/**
+	 * @param string $variationId The variation to return
 	 * @return array
 	 */
-	public function getItemDetails($variationId = ''): array {
+	public function getItemDetails(string $variationId = ''): array {
 		if (empty($variationId)) {
 			$variationId = 'any';
 		}
@@ -605,25 +493,19 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @return string
-	 */
-	public function getCallNumber(): string {
-		return $this->_callNumber;
-	}
-
-	/**
 	 * @param string $callNumber
 	 */
 	public function setCallNumber(string $callNumber): void {
 		$this->_callNumber = $callNumber;
 	}
 
-	private $_allActions = [];
+	private array $_allActions = [];
 
 	/**
+	 * @param string $variationId The variation to get actions for
 	 * @return array
 	 */
-	public function getActions($variationId = ''): array {
+	public function getActions(string $variationId = ''): array {
 		if (empty($variationId)) {
 			$variationId = 'any';
 		}
@@ -657,6 +539,7 @@ class Grouping_Record {
 	}
 
 	/**
+	 * @param string|null $variationId The Variation ID to set the actions for
 	 * @param array $actions
 	 */
 	public function setActions(?string $variationId, array $actions): void {
@@ -667,16 +550,16 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @return mixed
+	 * @return ?string
 	 */
-	public function getEContentSource() {
+	public function getEContentSource() : ?string {
 		return $this->_eContentSource;
 	}
 
 	/**
-	 * @param mixed $eContentSource
+	 * @param ?string $eContentSource
 	 */
-	public function setEContentSource($eContentSource): void {
+	public function setEContentSource(?string $eContentSource): void {
 		$this->_eContentSource = $eContentSource;
 	}
 
@@ -694,6 +577,7 @@ class Grouping_Record {
 		$this->_isEContent = $isEContent;
 	}
 
+	/** @noinspection PhpUnused */
 	public function showCopySummary() : bool {
 		if (!$this->_isEContent) {
 			return true;
@@ -707,21 +591,14 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @return int
+	 * @return float
 	 */
-	function getHoldRatio(): int {
+	function getHoldRatio(): float {
 		if ($this->getCopies() > 0) {
 			return $this->_statusInformation->getNumHolds() / $this->getCopies();
 		} else {
 			return 0;
 		}
-	}
-
-	/**
-	 * @return int
-	 */
-	function getLocalAvailableCopies(): int {
-		return $this->_statusInformation->getLocalAvailableCopies();
 	}
 
 	/**
@@ -731,37 +608,24 @@ class Grouping_Record {
 		return $this->_url;
 	}
 
-	/**
-	 * @param string $url
-	 */
-	function setUrl(string $url): void {
-		$this->_url = $url;
-	}
 
-	function getStatusInformation() {
+	function getStatusInformation(): Grouping_StatusInformation {
 		return $this->_statusInformation;
 	}
 
-	function isAvailable() {
+	function isAvailable() : bool {
 		return $this->_statusInformation->isAvailable();
 	}
 
-	function isAvailableOnline() {
+	function isAvailableOnline() : bool {
 		return $this->_statusInformation->isAvailableOnline();
 	}
 
-	function getGroupedStatus() {
+	function getGroupedStatus(): string {
 		return $this->_statusInformation->getGroupedStatus();
 	}
 
-	/**
-	 * @return int
-	 */
-	function getOnOrderCopies(): int {
-		return $this->_statusInformation->getOnOrderCopies();
-	}
-
-	function addOnOrderCopies($numCopies) {
+	function addOnOrderCopies($numCopies) :void {
 		$this->_statusInformation->addOnOrderCopies($numCopies);
 	}
 
@@ -781,13 +645,6 @@ class Grouping_Record {
 	 */
 	public function getItems() : ?array {
 		return $this->_items;
-	}
-
-	/**
-	 * @return IlsVolumeInfo[]
-	 */
-	public function getVolumeData() : array{
-		return $this->_volumeData;
 	}
 
 	/**
@@ -833,12 +690,12 @@ class Grouping_Record {
 		return $this->format ?? 'Unknown';
 	}
 
-	public function isLocallyOwned() {
+	public function isLocallyOwned(): bool {
 		return $this->_statusInformation->isLocallyOwned();
 	}
 
 
-	public function isLibraryOwned() {
+	public function isLibraryOwned(): bool {
 		return $this->_statusInformation->isLibraryOwned();
 	}
 
@@ -872,7 +729,7 @@ class Grouping_Record {
 			$formatMap = $indexingProfile->formatMap;
 			//Loop through the format map to figure out if there are restrictions on the pickup location
 			//Grab the first value we find (if a format is listed multiple times with inconsistent pickup location restrictions,
-			//We don't handle that currently.
+			//we don't handle that currently).
 			/** @var FormatMapValue $formatMapValue */
 			foreach ($formatMap as $formatMapValue) {
 				if (strcasecmp($formatMapValue->format, $this->format) === 0) {
@@ -883,14 +740,14 @@ class Grouping_Record {
 		return $result;
 	}
 
-	public function discardDriver() {
+	public function discardDriver() : void {
 		$this->_driver = null;
 	}
 
-	public function getBookcoverUrl($size) {
+	public function getBookcoverUrl(string $size) : ?string {
 		$bookcoverUrl = null;
 		$recordDriver = $this->getDriver();
-		if($recordDriver) {
+		if ($recordDriver) {
 			$bookcoverUrl = $recordDriver->getBookcoverUrl($size);
 		}
 		return $bookcoverUrl;
