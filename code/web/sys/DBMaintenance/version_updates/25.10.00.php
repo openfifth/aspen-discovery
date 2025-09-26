@@ -78,6 +78,14 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE grouped_work_display_settings ADD COLUMN eContentSortingGroupId INT(11) DEFAULT 1'
 			]
 		], //link_econtent_sorting_to_display_settings
+		'add_series_sort_method' => [
+			'title' => 'Add series sorting method',
+			'description' => 'Add series sorting method',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE series ADD COLUMN sortMethod TINYINT DEFAULT 1'
+			]
+		], //add_series_sort_method
 
 		//katherine - Grove
 
