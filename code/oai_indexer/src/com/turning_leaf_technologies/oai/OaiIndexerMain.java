@@ -575,7 +575,12 @@ public class OaiIndexerMain {
 									case "dc:identifier":
 									case "mods:identifier":
 										String textContentLower = textContent.toLowerCase();
-										if (textContentLower.startsWith("http") && !textContentLower.endsWith(".jpg") && !textContentLower.endsWith(".mp3") && !textContentLower.endsWith(".pdf")) {
+										if (textContentLower.startsWith("http") &&
+											!textContentLower.matches(".*\\.jpg([?&].*|$)") &&
+											!textContentLower.matches(".*\\.png([?&].*|$)") &&
+											!textContentLower.matches(".*\\.mp3([?&].*|$)") &&
+											!textContentLower.matches(".*\\.pdf([?&].*|$)"))
+										{
 											if (solrRecord.getIdentifier() == null || !solrRecord.getIdentifier().startsWith("http")) {
 												solrRecord.setIdentifier(textContent);
 											} else {
