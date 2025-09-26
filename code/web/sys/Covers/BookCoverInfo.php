@@ -91,24 +91,8 @@ class BookCoverInfo extends DataObject {
 	}
 
 	/**
-	 * Get the original URL of the cover image
-	 * @return string|null
-	 */
-	public function getOriginalUrl(): ?string
-	{
-		return $this->original_url;
-	}
-
-	/**
-	 * Set the original URL of the cover image
-	 * @param string $url
-	 */
-	public function setOriginalUrl(string $url): void {
-		$this->__set('original_url', $url);
-	}
-
-	/**
-	 * Get the timestamp when the URL was last validated
+	 * Get the timestamp when the URL was last validated.
+	 *
 	 * @return int|null
 	 */
 	public function getLastUrlValidation(): ?int
@@ -117,12 +101,14 @@ class BookCoverInfo extends DataObject {
 	}
 
 	/**
-	 * Set the timestamp when the URL was last validated
+	 * Set the timestamp when the URL was last validated.
+	 *
 	 * @param int $timestamp
 	 */
 	public function setLastUrlValidation(int $timestamp): void {
 		$this->__set('last_url_validation', $timestamp);
 	}
+	
 	public function setThumbnailLoaded(int $loaded) : void {
 		$this->__set('thumbnailLoaded', $loaded);
 	}
