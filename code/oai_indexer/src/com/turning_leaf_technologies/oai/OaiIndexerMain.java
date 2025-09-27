@@ -578,6 +578,7 @@ public class OaiIndexerMain {
 										if (textContentLower.startsWith("http") &&
 											!textContentLower.matches(".*\\.jpg([?&].*|$)") &&
 											!textContentLower.matches(".*\\.png([?&].*|$)") &&
+											!textContentLower.matches(".*\\.tif([?&].*|$)") &&
 											!textContentLower.matches(".*\\.mp3([?&].*|$)") &&
 											!textContentLower.matches(".*\\.pdf([?&].*|$)"))
 										{
