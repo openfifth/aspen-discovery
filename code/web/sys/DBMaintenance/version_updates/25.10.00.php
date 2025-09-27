@@ -42,6 +42,16 @@ function getUpdates25_10_00(): array {
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer All eContent Sorting'))",
 			]
 		], //add_permission_for_econtent_sorting
+		'add_permission_group_for_econtent_sorting' => [
+			'title' => 'Add permission group for eContent sorting',
+			'description' => 'Add permission group for eContent sorting',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO `permission_groups` (`groupKey`,`sectionName`,`label`,`description`) VALUES
+					('adminEContentSorting','Grouped Work Display','Administer eContent Source Sorting','Allows users to change how eContent Sources are sorted within a grouped work.');",
+				"INSERT IGNORE INTO `permission_group_permissions` (`groupId`,`permissionId`) SELECT pg.id, p.id FROM `permission_groups` pg JOIN `permissions` p ON p.name IN ('Administer All eContent Sorting','Administer Library eContent Sorting') WHERE pg.groupKey = 'adminEContentSorting'",
+			]
+		], //add_permission_group_for_econtent_sorting
 		'create_econtent_sorting_tables' => [
 			'title' => 'Create eContent sorting tables',
 			'description' => 'Create eContent sorting tables',
