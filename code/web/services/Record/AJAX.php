@@ -738,7 +738,7 @@ class Record_AJAX extends Action {
 
 			list($interLibraryLoanType, $treatHoldAsInterLibraryLoanRequest, $homeLocation, $holdGroups) = $marcRecord->getInterLibraryLoanIntegrationInformation($relatedRecord, 'any');
 
-			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, $relatedRecord)) {
+			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, -1)) {
 				return [
 					'holdFormBypassed' => false,
 					'title' => 'Unable to place hold',
