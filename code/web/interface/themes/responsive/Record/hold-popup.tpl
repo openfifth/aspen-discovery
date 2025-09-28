@@ -185,6 +185,63 @@
 							</div>
 						</div>
 					{/if}
+					<input type="hidden" name="holdPromptForEditions" id="holdPromptForEditions" value="{$holdPromptForEditions}">
+                    {if $holdPromptForEditions > 0 && count($editionOptions) > 0}
+						<div id="editionSelectionOptions" class="form-group">
+							<label class="control-label" for="selectedEditionOption">{translate text="Do you want to place a hold on the first available item or a specific edition?" isPublicFacing=true}</label>
+							<select name="selectedEditionOption" id="selectedEditionOption" class="form-control"  onchange="AspenDiscovery.GroupedWork.showEditionSwiper()">
+								<option value="1" {if $holdPromptForEditions == 1}selected{/if}>{translate text="Place hold on first available item" isPublicFacing=true}</option>
+								<option value="2" {if $holdPromptForEditions == 2}selected{/if}>{translate text="Place hold on specific edition" isPublicFacing=true}</option>
+							</select>
+						</div>
+						<div id="editionSelectionSlider" class="horizontalSliders">
+							<div class="row horizontalEditionSelector">
+								<div class="col-xs-12">
+									<div class="slider-container" role="region" id="slider-edition">
+										<div class="slider-button slider-button-prev" id="slider-prev-edition"></div>
+										<div class="slider-wrapper" role="listbox" aria-activedescendant="slide-edition-0">
+											{assign var=firstEdition value=""}
+											{foreach from=$editionOptions item=edition name=editions}
+												{if $smarty.foreach.editions.index ==0}
+													{assign var=firstEdition value=$edition->databaseId}
+												{/if}
+                                                {assign var=current value=$smarty.foreach.editions.index + 1}
+												<div role="option" tabindex="0" class="slider-slide horizontal-edition-option{if $smarty.foreach.editions.index == 0} active{/if}">
+														<label for="editionOption{$edition->databaseId}">
+														<div class="edition-radio">
+															<input type="radio" name="editionOption" id="editionOption{$edition->databaseId}" value="{$edition->id}" {if $smarty.foreach.editions.index == 0}checked{/if}> {translate text="Select This Edition" isPublicFacing=true}
+														</div>
+														<div class="edition-cover">
+															<img src="{$relatedRecord->getBookcoverUrl('small')}" class="img-thumbnail {$coverStyle}" alt="{translate text='Book Cover' inAttribute=true isPublicFacing=true}">
+														</div>
+														<div class="edition-data">
+															{$edition->publicationDate}. {$edition->publisher}. {$edition->physical}.<br/>
+                                                            {include file='GroupedWork/statusIndicator.tpl' statusInformation=$relatedRecord->getStatusInformation() viewingIndividualRecord=1}
+															<span>{$current} of {count($editionOptions)}</span>
+														</div>
+														</label>
+												</div>
+											{/foreach}
+										</div>
+										<div class="slider-button slider-button-next" id="slider-next-edition"></div>
+								</div>
+									<script>
+										$(document).ready(function(){ldelim}
+											AspenDiscovery.GroupedWork.initializeHorizontalEditionSelectionSwipers();
+											$('#editionSelectionOptions').show();
+											{if $holdPromptForEditions == 2}
+												$('#editionSelectionSlider').show();
+												$('#editionSelectionOptionRemember').show();
+											{/if}
+                                            {rdelim});
+									</script>
+							</div>
+							</div>
+						</div>
+						<div id="editionSelectionOptionRemember" class="form-group" style="display:none">
+							<label for="rememberEditionSelection" class="checkbox"><input type="checkbox" name="rememberEditionSelection" id="rememberEditionSelection" {if $rememberEditionSelection}checked{/if}>{if $holdPromptForEditions == 1}{translate text="Never ask me about placing specific editions on hold" isPublicFacing=true}{else}{translate text="Always ask me about placing specific editions on hold" isPublicFacing=true}{/if}</label>
+						</div>
+					{/if}
 					{if !empty($promptForHoldNotifications)}
 						<div id="holdNotification" class="form-group">
 							{include file=$holdNotificationTemplate}
