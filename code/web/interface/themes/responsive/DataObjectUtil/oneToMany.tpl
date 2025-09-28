@@ -243,6 +243,8 @@
 									'{if !empty($subProperty.maxLength)} maxlength="{$subProperty.maxLength}"{/if}' +
 									'{if $subProperty.type=="integer" && !empty($subProperty.max)} max="{$subProperty.max}"{/if}' +
 									'{if $subProperty.type=="integer" && !empty($subProperty.min)} min="{$subProperty.min}"{/if}' +
+									'{if !empty($subProperty.placeholder)}placeholder="{$subProperty.placeholder}"{/if}' +
+									'{if !empty($subProperty.readOnlyWhenNew )}readonly{/if}' +
 									" data-id='" + numAdditional{$propName}
 								+ "'>";
 							{/if}
