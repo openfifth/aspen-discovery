@@ -11004,6 +11004,39 @@ a.browse-thumbnail.active {
   font-weight: bold;
   font-size: initial;
 }
+.horizontal-edition-option {
+  width: 275px;
+  padding: 1em;
+  border: 1px solid #dddddd;
+  border-radius: 6px;
+  margin-right: 0.25em;
+  background-color: #f9f9f9;
+  color: #000;
+}
+.horizontal-edition-option.active {
+  border-color: #088ec6;
+  background-color: #e6f2fa;
+}
+.horizontal-edition-option .edition-radio {
+  display: block;
+  margin-bottom: 0.75em;
+}
+.horizontal-edition-option .edition-cover {
+  float: left;
+  padding-right: 0.75em;
+}
+.horizontal-edition-option .edition-data {
+  font-size: smaller;
+}
+.horizontal-edition-option .edition-data .label {
+  margin-top: 0.75em;
+}
+.horizontal-edition-option .edition-data span {
+  display: block;
+  float: right;
+  font-style: italic;
+  color: #666565;
+}
 #innReachSearchResultsHeader {
   padding-top: 15px;
 }
