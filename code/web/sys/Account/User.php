@@ -73,6 +73,8 @@ class User extends DataObject {
 	public $rememberHoldPickupLocation;
 	public $pickupLocationId;
 	public $pickupSublocationId;
+	public $rememberHoldPromptForEdition;
+	public $holdPromptForEdition;
 
 	public $lastListUsed;
 	public $browseAddToHome;
@@ -3418,6 +3420,14 @@ class User extends DataObject {
 
 	public function setRememberHoldPickupLocation(bool $rememberPickupLocation) {
 		$this->__set('rememberHoldPickupLocation', $rememberPickupLocation ? 1 : 0);
+	}
+
+	public function setRememberHoldPromptForEdition(bool $rememberHoldPromptForEdition) {
+		$this->__set('rememberHoldPromptForEdition', $rememberHoldPromptForEdition ? 1 : 0);
+	}
+
+	public function setHoldPromptForEdition($val) {
+		$this->__set('holdPromptForEdition', $val);
 	}
 
 	function setNumMaterialsRequests($val) {

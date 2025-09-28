@@ -41,10 +41,20 @@ function getUpdates25_10_00(): array {
 			'description' => 'Add Option For Prompting For Edition When Placing Hold at the Location Level',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE location ADD COLUMN holdPromptForEditions INT DEFAULT 0',
+				'ALTER TABLE location ADD COLUMN holdPromptForEditions TINYINT DEFAULT 0',
 			]
 		],
 		//addEditionPromptSettingForLocation
+		'addEditionPromptSettingForUser' => [
+			'title' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',
+			'description' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN rememberHoldPromptForEdition TINYINT DEFAULT 1',
+				'ALTER TABLE user ADD COLUMN holdPromptForEdition TINYINT DEFAULT 0',
+			]
+		],
+		//addEditionPromptSettingForUser
 
 		//kodi - Grove
 
