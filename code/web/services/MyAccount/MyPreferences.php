@@ -84,6 +84,14 @@ class MyAccount_MyPreferences extends MyAccount {
 				$interface->assign('autoRenewalEnabled', $user->isAutoRenewalEnabledForUser());
 			}
 
+			$holdPromptForEditions = false;
+			if (isset($location) && $location != null) {
+				if ($location->holdPromptForEditions > 0) {
+					$holdPromptForEditions = true;
+				}
+			}
+			$interface->assign('showHoldPromptForEditions', $holdPromptForEditions);
+
 			$campaign = new Campaign();
 			$campaigns = $campaign->getUserEnrolledCampaigns($user->id);
 			$usersCampaigns = [];

@@ -325,6 +325,24 @@
 												{/if}
 											</div>
 										{/if}
+
+                                        {if $showHoldPromptForEditions  && !empty($isAssociatedWithILS)}
+											<div class="form-group propertyRow">
+												<label for="rememberHoldPromptForEdition" class="control-label">{translate text='Bypass edition selection prompt when placing holds' isPublicFacing=true}</label>&nbsp;
+                                                {if $edit == true}
+													<input type="checkbox" class="form-control" name="rememberHoldPromptForEdition" id="rememberHoldPromptForEdition" {if $profile->rememberHoldPromptForEdition==1}checked='checked'{/if} data-switch="" onchange="AspenDiscovery.Account.showSelectedEditionOptions();">
+                                                {else}
+                                                    {if $profile->rememberHoldPromptForEdition==0}{translate text="No" isPublicFacing=true}{else}{translate text="Yes" isPublicFacing=true}{/if}
+                                                {/if}
+											</div>
+	                                        <div class="form-group propertyRow" id="selectedEditionOptionsContainer" {if $profile->rememberHoldPromptForEdition == 0}style="display:none"{/if}>
+		                                        <label for="selectedEditionOption" class="control-label">{translate text='Preferred option when placing hold on edition' isPublicFacing=true}</label>&nbsp;
+		                                        <select name="selectedEditionOption" id="selectedEditionOption" class="form-control">
+			                                        <option value="1" {if $profile->holdPromptForEdition == '1'}selected{/if}>{translate text="Prefer to place hold on first available item" isPublicFacing=true inAttribute=true}</option>
+			                                        <option value="2" {if $profile->holdPromptForEdition == '2'}selected{/if}>{translate text="Prefer to place hold on specific edition" isPublicFacing=true inAttribute=true}</option>
+		                                        </select>
+	                                        </div>
+                                        {/if}
 									</div>
 								</div>
 							</div>
