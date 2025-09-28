@@ -5102,6 +5102,14 @@ AspenDiscovery.Account = (function () {
 			document.location.href = url;
 			return false;
 		},
+		showSelectedEditionOptions: function () {
+			var rememberHoldPromptForEdition = document.getElementById('rememberHoldPromptForEdition');
+			if (rememberHoldPromptForEdition.checked) {
+				$('#selectedEditionOptionsContainer').show();
+			} else {
+				$('#selectedEditionOptionsContainer').hide();
+			}
+		}
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {
@@ -11052,6 +11060,59 @@ AspenDiscovery.GroupedWork = (function(){
 			$("#horizDisplayShowEditionsRow_" + workId + ' .horizDisplayShowEditionsBtn').show();
 			$("#horizDisplayAllEditions_" + workId).html("");
 			return false;
+		},
+		initializeHorizontalEditionSelectionSwipers: function () {
+			var container = document.getElementById('slider-edition');
+			AspenDiscovery.initializeHorizontalSwiper(container, function (slide) {
+			});
+		},
+		checkEditions: function (volumeId, defaultRememberChoice) {
+			var option = $('#selectedVolume option[value="' + volumeId + '"]');
+			if (option.data('has-editions') === true) {
+				var editionsJson = option.attr('data-editions');
+				var editionOptions = editionsJson ? JSON.parse(editionsJson) : [];
+				if (editionOptions && !Array.isArray(editionOptions)) {
+					editionOptions = Object.values(editionOptions);
+				}
+				var html = '';
+				var count = editionOptions.length;
+				editionOptions.forEach(function (edition, idx) {
+					var current = idx + 1;
+					html += '<div role="option" tabindex="0" class="slider-slide horizontal-edition-option' + (idx === 0 ? ' active' : '') + '">';
+					html += '<label for="editionOption' + idx + '">';
+					html += '<div class="edition-radio"><input type="radio" name="selectedEdition" id="editionOption' + idx + '" value="' + edition.id + '" ' + (idx === 0 ? 'checked' : '') + '> ' + edition.label + '</div>';
+					html += '<div class="edition-cover"><img src="' + edition.coverUrl + '" class="img-thumbnail" alt="Book Cover"></div>';
+					html += '<div class="edition-data">' + edition.publicationDate + '. ' + edition.publisher + '. ' + edition.physical + '.<br/>' + edition.statusIndicator + '<br/><span>' + current + ' of ' + count + ' editions</span></div>';
+					html += '</label></div>';
+				});
+				$('#slider-edition .slider-wrapper').html(html);
+				AspenDiscovery.GroupedWork.initializeHorizontalEditionSelectionSwipers();
+				if (defaultRememberChoice == 2) {
+					$('#editionSelectionOptions').show();
+					$('#editionSelectionSlider').show();
+					$('#editionSelectionOptionRemember').show();
+				} else {
+					$('#editionSelectionOptions').hide();
+					$('#editionSelectionSlider').hide();
+					$('#editionSelectionOptionRemember').hide();
+				}
+			}
+		},
+		showEditionSwiper: function () {
+			var option = $('#selectedEditionOption').val();
+			if (option == 1) {
+				$('#editionSelectionSlider').show();
+				$('#editionSelectionOptionRemember label').contents().filter(function () {
+					return this.nodeType === 3;
+				}).last().replaceWith("Always ask me about placing specific editions on hold");
+				$('#editionSelectionOptionRemember').show();
+			} else {
+				$('#editionSelectionSlider').hide();
+				$('#editionSelectionOptionRemember label').contents().filter(function () {
+					return this.nodeType === 3;
+				}).last().replaceWith("Never ask me about placing specific editions on hold");
+				$('#editionSelectionOptionRemember').show();
+			}
 		}
 	};
 }(AspenDiscovery.GroupedWork || {}));
@@ -12857,7 +12918,8 @@ AspenDiscovery.Record = (function () {
 				cancelDate: cancelDateInput.val(),
 				recordSource: $('#recordSource').val(),
 				account: $('#account').val(),
-				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked')
+				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked'),
+				promptForEdition: $('#holdPromptForEditions').val()
 			};
 			if (autoLogOut) {
 				params['autologout'] = true;
@@ -12908,6 +12970,13 @@ AspenDiscovery.Record = (function () {
 					}
 				}
 			}
+
+			if (params['promptForEdition'] == '1' || params['promptForEdition'] == '2') {
+				params['placeHoldOnEdition'] = $('#selectedEditionOption').val();
+				params['selectedEdition'] = $('input[name="editionOption"]:checked').val();
+				params['rememberUserEditionPreference'] = $('#rememberEditionSelection').prop('checked');
+			}
+
 			params = this.loadHoldNotificationOptions(params);
 
 			var cancelDate = cancelDateInput.val();
@@ -13063,7 +13132,8 @@ AspenDiscovery.Record = (function () {
 				cancelDate: $('#cancelDate').val(),
 				recordSource: $('#recordSource').val(),
 				account: $('#account').val(),
-				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked')
+				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked'),
+				promptForEdition: $('#holdPromptForEditions').val()
 			};
 			if (autoLogOut) {
 				params['autologout'] = true;
@@ -13089,6 +13159,13 @@ AspenDiscovery.Record = (function () {
 					params['holdType'] = 'volume';
 				}
 			}
+
+			if (params['promptForEdition'] == '1' || params['promptForEdition'] == '2') {
+				params['placeHoldOnEdition'] = $('#selectedEditionOption').val();
+				params['selectedEdition'] = $('input[name="editionOption"]:checked').val();
+				params['rememberUserEditionPreference'] = $('#rememberEditionSelection').prop('checked');
+			}
+
 			params = this.loadHoldNotificationOptions(params);
 
 			$("#placeHoldForm").hide();

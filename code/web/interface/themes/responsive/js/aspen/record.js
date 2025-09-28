@@ -307,7 +307,8 @@ AspenDiscovery.Record = (function () {
 				cancelDate: cancelDateInput.val(),
 				recordSource: $('#recordSource').val(),
 				account: $('#account').val(),
-				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked')
+				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked'),
+				promptForEdition: $('#holdPromptForEditions').val()
 			};
 			if (autoLogOut) {
 				params['autologout'] = true;
@@ -358,6 +359,13 @@ AspenDiscovery.Record = (function () {
 					}
 				}
 			}
+
+			if (params['promptForEdition'] == '1' || params['promptForEdition'] == '2') {
+				params['placeHoldOnEdition'] = $('#selectedEditionOption').val();
+				params['selectedEdition'] = $('input[name="editionOption"]:checked').val();
+				params['rememberUserEditionPreference'] = $('#rememberEditionSelection').prop('checked');
+			}
+
 			params = this.loadHoldNotificationOptions(params);
 
 			var cancelDate = cancelDateInput.val();
@@ -513,7 +521,8 @@ AspenDiscovery.Record = (function () {
 				cancelDate: $('#cancelDate').val(),
 				recordSource: $('#recordSource').val(),
 				account: $('#account').val(),
-				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked')
+				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked'),
+				promptForEdition: $('#holdPromptForEditions').val()
 			};
 			if (autoLogOut) {
 				params['autologout'] = true;
@@ -539,6 +548,13 @@ AspenDiscovery.Record = (function () {
 					params['holdType'] = 'volume';
 				}
 			}
+
+			if (params['promptForEdition'] == '1' || params['promptForEdition'] == '2') {
+				params['placeHoldOnEdition'] = $('#selectedEditionOption').val();
+				params['selectedEdition'] = $('input[name="editionOption"]:checked').val();
+				params['rememberUserEditionPreference'] = $('#rememberEditionSelection').prop('checked');
+			}
+
 			params = this.loadHoldNotificationOptions(params);
 
 			$("#placeHoldForm").hide();
