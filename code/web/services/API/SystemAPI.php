@@ -814,7 +814,6 @@ class SystemAPI extends AbstractAPI {
 				}
 
 				$logger->log("Preparing to translate " . count($terms['terms']), Logger::LOG_DEBUG);
-				$logger->log("Terms: " . print_r($terms['terms'], true), Logger::LOG_DEBUG);
 				$translatedTerms = [];
 				/** @var Translator $translator */ global $translator;
 				foreach ($terms['terms'] as $key => $term) {
