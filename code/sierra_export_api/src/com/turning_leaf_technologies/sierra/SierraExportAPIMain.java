@@ -1002,7 +1002,17 @@ public class SierraExportAPIMain {
 				
 				//Get Marc data from bibs response
 				if (!bibsData.has("marc")) {
-					logEntry.incInvalidRecords("Record " + id + " has no MARC data");
+					String longId = ".b" + id + getCheckDigit(id);
+					logEntry.incInvalidRecords("Record " + longId + " has no MARC data");
+					RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork(indexingProfile.getName(), longId);
+					getGroupedWorkIndexer().markIlsRecordAsDeleted(indexingProfile.getName(), longId);
+					if (result.reindexWork) {
+						getGroupedWorkIndexer().processGroupedWork(result.permanentId);
+					} else if (result.deleteWork) {
+						//Delete the work from solr and the database
+						getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
+					}
+					logEntry.incDeleted();
 					return true;
 				}
 				JSONObject marcData = bibsData.getJSONObject("marc");
