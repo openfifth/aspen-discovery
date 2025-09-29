@@ -232,7 +232,7 @@ class CloudLibraryRecordDriver extends MarcRecordDriver {
 	 *
 	 * @return  array
 	 */
-	function getFormatCategory() {
+	function getFormatCategory() : string|array|null {
 		if ($this->cloudLibraryProduct) {
 			if ($this->cloudLibraryProduct->format == "eAudio") {
 				return [
