@@ -92,14 +92,14 @@ class LibraryHooplaSettings extends DataObject
                 'forcesReindex' => false,
             ],
             'circulationEnabled' => [
-				'property' => 'circulationEnabled',
-				'type' => 'checkbox',
-				'label' => 'Circulation Enabled',
-				'description' => 'Whether or not circulation is enabled within Aspen',
-				'hideInLists' => false,
-				'default' => true,
-				'forcesReindex' => false,
-			],
+                'property' => 'circulationEnabled',
+                'type' => 'checkbox',
+                'label' => 'Circulation Enabled',
+                'description' => 'Whether or not circulation is enabled within Aspen',
+                'hideInLists' => false,
+                'default' => true,
+                'forcesReindex' => false,
+            ],
         ];
 
         self::$_objectStructure[$context] = $structure;

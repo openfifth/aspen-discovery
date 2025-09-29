@@ -5,6 +5,7 @@ require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSettings.php';
 class HooplaSetting extends DataObject {
 	public $__table = 'hoopla_settings';    // table name
 	public $id;
+	public $countryCode;
 	public $apiUrl;
 	public $libraryId;
 	public $apiUsername;
@@ -31,6 +32,7 @@ class HooplaSetting extends DataObject {
 	public $indexingTime;
 
 	private $_scopes;
+	private $_librarySettings;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -58,6 +60,18 @@ class HooplaSetting extends DataObject {
 				'label' => 'API Connection Settings',
 				'expandByDefault' => false,
 				'properties' => [
+					'countryCode' => [
+						'property' => 'countryCode',
+						'type' => 'enum',
+						'label' => 'Country Code',
+						'description' => 'The country code for the API',
+						'values' => [
+							'US' => 'US',
+							'CA' => 'CA',
+							'NZ' => 'NZ',
+							'AU' => 'AU',
+						],
+					],
 					'apiUrl' => [
 						'property' => 'apiUrl',
 						'type' => 'url',
@@ -178,7 +192,7 @@ class HooplaSetting extends DataObject {
 			'librarySettingsSection' => [
 				'property' => 'librarySettingsSection',
 				'type' => 'section',
-				'label' => 'Hoopla Information',
+				'label' => 'Hoopla Library Information',
 				'expandByDefault' => true,
 				'properties' => [
 					'librarySettings' => [
@@ -236,6 +250,7 @@ class HooplaSetting extends DataObject {
 		$ret = parent::update();
 		if ($ret !== FALSE) {
 			$this->saveScopes();
+			$this->saveLibrarySettings();
 		}
 		return true;
 	}
@@ -262,6 +277,7 @@ class HooplaSetting extends DataObject {
 				$this->_scopes[] = $allScope;
 			}
 			$this->saveScopes();
+			$this->saveLibrarySettings();
 		}
 		return $ret;
 	}
@@ -270,6 +286,13 @@ class HooplaSetting extends DataObject {
 		if (isset ($this->_scopes) && is_array($this->_scopes)) {
 			$this->saveOneToManyOptions($this->_scopes, 'settingId');
 			unset($this->_scopes);
+		}
+	}
+
+	public function saveLibrarySettings(): void {
+		if (isset($this->_librarySettings) && is_array($this->_librarySettings)) {
+			$this->saveOneToManyOptions($this->_librarySettings, 'settingId');
+			unset($this->_librarySettings);
 		}
 	}
 
@@ -285,6 +308,17 @@ class HooplaSetting extends DataObject {
 				}
 			}
 			return $this->_scopes;
+		} elseif ($name == "librarySettings") {
+			if (!isset($this->_librarySettings) && $this->id) {
+				$this->_librarySettings = [];
+				$librarySettings = new LibraryHooplaSettings();
+				$librarySettings->settingId = $this->id;
+				$librarySettings->find();
+				while ($librarySettings->fetch()) {
+					$this->_librarySettings[$librarySettings->id] = clone($librarySettings);
+				}
+			}
+			return $this->_librarySettings;
 		} else {
 			return parent::__get($name);
 		}
@@ -293,6 +327,8 @@ class HooplaSetting extends DataObject {
 	public function __set($name, $value) {
 		if ($name == "scopes") {
 			$this->_scopes = $value;
+		} elseif ($name == "librarySettings") {
+			$this->_librarySettings = $value;
 		} else {
 			parent::__set($name, $value);
 		}

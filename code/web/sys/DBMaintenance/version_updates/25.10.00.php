@@ -166,6 +166,33 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE hoopla_settings ADD COLUMN indexingTime INT DEFAULT 1',
 			]
 		], //add_hoopla_configurable_indexing_time
+		'add_hoopla_country_code_and_drop_library_id' => [
+			'title' => 'Add Hoopla Country Code',
+			'description' => 'Allow Hoopla settings to define country code',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE hoopla_settings ADD COLUMN countryCode VARCHAR(2) DEFAULT 'US'",
+				"ALTER TABLE hoopla_settings DROP column libraryId",
+			]
+		], //add_hoopla_country_code_and_drop_library_id
+		'create_library_hoopla_settings_table' => [
+			'title' => 'Create Library Hoopla Settings Table',
+			'description' => 'Store Hoopla Library Information',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS library_hoopla_settings (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					weight INT DEFAULT 0,
+					settingId INT NOT NULL,
+					libraryId INT NOT NULL,
+					hooplaLibraryID VARCHAR(50) DEFAULT NULL,
+					circulationEnabled TINYINT(1) DEFAULT 0,
+					hooplaInstantEnabled TINYINT(1) DEFAULT 1,
+					hooplaFlexEnabled TINYINT(1) DEFAULT 1,
+					UNIQUE KEY librarySettingHoopla (libraryId, settingId)
+				)'
+			]
+		], //create_library_hoopla_settings_table
 
 		// Leo Stoyanov - BWS
 		'add_indexes_for_more_user_list_sort_options' => [
