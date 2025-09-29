@@ -36,15 +36,15 @@ function getUpdates25_10_00(): array {
 		//katherine - Grove
 
 		//kirstien - Grove
-		'addEditionPromptSettingForLocation' => [
+		'addEditionPromptSettingForLibrary' => [
 			'title' => 'Add Option For Prompting For Edition When Placing Hold',
-			'description' => 'Add Option For Prompting For Edition When Placing Hold at the Location Level',
+			'description' => 'Add Option For Prompting For Edition When Placing Hold at the Library Level',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE location ADD COLUMN holdPromptForEditions TINYINT DEFAULT 0',
+				'ALTER TABLE library ADD COLUMN holdPromptForEditions TINYINT DEFAULT 0',
 			]
 		],
-		//addEditionPromptSettingForLocation
+		//addEditionPromptSettingForLibrary
 		'addEditionPromptSettingForUser' => [
 			'title' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',
 			'description' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',

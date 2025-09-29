@@ -85,10 +85,8 @@ class MyAccount_MyPreferences extends MyAccount {
 			}
 
 			$holdPromptForEditions = false;
-			if (isset($location) && $location != null) {
-				if ($location->holdPromptForEditions > 0) {
-					$holdPromptForEditions = true;
-				}
+			if ($library->holdPromptForEditions > 0) {
+				$holdPromptForEditions = true;
 			}
 			$interface->assign('showHoldPromptForEditions', $holdPromptForEditions);
 

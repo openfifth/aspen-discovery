@@ -1652,16 +1652,13 @@ class User extends DataObject {
 		$this->__set('optInToAllCampaignLeaderboards', (isset($_POST['optInToAllCampaignLeaderboards']) && $_POST['optInToAllCampaignLeaderboards'] == 'on') ? 1 : 0);
 		$this->__set('campaignNotificationsByEmail', (isset($_POST['campaignNotificationsByEmail']) && $_POST['campaignNotificationsByEmail'] == 'on') ? 1 : 0);
 
-		global $location;
-		if (isset($location) && $location != null) {
-			if ($location->holdPromptForEditions > 0) {
-				if (isset($_POST['rememberHoldPromptForEdition'])) {
-					$this->setRememberHoldPromptForEdition($_POST['rememberHoldPromptForEdition']);
-				}
+		if ($library->holdPromptForEditions > 0) {
+			if (isset($_POST['rememberHoldPromptForEdition'])) {
+				$this->setRememberHoldPromptForEdition($_POST['rememberHoldPromptForEdition']);
+			}
 
-				if (isset($_POST['selectedEditionOption'])) {
-					$this->setHoldPromptForEdition($_POST['selectedEditionOption']);
-				}
+			if (isset($_POST['selectedEditionOption'])) {
+				$this->setHoldPromptForEdition($_POST['selectedEditionOption']);
 			}
 		}
 

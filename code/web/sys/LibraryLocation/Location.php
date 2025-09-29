@@ -156,8 +156,6 @@ class Location extends DataObject {
 
 	public $locationImage;
 
-	public $holdPromptForEditions;
-
 	function getNumericColumnNames(): array {
 		return [
 			'scope',
@@ -728,20 +726,6 @@ class Location extends DataObject {
 						'description' => 'Whether or not the hold button is displayed so patrons can place holds on items',
 						'hideInLists' => true,
 						'default' => true,
-						'permissions' => ['Location ILS Options'],
-					],
-					[
-						'property' => 'holdPromptForEditions',
-						'type' => 'enum',
-						'values' => [
-							'0' => 'Do not prompt user to pick an edition (default behavior)',
-							'1' => 'Prompt user to pick an edition, but default to using first available',
-							'2' => 'Prompt user to pick an edition',
-						],
-						'label' => 'Prompt for Edition when Placing Holds?',
-						'description' => 'Determines if the user should be prompted to select an edition when placing a hold from this location.',
-						'hideInLists' => true,
-						'default' => '0',
 						'permissions' => ['Location ILS Options'],
 					],
 					[

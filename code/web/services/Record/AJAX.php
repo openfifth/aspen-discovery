@@ -872,12 +872,8 @@ class Record_AJAX extends Action {
 
 			$interface->assign('volumes', $volumeData);
 
-			global $location;
-			$holdPromptForEditions = false;
 			$rememberEditionSelection = false;
-			if (isset($location) && $location != null) {
-				$holdPromptForEditions = $location->holdPromptForEditions;
-			}
+			$holdPromptForEditions = $library->holdPromptForEditions;
 
 			if ($holdPromptForEditions > 0) {
 				$user = UserAccount::getLoggedInUser();
@@ -1884,12 +1880,9 @@ class Record_AJAX extends Action {
 		}
 		$interface->assign('linkedUsers', $linkedUsers);
 
-		global $location;
-		$holdPromptForEditions = false;
+		global $library;
 		$rememberEditionSelection = false;
-		if (isset($location) && $location != null) {
-			$holdPromptForEditions = $location->holdPromptForEditions;
-		}
+		$holdPromptForEditions = $library->holdPromptForEditions;
 
 		if ($holdPromptForEditions > 0) {
 			if ($user->holdPromptForEdition !== $holdPromptForEditions && $user->rememberHoldPromptForEdition) {
