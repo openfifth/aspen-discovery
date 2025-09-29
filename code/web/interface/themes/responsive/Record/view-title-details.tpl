@@ -158,8 +158,8 @@
 
 	{if !empty($mpaaRating)}
 		<div class="row">
-			<div class="result-label col-sm-4 col-xs-12">{translate text='Rating' isPublicFacing=true}</div>
-			<div class="result-value col-sm-8 col-xs-12">{$mpaaRating|escape}</div>
+			<div class="result-label col-sm-4 col-xs-12">{translate text='MPAA Rating' isPublicFacing=true}</div>
+			<div class="result-value col-sm-8 col-xs-12">{implode subject=$mpaaRating glue=", " translate=true isPublicFacing=true}</div>
 		</div>
 	{/if}
 

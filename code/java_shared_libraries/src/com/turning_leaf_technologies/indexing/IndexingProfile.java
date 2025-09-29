@@ -106,6 +106,12 @@ public class IndexingProfile extends BaseIndexingSettings {
 	private Pattern customFacet3ValuesToIncludePattern;
 	private Pattern customFacet3ValuesToExcludePattern;
 
+	//Series Fields
+	private boolean index896asSeries;
+	private boolean index897asSeries;
+	private boolean index898asSeries;
+	private boolean index899asSeries;
+
 	//Evergreen settings
 	private final int numRetriesForBibLookups;
 	private final int numMillisecondsToPauseAfterBibLookups;
@@ -269,6 +275,11 @@ public class IndexingProfile extends BaseIndexingSettings {
 		treatUnknownAudienceAs = indexingProfileRS.getString("treatUnknownAudienceAs");
 
 		prioritizeAvailableRecordsForTitleSelection = indexingProfileRS.getBoolean("prioritizeAvailableRecordsForTitleSelection");
+
+		index896asSeries = indexingProfileRS.getBoolean("index896asSeries");
+		index897asSeries = indexingProfileRS.getBoolean("index897asSeries");
+		index898asSeries = indexingProfileRS.getBoolean("index898asSeries");
+		index899asSeries = indexingProfileRS.getBoolean("index899asSeries");
 
 		//Custom Facet 1
 		this.customFacet1SourceField = indexingProfileRS.getString("customFacet1SourceField");
@@ -1178,5 +1189,21 @@ public class IndexingProfile extends BaseIndexingSettings {
 	 */
 	public void setPrioritizeAvailableRecordsForTitleSelection(boolean prioritizeAvailableRecordsForTitleSelection) {
 		this.prioritizeAvailableRecordsForTitleSelection = prioritizeAvailableRecordsForTitleSelection;
+	}
+
+	public boolean isIndex896asSeries() {
+		return index896asSeries;
+	}
+
+	public boolean isIndex897asSeries() {
+		return index897asSeries;
+	}
+
+	public boolean isIndex898asSeries() {
+		return index898asSeries;
+	}
+
+	public boolean isIndex899asSeries() {
+		return index899asSeries;
 	}
 }
