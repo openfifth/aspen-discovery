@@ -609,6 +609,11 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		//Get Rating
 		$interface->assign('ratingData', $this->getRatingData());
 
+		// Get user
+		$user = UserAccount::getLoggedInUser();
+		$noPromptForUserReviews = $user ? $user->noPromptForUserReviews : false;
+		$interface->assign('noPromptForUserReviews', $noPromptForUserReviews);
+
 		//Get cover image size
 		global $interface;
 		$appliedTheme = $interface->getAppliedTheme();
