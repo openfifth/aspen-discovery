@@ -13,7 +13,6 @@ import org.json.JSONObject;
 import org.marc4j.MarcPermissiveStreamReader;
 import org.marc4j.MarcReader;
 import org.marc4j.marc.*;
-import org.marc4j.marc.Record;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -66,6 +65,8 @@ public class RecordGroupingProcessor {
 	private PreparedStatement getProductIdForPalaceProjectIdStmt;
 	private PreparedStatement getManualGroupForRecordStmt;
 	private PreparedStatement getRecordGroupingOverrideStmt;
+	private PreparedStatement setPermIdForManuallyGroupedRecordsStmt;
+	private final HashMap<String, String> manuallyGroupedRecords = new HashMap<>();
 
 	HashMap<String, HashMap<String, String>> translationMaps = new HashMap<>();
 
@@ -139,6 +140,7 @@ public class RecordGroupingProcessor {
 			getProductIdForPalaceProjectIdStmt.close();
 			getRecordGroupingOverrideStmt.close();
 			getManualGroupForRecordStmt.close();
+			setPermIdForManuallyGroupedRecordsStmt.close();
 
 		} catch (Exception e) {
 			logEntry.incErrors("Error closing prepared statements in record grouping processor", e);
@@ -291,7 +293,7 @@ public class RecordGroupingProcessor {
 			getWorkByAlternateTitleAuthorStmt = dbConnection.prepareStatement("SELECT permanent_id from grouped_work_alternate_titles where alternateTitle = ? and alternateAuthor = ? and alternateGroupingCategory = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
 			getManualGroupForRecordStmt = dbConnection.prepareStatement("SELECT mgw.title FROM manually_grouped_work_records mgwr JOIN manually_grouped_works mgw ON mgwr.manually_grouped_work_id = mgw.id WHERE mgwr.type = ? AND mgwr.identifier = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-
+			setPermIdForManuallyGroupedRecordsStmt = dbConnection.prepareStatement("UPDATE manually_grouped_works mgw JOIN manually_grouped_work_records mgwr ON mgwr.manually_grouped_work_id = mgw.id SET mgw.grouped_work_permanent_id = ? WHERE mgwr.type = ? AND mgwr.identifier = ?");
 		} catch (Exception e) {
 			logEntry.incErrors("Error setting up prepared statements", e);
 		}
@@ -336,11 +338,10 @@ public class RecordGroupingProcessor {
 		// Check if the record is manually grouped.
 		String manualGroupId = checkForManualGrouping(primaryIdentifier, groupedWork.getLanguage());
 		if (manualGroupId != null) {
-			// Override the permanent ID with the manual group ID.
 			groupedWorkPermanentId = manualGroupId;
 			groupedWork.overridePermanentId(groupedWorkPermanentId);
 		} else {
-			// Check to see if we need to ungroup the record.
+			// Check to see if the record needs to be ungrouped;
 			if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
 				groupedWork.makeUnique(primaryIdentifierString);
 				groupedWorkPermanentId = groupedWork.getPermanentId();
@@ -1227,18 +1228,15 @@ public class RecordGroupingProcessor {
 	}
 
 	/**
-	 * Check if the record is part of a manually grouped work
+	 * Check if the record is part of a manually grouped work.
 	 *
-	 * @param primaryIdentifier The primary identifier to check
-	 * @return The manually grouped work ID or null if not manually grouped
+	 * @param primaryIdentifier The primary identifier to check.
+	 * @return The manually grouped work ID or null if not manually grouped.
 	 */
 	private String checkForManualGrouping(RecordIdentifier primaryIdentifier, String recordLanguage) {
 		String primaryIdentifierString = primaryIdentifier.toString();
-		logger.warn("Checking manual grouping for record " + primaryIdentifierString);
 		if (manuallyGroupedRecords.containsKey(primaryIdentifierString)) {
-			String cachedGroup = manuallyGroupedRecords.get(primaryIdentifierString);
-			logger.warn("Manual grouping cache hit for record " + primaryIdentifierString + ": " + cachedGroup);
-			return cachedGroup;
+			return manuallyGroupedRecords.get(primaryIdentifierString);
 		}
 
 		try {
@@ -1248,24 +1246,23 @@ public class RecordGroupingProcessor {
 
 			if (manualGroupRS.next()) {
 				String manualGroupTitle = manualGroupRS.getString("title");
-				logger.warn("Manual group record found: " + primaryIdentifierString + " group title '" + manualGroupTitle + "'");
-				// Create a unique ID for the manual group based on the title using GroupedWork
+				// Create a unique ID for the manual group based on the title.
 				GroupedWork manualGroupWork = new GroupedWork(this);
 				manualGroupWork.setLanguage(recordLanguage);
 				manualGroupWork.makeUnique("manual_group_" + manualGroupTitle);
 				String manualGroupId = manualGroupWork.getPermanentId();
-				logger.warn("Manual group ID for record " + primaryIdentifierString + " is " + manualGroupId);
-
-				// Cache the result
 				manuallyGroupedRecords.put(primaryIdentifierString, manualGroupId);
-				manualGroupRS.close();
+
+				setPermIdForManuallyGroupedRecordsStmt.setString(1, manualGroupId);
+				setPermIdForManuallyGroupedRecordsStmt.setString(2, primaryIdentifier.getType());
+				setPermIdForManuallyGroupedRecordsStmt.setString(3, primaryIdentifier.getIdentifier());
+				setPermIdForManuallyGroupedRecordsStmt.executeUpdate();
 
 				return manualGroupId;
 			}
-			logger.warn("No manual group for record " + primaryIdentifierString);
 			manualGroupRS.close();
 		} catch (SQLException e) {
-			logEntry.incErrors("Error checking for manual grouping for " + primaryIdentifierString, e);
+			logEntry.incErrors("Error checking for manual grouping for " + primaryIdentifierString + ": ", e);
 		}
 
 		return null;

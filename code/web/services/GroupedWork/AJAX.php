@@ -2123,6 +2123,7 @@ class GroupedWork_AJAX extends JSON_Action {
 					$interface->assign('author', $existingDisplayInfo->author);
 					$interface->assign('seriesName', $existingDisplayInfo->seriesName);
 					$interface->assign('seriesDisplayOrder', ($existingDisplayInfo->seriesDisplayOrder == 0) ? '' : $existingDisplayInfo->seriesDisplayOrder);
+					$interface->assign('description', $existingDisplayInfo->description);
 				} else {
 					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 					$recordDriver = new GroupedWorkDriver($id);
@@ -2136,6 +2137,7 @@ class GroupedWork_AJAX extends JSON_Action {
 						$interface->assign('seriesName', '');
 						$interface->assign('seriesDisplayOrder', '');
 					}
+					$interface->assign('description', '');
 				}
 
 				$results = [
@@ -2184,10 +2186,11 @@ class GroupedWork_AJAX extends JSON_Action {
 				$author = $_REQUEST['author'];
 				$seriesName = $_REQUEST['seriesName'];
 				$seriesDisplayOrder = $_REQUEST['seriesDisplayOrder'];
+				$description = $_REQUEST['description'];
 				if (!is_numeric($seriesDisplayOrder)) {
 					$seriesDisplayOrder = '0';
 				}
-				if (empty($title) && empty($author) && empty($seriesName) && empty($seriesDisplayOrder)) {
+				if (empty($title) && empty($author) && empty($seriesName) && empty($seriesDisplayOrder) && empty($description)) {
 					$results['message'] = translate([
 						'text' => "Please specify at least one piece of information",
 						'isAdminFacing' => true,
@@ -2204,6 +2207,7 @@ class GroupedWork_AJAX extends JSON_Action {
 					$existingDisplayInfo->author = $author;
 					$existingDisplayInfo->seriesName = $seriesName;
 					$existingDisplayInfo->seriesDisplayOrder = $seriesDisplayOrder;
+					$existingDisplayInfo->description = $description;
 					if ($isNew) {
 						$existingDisplayInfo->addedBy = UserAccount::getActiveUserId();
 						$existingDisplayInfo->dateAdded = time();

@@ -1,4 +1,5 @@
 <?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class ManualGroupedWork extends DataObject {
 	public $__table = 'manually_grouped_works';
@@ -8,10 +9,106 @@ class ManualGroupedWork extends DataObject {
 	public $created_by;
 	public $date_created;
 	public $last_updated;
+	public $grouped_work_permanent_id;
 
 	private $_records;
 	// Keep track of grouped work permanent IDs that have been scheduled for reindex this request.
 	private static $reindexedPermanentIds = [];
+
+	static $_objectStructure = [];
+	static function getObjectStructure(string $context = ''): array {
+		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
+			return self::$_objectStructure[$context];
+		}
+
+		$structure = [
+			'id' => [
+				'property' => 'id',
+				'type' => 'label',
+				'label' => 'Id',
+				'description' => 'The unique id of the manually created group.',
+			],
+			'title' => [
+				'property' => 'title',
+				'type' => 'text',
+				'maxLength' => 150,
+				'label' => 'Title',
+				'description' => 'The title of this manually created group.',
+				'required' => true,
+			],
+			'description' => [
+				'property' => 'description',
+				'type' => 'textarea',
+				'label' => 'Description',
+				'description' => 'An internal description of why this manual group exists.',
+			],
+			'created_by' => [
+				'property' => 'created_by',
+				'type' => 'hidden',
+				'label' => 'Created By',
+				'description' => 'The user who created this manual group.',
+				'hideInLists' => true,
+			],
+			'created_by_display' => [
+				'property' => 'created_by_display',
+				'type' => 'label',
+				'label' => 'Created By',
+				'description' => 'The display name of the user who created this manual group.',
+				'hideInLists' => false,
+			],
+			'date_created' => [
+				'property' => 'date_created',
+				'type' => 'timestamp',
+				'label' => 'Date Created',
+				'description' => 'The date this manual group was created.',
+				'hideInLists' => true,
+				'readOnly' => true,
+			],
+			'last_updated' => [
+				'property' => 'last_updated',
+				'type' => 'timestamp',
+				'label' => 'Last Updated',
+				'description' => 'The date this manual group was last updated.',
+				'hideInLists' => true,
+				'readOnly' => true,
+			],
+			'record_summary' => [
+				'property' => 'record_summary',
+				'type' => 'hidden',
+				'label' => 'Records',
+				'description' => 'Summary of records in this manual group.',
+				'hideInLists' => false,
+			],
+			'records' => [
+				'property' => 'records',
+				'type' => 'oneToMany',
+				'label' => 'Records',
+				'description' => 'The records to include in this manual group.',
+				'infoBullets' => [
+					'In the table below, select the source of the record, input its identifier value, and select the identifier\'s type.',
+					'The "Resolved Record ID" field cannot be edited and will be automatically populated with the record\'s primary identifier if a record is found.',
+				],
+				'keyThis' => 'id',
+				'keyOther' => 'manually_grouped_work_id',
+				'subObjectType' => 'ManuallyGroupedWorkRecord',
+				'structure' => ManuallyGroupedWorkRecord::getObjectStructure(),
+				'canAddNew' => true,
+				'canDelete' => true,
+				'sortable' => false,
+				'hideInLists' => true,
+			],
+		];
+
+		self::$_objectStructure[$context] = $structure;
+		return self::$_objectStructure[$context];
+	}
+
+	/**
+	 * @return mixed
+	 */
+	public function getGroupedWorkPermanentId(): string {
+		return $this->grouped_work_permanent_id;
+	}
 
 	public function insert($context = ''): bool|int {
 		if (empty($this->date_created)) {
@@ -32,10 +129,16 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	public function update($context = ''): bool|int {
+		if (empty($this->date_created) && !empty($this->id)) {
+			$original = new ManualGroupedWork();
+			$original->id = $this->id;
+			if ($original->find(true) && !empty($original->date_created)) {
+				$this->date_created = $original->date_created;
+			}
+		}
 		$this->last_updated = time();
 		$ret = parent::update();
 		if ($ret) {
-			// If the records property has been set (via DataObjectUtil), save changes (including deletions)
 			if (isset($this->_records) && is_array($this->_records)) {
 				$this->saveRecords();
 			}
@@ -43,19 +146,66 @@ class ManualGroupedWork extends DataObject {
 		return $ret;
 	}
 
-	/**
-	 * Override the delete functionality to delete related records
-	 */
-	public function delete($useWhere = false): int {
+	public function __get($name) {
+		if ($name === 'records') {
+			return $this->getRecords();
+		} elseif ($name === 'record_summary') {
+			$records = $this->getRecords();
+			if (!empty($records)) {
+				$identifiers = [];
+				foreach ($records as $record) {
+					if (!empty($record->identifier)) {
+						$identifiers[] = $record->identifier;
+					}
+				}
+				if (!empty($identifiers)) {
+					return implode(", ", $identifiers);
+				}
+			}
+			return 'No records';
+		} elseif ($name === 'created_by_display') {
+			if (!empty($this->created_by)) {
+				require_once ROOT_DIR . '/sys/Account/User.php';
+				$user = new User();
+				$user->id = $this->created_by;
+				if ($user->find(true)) {
+					$displayName = $user->getDisplayName();
+					$barcode = $user->getBarcode();
+					if (!empty($barcode)) {
+						return trim($barcode . ' - ' . $displayName, ' -');
+					} elseif (!empty($user->username)) {
+						return trim($user->username . ' - ' . $displayName, ' -');
+					} else {
+						return $displayName;
+					}
+				} else {
+					return 'User ID: ' . $this->created_by;
+				}
+			}
+			return 'Not set';
+		}
+		return parent::__get($name);
+	}
+
+	public function __set($name, $value) {
+		if ($name === 'records') {
+			$this->_records = $value;
+		} else {
+			parent::__set($name, $value);
+		}
+	}
+
+	public function delete($useWhere = false, bool $hardDelete = false): int {
 		$ret = parent::delete($useWhere);
 		if ($ret) {
+			$this->reindexRecords();
 			$this->clearRecords();
 		}
 		return $ret;
 	}
 
 	/**
-	 * Get all records associated with this manually grouped work
+	 * Get all records associated with this manually grouped work.
 	 *
 	 * @return array|null
 	 */
@@ -67,7 +217,7 @@ class ManualGroupedWork extends DataObject {
 			$manuallyGroupedWorkRecord->orderBy('id');
 			$manuallyGroupedWorkRecord->find();
 			while ($manuallyGroupedWorkRecord->fetch()) {
-				$this->_records[$manuallyGroupedWorkRecord->id] = clone($manuallyGroupedWorkRecord);
+				$this->_records[$manuallyGroupedWorkRecord->id] = clone $manuallyGroupedWorkRecord;
 			}
 		}
 		return $this->_records;
@@ -92,7 +242,6 @@ class ManualGroupedWork extends DataObject {
 		$record->identifier_type = $identifierType;
 		$record->user_provided_identifier = $identifier;
 		if (!$record->resolvePrimaryIdentifier()) {
-			// Resolution failed or no such record
 			$this->displayMessageToUser("Unable to resolve identifier '{$record->user_provided_identifier}' for type '{$record->type}'.", true);
 			return false;
 		}
@@ -110,7 +259,6 @@ class ManualGroupedWork extends DataObject {
 			}
 		}
 
-		// Check if the record already exists
 		foreach ($this->_records as $existingRecord) {
 			if ($existingRecord->type == $record->type && $existingRecord->identifier == $record->identifier) {
 				$this->displayMessageToUser("Record is already in this manual group.", false);
@@ -157,11 +305,10 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	/**
-	 * Save all records associated with this manually grouped work
+	 * Save all records associated with this manually grouped work.
 	 */
 	private function saveRecords(): void {
 		if (isset($this->_records) && is_array($this->_records)) {
-			// Validate all records before clearing existing ones
 			$recordsToInsert = [];
 			foreach ($this->_records as $record) {
 				// Skip records flagged for deletion by DataObjectUtil.
@@ -189,19 +336,17 @@ class ManualGroupedWork extends DataObject {
 				$recordsToInsert[] = $record;
 			}
 
-			// Update records one-by-one without clearing all to avoid side effects
 			foreach ($recordsToInsert as $record) {
-				// Prepare for insert; unique constraint will skip duplicates
+				// Prepare for insert; unique constraint will skip duplicates.
 				$record->manually_grouped_work_id = $this->id;
 				if (empty($record->date_added)) {
 					$record->date_added = time();
 				}
-				// Skip if this record is already in any manual group
+				// Skip if this record is already in any manual group.
 				$existing = new ManuallyGroupedWorkRecord();
 				$existing->type = $record->type;
 				$existing->identifier = $record->identifier;
 				if ($existing->find(true)) {
-					// If in a different group, inform the user
 					if ($existing->manually_grouped_work_id != $this->id) {
 						$this->displayMessageToUser("Record '{$record->identifier}' is already in another manual group.", false);
 					}
@@ -223,7 +368,7 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	/**
-	 * Clear all records associated with this manually grouped work
+	 * Clear all records associated with this manually grouped work.
 	 */
 	private function clearRecords(): void {
 		if ($this->id) {
@@ -234,9 +379,9 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	/**
-	 * Force reindexing of all records in this manually grouped work
-	 * This method will add each record's identifier and type to the
-	 * record_identifiers_to_reload table, so they are picked up by the indexer.
+	 * Force reindexing of all records in this manually grouped work.
+	 * Adds each record's identifier and type to the record_identifiers_to_reload
+	 * table to be picked up by the indexer.
 	 */
 	public function reindexRecords(): int {
 		if (!isset($this->_records)) {
@@ -267,7 +412,7 @@ class ManualGroupedWork extends DataObject {
 					$reindexedCount++;
 				} catch (Exception $e) {
 					global $logger;
-					$logger->log("Error adding record to reload queue: $identifier (source: $source) for manual group ID $this->id. Error: {$e->getMessage()}", Logger::LOG_ERROR);
+					$logger->log("Error adding record to reload queue: $identifier (source: $source) for manual group ID $this->id. Error: {$e->getMessage()}.", Logger::LOG_ERROR);
 				}
 			} else {
 				global $logger;
@@ -277,107 +422,6 @@ class ManualGroupedWork extends DataObject {
 		return $reindexedCount;
 	}
 
-	/**
-	 * Get the structure of the object for use in the edit form.
-	 *
-	 * @param string $context
-	 * @return array
-	 */
-	static function getObjectStructure(string $context = ''): array {
-		return [
-			'id' => [
-				'property' => 'id',
-				'type' => 'label',
-				'label' => 'Id',
-				'description' => 'The unique id of the manually created group',
-				'storeDb' => true,
-			],
-			'title' => [
-				'property' => 'title',
-				'type' => 'text',
-				'size' => 250,
-				'maxLength' => 500,
-				'label' => 'Title',
-				'description' => 'The title of this manually created group',
-				'storeDb' => true,
-				'required' => true,
-			],
-			'description' => [
-				'property' => 'description',
-				'type' => 'textarea',
-				'label' => 'Description',
-				'description' => 'A description of why this manual group exists',
-				'storeDb' => true,
-				'required' => false,
-			],
-			'created_by' => [
-				'property' => 'created_by',
-				'type' => 'hidden',
-				'label' => 'Created By',
-				'description' => 'The user who created this manual group',
-				'storeDb' => true,
-				'default' => UserAccount::getActiveUserId(),
-			],
-			'date_created' => [
-				'property' => 'date_created',
-				'type' => 'timestamp',
-				'label' => 'Date Created',
-				'description' => 'The date this manual group was created',
-				'storeDb' => true,
-				'hideInLists' => true,
-				'readOnly' => true,
-			],
-			'last_updated' => [
-				'property' => 'last_updated',
-				'type' => 'timestamp',
-				'label' => 'Last Updated',
-				'description' => 'The date this manual group was last updated',
-				'storeDb' => true,
-				'hideInLists' => true,
-				'readOnly' => true,
-			],
-			'records' => [
-				'property' => 'records',
-				'type' => 'oneToMany',
-				'label' => 'Records',
-				'description' => 'The records to include in this manual group',
-				'infoBullets' => [
-					'In the table below, select the source of the record, input its identifier value, and select the identifier\'s type.',
-					'The "Resolved Record ID" field cannot be edited and will be automatically populated with the record\'s primary identifier if a record is found.',
-				],
-				'keyThis' => 'id',
-				'keyOther' => 'manually_grouped_work_id',
-				'subObjectType' => 'ManuallyGroupedWorkRecord',
-				'structure' => ManuallyGroupedWorkRecord::getObjectStructure(),
-				'storeDb' => true,
-				'canAddNew' => true,
-				'canDelete' => true,
-				'sortable' => false,
-			],
-		];
-	}
-
-	/**
-	 * Expose records to the template by loading from DB when getting property.
-	 */
-	public function __get($name) {
-		if ($name === 'records') {
-			return $this->getRecords();
-		}
-		return parent::__get($name);
-	}
-
-	/**
-	 * Allow DataObjectUtil to assign posted records before saving.
-	 */
-	public function __set($name, $value) {
-		if ($name === 'records') {
-			$this->_records = $value;
-		} else {
-			parent::__set($name, $value);
-		}
-	}
-
 	private function displayMessageToUser(string $message, bool $isError): void {
 		$user = UserAccount::getActiveUserObj();
 		if ($user) {
@@ -385,5 +429,38 @@ class ManualGroupedWork extends DataObject {
 			$user->updateMessageIsError = $isError;
 			$user->update();
 		}
+	}
+
+	public function getAdditionalListActions(): array {
+		$actions = [];
+		$permanentId = self::returnGroupedWorkPermanentId($this->grouped_work_permanent_id);
+		if (!empty($permanentId)) {
+			$actions[] = [
+				'text' => 'View Grouped Work',
+				'url' => "/GroupedWork/$permanentId",
+				'target' => '_blank',
+			];
+		}
+
+		return $actions;
+	}
+
+	/**
+	 * Get the permanent ID of the grouped work created from this manual grouping
+	 * to ensure the Grouped Work exists.
+	 *
+	 * @param $permId
+	 * @return string|null
+	 */
+	public static function returnGroupedWorkPermanentId($permId): ?string {
+		if (!empty($permId)) {
+			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+			$groupedWork = new GroupedWork();
+			$groupedWork->permanent_id = $permId;
+			if ($groupedWork->find(true)) {
+				return $groupedWork->permanent_id;
+			}
+		}
+		return null;
 	}
 }

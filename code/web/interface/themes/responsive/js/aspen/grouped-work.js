@@ -717,7 +717,8 @@ AspenDiscovery.GroupedWork = (function(){
 				"title" : $("#title").val(),
 				"author" : $("#author").val(),
 				"seriesName" : $("#seriesName").val(),
-				"seriesDisplayOrder" : $("#seriesDisplayOrder").val()
+				"seriesDisplayOrder" : $("#seriesDisplayOrder").val(),
+				"description" : $("#description").val()
 			}
 			$.getJSON(url, params, function (data){
 				if (!data.success){

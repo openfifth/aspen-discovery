@@ -35,6 +35,14 @@
 				</div>
 			</div>
 		{/if}
+		<div class="form-group">
+			<div class="col-tn-3">
+				<label for="description">{translate text="Description" isAdminFacing=true}</label>
+			</div>
+			<div class="col-tn-9">
+				<textarea name="description" id="description" class="form-control" rows="4" maxlength="2000">{$description}</textarea>
+			</div>
+		</div>
 	</div>
 	<input type="hidden" name="id" id="id" value="{$id}"/>
 </form>

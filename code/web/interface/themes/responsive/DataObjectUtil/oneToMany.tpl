@@ -255,7 +255,11 @@
 						{elseif $subProperty.type=='dynamic_label'}
 							newRow += "<span id='{$propName}_{$subPropName}_" + numAdditional{$propName} + "' data-id='" + numAdditional{$propName} + "'><span>"
 						{elseif $subProperty.type=='checkbox'}
-							newRow += "<input type='checkbox' name='{$propName}_{$subPropName}[" + numAdditional{$propName} + "]' {if !empty($subProperty.default) && $subProperty.default == 1}checked='checked'{/if} data-id='" + numAdditional{$propName} + "'>";
+							{if !empty($subProperty.readOnlyWhenNew)}
+								newRow += "{if !empty($subProperty.default) && $subProperty.default == 1}{translate text='Yes' isAdminFacing=true}{else}{translate text='No' isAdminFacing=true}{/if}";
+							{else}
+								newRow += "<input type='checkbox' name='{$propName}_{$subPropName}[" + numAdditional{$propName} + "]' {if !empty($subProperty.default) && $subProperty.default == 1}checked='checked'{/if} data-id='" + numAdditional{$propName} + "'>";
+							{/if}
 						{else}
 							newRow += "<select name='{$propName}_{$subPropName}[" + numAdditional{$propName} + "]' id='{$propName}{$subPropName}_" + numAdditional{$propName} + "' class='form-control{if !empty($subProperty.required)} required{/if}' {if !empty($subProperty.onchange)}onchange=\"{$subProperty.onchange}\"{/if} data-id='" + numAdditional{$propName} + "'>";
 							{foreach from=$subProperty.values item=propertyName key=propertyValue}

@@ -31,7 +31,7 @@ class Admin_ManualGroupedWorks extends ObjectEditor {
 	}
 
 	function getDefaultSort(): string {
-		return 'title asc';
+		return 'id desc';
 	}
 
 	function getObjectStructure($context = ''): array {
@@ -47,7 +47,7 @@ class Admin_ManualGroupedWorks extends ObjectEditor {
 	}
 
 	function getInstructions(): string {
-		return 'Manual Grouped Works allow you to create custom groups of records that override the automatic grouping algorithm. This is useful for edge cases where the automatic grouping does not work as expected.';
+		return '';
 	}
 
 	function getBreadcrumbs(): array {
@@ -67,10 +67,24 @@ class Admin_ManualGroupedWorks extends ObjectEditor {
 	}
 
 	function canAddNew(): bool {
-		return $this->canView();
+		return UserAccount::userHasPermission('Manually Group and Ungroup Works');
 	}
 
 	function canDelete(): bool {
-		return $this->canView();
+		return UserAccount::userHasPermission('Manually Group and Ungroup Works');
+	}
+
+	function getAdditionalObjectActions($existingObject): array {
+		$actions = parent::getAdditionalObjectActions($existingObject);
+		/** @var ManualGroupedWork $existingObject */
+		$permanentId = ManualGroupedWork::returnGroupedWorkPermanentId($existingObject->getGroupedWorkPermanentId());
+		if (!empty($permanentId)) {
+			$actions[] = [
+				'text' => 'View Grouped Work',
+				'url' => "/GroupedWork/$permanentId",
+				'target' => '_blank',
+			];
+		}
+		return $actions;
 	}
 }
