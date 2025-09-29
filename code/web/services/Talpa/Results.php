@@ -12,9 +12,11 @@ class Talpa_Results extends ResultsAction {
 		}
 
 		//Retrieve the Grouped Work Display settings to use in result.tpl
-		foreach ($library->getGroupedWorkDisplaySettings()->showInSearchResultsMainDetails as $detailOption) {
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		foreach ($groupedWorkDisplaySettings->showInSearchResultsMainDetails as $detailOption) {
 			$interface->assign($detailOption, true);
 		}
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
 
 		//Retrieve Talpa Display settings to use in result.tpl
 		$defaultTalpaExplainerText = '<p>Talpa Search is a new way to search for books and other media using natural language to find items by plot details, genre, descriptions, and more. Talpa combines cutting-edge technology with data from libraries, publishers and readers to enable entirely new ways of searching&mdash;and find what you\'re looking for.</p>

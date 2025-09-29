@@ -221,7 +221,7 @@ class Record_Home extends GroupedWorkSubRecordHomeAction {
 		// (needs to be set before moreDetailsOptions)
 		global $library;
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
-		foreach ($groupedWorkDisplaySettings->showInSearchResultsMainDetails as $detailOption) {
+		foreach ($groupedWorkDisplaySettings->showInMainDetails as $detailOption) {
 			$interface->assign($detailOption, true);
 		}
 

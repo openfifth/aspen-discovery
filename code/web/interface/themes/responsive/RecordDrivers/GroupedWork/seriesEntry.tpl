@@ -61,41 +61,8 @@
 					</div>
 				{/if}
 
-				{* Short Mobile Entry for Formats when there aren't hidden formats *}
-				<div class="row visible-xs">
-
-					{* Determine if there were hidden Formats for this entry *}
-					{assign var=hasHiddenFormats value=false}
-					{foreach from=$relatedManifestations item=relatedManifestation}
-						{if $relatedManifestation->hasHiddenFormats()}
-							{assign var=hasHiddenFormats value=true}
-						{/if}
-					{/foreach}
-
-					{* If there weren't hidden formats, show this short Entry (mobile view only). The exception is single format manifestations, they
-						 won't have any hidden formats and will be displayed *}
-					{if empty($hasHiddenFormats) && count($relatedManifestations) != 1}
-						<div class="hidethisdiv{$summId|escape} result-label col-tn-3 col-xs-3">
-							Formats:
-						</div>
-						<div class="hidethisdiv{$summId|escape} result-value col-tn-9 col-xs-9">
-							<a href="#" onclick="$('#relatedManifestationsValue{$summId|escape},.hidethisdiv{$summId|escape}').toggleClass('hidden-xs');return false;">
-								{implode subject=$relatedManifestations|@array_keys glue=", "}
-							</a>
-						</div>
-					{/if}
-
-				</div>
-
-				{* Formats Section *}
 				<div class="row">
-					<div class="{if empty($hasHiddenFormats) && count($relatedManifestations) != 1}hidden-xs {/if}col-sm-12" id="relatedManifestationsValue{$summId|escape}">
-						{* Hide Formats section on mobile view, unless there is a single format or a format has been selected by the user *}
-						{* relatedManifestationsValue ID is used by the Formats button *}
-
-						{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
-
-					</div>
+					{include file="GroupedWork/allManifestations.tpl" isSearchResults=true}
 				</div>
 
 				{* Description Section *}

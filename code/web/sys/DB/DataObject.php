@@ -1406,7 +1406,8 @@ abstract class DataObject implements JsonSerializable {
 			$loadDefault = true;
 		}else {
 			if (!empty($this->getPrimaryKeyValue())) {
-				global $validLanguages;
+				require_once ROOT_DIR . '/sys/Translation/Language.php';
+				$validLanguages = Language::getValidLanguages();
 				$languageId = 1;
 				foreach ($validLanguages as $language) {
 					if ($language->code == $languageCode) {
@@ -1458,7 +1459,8 @@ abstract class DataObject implements JsonSerializable {
 	}
 
 	public function saveTextBlockTranslations($fieldName) : void {
-		global $validLanguages;
+		require_once ROOT_DIR . '/sys/Translation/Language.php';
+		$validLanguages = Language::getValidLanguages();
 
 		require_once ROOT_DIR . '/sys/Administration/TextBlockTranslation.php';
 		/** @var TextBlockTranslation[] $existingTranslations */

@@ -309,7 +309,7 @@ class Axis360RecordDriver extends GroupedWorkSubDriver {
 	 *
 	 * @return  array
 	 */
-	function getFormatCategory() {
+	function getFormatCategory() : string|array|null {
 		if ($this->axis360RawMetadata->formatType == 'eBook') {
 			return ['eBook'];
 		} elseif ($this->axis360RawMetadata->formatType == 'eAudiobook') {

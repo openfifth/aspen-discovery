@@ -245,7 +245,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		}
 
 		//Check to see if we should apply a default filter
-		if ($this->selectedAvailabilityToggleValue == null) {
+		if ($this->selectedAvailabilityToggleValue == null && !$this->disableDefaultAvailabilityToggle) {
 			global $library;
 			$location = Location::getSearchLocation(null);
 			if ($location != null) {
@@ -283,28 +283,14 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			$selectedFormatValues[] = '*';
 		}
 		$allEditionFilters = [];
-//		$editionFiltersFormat = [];
-//		$editionFiltersFormatCategory = [];
-//		$editionFiltersFormatAvailability = [];
-//		$editionFiltersFormatAvailableAt = [];
-		foreach ($selectedAvailableAtValues as $selectedAvailableAtValue) {
-			$selectedAvailableAtValue = str_replace('(', '\(', $selectedAvailableAtValue);
-			$selectedAvailableAtValue = str_replace(')', '\)', $selectedAvailableAtValue);
-			foreach ($selectedFormatCategoryValues as $selectedFormatCategoryValue) {
-				foreach ($selectedFormatValues as $selectedFormatValue) {
-//					if ($selectedFormatValue != '*'){
-//						$editionFiltersFormat[] = str_replace(' ', '_', "edition_info:$solrScope#$selectedFormatCategoryValue#*#$this->selectedAvailabilityToggleValue#$selectedAvailableAtValue#");
-//					}
-//					if ($selectedFormatCategoryValue != '*'){
-//						$editionFiltersFormatCategory[] = str_replace(' ', '_', "edition_info:$solrScope#*#$selectedFormatValue#$this->selectedAvailabilityToggleValue#$selectedAvailableAtValue#");
-//					}
-//					if ($this->selectedAvailabilityToggleValue != 'global'){
-//						$editionFiltersFormatAvailability[] = str_replace(' ', '_', "edition_info:$solrScope#$selectedFormatCategoryValue#$selectedFormatValue#*#$selectedAvailableAtValue#");
-//					}
-//					if ($selectedAvailableAtValue != '*'){
-//						$editionFiltersFormatAvailableAt[] = str_replace(' ', '_', "edition_info:$solrScope#$selectedFormatCategoryValue#$selectedFormatValue#$this->selectedAvailabilityToggleValue#*#");
-//					}
-					$allEditionFilters[] = str_replace(' ', '_', "edition_info:$solrScope#$selectedFormatCategoryValue#$selectedFormatValue#$this->selectedAvailabilityToggleValue#$selectedAvailableAtValue#");
+		if (!$this->indexEngine->editionLimitersAreDisabled()) {
+			foreach ($selectedAvailableAtValues as $selectedAvailableAtValue) {
+				$selectedAvailableAtValue = str_replace('(', '\(', $selectedAvailableAtValue);
+				$selectedAvailableAtValue = str_replace(')', '\)', $selectedAvailableAtValue);
+				foreach ($selectedFormatCategoryValues as $selectedFormatCategoryValue) {
+					foreach ($selectedFormatValues as $selectedFormatValue) {
+						$allEditionFilters[] = str_replace(' ', '_', "edition_info:$solrScope#$selectedFormatCategoryValue#$selectedFormatValue#$this->selectedAvailabilityToggleValue#$selectedAvailableAtValue#");
+					}
 				}
 			}
 		}
@@ -312,22 +298,6 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			$allEditions = '(' . implode(' OR ', $allEditionFilters) . ')';
 			$filterQuery[] = "{!tag=edition_info}$allEditions";
 		}
-//		if (count($editionFiltersFormat) > 0) {
-//			$allFormatEditions = '(' . implode(' OR ', $editionFiltersFormat) . ')';
-//			$filterQuery[] = "{!tag=edition_info_format}$allFormatEditions";
-//		}
-//		if (count($editionFiltersFormatCategory) > 0) {
-//			$allFormatCategoryEditions = '(' . implode(' OR ', $editionFiltersFormatCategory) . ')';
-//			$filterQuery[] = "{!tag=edition_info_format_category}$allFormatCategoryEditions";
-//		}
-//		if (count($editionFiltersFormatAvailability) > 0) {
-//			$allAvailabilityEditions = '(' . implode(' OR ', $editionFiltersFormatAvailability) . ')';
-//			$filterQuery[] = "{!tag=edition_info_availability}$allAvailabilityEditions";
-//		}
-//		if (count($editionFiltersFormatAvailableAt) > 0) {
-//			$allAvailableAtEditions = '(' . implode(' OR ', $editionFiltersFormatAvailableAt) . ')';
-//			$filterQuery[] = "{!tag=edition_info_available_at}$allAvailableAtEditions";
-//		}
 
 		// If we are only searching one field use the DisMax handler
 		//    for that field. If left at null let solr take care of it

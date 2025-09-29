@@ -347,6 +347,8 @@ public class PolarisExportMain {
 			PreparedStatement addAspenSublocationStmt = dbConn.prepareStatement("INSERT INTO sublocation (locationId, name, ilsId, isValidHoldPickupAreaILS, isValidHoldPickupAreaAspen, weight) VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
 			PreparedStatement activateSublocationForAllPTypesStmt = dbConn.prepareStatement("INSERT INTO sublocation_ptype (sublocationId, patronTypeId) SELECT ?, id from ptype");
 			PreparedStatement getExistingAspenLocationsStmt = dbConn.prepareStatement("SELECT locationId, displayName, code from location", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getExistingSublocationsStmt = dbConn.prepareStatement("select distinct (ilsId) from sublocation where ilsId REGEXP '^[0-9]+$'", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement deleteExistingSublocationStmt = dbConn.prepareStatement("UPDATE sublocation set isValidHoldPickupAreaILS = 0 where ilsId = ?");
 			ResultSet allExistingLocationsRS = getExistingAspenLocationsStmt.executeQuery();
 			HashMap<String, ExistingLocation> existingLocations = new HashMap<>();
 			while (allExistingLocationsRS.next()) {
@@ -357,6 +359,13 @@ public class PolarisExportMain {
 				existingLocation.setCode(allExistingLocationsRS.getString("code"));
 				existingLocations.put(existingLocation.getCode(), existingLocation);
 			}
+
+			HashSet<Long> existingSublocationIds = new HashSet<>();
+			ResultSet allExistingSublocationsRS = getExistingSublocationsStmt.executeQuery();
+			while (allExistingSublocationsRS.next()) {
+				existingSublocationIds.add(allExistingSublocationsRS.getLong("ilsId"));
+			}
+
 
 			//Lookup the sub-locations in Polaris. It does not look like filtering by orgID works in the API so we will just grab them all
 			String getPickupAreasUrl = "/PAPIService/REST/public/v1/1033/100/1/pickupareas";
@@ -371,6 +380,8 @@ public class PolarisExportMain {
 					String name = pickupAreaInfo.getString("Description");
 					long sequence = pickupAreaInfo.getLong("SequenceID");
 					boolean selected = pickupAreaInfo.getBoolean("Selected");
+
+					existingSublocationIds.remove(pickupAreaId);
 
 					//Get the parent location for the sublocation
 					ExistingLocation parentLocation = existingLocations.get(parentOrganizationId);
@@ -418,6 +429,13 @@ public class PolarisExportMain {
 				}
 			}
 			allExistingLocationsRS.close();
+
+			//Remove any pickup locations that no longer exist
+			for (Long existingSublocationId : existingSublocationIds) {
+				deleteExistingSublocationStmt.setLong(1, existingSublocationId);
+				deleteExistingSublocationStmt.executeUpdate();
+			}
+
 			logEntry.addNote("Finished Loading Pickup Areas into Sub-locations");
 
 		} catch (Exception e) {
@@ -1002,7 +1020,7 @@ public class PolarisExportMain {
 
 		logEntry.addNote("Finished updating bibs");
 		logEntry.saveResults();
-		
+
 		return numChanges;
 	}
 
@@ -1038,8 +1056,8 @@ public class PolarisExportMain {
 		//If we are doing a continuous index, get a list of any items that have been updated or changed or bib ids that have been replaced
 		HashSet<String> bibsToUpdate = new HashSet<>();
 
-		// Get a list of all the bibs that have been updated since the last extract 
-		String getUpdatedBibsUrl = "/PAPIService/REST/protected/v1/1033/100/1/" + accessToken + "/synch/bibs/updated?updatedate=" + formattedLastExtractTime;	
+		// Get a list of all the bibs that have been updated since the last extract
+		String getUpdatedBibsUrl = "/PAPIService/REST/protected/v1/1033/100/1/" + accessToken + "/synch/bibs/updated?updatedate=" + formattedLastExtractTime;
 		WebServiceResponse updatedBibs = callPolarisAPI(getUpdatedBibsUrl, null, "GET", "application/json", accessSecret);
 		if (updatedBibs.isSuccess()){
 			try {

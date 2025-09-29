@@ -49,6 +49,15 @@ function getUpdates25_09_00(): array {
 				"DELETE FROM permissions where name = 'Administer RBdigital'",
 			]
 		], //remove_rbdigital_tables
+		'remove_rbdigital_tables_2' => [
+			'title' => 'Remove additional RBdigital tables',
+			'description' => 'Remove Additional Unused RBdigital Tables',
+			'continueOnError' => false,
+			'sql' => [
+				'DROP TABLE rbdigital_availability',
+				'DROP TABLE rbdigital_magazine_issue_availability',
+			]
+		], //remove_rbdigital_tables_2
 		'remove_redwood_tables' => [
 			'title' => 'Remove Redwood tables',
 			'description' => 'Remove Unused Redwood Table',
@@ -64,6 +73,17 @@ function getUpdates25_09_00(): array {
 			'sql' => [
 				'DROP TABLE archive_requests',
 				'DROP TABLE claim_authorship_requests'
+			]
+		], //remove_archives_tables
+		'remove_archives_permissions' => [
+			'title' => 'Remove Archives Permissions',
+			'description' => 'Remove Unused Archives Permissions',
+			'continueOnError' => false,
+			'sql' => [
+				"DELETE FROM role_permissions where permissionId = (SELECT id from permissions where name = 'Administer Islandora Archive')",
+				"DELETE FROM permissions where name = 'Administer Islandora Archive'",
+				"DELETE FROM role_permissions where permissionId = (SELECT id from permissions where name = 'Library Islandora Archive Options')",
+				"DELETE FROM permissions where name = 'Library Islandora Archive Options'",
 			]
 		], //remove_archives_tables
 		'remove_development_tracking_tables' => [
@@ -99,14 +119,23 @@ function getUpdates25_09_00(): array {
 			'description' => 'Add configuration table for self check completion messages',
 			'continueOnError' => false,
 			'sql' => [
-				'CREATE TABLE self_check_completion_message (
+				"CREATE TABLE self_check_completion_message (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					formats VARCHAR(500),
 					owningLocations VARCHAR(500),
 					checkoutLocations VARCHAR(500)
-				) ENGINE INNODB',
+				) ENGINE INNODB",
 			]
 		], //add_self_check_completion_message
+		'set_defaults_for_self_check_completion_message' => [
+			'title' => 'Set Defaults for Self Check Completion Message',
+			'description' => 'Set default values for self check completion messages',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE self_check_completion_message CHANGE COLUMN owningLocations owningLocations VARCHAR(500) DEFAULT '.*'",
+				"ALTER TABLE self_check_completion_message CHANGE COLUMN checkoutLocations checkoutLocations VARCHAR(500) DEFAULT '.*'",
+			]
+		], //set_defaults_for_self_check_completion_message
 		'add_removeTheWordSeriesFromEndOfSeries' => [
 			'title' => 'Add Remove the word series from the end of series option',
 			'description' => 'Add Remove the word series from the end of series option',
@@ -115,6 +144,28 @@ function getUpdates25_09_00(): array {
 				'ALTER TABLE system_variables ADD COLUMN removeTheWordSeriesFromEndOfSeries TINYINT DEFAULT 1',
 			]
 		], //add_removeTheWordSeriesFromEndOfSeries
+		'force_regrouping_all_works_25_09' => [
+			'title' => 'Force Regrouping All Works 25.09',
+			'description' => 'Force Regrouping All Works',
+			'sql' => [
+				"UPDATE system_variables set regroupAllRecordsDuringNightlyIndex = 1",
+			],
+		], //force_regrouping_all_works_25_09
+		'increase_series_member_priority_score_length' => [
+			'title' => 'Increase series priority score length',
+			'description' => 'Increase series priority score length',
+			'sql' => [
+				"ALTER TABLE series_member CHANGE COLUMN priorityScore priorityScore INT NOT NULL DEFAULT 1;",
+			]
+		], //increase_series_member_priority_score_length
+		'add_switch_for_sending_slack_alerts' => [
+			'title' => 'Add a switch for sending slack alerts',
+			'description' => 'Update Aspen Sites in the Greenhouse to have a switch for which sites should have alerts sent for them',
+			'sql' => [
+				'ALTER TABLE aspen_sites ADD COLUMN sendSlackAlerts TINYINT DEFAULT 1',
+				'UPDATE aspen_sites SET sendSlackAlerts = 0 WHERE NOT ((implementationStatus = 2 or implementationStatus = 3) AND siteType = 0)'
+			]
+		], //add_switch_for_sending_slack_alerts
 
 		//katherine - Grove
 
@@ -143,6 +194,14 @@ function getUpdates25_09_00(): array {
 				'ALTER TABLE browse_category MODIFY label VARCHAR(100) NOT NULL'
 			],
 		], // increase_browse_category_label_length
+		'increase_browse_category_textId_length' => [
+			'title' => 'Increase Browse Category TextId Length',
+			'description' => 'Increase the allowed length for browse category textId from 50 to 150 characters to accommodate longer generated textIds.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE browse_category MODIFY textId VARCHAR(150) NOT NULL'
+			],
+		], // increase_browse_category_textId_length
 
 		//alexander - Open Fifth
 		'increase_location_display_name_allowed_length' => [

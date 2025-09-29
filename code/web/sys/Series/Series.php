@@ -12,6 +12,7 @@ class Series extends DataObject {
 	public $cover;
 	public $audience;
 	public $author;
+	public $sortMethod;
 	/** @noinspection PhpUnused */
 	public $isIndexed;
 	public $dateUpdated;
@@ -73,6 +74,20 @@ class Series extends DataObject {
 				'path' => "$coverPath/original/series",
 				'hideInLists' => true,
 			],
+			'sortMethod' => [
+				'property' => 'sortMethod',
+				'type' => 'enum',
+				'values' => [
+					1 => 'By Volume',
+					2 => 'By Title',
+					3 => 'By Publication Date',
+					4 => 'By Publication Date Descending',
+					5 => 'Custom'
+				],
+				'label' => 'Default Sort Method for Titles',
+				'description' => 'How the titles within the series should be sorted by default',
+				'note' => 'Save the series to see the updated list'
+			],
 			'dateUpdated' => [
 				'property' => 'dateUpdated',
 				'type' => 'timestamp',
@@ -115,10 +130,19 @@ class Series extends DataObject {
 		return self::$_objectStructure[$context];
 	}
 
+	public function updateStructureForEditingObject($structure) : array {
+		if ($this->sortMethod != 5) {
+			$structure['seriesMembers']['sortable'] = false;
+		}
+		return $structure;
+	}
+
+
 	public function update(string $context = '') : int|bool {
 		$this->dateUpdated = time();
 		$ret = parent::update();
 		if ($ret !== FALSE) {
+			$this->reindexMembers();
 			$this->saveSeriesMembers();
 			if (in_array('cover', $this->_changedFields)) {
 				$this->reloadCover();
@@ -175,7 +199,7 @@ class Series extends DataObject {
 			if (!empty($_REQUEST['showExcluded'])) {
 				return $this->getSeriesMembers();
 			}
-			return $this->getSeriesMembers(false);
+			return $this->getSeriesMembers(null,false);
 		} else {
 			return parent::__get($name);
 		}
@@ -192,6 +216,20 @@ class Series extends DataObject {
 		}
 	}
 
+	public function reindexMembers() : void {
+		$seriesMembers = $this->_seriesMembers;
+		foreach ($seriesMembers as $seriesMember) {
+			if (!empty($seriesMember->groupedWorkPermanentId)) {
+				require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+				$groupedWork = new GroupedWork();
+				$groupedWork->permanent_id = $seriesMember->groupedWorkPermanentId;
+				if ($groupedWork->find(true)) {
+					$groupedWork->forceReindex();
+				}
+			}
+		}
+	}
+
 	function numTitlesInSeries() {
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
 		$members = new SeriesMember();
@@ -201,22 +239,17 @@ class Series extends DataObject {
 	}
 
 	/**
+	 * Returns all members of the series as a custom array, used when loading members for display to the Series Page
+	 * Also returns a list of unique grouped work ids for the series
+	 *
 	 * @return array      of list entries
 	 */
 	function getTitles($sortName = "volume asc", $includePlaceholders = true) : array {
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
-		$seriesMember = new SeriesMember();
-		$seriesMember->seriesId = $this->id;
-		$seriesMember->excluded = 0;
-		if (!$includePlaceholders) {
-			$seriesMember->isPlaceholder = 0;
-		}
-		$seriesMember->orderBy($sortName);
-
+		$originalSeriesMembers = $this->getSeriesMembers($sortName, false, $includePlaceholders);
 		$seriesMembers = [];
 		$idsBySource = [];
-		$seriesMember->find();
-		while ($seriesMember->fetch()) {
+		foreach ($originalSeriesMembers as $seriesMember) {
 			$source = "GroupedWork";  // All series currently come from groupedWorks
 			if (!array_key_exists($source, $idsBySource)) {
 				$idsBySource[$source] = [];
@@ -237,21 +270,7 @@ class Series extends DataObject {
 
 			$seriesMembers[] = $tmpListEntry;
 		}
-		if ($sortName == "volume asc" || $sortName == "volume desc") {
-			// If manually sorted, use weight instead
-			if (!in_array(0, array_column($seriesMembers, 'weight'))  && array_column($seriesMembers, 'weight') != array_column($seriesMembers, 'volume')) {
-				array_multisort(array_column($seriesMembers, 'weight'), SORT_ASC, $seriesMembers);
 
-			} else {
-				// Otherwise
-				array_multisort(array_column($seriesMembers, 'volume'), SORT_NATURAL, $seriesMembers);
-			}
-			if ($sortName == "volume desc") {
-				$seriesMembers = array_reverse($seriesMembers);
-			}
-		}
-		$seriesMember->__destruct();
-		$seriesMember = null;
 		return [
 			'seriesMembers' => $seriesMembers,
 			'idsBySource' => $idsBySource,
@@ -259,9 +278,27 @@ class Series extends DataObject {
 	}
 
 	/**
-	 * @return array      of series members
+	 * Return all members of the series as an array of Series Member objects.
+	 * Used as back end for getting series data for the admin page as well as loading members for display to Series Page
+	 *
+	 * @return SeriesMember[]      array of series members
 	 */
-	function getSeriesMembers($showExcluded = true) : array {
+	function getSeriesMembers($sortName = null, $showExcluded = true, $includePlaceholders = true) : array {
+		$sortMethod = $this->sortMethod;
+		if ($sortName != null) {
+			if ($sortName == 'volume') {
+				$sortMethod = 1;
+			}elseif ($sortName == 'displayName') {
+				$sortMethod = 2;
+			}elseif ($sortName == 'pubDate') {
+				$sortMethod = 3;
+			}elseif ($sortName == 'pubDate desc') {
+				$sortMethod = 4;
+			}else{
+				$sortMethod = 5;
+			}
+			$sortName = $this->sortMethod;
+		}
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
 		if (empty($this->id)) {
 			return [];
@@ -271,13 +308,50 @@ class Series extends DataObject {
 		if (!$showExcluded) {
 			$seriesMember->excluded = 0;
 		}
+		if (!$includePlaceholders) {
+			$seriesMember->isPlaceholder = 0;
+		}
 		$seriesMember->deleted = 0;
-		$seriesMember->orderBy('weight');
+		//Sort the titles based on the active sort method
+		if ($sortMethod == 1) {
+			$seriesMember->orderBy('volume, displayName');
+		}else if ($sortMethod == 2) {
+			$seriesMember->orderBy('displayName');
+		}else if ($sortMethod == 3) {
+			$seriesMember->orderBy('pubDate');
+		}else if ($sortMethod == 4) {
+			$seriesMember->orderBy('pubDate desc');
+		}else{
+			$seriesMember->orderBy('weight');
+		}
+
 		$this->_seriesMembers = [];
 		$seriesMember->find();
 		while ($seriesMember->fetch()) {
 			$this->_seriesMembers[$seriesMember->id] = clone($seriesMember);
 		}
+		//Resort if we're doing volume sorting to get natural case sorting
+		if ($sortMethod == 1) {
+			uasort($this->_seriesMembers, function (SeriesMember $a, SeriesMember $b) {
+
+				$volumeComparison = 0;
+				if (!empty($a->volume) && !empty($b->volume)) {
+					$volumeComparison = strnatcasecmp($a->volume, $b->volume);
+				}else if (!empty($a->volume) && empty($b->volume)) {
+					//Sort things with volumes before things without
+					$volumeComparison = -1;
+				}else if (empty($a->volume) && !empty($b->volume)) {
+					//Sort things with volumes before things without
+					$volumeComparison = 1;
+				}
+				if ($volumeComparison == 0) {
+					return strnatcasecmp($a->displayName, $b->displayName);
+				}else{
+					return $volumeComparison;
+				}
+			});
+		}
+
 		$seriesMember->__destruct();
 		$seriesMember = null;
 		return $this->_seriesMembers;
@@ -366,7 +440,7 @@ class Series extends DataObject {
 		//Reorder the documents based on the list of id's
 		foreach ($allListEntryIds as $listPosition => $currentId) {
 			// use $IDList as the order guide for the html
-			/** @var GroupedWorkDriver|null $current */
+			/** @var ?GroupedWorkDriver $current */
 			$current = null; // empty out in case we don't find the matching record
 			reset($records);
 			foreach ($records as $recordDriver) {
@@ -429,4 +503,13 @@ class Series extends DataObject {
 	}
 
 
+	function getDefaultSortMethodName() : string {
+		return match ($this->sortMethod) {
+			2 => 'title',
+			3 => 'pubDate',
+			4 => 'pubDate desc',
+			5 => 'custom',
+			default => 'volume',
+		};
+	}
 }

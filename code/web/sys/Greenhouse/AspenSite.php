@@ -15,6 +15,7 @@ class AspenSite extends DataObject {
 	protected $timezone;
 	protected $implementationStatus;
 	protected $monitored;
+	protected $sendSlackAlerts;
 	/** @noinspection PhpUnused */
 	protected $hosting;
 	protected $appAccess;
@@ -193,6 +194,13 @@ class AspenSite extends DataObject {
 				'property' => 'monitored',
 				'type' => 'checkbox',
 				'label' => 'Monitored',
+				'description' => 'Whether the site is monitored in the Greenhouse',
+				'default' => 1,
+			],
+			'sendSlackAlerts' => [
+				'property' => 'sendSlackAlerts',
+				'type' => 'checkbox',
+				'label' => 'Send Slack Alerts',
 				'description' => 'Whether the site is monitored in the Greenhouse',
 				'default' => 1,
 			],
@@ -684,6 +692,10 @@ class AspenSite extends DataObject {
 			return $this->activeTicketFeed;
 		}
 		return false;
+	}
+
+	public function isSendSlackAlerts() : bool {
+		return $this->sendSlackAlerts;
 	}
 
 	public function getSiteName() {
