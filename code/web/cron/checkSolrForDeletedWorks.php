@@ -27,16 +27,16 @@ $recordsToDeleteFromSolr = [];
 $numRecordsDeleted = 0;
 if (!$result instanceof AspenError && empty($result['error'])) {
 	$numResults = $searchObject->getResultTotal();
-	$cronLogEntry->notes .= date('h:i:s') . " There are $numResults records in Solr.<br/>";
+	$cronLogEntry->notes .= date('g:i:s A') . " There are $numResults records in Solr.<br/>";
 	$solrBatchSize = 250;
 	$searchObject->setTimeout(60);
 	$searchObject->setLimit($solrBatchSize);
 	$searchObject->clearFacets();
 	$numBatches = (int)ceil($numResults / $solrBatchSize);
-	$cronLogEntry->notes .= date('h:i:s') . " Processing in $numBatches batches.<br/>";
+	$cronLogEntry->notes .= date('g:i:s A') . " Processing in $numBatches batches.<br/>";
 	for ($batchIndex = 1; $batchIndex <= $numBatches; $batchIndex++) {
 		if ($batchIndex % 100 == 0) {
-			$cronLogEntry->notes .= date('h:i:s') . " Processing batch $batchIndex.<br/>";
+			$cronLogEntry->notes .= date('g:i:s A') . " Processing batch $batchIndex.<br/>";
 		}
 		$cronLogEntry->lastUpdate = time();
 		$cronLogEntry->update();
@@ -58,7 +58,7 @@ if (!$result instanceof AspenError && empty($result['error'])) {
 				//Loop through to figure out which record(s) are missing
 				foreach ($recordsInBatch as $groupedWorkId) {
 					if (!isset($allResultsFromDB[$groupedWorkId])) {
-						$cronLogEntry->notes .= date('h:i:s') . " $groupedWorkId does not exist in the database and needs to be deleted.<br/>";
+						$cronLogEntry->notes .= date('g:i:s A') . " $groupedWorkId does not exist in the database and needs to be deleted.<br/>";
 						$recordsToDeleteFromSolr[] = $groupedWorkId;
 						$cronLogEntry->update();
 					}
@@ -69,19 +69,19 @@ if (!$result instanceof AspenError && empty($result['error'])) {
 
 	foreach ($recordsToDeleteFromSolr as $groupedWorkId) {
 		if (!$solrConnection->deleteRecord($groupedWorkId)) {
-			$cronLogEntry->notes .= date('h:i:s') . " ERROR $groupedWorkId could not be deleted.<br/>";
+			$cronLogEntry->notes .= date('g:i:s A') . " ERROR $groupedWorkId could not be deleted.<br/>";
 			$cronLogEntry->numErrors++;
 		}else{
 			$numRecordsDeleted++;
 		}
 	}
 }else{
-	$cronLogEntry->notes .= date('h:i:s') . " Could not connect to Solr.<br/>";
+	$cronLogEntry->notes .= date('g:i:s A') . " Could not connect to Solr.<br/>";
 }
 if ($numRecordsDeleted > 0) {
 	$solrConnection->commit();
 }
 
-$cronLogEntry->notes .= date('h:i:s') . " Deleted $numRecordsDeleted records.";
+$cronLogEntry->notes .= date('g:i:s A') . " Deleted $numRecordsDeleted records.";
 $cronLogEntry->endTime = time();
 $cronLogEntry->update();

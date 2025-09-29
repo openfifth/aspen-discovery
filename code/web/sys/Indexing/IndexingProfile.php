@@ -224,6 +224,15 @@ class IndexingProfile extends DataObject {
 	public /** @noinspection PhpUnused */
 		$prioritizeAvailableRecordsForTitleSelection;
 
+	/** @noinspection PhpUnused */
+	public $index896asSeries;
+	/** @noinspection PhpUnused */
+	public $index897asSeries;
+	/** @noinspection PhpUnused */
+	public $index898asSeries;
+	/** @noinspection PhpUnused */
+	public $index899asSeries;
+
 	private $_translationMaps;
 	private $_timeToReshelve;
 	private $_sierraFieldMappings;
@@ -1046,8 +1055,47 @@ class IndexingProfile extends DataObject {
 							],
 						],
 					],
+					'seriesOptionsSection' => [
+						'property' => 'seriesOptionsSection',
+						'type' => 'section',
+						'label' => 'Series',
+						'properties' => [
+							'index896asSeries' => [
+								'property' => 'index896asSeries',
+								'type' => 'checkbox',
+								'label' => 'Index 896 as series',
+								'description' => 'Should the 896 field be processed as a series',
+								'forcesReindex' => true,
+								'default' => 1,
+							],
+							'index897asSeries' => [
+								'property' => 'index897asSeries',
+								'type' => 'checkbox',
+								'label' => 'Index 897 as series',
+								'description' => 'Should the 897 field be processed as a series',
+								'forcesReindex' => true,
+								'default' => 1,
+							],
+							'index898asSeries' => [
+								'property' => 'index898asSeries',
+								'type' => 'checkbox',
+								'label' => 'Index 898 as series',
+								'description' => 'Should the 898 field be processed as a series',
+								'forcesReindex' => true,
+								'default' => 1,
+							],
+							'index899asSeries' => [
+								'property' => 'index899asSeries',
+								'type' => 'checkbox',
+								'label' => 'Index 899 as series',
+								'description' => 'Should the 899 field be processed as a series',
+								'forcesReindex' => true,
+								'default' => 1,
+							]
+						],
+					],
 					'statusOptionsSection' => [
-						'property' => 'statusFormOptionsSection',
+						'property' => 'statusOptionsSection',
 						'type' => 'section',
 						'label' => 'Statuses',
 						'properties' => [
