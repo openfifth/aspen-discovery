@@ -65,6 +65,7 @@ class Events_EventGraphs extends Admin_Admin {
 		$interface->assign('fields', $fields);
 		$query = $_REQUEST['query'] ?? '';
 		$interface->assign('query', $query);
+		$interface->assign('urlParameters', http_build_query($_GET));
 
 
 		$title = 'Aspen Event Hours';
@@ -149,6 +150,12 @@ class Events_EventGraphs extends Admin_Admin {
 		header('Content-Type: text/csv; charset=utf-8');
 		header("Content-Disposition: attachment;filename={$filename}");
 		$fp = fopen('php://output', 'w');
+
+		$title = 'Aspen Event Hours' . $this->assignGraphSpecificTitle($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate);
+		if (!empty($title)) {
+			fputcsv($fp, [trim($title)]);
+		}
+
 		$graphTitles = array_keys($dataSeries);
 
 		$header = array_merge(['Dates'], $graphTitles);
@@ -367,7 +374,7 @@ class Events_EventGraphs extends Admin_Admin {
 			$title = substr($title, 0, -2);
 		}
 		$interface->assign('graphTitle', $title);
-
+		return $title;
 	}
 
 }
