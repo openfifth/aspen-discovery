@@ -1601,7 +1601,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	}
 
 	public function getMpaaRating() {
-		return isset($this->fields['mpaaRating']) ? $this->fields['mpaaRating'] : null;
+		return $this->fields['mpaa_rating'] ?? null;
 	}
 
 	private $numRelatedRecords = -1;
