@@ -103,18 +103,8 @@ class Translator {
 					$defaultTextChanged = false;
 					// Write term records to DB in translation mode or when called from API.
 					if ($allowTermCreation) {
-						if ($phrase == 'Are you sure you want to delete this list? The list will be soft-deleted and can be restored within 30 days.') {
-							global $logger;
-							$logger->log("Term to be inserted!", Logger::LOG_ERROR);
-						}
 						if (!$translationTerm->find(true)) {
-							if ($phrase == 'Are you sure you want to delete this list? The list will be soft-deleted and can be restored within 30 days.') {
-								global $logger;
-								$logger->log("Term does not exist yet!", Logger::LOG_ERROR);
-							}
 							$translationTerm->defaultText = $defaultText;
-							//Insert the translation term
-
 							$translationTerm->samplePageUrl = mb_strimwidth($_SERVER['REQUEST_URI'], 0, 255);
 							$translationTerm->isPublicFacing = $isPublicFacing;
 							$translationTerm->isAdminFacing = $isAdminFacing;
@@ -124,8 +114,7 @@ class Translator {
 							try {
 								if ($translationTerm->insert() !== false) {
 									$termTooLong = false;
-									//Send this to the Community Content Server as well
-
+									// Send this to the Community Content Server as well.
 									require_once ROOT_DIR . '/sys/SystemVariables.php';
 									$systemVariables = SystemVariables::getSystemVariables();
 									if ($systemVariables && !empty($systemVariables->communityContentUrl)) {
