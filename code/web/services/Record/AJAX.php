@@ -428,16 +428,7 @@ class Record_AJAX extends Action {
 			$items = $marcRecord->getCopies();
 			//sort things alphabetically and newest first for periodicals/serials
 			if ($marcRecord->isPeriodical()){
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($items, $sorter);
+				$items = sortPeriodicalItemsByShelfLocationAndCallNumber($items);
 			} else {
 				array_multisort(array_column($items, 'description'), SORT_NATURAL, $items);
 			}
@@ -629,7 +620,7 @@ class Record_AJAX extends Action {
 				} else {
 					$interface->assign('whileYouWaitTitles', []);
 					if (isset($results['items'])) {
-						$results = $this->getItemHoldForm($user->_homeLocationCode, $results, $shortId, $user);
+						$results = $this->getItemHoldForm($user->getPickupLocationCode(), $results, $shortId, $user);
 						$results['holdFormBypassed'] = true;
 					}
 				}
@@ -941,7 +932,7 @@ class Record_AJAX extends Action {
 					$location = new Location();
 					$userPickupLocations = $location->getPickupBranches($user);
 					foreach ($userPickupLocations as $tmpLocation) {
-						if ($tmpLocation->code == $pickupBranch) {
+						if (isset($tmpLocation->code) && $tmpLocation->code == $pickupBranch) {
 							$patron = $user;
 							break;
 						}
@@ -1884,62 +1875,52 @@ class Record_AJAX extends Action {
 			}
 		}
 
+		//Check to see if the patron's preferred pickup location and sublocation (if applicable) are valid.
+		// do this regardless of if "allow remembering pickup location" is on since we use the check for other messages
+		$preferredPickupLocationIsValid = false;
+		$preferredPickupLocation = null;
+		$preferredPickupSublocationIsValid = false;
+		foreach ($locations as $location) {
+			if (is_object($location) && ($location->locationId == $user->pickupLocationId)) {
+				$preferredPickupLocationIsValid = true;
+				$preferredPickupLocation = $location;
+				break;
+			}
+		}
+
+		$preferredPickupSublocationIsValid = true;
+		if ($preferredPickupLocationIsValid) {
+			//The preferred location is valid, check to see if sublocations are in use and if so if the preferred pickup area is valid
+			$preferredSublocationsAtPreferredLocation = $preferredPickupLocation->getPickupSublocations($user);
+			if (count($preferredSublocationsAtPreferredLocation) > 1) {
+				$preferredPickupSublocationIsValid = false;
+				require_once ROOT_DIR . '/sys/LibraryLocation/Sublocation.php';
+				require_once ROOT_DIR . '/sys/LibraryLocation/SublocationPatronType.php';
+				$patronType = $user->getPTypeObj();
+				$sublocationLookup = new Sublocation();
+				$sublocationLookup->id = $user->pickupSublocationId;
+				$sublocationLookup->isValidHoldPickupAreaILS = 1;
+				$sublocationLookup->isValidHoldPickupAreaAspen = 1;
+				if ($sublocationLookup->find(true)) {
+					$sublocationPType = new SublocationPatronType();
+					$sublocationPType->patronTypeId = $patronType->id;
+					$sublocationPType->sublocationId = $sublocationLookup->id;
+					if ($sublocationPType->find(true)) {
+						$preferredPickupSublocationIsValid = true;
+					}
+				}
+			}
+		}
+
 		global $library;
 		//Check to see if we can bypass the holds popup and just place the hold
 		if (!$multipleAccountPickupLocations && !$promptForHoldNotifications && $library->allowRememberPickupLocation) {
 			//If the patron's preferred pickup location is not valid, then force them to pick a new location
-			$preferredPickupLocationIsValid = false;
-			$preferredPickupLocation = null;
-			$preferredPickupSublocationIsValid = false;
-			foreach ($locations as $location) {
-				if (is_object($location) && ($location->locationId == $user->pickupLocationId)) {
-					$preferredPickupLocationIsValid = true;
-					$preferredPickupLocation = $location;
-					break;
-				}
-			}
-
-			$preferredPickupSublocationIsValid = true;
-			if ($preferredPickupLocationIsValid) {
-				//The preferred location is valid, check to see if sublocations are in use and if so if the preferred pickup area is valid
-				$preferredSublocationsAtPreferredLocation = $preferredPickupLocation->getPickupSublocations($user);
-				if (count($preferredSublocationsAtPreferredLocation) > 1) {
-					$preferredPickupSublocationIsValid = false;
-					require_once ROOT_DIR . '/sys/LibraryLocation/Sublocation.php';
-					require_once ROOT_DIR . '/sys/LibraryLocation/SublocationPatronType.php';
-					$patronType = $user->getPTypeObj();
-					$sublocationLookup = new Sublocation();
-					$sublocationLookup->id = $user->pickupSublocationId;
-					$sublocationLookup->isValidHoldPickupAreaILS = 1;
-					$sublocationLookup->isValidHoldPickupAreaAspen = 1;
-					if ($sublocationLookup->find(true)) {
-						$sublocationPType = new SublocationPatronType();
-						$sublocationPType->patronTypeId = $patronType->id;
-						$sublocationPType->sublocationId = $sublocationLookup->id;
-						if ($sublocationPType->find(true)) {
-							$preferredPickupSublocationIsValid = true;
-						}
-					}
-				}
-			}
-
 			if ($preferredPickupLocationIsValid && $preferredPickupSublocationIsValid) {
 				$rememberHoldPickupLocation = $user->rememberHoldPickupLocation;
 			} else {
 				$rememberHoldPickupLocation = false;
-				$locationKeys = array_keys($locations);
-				if (!$preferredPickupLocationIsValid && count($locations) == 2 && !empty($locations[$locationKeys[1]])) {
-					$onlyValidPickupLocation = $locations[$locationKeys[1]]->code;
-					$interface->assign('pickupLocationInvalidMessage', translate([
-						'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. The item must be picked up at the following location.',
-						'isPublicFacing' => true,
-					]));
-				} elseif (!$preferredPickupLocationIsValid) {
-					$interface->assign('pickupLocationInvalidMessage', translate([
-						'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. Please select a pickup location.',
-						'isPublicFacing' => true,
-					]));
-				} elseif (!$preferredPickupSublocationIsValid) {
+				if (!$preferredPickupSublocationIsValid) {
 					if ($user->pickupSublocationId > 0) {
 						$interface->assign('pickupLocationInvalidMessage', translate([
 							'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
@@ -1964,6 +1945,21 @@ class Record_AJAX extends Action {
 			// If the Library System does not allow remembering pickup location (i.e., !$library->allowRememberPickupLocation),
 			// then no need to display a message because the patron cannot choose a preferred pickup location anyway.
 		}
+
+		$locationKeys = array_keys($locations);
+		if (!$preferredPickupLocationIsValid && count($locations) == 2 && !empty($locations[$locationKeys[1]])) {
+			$onlyValidPickupLocation = $locations[$locationKeys[1]]->code;
+			$interface->assign('pickupLocationInvalidMessage', translate([
+				'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. The item must be picked up at the following location.',
+				'isPublicFacing' => true,
+			]));
+		} elseif (!$preferredPickupLocationIsValid) {
+			$interface->assign('pickupLocationInvalidMessage', translate([
+				'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. Please select a pickup location.',
+				'isPublicFacing' => true,
+			]));
+		}
+
 		$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
 		$interface->assign('onlyValidPickupLocation', $onlyValidPickupLocation ?? null);
 
