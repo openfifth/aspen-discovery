@@ -98,6 +98,14 @@ function getUpdates25_10_00(): array {
 		], //add_series_sort_method
 
 		//katherine - Grove
+		'add_include_in_reports_option_to_event_type' => [
+			'title' => 'Add Include In Reports option to Event Types',
+			'description' => 'Allows specific event types to be excluded from reports',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE event_type ADD COLUMN includeInReports TINYINT DEFAULT 1',
+			]
+		], //add_include_in_reports_option_to_event_type
 
 		//kirstien - Grove
 
