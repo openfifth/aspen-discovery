@@ -3,14 +3,15 @@
 		<div class="col-tn-8">
 			<div class="row">
 				{capture assign=statusIndicator}{include file='GroupedWork/statusIndicator.tpl' statusInformation=$firstRecord->getStatusInformation() viewingIndividualRecord=0 applyColors=false}{/capture}
-				<div class="result-label col-tn-12">{translate text="This %1% is currently %2%" 1=$firstRecord->getFormat() 2=$statusIndicator isPublicFacing=true}</div>
+				{capture assign=formatWithLink}<a href="{$firstRecord->getUrl()}">{translate text=$firstRecord->getFormat() isPublicFacing=true inAttribute=true}</a>{/capture}
+				<div class="result-label col-tn-12">{translate text="This %1% is currently %2%" 1=$formatWithLink 2=$statusIndicator isPublicFacing=true}</div>
 			</div>
 			<div style="margin-bottom: 3px; font-size: smaller">
 				{if !empty($firstRecord->publicationDate) || !empty($firstRecord->publisher)}
 					{$firstRecord->publicationDate} {$firstRecord->publisher}
 				{/if}
 				{if !empty($firstRecord->edition)} {$firstRecord->edition}{/if}
-				{if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if}
+				{* {if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if} *}
 				{if !empty($firstRecord->physical)} {$firstRecord->physical} {if $firstRecord->closedCaptioned}<i class="fas fa-closed-captioning"></i> {/if}{/if}
 				{if !empty($firstRecord->languageNote)} {$firstRecord->languageNote}{/if}
 			</div>
@@ -26,13 +27,15 @@
 	{* Show Shelf Locations *}
 	{if !$isEContent}
 		<div class="row horizDisplayShelfLocations" id="horizDisplayShelfLocations_{$workId}">
+			{assign var=numDisplayed value=0}
 			{foreach from=$itemSummary item=$curItemSummary name=itemSummary}
-				{if $smarty.foreach.itemSummary.index < 2}
-				<div class="col-tn-4">
-					<div><strong>{$curItemSummary.shelfLocation}</strong></div>
-					<div>{$curItemSummary.callNumber}</div>
-					<div>{$curItemSummary.availableCopies} of {$curItemSummary.totalCopies} available</div>
-				</div>
+				{if $numDisplayed < 2 && $curItemSummary.displayByDefault}
+					{assign var=numDisplayed value=$numDisplayed+1}
+					<div class="col-tn-4">
+						<div><strong>{$curItemSummary.shelfLocation}</strong></div>
+						<div>{$curItemSummary.callNumber}</div>
+						<div>{$curItemSummary.availableCopies} of {$curItemSummary.totalCopies} available</div>
+					</div>
 				{/if}
 			{/foreach}
 			{if count($itemSummary) > 2}

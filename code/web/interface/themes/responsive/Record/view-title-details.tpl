@@ -99,7 +99,6 @@
 			</div>
 		</div>
 	{/if}
-
 	{if !empty($showISBNs) && count($recordDriver->getISBNs()) > 0}
 		<div class="row">
 			<div class="result-label col-sm-4 col-xs-12">{translate text='ISBN' isPublicFacing=true}</div>
@@ -159,8 +158,8 @@
 
 	{if !empty($mpaaRating)}
 		<div class="row">
-			<div class="result-label col-sm-4 col-xs-12">{translate text='Rating' isPublicFacing=true}</div>
-			<div class="result-value col-sm-8 col-xs-12">{$mpaaRating|escape}</div>
+			<div class="result-label col-sm-4 col-xs-12">{translate text='MPAA Rating' isPublicFacing=true}</div>
+			<div class="result-value col-sm-8 col-xs-12">{implode subject=$mpaaRating glue=", " translate=true isPublicFacing=true}</div>
 		</div>
 	{/if}
 

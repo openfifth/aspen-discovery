@@ -91,27 +91,8 @@ if (!UserAccount::isLoggedIn() && isset($_COOKIE['searchPreferenceLanguage'])) {
 $interface->assign('showLanguagePreferencesBar', $showLanguagePreferencesBar);
 
 // Make sure language code is valid, reset to default if bad:
-$validLanguages = [];
-try {
-	require_once ROOT_DIR . '/sys/Translation/Language.php';
-	$validLanguage = new Language();
-	$validLanguage->orderBy(["weight", "displayName"]);
-	$validLanguage->find();
-	$userIsTranslator = UserAccount::userHasPermission('Translate Aspen');
-	while ($validLanguage->fetch()) {
-		if (!$validLanguage->displayToTranslatorsOnly || $userIsTranslator) {
-			$validLanguages[$validLanguage->code] = clone $validLanguage;
-		}
-	}
-} catch (Exception $e) {
-	$defaultLanguage = new Language();
-	$defaultLanguage->code = 'en';
-	$defaultLanguage->displayName = 'English';
-	$defaultLanguage->displayNameEnglish = 'English';
-	$defaultLanguage->facetValue = 'English';
-	$validLanguages['en'] = $defaultLanguage;
-	$language = 'en';
-}
+require_once ROOT_DIR . '/sys/Translation/Language.php';
+$validLanguages = Language::getValidLanguages();
 
 if (!array_key_exists($language, $validLanguages)) {
 	$language = 'en';
@@ -728,7 +709,7 @@ $interface->assign('searchSource', $searchSource);
 //Does have a slight performance advantage.
 global $isAJAX;
 $isAJAX = false;
-if ($action == "AJAX" || $action == "JSON" || $module == 'API') {
+if ($action == "AJAX" || $action == "JSON" || ($module == 'API' && $action !== 'Documentation')) {
 	$isAJAX = true;
 	$interface->assign('showTopSearchBox', 0);
 	$interface->assign('showBreadcrumbs', 0);
@@ -829,7 +810,7 @@ if (!$isAJAX) {
 			$librarySystemMessage->setPreFormattedMessage($library->systemMessage);
 			$systemMessages[] = $librarySystemMessage;
 		}
-		$systemMessages = SystemMessage::getActiveSystemMessages();
+		$systemMessages += SystemMessage::getActiveSystemMessages();
 
 		$interface->assign('systemMessages', $systemMessages);
 	} catch (Exception $e) {

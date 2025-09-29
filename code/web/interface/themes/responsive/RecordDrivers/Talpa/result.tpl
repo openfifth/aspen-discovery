@@ -230,49 +230,7 @@
 
 						{/if}
 						{if !$talpaResult}
-							{*					{include file="GroupedWork/relatedLists.tpl" isSearchResults=true}*}
-
-							{*					{include file="GroupedWork/readingHistoryIndicator.tpl" isSearchResults=true}*}
-
-							{* Short Mobile Entry for Formats when there aren't hidden formats *}
-							<div class="visible-xs">
-
-								{*						*}{* Determine if there were hidden Formats for this entry *}
-								{assign var=hasHiddenFormats value=false}
-								{foreach from=$relatedManifestations item=relatedManifestation}
-									{if $relatedManifestation->hasHiddenFormats()}
-										{assign var=hasHiddenFormats value=true}
-									{/if}
-								{/foreach}
-
-								{*						{* If there weren't hidden formats, show this short Entry (mobile view only). The exception is single format manifestations, they*}
-								{*                           won't have any hidden formats and will be displayed *}
-								{if empty($hasHiddenFormats) && is_array($relatedManifestations) && count($relatedManifestations) != 1}
-									<div class="hidethisdiv{$summId|escape} result-label col-sm-4 col-xs-12">
-										{translate text="Formats" isPublicFacing=true}
-									</div>
-									<div class="hidethisdiv{$summId|escape} result-value col-sm-8 col-xs-12">
-										<a onclick="$('#relatedManifestationsValue{$summId|escape},.hidethisdiv{$summId|escape}').toggleClass('hidden-xs');return false;" role="button">
-											{implode subject=$relatedManifestations|@array_keys glue=", "}
-										</a>
-									</div>
-								{/if}
-
-							</div>
-
-							{*					 Formats Section*}
-
-
-							{if is_array($relatedManifestations)}
-								<div class="{if empty($hasHiddenFormats) && count($relatedManifestations) != 1}hidden-xs {/if}col-xs-12" id="relatedManifestationsValue{$summId|escape}">
-									{*						Hide Formats section on mobile view, unless there is a single format or a format has been selected by the user*}
-									{*						relatedManifestationsValue ID is used by the Formats button*}
-
-									{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
-								</div>
-							{/if}
-
-
+							{include file="GroupedWork/allManifestations.tpl" isSearchResults=true}
 
 							{if empty($viewingCombinedResults)}
 								{* Description Section *}

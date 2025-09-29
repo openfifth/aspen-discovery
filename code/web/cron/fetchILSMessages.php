@@ -25,7 +25,7 @@ foreach ($accountProfiles as $accountProfileInfo) {
 			if (!empty($catalogDriver)) {
 				$catalog = CatalogFactory::getCatalogConnectionInstance($catalogDriver, $accountProfile);
 				try {
-					$catalog->updateAccountNotifications($ilsNotificationSetting);
+					$catalog->updateAccountNotifications($ilsNotificationSetting, $cronLogEntry);
 				} catch (PDOException $e) {
 					$cronLogEntry->numErrors++;
 					$cronLogEntry->notes .= "Could not update message queue for account profile $accountProfile->id.";

@@ -1,1 +1,1 @@
-Some materials are your account are due soon. Some materials may automatically may renew. If renewed, the Due Date has been updated.
+Some materials on your account are due soon. Some materials may automatically may renew. If renewed, the Due Date has been updated.

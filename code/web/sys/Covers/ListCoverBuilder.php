@@ -101,34 +101,36 @@ class ListCoverBuilder {
 			if ($listEntryCoverImage = @file_get_contents($bookcoverUrl, false)) {
 				$listEntryImageResource = @imagecreatefromstring($listEntryCoverImage);
 
-				$listEntryWidth = imagesx($listEntryImageResource);
-				$listEntryHeight = imagesy($listEntryImageResource);
+				if ($listEntryImageResource !== false) {
+					$listEntryWidth = imagesx($listEntryImageResource);
+					$listEntryHeight = imagesy($listEntryImageResource);
 
-				if ($isListOfLists) {
-					// For lists of lists, use a different placement strategy: make covers larger and more spaced out.
-					$coverLeft = 10 + (45 * (2 - $i));
-					$coverTop = 10 + (20 * (2 - $i));
+					if ($isListOfLists) {
+						// For lists of lists, use a different placement strategy: make covers larger and more spaced out.
+						$coverLeft = 10 + (45 * (2 - $i));
+						$coverTop = 10 + (20 * (2 - $i));
 
-					$newWidth = $listEntryWidth * 1.2;
-					$newHeight = $listEntryHeight * 1.2;
+						$newWidth = $listEntryWidth * 1.2;
+						$newHeight = $listEntryHeight * 1.2;
 
-					if (imagecopyresampled($imageCanvas, $listEntryImageResource, $coverLeft, $coverTop, 0, 0, $newWidth, $newHeight, $listEntryWidth, $listEntryHeight)) {
-						$borderColor = imagecolorallocate($imageCanvas, 0, 0, 0);
-						imagerectangle($imageCanvas, $coverLeft, $coverTop, $newWidth + $coverLeft, $newHeight + $coverTop, $borderColor);
+						if (imagecopyresampled($imageCanvas, $listEntryImageResource, $coverLeft, $coverTop, 0, 0, $newWidth, $newHeight, $listEntryWidth, $listEntryHeight)) {
+							$borderColor = imagecolorallocate($imageCanvas, 0, 0, 0);
+							imagerectangle($imageCanvas, $coverLeft, $coverTop, $newWidth + $coverLeft, $newHeight + $coverTop, $borderColor);
+						} else {
+							global $logger;
+							$logger->log(sprintf(
+								"ListCoverBuilder [getCover()]: imagecopyresampled failed for cover URL '%s' (src %dx%d -> dest %dx%d at %d,%d).",
+								$bookcoverUrl, $listEntryWidth, $listEntryHeight, $newWidth, $newHeight, $coverLeft, $coverTop
+							), Logger::LOG_ERROR);
+						}
 					} else {
-						global $logger;
-						$logger->log(sprintf(
-							"ListCoverBuilder [getCover()]: imagecopyresampled failed for cover URL '%s' (src %dx%d -> dest %dx%d at %d,%d).",
-							$bookcoverUrl, $listEntryWidth, $listEntryHeight, $newWidth, $newHeight, $coverLeft, $coverTop
-						), Logger::LOG_ERROR);
+						$coverLeft = 10 + (40 * (3 - $i));
+						$coverTop = 10 + (35 * (3 - $i));
+						imagefilledrectangle($imageCanvas, $coverLeft, $coverTop, $listEntryWidth + $coverLeft, $listEntryHeight + $coverTop, $white);
+						imagecopyresampled($imageCanvas, $listEntryImageResource, $coverLeft, $coverTop, 0, 0, $listEntryWidth, $listEntryHeight, $listEntryWidth, $listEntryHeight);
 					}
-				} else {
-					$coverLeft = 10 + (40 * (3 - $i));
-					$coverTop = 10 + (35 * (3 - $i));
-					imagefilledrectangle($imageCanvas, $coverLeft, $coverTop, $listEntryWidth + $coverLeft, $listEntryHeight + $coverTop, $white);
-					imagecopyresampled($imageCanvas, $listEntryImageResource, $coverLeft, $coverTop, 0, 0, $listEntryWidth, $listEntryHeight, $listEntryWidth, $listEntryHeight);
+					imagedestroy($listEntryImageResource);
 				}
-				imagedestroy($listEntryImageResource);
 			}
 		}
 

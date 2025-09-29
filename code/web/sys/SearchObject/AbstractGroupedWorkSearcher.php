@@ -8,17 +8,52 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 
 	public $selectedAvailabilityToggleValue;
 
+	/**
+	 * This determines if Aspen applies the default availability toggle for the library
+	 * or location if no value is provided. It needs to be disabled to search across libraries
+	 * and locations.
+	 *
+	 * @var bool
+	 */
+	protected bool $disableDefaultAvailabilityToggle = false;
+
 	public function __construct($searchVersion) {
 		parent::__construct();
 		$this->searchVersion = $searchVersion;
 	}
 
-	public function disableScoping() {
+	public function disableScoping() : void {
 		$this->indexEngine->disableScoping();
 	}
 
-	public function enableScoping() {
+	public function enableScoping() : void {
 		$this->indexEngine->enableScoping();
+	}
+
+	public function disableBoosting() : void {
+		$this->indexEngine->disableBoosting();
+	}
+
+	public function enableBoosting() : void {
+		$this->indexEngine->enableBoosting();
+	}
+
+	public function disableDefaultAvailabilityToggle() : void {
+		$this->disableDefaultAvailabilityToggle = true;
+	}
+
+	/** @noinspection PhpUnused */
+	public function enableDefaultAvailabilityToggle() : void {
+		$this->disableDefaultAvailabilityToggle = false;
+	}
+
+	public function disableEditionLimiters() : void {
+		$this->indexEngine->disableEditionLimiters();
+	}
+
+	/** @noinspection PhpUnused */
+	public function enableEditionLimiters() : void {
+		$this->indexEngine->enableEditionLimiters();
 	}
 
 
