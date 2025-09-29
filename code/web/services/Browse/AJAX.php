@@ -397,8 +397,8 @@ class Browse_AJAX extends Action {
 			}
 			$browseCategory->libraryId = $libraryId;
 			$browseCategory->description = '';
+			$browseCategory->validateTextId();
 
-			//setup and add the category
 			if (!$browseCategory->insert()) {
 				return [
 					'success' => false,
@@ -412,7 +412,7 @@ class Browse_AJAX extends Action {
 					]),
 				];
 			} elseif ($addAsSubCategoryOf) {
-				$id = $browseCategory->id; // get from above insertion operation
+				$id = $browseCategory->id;
 				$subCategory = new SubBrowseCategories();
 				$subCategory->browseCategoryId = $addAsSubCategoryOf;
 				$subCategory->subCategoryId = $id;
@@ -434,8 +434,6 @@ class Browse_AJAX extends Action {
 
 			$groupContext = $this->getBrowseCategoryGroupContext();
 			$activeBrowseCategoryGroup = $groupContext['group'];
-
-			//Now add to the library/location
 			$addToHomePageEnabled = isset($_REQUEST['addToHomePage']) && $_REQUEST['addToHomePage'] == 'true';
 			if ($activeBrowseCategoryGroup == null) {
 				$addToHomePageEnabled = false;

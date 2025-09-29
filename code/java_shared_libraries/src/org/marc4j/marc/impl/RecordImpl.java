@@ -340,7 +340,7 @@ class RecordImpl implements org.marc4j.marc.Record {
     /**
      * Gets a {@link List} of {@link VariableField}s from the {@link Record}
      * including the LEADER recast as ControlField for field matching purposes.
-     * 
+     *
      * @return a List of all VariableFields plus the Leader represented as a ControlField
      */
     public List<VariableField> getVariableFieldsWithLeader() {
@@ -421,6 +421,15 @@ class RecordImpl implements org.marc4j.marc.Record {
 
         return result;
     }
+
+	public List<DataField> getDataFields(final ArrayList<Integer> tags) {
+		final List<DataField> result = new ArrayList<>();
+		for (int tag : tags) {
+			result.addAll(getDataFields(tag));
+		}
+
+		return result;
+	}
 
     String stringRepresentation = null;
     /**
@@ -584,12 +593,12 @@ class RecordImpl implements org.marc4j.marc.Record {
     }
 
     /**
-     *  Logs an error message using the stated severity level.  Uses the values passed  
+     *  Logs an error message using the stated severity level.  Uses the values passed
      *  in id, field, and subfield to note the location of the error.
-     * 
+     *
      * @param field - the tag of the field currently being processed
      * @param subfield - the subfield tag of the subfield currently being processed
-     * @param severity - An indication of the relative severity of the error that was 
+     * @param severity - An indication of the relative severity of the error that was
      *                      encountered.
      * @param message - A descriptive message about the error that was encountered.
      */
@@ -607,7 +616,7 @@ class RecordImpl implements org.marc4j.marc.Record {
 
     /**
      *  Copies a List of errors into the current error handler
-     * 
+     *
      * @param newErrors - A list of Errors.
      */
     @Override
