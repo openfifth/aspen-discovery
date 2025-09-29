@@ -285,6 +285,7 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 	 */
 	function getAvailabilityInformation() : array {
 		if ($this->availability == null) {
+			require_once ROOT_DIR . '/sys/OverDrive/OverDriveAPIProductAvailability.php';
 			$this->availability = OverDriveAPIProductAvailability::getOverDriveAvailabilityForId($this->id);
 		}
 		return $this->availability;
@@ -470,10 +471,8 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 
 	/**
 	 * Get an array of all the format categories associated with the record.
-	 *
-	 * @return  string[]
 	 */
-	public function getFormatCategory() : array {
+	public function getFormatCategory() : string|array|null {
 		return [$this->getGroupedWorkDriver()->getFormatCategory()];
 	}
 

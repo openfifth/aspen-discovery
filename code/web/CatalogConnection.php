@@ -1941,7 +1941,7 @@ class CatalogConnection {
 		return $this->driver->getMessageTypes();
 	}
 
-	public function updateAccountNotifications(ILSNotificationSetting $ilsNotificationSetting): array {
+	public function updateAccountNotifications(ILSNotificationSetting $ilsNotificationSetting, ?CronLogEntry $cronLogEntry): array {
 		if ($this->supportAccountNotifications()) {
 			//Get a list of all users that have account notifications turned on
 			require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
@@ -1950,6 +1950,10 @@ class CatalogConnection {
 			$userNotificationToken->selectAdd();
 			$userNotificationToken->selectAdd('DISTINCT(userId)');
 			$userNotificationToken->find();
+			if (!is_null($cronLogEntry)) {
+				$cronLogEntry->notes .= "Updating Account Notifications for {$userNotificationToken->getNumResults()} users.<br/>";
+				$cronLogEntry->update();
+			}
 			$result = [
 				'success' => true,
 				'message' => '',
@@ -1962,7 +1966,7 @@ class CatalogConnection {
 				$user->id = $userNotificationToken->userId;
 				if ($user->find(true)) {
 					if ($user->canReceiveNotifications('notifyAccount')) {
-						$userResult = $this->driver->updateAccountNotifications($user, $ilsNotificationSetting);
+						$userResult = $this->driver->updateAccountNotifications($user, $ilsNotificationSetting, $cronLogEntry);
 						if ($userResult['success']) {
 							$result['numUserUpdates']++;
 							$result['numMessagesAdded'] +=  $userResult['numMessagesAdded'];
@@ -1972,6 +1976,13 @@ class CatalogConnection {
 						}
 					}
 				}
+			}
+			if (!is_null($cronLogEntry)) {
+				$cronLogEntry->notes .= "Added a total of {$result['numMessagesAdded']} messages.<br/>";
+				if ($result['numFailedUserUpdates'] > 0) {
+					$cronLogEntry->notes .= "Failed to update {$result['numFailedUserUpdates']} users.<br/>";
+				}
+				$cronLogEntry->update();
 			}
 			return $result;
 		}else{

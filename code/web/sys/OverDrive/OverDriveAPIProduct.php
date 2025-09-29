@@ -61,7 +61,7 @@ class OverDriveAPIProduct extends DataObject {
 		}else{
 			$overDriveProduct = new OverDriveAPIProduct();
 			$overDriveProduct->overdriveId = $identifier;
-			if ($overDriveProduct->fetch()) {
+			if ($overDriveProduct->find(true)) {
 				return $overDriveProduct;
 			}else{
 				return null;

@@ -60,7 +60,7 @@ class HooplaExtract extends DataObject {
 		}else{
 			$hooplaProduct = new HooplaExtract();
 			$hooplaProduct->hooplaId = $identifier;
-			if ($hooplaProduct->fetch()) {
+			if ($hooplaProduct->find(true)) {
 				return $hooplaProduct;
 			}else{
 				return null;

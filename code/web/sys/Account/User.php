@@ -4354,19 +4354,23 @@ class User extends DataObject {
 		}
 		$sections['cataloging'] = new AdminSection('Catalog / Grouped Works');
 		$groupedWorkAction = new AdminAction('Grouped Work Display', 'Define information about what is displayed for Grouped Works in search results and full record displays.', '/Admin/GroupedWorkDisplay');
-		$groupedWorkAction->addSubAction(new AdminAction('Grouped Work Facets', 'Define information about what facets are displayed for grouped works in search results and Advanced Search.', '/Admin/GroupedWorkFacets'), [
-			'Administer All Grouped Work Facets',
-			'Administer Library Grouped Work Facets',
+		$groupedWorkAction->addSubAction(new AdminAction('eContent Sorting', 'Define how eContent sources are sorted within a Grouped Work.', '/Admin/GroupedWorkEContentSorting'), [
+			'Administer All eContent Sorting',
+			'Administer Library eContent Sorting',
 		]);
 		$groupedWorkAction->addSubAction(new AdminAction('Format Sorting', 'Define how formats are sorted within a Grouped Work.', '/Admin/GroupedWorkFormatSorting'), [
 			'Administer All Format Sorting',
 			'Administer Library Format Sorting',
 		]);
+		$groupedWorkAction->addSubAction(new AdminAction('Grouped Work Facets', 'Define information about what facets are displayed for grouped works in search results and Advanced Search.', '/Admin/GroupedWorkFacets'), [
+			'Administer All Grouped Work Facets',
+			'Administer Library Grouped Work Facets',
+		]);
 		$sections['cataloging']->addAction($groupedWorkAction, [
 			'Administer All Grouped Work Display Settings',
 			'Administer Library Grouped Work Display Settings',
 		]);
-		$sections['cataloging']->addAction(new AdminAction('Manual Grouping Title/Author Variants', 'View a list of all title/author variants that have been added to Aspen to merge works.', '/Admin/AlternateTitles'), 'Manually Group and Ungroup Works');
+		$sections['cataloging']->addAction(new AdminAction('Manually Grouped Title/Author Variants', 'View a list of all title/author variants that have been added to Aspen to merge works.', '/Admin/AlternateTitles'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Author Authorities', 'Create and edit authorities for authors.', '/Admin/AuthorAuthorities'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Records To Not Group', 'Lists records that should not be grouped.', '/Admin/NonGroupedRecords'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Replacement Costs', 'Define default replacement costs by format.', '/Admin/ReplacementCosts'), 'Administer Replacement Costs');
@@ -5898,7 +5902,7 @@ class User extends DataObject {
 				// Get all the related records, use for covers since we don't need actions
 				foreach ($groupedWorkDriver->getRelatedRecords(true) as $record) {
 					foreach ($record->getItems() as $item) {
-						if ($item->itemId == $result['itemData']['itemId']) {
+						if ($item->itemId == $result['itemData']['itemId'] || $item->itemId == $result['itemData']['barcode']) {
 							$format = $record->getFormat();
 							break;
 						}
@@ -5907,7 +5911,7 @@ class User extends DataObject {
 			}
 
 			//Determine if we need to show a message
-			require_once ROOT_DIR . '/sys/AspenLIDA/SelfCheckCompletionMessage.php';
+			require_once ROOT_DIR . '/sys/AspenLiDA/SelfCheckCompletionMessage.php';
 			$selfCheckCompletionMessage = new SelfCheckCompletionMessage();
 			$escapedFormat = $selfCheckCompletionMessage->escape($format);
 			$escapedOwningLocationCode = $selfCheckCompletionMessage->escape($result['itemData']['owningLocationCode']);

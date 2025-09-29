@@ -84,7 +84,7 @@ class Language extends DataObject {
 	}
 
 	/**
-	 * @return Language[]
+	 * @return string[]
 	 */
 	public static function getLanguageList() : array {
 		$language = new Language();
@@ -111,6 +111,38 @@ class Language extends DataObject {
 			$languageList[$language->code] = $language->id;
 		}
 		return $languageList;
+	}
+
+	private static $_validLanguages = null;
+
+	/**
+	 * @return Language[]
+	 */
+	public static function getValidLanguages() : array {
+		if (self::$_validLanguages == null) {
+			$validLanguages = [];
+			try {
+				require_once ROOT_DIR . '/sys/Translation/Language.php';
+				$validLanguage = new Language();
+				$validLanguage->orderBy(["weight", "displayName"]);
+				$validLanguage->find();
+				$userIsTranslator = UserAccount::userHasPermission('Translate Aspen');
+				while ($validLanguage->fetch()) {
+					if (!$validLanguage->displayToTranslatorsOnly || $userIsTranslator) {
+						$validLanguages[$validLanguage->code] = clone $validLanguage;
+					}
+				}
+			} catch (Exception) {
+				$defaultLanguage = new Language();
+				$defaultLanguage->code = 'en';
+				$defaultLanguage->displayName = 'English';
+				$defaultLanguage->displayNameEnglish = 'English';
+				$defaultLanguage->facetValue = 'English';
+				$validLanguages['en'] = $defaultLanguage;
+			}
+			self::$_validLanguages = $validLanguages;
+		}
+		return  self::$_validLanguages;
 	}
 
 	public function getNumericColumnNames(): array {

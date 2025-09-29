@@ -484,6 +484,9 @@ class GroupedWork_AJAX extends JSON_Action {
 	/** @noinspection PhpUnused */
 	function getWorkInfo() : array {
 		global $interface;
+		global $library;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
 
 		//Indicate we are showing search results, so we don't get hold buttons
 		$interface->assign('displayingSearchResults', true);
@@ -2718,6 +2721,7 @@ class GroupedWork_AJAX extends JSON_Action {
 
 			if ($foundVariation) {
 				$relatedRecords = $variation->getRelatedRecords();
+				/** @var Grouping_Record $firstRecord */
 				$firstRecord = reset($relatedRecords);
 				$interface->assign('firstRecord', $firstRecord);
 				$interface->assign('isEContent', $firstRecord->isEContent());

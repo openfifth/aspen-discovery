@@ -92,7 +92,21 @@ abstract class Solr {
 	/**
 	 * Flag to disable default scoping to show ILL book titles, etc.
 	 */
-	private $scopingDisabled = false;
+	private bool $scopingDisabled = false;
+
+	/**
+	 * Flag to enable or disable boosting of records.
+	 * In general only useful for finding all records in Solr.
+	 */
+	protected bool $boostingDisabled = false;
+
+	/**
+	 * This determines if Aspen applies edition limiters which limit based on ownership, availability, etc.
+	 * This needs to be disabled to search across libraries and locations.
+	 *
+	 * @var bool
+	 */
+	protected bool $disableEditionLimiters = false;
 
 	/** @var string */
 	private $searchSource = null;
@@ -1042,11 +1056,11 @@ abstract class Solr {
 		return $sortField . ' ' . $sortDirection;
 	}
 
-	function disableScoping() {
+	function disableScoping() : void {
 		$this->scopingDisabled = true;
 	}
 
-	function enableScoping() {
+	function enableScoping() : void {
 		$this->scopingDisabled = false;
 	}
 
@@ -1063,6 +1077,26 @@ abstract class Solr {
 		}
 
 		return $scopingEnabled;
+	}
+
+	function disableBoosting() : void {
+		$this->boostingDisabled = true;
+	}
+
+	function enableBoosting() : void {
+		$this->boostingDisabled = false;
+	}
+
+	function editionLimitersAreDisabled() : bool {
+		return $this->disableEditionLimiters;
+	}
+
+	function disableEditionLimiters() : void {
+		$this->disableEditionLimiters = true;
+	}
+
+	function enableEditionLimiters() : void {
+		$this->disableEditionLimiters = false;
 	}
 
 	/**

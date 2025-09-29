@@ -3855,7 +3855,9 @@ class Koha extends AbstractIlsDriver {
 						$error);
 				}
 				$result['error'] = trim($error);
-			} elseif (preg_match('%<div id="password-recovery">\s+<div class="alert alert-info">(.*?)<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s+</div>\s+</div>%s', $postResults, $messageInformation)) {
+			}
+			elseif (preg_match('%<div id="password-recovery">\s*<div class="alert alert-info">\s*<p>(.*?)</p>\s*<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s*</div>%s', $postResults, $messageInformation) ||
+					preg_match('%<div id="password-recovery">\s+<div class="alert alert-info">(.*?)<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s+</div>\s+</div>%s', $postResults, $messageInformation)) {
 				$message = $messageInformation[1];
 				$result['success'] = true;
 				$result['message'] = translate([
@@ -3864,7 +3866,6 @@ class Koha extends AbstractIlsDriver {
 				]);
 			}
 		}
-
 		return $result;
 	}
 
@@ -8850,9 +8851,10 @@ class Koha extends AbstractIlsDriver {
 	 *
 	 * @param User $user - the user to update notifications for
 	 * @param ILSNotificationSetting $ilsNotificationSetting - the settings to base notifications on
+	 * @param ?CronLogEntry $cronLogEntry - an optional log entry to record information to
 	 * @return array
 	 */
-	public function updateAccountNotifications(User $user, ILSNotificationSetting $ilsNotificationSetting): array {
+	public function updateAccountNotifications(User $user, ILSNotificationSetting $ilsNotificationSetting, ?CronLogEntry $cronLogEntry): array {
 		$this->initDatabaseConnection();
 
 		//Get a list of all messages that have been queued in the last 24 hours for the user

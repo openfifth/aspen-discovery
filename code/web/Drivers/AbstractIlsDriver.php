@@ -992,9 +992,10 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	 *
 	 * @param User $user - the user to update notifications for
 	 * @param ILSNotificationSetting $ilsNotificationSetting - the settings to base notifications on
+	 * @param ?CronLogEntry $cronLogEntry - an optional log entry to record information to
 	 * @return array
 	 */
-	public function updateAccountNotifications(User $user, ILSNotificationSetting $ilsNotificationSetting): array {
+	public function updateAccountNotifications(User $user, ILSNotificationSetting $ilsNotificationSetting, ?CronLogEntry $cronLogEntry): array {
 		return [
 			'success' => false,
 			'message' => 'This functionality has not been implemented for this ILS',
