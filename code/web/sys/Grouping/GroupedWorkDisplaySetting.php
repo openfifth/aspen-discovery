@@ -4,6 +4,7 @@ require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFacetGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkMoreDetails.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFormatSortingGroup.php';
+require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
 
 /**
  * Class GroupedWorkDisplaySetting
@@ -52,6 +53,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	public $formatDisplayStyle;
 	public $formatSortingGroupId;
+	public $eContentSortingGroupId;
 
 	//Enrichment
 	public $showStandardReviews;
@@ -148,6 +150,14 @@ class GroupedWorkDisplaySetting extends DataObject {
 		$formatSort->find();
 		while ($formatSort->fetch()) {
 			$formatSortGroups[$formatSort->id] = $formatSort->name;
+		}
+
+		$eContentSortGroups = [];
+		$eContentSortGroup = new GroupedWorkEContentSortingGroup();
+		$eContentSortGroup->orderBy('name');
+		$eContentSortGroup->find();
+		while ($eContentSortGroup->fetch()) {
+			$eContentSortGroups[$eContentSortGroup->id] = $eContentSortGroup->name;
 		}
 
 		$moreDetailsStructure = GroupedWorkMoreDetails::getObjectStructure($context);
@@ -260,6 +270,15 @@ class GroupedWorkDisplaySetting extends DataObject {
 						],
 						'label' => 'Format Display Style',
 						'description' => 'The display style of individual formats within the grouped work.',
+						'default' => 1
+					],
+					'eContentSortingGroupId' => [
+						'property' => 'eContentSortingGroupId',
+						'type' => 'enum',
+						'values' => $eContentSortGroups,
+						'label' => 'eContent Sorting',
+						'description' => 'Required eContent sorting configuration that can be created under eContent Sorting.',
+						'required' => true,
 						'default' => 1
 					],
 					'formatSortingGroupId' => [
@@ -1052,5 +1071,18 @@ class GroupedWorkDisplaySetting extends DataObject {
 			}
 		}
 		return $this->_formatSortingGroup;
+	}
+
+	private GroupedWorkEContentSortingGroup|false|null $_eContentSortingGroup = false;
+	public function getEContentSortingGroup() : ?GroupedWorkEContentSortingGroup {
+		if ($this->_eContentSortingGroup === false) {
+			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
+			$this->_eContentSortingGroup = new GroupedWorkEContentSortingGroup();
+			$this->_eContentSortingGroup->id = $this->eContentSortingGroupId;
+			if (!$this->_eContentSortingGroup->find(true)) {
+				$this->_eContentSortingGroup = null;
+			}
+		}
+		return $this->_eContentSortingGroup;
 	}
 }

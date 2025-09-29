@@ -27,13 +27,15 @@
 	{* Show Shelf Locations *}
 	{if !$isEContent}
 		<div class="row horizDisplayShelfLocations" id="horizDisplayShelfLocations_{$workId}">
+			{assign var=numDisplayed value=0}
 			{foreach from=$itemSummary item=$curItemSummary name=itemSummary}
-				{if $smarty.foreach.itemSummary.index < 2}
-				<div class="col-tn-4">
-					<div><strong>{$curItemSummary.shelfLocation}</strong></div>
-					<div>{$curItemSummary.callNumber}</div>
-					<div>{$curItemSummary.availableCopies} of {$curItemSummary.totalCopies} available</div>
-				</div>
+				{if $numDisplayed < 2 && $curItemSummary.displayByDefault}
+					{assign var=numDisplayed value=$numDisplayed+1}
+					<div class="col-tn-4">
+						<div><strong>{$curItemSummary.shelfLocation}</strong></div>
+						<div>{$curItemSummary.callNumber}</div>
+						<div>{$curItemSummary.availableCopies} of {$curItemSummary.totalCopies} available</div>
+					</div>
 				{/if}
 			{/foreach}
 			{if count($itemSummary) > 2}

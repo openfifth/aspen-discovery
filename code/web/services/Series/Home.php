@@ -50,7 +50,7 @@ class Series_Home extends Action {
 			$activeSort = $_REQUEST['sort'];
 		}
 		if (empty($activeSort)) {
-			$activeSort = 'volume asc';
+			$activeSort = $series->getDefaultSortMethodName();
 		}
 
 		if ($series->find(true)) {
@@ -64,7 +64,13 @@ class Series_Home extends Action {
 			$interface->assign('authors', $authors);
 
 			$seriesRecordDriver = new SeriesRecordDriver($listId);
-			$interface->assign('cover', $seriesRecordDriver->getBookcoverUrl('medium'));
+			if ($seriesRecordDriver->isValid()) {
+				$interface->assign('cover', $seriesRecordDriver->getBookcoverUrl('medium'));
+			}else{
+				//This series has not been indexed yet
+				$bookCoverUrl = "/bookcover.php?type=series&id=$listId&size=medium";
+				$interface->assign('cover', $bookCoverUrl);
+			}
 
 			$this->buildListForDisplay($series, $activeSort);
 
@@ -87,7 +93,7 @@ class Series_Home extends Action {
 	 *
 	 * @access  public
 	 */
-	public function buildListForDisplay(Series $list, string $sortName = "volume asc") : void {
+	public function buildListForDisplay(Series $list, string $sortName) : void {
 		global $interface;
 
 		$queryParams = parse_url($_SERVER['REQUEST_URI'], PHP_URL_QUERY);
@@ -147,27 +153,34 @@ class Series_Home extends Action {
 		}
 
 		$sortOptions = [
+			'volumeAsc' => [
+				'desc' => 'Volume',
+				'selected' => $sortName == 'volume',
+				'sortUrl' => "/Series/$list->id?sort=volume",
+			],
 			'displayName' => [
 				'desc' => 'Title',
 				'selected' => $sortName == 'displayName',
-				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'displayName'])),
+				'sortUrl' => "/Series/$list->id?sort=displayName",
 			],
 			'pubDate' => [
 				'desc' => 'Publication Date',
 				'selected' => $sortName == 'pubDate',
-				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'pubDate'])),
+				'sortUrl' => "/Series/$list->id?sort=pubDate",
 			],
-			'volumeAsc' => [
-				'desc' => 'Volume Number Ascending',
-				'selected' => $sortName == 'volume asc',
-				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'volume asc'])),
-			],
-			'volumeDesc' => [
-				'desc' => 'Volume Number Descending',
-				'selected' => $sortName == 'volumed desc',
-				'sortUrl' => "/Series/$list->id?" . http_build_query(array_merge($queryParams, ['sort' => 'volume desc'])),
+			'pubDateDesc' => [
+				'desc' => 'Publication Date Descending',
+				'selected' => $sortName == 'pubDate desc',
+				'sortUrl' => "/Series/$list->id?sort=pubDate+desc",
 			],
 		];
+		if ($list->sortMethod == 5) {
+			$sortOptions['custom'] = [
+				'desc' => 'Suggested Order',
+				'selected' => $sortName == 'custom',
+				'sortUrl' => "/Series/$list->id?sort=custom",
+			];
+		}
 
 		$interface->assign('sortList', $sortOptions);
 

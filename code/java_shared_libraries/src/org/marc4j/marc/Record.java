@@ -21,6 +21,7 @@
 package org.marc4j.marc;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.marc4j.MarcError;
@@ -118,7 +119,7 @@ public interface Record extends Serializable {
     /**
      * Returns the control number or <code>null</code> if no control number is
      * available.
-     * 
+     *
      * This method returns the data for a <code>ControlField</code> with tag
      * 001.
      *
@@ -194,6 +195,8 @@ public interface Record extends Serializable {
 
     List<DataField> getDataFields(int[] tags);
 
+	List<DataField> getDataFields(ArrayList<Integer> tags);
+
     /**
      * Returns the <code>Leader</code>.
      *
@@ -254,12 +257,12 @@ public interface Record extends Serializable {
     List<VariableField> find(int[] tag, String pattern);
 
     /**
-     * Logs an error message using the stated severity level.  Uses the values passed  
+     * Logs an error message using the stated severity level.  Uses the values passed
      * in id, field, and subfield to note the location of the error.
-     * 
+     *
      * @param field - the tag of the field currently being processed
      * @param subfield - the subfield tag of the subfield currently being processed
-     * @param severity - An indication of the relative severity of the error that was 
+     * @param severity - An indication of the relative severity of the error that was
      *                      encountered.
      * @param message - A descriptive message about the error that was encountered.
      */
@@ -267,7 +270,7 @@ public interface Record extends Serializable {
 
     /**
      * Copies a List of errors into the current error handler
-     * 
+     *
      * @param newErrors - A list of Errors.
      */
     void addErrors(List<MarcError> newErrors);

@@ -1,10 +1,8 @@
 <?php
 
 class StringUtils {
-	public static function trimStringToLengthAtWordBoundary($string, $maxLength, $addEllipsis) {
-		if (strlen($string) < $maxLength) {
-			return $string;
-		} else {
+	public static function trimStringToLengthAtWordBoundary($string, $maxLength, $addEllipsis) : string {
+		if (strlen($string) >= $maxLength) {
 			if ($addEllipsis) {
 				$maxLength -= 3;
 			}
@@ -13,11 +11,11 @@ class StringUtils {
 			if ($addEllipsis) {
 				$string .= '...';
 			}
-			return $string;
 		}
+		return $string;
 	}
 
-	static function formatCurrency($number) {
+	static function formatCurrency($number) : string {
 		global $activeLanguage;
 
 		$currencyCode = 'USD';
@@ -45,7 +43,7 @@ class StringUtils {
 		return $currencyFormatter->getSymbol(NumberFormatter::CURRENCY_SYMBOL);
 	}
 
-	static function truncate($string, $length = 80, $etc = '...', $break_words = false, $middle = false) {
+	static function truncate($string, $length = 80, $etc = '...', $break_words = false, $middle = false) : string {
 		if ($length == 0) {
 			return '';
 		}
@@ -65,15 +63,14 @@ class StringUtils {
 		}
 	}
 
-	static function removeTrailingPunctuation($str) {
+	static function removeTrailingPunctuation($str) : string {
 		// We couldn't find the file, return an empty value:
 		$str = trim($str);
 		$str = preg_replace("~([-/:,]+)$~", "", $str);
-		$str = trim($str);
-		return $str;
+		return trim($str);
 	}
 
-	static function formatBytes($bytes, $precision = 2) {
+	static function formatBytes($bytes, $precision = 2) : string {
 		$units = [
 			'B',
 			'KB',
@@ -93,7 +90,7 @@ class StringUtils {
 		return round($bytes, $precision) . ' ' . $units[$pow];
 	}
 
-	static function unformatBytes($formattedBytes) {
+	static function unformatBytes($formattedBytes): float|object|int {
 
 		$units = [
 			'B' => 0,
@@ -114,12 +111,7 @@ class StringUtils {
 		return $bytes;
 	}
 
-	static function startsWith($haystack, $needle) {
-		$length = strlen($needle);
-		return substr($haystack, 0, $length) === $needle;
-	}
-
-	static function endsWith($haystack, $needle) {
+	static function endsWith($haystack, $needle) : bool {
 		$length = strlen($needle);
 		if (!$length) {
 			return true;
