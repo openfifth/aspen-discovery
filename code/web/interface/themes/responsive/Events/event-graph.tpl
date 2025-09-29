@@ -36,12 +36,13 @@
 				</select>
 			</div>
 			<div class="form-group property-row">
-				<div class="checkbox">
-					<label for="separateEventTypes">
-						<input class="form-check-inline" type="checkbox" id="separateEventTypes" name="separateEventTypes" {if $separateEventTypes}checked="checked"{/if}">
-						Graph each Event Type on a separate line
-					</label>
-				</div>
+				<label for="type">Graph Options:</label>
+				<select name="graphOption" id="graphOption" class="form-control">
+					<option {if $graphOption == '0'}selected{/if} value="0">Show total event hours</option>
+					<option {if $graphOption == '1'}selected{/if} value="1">Group hours by event type</option>
+					<option {if $graphOption == '2'}selected{/if} value="2">Group hours by location</option>
+					<option {if $graphOption == '3'}selected{/if} value="3">Group hours by event type at each location (no graph)</option>
+				</select>
 			</div>
 			<div class="form-group">
 				<label for="type">Location:</label>
@@ -123,7 +124,7 @@
 		</div>
 		{if !empty($showCSVExportButton)}
 			<div>
-				<a id="UsageGraphExport" class="btn btn-sm btn-default" href="/{$section}/AJAX?method=exportUsageData&stat={$stat}{if !empty($profileName)}&profileName={$profileName}{/if}&instance={if !empty($instance)}{$instance}{/if}{if !empty($timeframe)}&timeframe={$timeframe}{/if}{if !empty($eventTypeValue)}&eventTypeValue={$eventTypeValue}{/if}{if !empty($locationValue)}&locationValue={$locationValue}{/if}{if !empty($sublocationValue)}&sublocationValue={$sublocationValue}{/if}{if !empty($fromDate)}&fromDate={$fromDate}{/if}{if !empty($toDate)}&toDate={$toDate}{/if}{if !empty($separateEventTypes)}&separateEventTypes={$separateEventTypes}{/if}">{translate text='Export To CSV' isAdminFacing=true}</a>
+				<a id="UsageGraphExport" class="btn btn-sm btn-default" href="/{$section}/AJAX?method=exportUsageData&stat={$stat}{if !empty($profileName)}&profileName={$profileName}{/if}&instance={if !empty($instance)}{$instance}{/if}{if !empty($timeframe)}&timeframe={$timeframe}{/if}{if !empty($eventTypeValue)}&eventTypeValue={$eventTypeValue}{/if}{if !empty($locationValue)}&locationValue={$locationValue}{/if}{if !empty($sublocationValue)}&sublocationValue={$sublocationValue}{/if}{if !empty($fromDate)}&fromDate={$fromDate}{/if}{if !empty($toDate)}&toDate={$toDate}{/if}{if !empty($graphOption)}&graphOption={$graphOption}{/if}">{translate text='Export To CSV' isAdminFacing=true}</a>
 				<div id="exportToCSVHelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Exporting will retrieve the latest data. To see it on screen, refresh this page." isAdminFacing=true}</small></div>
 			</div>
 		{/if}
@@ -131,6 +132,9 @@
 {/strip}
 {literal}
 <script>
+	{/literal}
+	{if $graphOption != "3"}
+	{literal}
 	var ctx = document.getElementById('chart');
 	var myChart = new Chart(ctx, {
 		type: 'line',
@@ -180,6 +184,9 @@
 			}
 		}
 	});
+	{/literal}
+	{/if}
+	{literal}
 	$("#location").on('change', function () {
 		var url = Globals.path + '/Events/AJAX';
 		var params = {

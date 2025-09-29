@@ -23,8 +23,18 @@ class Events_EventGraphs extends Admin_Admin {
 		$eventType = $_REQUEST['type'] ?? '';
 		$interface->assign('eventTypeValue', $eventType);
 		$interface->assign('eventTypes', EventType::getEventTypeList(true));
-		$separateEventTypes = $_REQUEST['separateEventTypes'] ?? false;
-		$interface->assign('separateEventTypes', $separateEventTypes);
+		$graphOption = $_REQUEST['graphOption'] ?? 0;
+		$interface->assign('graphOption', $graphOption);
+		$separateEventTypes = false;
+		$separateLocations = false;
+		if ($graphOption == 1) {
+			$separateEventTypes = true;
+		} else if ($graphOption == 2) {
+			$separateLocations = true;
+		} else if ($graphOption == 3) {
+			$separateEventTypes = true;
+			$separateLocations = true;
+		}
 
 		// $libraryList = Library::getLibraryList(!UserAccount::userHasPermission('View Event Reports For All Libraries'));
 		$locations = Location::getLocationList(!UserAccount::userHasPermission('View Event Reports for All Libraries') || UserAccount::userHasPermission('View Event Reports for Home Library'));
@@ -62,7 +72,7 @@ class Events_EventGraphs extends Admin_Admin {
 		$interface->assign('showCSVExportButton', true);
 		$interface->assign('graphTitle', $title);
 		// $this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes);
+		$this->getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes, $separateLocations);
 		$interface->assign('stat', $stat);
 		$interface->assign('propName', 'exportToCSV');
 		$title = $interface->getVariable('graphTitle');
@@ -109,7 +119,17 @@ class Events_EventGraphs extends Admin_Admin {
 		$fromDate = $_REQUEST['fromDate'] ?? '';
 		$toDate = $_REQUEST['toDate'] ?? '';
 		$eventType = $_REQUEST['eventTypeValue'] ?? '';
-		$separateEventTypes = $_REQUEST['separateEventTypes'] ?? false;
+		$graphOption = $_REQUEST['graphOption'] ?? 0;
+		$separateEventTypes = false;
+		$separateLocations = false;
+		if ($graphOption == 1) {
+			$separateEventTypes = true;
+		} else if ($graphOption == 2) {
+			$separateLocations = true;
+		} else if ($graphOption == 3) {
+			$separateEventTypes = true;
+			$separateLocations = true;
+		}
 		$fields = array_filter($_REQUEST, function($v, $k) {
 			return str_contains($k, 'field_') && $v != NULL && $v !== '';
 		}, ARRAY_FILTER_USE_BOTH);
@@ -118,7 +138,7 @@ class Events_EventGraphs extends Admin_Admin {
 		}
 		$query = $_REQUEST['query'] ?? '';
 
-		$this->getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes);
+		$this->getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes, $separateLocations);
 		$dataSeries = $interface->getVariable('dataSeries');
 
 		$filename = "AspenUsageData_{$stat}.csv";
@@ -146,18 +166,41 @@ class Events_EventGraphs extends Admin_Admin {
 		exit();
 	}
 
-	private function getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation = '', $query = '', $fields = [], $fromDate = '', $toDate = '', $separateEventTypes = false): void {
+	private function getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation = '', $query = '', $fields = [], $fromDate = '', $toDate = '', $separateEventTypes = false, $separateLocations = false): void {
 		global $interface;
 
 		$dataSeries = [];
 		$columnLabels = [];
 
-		$seriesToGenerate = [$eventType => 'Total Hours'];
-		if ($separateEventTypes && empty($eventType)) {
-			$seriesToGenerate = $seriesToGenerate + EventType::getEventTypeList(true);
+		$restrictByHomeLibrary = !UserAccount::userHasPermission('View Event Reports for All Libraries') || UserAccount::userHasPermission('View Event Reports for Home Library');
+		$seriesToGenerate[] = ['label' => 'Total Hours', 'eventTypeId' => $eventType ?? null, 'locationId' => $location ?? null];
+		if ($separateEventTypes && !$separateLocations && empty($eventType)) {
+			$eventTypes = EventType::getEventTypeList(true);
+			foreach ($eventTypes as $eventId => $eventLabel) {
+				$seriesToGenerate[] = ['label' => $eventLabel, 'eventTypeId' => $eventId, 'locationId' => $location ?? null];
+			}
+		} else if ($separateLocations && !$separateEventTypes && empty($location)) {
+			$locations = Location::getLocationList($restrictByHomeLibrary);
+			foreach ($locations as $locationId => $locationLabel) {
+				$seriesToGenerate[] = ['label' => $locationLabel, 'eventTypeId' => $eventType ?? null, 'locationId' => $locationId];
+			}
+		} else if ($separateEventTypes && $separateLocations) {
+			$eventTypes = EventType::getEventTypeList(true);
+			$locations = Location::getLocationList($restrictByHomeLibrary);
+			if (!empty($location)) {
+				$locations = [$location => $locations[$location]];
+			}
+			if (!empty($eventType)) {
+				$eventTypes = [$eventType => $eventTypes[$eventType]];
+			}
+			foreach ($locations as $locationId => $locationLabel) {
+				foreach ($eventTypes as $eventTypeId => $eventTypeLabel) {
+					$seriesToGenerate[] = ['label' => "$locationLabel - $eventTypeLabel", 'eventTypeId' => $eventTypeId, 'locationId' => $locationId];
+				}
+			}
 		}
 
-		foreach ($seriesToGenerate as $eventTypeId => $eventTypeLabel) {
+		foreach ($seriesToGenerate as $series) {
 			$userHours = new EventInstance();
 			$userHours->selectAdd();
 			$userHours->whereAdd("event_instance.deleted = 0");
@@ -176,15 +219,14 @@ class Events_EventGraphs extends Admin_Admin {
 				$eventField->groupBy("eventId");
 				$userHours->joinAdd($eventField, 'INNER', 'eventEventField', 'eventId', 'eventId');
 			}
-			$restrictByHomeLibrary = !UserAccount::userHasPermission('View Event Reports for All Libraries') || UserAccount::userHasPermission('View Event Reports for Home Library');
 			$interface->assign('libraryRestriction', $restrictByHomeLibrary ? " at Your Home Library" : "");
-			if (!empty($eventTypeId) || !empty($location) || $restrictByHomeLibrary || !empty($query)) {
+			if (!empty($series['locationId']) || !empty($series['eventTypeId']) || !empty($location) || $restrictByHomeLibrary || !empty($query)) {
 				$event = new Event();
-				if (!empty($eventTypeId)) {
-					$event->whereAdd("eventTypeId = " . $event->escape($eventTypeId));
+				if (($separateEventTypes && !empty($series['eventTypeId'])) || !empty($eventType)) {
+					$event->whereAdd("eventTypeId = " . $event->escape($series['eventTypeId']));
 				}
-				if (!empty($location)) {
-					$event->whereAdd("locationId = " . $event->escape($location));
+				if (($separateLocations && !empty($series['locationId'])) || !empty($location)) {
+					$event->whereAdd("locationId = " . $event->escape($series['locationId']));
 					if (!empty($sublocation)) {
 						$event->whereAdd("sublocationId = " . $event->escape($sublocation));
 					}
@@ -218,7 +260,7 @@ class Events_EventGraphs extends Admin_Admin {
 			}
 			$userHours->orderBy('date');
 
-			if (!$separateEventTypes || !empty($eventType)) {
+			if (((!$separateEventTypes || !empty($eventType)) && (!$separateLocations || !empty($location)))) {
 				$dataSeries['Event Hours'] = [
 					'borderColor' => 'rgba(255, 99, 132, 1)',
 					'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
@@ -226,12 +268,12 @@ class Events_EventGraphs extends Admin_Admin {
 				];
 				$userHours->selectAdd('SUM(length) / 60 AS sumHours');
 			} else {
-				$dataSeries[$eventTypeLabel] = GraphingUtils::getDataSeriesArray(count($dataSeries));
+				$dataSeries[$series['label']] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 				$userHours->selectAdd('SUM(length) / 60 AS sumHours');
 			}
 
 			$userHours->find();
-
+			$totalHoursForSeries = 0;
 			while ($userHours->fetch()) {
 				switch ($timeframe) {
 					case "weeks":
@@ -253,22 +295,29 @@ class Events_EventGraphs extends Admin_Admin {
 				}
 
 
-				if (!$separateEventTypes || !empty($eventType)) {
+				if ((!$separateEventTypes || !empty($eventType)) && (!$separateLocations || !empty($location)) ) {
 					/** @noinspection PhpUndefinedFieldInspection */
 					$dataSeries['Event Hours']['data'][$curPeriod] = $userHours->sumHours;
 				} else {
 					/** @noinspection PhpUndefinedFieldInspection */
-					$dataSeries[$eventTypeLabel]['data'][$curPeriod] = $userHours->sumHours;
+					$dataSeries[$series['label']]['data'][$curPeriod] = $userHours->sumHours;
 				}
+				$totalHoursForSeries += $userHours->sumHours;
 			}
-			if ($separateEventTypes && empty($eventType)) {
-				$columnsWithData = array_keys($dataSeries[$eventTypeLabel]['data']);
+			if ($totalHoursForSeries == 0 && !empty($series['label']) && $series['label'] !== 'Total Hours') {
+				unset($dataSeries[$series['label']]);
+			} else if ($separateEventTypes && empty($eventType) || $separateLocations && empty($location)) {
+				$columnsWithData = array_keys($dataSeries[$series['label']]['data']);
 				$columnsToAdd = array_diff($columnLabels, $columnsWithData);
 				foreach ($columnsToAdd as $column) {
-					$dataSeries[$eventTypeLabel]['data'][$column] = 0;
+					$dataSeries[$series['label']]['data'][$column] = 0;
 				}
 				if (count($columnsToAdd) > 0) {
-					ksort($dataSeries[$eventTypeLabel]['data'], SORT_NUMERIC);
+					if ($timeframe == "days") {
+						ksort($dataSeries[$series['label']]['data']);
+					} else {
+						ksort($dataSeries[$series['label']]['data'], SORT_NUMERIC);
+					}
 				}
 			}
 		}
@@ -293,7 +342,7 @@ class Events_EventGraphs extends Admin_Admin {
 				$locations = Location::getLocationList(!UserAccount::userHasPermission('View Event Reports for All Libraries') || UserAccount::userHasPermission('View Event Reports for Home Library'));
 				$title .= "Location: " . $locations[$location] . ", ";
 			}
-			if (!empty($sublocation)) {
+			if (!empty($sublocation) && !empty($location)) {
 				$sublocations = Location::getEventSublocations($location);
 				$title .= "Sublocation: " . $sublocations[$sublocation] . ", ";
 			}
