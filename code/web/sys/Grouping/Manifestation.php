@@ -21,6 +21,8 @@ class Grouping_Manifestation {
 	/** @var Grouping_Record[] */
 	private array $_relatedRecords = [];
 
+	private static ?GroupedWorkEContentSortingGroup $_econtentSorting = null;
+
 	/**
 	 * Grouping_Manifestation constructor.
 	 * @param Grouping_Record|array $record
@@ -44,6 +46,54 @@ class Grouping_Manifestation {
 
 	function removeVariation($variationKey) : void {
 		unset($this->_variations[$variationKey]);
+	}
+
+	function sortVariations() : void {
+		if (count($this->_variations) <= 1 ) {
+			return;
+		}
+		//Only do special sorting for eContent manifestations
+		if (!$this->isEContent()){
+			return;
+		}
+
+		if (self::$_econtentSorting == null) {
+			global $library;
+			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+			self::$_econtentSorting = $groupedWorkDisplaySettings->getEContentSortingGroup();
+		}
+
+		if (self::$_econtentSorting == null) {
+			//Default to alphabetic sorting
+			$sortMethod = 1;
+			$sortAvailableFirst = false;
+			$eContentSourceWeights = [];
+		}else{
+			$sortMethod = self::$_econtentSorting->sortMethod;
+			$sortAvailableFirst = self::$_econtentSorting->sortAvailableSourcesFirst;
+			$eContentSourceWeights = self::$_econtentSorting->getEContentSourceWeights();
+		}
+
+		usort($this->_variations, function(Grouping_Variation $a, Grouping_Variation $b) use ($sortMethod, $sortAvailableFirst, $eContentSourceWeights) {
+			$availabilityComparison = $sortAvailableFirst ? $b->getStatusInformation()->isAvailableOnline() <=> $a->getStatusInformation()->isAvailableOnline() : 0;
+			if ($availabilityComparison == 0) {
+				if ($sortMethod == 1) {
+					return strnatcasecmp($a->econtentSource, $b->econtentSource);
+				}else{
+					//Get the index of each source
+					$weightA = array_key_exists($a->econtentSource, $eContentSourceWeights) ?  $eContentSourceWeights[$a->econtentSource] : 999;
+					$weightB = array_key_exists($b->econtentSource, $eContentSourceWeights) ?  $eContentSourceWeights[$b->econtentSource] : 999;
+					$weightComparison = $weightA <=> $weightB;
+					if ($weightComparison == 0) {
+						return strnatcasecmp($a->econtentSource, $b->econtentSource);
+					}else{
+						return $weightComparison;
+					}
+				}
+			}else{
+				return $availabilityComparison;
+			}
+		});
 	}
 
 	function addRecord(Grouping_Record $record) : void {
@@ -336,19 +386,11 @@ class Grouping_Manifestation {
 			foreach ($this->_variations as $variation) {
 				$itemSummary = mergeItemSummary($itemSummary, $variation->getItemSummary());
 			}
+			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
 			if ($this->isPeriodical()) {
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($itemSummary, $sorter);
+				$itemSummary = sortPeriodicalItemsByShelfLocationAndCallNumber($itemSummary);
 			} else {
-				ksort($itemSummary, SORT_NATURAL);
+				$itemSummary = sortItemsByShelfLocationAndCallNumber($itemSummary);
 			}
 			$this->_itemSummary = $itemSummary;
 			$timer->logTime("Got item summary for manifestation");
@@ -369,49 +411,45 @@ class Grouping_Manifestation {
 				}
 			}
 			//sort things alphabetically and newest first for periodicals/serials
+			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
 			if ($this->isPeriodical()) {
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($itemsDisplayedByDefault, $sorter);
-			} else {
-				ksort($itemsDisplayedByDefault, SORT_NATURAL);
+				$itemsDisplayedByDefault = sortPeriodicalItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
+			}else{
+				$itemsDisplayedByDefault = sortItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
 			}
 			$this->_itemsDisplayedByDefault = $itemsDisplayedByDefault;
 		}
 		return $this->_itemsDisplayedByDefault;
 	}
 
+	private ?bool $_isPeriodical = null;
 	function isPeriodical(): bool {
-		global $library;
-		$ils = 'Unknown';
-		if ($library->getAccountProfile() != null) {
-			$ils = $library->getAccountProfile()->ils;
+		if ($this->_isPeriodical === null) {
+			global $library;
+			$ils = 'Unknown';
+			if ($library->getAccountProfile() != null) {
+				$ils = $library->getAccountProfile()->ils;
 
-		}
-		//If this is a periodical we may have additional information
-		$isPeriodical = false;
-		$format = $this->format;
-		require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
-		if ($ils == 'sierra' || $ils == 'millennium') {
-			$formatValue = new FormatMapValue();
-			$formatValue->format = $format;
-			$formatValue->displaySierraCheckoutGrid = 1;
-			if ($formatValue->find(true)) {
-				$isPeriodical = true;
 			}
-		} else {
-			if ($format == 'Journal' || $format == 'Newspaper' || $format == 'Print Periodical' || $format == 'Magazine') {
-				$isPeriodical = true;
+			//If this is a periodical we may have additional information
+			$isPeriodical = false;
+			$format = $this->format;
+			require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
+			if ($ils == 'sierra' || $ils == 'millennium') {
+				$formatValue = new FormatMapValue();
+				$formatValue->format = $format;
+				$formatValue->displaySierraCheckoutGrid = 1;
+				if ($formatValue->find(true)) {
+					$isPeriodical = true;
+				}
+			} else {
+				if ($format == 'Journal' || $format == 'Newspaper' || $format == 'Print Periodical' || $format == 'Magazine') {
+					$isPeriodical = true;
+				}
 			}
+			$this->_isPeriodical = $isPeriodical;
 		}
-		return $isPeriodical;
+		return $this->_isPeriodical;
 	}
 
 	/**
@@ -460,10 +498,10 @@ class Grouping_Manifestation {
 	 * @noinspection PhpUnused
 	 */
 	function getHorizontalFormatDisplayInfo() : string {
-		$variationsData = [];
-		foreach ($this->_variations as $variation) {
-			$variationsData[$variation->databaseId] = $variation->getHorizontalFormatDisplayInfo();
-		}
+		$variationsData = array_map(function ($variation) {
+			return $variation->getHorizontalFormatDisplayInfo();
+		}, $this->_variations);
+
 		$data = [
 			'numVariations' => $this->getNumVariations(),
 			'variations' => $variationsData
