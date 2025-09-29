@@ -93,6 +93,21 @@
 					</div>
 				{/if}
 
+				{if !empty($statement.legalConsiderations)}
+					<div class="overdrive-accessibility-section legal-considerations" id="overdrive-legal-considerations-section">
+						<div class="overdrive-section-label" id="overdrive-legal-considerations-label">
+							<h4><strong>{translate text="Legal Considerations" isPublicFacing=true}</strong></h4>
+						</div>
+						<div class="overdrive-section-content" id="overdrive-legal-considerations-content">
+							{foreach from=$statement.legalConsiderations item=legalConsideration key=legalIndex}
+								<div class="overdrive-accessibility-item" id="overdrive-legal-consideration-item-{$legalIndex}">
+									<p>{translate text=$legalConsideration isPublicFacing=true}</p>
+								</div>
+							{/foreach}
+						</div>
+					</div>
+				{/if}
+
 				{if !empty($statement.additionalInformation)}
 					<div class="overdrive-accessibility-section additional-info" id="overdrive-additional-info-section">
 						<div class="overdrive-section-label" id="overdrive-additional-info-label">
