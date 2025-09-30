@@ -10,42 +10,52 @@
 		<form>
 		<div>
 			<div class="form-group">
-				<label for="timeframe">Event hours per:</label>
+				<label for="timeframe">{translate text="Event hours per" isAdminFacing=true}</label>
 				<select name="timeframe" id="timeframe" class="form-control">
-					<option {if $timeframe == 'days'}selected{/if} value="days">Day</option>
-					<option {if $timeframe == 'weeks'}selected{/if} value="weeks">Week</option>
-					<option {if $timeframe == 'months'}selected{/if} value="months">Month</option>
-					<option {if $timeframe == 'years'}selected{/if} value="years">Year</option>
+					<option {if $timeframe == 'days'}selected{/if} value="days">{translate text="Day" isAdminFacing=true}</option>
+					<option {if $timeframe == 'weeks'}selected{/if} value="weeks">{translate text="Week" isAdminFacing=true}</option>
+					<option {if $timeframe == 'months'}selected{/if} value="months">{translate text="Month" isAdminFacing=true}</option>
+					<option {if $timeframe == 'years'}selected{/if} value="years">{translate text="Year" isAdminFacing=true}</option>
 				</select>
 			</div>
 			<div class="form-group">
-				<label for="fromDate">Start date:</label>
+				<label for="fromDate">{translate text="Start date" isAdminFacing=true}</label>
 				<input class="form-control" type="date" {if !empty($fromDate)}value="{$fromDate}"{/if} id="fromDate" name="fromDate">
 			</div>
 			<div class="form-group">
-				<label for="toDate">End date:</label>
+				<label for="toDate">{translate text="End date" isAdminFacing=true}</label>
 				<input class="form-control" type="date" {if !empty($toDate)}value="{$toDate}"{/if} id="toDate" name="toDate">
 			</div>
 			<div class="form-group">
-				<label for="type">Event Type:</label>
+				<label for="type">{translate text="Event type" isAdminFacing=true}</label>
 				<select name="type" id="type" class="form-control">
-					<option {if $eventTypeValue == ''}selected{/if} value="">All Types</option>
+					<option {if $eventTypeValue == ''}selected{/if} value="">{translate text="All Types" isAdminFacing=true}</option>
 					{foreach $eventTypes as $id => $type}
 						<option {if $eventTypeValue == $id}selected{/if} value="{$id}">{$type}</option>
 					{/foreach}
 				</select>
 			</div>
+			<div class="form-group property-row">
+				<label for="type">{translate text="Graph options" isAdminFacing=true}</label>
+				<select name="graphOption" id="graphOption" class="form-control">
+					<option {if $graphOption == '0'}selected{/if} value="0">{translate text="Show total event hours" isAdminFacing=true}</option>
+					<option {if $graphOption == '1'}selected{/if} value="1">{translate text="Group hours by event type" isAdminFacing=true}</option>
+					<option {if $graphOption == '2'}selected{/if} value="2">{translate text="Group hours by location" isAdminFacing=true}</option>
+					<option {if $graphOption == '3'}selected{/if} value="3">{translate text="Group hours by event type at each location (no graph)" isAdminFacing=true}</option>
+				</select>
+				<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Groupings with no events will not show" isAdminFacing=true}</small></span>
+			</div>
 			<div class="form-group">
-				<label for="type">Location:</label>
+				<label for="type">{translate text="Location" isAdminFacing=true}</label>
 				<select name="location" id="location" class="form-control">
-					<option {if $locationValue == ''}selected{/if} value="">All Locations{$libraryRestriction}</option>
+					<option {if $locationValue == ''}selected{/if} value="">{translate text="All Locations{$libraryRestriction}" isAdminFacing=true}</option>
 					{foreach $locations as $id => $location}
 						<option {if $locationValue == $id}selected{/if} value="{$id}">{$location}</option>
 					{/foreach}
 				</select>
 			</div>
 			<div class="form-group" {if empty($sublocations)}style="display:none"{/if}>
-				<label for="type">Sublocation:</label>
+				<label for="type">{translate text="Sublocation" isAdminFacing=true}</label>
 				<select name="sublocation" id="sublocation" class="form-control" >
 					<option {if $sublocations && $sublocationValue == ''}selected{/if} value="">All Sublocations</option>
 					{if $sublocations}
@@ -69,7 +79,7 @@
 			<hr>
 			{foreach $selectFields as $id => $select}
 				<div class="form-group">
-					<label for="field_{$id}">{$select->name}: </label>
+					<label for="field_{$id}">{$select->name}</label>
 					<select value="{$id}" id="field_{$id}" name="field_{$id}" class="form-control">
 						<option value="">No selection</option>
 						{foreach explode("\n", $select->allowableValues) as $index => $option}
@@ -80,7 +90,7 @@
 			{/foreach}
 			<hr>
 			<div class="form-group">
-				<label for="query">Search: </label><input type="text" id="query" name="query" class="form-control" value="{$query}"/>
+				<label for="query">{translate text="Search" isAdminFacing=true}</label><input type="text" id="query" name="query" class="form-control" value="{$query}"/>
 				<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Searches all text fields (title, description, custom text fields)" isAdminFacing=true}</small></span>
 			</div>
 			<hr>
@@ -115,7 +125,7 @@
 		</div>
 		{if !empty($showCSVExportButton)}
 			<div>
-				<a id="UsageGraphExport" class="btn btn-sm btn-default" href="/{$section}/AJAX?method=exportUsageData&stat={$stat}{if !empty($profileName)}&profileName={$profileName}{/if}&instance={if !empty($instance)}{$instance}{/if}">{translate text='Export To CSV' isAdminFacing=true}</a>
+				<a id="UsageGraphExport" class="btn btn-sm btn-default" href="/{$section}/AJAX?{$urlParameters}&method=exportUsageData">{translate text='Export To CSV' isAdminFacing=true}</a>
 				<div id="exportToCSVHelpBlock" class="help-block" style="margin-top:0"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Exporting will retrieve the latest data. To see it on screen, refresh this page." isAdminFacing=true}</small></div>
 			</div>
 		{/if}
@@ -123,6 +133,9 @@
 {/strip}
 {literal}
 <script>
+	{/literal}
+	{if $graphOption != "3"}
+	{literal}
 	var ctx = document.getElementById('chart');
 	var myChart = new Chart(ctx, {
 		type: 'line',
@@ -172,6 +185,9 @@
 			}
 		}
 	});
+	{/literal}
+	{/if}
+	{literal}
 	$("#location").on('change', function () {
 		var url = Globals.path + '/Events/AJAX';
 		var params = {

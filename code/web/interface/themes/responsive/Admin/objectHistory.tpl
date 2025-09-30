@@ -4,10 +4,14 @@
 		{translate text="Only 90 days of history is included" isAdminFacing=true}
 	</div>
 {if !empty($showReturnToList)}
-	<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+	{if !empty($returnToListUrl)}
+		<a class="btn btn-default" href='{$returnToListUrl}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+	{else}
+		<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+	{/if}
 {/if}
 {if !empty($showEditButtonsInCompareAndHistoryViews)}
-<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=edit&id={$id}'>{translate text="Edit" isAdminFacing=true}</a>
+<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=edit&id={$id}{$contextParams}'>{translate text="Edit" isAdminFacing=true}</a>
 {/if}
 
 {if count($objectHistory) > 0}

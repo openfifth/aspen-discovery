@@ -1669,7 +1669,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			$this->_physicalDescriptions = [];
 			$physicalDescriptionFields = $this->getFields('300|530', true);
 			foreach ($physicalDescriptionFields as $field) {
-				if ($field == '300') {
+				if ($field->getTag() == '300') {
 					$info = $this->getSubfieldArray($field, ['a', 'b', 'c', 'e', 'f', 'g'], true);
 				}else{
 					$info = $this->getSubfieldArray($field, ['a', 'b', 'c', 'd'], true);
@@ -1973,8 +1973,8 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			}
 		}
 
-		// Only add copies section if there are non-eContent holdings to display.
-		if ($hasNonEContentHoldings) {
+		// Only add copies section if there are non-eContent holdings to display or if it's a periodical (with setting enabled).
+		if ($hasNonEContentHoldings || ($this->isPeriodical() && $library->getGroupedWorkDisplaySettings()->showCopiesForPeriodicalsWithNoItems)) {
 			$moreDetailsOptions['copies'] = [
 				'label' => 'Copies',
 				'body' => $interface->fetch('Record/view-holdings.tpl'),
@@ -2757,7 +2757,6 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		$interface->assign('hasDueDate', $hasDueDate);
 		$interface->assign('holdings', $this->holdings);
 		$interface->assign('sections', $this->holdingSections);
-
 		$interface->assign('statusSummary', $this->statusSummary);
 		global $timer;
 		$timer->logTime("Assigned copy information");

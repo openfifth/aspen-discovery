@@ -22,12 +22,16 @@
 		<div class="row">
 			<div class="col-xs-12">
 				<div class="btn-group">
-					{if !empty($showReturnToList) && !empty($object) && !empty($object->formId)}
-						<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list&formId={$object->formId}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
-					{elseif !empty($showReturnToList) && !empty($object) && !empty($object->pollId)}
-						<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list&pollId={$object->pollId}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
-					{elseif !empty($showReturnToList)}
-						<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+					{if !empty($showReturnToList)}
+						{if !empty($returnToListUrl)}
+							<a class="btn btn-default" href='{$returnToListUrl}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+						{elseif !empty($object) && !empty($object->formId)}
+							<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list&formId={$object->formId}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+						{elseif !empty($object) && !empty($object->pollId)}
+							<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list&pollId={$object->pollId}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+						{else}
+							<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+						{/if}
 					{/if}
 					{if !empty($id)}
 						<a class="btn btn-default" href='/{$module}/{$toolName}?id={$id}&amp;objectAction=history'><i class="fas fa-history" role="presentation"></i> {translate text="History" isAdminFacing=true}</a>

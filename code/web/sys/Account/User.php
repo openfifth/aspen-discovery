@@ -136,11 +136,12 @@ class User extends DataObject {
 	public $_dateOfBirth;
 
 
-	// CarlX Option
+	// CarlX Options
 	public $_emailReceiptFlag;
 	public $_availableHoldNotice;
 	public $_comingDueNotice;
 	public $_phoneType;
+	public $_thirdPartySMSOptIn;
 
 	//Staff Settings
 	public $materialsRequestEmailSignature;
@@ -2933,10 +2934,10 @@ class User extends DataObject {
 		return $result;
 	}
 
-	function freezeOverDriveHold($overDriveId, $reactivationDate): array {
+	function freezeOverDriveHold($overDriveId): array {
 		require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 		$overDriveDriver = new OverDriveDriver();
-		return $overDriveDriver->freezeHold($this, $overDriveId, $reactivationDate);
+		return $overDriveDriver->freezeHold($this, $overDriveId);
 	}
 
 	function thawOverDriveHold($overDriveId): array {
@@ -4858,34 +4859,6 @@ class User extends DataObject {
 
 
 		$sections['support'] = new AdminSection('Aspen Discovery Support');
-		$sections['support']->addAction(new AdminAction('Request Tracker Settings', 'Define settings for a Request Tracker support system.', '/Support/RequestTrackerConnections'), 'Administer Request Tracker Connection');
-		try {
-			require_once ROOT_DIR . '/sys/Support/RequestTrackerConnection.php';
-			$supportConnections = new RequestTrackerConnection();
-			$hasSupportConnection = false;
-			if ($supportConnections->find(true)) {
-				$hasSupportConnection = true;
-			}
-			if ($hasSupportConnection) {
-				$sections['support']->addAction(new AdminAction('View Active Tickets', 'View Active Tickets.', '/Support/ViewTickets'), 'View Active Tickets');
-			}
-			$showSubmitTicket = false;
-			try {
-				if (!empty(SystemVariables::getSystemVariables()->ticketEmail)) {
-					$showSubmitTicket = true;
-				}
-			} catch (Exception $e) {
-				//This happens before the table is setup
-			}
-			if ($showSubmitTicket) {
-				$sections['support']->addAction(new AdminAction('Submit Ticket', 'Submit a support ticket for assistance with Aspen Discovery.', '/Admin/SubmitTicket'), 'Submit Ticket');
-			}
-			if ($hasSupportConnection) {
-				$sections['support']->addAction(new AdminAction('Set Priorities', 'Set Development Priorities.', '/Support/SetDevelopmentPriorities'), 'Set Development Priorities');
-			}
-		} catch (Exception $e) {
-			//This happens before tables are created, ignore
-		}
 		$sections['support']->addAction(new AdminAction('Help Center', 'View the Help Center for Aspen Discovery.', 'https://help.aspendiscovery.org'), true);
 		$sections['support']->addAction(new AdminAction('API Documentation', 'View available OpenAPI specifications for Aspen Discovery APIs.', '/API/Documentation'), true);
 		$sections['support']->addAction(new AdminAction('Release Notes', 'View release notes for Aspen Discovery which contain information about new functionality and fixes for each release.', '/Admin/ReleaseNotes'), true);

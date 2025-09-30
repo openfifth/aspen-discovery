@@ -112,7 +112,7 @@
 								{if $property.type == 'label'}
 									{if empty($dataItem->class) || $dataItem->class != 'objectDeleted'}
 										{if $dataItem->canActiveUserEdit()}
-											{if $propName == $dataItem->getPrimaryKey()}<a class="btn btn-default btn-sm" href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}'>
+											{if $propName == $dataItem->getPrimaryKey()}<a class="btn btn-default btn-sm" href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}{$contextParams}'>
 											<i class="fas fa-pencil-alt fa-xs" style="padding-right: .5em"></i>{/if}
 											{if empty($propValue)}
 												{translate text="Not Set" isAdminFacing=true}
@@ -199,7 +199,7 @@
 							<td>
 								<div class="btn-group-vertical">
 								{if $dataItem->canActiveUserEdit()}
-									<a href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}' class="btn btn-default btn-sm" aria-label="Edit Item {$id}"><i class="fas fa-pencil-alt"></i> {translate text="Edit" isAdminFacing=true}</a>
+									<a href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}{$contextParams}' class="btn btn-default btn-sm" aria-label="Edit Item {$id}"><i class="fas fa-pencil-alt"></i> {translate text="Edit" isAdminFacing=true}</a>
 								{/if}
 								{if $dataItem->getAdditionalListActions()}
 									{foreach from=$dataItem->getAdditionalListActions() item=action}
@@ -316,3 +316,11 @@
 	{/literal}
 </script>
 {/if}
+
+<script type="text/javascript">
+	{literal}
+	$(() => {
+		AspenDiscovery.Admin.initializeScrollPositioning();
+	});
+	{/literal}
+</script>

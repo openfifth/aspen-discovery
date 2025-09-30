@@ -27,10 +27,10 @@ $aspenDir = '/usr/local/aspen-discovery';
 
 try {
 	//Create temp smarty directory
-	$tmpDir = "$aspenDir/tmp";
+	$tmpDir = "$aspenDir/tmp/smarty/compile";
 	if (!file_exists($tmpDir)) {
 		exec("mkdir -p $tmpDir");
-		exec("chown -R www-data $tmpDir");
+		exec("chown -R $newOwner $tmpDir");
 		exec("chmod -R 755 $tmpDir");
 	}
 
@@ -51,9 +51,9 @@ try {
 
 	if (!file_exists("/data/aspen-discovery/accelerated_reader")) {
 		exec("mkdir -p /data/aspen-discovery/accelerated_reader");
-		exec("chmod -R 755 /data/aspen-discovery/accelerated_reader");
-		exec("chown -R $newOwner /data/aspen-discovery/accelerated_reader");
 	}
+	exec("chmod -R 755 /data/aspen-discovery/accelerated_reader");
+	exec("chown -R $newOwner /data/aspen-discovery/accelerated_reader");
 
 	//Copy just necessary directories
 	recursive_copy("$aspenDir/data_dir_setup/", $dataDir);
@@ -83,10 +83,12 @@ try {
 	//Assign owners and permissions
 
 	//Aspen directory
-	exec("chown -R www-data $aspenDir/tmp");
-	exec("chown -R www-data $aspenDir/code/web");
-	exec("chown -R www-data $aspenDir/sites");
-	exec("chown -R www-data $aspenDir/sites/default");
+	exec("chown -v -R $newOwner $aspenDir/tmp");
+	exec("chmod -R 755 $dataDir");
+
+	exec("chown -R $newOwner $aspenDir/code/web");
+	exec("chown -R $newOwner $aspenDir/sites");
+	exec("chown -R $newOwner $aspenDir/sites/default");
 
 	//Data directory
 	exec("chmod -R 755 $dataDir");
@@ -133,6 +135,7 @@ try {
 	exec("chmod -R 755 $configDir/conf");
 	exec("chown $newOwner $configDir/conf");
 	exec("chown $newOwner $configDir/conf/config*");
+	exec("chown $newOwner $configDir/conf/php-fpm.conf");
 	exec("chown root:root $configDir/httpd-$siteName.conf");
 	exec("chown root:root $configDir/conf/crontab_settings.txt");
 	exec("chmod 0644 $configDir/conf/crontab_settings.txt");
@@ -149,6 +152,11 @@ try {
 	//Copy the httpd conf file
 	$apacheDir = "/etc/apache2";
 	copy("$configDir/httpd-$siteName.conf", "$apacheDir/sites-enabled/httpd-$siteName.conf");
+	
+	//Copy the php-fpm config file
+	$phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+	$phpDir = "/etc/php/$phpVersion";
+	copy("$configDir/conf/php-fpm.conf", $phpDir . "/fpm/pool.d/php-fpm.conf");
 
 } catch (ErrorException $e) {
 	echo "%   ERROR ASSIGNING PERMISSIONS AND OWNERSHIPS\n";
