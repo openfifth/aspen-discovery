@@ -98,12 +98,29 @@ function getUpdates25_10_00(): array {
 		], //add_series_sort_method
 
 		//katherine - Grove
+		'add_include_in_reports_option_to_event_type' => [
+			'title' => 'Add Include In Reports option to Event Types',
+			'description' => 'Allows specific event types to be excluded from reports',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE event_type ADD COLUMN includeInReports TINYINT DEFAULT 1',
+			]
+		], //add_include_in_reports_option_to_event_type
 
 		//kirstien - Grove
 
 		//kodi - Grove
 
 		// Myranda - Grove
+		'add_dark_mode_checkbox' => [
+			'title' => 'Add checkbox for if theme is dark mode or not',
+			'description' => 'Adds checkbox to themes for additional CSS modifications applicable to dark color schemes',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE themes ADD COLUMN isDarkColorScheme TINYINT(1) DEFAULT 0',
+			]
+		],
+		//add_high_contrast_checkbox
 
 		//Yanjun Li - ByWater
 		'add_hoopla_configurable_indexing_time' => [
@@ -116,6 +133,68 @@ function getUpdates25_10_00(): array {
 		], //add_hoopla_configurable_indexing_time
 
 		// Leo Stoyanov - BWS
+		'add_show_copies_for_periodicals_with_no_iems_setting' => [
+			'title' => 'Add Show Copies for Periodicals with No Items Setting',
+			'description' => 'Add a setting to control whether Copies accordion is shown for periodicals with no items.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN showCopiesForPeriodicalsWithNoItems TINYINT(1) DEFAULT 0'
+			]
+		], //add_show_copies_for_periodicals_with_no_iems_setting
+		'add_enable_third_party_sms_notifications_option' => [
+			'title' => 'Add "Enable Third Party SMS Notifications" Option',
+			'description' => 'Add "Enable Third Party SMS Notifications" option for CarlX to Library System settings.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN enableThirdPartySMSNotifications TINYINT(1) DEFAULT 0'
+			],
+		], // add_enable_third_party_sms_notifications_option
+		'remove_request_tracker_tables' => [
+			'title' => 'Remove Request Tracker Database Tables',
+			'description' => 'Drop all database tables related to the Request Tracker implementation.',
+			'continueOnError' => true,
+			'sql' => [
+				'DROP TABLE IF EXISTS component_ticket_link',
+				'DROP TABLE IF EXISTS development_task_ticket_link',
+				'DROP TABLE IF EXISTS request_tracker_connection',
+				'DROP TABLE IF EXISTS ticket',
+				'DROP TABLE IF EXISTS ticket_component_feed',
+				'DROP TABLE IF EXISTS ticket_queue_feed',
+				'DROP TABLE IF EXISTS ticket_severity_feed',
+				'DROP TABLE IF EXISTS ticket_status_feed',
+				'DROP TABLE IF EXISTS ticket_trend_bugs_by_severity',
+				'DROP TABLE IF EXISTS ticket_trend_by_component',
+				'DROP TABLE IF EXISTS ticket_trend_by_partner',
+				'DROP TABLE IF EXISTS ticket_trend_by_queue'
+			]
+		], // remove_request_tracker_tables
+		'remove_request_tracker_permissions' => [
+			'title' => 'Remove Request Tracker Permissions',
+			'description' => 'Remove permissions and role assignments related to the Request Tracker implementation.',
+			'continueOnError' => true,
+			'sql' => [
+				'DELETE FROM role_permissions WHERE permissionId IN (SELECT id FROM permissions WHERE name IN ("Submit Ticket", "Administer Request Tracker Connection", "View Active Tickets", "Set Development Priorities"))',
+				'DELETE FROM permissions WHERE name IN ("Submit Ticket", "Administer Request Tracker Connection", "View Active Tickets", "Set Development Priorities")',
+				'DROP TABLE IF EXISTS development_priorities'
+			]
+		], // remove_request_tracker_permissions
+		'remove_request_tracker_greenhouse_settings' => [
+			'title' => 'Remove Request Tracker Greenhouse Settings',
+			'description' => 'Remove Request Tracker fields from greenhouse_settings table.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE greenhouse_settings DROP COLUMN IF EXISTS requestTrackerBaseUrl',
+				'ALTER TABLE greenhouse_settings DROP COLUMN IF EXISTS requestTrackerAuthToken'
+			]
+		], //remove_request_tracker_greenhouse_settings
+		'remove_ticket_email_system_variable' => [
+			'title' => 'Remove Ticket Email System Variable',
+			'description' => 'Remove ticketEmail column from system_variables table.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE system_variables DROP COLUMN IF EXISTS ticketEmail'
+			]
+		], // remove_ticket_email_system_variable
 
 		//alexander - Open Fifth
 

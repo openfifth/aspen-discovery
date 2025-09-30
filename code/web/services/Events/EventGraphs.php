@@ -22,7 +22,7 @@ class Events_EventGraphs extends Admin_Admin {
 		$interface->assign('toDate', $toDate);
 		$eventType = $_REQUEST['type'] ?? '';
 		$interface->assign('eventTypeValue', $eventType);
-		$interface->assign('eventTypes', EventType::getEventTypeList(true));
+		$interface->assign('eventTypes', EventType::getEventTypeList(true, false, true));
 		$graphOption = $_REQUEST['graphOption'] ?? 0;
 		$interface->assign('graphOption', $graphOption);
 		$separateEventTypes = false;
@@ -205,6 +205,38 @@ class Events_EventGraphs extends Admin_Admin {
 					$seriesToGenerate[] = ['label' => "$locationLabel - $eventTypeLabel", 'eventTypeId' => $eventTypeId, 'locationId' => $locationId];
 				}
 			}
+			$eventType = new EventType();
+			$eventType->includeInReports = true;
+			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
+			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
+		} else {
+			$event = new Event();
+			$eventType = new EventType();
+			$eventType->includeInReports = true;
+			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
+			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
+		}
+		if (!empty($query)) {
+			$escapedQuery = $userHours->escape('%' . $query . '%');
+			$userHours->whereAdd("(event.title LIKE $escapedQuery OR event.description LIKE $escapedQuery OR eventEventField.value LIKE $escapedQuery)");
+		}
+		switch ($timeframe) {
+			case "weeks":
+				$userHours->selectAdd("WEEK(date) AS week, YEAR(date) AS year");
+				$userHours->groupBy("week, year");
+				break;
+			case "months":
+				$userHours->selectAdd("MONTH(date) AS month, YEAR(date) AS year");
+				$userHours->groupBy("month, year");
+				break;
+			case "years":
+				$userHours->selectAdd("YEAR(date) AS year");
+				$userHours->groupBy("year");
+				break;
+			case "days":
+			default: // default to hours per day
+				$userHours->selectAdd("date");
+				$userHours->groupBy("date");
 		}
 
 		foreach ($seriesToGenerate as $series) {
@@ -342,7 +374,7 @@ class Events_EventGraphs extends Admin_Admin {
 		if (!empty($eventType) || !empty($location) || !empty($sublocation) || !empty($query) || !empty($fields)) {
 			$title .= " - ";
 			if (!empty($eventType)) {
-				$eventTypes = EventType::getEventTypeList(true);
+				$eventTypes = EventType::getEventTypeList(true, false, true);
 				$title .= "Event Type: " . $eventTypes[$eventType] . ", ";
 			}
 			if (!empty($location)) {
