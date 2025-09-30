@@ -495,6 +495,7 @@ class UInterface extends Smarty {
 				$this->assign('tertiaryForegroundColor', $primaryTheme->tertiaryForegroundColor);
 				$this->assign('linkColor', $primaryTheme->linkColor);
 				$this->assign('bodyFont', $primaryTheme->bodyFont);
+				$this->assign('isDarkColorScheme', $primaryTheme->isDarkColorScheme);
 			}
 		} catch (PDOException $e) {
 			global $logger;
@@ -1143,6 +1144,7 @@ class UInterface extends Smarty {
 			$this->assign('tertiaryForegroundColor', $primaryTheme->tertiaryForegroundColor);
 			$this->assign('linkColor', $primaryTheme->linkColor);
 			$this->assign('bodyFont', $primaryTheme->bodyFont);
+			$this->assign('isDarkColorScheme', $primaryTheme->isDarkColorScheme);
 		}
 	}
 }

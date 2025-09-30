@@ -1,5 +1,7 @@
 networks:
   net-aspen:
+  kohadev_kohanet:
+    external: true
 volumes:
   solr:
 
@@ -8,8 +10,6 @@ services:
     image: ${BACKEND_IMAGE_TAG:-aspendiscovery/aspen}
     env_file:
       - .env
-    ports:
-      - "80:80"
     networks:
       - net-aspen
     tty: true
@@ -18,15 +18,34 @@ services:
       - ${ASPEN_DATA_DIR}/data:/data/aspen-discovery/${SITE_NAME}
       - ${ASPEN_DATA_DIR}/logs:/var/log/aspen-discovery/${SITE_NAME}
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+
+  apache:
+    image: ${BACKEND_IMAGE_TAG:-aspendiscovery/aspen}
+    env_file:
+      - .env
+    ports:
+      - "85:80"
+    networks:
+      - net-aspen
+    volumes:
+      - ${ASPEN_DATA_DIR}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
+      - ${ASPEN_DATA_DIR}/data:/data/aspen-discovery/${SITE_NAME}
+      - ${ASPEN_DATA_DIR}/logs:/var/log/aspen-discovery/${SITE_NAME}
+    command:
+      - apache
+    depends_on:
+      - backend
+    tty: true
 
   cron:
     image: ${BACKEND_IMAGE_TAG:-aspendiscovery/aspen}
     env_file:
       - .env
     networks:
-      - net-aspen
+      net-aspen:
+        aliases:
+          - ${SITE_NAME}
     tty: true
     volumes:
       - ${ASPEN_DATA_DIR}/conf:/usr/local/aspen-discovery/sites/${SITE_NAME}
@@ -36,6 +55,8 @@ services:
       - cron
     depends_on:
       - backend
+      - apache
+
 
   db:
     image: ${MARIADB_IMAGE:-mariadb:10.5}
@@ -49,19 +70,9 @@ services:
       - MARIADB_DATABASE=${DATABASE_NAME:-aspen}
     volumes:
       - ${ASPEN_DATA_DIR}/database:/var/lib/mysql
+      - ${ASPEN_DATA_DIR}/my.cnf:/etc/mysql/my.cnf
     networks:
       - net-aspen
-    healthcheck:
-      interval: 10s
-      retries: 10
-      test:
-        [
-          "CMD",
-          "healthcheck.sh",
-          "--su-mysql",
-          "--connect",
-          "--innodb_initialized"
-        ]
 
   solr:
     image: ${SOLR_IMAGE_TAG:-aspendiscovery/solr}
@@ -73,6 +84,7 @@ services:
       - "${SOLR_PORT}:${SOLR_PORT:-8983}"
     volumes:
       - solr:/var/solr
+      - solr:/opt/solr/server/solr
     networks:
       - net-aspen
     depends_on:
