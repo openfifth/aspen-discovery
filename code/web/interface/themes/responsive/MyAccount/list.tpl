@@ -369,6 +369,7 @@
 			const urlParams = new URLSearchParams(window.location.search);
 
 			urlParams.delete('filters');
+			urlParams.delete('page');
 			if (selectedFormats.length > 0) {
 				urlParams.set('filters', selectedFormats.join(','));
 			}
