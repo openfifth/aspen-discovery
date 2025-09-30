@@ -1,13 +1,17 @@
 <div id="main-content" class="col-md-12">
 	<h1>{translate text="View Collection Spotlight" isAdminFacing=true}</h1>
 	<div class="btn-group">
-		<a class="btn btn-sm btn-default" href="/Admin/CollectionSpotlights">{translate text="All Collection Spotlights" isAdminFacing=true}</a>
-		<a class="btn btn-sm btn-default" href="/Admin/CollectionSpotlights?objectAction=edit&amp;id={$object->id}">{translate text="Edit" isAdminFacing=true}</a>
-		<a class="btn btn-sm btn-default" href="/API/SearchAPI?method=getCollectionSpotlight&amp;id={$object->id}">{translate text="Preview" isAdminFacing=true}</a>
-		{if !empty($canDelete)}
-			<a class="btn btn-sm btn-danger" href="/Admin/CollectionSpotlights?objectAction=delete&amp;id={$object->id}" onclick="return confirm('{translate text="Are you sure you want to delete %1%?" 1=$object->name inAttribute=true isAdminFacing=true}');"><i class="fas fa-trash" role="presentation"></i> {translate text="Delete" isAdminFacing=true}</a>
-		{/if}
+		<a class="btn btn-default" href="{$returnToListUrl|default:'/Admin/CollectionSpotlights'}"><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
 	</div>
+	<div class="btn-group">
+		<a class="btn btn-default" href="/Admin/CollectionSpotlights?objectAction=edit&amp;id={$object->id}{$contextParams}"><i class="fas fa-edit" role="presentation"></i> {translate text="Edit" isAdminFacing=true}</a>
+		<a class="btn btn-default" href="/API/SearchAPI?method=getCollectionSpotlight&amp;id={$object->id}" target="_blank"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="Preview" isAdminFacing=true}</a>
+	</div>
+	{if !empty($canDelete)}
+	<div class="btn-group">
+		<a class="btn btn-danger" href="/Admin/CollectionSpotlights?objectAction=delete&amp;id={$object->id}" onclick="return confirm('{translate text="Are you sure you want to delete %1%?" 1=$object->name inAttribute=true isAdminFacing=true}');"><i class="fas fa-trash" role="presentation"></i> {translate text="Delete" isAdminFacing=true}</a>
+	</div>
+	{/if}
 	{* Show details for the selected spotlight *}
 	<h2>{$object->name}</h2>
 	<hr>
@@ -154,3 +158,11 @@
 		window.setSpotlightSizing = setSpotlightSizing;
 	</script>
 {/literal}
+
+<script type="text/javascript">
+	{literal}
+	$(() => {
+		AspenDiscovery.Admin.initializeScrollPositioning();
+	});
+	{/literal}
+</script>

@@ -110,6 +110,7 @@ function getSortableDate(string $str) : ?DateTime {
 		$year = $matches[3];
 		$dateString = "$monthAbbr 01 $year";
 		$sortableDateCache[$str] = DateTime::createFromFormat('M j Y', $dateString);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
 	}
 
@@ -119,6 +120,7 @@ function getSortableDate(string $str) : ?DateTime {
 		$year = $matches[4];
 		$dateString = "$monthAbbr 01 $year";
 		$sortableDateCache[$str] = DateTime::createFromFormat('M j Y', $dateString);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
 	}
 
@@ -129,6 +131,7 @@ function getSortableDate(string $str) : ?DateTime {
 		$date1 = DateTime::createFromFormat('M j Y', "$matches[1] $matches[2] $year");
 		$date2 = DateTime::createFromFormat('M j Y', "$month2 $matches[4] $year");
 		$sortableDateCache[$str] = max($date1, $date2);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
 	}
 
@@ -138,6 +141,7 @@ function getSortableDate(string $str) : ?DateTime {
 		$day = $matches[3];
 		$dateString = "$monthAbbr $day $matches[4]";
 		$sortableDateCache[$str] = DateTime::createFromFormat('M j Y', $dateString);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
 	}
 
@@ -148,6 +152,7 @@ function getSortableDate(string $str) : ?DateTime {
 		$year = $matches[5];
 		$dateString = "$monthAbbr $day $year";
 		$sortableDateCache[$str] = DateTime::createFromFormat('M j Y', $dateString);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
 	}
 
@@ -181,6 +186,7 @@ function getSortableDate(string $str) : ?DateTime {
 		$monthName = $seasonal_mapping[strtoupper($matches[1])];
 		$dateString = "$monthName 01 {$matches[2]}";
 		$sortableDateCache[$str] = DateTime::createFromFormat('F j Y', $dateString);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
 	}
 

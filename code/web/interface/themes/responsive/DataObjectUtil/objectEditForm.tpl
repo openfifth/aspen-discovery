@@ -39,6 +39,31 @@
 		{if !empty($activeIls)}
 			<input type="hidden" name="activeIls" id="activeIls" value={$activeIls}>
 		{/if}
+		{* Preserve all context parameters for list state *}
+		{if !empty($page)}
+			<input type="hidden" name="page" value="{$page|escape}">
+		{/if}
+		{if !empty($pageSize)}
+			<input type="hidden" name="pageSize" value="{$pageSize|escape}">
+		{/if}
+		{if !empty($sort)}
+			<input type="hidden" name="sort" value="{$sort|escape}">
+		{/if}
+		{if !empty($filterType)}
+			{foreach from=$filterType item=filterTypeValue key=filterKey}
+				<input type="hidden" name="filterType[{$filterKey|escape}]" value="{$filterTypeValue|escape}">
+			{/foreach}
+		{/if}
+		{if !empty($filterValue)}
+			{foreach from=$filterValue item=filterValueValue key=filterKey}
+				<input type="hidden" name="filterValue[{$filterKey|escape}]" value="{$filterValueValue|escape}">
+			{/foreach}
+		{/if}
+		{if !empty($filterValue2)}
+			{foreach from=$filterValue2 item=filterValue2Value key=filterKey}
+				<input type="hidden" name="filterValue2[{$filterKey|escape}]" value="{$filterValue2Value|escape}">
+			{/foreach}
+		{/if}
 
 		{foreach from=$structure item=property}
 			{if is_array($property) && isset($property.property) && isset($property.type)}
