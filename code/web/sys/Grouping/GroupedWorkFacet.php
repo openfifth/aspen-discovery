@@ -184,16 +184,16 @@ class GroupedWorkFacet extends FacetSetting {
 				'type' => 'integer',
 				'label' => 'Num Default Entries',
 				'description' => 'The number of facets to display under a facet group by default.',
-				'default' => '5',
+				'default' => 5,
 			],
 			'numTotalEntriesToShowInMore' => [
 				'property' => 'numTotalEntriesToShowInMore',
 				'type' => 'integer',
 				'label' => 'Num Total Entries',
 				'description' => 'The number of values to show in the displayed after clicking &quot;More...&quot;. This setting is ignored for Format, Available At, and Owning Location facets, which use calculated limits.',
-				'default' => '30',
+				'default' => 30,
 				'max' => 100,
-				'min' => 1,
+				'min' => 30,
 			],
 		];
 
