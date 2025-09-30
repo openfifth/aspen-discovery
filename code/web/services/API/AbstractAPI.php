@@ -10,11 +10,11 @@ abstract class AbstractAPI extends Action{
 		}
 	}
 
-	function checkIfLiDA() {
+	function checkIfLiDA(): bool {
 		if (function_exists('getallheaders')) {
 			foreach (getallheaders() as $name => $value) {
 				if ($name == 'User-Agent' || $name == 'user-agent') {
-					if (strpos($value, "Aspen LiDA") !== false) {
+					if (str_contains($value, "Aspen LiDA")) {
 						return true;
 					}
 				}

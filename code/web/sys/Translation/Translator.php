@@ -72,14 +72,14 @@ class Translator {
 	 * @param bool $isAdminEnteredData Whether this is data an administrator entered (System message, etc).
 	 * @param bool $translateParameters Whether parameters should be translated.
 	 * @param bool $escape Whether the translation should be escaped before rendering.
-	 * @param bool $fromAPI Whether the translation is being requested from an API call, typically from LiDA.
+	 * @param bool $fromLiDA Whether the translation is being requested from a verified LiDA API call.
 	 * @return string The translated phrase.
 	 */
 	function translate(
 		?string $phrase, string $defaultText = '', array $replacementValues = [],
 		bool $inAttribute = false, bool $isPublicFacing = false, bool $isAdminFacing = false,
 		bool $isMetadata = false, bool $isAdminEnteredData = false,
-		bool $translateParameters = false, bool $escape = false, bool $fromAPI = false
+		bool $translateParameters = false, bool $escape = false, bool $fromLiDA = false
 	): string {
 
 		if ($phrase === '' || is_numeric($phrase)) {
@@ -91,7 +91,7 @@ class Translator {
 
 		global $activeLanguage;
 		$translationMode = $this->translationModeActive() && !$inAttribute && (UserAccount::userHasPermission('Translate Aspen'));
-		$allowTermCreation = $translationMode || $fromAPI;
+		$allowTermCreation = $translationMode || $fromLiDA;
 		try {
 			if (!empty($activeLanguage)) {
 				$translationKey = $activeLanguage->id . '_' . ($translationMode ? 1 : 0) . '_' . $phrase;
@@ -101,7 +101,7 @@ class Translator {
 					$translationTerm = new TranslationTerm();
 					$translationTerm->term = $phrase;
 					$defaultTextChanged = false;
-					// Write term records to DB in translation mode or when called from API.
+					// Write term records to DB in translation mode or when called from a verified LiDA instance.
 					if ($allowTermCreation) {
 						if (!$translationTerm->find(true)) {
 							$translationTerm->defaultText = $defaultText;
@@ -203,7 +203,7 @@ class Translator {
 							if (count($replacementValues) > 0) {
 								foreach ($replacementValues as $index => $replacementValue) {
 									if ($translateParameters) {
-										$replacementValue = $this->translate($replacementValue, '', [], true, $isPublicFacing, $isAdminFacing, $isMetadata, $isAdminEnteredData, $translateParameters, false, $fromAPI);
+										$replacementValue = $this->translate($replacementValue, '', [], true, $isPublicFacing, $isAdminFacing, $isMetadata, $isAdminEnteredData, $translateParameters, false, $fromLiDA);
 									}
 									$returnString = str_replace('%' . $index . '%', $replacementValue, $returnString);
 								}
