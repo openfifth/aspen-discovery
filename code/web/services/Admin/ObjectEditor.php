@@ -83,9 +83,9 @@ abstract class ObjectEditor extends Admin_Admin {
 		} elseif ($objectAction == 'getCopyOptions') {
 			$this->getCopyOptions($structure);
 		} elseif ($objectAction == 'shareForm') {
-			$this->showShareForm($structure);
+			$this->showShareForm();
 		} elseif ($objectAction == 'shareToCommunity') {
-			$this->shareToCommunity($structure);
+			$this->shareToCommunity();
 		} elseif ($objectAction == 'importFromCommunity') {
 			$this->importFromCommunity($structure);
 		} elseif ($objectAction == 'exportToCSV' || $objectAction == 'exportSelectedToCSV') {
@@ -252,6 +252,33 @@ abstract class ObjectEditor extends Admin_Admin {
 	function viewExistingObjects($structure) {
 		global $interface;
 		$user = UserAccount::getActiveUserObj();
+		// Assign all context parameters for edit links.
+		$contextParams = [];
+		$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+		foreach ($preservedParams as $param) {
+			if (!empty($_REQUEST[$param])) {
+				$contextParams[$param] = $_REQUEST[$param];
+				$interface->assign($param, $_REQUEST[$param]);
+			}
+		}
+
+		// Build context parameter string for edit links.
+		$contextQueryString = '';
+		if (!empty($contextParams)) {
+			$queryParts = [];
+			foreach ($contextParams as $param => $value) {
+				if (is_array($value)) {
+					foreach ($value as $key => $val) {
+						$queryParts[] = urlencode($param) . '[' . urlencode($key) . ']=' . urlencode($val);
+					}
+				} else {
+					$queryParts[] = urlencode($param) . '=' . urlencode($value);
+				}
+			}
+			$contextQueryString = '&' . implode('&', $queryParts);
+		}
+		$interface->assign('contextParams', $contextQueryString);
+
 		$interface->assign('instructions', $this->getListInstructions());
 		$interface->assign('sortableFields', $this->getSortableFields($structure));
 		$interface->assign('sort', $this->getSort());
@@ -261,7 +288,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('hiddenFields', $this->getHiddenFields());
 
 		$numObjects = $this->getNumObjects();
-		$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+		$page = $_REQUEST['page'] ?? 1;
 		if (!is_numeric($page)) {
 			$page = 1;
 		}
@@ -285,11 +312,16 @@ abstract class ObjectEditor extends Admin_Admin {
 		} else { // Export Selected to CSV OR Display on screen
 			$allObjects = $this->getAllObjects($page, $recordsPerPage);
 			if ($this->supportsPagination()) {
+				// Build clean URL for pagination without scrollToId parameter.
+				$cleanUrl = $_SERVER['REQUEST_URI'];
+				$cleanUrl = preg_replace("/scrollToId=\d+&|[?&]scrollToId=\d+/", '', $cleanUrl);
+
 				$options = [
 					'totalItems' => $numObjects,
 					'perPage' => $recordsPerPage,
 					'canChangeRecordsPerPage' => true,
 					'canJumpToPage' => true,
+					'fileName' => $cleanUrl,
 				];
 				$pager = new Pager($options);
 				$interface->assign('pageLinks', $pager->getLinks());
@@ -356,6 +388,7 @@ abstract class ObjectEditor extends Admin_Admin {
 			$interface->assign('contentType', $contentType);
 
 			$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($existingObject));
+			$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 			$interface->setTemplate('../Admin/objectEditor.tpl');
 		}else {
 			$interface->setTemplate('../Admin/noPermission.tpl');
@@ -414,6 +447,7 @@ abstract class ObjectEditor extends Admin_Admin {
 
 					$interface->assign('objectName', $existingObject->__toString());
 					$interface->assign('id', $id);
+					$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 					$interface->setTemplate('../Admin/shareForm.tpl');
 				} else {
 					$interface->setTemplate('../Admin/noPermission.tpl');
@@ -511,6 +545,7 @@ abstract class ObjectEditor extends Admin_Admin {
 						$interface->assign('contentType', $contentType);
 
 						$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($newObject));
+						$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 						$interface->setTemplate('../Admin/objectEditor.tpl');
 					} else {
 						$interface->setTemplate('../Admin/invalidObject.tpl');
@@ -532,6 +567,32 @@ abstract class ObjectEditor extends Admin_Admin {
 		} else {
 			unset($_SESSION['redirect_location']);
 		}
+		// Capture and assign all context parameters for preserving list state.
+		$contextParams = [];
+		$preservedParams = ['returnPage', 'page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+		foreach ($preservedParams as $param) {
+			if (!empty($_REQUEST[$param])) {
+				$contextParams[$param] = $_REQUEST[$param];
+				$interface->assign($param, $_REQUEST[$param]);
+			}
+		}
+		// Build context parameter string for edit links.
+		$contextQueryString = '';
+		if (!empty($contextParams)) {
+			$queryParts = [];
+			foreach ($contextParams as $param => $value) {
+				if (is_array($value)) {
+					foreach ($value as $key => $val) {
+						$queryParts[] = urlencode($param) . '[' . urlencode($key) . ']=' . urlencode($val);
+					}
+				} else {
+					$queryParts[] = urlencode($param) . '=' . urlencode($value);
+				}
+			}
+			$contextQueryString = '&' . implode('&', $queryParts);
+		}
+		$interface->assign('contextParams', $contextQueryString);
+
 		if (isset($_REQUEST['id'])) {
 			$id = $_REQUEST['id'];
 			$existingObject = $this->getExistingObjectById($id);
@@ -540,7 +601,7 @@ abstract class ObjectEditor extends Admin_Admin {
 					$interface->assign('id', $id);
 					$user = UserAccount::getActiveUserObj();
 					$interface->assign('patronIdCheck', $user->id);
-;					if (method_exists($existingObject, 'label')) {
+					if (method_exists($existingObject, 'label')) {
 						$interface->assign('objectName', $existingObject->label());
 					}
 					$this->activeObject = $existingObject;
@@ -585,6 +646,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		}
 
 		$interface->assign('additionalObjectActions', $this->getAdditionalObjectActions($existingObject));
+		$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 		$interface->setTemplate('../Admin/objectEditor.tpl');
 	}
 
@@ -712,13 +774,29 @@ abstract class ObjectEditor extends Admin_Admin {
 				header("Location: /{$this->getModule()}/{$this->getToolName()}");
 			}
 		} elseif (isset($_REQUEST['submitStay']) || $errorOccurred) {
-			header("Location: /{$this->getModule()}/{$this->getToolName()}?objectAction=edit&id=$id");
+			$editUrl = "/{$this->getModule()}/{$this->getToolName()}?objectAction=edit&id=$id";
+			// Preserve all context parameters for submitStay to maintain list context.
+			$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+			$contextParams = [];
+			foreach ($preservedParams as $param) {
+				if (!empty($_REQUEST[$param])) {
+					$contextParams[$param] = $_REQUEST[$param];
+				}
+			}
+			if (!empty($contextParams)) {
+				$editUrl .= '&' . http_build_query($contextParams);
+			}
+			header("Location: " . $editUrl);
 		} elseif (isset($_REQUEST['submitAddAnother'])) {
 			header("Location: /{$this->getModule()}/{$this->getToolName()}?objectAction=addNew");
 		} else {
 			$redirectLocation = $this->getRedirectLocation($objectAction, $curObject);
 			if (is_null($redirectLocation)) {
-				if (isset($_SESSION['redirect_location']) && $objectAction != 'delete') {
+				// Try to use context-aware return URL first.
+				$returnToListUrl = $this->getReturnToListUrl();
+				if (!empty($returnToListUrl) && $objectAction != 'delete') {
+					header("Location: " . $returnToListUrl);
+				} elseif (isset($_SESSION['redirect_location']) && $objectAction != 'delete') {
 					header("Location: " . $_SESSION['redirect_location']);
 				} else {
 					header("Location: /{$this->getModule()}/{$this->getToolName()}");
@@ -898,6 +976,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('showReturnToList', $this->getToolName() === 'ObjectRestorations');
 		$interface->assign('module', $this->getModule());
 		$interface->assign('toolName', $this->getToolName());
+		$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 		$interface->setTemplate('../Admin/compareObjects.tpl');
 	}
 
@@ -1080,6 +1159,7 @@ abstract class ObjectEditor extends Admin_Admin {
 			$interface->assign('showEditButtonsInCompareAndHistoryViews', $this->showEditButtonsInCompareAndHistoryViews());
 			$interface->assign('module', $this->getModule());
 			$interface->assign('toolName', $this->getToolName());
+			$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 			$this->display('../Admin/objectHistory.tpl', $title);
 			exit();
 		}
@@ -1507,5 +1587,57 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	public function hasMultiStepAddNew() : bool {
 		return false;
+	}
+
+
+	/**
+	 * Builds a return URL that preserves the user's complete list context including page number,
+	 * page size, sorting, and filters. Context parameters are primarily obtained from the current
+	 * request for form submissions and direct navigation, with HTTP referer parsing as fallback.
+	 * Includes scrollToId parameter to maintain scroll position when returning to the list.
+	 *
+	 * @return string The constructed return URL with preserved context parameters.
+	 */
+	public function getReturnToListUrl(): string {
+		$baseUrl = '/' . $this->getModule() . '/' . $this->getToolName() . '?objectAction=list';
+		$listParams = [];
+		$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
+
+		// First priority: use parameters from current request for form submissions and direct navigation.
+		foreach ($preservedParams as $param) {
+			if (!empty($_REQUEST[$param])) {
+				$listParams[$param] = $_REQUEST[$param];
+			}
+		}
+
+		// If no context parameters found in request, fall back to HTTP referer parsing.
+		if (empty($listParams) && !empty($_SERVER['HTTP_REFERER'])) {
+			$refererUrl = parse_url($_SERVER['HTTP_REFERER']);
+			if (!empty($refererUrl['query'])) {
+				parse_str($refererUrl['query'], $refererParams);
+				foreach ($preservedParams as $param) {
+					if (isset($refererParams[$param])) {
+						$listParams[$param] = $refererParams[$param];
+					}
+				}
+			}
+		}
+
+		if (!empty($listParams)) {
+			$baseUrl .= '&' . http_build_query($listParams);
+		}
+
+		// Always add scroll ID to return to the object.
+		$currentParams = parse_url($baseUrl, PHP_URL_QUERY);
+		parse_str($currentParams ?: '', $existingParams);
+
+		if (empty($existingParams['scrollToId'])) {
+			if (!empty($_REQUEST['scrollToId'])) {
+				$baseUrl .= (!str_contains($baseUrl, '?') ? '?' : '&') . 'scrollToId=' . $_REQUEST['scrollToId'];
+			} elseif (!empty($_REQUEST['id'])) {
+				$baseUrl .= (!str_contains($baseUrl, '?') ? '?' : '&') . 'scrollToId=' . $_REQUEST['id'];
+			}
+		}
+		return $baseUrl;
 	}
 }

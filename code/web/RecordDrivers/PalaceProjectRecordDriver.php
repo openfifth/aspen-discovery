@@ -401,7 +401,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 *
 	 * @return  array
 	 */
-	function getFormatCategory() {
+	function getFormatCategory() : string|array|null {
 		switch ($this->getType()) {
 			case 'http://schema.org/EBook':
 				return ['eBook'];

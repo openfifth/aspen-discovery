@@ -361,7 +361,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 *
 	 * @return  array
 	 */
-	function getFormatCategory() {
+	function getFormatCategory() : string|array|null {
 		if ($this->hooplaExtract->kind == "AUDIOBOOK") {
 			return [
 				'eBook',
