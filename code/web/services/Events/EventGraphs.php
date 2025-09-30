@@ -21,7 +21,7 @@ class Events_EventGraphs extends Admin_Admin {
 		$interface->assign('toDate', $toDate);
 		$eventType = $_REQUEST['type'] ?? '';
 		$interface->assign('eventTypeValue', $eventType);
-		$interface->assign('eventTypes', EventType::getEventTypeList(true));
+		$interface->assign('eventTypes', EventType::getEventTypeList(true, false, true));
 
 		// $libraryList = Library::getLibraryList(!UserAccount::userHasPermission('View Event Reports For All Libraries'));
 		$locations = Location::getLocationList(!UserAccount::userHasPermission('View Event Reports for All Libraries') || UserAccount::userHasPermission('View Event Reports for Home Library'));
@@ -101,7 +101,6 @@ class Events_EventGraphs extends Admin_Admin {
 
 		// Form options
 		$timeframe = $_REQUEST['timeframe'] ?? 'days';
-		$eventType = $_REQUEST['type'] ?? '';
 		$location = $_REQUEST['location'] ?? '';
 		$sublocation = $_REQUEST['sublocation'] ?? '';
 		$fromDate = $_REQUEST['fromDate'] ?? '';
@@ -190,6 +189,15 @@ class Events_EventGraphs extends Admin_Admin {
 				$homeLibraryLocations = Location::getLocationList(true);
 				$event->whereAddIn('locationId', array_keys($homeLibraryLocations), true,'AND');
 			}
+			$eventType = new EventType();
+			$eventType->includeInReports = true;
+			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
+			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
+		} else {
+			$event = new Event();
+			$eventType = new EventType();
+			$eventType->includeInReports = true;
+			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
 			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
 		}
 		if (!empty($query)) {
@@ -264,7 +272,7 @@ class Events_EventGraphs extends Admin_Admin {
 		if (!empty($eventType) || !empty($location) || !empty($sublocation) || !empty($query) || !empty($fields)) {
 			$title .= " - ";
 			if (!empty($eventType)) {
-				$eventTypes = EventType::getEventTypeList(true);
+				$eventTypes = EventType::getEventTypeList(true, false, true);
 				$title .= "Event Type: " . $eventTypes[$eventType] . ", ";
 			}
 			if (!empty($location)) {
