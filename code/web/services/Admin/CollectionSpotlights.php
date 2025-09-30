@@ -138,6 +138,7 @@ class Admin_CollectionSpotlights extends ObjectEditor {
 			$interface->assign('initializationJs', $this->getInitializationJs());
 			$editForm = DataObjectUtil::getEditForm($collectionSpotlight->getObjectStructure());
 			$interface->assign('editForm', $editForm);
+			$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 			$interface->setTemplate('collectionSpotlightEdit.tpl');
 		} elseif ($objectAction === 'view') {
 			// Set some default sizes for the iframe we embed on the view page.
@@ -166,6 +167,7 @@ class Admin_CollectionSpotlights extends ObjectEditor {
 			}
 			$interface->assign('width', $width);
 			$interface->assign('height', $height);
+			$interface->assign('returnToListUrl', $this->getReturnToListUrl());
 			$interface->setTemplate('collectionSpotlight.tpl');
 		} else {
 			parent::launch();
