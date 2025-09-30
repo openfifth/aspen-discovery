@@ -987,7 +987,6 @@ pre a{ldelim}
     color: {$cookieConsentTextColor};
 {rdelim}
 
-{* Button shimmer effect - configurable via theme settings *}
 {if $showButtonShimmer}
 .btn.shimmer-fade-out {ldelim}
   position: relative;
