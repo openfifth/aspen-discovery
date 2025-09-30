@@ -1560,6 +1560,14 @@ AspenDiscovery.Admin = (function () {
 				}
 			}
 		},
+		updateGroupedWorkEContentSortFields: function () {
+			var selectedOption = $("#sortMethodSelect").find(":selected").val();
+			if (selectedOption === "1") {
+				$("#propertyRowsortedEContentSources").hide();
+			} else {
+				$("#propertyRowsortedEContentSources").show();
+			}
+		},
 		updateIndexingProfileFields: function () {
 			var audienceType = $('#determineAudienceBySelect').val();
 			if (audienceType === '3') {

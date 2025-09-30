@@ -305,7 +305,7 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 	 *
 	 * @return  array
 	 */
-	abstract function getFormatCategory();
+	abstract function getFormatCategory() : string|array|null ;
 
 	public function getFountasPinnellLevel() {
 		return $this->getGroupedWorkDriver()->getFountasPinnellLevel();
