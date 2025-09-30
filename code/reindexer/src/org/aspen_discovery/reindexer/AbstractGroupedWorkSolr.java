@@ -578,10 +578,15 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	}
 
 	protected String getPrimaryAuthor() {
+		if (authorDisplay != null && !authorDisplay.isEmpty()) {
+			return authorDisplay;
+		}
 		String mostUsedAuthor = null;
-		long numUses = -1;
+		long highestUsage = -1;
 		for (String curAuthor : primaryAuthors.keySet()) {
-			if (primaryAuthors.get(curAuthor) > numUses) {
+			long numUses = primaryAuthors.get(curAuthor);
+			if (numUses > highestUsage) {
+				highestUsage = numUses;
 				mostUsedAuthor = curAuthor;
 			}
 		}
