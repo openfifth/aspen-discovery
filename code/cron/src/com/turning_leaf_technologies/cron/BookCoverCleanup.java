@@ -20,7 +20,7 @@ public class BookCoverCleanup implements IProcessHandler {
 		processLog.saveResults();
 
 		String coverPath = configIni.get("Site", "coverPath");
-		String[] coverPaths = new String[] { "/small", "/medium", "/large", "/url_cache" };
+		String[] coverPaths = new String[] { "/small", "/medium", "/large" };
 		long currentTime = new Date().getTime();
 		long oneWeekAgo = currentTime - (7L * 24 * 3600 * 1000);
 		long twoWeeksAgo = currentTime - (2L * 7 * 24 * 3600 * 1000);
@@ -41,12 +41,7 @@ public class BookCoverCleanup implements IProcessHandler {
 			} else {
 				processLog.addNote("Cleaning up covers in " + coverDirectoryFile.getAbsolutePath());
 				processLog.saveResults();
-				File[] filesToCheck;
-				if (path.equals("/url_cache")) {
-					filesToCheck = coverDirectoryFile.listFiles((dir, name) -> name.toLowerCase().endsWith("txt"));
-				} else {
-					filesToCheck = coverDirectoryFile.listFiles((dir, name) -> name.toLowerCase().endsWith("jpg") || name.toLowerCase().endsWith("png"));
-				}
+				File[] filesToCheck = coverDirectoryFile.listFiles((dir, name) -> name.toLowerCase().endsWith("jpg") || name.toLowerCase().endsWith("png"));
 				if (filesToCheck != null) {
 					for (File curFile : filesToCheck) {
 						//Remove any files created more than 2 weeks ago.
@@ -61,7 +56,7 @@ public class BookCoverCleanup implements IProcessHandler {
 								} else {
 									processLog.incErrors("Unable to delete file " + curFile);
 								}
-							} else if (dateCreated.toMillis() < fourWeeksAgo) {
+							}else if (dateCreated.toMillis() < fourWeeksAgo) {
 								if (curFile.delete()) {
 									numFilesDeleted++;
 									processLog.incUpdated();
