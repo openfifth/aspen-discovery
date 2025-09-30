@@ -278,12 +278,15 @@ class MyAccount_MyList extends MyAccount {
 			$queryParamsTmp = explode("&", $queryParams);
 			$queryParams = [];
 			foreach ($queryParamsTmp as $param) {
-				[
-					$name,
-					$value,
-				] = explode("=", $param);
-				if ($name != 'sort') {
-					$queryParams[$name] = $value;
+				$parts = explode("=", $param, 2);
+				if (count($parts) === 2) {
+					[
+						$name,
+						$value,
+					] = $parts;
+					if ($name != 'sort') {
+						$queryParams[$name] = urldecode($value);
+					}
 				}
 			}
 		}
