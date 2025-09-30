@@ -136,11 +136,12 @@ class User extends DataObject {
 	public $_dateOfBirth;
 
 
-	// CarlX Option
+	// CarlX Options
 	public $_emailReceiptFlag;
 	public $_availableHoldNotice;
 	public $_comingDueNotice;
 	public $_phoneType;
+	public $_thirdPartySMSOptIn;
 
 	//Staff Settings
 	public $materialsRequestEmailSignature;
@@ -4354,13 +4355,17 @@ class User extends DataObject {
 		}
 		$sections['cataloging'] = new AdminSection('Catalog / Grouped Works');
 		$groupedWorkAction = new AdminAction('Grouped Work Display', 'Define information about what is displayed for Grouped Works in search results and full record displays.', '/Admin/GroupedWorkDisplay');
-		$groupedWorkAction->addSubAction(new AdminAction('Grouped Work Facets', 'Define information about what facets are displayed for grouped works in search results and Advanced Search.', '/Admin/GroupedWorkFacets'), [
-			'Administer All Grouped Work Facets',
-			'Administer Library Grouped Work Facets',
+		$groupedWorkAction->addSubAction(new AdminAction('eContent Sorting', 'Define how eContent sources are sorted within a Grouped Work.', '/Admin/GroupedWorkEContentSorting'), [
+			'Administer All eContent Sorting',
+			'Administer Library eContent Sorting',
 		]);
 		$groupedWorkAction->addSubAction(new AdminAction('Format Sorting', 'Define how formats are sorted within a Grouped Work.', '/Admin/GroupedWorkFormatSorting'), [
 			'Administer All Format Sorting',
 			'Administer Library Format Sorting',
+		]);
+		$groupedWorkAction->addSubAction(new AdminAction('Grouped Work Facets', 'Define information about what facets are displayed for grouped works in search results and Advanced Search.', '/Admin/GroupedWorkFacets'), [
+			'Administer All Grouped Work Facets',
+			'Administer Library Grouped Work Facets',
 		]);
 		$sections['cataloging']->addAction($groupedWorkAction, [
 			'Administer All Grouped Work Display Settings',

@@ -428,16 +428,7 @@ class Record_AJAX extends Action {
 			$items = $marcRecord->getCopies();
 			//sort things alphabetically and newest first for periodicals/serials
 			if ($marcRecord->isPeriodical()){
-				$sorter = function ($a, $b){
-					if ($a['shelfLocation'] == $b['shelfLocation']) {
-						if ($a['callNumber'] == $b['callNumber']) {
-							return 0;
-						}
-						return strnatcasecmp($b['callNumber'], $a['callNumber']);
-					}
-					return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
-				};
-				uasort($items, $sorter);
+				$items = sortPeriodicalItemsByShelfLocationAndCallNumber($items);
 			} else {
 				array_multisort(array_column($items, 'description'), SORT_NATURAL, $items);
 			}
@@ -629,7 +620,7 @@ class Record_AJAX extends Action {
 				} else {
 					$interface->assign('whileYouWaitTitles', []);
 					if (isset($results['items'])) {
-						$results = $this->getItemHoldForm($user->_homeLocationCode, $results, $shortId, $user);
+						$results = $this->getItemHoldForm($user->getPickupLocationCode(), $results, $shortId, $user);
 						$results['holdFormBypassed'] = true;
 					}
 				}
@@ -756,11 +747,11 @@ class Record_AJAX extends Action {
 				];
 			}
 
-			// Get a list of volumes with unsuppressed items for the record's variations.
+			// Get a list of volumes with unsuppressed, holdable items for the record's variations.
 			$volumeData = [];
 			foreach ($relatedRecord->recordVariations as $variation) {
 				foreach ($variation->getRecords() as $record) {
-					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData();
+					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData(true);
 					foreach ($unsuppressedVolumeData as $volumeInfo) {
 						if (!isset($volumeData[$volumeInfo->volumeId])) {
 							$volumeData[$volumeInfo->volumeId] = clone($volumeInfo);
@@ -941,7 +932,7 @@ class Record_AJAX extends Action {
 					$location = new Location();
 					$userPickupLocations = $location->getPickupBranches($user);
 					foreach ($userPickupLocations as $tmpLocation) {
-						if ($tmpLocation->code == $pickupBranch) {
+						if (isset($tmpLocation->code) && $tmpLocation->code == $pickupBranch) {
 							$patron = $user;
 							break;
 						}

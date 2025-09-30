@@ -26,7 +26,6 @@ abstract class IndexRecordDriver extends RecordInterface {
 	 */
 	protected $forbiddenSnippetFields = [
 		'author',
-		'author-letter',
 		'auth_author2',
 		'title',
 		'title_short',
@@ -122,17 +121,17 @@ abstract class IndexRecordDriver extends RecordInterface {
 	 * @access  public
 	 * @return  array
 	 */
-	public function getFormats() {
-		return isset($this->fields['format']) ? $this->fields['format'] : [];
+	public function getFormats() : array {
+		return $this->fields['format'] ?? [];
 	}
 
 	/**
 	 * Get an array of all the format categories associated with the record.
 	 *
-	 * @return  array
+	 * @return array|null|string
 	 */
-	public function getFormatCategory() {
-		return isset($this->fields['format_category']) ? $this->fields['format_category'] : [];
+	public function getFormatCategory() : array|null|string {
+		return $this->fields['format_category'] ?? [];
 	}
 
 	/**
