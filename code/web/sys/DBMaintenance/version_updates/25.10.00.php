@@ -112,6 +112,15 @@ function getUpdates25_10_00(): array {
 		//kodi - Grove
 
 		// Myranda - Grove
+		'add_dark_mode_checkbox' => [
+			'title' => 'Add checkbox for if theme is dark mode or not',
+			'description' => 'Adds checkbox to themes for additional CSS modifications applicable to dark color schemes',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE themes ADD COLUMN isDarkColorScheme TINYINT(1) DEFAULT 0',
+			]
+		],
+		//add_high_contrast_checkbox
 
 		//Yanjun Li - ByWater
 		'add_hoopla_configurable_indexing_time' => [
