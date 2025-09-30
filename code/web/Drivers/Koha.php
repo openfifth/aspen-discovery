@@ -3855,7 +3855,9 @@ class Koha extends AbstractIlsDriver {
 						$error);
 				}
 				$result['error'] = trim($error);
-			} elseif (preg_match('%<div id="password-recovery">\s+<div class="alert alert-info">(.*?)<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s+</div>\s+</div>%s', $postResults, $messageInformation)) {
+			}
+			elseif (preg_match('%<div id="password-recovery">\s*<div class="alert alert-info">\s*<p>(.*?)</p>\s*<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s*</div>%s', $postResults, $messageInformation) ||
+					preg_match('%<div id="password-recovery">\s+<div class="alert alert-info">(.*?)<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s+</div>\s+</div>%s', $postResults, $messageInformation)) {
 				$message = $messageInformation[1];
 				$result['success'] = true;
 				$result['message'] = translate([
@@ -3864,7 +3866,6 @@ class Koha extends AbstractIlsDriver {
 				]);
 			}
 		}
-
 		return $result;
 	}
 
@@ -4577,7 +4578,6 @@ class Koha extends AbstractIlsDriver {
 						'maxLength' => $pinValidationRules['maxLength'],
 						'onlyDigitsAllowed' => $pinValidationRules['onlyDigitsAllowed'],
 						'showConfirm' => false,
-						'required' => true,
 						'showDescription' => true,
 						'autocomplete' => false,
 					],
@@ -4590,7 +4590,6 @@ class Koha extends AbstractIlsDriver {
 						'maxLength' => $pinValidationRules['maxLength'],
 						'onlyDigitsAllowed' => $pinValidationRules['onlyDigitsAllowed'],
 						'showConfirm' => false,
-						'required' => true,
 						'showDescription' => false,
 						'autocomplete' => false,
 					],
@@ -4755,7 +4754,20 @@ class Koha extends AbstractIlsDriver {
 		global $library;
 		$result = ['success' => false,];
 
-		if (isset($_REQUEST['borrower_password'])) {
+		// Check if password is mandatory before attempting validation.
+		$this->initDatabaseConnection();
+		$sql = "SELECT value FROM systempreferences WHERE variable = 'PatronSelfRegistrationBorrowerMandatoryField';";
+		$results = mysqli_query($this->dbConnection, $sql);
+		$mandatoryFieldsValue = '';
+		if ($curRow = $results->fetch_assoc()) {
+			$mandatoryFieldsValue = $curRow['value'];
+		}
+		$results->close();
+		$requiredFields = explode('|', $mandatoryFieldsValue);
+		$requiredFields = array_flip($requiredFields);
+		$passwordIsRequired = array_key_exists('password', $requiredFields);
+
+		if (isset($_REQUEST['borrower_password']) && $passwordIsRequired) {
 			$password = $_REQUEST['borrower_password'];
 			$pinValidationRules = $this->getPasswordPinValidationRules();
 

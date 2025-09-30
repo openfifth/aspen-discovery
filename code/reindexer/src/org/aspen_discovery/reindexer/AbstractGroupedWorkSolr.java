@@ -578,10 +578,15 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	}
 
 	protected String getPrimaryAuthor() {
+		if (authorDisplay != null && !authorDisplay.isEmpty()) {
+			return authorDisplay;
+		}
 		String mostUsedAuthor = null;
-		long numUses = -1;
+		long highestUsage = -1;
 		for (String curAuthor : primaryAuthors.keySet()) {
-			if (primaryAuthors.get(curAuthor) > numUses) {
+			long numUses = primaryAuthors.get(curAuthor);
+			if (numUses > highestUsage) {
+				highestUsage = numUses;
 				mostUsedAuthor = curAuthor;
 			}
 		}
@@ -773,39 +778,45 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 			}
 			if (!this.seriesWithVolume.containsKey(normalizedSeriesInfoWithVolume)) {
 				boolean okToAdd = true;
-				for (String existingSeries2 : this.seriesWithVolume.keySet()) {
-					String[] existingSeriesInfo = existingSeries2.split("\\|", 2);
-					String existingSeriesName = existingSeriesInfo[0];
-					String existingVolume = "";
-					if (existingSeriesInfo.length > 1) {
-						existingVolume = existingSeriesInfo[1];
-					}
-					//Get the longer series name
-					if (existingSeriesName.contains(seriesInfoLower)) {
-						//Use the old one unless it doesn't have a volume
-						if (existingVolume.isEmpty()) {
-							this.seriesWithVolume.remove(existingSeries2);
-							break;
-						} else {
-							if (volumeLower.equals(existingVolume)) {
+				//Check to see if we have a similar series name (where one series name is fully contained in the other series).
+				// This helps to prevent cases where series of "Dark" and "Dark Series" both appear.
+				// When this occurs the more specific series (longer or with a volume) will be preserved.
+				// This logic only applies if the series module is NOT active.
+				if (!groupedWorkIndexer.hasSeriesModuleEnabled()) {
+					for (String existingSeries2 : this.seriesWithVolume.keySet()) {
+						String[] existingSeriesInfo = existingSeries2.split("\\|", 2);
+						String existingSeriesName = existingSeriesInfo[0];
+						String existingVolume = "";
+						if (existingSeriesInfo.length > 1) {
+							existingVolume = existingSeriesInfo[1];
+						}
+						//Get the longer series name
+						if (existingSeriesName.contains(seriesInfoLower)) {
+							//Use the old one unless it doesn't have a volume
+							if (existingVolume.isEmpty()) {
+								this.seriesWithVolume.remove(existingSeries2);
+								break;
+							} else {
+								if (volumeLower.equals(existingVolume)) {
+									okToAdd = false;
+									break;
+								} else if (volumeLower.isEmpty()) {
+									okToAdd = false;
+									break;
+								}
+							}
+						} else if (seriesInfoLower.contains(existingSeriesName)) {
+							//Before removing the old series, make sure the new one has a volume
+							if (!existingVolume.isEmpty() && existingVolume.equals(volumeLower)) {
+								this.seriesWithVolume.remove(existingSeries2);
+								break;
+							} else if (volume.isEmpty() && !existingVolume.isEmpty()) {
 								okToAdd = false;
 								break;
-							} else if (volumeLower.isEmpty()) {
-								okToAdd = false;
+							} else if (volume.isEmpty()) {
+								this.seriesWithVolume.remove(existingSeries2);
 								break;
 							}
-						}
-					} else if (seriesInfoLower.contains(existingSeriesName)) {
-						//Before removing the old series, make sure the new one has a volume
-						if (!existingVolume.isEmpty() && existingVolume.equals(volumeLower)) {
-							this.seriesWithVolume.remove(existingSeries2);
-							break;
-						} else if (volume.isEmpty() && !existingVolume.isEmpty()) {
-							okToAdd = false;
-							break;
-						} else if (volume.isEmpty()) {
-							this.seriesWithVolume.remove(existingSeries2);
-							break;
 						}
 					}
 				}
@@ -1436,60 +1447,61 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 						//Loop through all the scopes to see if we should remove the hoopla record from that scope.
 						for (ItemInfo curItem1 : record1.getRelatedItems()){
 							HashSet<String> scopesToRemove = new HashSet<>();
-							for (ScopingInfo item1Scope : curItem1.getScopingInfo().values()) {
-								String item1ScopeName = item1Scope.getScope().getScopeName();
-								//Get information about the scope to determine how this scope should be processed.
-								switch (item1Scope.getScope().getHooplaScope().getExcludeTitlesWithCopiesFromOtherVendors()) {
-									case 0:
-										//Don't remove items that have the same record someplace else
-										break;
-									case 1:
-										//Remove if there is an available copy for the scope
-										for (ItemInfo curItem2 : record2.getRelatedItems()){
-											if (curItem2.isAvailable()){
+							if (!curItem1.geteContentSubSource().equals("Flex")) {
+								for (ScopingInfo item1Scope : curItem1.getScopingInfo().values()) {
+									String item1ScopeName = item1Scope.getScope().getScopeName();
+									//Get information about the scope to determine how this scope should be processed.
+									switch (item1Scope.getScope().getHooplaScope().getExcludeTitlesWithCopiesFromOtherVendors()) {
+										case 0:
+											//Don't remove items that have the same record someplace else
+											break;
+										case 1:
+											//Remove if there is an available copy for the scope
+											for (ItemInfo curItem2 : record2.getRelatedItems()){
+												if (curItem2.isAvailable()){
+													if (curItem2.getScopingInfo().containsKey(item1ScopeName)){
+														scopesToRemove.add(item1ScopeName);
+														break;
+													}
+												}
+											}
+											break;
+										case 2:
+											//Remove if there is another copy in the scope (does not have to be available)
+											for (ItemInfo curItem2 : record2.getRelatedItems()){
 												if (curItem2.getScopingInfo().containsKey(item1ScopeName)){
 													scopesToRemove.add(item1ScopeName);
 													break;
 												}
 											}
-										}
-										break;
-									case 2:
-										//Remove if there is another copy in the scope (does not have to be available)
-										for (ItemInfo curItem2 : record2.getRelatedItems()){
-											if (curItem2.getScopingInfo().containsKey(item1ScopeName)){
-												scopesToRemove.add(item1ScopeName);
-												break;
+											break;
+									}
+								}
+								for (String scopeToRemove : scopesToRemove){
+									curItem1.getScopingInfo().remove(scopeToRemove);
+									//Remove from related scopes as well
+									ArrayList<ScopingInfo> scopingInfo = relatedScopes.get(scopeToRemove);
+									if (scopingInfo != null) {
+										ArrayList<ScopingInfo> scopingInfoClone;
+										//noinspection unchecked
+										scopingInfoClone = (ArrayList<ScopingInfo>) scopingInfo.clone();
+										for (ScopingInfo relatedScopeInfo : scopingInfoClone) {
+											if (relatedScopeInfo.getItem().equals(curItem1)) {
+												scopingInfo.remove(relatedScopeInfo);
 											}
 										}
-										break;
-								}
-							}
-							for (String scopeToRemove : scopesToRemove){
-								curItem1.getScopingInfo().remove(scopeToRemove);
-								//Remove from related scopes as well
-								ArrayList<ScopingInfo> scopingInfo = relatedScopes.get(scopeToRemove);
-								if (scopingInfo != null) {
-									ArrayList<ScopingInfo> scopingInfoClone;
-									//noinspection unchecked
-									scopingInfoClone = (ArrayList<ScopingInfo>) scopingInfo.clone();
-									for (ScopingInfo relatedScopeInfo : scopingInfoClone) {
-										if (relatedScopeInfo.getItem().equals(curItem1)) {
-											scopingInfo.remove(relatedScopeInfo);
+										if (scopingInfo.isEmpty()) {
+											relatedScopes.remove(scopeToRemove);
 										}
 									}
-									if (scopingInfo.isEmpty()) {
-										relatedScopes.remove(scopeToRemove);
-									}
+								}
+
+								//Remove the item entirely if it is no longer valid for any scope
+								if (curItem1.getScopingInfo().isEmpty()){
+									record1.getRelatedItems().remove(curItem1);
+									break;
 								}
 							}
-
-							//Remove the item entirely if it is no longer valid for any scope
-							if (curItem1.getScopingInfo().isEmpty()){
-								record1.getRelatedItems().remove(curItem1);
-								break;
-							}
-
 
 						}
 					}
