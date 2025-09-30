@@ -124,6 +124,14 @@ function getUpdates25_10_00(): array {
 		], //add_hoopla_configurable_indexing_time
 
 		// Leo Stoyanov - BWS
+		'add_show_copies_for_periodicals_with_no_iems_setting' => [
+			'title' => 'Add Show Copies for Periodicals with No Items Setting',
+			'description' => 'Add a setting to control whether Copies accordion is shown for periodicals with no items.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN showCopiesForPeriodicalsWithNoItems TINYINT(1) DEFAULT 0'
+			]
+		], //add_show_copies_for_periodicals_with_no_iems_setting
 		'add_enable_third_party_sms_notifications_option' => [
 			'title' => 'Add "Enable Third Party SMS Notifications" Option',
 			'description' => 'Add "Enable Third Party SMS Notifications" option for CarlX to Library System settings.',
