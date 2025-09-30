@@ -6,20 +6,24 @@ import java.sql.SQLException;
 class HooplaSettings {
 	private final long settingsId;
 	private final String apiUrl;
-	private final int libraryId;
 	private final String apiUsername;
 	private final String apiPassword;
 	private final int recordExtractionBatchSize;
 	private final int indexingTime;
+	private final String countryCode;
+
+	// Global metadata settings
+	private final boolean runFullUpdateGlobal;
+	private final long lastUpdateOfChangedRecordsGlobal;
+	private final long lastUpdateOfAllRecordsGlobal;
+	private final long lastRecordProcessed;
 
 	// Instant settings
-	private final boolean hooplaInstantEnabled;
 	private final boolean runFullUpdateInstant;
 	private final long lastUpdateOfChangedRecordsInstant;
 	private final long lastUpdateOfAllRecordsInstant;
 
 	// Flex settings
-	private final boolean hooplaFlexEnabled;
 	private final boolean runFullUpdateFlex;
 	private final long lastUpdateOfChangedRecordsFlex;
 	private final long lastUpdateOfAllRecordsFlex;
@@ -36,15 +40,19 @@ class HooplaSettings {
 		libraryId = settingsRS.getInt("libraryId");
 		apiUsername = settingsRS.getString("apiUsername");
 		apiPassword = settingsRS.getString("apiPassword");
+		countryCode = settingsRS.getString("countryCode");
 
 		recordExtractionBatchSize = settingsRS.getInt("recordExtractionBatchSize");
 		indexingTime = settingsRS.getInt("indexingTime");
-		hooplaInstantEnabled = settingsRS.getBoolean("hooplaInstantEnabled");
+		runFullUpdateGlobal = settingsRS.getBoolean("runFullUpdateGlobal");
+		lastUpdateOfChangedRecordsGlobal = settingsRS.getLong("lastUpdateOfChangedRecordsGlobal");
+		lastUpdateOfAllRecordsGlobal = settingsRS.getLong("lastUpdateOfAllRecordsGlobal");
+		lastRecordProcessed = settingsRS.getLong("lastRecordProcessed");
+
 		runFullUpdateInstant = settingsRS.getBoolean("runFullUpdateInstant");
 		lastUpdateOfChangedRecordsInstant = settingsRS.getLong("lastUpdateOfChangedRecordsInstant");
 		lastUpdateOfAllRecordsInstant = settingsRS.getLong("lastUpdateOfAllRecordsInstant");
 
-		hooplaFlexEnabled = settingsRS.getBoolean("hooplaFlexEnabled");
 		runFullUpdateFlex = settingsRS.getBoolean("runFullUpdateFlex");
 		lastUpdateOfChangedRecordsFlex = settingsRS.getLong("lastUpdateOfChangedRecordsFlex");
 		lastUpdateOfAllRecordsFlex = settingsRS.getLong("lastUpdateOfAllRecordsFlex");
@@ -63,8 +71,8 @@ class HooplaSettings {
 		return apiUrl;
 	}
 
-	public int getLibraryId() {
-		return libraryId;
+	public String getCountryCode() {
+		return countryCode;
 	}
 
 	public String getApiUsername() {
@@ -73,15 +81,6 @@ class HooplaSettings {
 
 	public String getApiPassword() {
 		return apiPassword;
-	}
-
-	public boolean isHooplaEnabled(String hooplaType) {
-		if (hooplaType.equals("Flex")) {
-			return hooplaFlexEnabled;
-		} else if (hooplaType.equals("Instant")) {
-			return hooplaInstantEnabled;
-		}
-		return false;
 	}
 
 	public boolean isRunFullUpdate(String hooplaType) {
@@ -130,4 +129,21 @@ class HooplaSettings {
 	public int getIndexingTime() {
 		return indexingTime;
 	}
+
+	public boolean isRunFullUpdateGlobal() {
+		return runFullUpdateGlobal;
+	}
+
+	public long getLastUpdateOfChangedRecordsGlobal() {
+		return lastUpdateOfChangedRecordsGlobal;
+	}
+
+	public long getLastUpdateOfAllRecordsGlobal() {
+		return lastUpdateOfAllRecordsGlobal;
+	}
+
+	public long getLastRecordProcessed() {
+		return lastRecordProcessed;
+	}
+
 }

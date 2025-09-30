@@ -166,15 +166,14 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE hoopla_settings ADD COLUMN indexingTime INT DEFAULT 1',
 			]
 		], //add_hoopla_configurable_indexing_time
-		'add_hoopla_country_code_and_drop_library_id' => [
+		'add_hoopla_country_code_to_hoopla_settings' => [
 			'title' => 'Add Hoopla Country Code',
 			'description' => 'Allow Hoopla settings to define country code',
 			'continueOnError' => false,
 			'sql' => [
 				"ALTER TABLE hoopla_settings ADD COLUMN countryCode VARCHAR(2) DEFAULT 'US'",
-				"ALTER TABLE hoopla_settings DROP column libraryId",
 			]
-		], //add_hoopla_country_code_and_drop_library_id
+		], //add_hoopla_country_code_to_hoopla_settings
 		'create_library_hoopla_settings_table' => [
 			'title' => 'Create Library Hoopla Settings Table',
 			'description' => 'Store Hoopla Library Information',
@@ -193,6 +192,46 @@ function getUpdates25_10_00(): array {
 				)'
 			]
 		], //create_library_hoopla_settings_table
+		'drop_unused_hoopla_settings_columns' => [
+			'title' => 'Drop Unused Hoopla Settings',
+			'description' => 'Drop unused Hoopla settings',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE hoopla_settings DROP column libraryId",
+				"ALTER TABLE hoopla_settings DROP column hooplaFlexEnabled",
+				"ALTER TABLE hoopla_settings DROP column hooplaInstantEnabled",
+			]
+		], //drop_unused_hoopla_settings
+		'drop_unused_hoopla_scopes_columns' => [
+			'title' => 'Drop Unused Hoopla Scopes Columns',
+			'description' => 'Drop unused Hoopla scopes columns',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE hoopla_scopes DROP column includeInstant",
+				"ALTER TABLE hoopla_scopes DROP column includeFlex",
+			]
+		], //drop_unused_hoopla_scopes_columns
+		'add_global_contents_hoopla_settings' => [
+			'title' => 'Add Global Contents Hoopla Settings',
+			'description' => 'Add global contents Hoopla settings',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE hoopla_settings ADD COLUMN runFullUpdateGlobal TINYINT(1) DEFAULT 0",
+				"ALTER TABLE hoopla_settings ADD COLUMN lastUpdateOfChangedRecordsGlobal INT(11) DEFAULT 0",
+				"ALTER TABLE hoopla_settings ADD COLUMN lastUpdateOfAllRecordsGlobal INT(11) DEFAULT 0",
+				"ALTER TABLE hoopla_settings ADD COLUMN lastRecordProcessed INT(11) DEFAULT 0",
+			]
+		], //add_global_contents_hoopla_settings
+		'update_hoopla_export_table' => [
+			'title' => 'Update Hoopla Export Table',
+			'description' => 'Update Hoopla export table',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE hoopla_export DROP COLUMN active",
+				"ALTER TABLE hoopla_export DROP COLUMN hooplaType",
+				"ALTER TABLE hoopla_export CHANGE COLUMN kind format VARCHAR(10) DEFAULT NULL",
+			]
+		], //update_hoopla_export_table
 
 		// Leo Stoyanov - BWS
 		'add_indexes_for_more_user_list_sort_options' => [

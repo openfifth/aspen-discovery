@@ -15,6 +15,13 @@ class HooplaSetting extends DataObject {
 	/** @noinspection PhpUnused */
 	public $regroupAllRecords;
 	/** @noinspection PhpUnused */
+	public $runFullUpdateGlobal;
+	/** @noinspection PhpUnused */
+	public $lastUpdateOfChangedRecordsGlobal;
+	/** @noinspection PhpUnused */
+	public $lastUpdateOfAllRecordsGlobal;
+	/** @noinspection PhpUnused */
+	public $lastRecordProcessed;
 	public $runFullUpdateInstant;
 	/** @noinspection PhpUnused */
 	public $lastUpdateOfChangedRecordsInstant;
@@ -128,7 +135,35 @@ class HooplaSetting extends DataObject {
 							'500' => '500',
 						],
 						'default' => '500',
-					]
+					],
+					'runFullUpdateGlobal' => [
+						'property' => 'runFullUpdateGlobal',
+						'type' => 'checkbox',
+						'label' => 'Run Full Update for Global Content',
+						'description' => 'Trigger a full global metadata reload on the next export run',
+						'default' => 0,
+					],
+					'lastUpdateOfChangedRecordsGlobal' => [
+						'property' => 'lastUpdateOfChangedRecordsGlobal',
+						'type' => 'timestamp',
+						'label' => 'Last Update of Changed Global Records',
+						'description' => 'Timestamp from the most recent incremental global content update',
+						'default' => 0,
+					],
+					'lastUpdateOfAllRecordsGlobal' => [
+						'property' => 'lastUpdateOfAllRecordsGlobal',
+						'type' => 'timestamp',
+						'label' => 'Last Full Update of Global Records',
+						'description' => 'Timestamp from the most recent full global content reload',
+						'default' => 0,
+						],
+					'lastRecordProcessed' => [
+						'property' => 'lastRecordProcessed',
+						'type' => 'integer',
+						'label' => 'Last Record Processed',
+						'description' => 'The index of the last record that was processed. Can be used for resuming API extracts if errors are generated.',
+						'default' => 0,
+					],
 				]
 			],
 			'hooplaInstantRecords' => [
