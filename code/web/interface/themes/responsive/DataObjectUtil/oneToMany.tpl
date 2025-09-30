@@ -20,11 +20,7 @@
 			<tbody>
 			{foreach from=$propValue item=subObject}
 				{assign var=subObjectId value=$subObject->getPrimaryKeyValue()}
-				{* Get instance-specific structure once per object *}
-				{assign var=instanceStructure value=null}
-				{if method_exists($subObject, 'updateStructureForEditingObject')}
-					{assign var=instanceStructure value=$subObject->updateStructureForEditingObject($property.structure)}
-				{/if}
+				{assign var=instanceStructure value=$subObject->_instanceStructure}
 				<tr id="{$propName}{$subObject->id}" class="{$propName}Row" data-id="{$subObject->id}">
 					<input type="hidden" id="{$propName}Id_{$subObject->id}" name="{$propName}Id[{$subObject->id}]" value="{$subObject->id}"/>
 					{if !empty($property.sortable)}
