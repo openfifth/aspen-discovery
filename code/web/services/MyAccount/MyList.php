@@ -317,7 +317,7 @@ class MyAccount_MyList extends MyAccount {
 			$maxPage = ceil($totalRecords / $pageSize);
 			if ($page > $maxPage) {
 				$originalPage = $page;
-				$page = $maxPage;
+				$page = 1;
 				$currentUrl = $_SERVER['REQUEST_URI'];
 				if (preg_match('/[&?]page=\d+/', $currentUrl)) {
 					$newUrl = preg_replace('/([&?])page=\d+/', '$1page=' . $page, $currentUrl);
