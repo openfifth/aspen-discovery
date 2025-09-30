@@ -1669,7 +1669,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			$this->_physicalDescriptions = [];
 			$physicalDescriptionFields = $this->getFields('300|530', true);
 			foreach ($physicalDescriptionFields as $field) {
-				if ($field == '300') {
+				if ($field->getTag() == '300') {
 					$info = $this->getSubfieldArray($field, ['a', 'b', 'c', 'e', 'f', 'g'], true);
 				}else{
 					$info = $this->getSubfieldArray($field, ['a', 'b', 'c', 'd'], true);

@@ -136,11 +136,12 @@ class User extends DataObject {
 	public $_dateOfBirth;
 
 
-	// CarlX Option
+	// CarlX Options
 	public $_emailReceiptFlag;
 	public $_availableHoldNotice;
 	public $_comingDueNotice;
 	public $_phoneType;
+	public $_thirdPartySMSOptIn;
 
 	//Staff Settings
 	public $materialsRequestEmailSignature;
@@ -2933,10 +2934,10 @@ class User extends DataObject {
 		return $result;
 	}
 
-	function freezeOverDriveHold($overDriveId, $reactivationDate): array {
+	function freezeOverDriveHold($overDriveId): array {
 		require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 		$overDriveDriver = new OverDriveDriver();
-		return $overDriveDriver->freezeHold($this, $overDriveId, $reactivationDate);
+		return $overDriveDriver->freezeHold($this, $overDriveId);
 	}
 
 	function thawOverDriveHold($overDriveId): array {

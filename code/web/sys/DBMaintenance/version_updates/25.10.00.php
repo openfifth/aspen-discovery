@@ -98,6 +98,14 @@ function getUpdates25_10_00(): array {
 		], //add_series_sort_method
 
 		//katherine - Grove
+		'add_include_in_reports_option_to_event_type' => [
+			'title' => 'Add Include In Reports option to Event Types',
+			'description' => 'Allows specific event types to be excluded from reports',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE event_type ADD COLUMN includeInReports TINYINT DEFAULT 1',
+			]
+		], //add_include_in_reports_option_to_event_type
 
 		//kirstien - Grove
 
@@ -116,6 +124,14 @@ function getUpdates25_10_00(): array {
 		], //add_hoopla_configurable_indexing_time
 
 		// Leo Stoyanov - BWS
+		'add_enable_third_party_sms_notifications_option' => [
+			'title' => 'Add "Enable Third Party SMS Notifications" Option',
+			'description' => 'Add "Enable Third Party SMS Notifications" option for CarlX to Library System settings.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN enableThirdPartySMSNotifications TINYINT(1) DEFAULT 0'
+			],
+		], // add_enable_third_party_sms_notifications_option
 
 		//alexander - Open Fifth
 
