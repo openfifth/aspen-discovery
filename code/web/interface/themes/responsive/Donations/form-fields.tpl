@@ -120,7 +120,7 @@
 
 					{elseif $formField->textId == 'notificationAddress' || $formField->textId == 'notificationCity' || $formField->textId == 'notificationState' || $formField->textId == 'notificationZip'}
 						{if $allowDonationDedication == 1}
-						<div class="{if $formField->textId == 'notificationAddress'}col-md-7{elseif $formField->textId == 'notificationState'}col-md-1{else}col-md-2{/if}">
+						<div class="{if $formField->textId == 'notificationAddress'}col-xs-12 col-md-7{elseif $formField->textId == 'notificationState'}col-xs-6 col-sm-3 col-md-2{else}col-xs-6 col-sm-4 col-md-2{/if}">
 						<div class="form-group {$formField->textId}">
 							<label id="{$formField->textId}Label" for="{$formField->textId}" class="control-label">{translate text=$formField->label isPublicFacing=true isAdminEnteredData=true}</label>
 							<input type="text" name="{$formField->textId}" id="{$formField->textId}" class="form-control input-lg">
@@ -165,7 +165,7 @@
 						</div>
 
 					{elseif ($formField->textId == 'address' || $formField->textId == 'address2' || $formField->textId == 'city' || $formField->textId == 'state' || $formField->textId == 'zip')}
-						<div class="{if $formField->textId == 'address' || $formField->textId == 'address2'}col-md-12{else}col-md-4{/if}">
+						<div class="{if $formField->textId == 'address' || $formField->textId == 'address2'}col-xs-12 col-md-12{elseif $formField->textId == 'state'}col-xs-6 col-sm-3 col-md-2{else}col-xs-6 col-sm-4 col-md-4{/if}">
 							<div class="form-group {$formField->textId}">
 								<label id="{$formField->textId}Label" for="{$formField->textId}"
 									   class="control-label">{translate text=$formField->label isPublicFacing=true isAdminEnteredData=true}</label>

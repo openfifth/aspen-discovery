@@ -344,6 +344,7 @@ abstract class RecordInterface {
 			'citations' => 'Citations',
 			'copyDetails' => 'Copy Details (OverDrive)',
 			'staff' => 'Staff View',
+			'accessibilityStatements' => 'Accessibility Statements (OverDrive)',
 		];
 	}
 
@@ -378,6 +379,7 @@ abstract class RecordInterface {
 			'citations' => 'closed',
 			'copyDetails' => 'closed',
 			'staff' => 'closed',
+			'accessibilityStatements' => 'closed',
 		];
 	}
 
