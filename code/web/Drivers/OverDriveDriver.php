@@ -979,7 +979,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		return $holdResult;
 	}
 
-	function freezeHold(User $patron, $overDriveId, $reactivationDate): array {
+	function freezeHold(User $patron, $overDriveId): array {
 		//Figure out which collection the title is on hold in.
 		if (str_contains($overDriveId, '_')){
 			list ($overDriveId, $settingId) = explode('_', $overDriveId);
@@ -992,24 +992,6 @@ class OverDriveDriver extends AbstractEContentDriver {
 		$params = [
 			'emailAddress' => trim($patron->overdriveEmail),
 		];
-		$params['suspensionType'] = 'limited';
-		if (empty($reactivationDate)) {
-			$params['numberOfDays'] = 365;
-		} else {
-			try {
-				$numberOfDaysToSuspend = (new DateTime())->diff(new DateTime($reactivationDate))->days + 1;
-				if ($numberOfDaysToSuspend > 365) {
-					$numberOfDaysToSuspend = 365;
-				}
-				$params['numberOfDays'] = $numberOfDaysToSuspend;
-			} /** @noinspection PhpUnusedLocalVariableInspection */ catch (Exception $e) {
-				return [
-					'success' => false,
-					'message' => 'Unable to determine reactivation date',
-				];
-			}
-
-		}
 		$response = $this->_callPatronUrl($settings, $patron, $url, "freezeHold", $params);
 
 		$holdResult = [];
@@ -1019,7 +1001,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 			$this->incrementStat('numHoldsFrozen');
 			$holdResult['success'] = true;
 			$holdResult['message'] = translate([
-				'text' => 'Your hold was frozen successfully.',
+				'text' => 'Your hold was frozen successfully. Your hold will be frozen until you thaw the holds. Holds frozen for over a year will be cancelled.',
 				'isPublicFacing' => true,
 			]);
 
@@ -1029,7 +1011,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 			$holdResult['api']['message'] = translate([
-				'text' => 'Your hold was frozen successfully.',
+				'text' => 'Your hold was frozen successfully. Your hold will be frozen until you thaw the holds. Holds frozen for over a year will be cancelled.',
 				'isPublicFacing' => true,
 			]);
 

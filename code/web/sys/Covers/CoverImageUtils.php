@@ -220,13 +220,13 @@ function resizeImage($originalPath, $newPath, $maxWidth, $maxHeight) {
 			return false;
 		} else {
 			if ($width > $maxWidth || $height > $maxHeight) {
-				if ($width > $height) {
-					$new_width = $maxWidth;
-					$new_height = floor($height * ($maxWidth / $width));
-				} else {
-					$new_height = $maxHeight;
-					$new_width = floor($width * ($maxHeight / $height));
-				}
+				// Images larger than constraints get scaled down to fit within
+				// both maxWidth and maxHeight, thus preserving aspect ratio.
+				$scaleWidth = $maxWidth / $width;
+				$scaleHeight = $maxHeight / $height;
+				$scale = min($scaleWidth, $scaleHeight);
+				$new_width = floor($width * $scale);
+				$new_height = floor($height * $scale);
 
 				$tmp_img = imagecreatetruecolor($new_width, $new_height);
 				imagealphablending($tmp_img, false);

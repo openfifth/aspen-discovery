@@ -8,14 +8,14 @@
          default-schema-tab="schema" 
          allow-try="false"
          allow-authentication="false"
-         theme="light" 
          bg-color="{$bodyBackgroundColor}" 
          header-color="{$bodyBackgroundColor}" 
          regular-font="{$bodyFont}" 
          mono-font="'Consolas', monospace" 
          text-color="{$bodyTextColor}" 
          primary-color="{$linkColor}" 
-         nav-bg-color="{$secondaryBackgroundColor}">
+         nav-bg-color="{$secondaryBackgroundColor}"
+         {if $isDarkColorScheme}theme="dark"{else}theme="light"{/if}>
 {strip}
             <img slot="logo" src="" alt="" />
         </rapi-doc>
