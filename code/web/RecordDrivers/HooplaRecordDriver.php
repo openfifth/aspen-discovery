@@ -507,12 +507,13 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 		/** @var Library $searchLibrary */
 		$searchLibrary = Library::getSearchLibrary();
 		if ($searchLibrary->hooplaLibraryID > 0) { // Library is enabled for Hoopla patron action integration
+			$hooplaType = $this->getHooplaType();
 			$title = translate([
 				'text' => 'Check Out Hoopla',
 				'isPublicFacing' => true,
 			]);
 			$actions[] = [
-				'onclick' => "return AspenDiscovery.Hoopla.getCheckOutPrompts('{$this->id}', 'Instant', this)",
+				'onclick' => "return AspenDiscovery.Hoopla.getCheckOutPrompts('$this->id', '$hooplaType', this)",
 				'title' => $title,
 			];
 

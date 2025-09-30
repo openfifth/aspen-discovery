@@ -16,13 +16,6 @@ class MyAccount_AJAX extends JSON_Action {
 				break;
 			case 'getUserHolds':
 				$method = 'getUserHolds';
-				break;
-			case 'refreshUserCirculationCache':
-				$method = 'refreshUserCirculationCache';
-				break;
-			case 'getUpdatedCirculationButtons':
-				$method = 'getUpdatedCirculationButtons';
-				break;
 		}
 		if (method_exists($this, $method)) {
 			parent::launch($method);

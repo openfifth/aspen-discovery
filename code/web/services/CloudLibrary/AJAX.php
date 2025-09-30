@@ -19,7 +19,7 @@ class CloudLibrary_AJAX extends JSON_Action {
 						'isPublicFacing' => true,
 					]),
 					'message' => translate([
-						'text' => 'Sorry, it looks like you don\'t have permissions to place holds as that user.',
+						'text' => 'Sorry, it looks like you don\'t have permissions to place holds for that user.',
 						'isPublicFacing' => true,
 					]),
 				];
