@@ -21,6 +21,8 @@ class Grouping_Manifestation {
 	/** @var Grouping_Record[] */
 	private array $_relatedRecords = [];
 
+	private static ?GroupedWorkEContentSortingGroup $_econtentSorting = null;
+
 	/**
 	 * Grouping_Manifestation constructor.
 	 * @param Grouping_Record|array $record
@@ -44,6 +46,54 @@ class Grouping_Manifestation {
 
 	function removeVariation($variationKey) : void {
 		unset($this->_variations[$variationKey]);
+	}
+
+	function sortVariations() : void {
+		if (count($this->_variations) <= 1 ) {
+			return;
+		}
+		//Only do special sorting for eContent manifestations
+		if (!$this->isEContent()){
+			return;
+		}
+
+		if (self::$_econtentSorting == null) {
+			global $library;
+			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+			self::$_econtentSorting = $groupedWorkDisplaySettings->getEContentSortingGroup();
+		}
+
+		if (self::$_econtentSorting == null) {
+			//Default to alphabetic sorting
+			$sortMethod = 1;
+			$sortAvailableFirst = false;
+			$eContentSourceWeights = [];
+		}else{
+			$sortMethod = self::$_econtentSorting->sortMethod;
+			$sortAvailableFirst = self::$_econtentSorting->sortAvailableSourcesFirst;
+			$eContentSourceWeights = self::$_econtentSorting->getEContentSourceWeights();
+		}
+
+		usort($this->_variations, function(Grouping_Variation $a, Grouping_Variation $b) use ($sortMethod, $sortAvailableFirst, $eContentSourceWeights) {
+			$availabilityComparison = $sortAvailableFirst ? $b->getStatusInformation()->isAvailableOnline() <=> $a->getStatusInformation()->isAvailableOnline() : 0;
+			if ($availabilityComparison == 0) {
+				if ($sortMethod == 1) {
+					return strnatcasecmp($a->econtentSource, $b->econtentSource);
+				}else{
+					//Get the index of each source
+					$weightA = array_key_exists($a->econtentSource, $eContentSourceWeights) ?  $eContentSourceWeights[$a->econtentSource] : 999;
+					$weightB = array_key_exists($b->econtentSource, $eContentSourceWeights) ?  $eContentSourceWeights[$b->econtentSource] : 999;
+					$weightComparison = $weightA <=> $weightB;
+					if ($weightComparison == 0) {
+						return strnatcasecmp($a->econtentSource, $b->econtentSource);
+					}else{
+						return $weightComparison;
+					}
+				}
+			}else{
+				return $availabilityComparison;
+			}
+		});
 	}
 
 	function addRecord(Grouping_Record $record) : void {
@@ -448,10 +498,10 @@ class Grouping_Manifestation {
 	 * @noinspection PhpUnused
 	 */
 	function getHorizontalFormatDisplayInfo() : string {
-		$variationsData = [];
-		foreach ($this->_variations as $variation) {
-			$variationsData[$variation->databaseId] = $variation->getHorizontalFormatDisplayInfo();
-		}
+		$variationsData = array_map(function ($variation) {
+			return $variation->getHorizontalFormatDisplayInfo();
+		}, $this->_variations);
+
 		$data = [
 			'numVariations' => $this->getNumVariations(),
 			'variations' => $variationsData
