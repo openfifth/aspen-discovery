@@ -80,13 +80,11 @@ class UserList extends DataObject {
 
 
 	public static function getSortOptions(): array {
-		return [
+		$sortOptions = [
 			'title' => 'Title',
 			'author' => 'Author',
 			'dateAdded' => 'Date Added (Oldest First)',
 			'recentlyAdded' => 'Date Added (Newest First)',
-			'publication_date' => 'Publication Date (Oldest First)',
-			'publication_date_desc' => 'Publication Date (Newest First)',
 			'call_number' => 'Call Number',
 			'availability' => 'Availability (Available First)',
 			'availability_desc' => 'Availability (Unavailable First)',
@@ -94,6 +92,22 @@ class UserList extends DataObject {
 			'copies_available_asc' => 'Number of Copies (Least First)',
 			'custom' => 'User Defined Order',
 		];
+
+		global $library;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$showPublicationDate = false;
+		if (!empty($groupedWorkDisplaySettings->showInSearchResultsMainDetails)) {
+			if (is_array($groupedWorkDisplaySettings->showInSearchResultsMainDetails)) {
+				$showPublicationDate = in_array('showPublicationDate', $groupedWorkDisplaySettings->showInSearchResultsMainDetails);
+			}
+		}
+
+		if ($showPublicationDate) {
+			$sortOptions['publication_date'] = 'Publication Date (Oldest First)';
+			$sortOptions['publication_date_desc'] = 'Publication Date (Newest First)';
+		}
+
+		return $sortOptions;
 	}
 
 	static $_objectStructure = [];
