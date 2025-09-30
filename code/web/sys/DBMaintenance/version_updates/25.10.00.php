@@ -133,22 +133,6 @@ function getUpdates25_10_00(): array {
 		], //add_hoopla_configurable_indexing_time
 
 		// Leo Stoyanov - BWS
-		'create_url_cache_directory' => [
-			'title' => 'Create URL Cache Directory',
-			'description' => 'Create url_cache directory for storing cached cover URLs as text files.',
-			'continueOnError' => false,
-			'sql' => [
-				'createUrlCacheDirectory'
-			]
-		], //create_url_cache_directory
-		'remove_original_url_column' => [
-			'title' => 'Remove original_url Column from bookcover_info',
-			'description' => 'Remove the original_url column because URLs are now stored in text files.',
-			'continueOnError' => false,
-			'sql' => [
-				'ALTER TABLE bookcover_info DROP COLUMN IF EXISTS original_url'
-			]
-		], //remove_original_url_column
 		'add_show_copies_for_periodicals_with_no_iems_setting' => [
 			'title' => 'Add Show Copies for Periodicals with No Items Setting',
 			'description' => 'Add a setting to control whether Copies accordion is shown for periodicals with no items.',
@@ -233,19 +217,4 @@ function getUpdates25_10_00(): array {
 		// Brendan Lawlor
 
 	];
-}
-
-function createUrlCacheDirectory(&$update) : void {
-	global $configArray;
-	$urlCachePath = $configArray['Site']['coverPath'] . '/url_cache/';
-
-	if (!file_exists($urlCachePath)) {
-		if (mkdir($urlCachePath, 0755, true)) {
-			$update['status'] = 'Created url_cache directory at ' . $urlCachePath . '.';
-		} else {
-			$update['status'] = 'Failed to create url_cache directory at ' . $urlCachePath . '.';
-		}
-	} else {
-		$update['status'] = 'The url_cache directory already exists at ' . $urlCachePath . '.';
-	}
 }
