@@ -305,7 +305,7 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 	 *
 	 * @return  array
 	 */
-	abstract function getFormatCategory();
+	abstract function getFormatCategory() : string|array|null ;
 
 	public function getFountasPinnellLevel() {
 		return $this->getGroupedWorkDriver()->getFountasPinnellLevel();
@@ -529,10 +529,10 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 
 	/**
 	 * @param IlsVolumeInfo[] $volumeData
-	 * @return int
+	 * @return array
 	 */
-	function getVolumeHolds(/** @noinspection PhpUnusedParameterInspection */ $volumeData) {
-		return 0;
+	function getVolumeHolds(/** @noinspection PhpUnusedParameterInspection */ array $volumeData) : array {
+		return [];
 	}
 
 	static $groupedWorks = [];

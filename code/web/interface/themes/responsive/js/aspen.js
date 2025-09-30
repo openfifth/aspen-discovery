@@ -6666,6 +6666,14 @@ AspenDiscovery.Admin = (function () {
 				}
 			}
 		},
+		updateGroupedWorkEContentSortFields: function () {
+			var selectedOption = $("#sortMethodSelect").find(":selected").val();
+			if (selectedOption === "1") {
+				$("#propertyRowsortedEContentSources").hide();
+			} else {
+				$("#propertyRowsortedEContentSources").show();
+			}
+		},
 		updateIndexingProfileFields: function () {
 			var audienceType = $('#determineAudienceBySelect').val();
 			if (audienceType === '3') {
@@ -10974,9 +10982,10 @@ AspenDiscovery.GroupedWork = (function(){
 			}else{
 				//Show variations swiper
 				let variationSlider = $('#slider-variations-' + workId);
+				variationsInfoElement.show();
 				variationSlider.html('');
 				var i = 0;
-				$.each(activeManifestationInfo.variations, function (index, variations, test) {
+				$.each(activeManifestationInfo.variations, function () {
 					var activeClass = (i === 0) ? ' active' : '';
 					var variationButton = '<div role="option" tabindex="0" class="slider-slide horizontal-format-button slider-sm' + activeClass + '" data-workId="' + workId + '" data-variationid="' + this.databaseId + '" data-format="' + format + '" data-cleanedWorkId="' + cleanedWorkId + '">\n' +
 						'<div>' +

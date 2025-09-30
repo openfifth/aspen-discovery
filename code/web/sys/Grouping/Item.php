@@ -1,182 +1,109 @@
 <?php
 
 class Grouping_Item {
-	public $id;
+	public string $id;
 	/** @noinspection PhpPropertyOnlyWrittenInspection */
 	private ?Grouping_Record $_record;
-	public $recordId;
-	public $variationId;
-	public $shelfLocation;
-	public $callNumber;
-	public $numCopies;
-	/** @var bool */
-	public $isOrderItem;
-	/** @var bool */
-	public $isEContent;
-	/** @var string */
-	public $itemId;
-	/** @var string */
-	public $eContentSource;
-	/** @var string */
-	public $groupedStatus;
-	/** @var string */
-	public $status;
-	/** @var bool */
-	public $locallyOwned;
-	/** @var bool */
-	public $holdable;
-	/**
-	 * @var bool
-	 */
-	public $inLibraryUseOnly;
-	/**
-	 * @var bool
-	 */
-	public $libraryOwned;
-	/**
-	 * @var string
-	 */
-	public $locationCode;
-	/**
-	 * @var string
-	 */
-	public $subLocation;
-	public $volume;
-	public $volumeId;
-	public $volumeOrder;
-	public $lastCheckInDate;
-	public $atLibraryMainBranch;
-	public $atActiveLocation;
-	public $atUserHomeLocation;
-	public $atUserNearbyLocation1;
-	public $atUserNearbyLocation2;
-	public $atActiveNearbyLocation1;
-	public $atActiveNearbyLocation2;
+	public string $recordId;
+	public string $variationId;
+	public ?string $shelfLocation;
+	public ?string $callNumber;
+	public int $numCopies;
+	public bool $isOrderItem;
+	public bool $isEContent;
+	public string $itemId;
+	public ?string $eContentSource;
+	public string $groupedStatus;
+	public string $status;
+	public bool $locallyOwned;
+	public string $holdable;
+	public string $inLibraryUseOnly;
+	public string $libraryOwned;
+	public ?string $locationCode;
+	public ?string $subLocation;
+	public string $volume = '';
+	public string|int $volumeId = '';
+	public string $volumeOrder = '';
+	public null|string|int $lastCheckInDate;
+	public bool $atLibraryMainBranch = false;
+	public bool $atActiveLocation = false;
+	public bool $atUserHomeLocation = false;
+	public bool $atUserNearbyLocation1 = false;
+	public bool $atUserNearbyLocation2 = false;
+	public bool $atActiveNearbyLocation1 = false;
+	public bool $atActiveNearbyLocation2 = false;
 
-	public $numHolds = 0;
-	public $available = false;
-	public $isVirtual = false;
-	private $_relatedUrls = [];
-	private $_actions = [];
-	private $_displayByDefault = false;
+	public int $numHolds = 0;
+	public bool $available = false;
+	public bool $isVirtual = false;
+	private array $_relatedUrls = [];
+	private array $_actions = [];
+	private bool $_displayByDefault = false;
 
 
 	/**
 	 * Grouping_Item constructor.
-	 * @param array $itemDetails
-	 * @param array|null $scopingInfo
-	 * @param Location $searchLocation
-	 * @param Library $library
 	 */
-	public function __construct($itemDetails, $scopingInfo, $searchLocation, $library, $activeLocationScopeId, $mainLocationScopeId, $homeLocationScopeId, $userNearbyLocation1ScopeId, $userNearbyLocation2ScopeId, $atNearbyLocation1, $atNearbyLocation2) {
-		if (is_null($scopingInfo)) {
-			//Item details stored in the database
-			$this->itemId = $itemDetails['itemId'];
-			$this->shelfLocation = $itemDetails['shelfLocation'];
-			$this->callNumber = $itemDetails['callNumber'];
-			$this->numCopies = $itemDetails['numCopies'];
-			$this->isOrderItem = (bool)$itemDetails['isOrderItem'];
-			$this->isEContent = $itemDetails['isEContent'];
-			$this->eContentSource = $itemDetails['eContentSource'];
-			if ($this->isEContent && !empty($itemDetails['localUrl'])) {
-				$this->_relatedUrls[] = [
-					'source' => $itemDetails['eContentSource'],
-					'file' => '',
-					'url' => $itemDetails['localUrl'],
-				];
-			}
-			$this->groupedStatus = $itemDetails['groupedStatus'];
-			$this->status = $itemDetails['status'];
-			$this->locallyOwned = strpos($itemDetails['locationOwnedScopes'], "~{$itemDetails['scopeId']}~") !== false;
-			$this->libraryOwned = $this->locallyOwned || strpos($itemDetails['libraryOwnedScopes'], "~{$itemDetails['scopeId']}~") !== false;
-			if ($activeLocationScopeId !== false) {
-				$this->atActiveLocation = strpos($itemDetails['locationOwnedScopes'], "~{$activeLocationScopeId}~") !== false;
-			}
-			if ($mainLocationScopeId !== false) {
-				$this->atLibraryMainBranch = strpos($itemDetails['locationOwnedScopes'], "~{$mainLocationScopeId}~") !== false;
-			}
-			if ($homeLocationScopeId !== false) {
-				$this->atUserHomeLocation = strpos($itemDetails['locationOwnedScopes'], "~{$homeLocationScopeId}~") !== false;
-			}
-			if ($userNearbyLocation1ScopeId !== false) {
-				$this->atUserNearbyLocation1 = strpos($itemDetails['locationOwnedScopes'], "~{$userNearbyLocation1ScopeId}~") !== false;
-			}
-			if ($userNearbyLocation2ScopeId !== false) {
-				$this->atUserNearbyLocation2 = strpos($itemDetails['locationOwnedScopes'], "~{$userNearbyLocation2ScopeId}~") !== false;
-			}
-			if ($atNearbyLocation1 !== false) {
-				$this->atActiveNearbyLocation1 = strpos($itemDetails['locationOwnedScopes'], "~{$atNearbyLocation1}~") !== false;
-			}
-			if ($atNearbyLocation2 !== false) {
-				$this->atActiveNearbyLocation2 = strpos($itemDetails['locationOwnedScopes'], "~{$atNearbyLocation2}~") !== false;
-			}
-			$this->available = $itemDetails['available'] == "1";
-			$this->holdable = $itemDetails['holdable'] == "1";
-			$this->inLibraryUseOnly = $itemDetails['inLibraryUseOnly'] == "1";
-			$this->locationCode = $itemDetails['locationCode'];
-			$this->subLocation = $itemDetails['subLocationCode'];
-			$this->lastCheckInDate = $itemDetails['lastCheckInDate'];
-			$this->isVirtual = $itemDetails['isVirtual'];
-			$this->variationId = $itemDetails['groupedWorkVariationId'];
-		} else {
-			//Item details stored in solr
-			$this->itemId = $itemDetails[1] == 'null' ? '' : $itemDetails[1];
-			$scopeKey = $itemDetails[0] . ':' . $this->itemId;
-
-			$this->shelfLocation = $itemDetails[2];
-			$this->callNumber = $itemDetails[3];
-			$this->numCopies = is_numeric($itemDetails[6]) ? $itemDetails[6] : 0;
-			$this->isOrderItem = $itemDetails[7] == 'true';
-			$this->isEContent = $itemDetails[8] == 'true';
-
-			$scopingDetails = $scopingInfo[$scopeKey];
-			if ($this->isEContent) {
-				if (strlen($scopingDetails[12]) > 0) {
-					$this->_relatedUrls[] = [
-						'source' => $itemDetails[9],
-						'file' => $itemDetails[10],
-						'url' => $scopingDetails[12],
-					];
-				} else {
-					$this->_relatedUrls[] = [
-						'source' => $itemDetails[9],
-						'file' => $itemDetails[10],
-						'url' => $itemDetails[11],
-					];
-				}
-
-				$this->eContentSource = $itemDetails[9];
-				$this->isEContent = true;
-			}
-
-			//Get Scoping information for this record
-			$this->groupedStatus = $scopingDetails[2];
-			$this->status = $itemDetails[13];
-			$this->locallyOwned = $scopingDetails[4] == 'true';
-			$this->available = $scopingDetails[5] == 'true';
-			$this->holdable = $scopingDetails[6] == 'true';
-			$this->inLibraryUseOnly = $scopingDetails[8] == 'true';
-			$this->libraryOwned = $scopingDetails[9] == 'true';
-			$this->locationCode = isset($itemDetails[15]) ? $itemDetails[15] : '';
-			$this->subLocation = isset($itemDetails[16]) ? $itemDetails[16] : '';
+	public function __construct(array $itemDetails, ?Location $searchLocation, false|int|string $activeLocationScopeId, false|int|string $mainLocationScopeId, false|int|string $homeLocationScopeId, false|int|string $userNearbyLocation1ScopeId, false|int|string $userNearbyLocation2ScopeId, false|int|string $atNearbyLocation1, false|int|string $atNearbyLocation2) {
+		//Item details stored in the database
+		$this->itemId = $itemDetails['itemId'];
+		$this->shelfLocation = $itemDetails['shelfLocation'];
+		$this->callNumber = $itemDetails['callNumber'];
+		$this->numCopies = $itemDetails['numCopies'];
+		$this->isOrderItem = (bool)$itemDetails['isOrderItem'];
+		$this->isEContent = $itemDetails['isEContent'];
+		$this->eContentSource = $itemDetails['eContentSource'];
+		if ($this->isEContent && !empty($itemDetails['localUrl'])) {
+			$this->_relatedUrls[] = [
+				'source' => $itemDetails['eContentSource'],
+				'file' => '',
+				'url' => $itemDetails['localUrl'],
+			];
 		}
+		$this->groupedStatus = $itemDetails['groupedStatus'];
+		$this->status = $itemDetails['status'];
+		$this->locallyOwned = str_contains($itemDetails['locationOwnedScopes'], "~{$itemDetails['scopeId']}~");
+		$this->libraryOwned = $this->locallyOwned || str_contains($itemDetails['libraryOwnedScopes'], "~{$itemDetails['scopeId']}~");
+		if ($activeLocationScopeId !== false) {
+			$this->atActiveLocation = str_contains($itemDetails['locationOwnedScopes'], "~$activeLocationScopeId~");
+		}
+		if ($mainLocationScopeId !== false) {
+			$this->atLibraryMainBranch = str_contains($itemDetails['locationOwnedScopes'], "~$mainLocationScopeId~");
+		}
+		if ($homeLocationScopeId !== false) {
+			$this->atUserHomeLocation = str_contains($itemDetails['locationOwnedScopes'], "~$homeLocationScopeId~");
+		}
+		if ($userNearbyLocation1ScopeId !== false) {
+			$this->atUserNearbyLocation1 = str_contains($itemDetails['locationOwnedScopes'], "~$userNearbyLocation1ScopeId~");
+		}
+		if ($userNearbyLocation2ScopeId !== false) {
+			$this->atUserNearbyLocation2 = str_contains($itemDetails['locationOwnedScopes'], "~$userNearbyLocation2ScopeId~");
+		}
+		if ($atNearbyLocation1 !== false) {
+			$this->atActiveNearbyLocation1 = str_contains($itemDetails['locationOwnedScopes'], "~$atNearbyLocation1~");
+		}
+		if ($atNearbyLocation2 !== false) {
+			$this->atActiveNearbyLocation2 = str_contains($itemDetails['locationOwnedScopes'], "~$atNearbyLocation2~");
+		}
+		$this->available = $itemDetails['available'] == "1";
+		$this->holdable = $itemDetails['holdable'] == "1";
+		$this->inLibraryUseOnly = $itemDetails['inLibraryUseOnly'] == "1";
+		$this->locationCode = $itemDetails['locationCode'];
+		$this->subLocation = $itemDetails['subLocationCode'];
+		$this->lastCheckInDate = $itemDetails['lastCheckInDate'];
+		$this->isVirtual = $itemDetails['isVirtual'];
+		$this->variationId = $itemDetails['groupedWorkVariationId'];
+
 		if ($this->status == 'Library Use Only' && !$this->available) {
 			$this->status = 'Checked Out (library use only)';
 		}
 		if ($this->available) {
 			if ($searchLocation) {
 				$this->_displayByDefault = $this->locallyOwned || $this->isEContent;
-			} elseif ($library) {
+			} else {
 				$this->_displayByDefault = $this->libraryOwned || $this->locallyOwned || $this->isEContent;
 			}
 		}
-	}
-
-	/**
-	 * @return bool
-	 */
-	public function isInLibraryUseOnly(): bool {
-		return $this->inLibraryUseOnly;
 	}
 
 	/**
@@ -204,6 +131,33 @@ class Grouping_Item {
 		return $this->_relatedUrls;
 	}
 
+	public function getLocationKey() : int {
+		if ($this->atActiveLocation) {
+			$key = 1;
+		}else if ($this->atUserHomeLocation) {
+			$key = 2;
+		}else if ($this->locallyOwned) {
+			$key = 3;
+		}else if ($this->atUserNearbyLocation1) {
+			$key = 4;
+		}else if ($this->atUserNearbyLocation2) {
+			$key = 5;
+		} elseif ($this->atLibraryMainBranch) {
+			$key = 6;
+		} elseif ($this->libraryOwned) {
+			$key = 7;
+		}else if ($this->atActiveNearbyLocation1) {
+			$key = 8;
+		}else if ($this->atActiveNearbyLocation2) {
+			$key = 9;
+		} elseif ($this->isOrderItem) {
+			$key = 10;
+		} else {
+			$key = 11;
+		}
+		return $key;
+	}
+
 	public function getSummaryKey(): string {
 		$key = str_pad($this->volumeOrder, 10, '0', STR_PAD_LEFT);
 		$key .= $this->shelfLocation . ':' . $this->callNumber;
@@ -213,17 +167,17 @@ class Grouping_Item {
 			$key = '02 ' . $key;
 		}else if ($this->locallyOwned) {
 			$key = '03 ' . $key;
-		}else if ($this->atActiveNearbyLocation1) {
-			$key = '04 ' . $key;
-		}else if ($this->atActiveNearbyLocation2) {
-			$key = '05 ' . $key;
 		}else if ($this->atUserNearbyLocation1) {
-			$key = '06 ' . $key;
+			$key = '04 ' . $key;
 		}else if ($this->atUserNearbyLocation2) {
-			$key = '07 ' . $key;
+			$key = '05 ' . $key;
 		} elseif ($this->atLibraryMainBranch) {
-			$key = '08 ' . $key;
+			$key = '06 ' . $key;
 		} elseif ($this->libraryOwned) {
+			$key = '07 ' . $key;
+		}else if ($this->atActiveNearbyLocation1) {
+			$key = '08 ' . $key;
+		}else if ($this->atActiveNearbyLocation2) {
 			$key = '09 ' . $key;
 		} elseif ($this->isOrderItem) {
 			$key = '10 ' . $key;
@@ -244,7 +198,6 @@ class Grouping_Item {
 		$description .= $this->shelfLocation . ": " . $this->callNumber;
 
 		$description .= ' - ' . $this->status;
-		$section = 'Other Locations';
 		if ($this->locallyOwned) {
 			$sectionId = 1;
 			$section = 'In this library';
@@ -256,6 +209,7 @@ class Grouping_Item {
 			$section = 'On Order';
 		} else {
 			$sectionId = 6;
+			$section = 'Other Locations';
 		}
 
 		$lastCheckInDate = '';
@@ -284,6 +238,7 @@ class Grouping_Item {
 			'numHolds' => $this->numHolds,
 			'sectionId' => $sectionId,
 			'section' => $section,
+			'locationKey' => $this->getLocationKey(),
 			'relatedUrls' => $this->getRelatedUrls(),
 			'lastCheckinDate' => $lastCheckInDate,
 			'volume' => $this->volume,

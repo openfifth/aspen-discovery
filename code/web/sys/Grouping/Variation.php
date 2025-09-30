@@ -3,30 +3,30 @@
 require_once ROOT_DIR . '/sys/Grouping/StatusInformation.php';
 
 class Grouping_Variation {
-	public $id;
-	public $databaseId;
-	public $label;
-	public $language;
-	public $isEContent = false;
-	public $econtentSource = '';
+	public string $id;
+	public null|string|int $databaseId;
+	public string $label;
+	public string $language;
+	public bool $isEContent = false;
+	public ?string $econtentSource = '';
 
 	/** @var Grouping_Record[] */
-	private $_records = [];
+	private array $_records = [];
 
 	/** @var Grouping_StatusInformation */
-	private $_statusInformation;
+	private Grouping_StatusInformation $_statusInformation;
 
-	private $_hideByDefault = false;
+	private bool $_hideByDefault = false;
 	/**
-	 * @var Grouping_Manifestation
+	 * @var ?Grouping_Manifestation
 	 */
-	public $manifestation;
+	public ?Grouping_Manifestation $manifestation = null;
 
 	/**
 	 * Grouping_Variation constructor.
 	 * @param Grouping_Record|array $record
 	 */
-	public function __construct($record) {
+	public function __construct(array|Grouping_Record $record) {
 		if (is_array($record)) {
 			$this->isEContent = $record['eContentSource'] != null;
 			$this->econtentSource = $record['eContentSource'];
@@ -36,6 +36,7 @@ class Grouping_Variation {
 			$this->isEContent = $record->isEContent();
 			$this->econtentSource = $record->getEContentSource();
 			$this->language = $record->language;
+
 		}
 		if (!empty($this->econtentSource)) {
 			$this->label = trim(translate([
@@ -71,8 +72,19 @@ class Grouping_Variation {
 		if ($record->isEContent() != $this->isEContent) {
 			return false;
 		}
-		if ($this->isEContent && ($this->econtentSource != $record->getEContentSource())) {
-			return false;
+		if ($this->isEContent) {
+			$recordEContentSources = $record->getEContentSource();
+			// Handle records with multiple eContent sources (e.g., Palace Project).
+			if (str_contains($recordEContentSources, ',')) {
+				$recordSources = array_map('trim', explode(',', $recordEContentSources));
+				if (!in_array($this->econtentSource, $recordSources)) {
+					return false;
+				}
+			} else {
+				if ($this->econtentSource != $recordEContentSources) {
+					return false;
+				}
+			}
 		}
 		if ($record->language != $this->language) {
 			return false;
@@ -80,7 +92,7 @@ class Grouping_Variation {
 		return true;
 	}
 
-	public function addRecord(Grouping_Record $record) {
+	public function addRecord(Grouping_Record $record) : void {
 		$this->_records[] = $record;
 		$this->_statusInformation->updateStatus($record->getStatusInformation());
 	}
@@ -89,11 +101,14 @@ class Grouping_Variation {
 		return count($this->_records);
 	}
 
-	public function getRelatedRecords() {
+	/**
+	 * @return Grouping_Record[]
+	 */
+	public function getRelatedRecords() : array {
 		return $this->_records;
 	}
 
-	public function setSortedRelatedRecords($relatedRecords) {
+	public function setSortedRelatedRecords($relatedRecords) : void {
 		$this->_records = $relatedRecords;
 	}
 
@@ -104,7 +119,7 @@ class Grouping_Variation {
 		return $this->_statusInformation;
 	}
 
-	private $_actions = null;
+	private ?array $_actions = null;
 
 	/**
 	 * @return array
@@ -251,7 +266,7 @@ class Grouping_Variation {
 		return reset($this->_records);
 	}
 
-	protected $_itemSummary = null;
+	protected ?array $_itemSummary = null;
 
 	/**
 	 * @return array
@@ -272,9 +287,9 @@ class Grouping_Variation {
 		return $this->_itemSummary;
 	}
 
-	protected $_itemsDisplayedByDefault = null;
+	protected ?array $_itemsDisplayedByDefault = null;
 
-	function getItemsDisplayedByDefault() {
+	function getItemsDisplayedByDefault() : array {
 		if ($this->_itemsDisplayedByDefault == null) {
 			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
 			$itemsDisplayedByDefault = [];
@@ -283,13 +298,20 @@ class Grouping_Variation {
 					$itemsDisplayedByDefault = mergeItemSummary($itemsDisplayedByDefault, $record->getItemsDisplayedByDefault());
 				}
 			}
-			ksort($itemsDisplayedByDefault);
+			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
+			$isPeriodical = !($this->manifestation == null) && $this->manifestation->isPeriodical();
+			if ($isPeriodical) {
+				$itemsDisplayedByDefault = sortPeriodicalItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
+			}else{
+				$itemsDisplayedByDefault = sortItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
+			}
 			$this->_itemsDisplayedByDefault = $itemsDisplayedByDefault;
 		}
 		return $this->_itemsDisplayedByDefault;
 	}
 
-	public function getCopies() {
+	/** @noinspection PhpUnused */
+	public function getCopies() : int {
 		return $this->_statusInformation->getCopies();
 	}
 
@@ -307,10 +329,11 @@ class Grouping_Variation {
 		$this->_hideByDefault = $hideByDefault;
 	}
 
-	function isEContent() {
+	function isEContent() : bool {
 		return $this->isEContent;
 	}
 
+	/** @noinspection PhpUnused */
 	public function showCopySummary() : bool {
 		if (!$this->isEContent) {
 			return true;

@@ -471,10 +471,8 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 
 	/**
 	 * Get an array of all the format categories associated with the record.
-	 *
-	 * @return  string[]
 	 */
-	public function getFormatCategory() : array {
+	public function getFormatCategory() : string|array|null {
 		return [$this->getGroupedWorkDriver()->getFormatCategory()];
 	}
 
