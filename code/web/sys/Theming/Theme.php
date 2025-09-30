@@ -2956,8 +2956,8 @@ class Theme extends DataObject {
 		$additionalCSS = '';
 		$appendCSS = true;
 
-		// Clear all template variables to prevent cross-contamination between themes during batch processing.
-		$interface->clearAllAssign();
+		// Bookmark all template variables to prevent cross-contamination between themes during batch processing.
+		$savedTemplateVars = $interface->tpl_vars;
 		$this->applyDefaults();
 		$interface->assign('headerBackgroundColor', $this->headerBackgroundColor);
 		$interface->assign('headerForegroundColor', $this->headerForegroundColor);
@@ -3178,9 +3178,10 @@ class Theme extends DataObject {
 		}
 
 		$interface->assign('additionalCSS', $additionalCSS);
-
 		$previousCss = $this->generatedCss;
 		$updatedCss = $interface->fetch('theme.css.tpl');
+		$interface->tpl_vars = $savedTemplateVars;
+
 		if ($updatedCss != $previousCss) {
 			$this->__set('generatedCss', $updatedCss);
 			if ($saveChanges) {
