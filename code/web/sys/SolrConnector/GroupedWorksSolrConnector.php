@@ -415,7 +415,7 @@ class GroupedWorksSolrConnector extends Solr {
 
 	protected function getHighlightOptions($fields, &$options) {
 		global $solrScope;
-		$highlightFields = $fields . ",table_of_contents";
+		$highlightFields = $fields;
 		$highlightFields = str_replace(",related_record_ids_$solrScope", '', $highlightFields);
 		$highlightFields = str_replace(",related_items_$solrScope", '', $highlightFields);
 		$highlightFields = str_replace(",format_$solrScope", '', $highlightFields);
