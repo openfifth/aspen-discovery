@@ -1771,7 +1771,6 @@ class User extends DataObject {
 
 		$checkoutsToReturn = [];
 		if ($reloadCheckoutInformation) {
-			$this->clearSessionCirculationCache();
 			global $timer;
 			$allCheckedOut = [];
 			global $offlineMode;
@@ -1914,7 +1913,6 @@ class User extends DataObject {
 			'unavailable' => [],
 		];
 		if ($reloadHoldInformation) {
-			$this->clearSessionCirculationCache();
 			$allHolds = [
 				'available' => [],
 				'unavailable' => [],
@@ -2175,18 +2173,14 @@ class User extends DataObject {
 	 */
 	private function ensureCirculationDataLoaded(): void {
 		if (empty($this->_circulationStatusCache)) {
-			// Try to restore from session cache if available.
-			if (!$this->restoreCirculationCacheFromSession()) {
-				// If no session cache, load from database.
-				$cacheTimestamp = max($this->checkoutInfoLastLoaded, $this->holdInfoLastLoaded);
+			$cacheTimestamp = max($this->checkoutInfoLastLoaded, $this->holdInfoLastLoaded);
 
-				$this->loadAllCirculationData();
-				if ($cacheTimestamp == 0) {
-					$currentTime = time();
-					$this->__set('checkoutInfoLastLoaded', $currentTime);
-					$this->__set('holdInfoLastLoaded', $currentTime);
-					$this->update();
-				}
+			$this->loadAllCirculationData();
+			if ($cacheTimestamp == 0) {
+				$currentTime = time();
+				$this->__set('checkoutInfoLastLoaded', $currentTime);
+				$this->__set('holdInfoLastLoaded', $currentTime);
+				$this->update();
 			}
 		}
 	}
@@ -2224,51 +2218,6 @@ class User extends DataObject {
 	 */
 	private function invalidateCirculationCache(): void {
 		$this->_circulationStatusCache = [];
-	}
-
-	/**
-	 * Save current circulation cache to session storage.
-	 * This allows the UI to continue displaying accurate circulation status immediately
-	 * after checkout/hold actions, while still enabling the lazy-loading system to refresh
-	 * buttons with updated data in the background.
-	 */
-	private function saveCirculationCacheToSession(): void {
-		if (!empty($this->_circulationStatusCache)) {
-			$_SESSION["circulation_cache_{$this->id}"] = [
-				'cache' => $this->_circulationStatusCache,
-				'timestamp' => time(),
-				'checkoutInfoLastLoaded' => $this->checkoutInfoLastLoaded,
-				'holdInfoLastLoaded' => $this->holdInfoLastLoaded,
-			];
-		}
-	}
-
-	/**
-	 * Restore circulation cache from session storage if available.
-	 * This restores previously saved circulation data from the session when the in-memory
-	 * cache is empty. This prevents circulation displays from going blank immediately after
-	 * checkout/hold actions.
-	 *
-	 * @return bool True if cache was restored from session; false if no session cache found.
-	 */
-	private function restoreCirculationCacheFromSession(): bool {
-		$sessionKey = "circulation_cache_{$this->id}";
-		if (isset($_SESSION[$sessionKey]) && !empty($_SESSION[$sessionKey]['cache'])) {
-			$sessionData = $_SESSION[$sessionKey];
-			$this->_circulationStatusCache = $sessionData['cache'];
-			return true;
-		}
-		return false;
-	}
-
-	/**
-	 * Clear the session-stored circulation cache.
-	 * This removes the temporary session cache when fresh
-	 * circulation data is loaded from the database/API.
-	 */
-	private function clearSessionCirculationCache(): void {
-		$sessionKey = "circulation_cache_{$this->id}";
-		unset($_SESSION[$sessionKey]);
 	}
 
 	public function isRecordCheckedOut($source, $recordId): bool {
@@ -5096,28 +5045,12 @@ class User extends DataObject {
 	}
 
 	public function forceReloadOfCheckouts(): void {
-		$this->ensureCirculationDataLoaded();
-		$this->saveCirculationCacheToSession();
-
-		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		$checkout = new Checkout();
-		$checkout->userId = $this->id;
-		$checkout->delete(true);
-
 		$this->__set('checkoutInfoLastLoaded', 0);
 		$this->invalidateCirculationCache();
 		$this->update();
 	}
 
 	public function forceReloadOfHolds(): void {
-		$this->ensureCirculationDataLoaded();
-		$this->saveCirculationCacheToSession();
-
-		require_once ROOT_DIR . '/sys/User/Hold.php';
-		$hold = new Hold();
-		$hold->userId = $this->id;
-		$hold->delete(true);
-
 		$this->__set('holdInfoLastLoaded', 0);
 		$this->invalidateCirculationCache();
 		$this->update();

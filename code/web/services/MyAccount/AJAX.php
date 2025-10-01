@@ -10495,8 +10495,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/**
-	 * Refresh user circulation cache by forcing reload of checkouts and holds data
-	 * Used for lazy loading optimization
+	 * Refresh user circulation cache by forcing reload of checkouts and holds data.
+	 *
+	 * @noinspection PhpUnused
 	 */
 	public function refreshUserCirculationCache(): array {
 		if (!UserAccount::isLoggedIn()) {
@@ -10515,12 +10516,19 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$user = UserAccount::getActiveUserObj();
 
-		// Force refresh by setting cache timestamps to 0
+		// Skip if data was refreshed in the last 5 seconds to prevent multiple calls.
+		$lastRefresh = max($user->checkoutInfoLastLoaded, $user->holdInfoLastLoaded);
+		if ($lastRefresh > (time() - 5)) {
+			return [
+				'success' => true,
+			];
+		}
+		global $logger;
+		$logger->log("REFRESH CIRC CACHE!", Logger::LOG_ERROR);
+
 		$user->checkoutInfoLastLoaded = 0;
 		$user->holdInfoLastLoaded = 0;
 		$user->update();
-
-		// Trigger fresh data load
 		$user->getCheckouts();
 		$user->getHolds();
 
