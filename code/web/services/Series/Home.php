@@ -176,7 +176,7 @@ class Series_Home extends Action {
 		];
 		if ($list->sortMethod == 5) {
 			$sortOptions['custom'] = [
-				'desc' => 'Suggested Order',
+				'desc' => 'Default Order',
 				'selected' => $sortName == 'custom',
 				'sortUrl' => "/Series/$list->id?sort=custom",
 			];
