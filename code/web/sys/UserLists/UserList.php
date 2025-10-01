@@ -306,11 +306,8 @@ class UserList extends DataObject {
 					$gwRecords = new GroupedWorkRecord();
 					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
 
-					$indexedFormat = new class extends DataObject {
-						public $__table = 'indexed_format';
-						public $id;
-						public $format;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
+					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
 					$indexedPubDate = new class extends DataObject {
@@ -321,16 +318,13 @@ class UserList extends DataObject {
 					$listEntry->joinAdd($indexedPubDate, "LEFT", 'indexedPubDate', 'gwRecords.publicationDateId', 'id');
 					
 					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
-					$listEntry->selectAdd("CASE 
-					WHEN user_list_entry.source = 'GroupedWork' $fmtGate AND indexedPubDate.publicationDate IS NOT NULL THEN
-						CASE 
-							WHEN indexedPubDate.publicationDate REGEXP '^[^0-9]*$' THEN NULL
-							WHEN indexedPubDate.publicationDate REGEXP '^[a-zA-Z]+[0-9]*$' THEN NULL
-							WHEN indexedPubDate.publicationDate REGEXP '[0-9]{4}' THEN CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, '[0-9]{4}') AS UNSIGNED)
-							ELSE NULL 
-						END
-					ELSE NULL 
-				END AS NormalizedYear");
+					$listEntry->selectAdd("CASE
+						WHEN user_list_entry.source = 'GroupedWork' $fmtGate
+							AND indexedPubDate.publicationDate IS NOT NULL
+							AND indexedPubDate.publicationDate REGEXP '[0-9]{4}' THEN
+							CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, '[0-9]{4}') AS UNSIGNED)
+						ELSE NULL
+					END AS NormalizedYear");
 					$listEntry->groupBy('user_list_entry.id');
 
 					$order = $sort == "publication_date" ? "ASC" : "DESC";
@@ -354,19 +348,12 @@ class UserList extends DataObject {
 					$gwItems = new GroupedWorkItem();
 					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
 
-					$gwVariation = new class extends DataObject {
-						public $__table = 'grouped_work_variation';
-						public $id;
-						public $groupedWorkId;
-						public $eContentSourceId;
-					};
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkVariation.php';
+					$gwVariation = new GroupedWorkVariation();
 					$listEntry->joinAdd($gwVariation, "LEFT", 'gwVariation', 'gwItems.groupedWorkVariationId', 'id');
 
-					$indexedFormat = new class extends DataObject {
-						public $__table = 'indexed_format';
-						public $id;
-						public $format;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
+					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
 					$indexedCallNumber = new class extends DataObject {
@@ -401,23 +388,33 @@ class UserList extends DataObject {
 
 					$listEntry->whereAdd("indexedCallNumber.callNumber != 'Libby' OR indexedCallNumber.callNumber IS NULL");
 					$listEntry->groupBy('user_list_entry.id');
+
+					// Use format-filtered call numbers consistently in ORDER BY.
+					$filteredCallNumberCase = "MIN(
+						CASE
+							WHEN user_list_entry.source = 'GroupedWork'
+								AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0)
+								$fmtGate
+								AND indexedCallNumber.callNumber IS NOT NULL
+							THEN indexedCallNumber.callNumber
+							ELSE NULL
+						END
+					)";
+
 					$listEntry->orderBy("
-						CASE 
+						CASE
 							WHEN user_list_entry.source != 'GroupedWork' THEN 3
-							-- Use MIN() so bucket assignment is deterministic per list entry.
-							-- Without it, grouping by user_list_entry.id could pick random eContentSourceId values.
 							WHEN MIN(COALESCE(gwVariation.eContentSourceId, 0)) > 0 THEN 3
-							WHEN MIN(indexedCallNumber.callNumber) IS NULL THEN 3
-							WHEN MIN(indexedCallNumber.callNumber) REGEXP '^[0-9]' THEN 1
+							WHEN $filteredCallNumberCase IS NULL THEN 3
+							WHEN $filteredCallNumberCase REGEXP '^[0-9]' THEN 1
 							ELSE 2
 						END ASC,
-						CASE 
-							WHEN MIN(indexedCallNumber.callNumber) REGEXP '^[0-9]' THEN
-								CAST(REGEXP_SUBSTR(MIN(indexedCallNumber.callNumber), '^[0-9]+(\\\.[0-9]+)?') AS DECIMAL(10,3))
+						CASE
+							WHEN $filteredCallNumberCase REGEXP '^[0-9]' THEN
+								CAST(REGEXP_SUBSTR($filteredCallNumberCase, '^[0-9]+(\\\.[0-9]+)?') AS DECIMAL(10,3))
 							ELSE 0
 						END ASC,
-						-- Sort by call number first, then by shelf location.
-						MIN(indexedCallNumber.callNumber) ASC,
+						$filteredCallNumberCase ASC,
 						MIN(shelfLoc.shelfLocation) ASC
 					");
 
@@ -437,11 +434,8 @@ class UserList extends DataObject {
 					$gwItems = new GroupedWorkItem();
 					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
 
-					$indexedFormat = new class extends DataObject {
-						public $__table = 'indexed_format';
-						public $id;
-						public $format;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
+					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
 					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
@@ -470,11 +464,8 @@ class UserList extends DataObject {
 					$gwItems = new GroupedWorkItem();
 					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
 
-					$indexedFormat = new class extends DataObject {
-						public $__table = 'indexed_format';
-						public $id;
-						public $format;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
+					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
 					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
