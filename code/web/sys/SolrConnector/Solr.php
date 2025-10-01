@@ -383,17 +383,16 @@ abstract class Solr {
 	 * Retrieves a document specified by the ID.
 	 *
 	 * @param array $ids A list of document to retrieve from Solr
-	 * @param string $fieldsToReturn An optional list of fields to return separated by commas
-	 * @access    public
+	 * @param ?string $fieldsToReturn An optional list of fields to return separated by commas
 	 * @return    array                            The requested resources
 	 * @throws    AspenError
 	 */
-	function getRecords($ids, $fieldsToReturn = null) {
+	function getRecords(array $ids, ?string $fieldsToReturn = null) : array {
 		if (count($ids) == 0) {
 			return [];
 		}
 		//Solr does not seem to be able to return more than 50 records at a time,
-		//If we have more than 50 ids, we will ned to make multiple calls and
+		//If we have more than 50 ids, we will need to make multiple calls and
 		//concatenate the results.
 		$records = [];
 		$startIndex = 0;
@@ -1758,7 +1757,7 @@ abstract class Solr {
 	 * @return    array                                                     The processed response from Solr
 	 * @access    private
 	 */
-	private function _process($result, $returnSolrError = false, $queryString = null) {
+	protected function _process($result, $returnSolrError = false, $queryString = null) {
 		global $timer;
 		global $memoryWatcher;
 		// Catch errors from SOLR

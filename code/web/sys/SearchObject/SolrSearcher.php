@@ -853,7 +853,7 @@ abstract class SearchObject_SolrSearcher extends SearchObject_BaseSearcher {
 		return $allSuggestions;
 	}
 
-	protected function getFieldsToReturn() {
+	protected function getFieldsToReturn() : string {
 		return '*,score';
 	}
 

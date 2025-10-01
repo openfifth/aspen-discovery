@@ -238,6 +238,11 @@ class Series extends DataObject {
 		return $members->count();
 	}
 
+	function numScopedTitlesInSeries() : int {
+		$allTitles = $this->getTitles();
+		return count($allTitles['seriesMembers']);
+	}
+
 	/**
 	 * Returns all members of the series as a custom array, used when loading members for display to the Series Page
 	 * Also returns a list of unique grouped work ids for the series
@@ -254,7 +259,9 @@ class Series extends DataObject {
 			if (!array_key_exists($source, $idsBySource)) {
 				$idsBySource[$source] = [];
 			}
-			$idsBySource[$source][] = $seriesMember->groupedWorkPermanentId;
+			if (!empty($seriesMember->groupedWorkPermanentId)) {
+				$idsBySource[$source][$seriesMember->groupedWorkPermanentId] = $seriesMember->groupedWorkPermanentId;
+			}
 			$tmpListEntry = [
 				'source' => $source,
 				'sourceId' => $seriesMember->groupedWorkPermanentId,
@@ -269,6 +276,32 @@ class Series extends DataObject {
 			];
 
 			$seriesMembers[] = $tmpListEntry;
+		}
+
+		//Filter to remove anything that is not part of this scope.
+		$sourceType = 'GroupedWork';
+		/** @var SearchObject_GroupedWorkSearcher2|false $searchObject */
+		$searchObject = SearchObjectFactory::initSearchObject($sourceType);
+		if ($searchObject === false) {
+			AspenError::raiseError("Unknown Series Member Source $sourceType");
+		}
+		$allSeriesMemberIds = $idsBySource[$sourceType];
+		$scopedRecords = $searchObject->getScopedRecordIds($allSeriesMemberIds);
+
+		//Remove anything that isn't in the scope from the series
+		$missingWorks = array_diff_key($allSeriesMemberIds, $scopedRecords);
+
+		$changeMade = true;
+		while ($changeMade) {
+			$changeMade = false;
+			foreach ($seriesMembers as $key => $seriesMember) {
+				if ($seriesMember['source'] == $sourceType && in_array($seriesMember['sourceId'], $missingWorks)) {
+					unset($seriesMembers[$key]);
+					unset($idsBySource[$sourceType][$key]);
+					$changeMade = true;
+					break;
+				}
+			}
 		}
 
 		return [
@@ -388,18 +421,19 @@ class Series extends DataObject {
 		//Load the actual items from each source
 		$listResults = [];
 		foreach ($filteredIdsBySource as $sourceType => $sourceIds) {
+			/** @var SearchObject_GroupedWorkSearcher2|false $searchObject */
 			$searchObject = SearchObjectFactory::initSearchObject($sourceType);
 			if ($searchObject === false) {
 				AspenError::raiseError("Unknown Series Member Source $sourceType");
+			}
+
+			$records = $searchObject->getRecords($sourceIds);
+			if ($format == 'html') {
+				$listResults = $listResults + $this->getResultListHTML($records, $filteredSeriesMembers, $start);
+			} elseif ($format == 'recordDrivers') {
+				$listResults = $listResults + $this->getResultListRecordDrivers($records, $filteredSeriesMembers);
 			} else {
-				$records = $searchObject->getRecords($sourceIds);
-				if ($format == 'html') {
-					$listResults = $listResults + $this->getResultListHTML($records, $filteredSeriesMembers, $start);
-				} elseif ($format == 'recordDrivers') {
-					$listResults = $listResults + $this->getResultListRecordDrivers($records, $filteredSeriesMembers);
-				} else {
-					AspenError::raiseError("Unknown display format $format in getSeriesRecords");
-				}
+				AspenError::raiseError("Unknown display format $format in getSeriesRecords");
 			}
 		}
 

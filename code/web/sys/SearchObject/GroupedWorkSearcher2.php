@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFacet.php';
 
 class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWorkSearcher {
 	// Field List
-	public static $fields_to_return = 'auth_author2,author2-role,id,mpaaRating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,num_titles,record_details,item_details,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,display_description,fountas_pinnell,last_indexed,lc_subject,bisac_subject,format,format_category,language,ils_description, author_additional';
+	public static string $fields_to_return = 'auth_author2,author2-role,id,mpaa_rating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,fountas_pinnell,last_indexed,lc_subject,bisac_subject,format,format_category,language,ils_description';
 
 	// Display Modes //
 	public $viewOptions = [
@@ -559,7 +559,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		$this->fieldsToReturn = $fields;
 	}
 
-	protected function getFieldsToReturn() {
+	protected function getFieldsToReturn() : string {
 		if (isset($_REQUEST['allFields'])) {
 			$fieldsToReturn = '*,score';
 		} elseif ($this->fieldsToReturn != null) {
@@ -567,7 +567,8 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		} else {
 			$fieldsToReturn = SearchObject_GroupedWorkSearcher2::$fields_to_return;
 			global $solrScope;
-			if ($solrScope != false) {
+			//We should always have a scope
+			if ($solrScope !== false) {
 				$fieldsToReturn .= ',local_days_since_added_' . $solrScope;
 				$fieldsToReturn .= ',local_time_since_added_' . $solrScope;
 				$fieldsToReturn .= ',local_callnumber_' . $solrScope;
@@ -579,7 +580,6 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			$fieldsToReturn .= ',collection';
 			$fieldsToReturn .= ',detailed_location';
 			$fieldsToReturn .= ',owning_location';
-			$fieldsToReturn .= ',owning_library';
 			$fieldsToReturn .= ',available_at';
 			$fieldsToReturn .= ',itype';
 			$fieldsToReturn .= ',score';
@@ -755,10 +755,10 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			$doBranchProcessing = false;
 
 			//Marmot specific processing to do custom resorting of facets.
-			if (strpos($field, 'owning_library') === 0 && isset($currentLibrary) && !is_null($currentLibrary)) {
+			if (str_starts_with($field, 'owning_library') && isset($currentLibrary)) {
 				$doInstitutionProcessing = true;
 			}
-			if (strpos($field, 'owning_location') === 0 || strpos($field, 'available_at') === 0) {
+			if (str_starts_with($field, 'owning_location') || str_starts_with($field, 'available_at')) {
 				$doBranchProcessing = true;
 			}
 			// Should we translate values for the current facet?
@@ -934,7 +934,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		return $list;
 	}
 
-	private static $scopedFields = [
+	private static array $scopedFields = [
 		'format_category',
 		'format',
 		'collection',
@@ -948,7 +948,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		'owning_library',
 	];
 
-	public function isScopedField($fieldName) {
+	public function isScopedField($fieldName) : bool {
 		return in_array($fieldName, SearchObject_GroupedWorkSearcher2::$scopedFields);
 	}
 
@@ -1038,16 +1038,21 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * Retrieves a document specified by the ID.
 	 *
 	 * @param string[] $ids An array of documents to retrieve from Solr
+	 * @param ?string $fieldsToReturn A comma delimited list of fields to return
 	 * @access  public
-	 * @return  array              The requested resources
+	 * @return  array             Record Drivers for the results
 	 * @throws  AspenError
 	 */
-	function getRecords($ids) {
+	function getRecords($ids, ?string $fieldsToReturn = null) : array {
 		$recordsRaw = $this->indexEngine->getRecords($ids, $this->getFieldsToReturn());
 		foreach ($recordsRaw as $index => $recordRaw) {
 			$recordsRaw[$index] = $this->getRecordDriverForResult($recordRaw);
 		}
 		return $recordsRaw;
+	}
+
+	function getScopedRecordIds($ids) : array {
+		return $this->indexEngine->getRecords($ids, 'id', true);
 	}
 
 	public function getRecordDriverForResult($record) {
