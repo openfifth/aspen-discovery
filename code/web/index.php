@@ -803,7 +803,7 @@ if (!$isAJAX) {
 			$librarySystemMessage->setPreFormattedMessage($library->systemMessage);
 			$systemMessages[] = $librarySystemMessage;
 		}
-		$systemMessages += SystemMessage::getActiveSystemMessages();
+		$systemMessages = array_merge($systemMessages, SystemMessage::getActiveSystemMessages());
 
 		$interface->assign('systemMessages', $systemMessages);
 	} catch (Exception $e) {
