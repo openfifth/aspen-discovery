@@ -588,7 +588,9 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 					formatCategories.add(scopeName + "#Books");
 					formatCategories.add(scopeName + "#Audio Books");
 				}
-				doc.addField("scoping_details_" + scopeName, scopingDetailsForScope);
+				if (storeRecordDetailsInSolr) {
+					doc.addField("scoping_details_" + scopeName, scopingDetailsForScope);
+				}
 
 				if (daysSinceAddedForScope != null){
 					doc.addField("local_days_since_added_" + scopeName, daysSinceAddedForScope);
@@ -673,7 +675,7 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 			} else if (curItem.getGroupedStatus().equals("In Processing")) {
 				daysSinceAdded = -1000L;
 			} else {
-				//copying the code below but adding a few steps, if we copy a 3rd time 
+				//copying the code below but adding a few steps, if we copy a 3rd time
 				//consider extracting a separate function instead
 				//Date Added To Catalog needs to be the earliest date added for the catalog.
 				Date dateAdded = curItem.getDateAdded();
@@ -699,8 +701,8 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 				}
 				//in order to make this appear before anything else we are going to shift it by -999
 				daysSinceAdded += -999L;
-				//clamping to -1 in case we get a value > 998 
-				//worst case scenario we are getting the previous behavior. 
+				//clamping to -1 in case we get a value > 998
+				//worst case scenario we are getting the previous behavior.
 				if(daysSinceAdded < -999L)
 				{
 					daysSinceAdded = -999L;
