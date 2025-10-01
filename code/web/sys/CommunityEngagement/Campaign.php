@@ -1422,7 +1422,11 @@ class Campaign extends DataObject {
 
 	private function applyUserFiltering($user) {
 		$this->joinAdd(new CampaignPatronTypeAccess(), 'LEFT', 'ce_campaign_patron_type_access', 'id', 'campaignId');
-		$this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . $user->getPTypeObj()->id . "' OR ce_campaign_patron_type_access.patronTypeId IS NULL");
+		if ($user->getPTypeObj() == null) {
+			$this->whereAdd("ce_campaign_patron_type_access.patronTypeId IS NULL");
+		}else{
+			$this->whereAdd("ce_campaign_patron_type_access.patronTypeId = '" . $user->getPTypeObj()->id . "' OR ce_campaign_patron_type_access.patronTypeId IS NULL");
+		}
 		
 		$this->joinAdd(new CampaignLibraryAccess(), 'LEFT', 'ce_campaign_library_access', 'id', 'campaignId');
 		$this->whereAdd("ce_campaign_library_access.libraryId = '" . $user->getHomeLibrary()->libraryId . "' OR NOT EXISTS (SELECT 1 FROM ce_campaign_library_access WHERE ce_campaign_library_access.campaignId = ce_campaign.id)");
