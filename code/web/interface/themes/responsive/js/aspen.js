@@ -11100,7 +11100,7 @@ AspenDiscovery.GroupedWork = (function(){
 		},
 		showEditionSwiper: function () {
 			var option = $('#selectedEditionOption').val();
-			if (option == 1) {
+			if (option == 2) {
 				$('#editionSelectionSlider').show();
 				$('#editionSelectionOptionRemember label').contents().filter(function () {
 					return this.nodeType === 3;
