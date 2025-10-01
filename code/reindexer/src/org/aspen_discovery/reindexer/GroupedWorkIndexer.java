@@ -1507,7 +1507,11 @@ public class GroupedWorkIndexer {
 						addSeriesMemberStmt.setString(2, groupedWork.getId());
 						if (series.length == 2) {
 							addSeriesMemberStmt.setString(3, AspenStringUtils.trimTo(100, series[1])); // Add volume
-							addSeriesMemberStmt.setLong(8, NumberUtils.toLong(series[1])); // Add volume as weight if it's an integer - 0 otherwise
+							long seriesWeight = NumberUtils.toLong(series[1]);
+							if (seriesWeight > Integer.MAX_VALUE) {
+								seriesWeight = Integer.MAX_VALUE;
+							}
+							addSeriesMemberStmt.setLong(8, seriesWeight); // Add volume as weight if it's an integer - 0 otherwise
 						} else {
 							addSeriesMemberStmt.setString(3, "");
 							addSeriesMemberStmt.setLong(8, 0);
