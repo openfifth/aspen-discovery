@@ -903,13 +903,8 @@ class SearchAPI extends AbstractAPI {
 			//Remove fields as needed to improve the display.
 			foreach ($recordSet as $recordKey => $record) {
 				unset($record['auth_author']);
-				unset($record['auth_authorStr']);
-				unset($record['callnumber-first-code']);
 				unset($record['spelling']);
-				unset($record['callnumber-first']);
 				unset($record['title_auth']);
-				unset($record['callnumber-subject']);
-				unset($record['author-letter']);
 				unset($record['marc_error']);
 				unset($record['shortId']);
 				$recordSet[$recordKey] = $record;
@@ -1570,13 +1565,8 @@ class SearchAPI extends AbstractAPI {
 				//Remove fields as needed to improve the display.
 				foreach ($records as $recordKey => $record) {
 					unset($record['auth_author']);
-					unset($record['auth_authorStr']);
-					unset($record['callnumber-first-code']);
 					unset($record['spelling']);
-					unset($record['callnumber-first']);
 					unset($record['title_auth']);
-					unset($record['callnumber-subject']);
-					unset($record['author-letter']);
 					unset($record['marc_error']);
 					unset($record['shortId']);
 					$records[$recordKey] = $record;
@@ -1616,13 +1606,8 @@ class SearchAPI extends AbstractAPI {
 			foreach ($suggestions as $suggestionData) {
 				$record = $suggestionData['titleInfo'];
 				unset($record['auth_author']);
-				unset($record['auth_authorStr']);
-				unset($record['callnumber-first-code']);
 				unset($record['spelling']);
-				unset($record['callnumber-first']);
 				unset($record['title_auth']);
-				unset($record['callnumber-subject']);
-				unset($record['author-letter']);
 				unset($record['marc_error']);
 				unset($record['shortId']);
 				$records[] = $record;
@@ -1682,13 +1667,8 @@ class SearchAPI extends AbstractAPI {
 			}
 			$record['format_category'] = $formatCategories;
 			unset($record['auth_author']);
-			unset($record['auth_authorStr']);
-			unset($record['callnumber-first-code']);
 			unset($record['spelling']);
-			unset($record['callnumber-first']);
 			unset($record['title_auth']);
-			unset($record['callnumber-subject']);
-			unset($record['author-letter']);
 			unset($record['marc_error']);
 			unset($record['shortId']);
 			$records[] = $record;

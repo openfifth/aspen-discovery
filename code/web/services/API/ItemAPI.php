@@ -12,8 +12,7 @@ class ItemAPI extends AbstractAPI {
 	public $id;
 
 	/**
-	 * @var MarcRecordDriver|IndexRecordDriver
-	 * marc record in File_Marc object
+	 * @var GroupedWorkDriver|IndexRecordDriver
 	 */
 	protected $recordDriver;
 
@@ -208,7 +207,7 @@ class ItemAPI extends AbstractAPI {
 	 * Get information about a particular item and return it as JSON
 	 * @noinspection PhpUnused
 	 */
-	function getItem() {
+	function getItem() : array {
 		global $timer;
 		global $configArray;
 		global $solrScope;
@@ -231,7 +230,9 @@ class ItemAPI extends AbstractAPI {
 
 		// Retrieve Full Marc Record
 		disableErrorHandler();
-		if (!($record = $this->db->getRecord($this->id))) {
+		$fieldsToReturn = 'isbn,upc,issn,title_display,author_display,publisher,placeOfPublication,edition,callnumber,genre,series,physical,lccn,contents,format,format_category,language';
+
+		if (!($record = $this->db->getRecord($this->id, $fieldsToReturn))) {
 			return [
 				'error',
 				'Record does not exist',
@@ -255,20 +256,20 @@ class ItemAPI extends AbstractAPI {
 		}
 		$itemData['title'] = $record['title_display'];
 		$itemData['author'] = $record['author_display'];
-		$itemData['publisher'] = $record['publisher'];
+		$itemData['publisher'] = $record['publisherStr'];
 		$itemData['placeOfPublication'] = $record['placeOfPublication'];
 		$itemData['allIsbn'] = $record['isbn'];
-		$itemData['allUpc'] = isset($record['upc']) ? $record['upc'] : null;
-		$itemData['allIssn'] = isset($record['issn']) ? $record['issn'] : null;
-		$itemData['edition'] = isset($record['edition']) ? $record['edition'] : null;
-		$itemData['callnumber'] = isset($record['callnumber']) ? $record['callnumber'] : null;
-		$itemData['genre'] = isset($record['genre']) ? $record['genre'] : null;
-		$itemData['series'] = isset($record['series']) ? $record['series'] : null;
+		$itemData['allUpc'] = $record['upc'] ?? null;
+		$itemData['allIssn'] = $record['issn'] ?? null;
+		$itemData['edition'] = $record['edition'] ?? null;
+		$itemData['callnumber'] = $record['callnumber'] ?? null;
+		$itemData['genre'] = $record['genre'] ?? null;
+		$itemData['series'] = $record['series'] ?? null;
 		$itemData['physical'] = $record['physical'];
-		$itemData['lccn'] = isset($record['lccn']) ? $record['lccn'] : null;
-		$itemData['contents'] = isset($record['contents']) ? $record['contents'] : null;
+		$itemData['lccn'] = $record['lccn'] ?? null;
+		$itemData['contents'] = $record['contents'] ?? null;
 
-		$itemData['format'] = isset($record['format_' . $solrScope]) ? $record['format_' . $solrScope] : null;
+		$itemData['format'] = $record['format_' . $solrScope] ?? null;
 		$itemData['formatCategory'] = isset($record['format_category_' . $solrScope]) ? $record['format_category_' . $solrScope][0] : null;
 		$itemData['language'] = $record['language'];
 
@@ -328,7 +329,7 @@ class ItemAPI extends AbstractAPI {
 	}
 
 	/** @noinspection PhpUnused */
-	function getBasicItemInfo() {
+	function getBasicItemInfo() : array {
 		global $timer;
 		global $configArray;
 		$itemData = [];
@@ -362,11 +363,11 @@ class ItemAPI extends AbstractAPI {
 			}
 
 			// Retrieve Full Marc Record
-			if (!($record = $this->db->getRecord($this->id))) {
+			$fieldsToReturn = 'isbn,upc,issn,title_display,author_display,publisherStr,placeOfPublication,format,format_category,language,ils_description,display_description';
+			if (!($record = $this->db->getRecord($this->id, $fieldsToReturn))) {
 				AspenError::raiseError(new AspenError('Record Does Not Exist'));
 			}
 			$this->record = $record;
-			/** @var GroupedWorkDriver recordDriver */
 			$this->recordDriver = RecordDriverFactory::initRecordDriver($record);
 			$timer->logTime('Initialized the Record Driver');
 
@@ -386,8 +387,8 @@ class ItemAPI extends AbstractAPI {
 
 			//Generate basic information from the marc file to make display easier.
 			$itemData['title'] = $record['title_display'];
-			$itemData['author'] = isset($record['author_display']) ? $record['author_display'] : (isset($record['author2']) ? $record['author2'][0] : '');
-			$itemData['publisher'] = $record['publisher'];
+			$itemData['author'] = $this->recordDriver->getPrimaryAuthor();
+			$itemData['publisher'] = $record['publisherStr'];
 			$itemData['placeOfPublication'] = $record['placeOfPublication'];
 			if(isset($record['isbn'])) {
 				$itemData['allIsbn'] = $record['isbn'];
@@ -409,22 +410,6 @@ class ItemAPI extends AbstractAPI {
 			//setup 5 star ratings
 			$itemData['ratingData'] = $this->recordDriver->getRatingData();
 			$timer->logTime('Got 5 star data');
-
-			require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-			$marcRecordDriver = new MarcRecordDriver($this->recordDriver->getIdWithSource());
-			if ($marcRecordDriver != null) {
-				/** @var File_MARC_Control_Field $oclcNumber */
-				$oclcNumber = $marcRecordDriver->getMarcRecord()->getField('001');
-				if ($oclcNumber != null) {
-					$oclcNumberString = StringUtils::truncate($oclcNumber->getData(), 50);
-				} else {
-					$oclcNumberString = '';
-				}
-			} else {
-				$oclcNumberString = '';
-			}
-
-			$itemData['oclcNumber'] = $oclcNumberString;
 		}
 
 		return $itemData;
@@ -763,7 +748,7 @@ class ItemAPI extends AbstractAPI {
 									$publisher = $relatedRecord->publisher;
 								}
 								$placeOfPublication = $hooplaDriver->getPlacesOfPublication();
-								if (is_array($placeOfPublication) && $placesOfPublication != null) {
+								if (is_array($placeOfPublication) && $placeOfPublication != null) {
 									$placeOfPublication = $placeOfPublication[0];
 								} elseif (count($placeOfPublication) == 0){
 									$placeOfPublication = $relatedRecord->placeOfPublication;
