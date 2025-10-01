@@ -4057,7 +4057,7 @@ AspenDiscovery.Account = (function () {
 		},
 
 		createSquareOrder: function (finesFormId, transactionType, token) {
-			this.createGenericOrder(finesFormId, 'Square', transactionType, token);
+			return this.createGenericOrder(finesFormId, 'Square', transactionType, token);
 		},
 
 		createStripeOrder: function (finesFormId, transactionType) {
@@ -7888,6 +7888,126 @@ AspenDiscovery.Admin = (function () {
 				} else {
 					highlightOpenToEnrollCampaigns.hide();
 				}
+		},
+
+		initializeScrollPositioning() {
+			// Check if the scrollToId parameter is in the URL.
+			const urlParams = new URLSearchParams(window.location.search);
+			const scrollToId = urlParams.get('scrollToId');
+			if (!scrollToId) return;
+
+			const findTargetRow = () => {
+				return $('#adminTable tbody tr').filter((index, row) => {
+					const $row = $(row);
+					const $editLink = $row.find(`a[href*="objectAction=edit"][href*="id=${scrollToId}"]`);
+					return $editLink.length > 0;
+				}).first();
+			};
+
+			const scrollPageToTable = () => {
+				const $tableContainer = $('.adminTableRegion');
+				if ($tableContainer.length === 0) return;
+
+				const containerOffset = $tableContainer.offset();
+				const windowHeight = $(window).height();
+				const windowScrollTop = $(window).scrollTop();
+				const containerTop = containerOffset.top;
+				const containerBottom = containerTop + $tableContainer.outerHeight();
+
+				// Check if the container needs to be scrolled into view.
+				const containerNotVisible = containerTop < windowScrollTop || containerBottom > (windowScrollTop + windowHeight);
+				if (containerNotVisible) {
+					window.scrollTo(0, containerTop - 100);
+				}
+			};
+
+			const scrollTableToRow = ($targetRow) => {
+				const $tableContainer = $('.adminTableRegion');
+				const $table = $('#adminTable');
+
+				if ($tableContainer.length === 0 || $table.length === 0 || $targetRow.length === 0) {
+					return false;
+				}
+
+				// Calculate position relative to the table container only.
+				const containerOffset = $tableContainer.offset();
+				const rowOffset = $targetRow.offset();
+				const relativeRowTop = rowOffset.top - containerOffset.top;
+				const containerHeight = $tableContainer.height();
+				const targetScroll = relativeRowTop - (containerHeight / 2);
+				$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+				return true;
+			};
+
+			const $targetRow = findTargetRow();
+			if ($targetRow.length === 0) {
+				return;
+			}
+
+			// Always scroll page immediately.
+			scrollPageToTable();
+
+			// Check if there are images in the table that might still be loading.
+			const $images = $('#adminTable img');
+			if ($images.length > 0) {
+				const $indicator = $('<div class="scroll-loading-indicator" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 9999; font-size: 14px;"><i class="fas fa-spinner fa-spin"></i> Positioning content...</div>');
+				$('body').append($indicator);
+
+				let loadedCount = 0;
+				const totalImages = $images.length;
+				let isCompleted = false;
+
+				const finalizeScrolling = () => {
+					if (isCompleted) return;
+					isCompleted = true;
+
+					// Calculate position relative to container only.
+					const $tableContainer = $('.adminTableRegion');
+					const containerOffset = $tableContainer.offset();
+					const rowOffset = $targetRow.offset();
+					const relativeRowTop = rowOffset.top - containerOffset.top;
+					const containerHeight = $tableContainer.height();
+					const targetScroll = relativeRowTop - (containerHeight / 2);
+					$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+					$indicator.remove();
+				};
+
+				const checkAllImagesLoaded = () => {
+					loadedCount++;
+					if (loadedCount >= totalImages) {
+						setTimeout(finalizeScrolling, 100);
+					}
+				};
+
+				// Set a timeout fallback in case images don't load properly.
+				const timeoutId = setTimeout(() => {
+					console.warn('Image loading timeout - proceeding with scroll positioning.');
+					finalizeScrolling();
+				}, 5000);
+
+				$images.each(function() {
+					const img = this;
+					if (img.complete && img.naturalWidth > 0) {
+						checkAllImagesLoaded();
+					} else {
+						$(img).on('load error', () => {
+							checkAllImagesLoaded();
+							if (loadedCount >= totalImages) {
+								clearTimeout(timeoutId);
+							}
+						});
+					}
+				});
+
+				if (loadedCount >= totalImages) {
+					clearTimeout(timeoutId);
+				}
+			} else {
+				// No images, scroll to row immediately.
+				scrollTableToRow($targetRow);
+			}
 		}
 	};
 }(AspenDiscovery.Admin || {}));
@@ -11821,33 +11941,15 @@ AspenDiscovery.OverDrive = (function(){
 			AspenDiscovery.loadingMessage();
 			var url = Globals.path + '/OverDrive/AJAX';
 			var params = {
-				patronId : patronId
-				,overDriveId : overDriveId
+				'method' : 'freezeHold',
+				patronId : patronId,
+				overDriveId : overDriveId
 			};
-			//Prompt the user for the date they want to reactivate the hold
-			params['method'] = 'getReactivationDateForm'; // set method for this form
-			$.getJSON(url, params, function(data){
-				// noinspection JSUnresolvedReference
-				AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons)
-			}).error(AspenDiscovery.ajaxFail);
-		},
-
-		// called by ReactivationDateForm when fn freezeHold above has promptForReactivationDate is set
-		doFreezeHoldWithReactivationDate: function(caller){
-			var popUpBoxTitle = $(caller).text() || "Freezing Hold"; // freezing terminology can be customized, so grab text from click button: caller
-			var params = {
-				'method' : 'freezeHold'
-				,patronId : $('#patronId').val()
-				,overDriveId : $('#overDriveId').val()
-				,reactivationDate : $("#reactivationDate").val()
-			};
-			var url = Globals.path + '/OverDrive/AJAX';
-			AspenDiscovery.showMessage(popUpBoxTitle, "Updating your hold.  This may take a minute.");
 			$.getJSON(url, params, function(data){
 				if (data.success) {
-					AspenDiscovery.showMessage("Success", data.message, true, true);
+					AspenDiscovery.showMessage("Successfully Froze Hold", data.message, true, true);
 				} else {
-					AspenDiscovery.showMessage("Error", data.message);
+					AspenDiscovery.showMessage("Failed to Freeze Hold", data.message);
 				}
 			}).error(AspenDiscovery.ajaxFail);
 		},

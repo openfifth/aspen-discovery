@@ -3154,6 +3154,10 @@ class Polaris extends AbstractIlsDriver {
 		return true;
 	}
 
+	public function showRenewalsRemaining(): bool {
+		return true;
+	}
+
 	private function getCarrierList(): array {
 		$staffUserInfo = $this->getStaffUserInfo();
 		$polarisUrl = "/PAPIService/REST/protected/v1/1033/100/1/{$staffUserInfo['accessToken']}/sysadmin/mobilephonecarriers";

@@ -2946,11 +2946,18 @@ class Theme extends DataObject {
 	 * @return string the resulting css
 	 */
 	public function generateCss($saveChanges = false) : string {
+		// Clear cached theme hierarchy to prevent cross-contamination during batch processing.
+		$this->_allAppliedThemes = null;
+		$this->_themeHierarchy = null;
+
 		$allAppliedThemes = $this->getAllAppliedThemes();
 		global $interface;
 		require_once ROOT_DIR . '/sys/Utils/ColorUtils.php';
 		$additionalCSS = '';
 		$appendCSS = true;
+
+		// Bookmark all template variables to prevent cross-contamination between themes during batch processing.
+		$savedTemplateVars = $interface->tpl_vars;
 		$this->applyDefaults();
 		$interface->assign('headerBackgroundColor', $this->headerBackgroundColor);
 		$interface->assign('headerForegroundColor', $this->headerForegroundColor);
@@ -3171,9 +3178,10 @@ class Theme extends DataObject {
 		}
 
 		$interface->assign('additionalCSS', $additionalCSS);
-
 		$previousCss = $this->generatedCss;
 		$updatedCss = $interface->fetch('theme.css.tpl');
+		$interface->tpl_vars = $savedTemplateVars;
+
 		if ($updatedCss != $previousCss) {
 			$this->__set('generatedCss', $updatedCss);
 			if ($saveChanges) {
