@@ -25,6 +25,7 @@ class Admin_CronRunner extends Admin_Admin {
 			'talpaWorksCron' => 'Talpa Works',
 			'updateCommunityTranslations' => 'Update Community Translations',
 			'updateNYTLists' => 'Update New York Times Lists',
+			'updateSavedSearches' => 'Update Saved Searches',
 			'updateSuggesters' => 'Update Suggesters',
 		];
 		$interface->assign('availableCronProcesses', $availableCronProcesses);
