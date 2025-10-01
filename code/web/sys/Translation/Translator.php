@@ -72,13 +72,14 @@ class Translator {
 	 * @param bool $isAdminEnteredData Whether this is data an administrator entered (System message, etc).
 	 * @param bool $translateParameters Whether parameters should be translated.
 	 * @param bool $escape Whether the translation should be escaped before rendering.
+	 * @param bool $fromLiDA Whether the translation is being requested from a verified LiDA API call.
 	 * @return string The translated phrase.
 	 */
 	function translate(
 		?string $phrase, string $defaultText = '', array $replacementValues = [],
 		bool $inAttribute = false, bool $isPublicFacing = false, bool $isAdminFacing = false,
 		bool $isMetadata = false, bool $isAdminEnteredData = false,
-		bool $translateParameters = false, bool $escape = false
+		bool $translateParameters = false, bool $escape = false, bool $fromLiDA = false
 	): string {
 
 		if ($phrase === '' || is_numeric($phrase)) {
@@ -90,6 +91,7 @@ class Translator {
 
 		global $activeLanguage;
 		$translationMode = $this->translationModeActive() && !$inAttribute && (UserAccount::userHasPermission('Translate Aspen'));
+		$allowTermCreation = $translationMode || $fromLiDA;
 		try {
 			if (!empty($activeLanguage)) {
 				$translationKey = $activeLanguage->id . '_' . ($translationMode ? 1 : 0) . '_' . $phrase;
@@ -99,12 +101,10 @@ class Translator {
 					$translationTerm = new TranslationTerm();
 					$translationTerm->term = $phrase;
 					$defaultTextChanged = false;
-					// Only write term records to DB in translation mode; otherwise, just load existing term.
-					if ($translationMode) {
+					// Write term records to DB in translation mode or when called from a verified LiDA instance.
+					if ($allowTermCreation) {
 						if (!$translationTerm->find(true)) {
 							$translationTerm->defaultText = $defaultText;
-							//Insert the translation term
-
 							$translationTerm->samplePageUrl = mb_strimwidth($_SERVER['REQUEST_URI'], 0, 255);
 							$translationTerm->isPublicFacing = $isPublicFacing;
 							$translationTerm->isAdminFacing = $isAdminFacing;
@@ -114,8 +114,7 @@ class Translator {
 							try {
 								if ($translationTerm->insert() !== false) {
 									$termTooLong = false;
-									//Send this to the Community Content Server as well
-
+									// Send this to the Community Content Server as well.
 									require_once ROOT_DIR . '/sys/SystemVariables.php';
 									$systemVariables = SystemVariables::getSystemVariables();
 									if ($systemVariables && !empty($systemVariables->communityContentUrl)) {
@@ -185,33 +184,36 @@ class Translator {
 						}
 					}
 					else {
-						// Non-translation mode: check DB override first, then .ini defaults.
-						if (empty($this->words)) {
-							$this->loadTranslationsFromIniFile();
-						}
-						$dbTranslation = $this->loadDbOverride($phrase);
-						if ($dbTranslation !== null) {
-							$returnString = $dbTranslation;
-						} elseif (isset($this->words[$phrase])) {
-							$returnString = $this->words[$phrase];
-						} elseif (!empty($defaultText)) {
-							$returnString = $defaultText;
-						} else {
-							$returnString = $phrase;
-						}
-						if (count($replacementValues) > 0) {
-							foreach ($replacementValues as $index => $replacementValue) {
-								if ($translateParameters) {
-									$replacementValue = $this->translate($replacementValue, '', [], true, $isPublicFacing, $isAdminFacing, $isMetadata, $isAdminEnteredData, $translateParameters);
-								}
-								$returnString = str_replace('%' . $index . '%', $replacementValue, $returnString);
+						// Non-translation mode: try to load the term if it exists.
+						if (!$translationTerm->find(true)) {
+							// Term doesn't exist - check DB override first, then .ini defaults.
+							if (empty($this->words)) {
+								$this->loadTranslationsFromIniFile();
 							}
+							$dbTranslation = $this->loadDbOverride($phrase);
+							if ($dbTranslation !== null) {
+								$returnString = $dbTranslation;
+							} elseif (isset($this->words[$phrase])) {
+								$returnString = $this->words[$phrase];
+							} elseif (!empty($defaultText)) {
+								$returnString = $defaultText;
+							} else {
+								$returnString = $phrase;
+							}
+							if (count($replacementValues) > 0) {
+								foreach ($replacementValues as $index => $replacementValue) {
+									if ($translateParameters) {
+										$replacementValue = $this->translate($replacementValue, '', [], true, $isPublicFacing, $isAdminFacing, $isMetadata, $isAdminEnteredData, $translateParameters, false, $fromLiDA);
+									}
+									$returnString = str_replace('%' . $index . '%', $replacementValue, $returnString);
+								}
+							}
+							if ($escape) {
+								$returnString = htmlentities($returnString);
+							}
+							$this->cachedTranslations[$translationKey] = $returnString;
+							return $returnString;
 						}
-						if ($escape) {
-							$returnString = htmlentities($returnString);
-						}
-						$this->cachedTranslations[$translationKey] = $returnString;
-						return $returnString;
 					}
 
 					if ($activeLanguage->code == 'pig') {
@@ -244,11 +246,15 @@ class Translator {
 							}
 
 							$translation->translation = $defaultTranslation;
-							if ($translationMode) {
-								$ret = $translation->update();
+							if ($allowTermCreation) {
+								if ($translation->id) {
+									$ret = $translation->update();
+								} else {
+									$ret = $translation->insert();
+								}
 								if (!$ret) {
 									global $logger;
-									$logger->log("Could not update translation", Logger::LOG_ERROR);
+									$logger->log("Could not save translation for term ID " . $translationTerm->id, Logger::LOG_ERROR);
 								}
 							}
 						} elseif ($defaultTextChanged) {
