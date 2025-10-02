@@ -7,6 +7,11 @@ require_once ROOT_DIR . '/sys/SearchUpdateLogEntry.php';
 
 require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 require_once ROOT_DIR . '/sys/Notifications/ExpoNotification.php';
+require_once ROOT_DIR . '/sys/CronLogEntry.php';
+$cronLogEntry = new CronLogEntry();
+$cronLogEntry->startTime = time();
+$cronLogEntry->name = 'Updating Saved Searches';
+$cronLogEntry->insert();
 
 //Create a log entry
 $searchUpdateLogEntry = new SearchUpdateLogEntry();
@@ -132,6 +137,10 @@ $searchUpdateLogEntry->update();
 $searchUpdateLogEntry->addNote("Finished updating saved searches");
 $searchUpdateLogEntry->endTime = time();
 $searchUpdateLogEntry->update();
+
+$cronLogEntry->notes .= "<br/>Imported a total of " . $searchUpdateLogEntry->numUpdated. " searches";
+$cronLogEntry->endTime = time();
+$cronLogEntry->update();
 
 $search->__destruct();
 $search = null;

@@ -1894,7 +1894,7 @@ AspenDiscovery.Account = (function () {
 		},
 
 		createSquareOrder: function (finesFormId, transactionType, token) {
-			this.createGenericOrder(finesFormId, 'Square', transactionType, token);
+			return this.createGenericOrder(finesFormId, 'Square', transactionType, token);
 		},
 
 		createStripeOrder: function (finesFormId, transactionType) {

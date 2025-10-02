@@ -258,13 +258,22 @@ class OverDriveProcessor {
 								}
 								if (isEComic) {
 									if (rawMetadataDecoded.has("edition")) {
-										if (rawMetadataDecoded.getString("edition").equalsIgnoreCase("Light Novel")){
+										if (rawMetadataDecoded.getString("edition").equalsIgnoreCase("Light Novel") || rawMetadataDecoded.getString("edition").equalsIgnoreCase("BL Light Novel")){
 											isEComic = false;
 											if (groupedWork.isDebugEnabled()) {
 												groupedWork.addDebugMessage("Resetting format back to eBook due to an edition of Light Novel", 2);
 											}
 										}
 									}
+									if (series != null && !series.isEmpty()) {
+										if (series.toLowerCase().contains("light novel")) {
+											isEComic = false;
+											if (groupedWork.isDebugEnabled()) {
+												groupedWork.addDebugMessage("Resetting format back to eBook due to a series including Light Novel", 2);
+											}
+										}
+									}
+
 
 									if (isEComic) {
 										validFormats.clear();

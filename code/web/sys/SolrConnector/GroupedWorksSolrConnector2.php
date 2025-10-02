@@ -58,6 +58,71 @@ class GroupedWorksSolrConnector2 extends Solr {
 		}
 	}
 
+	/**
+	 * Retrieves a document specified by the ID.
+	 *
+	 * @param array $ids A list of document to retrieve from Solr
+	 * @param ?string $fieldsToReturn An optional list of fields to return separated by commas
+	 * @param bool $applyScoping whether scoping should be applied to the search
+	 * @return    array                            The requested resources
+	 * @throws    AspenError
+	 */
+	function getRecords(array $ids, ?string $fieldsToReturn = null, bool $applyScoping = false) : array {
+		if (count($ids) == 0) {
+			return [];
+		}
+		//Solr does not seem to be able to return more than 50 records at a time,
+		//If we have more than 50 ids, we will need to make multiple calls and
+		//concatenate the results.
+		$records = [];
+		$startIndex = 0;
+		$batchSize = 40;
+
+		$lastBatch = false;
+		while (true) {
+			$endIndex = $startIndex + $batchSize;
+			if ($endIndex >= count($ids)) {
+				$lastBatch = true;
+				$endIndex = count($ids);
+				$batchSize = count($ids) - $startIndex;
+			}
+			$tmpIds = array_slice($ids, $startIndex, $batchSize);
+
+			// Query String Parameters
+			$idString = implode(' OR ', $tmpIds);
+			$options = ['q' => "id:($idString)"];
+			$options['fl'] = $fieldsToReturn;
+			$options['rows'] = count($tmpIds);
+
+			if ($applyScoping) {
+				global $solrScope;
+				$options['fq'] = "availability_toggle:\"$solrScope#global\"";
+			}
+
+			// Send Request
+			global $timer;
+			$timer->logTime("Prepare to send get (ids)  request to solr");
+			$getRecordsUrl = $this->host . "/select?" . http_build_query($options);
+			$result = $this->client->curlGetPage($getRecordsUrl);
+			$timer->logTime("Send data to solr for getRecords");
+
+			if ($result) {
+				$result = $this->_process($result);
+
+				foreach ($result['response']['docs'] as $record) {
+					$records[$record['id']] = $record;
+				}
+			}
+			if ($lastBatch) {
+				break;
+			} else {
+				$startIndex = $endIndex;
+			}
+		}
+		//echo("Found " . count($records) . " records.	Should have found " . count($ids) . "\r\n<br/>");
+		return $records;
+	}
+
 	function searchForRecordIds($ids) {
 		if (count($ids) == 0) {
 			return [];
@@ -491,7 +556,7 @@ class GroupedWorksSolrConnector2 extends Solr {
 
 	protected function getHighlightOptions($fields, &$options) {
 		global $solrScope;
-		$highlightFields = $fields . ",table_of_contents";
+		$highlightFields = $fields;
 		$highlightFields = str_replace(",related_record_ids_$solrScope", '', $highlightFields);
 		$highlightFields = str_replace(",related_items_$solrScope", '', $highlightFields);
 		$highlightFields = str_replace(",format_$solrScope", '', $highlightFields);

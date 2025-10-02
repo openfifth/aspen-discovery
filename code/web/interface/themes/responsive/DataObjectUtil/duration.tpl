@@ -1,5 +1,5 @@
 {strip}
-{assign var=hours value=($propValue/60)|intval}
+{assign var=hours value=intval($propValue/60)}
 {assign var=minutes value=$propValue % 60}
 <fieldset class="form-inline">
 	<div class="form-group col-sm-6">

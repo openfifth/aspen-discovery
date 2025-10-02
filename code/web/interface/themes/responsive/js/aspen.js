@@ -4057,7 +4057,7 @@ AspenDiscovery.Account = (function () {
 		},
 
 		createSquareOrder: function (finesFormId, transactionType, token) {
-			this.createGenericOrder(finesFormId, 'Square', transactionType, token);
+			return this.createGenericOrder(finesFormId, 'Square', transactionType, token);
 		},
 
 		createStripeOrder: function (finesFormId, transactionType) {
@@ -6674,6 +6674,14 @@ AspenDiscovery.Admin = (function () {
 				}
 			}
 		},
+		updateGroupedWorkEContentSortFields: function () {
+			var selectedOption = $("#sortMethodSelect").find(":selected").val();
+			if (selectedOption === "1") {
+				$("#propertyRowsortedEContentSources").hide();
+			} else {
+				$("#propertyRowsortedEContentSources").show();
+			}
+		},
 		updateIndexingProfileFields: function () {
 			var audienceType = $('#determineAudienceBySelect').val();
 			if (audienceType === '3') {
@@ -7888,6 +7896,126 @@ AspenDiscovery.Admin = (function () {
 				} else {
 					highlightOpenToEnrollCampaigns.hide();
 				}
+		},
+
+		initializeScrollPositioning() {
+			// Check if the scrollToId parameter is in the URL.
+			const urlParams = new URLSearchParams(window.location.search);
+			const scrollToId = urlParams.get('scrollToId');
+			if (!scrollToId) return;
+
+			const findTargetRow = () => {
+				return $('#adminTable tbody tr').filter((index, row) => {
+					const $row = $(row);
+					const $editLink = $row.find(`a[href*="objectAction=edit"][href*="id=${scrollToId}"]`);
+					return $editLink.length > 0;
+				}).first();
+			};
+
+			const scrollPageToTable = () => {
+				const $tableContainer = $('.adminTableRegion');
+				if ($tableContainer.length === 0) return;
+
+				const containerOffset = $tableContainer.offset();
+				const windowHeight = $(window).height();
+				const windowScrollTop = $(window).scrollTop();
+				const containerTop = containerOffset.top;
+				const containerBottom = containerTop + $tableContainer.outerHeight();
+
+				// Check if the container needs to be scrolled into view.
+				const containerNotVisible = containerTop < windowScrollTop || containerBottom > (windowScrollTop + windowHeight);
+				if (containerNotVisible) {
+					window.scrollTo(0, containerTop - 100);
+				}
+			};
+
+			const scrollTableToRow = ($targetRow) => {
+				const $tableContainer = $('.adminTableRegion');
+				const $table = $('#adminTable');
+
+				if ($tableContainer.length === 0 || $table.length === 0 || $targetRow.length === 0) {
+					return false;
+				}
+
+				// Calculate position relative to the table container only.
+				const containerOffset = $tableContainer.offset();
+				const rowOffset = $targetRow.offset();
+				const relativeRowTop = rowOffset.top - containerOffset.top;
+				const containerHeight = $tableContainer.height();
+				const targetScroll = relativeRowTop - (containerHeight / 2);
+				$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+				return true;
+			};
+
+			const $targetRow = findTargetRow();
+			if ($targetRow.length === 0) {
+				return;
+			}
+
+			// Always scroll page immediately.
+			scrollPageToTable();
+
+			// Check if there are images in the table that might still be loading.
+			const $images = $('#adminTable img');
+			if ($images.length > 0) {
+				const $indicator = $('<div class="scroll-loading-indicator" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 5px; z-index: 9999; font-size: 14px;"><i class="fas fa-spinner fa-spin"></i> Positioning content...</div>');
+				$('body').append($indicator);
+
+				let loadedCount = 0;
+				const totalImages = $images.length;
+				let isCompleted = false;
+
+				const finalizeScrolling = () => {
+					if (isCompleted) return;
+					isCompleted = true;
+
+					// Calculate position relative to container only.
+					const $tableContainer = $('.adminTableRegion');
+					const containerOffset = $tableContainer.offset();
+					const rowOffset = $targetRow.offset();
+					const relativeRowTop = rowOffset.top - containerOffset.top;
+					const containerHeight = $tableContainer.height();
+					const targetScroll = relativeRowTop - (containerHeight / 2);
+					$tableContainer.scrollTop(Math.max(0, targetScroll));
+
+					$indicator.remove();
+				};
+
+				const checkAllImagesLoaded = () => {
+					loadedCount++;
+					if (loadedCount >= totalImages) {
+						setTimeout(finalizeScrolling, 100);
+					}
+				};
+
+				// Set a timeout fallback in case images don't load properly.
+				const timeoutId = setTimeout(() => {
+					console.warn('Image loading timeout - proceeding with scroll positioning.');
+					finalizeScrolling();
+				}, 5000);
+
+				$images.each(function() {
+					const img = this;
+					if (img.complete && img.naturalWidth > 0) {
+						checkAllImagesLoaded();
+					} else {
+						$(img).on('load error', () => {
+							checkAllImagesLoaded();
+							if (loadedCount >= totalImages) {
+								clearTimeout(timeoutId);
+							}
+						});
+					}
+				});
+
+				if (loadedCount >= totalImages) {
+					clearTimeout(timeoutId);
+				}
+			} else {
+				// No images, scroll to row immediately.
+				scrollTableToRow($targetRow);
+			}
 		}
 	};
 }(AspenDiscovery.Admin || {}));
@@ -10207,6 +10335,56 @@ AspenDiscovery.Events = (function(){
 				}
 			).fail(AspenDiscovery.ajaxFail);
 			return false;
+		},
+		getPrintListOptions: function (week, month, year) {
+			AspenDiscovery.Account.ajaxLightbox(Globals.path + '/Events/AJAX?method=getListPrintOptions&week=' + week + '&month=' + month + "&year=" + year);
+			return false;
+		},
+		buildAndOpenPrintUrl: function () {
+			const print = document.getElementById('print').value;
+			const week = document.getElementById('week').value;
+			const month = document.getElementById('month').value;
+			const year = document.getElementById('year').value;
+
+			const baseUrl = Globals.path + '/Events/Calendar';
+
+
+			// Checkbox names (in order as in the form)
+			const checkboxIds = [
+				'endTime',
+				'descriptionAgenda'
+			];
+
+			// Build URL params object
+			const params = {
+				print,
+				week,
+				month,
+				year
+			};
+
+			checkboxIds.forEach(id => {
+				const el = document.getElementById(id);
+				if (el) {
+					// Only include if checked, send value "true" (or customize as needed)
+					params[id] = el.checked ? 'true' : 'false';
+				}
+			});
+
+			// Build search string
+			const urlSearchParams = new URLSearchParams(params).toString();
+
+			// Final URL
+			const printUrl = `${baseUrl}?${urlSearchParams}`;
+
+			// Open print window and prompt print dialog once loaded
+			const win = window.open(printUrl, '_blank', 'width=900,height=900');
+			if (win) {
+				// Wait for the new window to load content, then trigger print
+				win.onload = function () {
+					win.print();
+				};
+			}
 		}
 	};
 }(AspenDiscovery.Events || {}));
@@ -10982,9 +11160,10 @@ AspenDiscovery.GroupedWork = (function(){
 			}else{
 				//Show variations swiper
 				let variationSlider = $('#slider-variations-' + workId);
+				variationsInfoElement.show();
 				variationSlider.html('');
 				var i = 0;
-				$.each(activeManifestationInfo.variations, function (index, variations, test) {
+				$.each(activeManifestationInfo.variations, function () {
 					var activeClass = (i === 0) ? ' active' : '';
 					var variationButton = '<div role="option" tabindex="0" class="slider-slide horizontal-format-button slider-sm' + activeClass + '" data-workId="' + workId + '" data-variationid="' + this.databaseId + '" data-format="' + format + '" data-cleanedWorkId="' + cleanedWorkId + '">\n' +
 						'<div>' +
@@ -11823,33 +12002,15 @@ AspenDiscovery.OverDrive = (function(){
 			AspenDiscovery.loadingMessage();
 			var url = Globals.path + '/OverDrive/AJAX';
 			var params = {
-				patronId : patronId
-				,overDriveId : overDriveId
+				'method' : 'freezeHold',
+				patronId : patronId,
+				overDriveId : overDriveId
 			};
-			//Prompt the user for the date they want to reactivate the hold
-			params['method'] = 'getReactivationDateForm'; // set method for this form
-			$.getJSON(url, params, function(data){
-				// noinspection JSUnresolvedReference
-				AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons)
-			}).error(AspenDiscovery.ajaxFail);
-		},
-
-		// called by ReactivationDateForm when fn freezeHold above has promptForReactivationDate is set
-		doFreezeHoldWithReactivationDate: function(caller){
-			var popUpBoxTitle = $(caller).text() || "Freezing Hold"; // freezing terminology can be customized, so grab text from click button: caller
-			var params = {
-				'method' : 'freezeHold'
-				,patronId : $('#patronId').val()
-				,overDriveId : $('#overDriveId').val()
-				,reactivationDate : $("#reactivationDate").val()
-			};
-			var url = Globals.path + '/OverDrive/AJAX';
-			AspenDiscovery.showMessage(popUpBoxTitle, "Updating your hold.  This may take a minute.");
 			$.getJSON(url, params, function(data){
 				if (data.success) {
-					AspenDiscovery.showMessage("Success", data.message, true, true);
+					AspenDiscovery.showMessage("Successfully Froze Hold", data.message, true, true);
 				} else {
-					AspenDiscovery.showMessage("Error", data.message);
+					AspenDiscovery.showMessage("Failed to Freeze Hold", data.message);
 				}
 			}).error(AspenDiscovery.ajaxFail);
 		},
