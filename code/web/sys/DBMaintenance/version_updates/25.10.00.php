@@ -51,7 +51,7 @@ function getUpdates25_10_00(): array {
 			'continueOnError' => false,
 			'sql' => [
 				'ALTER TABLE user ADD COLUMN rememberHoldPromptForEdition TINYINT DEFAULT 1',
-				'ALTER TABLE user ADD COLUMN holdPromptForEdition TINYINT DEFAULT 0',
+				'ALTER TABLE user ADD COLUMN holdPromptForEdition TINYINT DEFAULT 1',
 			]
 		],
 		//addEditionPromptSettingForUser
