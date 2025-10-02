@@ -118,7 +118,7 @@ class Series_Home extends Action {
 		}
 
 		$recordsPerPage = isset($_REQUEST['pageSize']) && (is_numeric($_REQUEST['pageSize'])) ? $_REQUEST['pageSize'] : 20;
-		$totalRecords = $list->numTitlesInSeries();
+		$totalRecords = $list->numScopedTitlesInSeries();
 		$page = $_REQUEST['page'] ?? 1;
 		$startRecord = ($page - 1) * $recordsPerPage;
 		if ($startRecord < 0) {
@@ -176,7 +176,7 @@ class Series_Home extends Action {
 		];
 		if ($list->sortMethod == 5) {
 			$sortOptions['custom'] = [
-				'desc' => 'Suggested Order',
+				'desc' => 'Default Order',
 				'selected' => $sortName == 'custom',
 				'sortUrl' => "/Series/$list->id?sort=custom",
 			];

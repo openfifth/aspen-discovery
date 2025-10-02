@@ -817,7 +817,8 @@ AspenDiscovery.GroupedWork = (function(){
 			$.getJSON(url, params, function (data){
 				if (data.success) {
 					$("#variationInfo_" + workId).html(data.message);
-				}else{
+					AspenDiscovery.LazyCirculation.scanAndRefresh("#variationInfo_" + workId);
+				} else {
 					$("#variationInfo_" + workId).html("");
 				}
 			});
@@ -837,7 +838,8 @@ AspenDiscovery.GroupedWork = (function(){
 			$.getJSON(url, params, function (data){
 				if (data.success) {
 					$("#horizDisplayAllEditions_" + workId).html(data.message);
-				}else{
+					AspenDiscovery.LazyCirculation.scanAndRefresh("#horizDisplayAllEditions_" + workId);
+				} else {
 					$("#horizDisplayAllEditions_" + workId).html("");
 				}
 			});

@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/sys/SolrConnector/GroupedWorksSolrConnector.php';
 
 class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkSearcher {
 	// Field List
-	public static $fields_to_return = 'auth_author2,author2-role,id,mpaaRating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,num_titles,record_details,item_details,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,display_description,fountas_pinnell,last_indexed,lc_subject,bisac_subject';
+	public static $fields_to_return = 'auth_author2,author2-role,id,mpaa_rating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,num_titles,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,display_description,fountas_pinnell,last_indexed,lc_subject,bisac_subject';
 
 	// Display Modes //
 	public $viewOptions = [
@@ -547,7 +547,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		$this->fieldsToReturn = $fields;
 	}
 
-	protected function getFieldsToReturn() {
+	protected function getFieldsToReturn() : string {
 		if (isset($_REQUEST['allFields'])) {
 			$fieldsToReturn = '*,score';
 		} elseif ($this->fieldsToReturn != null) {
@@ -556,8 +556,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			$fieldsToReturn = SearchObject_GroupedWorkSearcher::$fields_to_return;
 			global $solrScope;
 			if ($solrScope != false) {
-				//$fieldsToReturn .= ',related_record_ids_' . $solrScope;
-				//$fieldsToReturn .= ',related_items_' . $solrScope;
 				$fieldsToReturn .= ',format_' . $solrScope;
 				$fieldsToReturn .= ',format_category_' . $solrScope;
 				$fieldsToReturn .= ',collection_' . $solrScope;
@@ -572,9 +570,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 				$fieldsToReturn .= ',itype_' . $solrScope;
 
 			} else {
-				//$fieldsToReturn .= ',related_record_ids';
-				//$fieldsToReturn .= ',related_record_items';
-				//$fieldsToReturn .= ',related_items_related_record_ids';
 				$fieldsToReturn .= ',collection_group';
 				$fieldsToReturn .= ',format';
 				$fieldsToReturn .= ',format_category';
@@ -582,7 +577,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 				$fieldsToReturn .= ',local_callnumber';
 				$fieldsToReturn .= ',detailed_location';
 				$fieldsToReturn .= ',owning_location';
-				$fieldsToReturn .= ',owning_library';
 				$fieldsToReturn .= ',available_at';
 				$fieldsToReturn .= ',itype';
 			}
@@ -596,29 +590,29 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 	 * @return string
 	 */
 	protected function getUnscopedFieldName(string $scopedFieldName): string {
-		if (strpos($scopedFieldName, 'availability_toggle_') === 0) {
+		if (str_starts_with($scopedFieldName, 'availability_toggle_')) {
 			$scopedFieldName = 'availability_toggle';
-		} elseif (strpos($scopedFieldName, 'format') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'format')) {
 			$scopedFieldName = 'format';
-		} elseif (strpos($scopedFieldName, 'format_category') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'format_category')) {
 			$scopedFieldName = 'format_category';
-		} elseif (strpos($scopedFieldName, 'econtent_source') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'econtent_source')) {
 			$scopedFieldName = 'econtent_source';
-		} elseif (strpos($scopedFieldName, 'shelf_location') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'shelf_location')) {
 			$scopedFieldName = 'shelf_location';
-		} elseif (strpos($scopedFieldName, 'detailed_location') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'detailed_location')) {
 			$scopedFieldName = 'detailed_location';
-		} elseif (strpos($scopedFieldName, 'owning_location') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'owning_location')) {
 			$scopedFieldName = 'owning_location';
-		} elseif (strpos($scopedFieldName, 'owning_library') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'owning_library')) {
 			$scopedFieldName = 'owning_library';
-		} elseif (strpos($scopedFieldName, 'available_at') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'available_at')) {
 			$scopedFieldName = 'available_at';
-		} elseif (strpos($scopedFieldName, 'local_time_since_added') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'local_time_since_added')) {
 			$scopedFieldName = 'local_time_since_added';
-		} elseif (strpos($scopedFieldName, 'itype') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'itype')) {
 			$scopedFieldName = 'itype';
-		} elseif (strpos($scopedFieldName, 'collection') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'collection')) {
 			$scopedFieldName = 'collection_group';
 		}
 		return $scopedFieldName;
@@ -765,12 +759,12 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			$doBranchProcessing = false;
 
 			//Marmot specific processing to do custom resorting of facets.
-			if (strpos($field, 'owning_library') === 0 && isset($currentLibrary) && !is_null($currentLibrary)) {
+			if (str_starts_with($field, 'owning_library') && isset($currentLibrary) && !is_null($currentLibrary)) {
 				$doInstitutionProcessing = true;
 			}
-			if (strpos($field, 'owning_location') === 0 && (!is_null($relatedLocationFacets) || !is_null($activeLocationFacet))) {
+			if (str_starts_with($field, 'owning_location') && (!is_null($relatedLocationFacets) || !is_null($activeLocationFacet))) {
 				$doBranchProcessing = true;
-			} elseif (strpos($field, 'available_at') === 0) {
+			} elseif (str_starts_with($field, 'available_at')) {
 				$doBranchProcessing = true;
 			}
 			// Should we translate values for the current facet?

@@ -706,7 +706,7 @@ class Record_AJAX extends Action {
 					'isPublicFacing' => true,
 				]),
 				'modalBody' => $interface->fetch('Record/hold-select-edition-popup.tpl'),
-				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.showPlaceHold(\'Record\', \'' . $recordSource . '\', \'' . $marcRecord->getId() . '\');">No, place a hold on this edition</a>',
+				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.showPlaceHold(\'Record\', \'' . $recordSource . '\', \'' . $marcRecord->getId() . '\', \'\', \'\', this);">No, place a hold on this edition</a>',
 			];
 		} else {
 			$results = [
@@ -862,7 +862,7 @@ class Record_AJAX extends Action {
 			$results = [
 				'title' => 'Select a volume to place a hold on',
 				'modalBody' => $interface->fetch('Record/hold-select-volume-popup.tpl'),
-				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.placeVolumeHold(\'Record\', \'' . $recordSource . '\', \'' . $id . '\');">' . "<i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.placeVolumeHold(this);">' . "<i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 						'text' => 'Place Hold',
 						'isPublicFacing' => true,
 					]) . '</a>',
@@ -1947,6 +1947,7 @@ class Record_AJAX extends Action {
 		}
 
 		$locationKeys = array_keys($locations);
+		$interface->assign('preferredPickupLocationIsValid', $preferredPickupLocationIsValid);
 		if (!$preferredPickupLocationIsValid && count($locations) == 2 && !empty($locations[$locationKeys[1]])) {
 			$onlyValidPickupLocation = $locations[$locationKeys[1]]->code;
 			$interface->assign('pickupLocationInvalidMessage', translate([
@@ -2305,4 +2306,3 @@ class Record_AJAX extends Action {
 		return $results;
 	}
 }
-

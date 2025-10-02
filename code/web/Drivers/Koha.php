@@ -8284,6 +8284,10 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
+	public function showRenewalsRemaining(): bool {
+		return true;
+	}
+
 	public function showHoldPlacedDate(): bool {
 		return true;
 	}

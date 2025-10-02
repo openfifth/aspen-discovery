@@ -155,6 +155,8 @@ class Theme extends DataObject {
 		$tertiaryForegroundColorDefault;
 	public $buttonRadius;
 	public $smallButtonRadius;
+	public static int $defaultShowButtonShimmer = 1;
+	public $showButtonShimmer;
 
 	public static $defaultBadgeBackgroundColor = '#666666';
 	public static $defaultBadgeForegroundColor = '#ffffff';
@@ -1758,6 +1760,15 @@ class Theme extends DataObject {
 						'required' => false,
 						'hideInLists' => true,
 					],
+					'showButtonShimmer' => [
+						'property' => 'showButtonShimmer',
+						'type' => 'checkbox',
+						'label' => 'Show Circulation Button Shimmer Effect',
+						'description' => 'Shows a shimmer animation on circulation buttons (checkout, place hold, etc.) while loading data.',
+						'required' => false,
+						'default' => 1,
+						'hideInLists' => true,
+					],
 
 					'defaultButtonSection' => [
 						'property' => 'defaultButtonSection',
@@ -2929,6 +2940,7 @@ class Theme extends DataObject {
 		$this->getValueForPropertyUsingDefaults('cookieConsentButtonBorderColor', Theme::$defaultCookieConsentButtonBorderColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('headerLogoBackgroundColorApp', Theme::$defaultHeaderLogoBackgroundColorApp, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('placardImageMaxHeight', Theme::$defaultPlacardImageMaxHeight, $appliedThemes);
+		$this->getValueForPropertyUsingDefaults('showButtonShimmer', Theme::$defaultShowButtonShimmer, $appliedThemes);
 	}
 
 	public function getValueForPropertyUsingDefaults($propertyName, $defaultValue, $appliedThemes) : void {
@@ -2946,11 +2958,18 @@ class Theme extends DataObject {
 	 * @return string the resulting css
 	 */
 	public function generateCss($saveChanges = false) : string {
+		// Clear cached theme hierarchy to prevent cross-contamination during batch processing.
+		$this->_allAppliedThemes = null;
+		$this->_themeHierarchy = null;
+
 		$allAppliedThemes = $this->getAllAppliedThemes();
 		global $interface;
 		require_once ROOT_DIR . '/sys/Utils/ColorUtils.php';
 		$additionalCSS = '';
 		$appendCSS = true;
+
+		// Bookmark all template variables to prevent cross-contamination between themes during batch processing.
+		$savedTemplateVars = $interface->tpl_vars;
 		$this->applyDefaults();
 		$interface->assign('headerBackgroundColor', $this->headerBackgroundColor);
 		$interface->assign('headerForegroundColor', $this->headerForegroundColor);
@@ -3077,6 +3096,7 @@ class Theme extends DataObject {
 		$interface->assign('customBodyFontName', '');
 		$interface->assign('bodyFont', '');
 		$interface->assign('placardImageMaxHeight', $this->placardImageMaxHeight);
+		$interface->assign('showButtonShimmer', $this->showButtonShimmer);
 		if ($this->customHeadingFont != null) {
 			$customHeadingFontName = substr($this->customHeadingFont, 0, strrpos($this->customHeadingFont, '.'));
 			$interface->assign('customHeadingFontName', $customHeadingFontName);
@@ -3171,9 +3191,10 @@ class Theme extends DataObject {
 		}
 
 		$interface->assign('additionalCSS', $additionalCSS);
-
 		$previousCss = $this->generatedCss;
 		$updatedCss = $interface->fetch('theme.css.tpl');
+		$interface->tpl_vars = $savedTemplateVars;
+
 		if ($updatedCss != $previousCss) {
 			$this->__set('generatedCss', $updatedCss);
 			if ($saveChanges) {
