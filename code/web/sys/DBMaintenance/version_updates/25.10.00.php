@@ -122,7 +122,7 @@ function getUpdates25_10_00(): array {
 			'description' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE user ADD COLUMN rememberHoldPromptForEdition TINYINT DEFAULT 1',
+				'ALTER TABLE user ADD COLUMN rememberHoldPromptForEdition TINYINT DEFAULT 0',
 				'ALTER TABLE user ADD COLUMN holdPromptForEdition TINYINT DEFAULT 1',
 			]
 		],
