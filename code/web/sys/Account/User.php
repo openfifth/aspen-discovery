@@ -73,6 +73,8 @@ class User extends DataObject {
 	public $rememberHoldPickupLocation;
 	public $pickupLocationId;
 	public $pickupSublocationId;
+	public $rememberHoldPromptForEdition;
+	public $holdPromptForEdition;
 
 	public $lastListUsed;
 	public $browseAddToHome;
@@ -1653,6 +1655,17 @@ class User extends DataObject {
 
 		$this->__set('optInToAllCampaignLeaderboards', (isset($_POST['optInToAllCampaignLeaderboards']) && $_POST['optInToAllCampaignLeaderboards'] == 'on') ? 1 : 0);
 		$this->__set('campaignNotificationsByEmail', (isset($_POST['campaignNotificationsByEmail']) && $_POST['campaignNotificationsByEmail'] == 'on') ? 1 : 0);
+
+		if ($library->holdPromptForEditions > 0) {
+			if (isset($_POST['rememberHoldPromptForEdition'])) {
+				$this->setRememberHoldPromptForEdition($_POST['rememberHoldPromptForEdition']);
+			}
+
+			if (isset($_POST['selectedEditionOption'])) {
+				$this->setHoldPromptForEdition($_POST['selectedEditionOption']);
+			}
+		}
+
 		$this->clearCache();
 		$saveResult = $this->update();
 		if ($saveResult === false) {
@@ -3467,6 +3480,14 @@ class User extends DataObject {
 
 	public function setRememberHoldPickupLocation(bool $rememberPickupLocation) {
 		$this->__set('rememberHoldPickupLocation', $rememberPickupLocation ? 1 : 0);
+	}
+
+	public function setRememberHoldPromptForEdition(bool $rememberHoldPromptForEdition) {
+		$this->__set('rememberHoldPromptForEdition', $rememberHoldPromptForEdition ? 1 : 0);
+	}
+
+	public function setHoldPromptForEdition($val) {
+		$this->__set('holdPromptForEdition', $val);
 	}
 
 	function setNumMaterialsRequests($val) {

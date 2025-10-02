@@ -398,6 +398,7 @@ class Library extends DataObject {
 	public $expiredMessage;
 	public $expirationNearMessage;
 	public $showOnOrderCounts;
+	public $holdPromptForEditions;
 
 	//Notes
 	public $showOpacNotes;
@@ -2264,6 +2265,20 @@ class Library extends DataObject {
 								'hideInLists' => true,
 								'maxLength' => 50,
 								'default' => '',
+							],
+							'holdPromptForEditions' => [
+								'property' => 'holdPromptForEditions',
+								'type' => 'enum',
+								'values' => [
+									'0' => 'Do not prompt user to pick an edition (default behavior)',
+									'1' => 'Prompt user to pick an edition, but default to using first available',
+									'2' => 'Prompt user to pick an edition',
+								],
+								'label' => 'Prompt for Edition when Placing Holds?',
+								'description' => 'Determines if the user should be prompted to select an edition when placing a hold from this library.',
+								'hideInLists' => true,
+								'default' => '0',
+								'permissions' => ['Library ILS Connection'],
 							],
 						],
 					],

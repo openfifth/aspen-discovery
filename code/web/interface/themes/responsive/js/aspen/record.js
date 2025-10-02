@@ -4,7 +4,18 @@ AspenDiscovery.Record = (function () {
 		volumeHoldInProgress: false,
 		showPlaceHold: function (module, source, id, volume, variationId, button) {
 			if (Globals.loggedIn) {
-				let url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldForm&recordSource=" + source;
+				document.body.style.cursor = "wait";
+				var buttonClicked = $(button);
+				var promptEditionData = buttonClicked.attr('data-promptEdition');
+				if (typeof promptEditionData === 'undefined') {
+					promptEditionData = buttonClicked.attr('data-promptedition');
+				}
+				var promptForEdition = false;
+				if (promptEditionData === "true") {
+					promptForEdition = true;
+				}
+
+				let url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldForm&recordSource=" + source + "&promptForEdition=" + promptForEdition;
 				if (volume !== undefined) {
 					url += "&volume=" + volume;
 				}
@@ -230,7 +241,17 @@ AspenDiscovery.Record = (function () {
 		showPlaceHoldVolumes: function (module, source, id, button) {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
-				const url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldVolumesForm&recordSource=" + source;
+				var buttonClicked = $(button);
+				var promptEditionData = buttonClicked.attr('data-promptEdition');
+				if (typeof promptEditionData === 'undefined') {
+					promptEditionData = buttonClicked.attr('data-promptedition');
+				}
+				var promptForEdition = false;
+				if (promptEditionData === "true") {
+					promptForEdition = true;
+				}
+
+				const url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldVolumesForm&recordSource=" + source + "&promptForEdition=" + promptForEdition;
 
 				AspenDiscovery.toggleButtonSpinner(button, true);
 
@@ -276,7 +297,8 @@ AspenDiscovery.Record = (function () {
 				cancelDate: cancelDateInput.val(),
 				recordSource: $('#recordSource').val(),
 				account: $('#account').val(),
-				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked')
+				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked'),
+				promptForEdition: $('#holdPromptForEditions').val()
 			};
 			if (autoLogOut) {
 				params['autologout'] = true;
@@ -321,6 +343,13 @@ AspenDiscovery.Record = (function () {
 					}
 				}
 			}
+
+			if (params['promptForEdition'] == '1' || params['promptForEdition'] == '2') {
+				params['placeHoldOnEdition'] = $('#selectedEditionOption').val();
+				params['selectedEdition'] = $('input[name="editionOption"]:checked').val();
+				params['rememberUserEditionPreference'] = $('#rememberEditionSelection').prop('checked');
+			}
+
 			params = this.loadHoldNotificationOptions(params);
 
 			const cancelDate = cancelDateInput.val();
@@ -464,7 +493,8 @@ AspenDiscovery.Record = (function () {
 				cancelDate: $('#cancelDate').val(),
 				recordSource: $('#recordSource').val(),
 				account: $('#account').val(),
-				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked')
+				rememberHoldPickupLocation: $('#rememberHoldPickupLocation').prop('checked'),
+				promptForEdition: $('#holdPromptForEditions').val()
 			};
 			if (autoLogOut) {
 				params['autologout'] = true;
@@ -488,6 +518,13 @@ AspenDiscovery.Record = (function () {
 					params['holdType'] = 'volume';
 				}
 			}
+
+			if (params['promptForEdition'] == '1' || params['promptForEdition'] == '2') {
+				params['placeHoldOnEdition'] = $('#selectedEditionOption').val();
+				params['selectedEdition'] = $('input[name="editionOption"]:checked').val();
+				params['rememberUserEditionPreference'] = $('#rememberEditionSelection').prop('checked');
+			}
+
 			params = this.loadHoldNotificationOptions(params);
 
 			$("#placeHoldForm").hide();

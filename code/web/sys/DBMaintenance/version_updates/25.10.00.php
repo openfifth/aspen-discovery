@@ -108,6 +108,25 @@ function getUpdates25_10_00(): array {
 		], //add_include_in_reports_option_to_event_type
 
 		//kirstien - Grove
+		'addEditionPromptSettingForLibrary' => [
+			'title' => 'Add Option For Prompting For Edition When Placing Hold',
+			'description' => 'Add Option For Prompting For Edition When Placing Hold at the Library Level',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN holdPromptForEditions TINYINT DEFAULT 0',
+			]
+		],
+		//addEditionPromptSettingForLibrary
+		'addEditionPromptSettingForUser' => [
+			'title' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',
+			'description' => 'Add Options For Storing User Preference on Prompting For Edition When Placing Hold',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN rememberHoldPromptForEdition TINYINT DEFAULT 0',
+				'ALTER TABLE user ADD COLUMN holdPromptForEdition TINYINT DEFAULT 1',
+			]
+		],
+		//addEditionPromptSettingForUser
 
 		//kodi - Grove
 

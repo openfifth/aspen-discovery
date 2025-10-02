@@ -2939,5 +2939,13 @@ AspenDiscovery.Account = (function () {
 			document.location.href = url;
 			return false;
 		},
+		showSelectedEditionOptions: function () {
+			var rememberHoldPromptForEdition = document.getElementById('rememberHoldPromptForEdition');
+			if (rememberHoldPromptForEdition.checked) {
+				$('#selectedEditionOptionsContainer').show();
+			} else {
+				$('#selectedEditionOptionsContainer').hide();
+			}
+		}
 	};
 }(AspenDiscovery.Account || {}));
