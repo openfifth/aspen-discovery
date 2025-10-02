@@ -152,6 +152,15 @@ function getUpdates25_10_00(): array {
 		], //add_hoopla_configurable_indexing_time
 
 		// Leo Stoyanov - BWS
+		'add_indexes_for_more_user_list_sort_options' => [
+			'title' => 'Add Indexes For More User List Sort Options',
+			'description' => 'Add indexes idx_publicationDateId and idx_callNumberId for faster User List sorting.',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE INDEX idx_publicationDateId ON grouped_work_records(publicationDateId)',
+				'CREATE INDEX idx_callNumberId ON grouped_work_record_items (callNumberId)'
+			],
+		], // add_indexes_for_more_user_list_sort_options
 		'add_num_total_entries_to_show_in_more_to_grouped_work_facet' => [
 			'title' => 'Add Total Num Entries To Show In More To Grouped Work Facet',
 			'description' => 'Add configurable field to control how many facet values show in the "More..." popup/expansion.',
@@ -160,12 +169,12 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE grouped_work_facet ADD COLUMN numTotalEntriesToShowInMore INT(11) NOT NULL DEFAULT 30',
 			]
 		], // add_num_total_entries_to_show_in_more_to_grouped_work_facet
-		'add_show_copies_for_periodicals_with_no_iems_setting' => [
+		'add_show_copies_for_periodicals_with_no_items_setting' => [
 			'title' => 'Add Show Copies for Periodicals with No Items Setting',
 			'description' => 'Add a setting to control whether Copies accordion is shown for periodicals with no items.',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE grouped_work_display_settings ADD COLUMN showCopiesForPeriodicalsWithNoItems TINYINT(1) DEFAULT 0'
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showCopiesForPeriodicalsWithNoItems TINYINT(1) DEFAULT 0'
 			]
 		], //add_show_copies_for_periodicals_with_no_iems_setting
 		'add_enable_third_party_sms_notifications_option' => [
@@ -222,6 +231,14 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE system_variables DROP COLUMN IF EXISTS ticketEmail'
 			]
 		], // remove_ticket_email_system_variable
+		'themes_show_button_shimmer' => [
+			'title' => 'Themes - Show Button Shimmer',
+			'description' => 'Add showButtonShimmer setting to themes table to allow libraries to disable shimmer effect on circulation buttons.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE themes ADD COLUMN showButtonShimmer TINYINT(1) DEFAULT 1',
+			]
+		], // themes_show_button_shimmer
 
 		//alexander - Open Fifth
 

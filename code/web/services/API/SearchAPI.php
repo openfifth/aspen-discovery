@@ -454,7 +454,7 @@ class SearchAPI extends AbstractAPI {
 						require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
 						$hooplaSettings = new HooplaSetting();
 						$hooplaSettings->find();
-						$checkEntriesInLast26Hours = true;
+						$checkEntriesInLast34Hours = true;
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
 					}
@@ -489,7 +489,7 @@ class SearchAPI extends AbstractAPI {
 						}
 						$isFirstEntry = false;
 					}
-					$checkEntriesInLast26Hours = false;
+					$checkEntriesInLast34Hours = false;
 					$checkEntriesInLast24Hours = true;
 					$checkEntriesInLast1Hours = true;
 					if ($aspenModule->name == 'Web Builder') {
@@ -530,11 +530,11 @@ class SearchAPI extends AbstractAPI {
 						require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
 						$hooplaSettings = new HooplaSetting();
 						$hooplaSettings->find();
-						$checkEntriesInLast26Hours = true;
+						$checkEntriesInLast34Hours = true;
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
 					}
-					if ($checkEntriesInLast26Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 26 * 60 * 60)) {
+					if ($checkEntriesInLast34Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 34 * 60 * 60)) {
 						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 26 hours");
 					} elseif ($checkEntriesInLast24Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 24 * 60 * 60)) {
 						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 24 hours");

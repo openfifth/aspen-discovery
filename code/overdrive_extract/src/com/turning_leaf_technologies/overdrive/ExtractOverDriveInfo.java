@@ -162,7 +162,7 @@ class ExtractOverDriveInfo {
 					logEntry.addNote("There are " + numProductsToUpdate + " products that need to be checked for updates");
 					logEntry.saveResults();
 
-					//Do some counts of numbers of records that will be updated for logging purposes
+					//Do some counts of the records that will be updated for logging purposes
 					int numRecordsToUpdate = 0;
 					int numNewRecords = 0;
 					int totalRecordsWithChanges = 0;
@@ -247,7 +247,7 @@ class ExtractOverDriveInfo {
 					}
 
 					if (checkForDeletedRecords) {
-						//Remove any records that no longer exist
+						//Remove any records that no longer exist.
 						//There is currently an issue with Libby Search APIs that cause all records to not be returned,
 						//so we will avoid deleting records if we are deleting more than 500 records or 5% of the collection
 						int totalRecordsToDelete = 0;
@@ -334,8 +334,9 @@ class ExtractOverDriveInfo {
 				if (settings.isRunFullUpdate()){
 					columnToUpdate = "lastUpdateOfAllRecords";
 				}
-				updateExtractTime = dbConn.prepareStatement("UPDATE overdrive_settings set " + columnToUpdate + " = ?");
+				updateExtractTime = dbConn.prepareStatement("UPDATE overdrive_settings set " + columnToUpdate + " = ? WHERE id = ?");
 				updateExtractTime.setLong(1, extractStartTime / 1000);
+				updateExtractTime.setLong(2, settings.getId());
 				updateExtractTime.executeUpdate();
 				logger.debug("Setting last extract time to " + extractStartTime + " " + new Date(extractStartTime));
 			}
@@ -361,7 +362,7 @@ class ExtractOverDriveInfo {
 				if (settings.getClientSecret() == null || settings.getClientKey() == null || settings.getAccountId() == null || settings.getClientSecret().isEmpty() || settings.getClientKey().isEmpty() || settings.getAccountId().isEmpty()) {
 					logEntry.addNote("Did not find correct configuration in settings, not loading Libby titles");
 				} else {
-					//Load products from database this lets us know what is new, what has been deleted, and what has been updated
+					//Load products from the database this lets us know what is new, what has been deleted, and what has been updated
 					singleWorkId = singleWorkId.toLowerCase();
 					OverDriveRecordInfo recordInfo = new OverDriveRecordInfo();
 					recordInfo.setId(singleWorkId);
@@ -495,7 +496,7 @@ class ExtractOverDriveInfo {
 			logger.info("Loading all records that have changed since " + lastUpdateFormat.format(lastExtractDate));
 			logEntry.addNote("Loading all records that have changed since " + lastUpdateFormat.format(lastExtractDate));
 			lastUpdateTimeParam = lastUpdateFormat.format(lastExtractDate);
-			//Simple Date Format doesn't give us quite the right timezone format so adjust
+			//Simple Date Format doesn't give us quite the right timezone format, so adjust
 			lastUpdateTimeParam = lastUpdateTimeParam.substring(0, lastUpdateTimeParam.length() - 2) + ":" + lastUpdateTimeParam.substring(lastUpdateTimeParam.length() - 2);
 			//lastUpdateTimeParam = lastUpdateTimeParam.substring(0, lastUpdateTimeParam.length() - 5) + "Z";
 		}else{
@@ -563,6 +564,7 @@ class ExtractOverDriveInfo {
 			//Update the product in the database
 			long curTime = new Date().getTime() / 1000;
 			int curCol = 0;
+			//noinspection DuplicatedCode
 			updateProductStmt.setLong(++curCol, crossRefId);
 			updateProductStmt.setString(++curCol, mediaType);
 			updateProductStmt.setString(++curCol, title);
@@ -584,7 +586,7 @@ class ExtractOverDriveInfo {
 		} catch (SQLException e) {
 			logEntry.incErrors("Error updating Libby product " + overDriveId, e);
 		}
-		
+
 	}
 
 	private synchronized long addProductToDB(String overDriveId, Long crossRefId, String mediaType, String title, String subtitle, String series, String primaryCreatorRole, String primaryCreatorName, String coverUrl) {
@@ -594,6 +596,7 @@ class ExtractOverDriveInfo {
 			long curTime = new Date().getTime() / 1000;
 			addProductStmt.setString(++curCol, overDriveId);
 			addProductStmt.setLong(++curCol, crossRefId);
+			//noinspection DuplicatedCode
 			addProductStmt.setString(++curCol, mediaType);
 			addProductStmt.setString(++curCol, title);
 			addProductStmt.setString(++curCol, subtitle);
@@ -609,7 +612,7 @@ class ExtractOverDriveInfo {
 			if (newIdRS.next()) {
 				databaseId = newIdRS.getLong(1);
 			}else{
-				//get the id of the title in Libby. This happens when we are adding titles in multiple threads.
+				//Get the id of the title in Libby. This happens when we are adding titles in multiple threads,
 				//or when the title was not previously available in a setting, but did exist in another setting
 				getProductIdByOverDriveIdStmt.setString(1, overDriveId);
 				ResultSet getProductIdByOverDriveIdRS = getProductIdByOverDriveIdStmt.executeQuery();
@@ -662,6 +665,7 @@ class ExtractOverDriveInfo {
 			JSONObject libraryInfo = libraryInfoResponse.getJSONResponse();
 			//noinspection CommentedOutCode
 			try {
+				//noinspection DuplicatedCode
 				String mainProductUrl = libraryInfo.getJSONObject("links").getJSONObject("products").getString("href");
 				if (mainProductUrl.contains("?")) {
 					mainProductUrl += "&minimum=true";
@@ -772,6 +776,7 @@ class ExtractOverDriveInfo {
 		AdvantageCollectionInfo collectionInfo = null;
 		if (loadType == LOAD_ALL_PRODUCTS || loadCollectionInfo) {
 			collectionInfo = new AdvantageCollectionInfo();
+			//noinspection DuplicatedCode
 			collectionInfo.setAdvantageId(curAdvantageAccount.getInt("id"));
 			collectionInfo.setName(curAdvantageAccount.getString("name"));
 			collectionInfo.setCollectionToken(curAdvantageAccount.getString("collectionToken"));
@@ -814,6 +819,7 @@ class ExtractOverDriveInfo {
 			if (advantageWebServiceResponse.getResponseCode() == 200) {
 				JSONObject advantageSelfInfo = advantageWebServiceResponse.getJSONResponse();
 				if (advantageSelfInfo != null) {
+					//noinspection DuplicatedCode
 					String productUrl = advantageSelfInfo.getJSONObject("links").getJSONObject("products").getString("href");
 					if (productUrl.contains("?")) {
 						productUrl += "&minimum=true";
@@ -866,6 +872,7 @@ class ExtractOverDriveInfo {
 								JSONObject curAdvantageAccount = advantageAccounts.getJSONObject(i);
 
 								AdvantageCollectionInfo collectionInfo = new AdvantageCollectionInfo();
+								//noinspection DuplicatedCode
 								collectionInfo.setAdvantageId(curAdvantageAccount.getInt("id"));
 								collectionInfo.setName(curAdvantageAccount.getString("name"));
 								collectionInfo.setCollectionToken(curAdvantageAccount.getString("collectionToken"));
@@ -926,7 +933,7 @@ class ExtractOverDriveInfo {
 			}
 			int batchSize = 300;
 			for (int i = 0; i < numProducts; i += batchSize) {
-				//Just search for the specific product
+				//Search for the specific product
 				String batchUrl = mainProductUrl;
 				if (mainProductUrl.contains("?")) {
 					batchUrl += "&";
@@ -954,7 +961,7 @@ class ExtractOverDriveInfo {
 									setLastSeenForProduct(startTime, curRecord);
 									totalProductsInCollection++;
 								} else {
-									//By definition the record has changes if we are loading just changes
+									//By definition, the record has changes if we are loading just changes
 									curRecord.hasChanges = true;
 									if (previouslyLoadedProduct == null) {
 										allProductsInOverDrive.put(curRecord.getId(), curRecord);
@@ -980,9 +987,9 @@ class ExtractOverDriveInfo {
 							}
 							break;
 						}else{
-							//This happens, retry and don't log the error unless we're at the end of trying.
+							//This seems to be a normal thing if a batch has no titles in it. Log the condition and move on.
 							if (tries == maxTries - 1) {
-								logEntry.incErrors("Batch " + i + " did not have any products in it, but we got back a 200 code");
+								logEntry.addNote("Batch " + i + " did not have any products in it, but we got back a 200 code");
 							}
 						}
 					} else {
@@ -1146,10 +1153,11 @@ class ExtractOverDriveInfo {
 			if (getExistingMetadataIdRS.next()){
 				long metadataId = getExistingMetadataIdRS.getLong("id");
 
+				//noinspection DuplicatedCode
 				updateMetaDataStmt.setLong(++curCol, metadataChecksum);
 				updateMetaDataStmt.setString(++curCol, metaData.has("sortTitle") ? metaData.getString("sortTitle") : "");
 				updateMetaDataStmt.setString(++curCol, metaData.has("publisher") ? metaData.getString("publisher") : "");
-				//Grab the textual version of publish date rather than the actual date
+				//Grab the textual version of publishDate rather than the actual date
 				if (metaData.has("publishDateText")){
 					String publishDateText = metaData.getString("publishDateText");
 					if (publishDateText.matches("\\d{2}/\\d{2}/\\d{4}")){
@@ -1187,10 +1195,11 @@ class ExtractOverDriveInfo {
 				updateMetaDataStmt.executeUpdate();
 			}else{
 				addMetadataStmt.setLong(++curCol, overDriveInfo.getDatabaseId());
+				//noinspection DuplicatedCode
 				addMetadataStmt.setLong(++curCol, metadataChecksum);
 				addMetadataStmt.setString(++curCol, metaData.has("sortTitle") ? metaData.getString("sortTitle") : "");
 				addMetadataStmt.setString(++curCol, metaData.has("publisher") ? metaData.getString("publisher") : "");
-				//Grab the textual version of publish date rather than the actual date
+				//Grab the textual version of publishDate rather than the actual date
 				if (metaData.has("publishDateText")){
 					String publishDateText = metaData.getString("publishDateText");
 					if (publishDateText.matches("\\d{2}/\\d{2}/\\d{4}")){
@@ -1227,7 +1236,7 @@ class ExtractOverDriveInfo {
 				try {
 					addMetadataStmt.executeUpdate();
 				}catch (SQLIntegrityConstraintViolationException e) {
-					//Another thread already created it, since we don't need the ID for additional work
+					//Another thread already created it, since we don't need the ID for additional work,
 					// and since the metadata doesn't normally change between collections, we can just ignore this
 				}
 			}
@@ -1307,7 +1316,7 @@ class ExtractOverDriveInfo {
 	}
 
 	private synchronized boolean updateOverDriveAvailability(OverDriveRecordInfo overDriveInfo, long databaseId, boolean singleWork) {
-		//Don't need to load availability if we already have availability and the availability was checked within the last hour
+		//Don't need to load availability if we already have availability, and the availability was checked within the last hour
 		long curTime = new Date().getTime() / 1000;
 
 		final boolean[] changesMade = {false};
@@ -1364,7 +1373,7 @@ class ExtractOverDriveInfo {
 				//404 is a message that availability has been deleted.
 				if (availabilityResponse.getResponseCode() == 404) {
 					//Add a note and skip to the next collection, in reality, this is probably deleted,
-					//but Nashville was having issues with 404s coming incorrectly, so we can just keep retrying
+					//but Nashville was having issues with 404 errors coming incorrectly, so we can just keep retrying
 					//No longer needed for logging
 					//logEntry.addNote("Got a 404 availability response code for " + url + " not updating for " + collectionInfo.getName());
 				} else if (availabilityResponse.getResponseCode() != 200) {
@@ -1638,9 +1647,7 @@ class ExtractOverDriveInfo {
 				JSONObject parser = new JSONObject(response.toString());
 				overDriveAPIToken = parser.getString("access_token");
 				overDriveAPITokenType = parser.getString("token_type");
-				//logger.debug("Token expires in " + parser.getLong("expires_in") + " seconds");
 				overDriveAPIExpiration = new Date().getTime() + (parser.getLong("expires_in") * 1000) - 10000;
-				//logger.debug("Libby token is " + overDriveAPIToken);
 			} else {
 				logger.error("Received error " + conn.getResponseCode() + " connecting to Libby authentication service. Encoded auth header: " + encoded);
 				// Get any errors
@@ -1694,6 +1701,7 @@ class ExtractOverDriveInfo {
 		allAdvantageCollections.clear();
 
 		try {
+			//noinspection DuplicatedCode
 			addProductStmt.close();
 			getProductIdByOverDriveIdStmt.close();
 			updateProductStmt.close();
