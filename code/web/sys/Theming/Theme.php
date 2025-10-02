@@ -155,6 +155,8 @@ class Theme extends DataObject {
 		$tertiaryForegroundColorDefault;
 	public $buttonRadius;
 	public $smallButtonRadius;
+	public static int $defaultShowButtonShimmer = 1;
+	public $showButtonShimmer;
 
 	public static $defaultBadgeBackgroundColor = '#666666';
 	public static $defaultBadgeForegroundColor = '#ffffff';
@@ -1758,6 +1760,15 @@ class Theme extends DataObject {
 						'required' => false,
 						'hideInLists' => true,
 					],
+					'showButtonShimmer' => [
+						'property' => 'showButtonShimmer',
+						'type' => 'checkbox',
+						'label' => 'Show Circulation Button Shimmer Effect',
+						'description' => 'Shows a shimmer animation on circulation buttons (checkout, place hold, etc.) while loading data.',
+						'required' => false,
+						'default' => 1,
+						'hideInLists' => true,
+					],
 
 					'defaultButtonSection' => [
 						'property' => 'defaultButtonSection',
@@ -2929,6 +2940,7 @@ class Theme extends DataObject {
 		$this->getValueForPropertyUsingDefaults('cookieConsentButtonBorderColor', Theme::$defaultCookieConsentButtonBorderColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('headerLogoBackgroundColorApp', Theme::$defaultHeaderLogoBackgroundColorApp, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('placardImageMaxHeight', Theme::$defaultPlacardImageMaxHeight, $appliedThemes);
+		$this->getValueForPropertyUsingDefaults('showButtonShimmer', Theme::$defaultShowButtonShimmer, $appliedThemes);
 	}
 
 	public function getValueForPropertyUsingDefaults($propertyName, $defaultValue, $appliedThemes) : void {
@@ -3084,6 +3096,7 @@ class Theme extends DataObject {
 		$interface->assign('customBodyFontName', '');
 		$interface->assign('bodyFont', '');
 		$interface->assign('placardImageMaxHeight', $this->placardImageMaxHeight);
+		$interface->assign('showButtonShimmer', $this->showButtonShimmer);
 		if ($this->customHeadingFont != null) {
 			$customHeadingFontName = substr($this->customHeadingFont, 0, strrpos($this->customHeadingFont, '.'));
 			$interface->assign('customHeadingFontName', $customHeadingFontName);
