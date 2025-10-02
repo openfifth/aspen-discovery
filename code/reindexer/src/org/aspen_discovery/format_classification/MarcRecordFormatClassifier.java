@@ -473,6 +473,7 @@ public class MarcRecordFormatClassifier {
 		return false;
 	}
 
+	public Pattern graphicNovelSubtitle = Pattern.compile("\\b(the|a) graphic novel\\b", Pattern.CASE_INSENSITIVE);
 	public void getFormatFromTitle(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, Set<String> printFormats) {
 		String titleMedium = MarcUtil.getFirstFieldVal(record, "245h");
 		if (titleMedium != null){
@@ -550,6 +551,13 @@ public class MarcRecordFormatClassifier {
 			if (title.contains("book club kit")){
 				if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format BookClubKit based on 245a", 2);}
 				printFormats.add("BookClubKit");
+			}
+		}
+		String subTitle = MarcUtil.getFirstFieldVal(record, "245b");
+		if (subTitle != null){
+			if (graphicNovelSubtitle.matcher(subTitle).find()){
+				if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format GraphicNovel based on 245b", 2);}
+				printFormats.add("GraphicNovel");
 			}
 		}
 	}
