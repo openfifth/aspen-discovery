@@ -126,7 +126,7 @@
 					</select>
 				</div>
 
-                {if $holdPromptForEditions > 0}
+                {if $holdPromptForEditions > 0 && $promptForEdition}
 				<div id="select-edition-prompt">
 	                <div id="editionSelectionOptions" class="form-group" style="display: none">
 		                <label class="control-label" for="selectedEditionOption">{translate text="Do you want to place a hold on the first available item or a specific edition?" isPublicFacing=true}</label>

@@ -400,13 +400,15 @@ class Record_AJAX extends Action {
 				$selectedVariationId = $_REQUEST['variationId'];
 			}
 
+			$promptForEdition = (isset($_REQUEST['promptForEdition']) && $_REQUEST['promptForEdition'] === "true");
+
 			$marcRecord = new MarcRecordDriver($id);
 
 			require_once ROOT_DIR . '/sys/Account/User.php';
 			$isOnHold = $user->isRecordOnHold($recordSource, $id);
 			$interface->assign('isOnHold', $isOnHold);
 
-			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, $selectedVariationId)) {
+			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, $selectedVariationId, $promptForEdition)) {
 				return [
 					'holdFormBypassed' => false,
 					'title' => translate([
@@ -738,7 +740,9 @@ class Record_AJAX extends Action {
 
 			list($interLibraryLoanType, $treatHoldAsInterLibraryLoanRequest, $homeLocation, $holdGroups) = $marcRecord->getInterLibraryLoanIntegrationInformation($relatedRecord, 'any');
 
-			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, -1)) {
+			$promptForEdition = (isset($_REQUEST['promptForEdition']) && $_REQUEST['promptForEdition'] === "true");
+
+			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, -1, $promptForEdition)) {
 				return [
 					'holdFormBypassed' => false,
 					'title' => 'Unable to place hold',
@@ -1839,9 +1843,10 @@ class Record_AJAX extends Action {
 	 * @param bool $rememberHoldPickupLocation
 	 * @param MarcRecordDriver $marcRecord
 	 * @param Location[] $locations
+	 * @param bool|null $promptForEdition
 	 * @return bool
 	 */
-	function setupHoldForm(string $recordSource, ?bool &$rememberHoldPickupLocation, MarcRecordDriver $marcRecord, ?array &$locations, $selectedVariationId): bool {
+	function setupHoldForm(string $recordSource, ?bool &$rememberHoldPickupLocation, MarcRecordDriver $marcRecord, ?array &$locations, $selectedVariationId, ?bool $promptForEdition): bool {
 		global $interface;
 		$user = UserAccount::getLoggedInUser();
 		if ($user->getCatalogDriver() == null) {
@@ -1896,6 +1901,7 @@ class Record_AJAX extends Action {
 
 		$interface->assign('holdPromptForEditions', $holdPromptForEditions);
 		$interface->assign('rememberEditionSelection', $rememberEditionSelection);
+		$interface->assign('promptForEdition', $promptForEdition);
 
 		//Check to see if the record must be picked up at the holding branch
 		$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
@@ -2022,7 +2028,7 @@ class Record_AJAX extends Action {
 		}
 
 		$editionOptions = [];
-		if ($holdPromptForEditions > 0) {
+		if ($holdPromptForEditions > 0 && $promptForEdition) {
 			if (count($relatedRecord->recordVariations) > 1) {
 				foreach ($relatedRecord->recordVariations as $variation) {
 					if (($selectedVariationId == -1) || ($selectedVariationId == $variation->databaseId)) {

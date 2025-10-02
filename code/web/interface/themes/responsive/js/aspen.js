@@ -12613,10 +12613,20 @@ AspenDiscovery.Record = (function () {
 	// noinspection JSUnusedGlobalSymbols
 	return {
 		volumeHoldInProgress: false,
-		showPlaceHold: function (module, source, id, volume, variationId) {
+		showPlaceHold: function (module, source, id, volume, variationId, obj) {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
-				var url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldForm&recordSource=" + source;
+				var buttonClicked = $(obj);
+				var promptEditionData = buttonClicked.attr('data-promptEdition');
+				if (typeof promptEditionData === 'undefined') {
+					promptEditionData = buttonClicked.attr('data-promptedition');
+				}
+				var promptForEdition = false;
+				if (promptEditionData === "true") {
+					promptForEdition = true;
+				}
+
+				var url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldForm&recordSource=" + source + "&promptForEdition=" + promptForEdition;
 				if (volume !== undefined) {
 					url += "&volume=" + volume;
 				}
@@ -12625,6 +12635,7 @@ AspenDiscovery.Record = (function () {
 				}
 
 				var targetButton = $('#actionButton' + id);
+
 				targetButton.prop('disabled', true);
 				targetButton.addClass('disabled');
 
@@ -12858,10 +12869,20 @@ AspenDiscovery.Record = (function () {
 			return false;
 		},
 
-		showPlaceHoldVolumes: function (module, source, id) {
+		showPlaceHoldVolumes: function (module, source, id, obj) {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
-				const url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldVolumesForm&recordSource=" + source;
+				var buttonClicked = $(obj);
+				var promptEditionData = buttonClicked.attr('data-promptEdition');
+				if (typeof promptEditionData === 'undefined') {
+					promptEditionData = buttonClicked.attr('data-promptedition');
+				}
+				var promptForEdition = false;
+				if (promptEditionData === "true") {
+					promptForEdition = true;
+				}
+
+				const url = Globals.path + "/" + module + "/" + id + "/AJAX?method=getPlaceHoldVolumesForm&recordSource=" + source + "&promptForEdition=" + promptForEdition;
 
 				const targetButton = $('#actionButton' + id);
 				targetButton.prop('disabled', true);

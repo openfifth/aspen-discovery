@@ -186,7 +186,8 @@
 						</div>
 					{/if}
 					<input type="hidden" name="holdPromptForEditions" id="holdPromptForEditions" value="{$holdPromptForEditions}">
-                    {if $holdPromptForEditions > 0 && count($editionOptions) > 0}
+                    {debug}
+					{if $holdPromptForEditions > 0 && count($editionOptions) > 0 && $promptForEdition}
 						<div id="editionSelectionOptions" class="form-group">
 							<label class="control-label" for="selectedEditionOption">{translate text="Do you want to place a hold on the first available item or a specific edition?" isPublicFacing=true}</label>
 							<select name="selectedEditionOption" id="selectedEditionOption" class="form-control"  onchange="AspenDiscovery.GroupedWork.showEditionSwiper()">
