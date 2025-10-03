@@ -424,7 +424,11 @@ class ListAPI extends AbstractAPI {
 
 		$sort = null;
 		if(isset($_REQUEST['sort_by'])) {
-			$sort = $_REQUEST['sort_by'];
+			$requestedSort = $_REQUEST['sort_by'];
+			$availableSorts = UserList::getSortOptions();
+			if (array_key_exists($requestedSort, $availableSorts)) {
+				$sort = $requestedSort;
+			}
 		}
 
 		if (!is_numeric($numTitlesToShow)) {
@@ -503,7 +507,11 @@ class ListAPI extends AbstractAPI {
 							$imageUrl .= "&upc=" . $suggestion['titleInfo']['upc'];
 						}
 						if (isset($suggestion['titleInfo']['format_category'])) {
-							$imageUrl .= "&category=" . $suggestion['titleInfo']['format_category'];
+							if (is_array($suggestion['titleInfo']['format_category'])) {
+								$imageUrl .= "&category=" . reset($suggestion['titleInfo']['format_category']);
+							}else{
+								$imageUrl .= "&category=" . $suggestion['titleInfo']['format_category'];
+							}
 						}
 						$smallImageUrl = $imageUrl . "&size=small";
 						$imageUrl .= "&size=medium";

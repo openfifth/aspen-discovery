@@ -471,10 +471,8 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 
 	/**
 	 * Get an array of all the format categories associated with the record.
-	 *
-	 * @return  string[]
 	 */
-	public function getFormatCategory() : array {
+	public function getFormatCategory() : string|array|null {
 		return [$this->getGroupedWorkDriver()->getFormatCategory()];
 	}
 
@@ -670,6 +668,15 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 			];
 		}
 
+		$accessibilityStatements = $this->getAccessibilityStatements();
+		if (!empty($accessibilityStatements)) {
+			$interface->assign('overdriveAccessibilityStatements', $accessibilityStatements);
+			$moreDetailsOptions['accessibilityStatements'] = [
+				'label' => 'Accessibility Statements',
+				'body' => $interface->fetch('OverDrive/view-accessibility.tpl'),
+			];
+		}
+
 		return $this->filterAndSortMoreDetailsOptions($moreDetailsOptions);
 	}
 
@@ -730,7 +737,7 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 		$i = 0;
 		$returnVal = [];
 		while (isset($places[$i]) || isset($placesOfPublication[$i]) || isset($names[$i]) || isset($dates[$i])) {
-		// while (isset($places[$i]) || isset($names[$i]) || isset($dates[$i])) {
+			// while (isset($places[$i]) || isset($names[$i]) || isset($dates[$i])) {
 			// Put all the pieces together, and do a little processing to clean up
 			// unwanted whitespace.
 			$publicationInfo = (isset($places[$i]) ? $places[$i] . ' ' : '') . (isset($placesOfPublication[$i]) ? $placesOfPublication[$i] . ' ': '') . (isset($names[$i]) ? $names[$i] . ' ' : '') . (isset($dates[$i]) ? (', ' . $dates[$i] . '.') : '');
@@ -773,8 +780,6 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 			return $this->groupedWorkDriver;
 		}
 	}
-
-	protected ?array $_actions = null;
 
 	/**
 	 * Determines which item should be used for circulation actions including
@@ -953,6 +958,8 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 		return $validCollections;
 	}
 
+	protected ?array $_actions = null;
+
 	public function getRecordActions($relatedRecord, $variationId, $isAvailable, $isHoldable, $volumeData = null) : array {
 		if ($this->_actions === null) {
 			if ($relatedRecord == null) {
@@ -969,14 +976,18 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 				if (UserAccount::isLoggedIn()) {
 					$activeUser = UserAccount::getActiveUserObj();
 					if ($activeUser->isValidForEContentSource('overdrive')) {
-						$this->_actions = array_merge($this->_actions, $activeUser->getCirculatedRecordActions('overdrive', $this->id));
+						$this->_actions = array_merge($this->_actions, $activeUser->getCirculatedRecordActionsWithLazyLoading('overdrive', $this->id));
 					}
 					$loadDefaultActions = count($this->_actions) == 0;
 				}else{
 					$activeUser = null;
 				}
-
 				if ($loadDefaultActions) {
+					$needsLazyLoading = false;
+					if ($activeUser) {
+						if (!$activeUser->areCirculationActionsDisabled()) $needsLazyLoading = !$activeUser->isCirculationCacheFresh();
+					}
+
 					require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 					$overDriveDriver = new OverDriveDriver();
 					$availableReaders = $overDriveDriver->getReaderNames();
@@ -1020,27 +1031,39 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 							if ($loadDefaultActions && (!$offlineMode || $loginAllowedWhileOffline)) {
 								if ($isAvailable) {
 									//Only one setting with a checkout link so far using this reader name
-									$actionsByReader[$readerName]['checkout'] = [
+									$checkoutAction = [
 										'title' => translate([
 											'text' => "Borrow with %1%",
 											1 => $readerName,
 											"isPublicFacing" => true,
 										]),
-										'onclick' => "return AspenDiscovery.OverDrive.checkOutTitle('$this->id', '$readerName');",
+										'onclick' => "return AspenDiscovery.OverDrive.checkOutTitle('$this->id', this);",
 										'requireLogin' => false,
 										'type' => 'overdrive_checkout',
 									];
+									if ($needsLazyLoading) {
+										$checkoutAction['data-needs-refresh'] = 'true';
+										$checkoutAction['data-record-id'] = $this->id;
+										$checkoutAction['data-record-source'] = 'overdrive';
+									}
+									$actionsByReader[$readerName]['checkout'] = $checkoutAction;
 								} else {
-									$actionsByReader[$readerName]['placeHold'] = [
+									$holdAction = [
 										'title' => translate([
 											'text' => 'Place Hold with %1%',
 											1 => $readerName,
 											'isPublicFacing' => true,
 										]),
-										'onclick' => "return AspenDiscovery.OverDrive.placeHold('$this->id', '$readerName');",
+										'onclick' => "return AspenDiscovery.OverDrive.placeHold('$this->id', this);",
 										'requireLogin' => false,
 										'type' => 'overdrive_hold',
 									];
+									if ($needsLazyLoading) {
+										$holdAction['data-needs-refresh'] = 'true';
+										$holdAction['data-record-id'] = $this->id;
+										$holdAction['data-record-source'] = 'overdrive';
+									}
+									$actionsByReader[$readerName]['placeHold'] = $holdAction;
 								}
 							}
 						} //End checking if circulation is enabled
@@ -1176,4 +1199,98 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	public function getAccessibilityStatements(): array {
+		$accessibilityStatements = [];
+		$rawData = $this->getOverDriveMetaData()->getDecodedRawData();
+		if (isset($rawData->accessibilityStatements) && is_array($rawData->accessibilityStatements)) {
+			foreach ($rawData->accessibilityStatements as $statement) {
+				$accessibilityStatements[] = $this->formatAccessibilityStatement($statement);
+			}
+		}
+		return $accessibilityStatements;
+	}
+
+	private function getAccessibilityMappings(): array {
+		static $accessibilityMappings = null;
+		if ($accessibilityMappings !== null) {
+			return $accessibilityMappings;
+		}
+
+		$accessibilityMappings = $this->loadAccessibilityMappingsFromFiles();
+		return $accessibilityMappings;
+	}
+
+	private function loadAccessibilityMappingsFromFiles(): array {
+		$mappingFile = ROOT_DIR . '/sys/OverDrive/accessibilityMappings.json';
+		if (file_exists($mappingFile)) {
+			$contents = file_get_contents($mappingFile);
+			if ($contents !== false) {
+				$decodedMappings = json_decode($contents, true);
+				if (is_array($decodedMappings)) {
+					return $decodedMappings;
+				}
+			}
+		}
+
+		return [];
+	}
+
+	private function formatAccessibilityStatement($statement): array {
+		$formattedStatements = [
+			'summaryStatement' => $statement->summaryStatement ?? '',
+			'conformance' => $this->formatConformance($statement),
+		];
+		$accessibilitySections = [
+			'waysOfReading',
+			'navigation',
+			'richContent',
+			'hazards',
+			'legalConsiderations',
+			'additionalInformation',
+		];
+		foreach ($accessibilitySections as $sectionName) {
+			$sectionItems = isset($statement->$sectionName) ? $statement->$sectionName : [];
+			$formattedStatements[$sectionName] = $this->formatAccessibilitySection($sectionItems, $sectionName);
+		}
+
+		return $formattedStatements;
+	}
+
+	private function formatAccessibilitySection($items, $section): array {
+		if (!is_array($items) || empty($items)) {
+			return [];
+		}
+		$sectionMappings = $this->getAccessibilityMappings()[$section] ?? [];
+		$formattedDescriptions = [];
+		foreach ($items as $item) {
+			if (isset($sectionMappings[$item])) {
+				$formattedDescriptions[] = $sectionMappings[$item];
+			}
+		}
+		return $formattedDescriptions;
+	}
+
+	private function formatConformance($statement): array {
+		$conformance = [];
+		$mappings = $this->getAccessibilityMappings()['conformance'] ?? [];
+
+		if (isset($statement->conformance)) {
+			$conformance = $this->formatAccessibilitySection($statement->conformance, 'conformance');
+			if (isset($statement->wcagLevel)) {
+				foreach ($conformance as &$wcagLevel) {
+					$wcagLevel = str_replace('{wcagLevel}', $statement->wcagLevel, $wcagLevel);
+				}
+				unset($wcagLevel);
+			}
+		}
+
+		if (isset($statement->certifiedBy) && isset($mappings['CertifiedBy'])) {
+			$conformance[] = str_replace('{certifiedBy}', $statement->certifiedBy, $mappings['CertifiedBy']);
+		}
+
+		if (isset($statement->certifierCredential) && isset($mappings['CertifierCredential'])) {
+			$conformance[] = str_replace('{certifierCredential}', $statement->certifierCredential, $mappings['CertifierCredential']);
+		}
+		return $conformance;
+	}
 }

@@ -118,6 +118,7 @@ public class RecordGroupingProcessor {
 			updateReadingHistoryStmt.close();
 			updateNotInterestedStmt.close();
 			updateUserListEntriesStmt.close();
+			//noinspection DuplicatedCode
 			updateNovelistStmt.close();
 			updateDisplayInfoStmt.close();
 			updateUploadedCoverInfoStmt.close();
@@ -426,7 +427,7 @@ public class RecordGroupingProcessor {
 
 	private void moveGroupedWorkEnrichment(String oldPermanentId, String newPermanentId) {
 		try{
-			//First make sure the old record does not have items attached to it still
+			//First, make sure the old record does not have items attached to it still
 			getGroupedWorkIdByPermanentIdStmt.setString(1, oldPermanentId);
 			ResultSet getWorkIdByPermanentIdRS = getGroupedWorkIdByPermanentIdStmt.executeQuery();
 			if (getWorkIdByPermanentIdRS.next()){
@@ -440,15 +441,18 @@ public class RecordGroupingProcessor {
 				getAdditionalPrimaryIdentifierForWorkRS.close();
 				//At the point this is called, we have not removed the record from the work so count should be 1
 				if (numPrimaryIdentifiers <= 1) {
-					//If there are no items attached to the old record
-					//Move ratings
+					//If there are no items attached to the old record, move ratings
 					int numUpdatedRatings = 0;
-					try{
+					try {
 						updateRatingsStmt.setString(1, newPermanentId);
 						updateRatingsStmt.setString(2, oldPermanentId);
 						numUpdatedRatings = updateRatingsStmt.executeUpdate();
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving ratings", e);
+						//Make sure this isn't just an error that the user had previously rated the destination title.
+						//If they have, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving ratings", e);
+						}
 					}
 
 					//Move reading history
@@ -458,7 +462,11 @@ public class RecordGroupingProcessor {
 						updateReadingHistoryStmt.setString(2, oldPermanentId);
 						numUpdatedReadingHistory = updateReadingHistoryStmt.executeUpdate();
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving reading history from " + oldPermanentId + " to " + newPermanentId, e);
+						//Make sure this isn't just an error that the user has reading history for both the old and new works.
+						//If they do, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving reading history from " + oldPermanentId + " to " + newPermanentId, e);
+						}
 					}
 
 					//Update list entries
@@ -468,17 +476,25 @@ public class RecordGroupingProcessor {
 						updateUserListEntriesStmt.setString(2, oldPermanentId);
 						numUpdatedListEntries = updateUserListEntriesStmt.executeUpdate();
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving list entries", e);
+						//Make sure this isn't just an error that the list already has the new value
+						//If it does, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving list entries", e);
+						}
 					}
 
-					//User Not Interested
+					//User is Not Interested in Work data
 					int numUpdatedNotInterested = 0;
 					try{
 						updateNotInterestedStmt.setString(1, newPermanentId);
 						updateNotInterestedStmt.setString(2, oldPermanentId);
 						numUpdatedNotInterested = updateNotInterestedStmt.executeUpdate();
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving not interested info", e);
+						//Make sure this isn't just an error that the user is not interested in the work already
+						//If they have, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving not interested info", e);
+						}
 					}
 
 					//Novelist
@@ -488,7 +504,11 @@ public class RecordGroupingProcessor {
 						updateNovelistStmt.setString(2, oldPermanentId);
 						numUpdatedNovelist = updateNovelistStmt.executeUpdate();
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving novelist info", e);
+						//Make sure this isn't just an error that novelist data already exists
+						//If it does, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving novelist info", e);
+						}
 					}
 
 					//Display info
@@ -498,7 +518,11 @@ public class RecordGroupingProcessor {
 						updateDisplayInfoStmt.setString(2, oldPermanentId);
 						numUpdatedDisplayInfo = updateDisplayInfoStmt.executeUpdate();
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving display info", e);
+						//Make sure this isn't just an error that the new value already has display info set
+						//If it does, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving display info", e);
+						}
 					}
 
 					int uploadedCoverInfo = 0;
@@ -515,7 +539,11 @@ public class RecordGroupingProcessor {
 							}
 						}
 					}catch (SQLException e){
-						logEntry.incErrors("Error moving uploaded covers", e);
+						//Make sure this isn't just an error that the new value already has an uploaded cover
+						//If it does, we preserve the previous value
+						if (!(e instanceof SQLIntegrityConstraintViolationException)) {
+							logEntry.incErrors("Error moving uploaded covers", e);
+						}
 					}
 
 					logger.debug("Updated " + numUpdatedRatings + " ratings, " + numUpdatedListEntries + " list entries, " + numUpdatedReadingHistory + " reading history entries, " + numUpdatedNotInterested + " not interested entries, " + numUpdatedNovelist + " novelist entries, " + numUpdatedDisplayInfo + " display info entries, " + uploadedCoverInfo + " uploaded covers");
@@ -701,18 +729,7 @@ public class RecordGroupingProcessor {
 				PreparedStatement addAuthorAuthorityStmt = dbConn.prepareStatement("INSERT into author_authorities (originalName, authoritativeName) VALUES (?, ?)");
 				try {
 					CSVReader csvReader = new CSVReader(new FileReader("../reindexer/author_authorities.properties"));
-					String[] curLine = csvReader.readNext();
-					while (curLine != null) {
-						try {
-							addAuthorAuthorityStmt.setString(1, curLine[0]);
-							addAuthorAuthorityStmt.setString(2, curLine[1]);
-							addAuthorAuthorityStmt.executeUpdate();
-						} catch (SQLException e) {
-							logEntry.incErrors("Error adding authority " + curLine[0]);
-						}
-						curLine = csvReader.readNext();
-					}
-					csvReader.close();
+					loadDefaultAuthorityFile(addAuthorAuthorityStmt, csvReader);
 				} catch (IOException e) {
 					logEntry.incErrors("Unable to load author authorities", e);
 				}
@@ -732,18 +749,7 @@ public class RecordGroupingProcessor {
 				PreparedStatement addTitleAuthorityStmt = dbConn.prepareStatement("INSERT into title_authorities (originalName, authoritativeName) VALUES (?, ?)");
 				try {
 					CSVReader csvReader = new CSVReader(new FileReader("../reindexer/title_authorities.properties"));
-					String[] curLine = csvReader.readNext();
-					while (curLine != null) {
-						try {
-							addTitleAuthorityStmt.setString(1, curLine[0]);
-							addTitleAuthorityStmt.setString(2, curLine[1]);
-							addTitleAuthorityStmt.executeUpdate();
-						} catch (SQLException e) {
-							logEntry.incErrors("Error adding authority " + curLine[0]);
-						}
-						curLine = csvReader.readNext();
-					}
-					csvReader.close();
+					loadDefaultAuthorityFile(addTitleAuthorityStmt, csvReader);
 				} catch (IOException e) {
 					logEntry.incErrors("Unable to load title authorities", e);
 				}
@@ -784,6 +790,21 @@ public class RecordGroupingProcessor {
 			logEntry.incErrors("Error normalizing authorities", e);
 		}
 		logger.info("Done loading authorities");
+	}
+
+	private void loadDefaultAuthorityFile(PreparedStatement addAuthorityStmt, CSVReader defaultAuthorityCsvReader) throws IOException {
+		String[] curLine = defaultAuthorityCsvReader.readNext();
+		while (curLine != null) {
+			try {
+				addAuthorityStmt.setString(1, curLine[0]);
+				addAuthorityStmt.setString(2, curLine[1]);
+				addAuthorityStmt.executeUpdate();
+			} catch (SQLException e) {
+				logEntry.incErrors("Error adding authority " + curLine[0]);
+			}
+			curLine = defaultAuthorityCsvReader.readNext();
+		}
+		defaultAuthorityCsvReader.close();
 	}
 
 	String getAuthoritativeAuthor(String originalAuthor) {
@@ -976,6 +997,7 @@ public class RecordGroupingProcessor {
 	}
 
 	private String getAxis360FieldValue(JSONObject itemDetails, String fieldName) {
+		//noinspection DuplicatedCode
 		JSONArray fields = itemDetails.getJSONArray("fields");
 		for (int i = 0; i < fields.length(); i++){
 			JSONObject field = fields.getJSONObject(i);
@@ -1129,9 +1151,11 @@ public class RecordGroupingProcessor {
 		String type = titleMetadata.getString("@type");
 		String primaryFormat;
 		switch (type) {
+			//noinspection HttpUrlsUsage
 			case "http://bib.schema.org/Audiobook":
 				primaryFormat = "eAudiobook";
 				break;
+			//noinspection HttpUrlsUsage
 			case "http://schema.org/EBook":
 				//TODO: May need to check the subjects to determine if this is a comic/graphic novel
 				primaryFormat = "eBook";

@@ -7,7 +7,9 @@
 	<div class="row">
 		<div class="col-xs-12">
 			<div class="btn-group">
-				{if !empty($showReturnToList)}
+				{if !empty($returnToListUrl)}
+					<a class="btn btn-default" href='{$returnToListUrl}'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
+				{else}
 					<a class="btn btn-default" href='/{$module}/{$toolName}?objectAction=list'><i class="fas fa-arrow-alt-circle-left" role="presentation"></i> {translate text="Return to List" isAdminFacing=true}</a>
 				{/if}
 			</div>

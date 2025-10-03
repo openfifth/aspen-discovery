@@ -1894,7 +1894,7 @@ AspenDiscovery.Account = (function () {
 		},
 
 		createSquareOrder: function (finesFormId, transactionType, token) {
-			this.createGenericOrder(finesFormId, 'Square', transactionType, token);
+			return this.createGenericOrder(finesFormId, 'Square', transactionType, token);
 		},
 
 		createStripeOrder: function (finesFormId, transactionType) {
@@ -2939,5 +2939,13 @@ AspenDiscovery.Account = (function () {
 			document.location.href = url;
 			return false;
 		},
+		showSelectedEditionOptions: function () {
+			var rememberHoldPromptForEdition = document.getElementById('rememberHoldPromptForEdition');
+			if (rememberHoldPromptForEdition.checked) {
+				$('#selectedEditionOptionsContainer').show();
+			} else {
+				$('#selectedEditionOptionsContainer').hide();
+			}
+		}
 	};
 }(AspenDiscovery.Account || {}));

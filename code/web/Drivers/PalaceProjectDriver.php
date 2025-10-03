@@ -99,6 +99,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 						$checkout->userId = $patron->id;
 						$checkout->sourceId = $publication->metadata->identifier;
 						$checkout->recordId = $publication->metadata->identifier;
+						$checkout->canRenew = false;
 						$palaceProjectTitle = new PalaceProjectTitle();
 						$palaceProjectTitle->palaceProjectId = $publication->metadata->identifier;
 						if ($palaceProjectTitle->find(true)) {
@@ -427,7 +428,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 
 					$this->incrementStat('numHoldsPlaced');
 					$this->trackUserUsageOfPalaceProject($patron);
-					$this->trackRecordCheckout($recordId);
+					$this->trackRecordHold($recordId);
 					$patron->lastReadingHistoryUpdate = 0;
 					$patron->update();
 
@@ -542,7 +543,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 			}
 			if (!$cancelWorked) {
 				$result['message'] = translate([
-					'text' => "Could not cancel Palace Project hold, " . (string)$status->statusMessage,
+					'text' => 'Could not cancel Palace Project hold.',
 					'isPublicFacing' => true,
 				]);
 
@@ -552,7 +553,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 					'isPublicFacing' => true,
 				]);
 				$result['api']['message'] = translate([
-					'text' => 'Could not cancel Palace Project hold, ' . (string)$status->statusMessage,
+					'text' => 'Could not cancel Palace Project hold.',
 					'isPublicFacing' => true,
 				]);
 
@@ -803,16 +804,20 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	}
 
 	/**
-	 * @param string $recordId
+	 * @param string|int $recordId
 	 */
-	function trackRecordCheckout($recordId): void {
-		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectRecordUsage.php';
+	function trackRecordCheckout(string|int $recordId): void {
 		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitle.php';
-		$recordUsage = new PalaceProjectRecordUsage();
 		$product = new PalaceProjectTitle();
-		$product->palaceProjectId = $recordId;
+		if (is_numeric($recordId)) {
+			$product->id = $recordId;
+		} else {
+			$product->palaceProjectId = $recordId;
+		}
 		if ($product->find(true)) {
-			$recordUsage->palaceProjectId = $product->palaceProjectId;
+			require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectRecordUsage.php';
+			$recordUsage = new PalaceProjectRecordUsage();
+			$recordUsage->palaceProjectId = $product->id;
 			global $aspenUsage;
 			$recordUsage->instance = $aspenUsage->getInstance();
 			$recordUsage->year = date('Y');
@@ -829,18 +834,22 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	}
 
 	/**
-	 * @param string $recordId
+	 * @param string|int $recordId
 	 */
-	function trackRecordHold($recordId): void {
-		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectRecordUsage.php';
+	function trackRecordHold(string|int $recordId): void {
 		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitle.php';
-		$recordUsage = new PalaceProjectRecordUsage();
 		$product = new PalaceProjectTitle();
-		$product->palaceProjectId = $recordId;
+		if (is_numeric($recordId)) {
+			$product->id = $recordId;
+		} else {
+			$product->palaceProjectId = $recordId;
+		}
 		if ($product->find(true)) {
+			require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectRecordUsage.php';
+			$recordUsage = new PalaceProjectRecordUsage();
 			global $aspenUsage;
 			$recordUsage->instance = $aspenUsage->getInstance();
-			$recordUsage->palaceProjectId = $product->palaceProjectId;
+			$recordUsage->palaceProjectId = $product->id;
 			$recordUsage->year = date('Y');
 			$recordUsage->month = date('n');
 			if ($recordUsage->find(true)) {

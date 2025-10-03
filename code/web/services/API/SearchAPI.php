@@ -454,7 +454,7 @@ class SearchAPI extends AbstractAPI {
 						require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
 						$hooplaSettings = new HooplaSetting();
 						$hooplaSettings->find();
-						$checkEntriesInLast26Hours = true;
+						$checkEntriesInLast34Hours = true;
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
 					}
@@ -489,7 +489,7 @@ class SearchAPI extends AbstractAPI {
 						}
 						$isFirstEntry = false;
 					}
-					$checkEntriesInLast26Hours = false;
+					$checkEntriesInLast34Hours = false;
 					$checkEntriesInLast24Hours = true;
 					$checkEntriesInLast1Hours = true;
 					if ($aspenModule->name == 'Web Builder') {
@@ -530,11 +530,11 @@ class SearchAPI extends AbstractAPI {
 						require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
 						$hooplaSettings = new HooplaSetting();
 						$hooplaSettings->find();
-						$checkEntriesInLast26Hours = true;
+						$checkEntriesInLast34Hours = true;
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
 					}
-					if ($checkEntriesInLast26Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 26 * 60 * 60)) {
+					if ($checkEntriesInLast34Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 34 * 60 * 60)) {
 						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 26 hours");
 					} elseif ($checkEntriesInLast24Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 24 * 60 * 60)) {
 						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 24 hours");
@@ -903,13 +903,8 @@ class SearchAPI extends AbstractAPI {
 			//Remove fields as needed to improve the display.
 			foreach ($recordSet as $recordKey => $record) {
 				unset($record['auth_author']);
-				unset($record['auth_authorStr']);
-				unset($record['callnumber-first-code']);
 				unset($record['spelling']);
-				unset($record['callnumber-first']);
 				unset($record['title_auth']);
-				unset($record['callnumber-subject']);
-				unset($record['author-letter']);
 				unset($record['marc_error']);
 				unset($record['shortId']);
 				$recordSet[$recordKey] = $record;
@@ -1570,13 +1565,8 @@ class SearchAPI extends AbstractAPI {
 				//Remove fields as needed to improve the display.
 				foreach ($records as $recordKey => $record) {
 					unset($record['auth_author']);
-					unset($record['auth_authorStr']);
-					unset($record['callnumber-first-code']);
 					unset($record['spelling']);
-					unset($record['callnumber-first']);
 					unset($record['title_auth']);
-					unset($record['callnumber-subject']);
-					unset($record['author-letter']);
 					unset($record['marc_error']);
 					unset($record['shortId']);
 					$records[$recordKey] = $record;
@@ -1616,13 +1606,8 @@ class SearchAPI extends AbstractAPI {
 			foreach ($suggestions as $suggestionData) {
 				$record = $suggestionData['titleInfo'];
 				unset($record['auth_author']);
-				unset($record['auth_authorStr']);
-				unset($record['callnumber-first-code']);
 				unset($record['spelling']);
-				unset($record['callnumber-first']);
 				unset($record['title_auth']);
-				unset($record['callnumber-subject']);
-				unset($record['author-letter']);
 				unset($record['marc_error']);
 				unset($record['shortId']);
 				$records[] = $record;
@@ -1682,13 +1667,8 @@ class SearchAPI extends AbstractAPI {
 			}
 			$record['format_category'] = $formatCategories;
 			unset($record['auth_author']);
-			unset($record['auth_authorStr']);
-			unset($record['callnumber-first-code']);
 			unset($record['spelling']);
-			unset($record['callnumber-first']);
 			unset($record['title_auth']);
-			unset($record['callnumber-subject']);
-			unset($record['author-letter']);
 			unset($record['marc_error']);
 			unset($record['shortId']);
 			$records[] = $record;
@@ -2530,7 +2510,7 @@ class SearchAPI extends AbstractAPI {
 						//Set Sorting, this is actually slightly mangled from the category to Solr
 						$searchObject->setSort($browseCategory->getSolrSort());
 						if ($browseCategory->searchTerm != '') {
-							$searchObject->setSearchTerm($browseCategory->searchTerm);
+							SearchObject_BaseSearcher::parseAndSetAdvancedSearchTerms($searchObject, $browseCategory->searchTerm);
 						}
 
 						//Get titles for the list

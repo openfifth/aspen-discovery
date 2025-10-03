@@ -306,3 +306,43 @@
   font-weight: bold;
   font-size: initial;
 }
+
+.horizontal-edition-option {
+  width: 275px;
+  padding: 1em;
+  border: 1px solid #dddddd;
+  border-radius: 6px;
+  margin-right: .25em;
+  background-color: #f9f9f9;
+  color: #000;
+
+  &.active {
+    border-color: #088ec6;
+    background-color: #e6f2fa;
+  }
+
+  .edition-radio {
+    display: block;
+    margin-bottom: .75em;
+  }
+
+  .edition-cover {
+    float: left;
+    padding-right: .75em;
+  }
+
+  .edition-data {
+    font-size: smaller;
+
+    .label {
+      margin-top: .75em;
+    }
+
+    span {
+      display: block;
+      float: right;
+      font-style: italic;
+      color: #666565;
+    }
+  }
+}

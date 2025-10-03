@@ -125,10 +125,10 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	/**
 	 * overriding getLinkUrl from RecordInterface to check
 	 * the conditions which cause us to load the invalidRecord.tpl
-	 * template when viewing a record. 
-	 * 
+	 * template when viewing a record.
+	 *
 	 * @param bool $absolutePath if true prepend site url from config to the result
-	 * @return string url for the record or an empty string 
+	 * @return string url for the record or an empty string
 	 */
 	public function getLinkUrl($absolutePath = false) {
 		if(!$this->isValid())
@@ -1273,7 +1273,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $records;
 	}
 
-	function getFormatCategory() {
+	function getFormatCategory() : string|array|null {
 		return $this->getGroupedWorkDriver()->getFormatCategory();
 	}
 
@@ -1292,7 +1292,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 
 			if (UserAccount::isLoggedIn()) {
 				$user = UserAccount::getActiveUserObj();
-				$this->_actions[$variationId] = array_merge($this->_actions[$variationId], $user->getCirculatedRecordActions($this->getIndexingProfile()->name, $this->id));
+				$this->_actions[$variationId] = array_merge($this->_actions[$variationId], $user->getCirculatedRecordActionsWithLazyLoading($this->getIndexingProfile()->name, $this->id));
 			}
 
 			$treatVolumeHoldsAsItemHolds = $this->getCatalogDriver()->treatVolumeHoldsAsItemHolds();
@@ -1669,7 +1669,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			$this->_physicalDescriptions = [];
 			$physicalDescriptionFields = $this->getFields('300|530', true);
 			foreach ($physicalDescriptionFields as $field) {
-				if ($field == '300') {
+				if ($field->getTag() == '300') {
 					$info = $this->getSubfieldArray($field, ['a', 'b', 'c', 'e', 'f', 'g'], true);
 				}else{
 					$info = $this->getSubfieldArray($field, ['a', 'b', 'c', 'd'], true);
@@ -1973,8 +1973,8 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			}
 		}
 
-		// Only add copies section if there are non-eContent holdings to display.
-		if ($hasNonEContentHoldings) {
+		// Only add copies section if there are non-eContent holdings to display or if it's a periodical (with setting enabled).
+		if ($hasNonEContentHoldings || ($this->isPeriodical() && $library->getGroupedWorkDisplaySettings()->showCopiesForPeriodicalsWithNoItems)) {
 			$moreDetailsOptions['copies'] = [
 				'label' => 'Copies',
 				'body' => $interface->fetch('Record/view-holdings.tpl'),
@@ -2757,7 +2757,6 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		$interface->assign('hasDueDate', $hasDueDate);
 		$interface->assign('holdings', $this->holdings);
 		$interface->assign('sections', $this->holdingSections);
-
 		$interface->assign('statusSummary', $this->statusSummary);
 		global $timer;
 		$timer->logTime("Assigned copy information");
@@ -3163,7 +3162,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 								if (array_key_exists($tmpOwningLibraryCode, $libraryCodeToDisplayName)) {
 									$owningLibrary = $libraryCodeToDisplayName[$tmpOwningLibraryCode];
 									break;
-								//Handle sierra quirks where the actual location code is specified with a z at the end
+									//Handle sierra quirks where the actual location code is specified with a z at the end
 								} elseif (array_key_exists($tmpOwningLibraryCode . 'z', $libraryCodeToDisplayName)) {
 									$owningLibrary = $libraryCodeToDisplayName[$tmpOwningLibraryCode . 'z'];
 									break;
@@ -3423,5 +3422,3 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $descriptionField->getSubfield('a')->getData();
 	}
 }
-
-

@@ -20,7 +20,7 @@ class Grouping_Variation {
 	/**
 	 * @var ?Grouping_Manifestation
 	 */
-	public ?Grouping_Manifestation $manifestation;
+	public ?Grouping_Manifestation $manifestation = null;
 
 	/**
 	 * Grouping_Variation constructor.
@@ -72,8 +72,19 @@ class Grouping_Variation {
 		if ($record->isEContent() != $this->isEContent) {
 			return false;
 		}
-		if ($this->isEContent && ($this->econtentSource != $record->getEContentSource())) {
-			return false;
+		if ($this->isEContent) {
+			$recordEContentSources = $record->getEContentSource();
+			// Handle records with multiple eContent sources (e.g., Palace Project).
+			if (str_contains($recordEContentSources, ',')) {
+				$recordSources = array_map('trim', explode(',', $recordEContentSources));
+				if (!in_array($this->econtentSource, $recordSources)) {
+					return false;
+				}
+			} else {
+				if ($this->econtentSource != $recordEContentSources) {
+					return false;
+				}
+			}
 		}
 		if ($record->language != $this->language) {
 			return false;
@@ -288,7 +299,8 @@ class Grouping_Variation {
 				}
 			}
 			require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
-			if ($this->manifestation->isPeriodical()) {
+			$isPeriodical = !($this->manifestation == null) && $this->manifestation->isPeriodical();
+			if ($isPeriodical) {
 				$itemsDisplayedByDefault = sortPeriodicalItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);
 			}else{
 				$itemsDisplayedByDefault = sortItemsByShelfLocationAndCallNumber($itemsDisplayedByDefault);

@@ -214,11 +214,17 @@ class Search_Home extends Action {
 				if ($browseCategory->isValidForDisplay()) {
 					$textId = $browseCategory->textId;
 					$subCatResult = $searchAPI->getSubCategories($textId);
+					$hasSubcategories = !empty($subCatResult['subCategories']);
+					$subcategoryCount = $hasSubcategories ? count($subCatResult['subCategories']) : 0;
+					// Only set searchUrl to '#' for categories without subcategories or with exactly one subcategory
+					// because it will become the only search URL.
+					// For parent categories with multiple subcategories, set empty string to prevent dead-end links.
+					$searchUrl = (!$hasSubcategories || $subcategoryCount == 1) ? '#' : '';
 					$browseCategories[] = [
 						'textId' => $textId,
 						'label' => $browseCategory->label,
-						'searchUrl' => '#',
-						'hasSubcategories' => !empty($subCatResult['subCategories']),
+						'searchUrl' => $searchUrl,
+						'hasSubcategories' => $hasSubcategories,
 					];
 				}
 			}

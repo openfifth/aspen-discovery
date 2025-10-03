@@ -350,4 +350,23 @@ class Events_AJAX extends JSON_Action {
 		];
 	}
 
+	function getListPrintOptions() {
+		global $interface;
+		$interface->assign('week', strip_tags($_REQUEST['week']));
+		$interface->assign('month', strip_tags($_REQUEST['month']));
+		$interface->assign('year', strip_tags($_REQUEST['year']));
+
+		return [
+			'title' => translate([
+				'text' => 'Print Options',
+				'isAdminFacing' => 'true',
+			]),
+			'modalBody' => $interface->fetch('Events/list-print-options.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Events.buildAndOpenPrintUrl()'>" . translate([
+					'text' => 'Print',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+		];
+	}
+
 }

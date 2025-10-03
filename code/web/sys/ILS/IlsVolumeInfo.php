@@ -13,6 +13,7 @@ class IlsVolumeInfo extends DataObject {
 	public $_hasLocalItems;
 	public $_needsIllRequest;
 	public $_allItems = [];
+	public $_editions = [];
 
 	public function setHasLocalItems(bool $hasLocalItems) : void {
 		$this->_hasLocalItems = $hasLocalItems;
@@ -20,6 +21,26 @@ class IlsVolumeInfo extends DataObject {
 
 	public function hasLocalItems(): bool {
 		return (bool)$this->_hasLocalItems;
+	}
+
+	public function setEdition($edition, $data): void {
+		$this->_editions[$edition] = $data;
+		$this->_editions[$edition]->label = translate([
+			'text' => 'Select This Edition',
+			'isPublicFacing' => true,
+		]);
+	}
+
+	public function getEditions(): bool {
+		return $this->_editions;
+	}
+
+	public function setEditionStatus($edition, $status): void {
+		$this->_editions[$edition]->statusIndicator = $status;
+	}
+
+	public function setEditionCover($edition, $cover): void {
+		$this->_editions[$edition]->coverUrl = $cover;
 	}
 
 	public function setNeedsIllRequest(bool $needsIllRequest) : void {

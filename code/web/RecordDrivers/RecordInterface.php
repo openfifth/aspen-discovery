@@ -11,6 +11,7 @@ abstract class RecordInterface {
 	private $listNotes;
 	private $listEntryId;
 	private $listEntryWeight;
+	private array $activeFilters = [];
 
 	/**
 	 * Constructor.  We build the object using all the data retrieved
@@ -344,6 +345,7 @@ abstract class RecordInterface {
 			'citations' => 'Citations',
 			'copyDetails' => 'Copy Details (OverDrive)',
 			'staff' => 'Staff View',
+			'accessibilityStatements' => 'Accessibility Statements (OverDrive)',
 		];
 	}
 
@@ -378,6 +380,7 @@ abstract class RecordInterface {
 			'citations' => 'closed',
 			'copyDetails' => 'closed',
 			'staff' => 'closed',
+			'accessibilityStatements' => 'closed',
 		];
 	}
 
@@ -439,6 +442,15 @@ abstract class RecordInterface {
 
 	function setListEntryWeight($listEntryWeight) {
 		$this->listEntryWeight = $listEntryWeight;
+	}
+
+
+	function setActiveFilters($activeFilters): void {
+		$this->activeFilters = $activeFilters;
+	}
+
+	function getActiveFilters(): array {
+		return $this->activeFilters;
 	}
 
 	function getListEntryWeight() {

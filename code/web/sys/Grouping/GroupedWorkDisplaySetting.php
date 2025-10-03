@@ -4,6 +4,7 @@ require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFacetGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkMoreDetails.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFormatSortingGroup.php';
+require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
 
 /**
  * Class GroupedWorkDisplaySetting
@@ -52,6 +53,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	public $formatDisplayStyle;
 	public $formatSortingGroupId;
+	public $eContentSortingGroupId;
 
 	//Enrichment
 	public $showStandardReviews;
@@ -86,6 +88,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	//Item details
 	public $showItemDueDates;
 	public $showItemNotes;
+	public $showCopiesForPeriodicalsWithNoItems;
 
 	private $_moreDetailsOptions;
 
@@ -148,6 +151,14 @@ class GroupedWorkDisplaySetting extends DataObject {
 		$formatSort->find();
 		while ($formatSort->fetch()) {
 			$formatSortGroups[$formatSort->id] = $formatSort->name;
+		}
+
+		$eContentSortGroups = [];
+		$eContentSortGroup = new GroupedWorkEContentSortingGroup();
+		$eContentSortGroup->orderBy('name');
+		$eContentSortGroup->find();
+		while ($eContentSortGroup->fetch()) {
+			$eContentSortGroups[$eContentSortGroup->id] = $eContentSortGroup->name;
 		}
 
 		$moreDetailsStructure = GroupedWorkMoreDetails::getObjectStructure($context);
@@ -262,6 +273,15 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'The display style of individual formats within the grouped work.',
 						'default' => 1
 					],
+					'eContentSortingGroupId' => [
+						'property' => 'eContentSortingGroupId',
+						'type' => 'enum',
+						'values' => $eContentSortGroups,
+						'label' => 'eContent Sorting',
+						'description' => 'Required eContent sorting configuration that can be created under eContent Sorting.',
+						'required' => true,
+						'default' => 1
+					],
 					'formatSortingGroupId' => [
 						'property' => 'formatSortingGroupId',
 						'type' => 'enum',
@@ -303,6 +323,14 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'label' => 'Show Check-in Grid',
 						'description' => 'Whether or not the check-in grid is shown for periodicals.',
 						'default' => 1,
+						'hideInLists' => true,
+					],
+					'showCopiesForPeriodicalsWithNoItems' => [
+						'property' => 'showCopiesForPeriodicalsWithNoItems',
+						'type' => 'checkbox',
+						'label' => 'Show Copies for Periodicals with No Items',
+						'description' => 'Whether or not to show the Copies accordion for periodicals that have no physical items.',
+						'default' => 0,
 						'hideInLists' => true,
 					],
 					'showStaffView' => [
@@ -715,16 +743,16 @@ class GroupedWorkDisplaySetting extends DataObject {
 			],
 		];
 
-		$hasCheckInGrid = false;
+		$hasSierraOrMillenniumIls = false;
 		foreach (UserAccount::getAccountProfiles() as $accountProfileInfo) {
-			/** @var AccountProfile $accountProfile */
 			$accountProfile = $accountProfileInfo['accountProfile'];
 			if ($accountProfile->ils == 'millennium' || $accountProfile->ils == 'sierra') {
-				$hasCheckInGrid = true;
+				$hasSierraOrMillenniumIls = true;
 			}
 		}
-		if (!$hasCheckInGrid) {
+		if (!$hasSierraOrMillenniumIls) {
 			unset($structure['fullRecordSection']['properties']['showCheckInGrid']);
+			unset($structure['fullRecordSection']['properties']['showCopiesForPeriodicalsWithNoItems']);
 		}
 
 		if (!UserAccount::getActiveUserObj()->isAspenAdminUser()) {
@@ -1052,5 +1080,18 @@ class GroupedWorkDisplaySetting extends DataObject {
 			}
 		}
 		return $this->_formatSortingGroup;
+	}
+
+	private GroupedWorkEContentSortingGroup|false|null $_eContentSortingGroup = false;
+	public function getEContentSortingGroup() : ?GroupedWorkEContentSortingGroup {
+		if ($this->_eContentSortingGroup === false) {
+			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
+			$this->_eContentSortingGroup = new GroupedWorkEContentSortingGroup();
+			$this->_eContentSortingGroup->id = $this->eContentSortingGroupId;
+			if (!$this->_eContentSortingGroup->find(true)) {
+				$this->_eContentSortingGroup = null;
+			}
+		}
+		return $this->_eContentSortingGroup;
 	}
 }

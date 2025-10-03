@@ -400,13 +400,15 @@ class Record_AJAX extends Action {
 				$selectedVariationId = $_REQUEST['variationId'];
 			}
 
+			$promptForEdition = (isset($_REQUEST['promptForEdition']) && $_REQUEST['promptForEdition'] === "true");
+
 			$marcRecord = new MarcRecordDriver($id);
 
 			require_once ROOT_DIR . '/sys/Account/User.php';
 			$isOnHold = $user->isRecordOnHold($recordSource, $id);
 			$interface->assign('isOnHold', $isOnHold);
 
-			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations)) {
+			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, $selectedVariationId, $promptForEdition)) {
 				return [
 					'holdFormBypassed' => false,
 					'title' => translate([
@@ -620,7 +622,7 @@ class Record_AJAX extends Action {
 				} else {
 					$interface->assign('whileYouWaitTitles', []);
 					if (isset($results['items'])) {
-						$results = $this->getItemHoldForm($user->_homeLocationCode, $results, $shortId, $user);
+						$results = $this->getItemHoldForm($user->getPickupLocationCode(), $results, $shortId, $user);
 						$results['holdFormBypassed'] = true;
 					}
 				}
@@ -706,7 +708,7 @@ class Record_AJAX extends Action {
 					'isPublicFacing' => true,
 				]),
 				'modalBody' => $interface->fetch('Record/hold-select-edition-popup.tpl'),
-				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.showPlaceHold(\'Record\', \'' . $recordSource . '\', \'' . $marcRecord->getId() . '\');">No, place a hold on this edition</a>',
+				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.showPlaceHold(\'Record\', \'' . $recordSource . '\', \'' . $marcRecord->getId() . '\', \'\', \'\', this);">No, place a hold on this edition</a>',
 			];
 		} else {
 			$results = [
@@ -738,7 +740,9 @@ class Record_AJAX extends Action {
 
 			list($interLibraryLoanType, $treatHoldAsInterLibraryLoanRequest, $homeLocation, $holdGroups) = $marcRecord->getInterLibraryLoanIntegrationInformation($relatedRecord, 'any');
 
-			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations)) {
+			$promptForEdition = (isset($_REQUEST['promptForEdition']) && $_REQUEST['promptForEdition'] === "true");
+
+			if (!$this->setupHoldForm($recordSource, $rememberHoldPickupLocation, $marcRecord, $locations, -1, $promptForEdition)) {
 				return [
 					'holdFormBypassed' => false,
 					'title' => 'Unable to place hold',
@@ -747,11 +751,11 @@ class Record_AJAX extends Action {
 				];
 			}
 
-			// Get a list of volumes with unsuppressed items for the record's variations.
+			// Get a list of volumes with unsuppressed, holdable items for the record's variations.
 			$volumeData = [];
 			foreach ($relatedRecord->recordVariations as $variation) {
 				foreach ($variation->getRecords() as $record) {
-					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData();
+					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData(true);
 					foreach ($unsuppressedVolumeData as $volumeInfo) {
 						if (!isset($volumeData[$volumeInfo->volumeId])) {
 							$volumeData[$volumeInfo->volumeId] = clone($volumeInfo);
@@ -777,6 +781,19 @@ class Record_AJAX extends Action {
 										if ($item->libraryOwned || $item->locallyOwned) {
 											$volumeData[$item->volumeId]->setHasLocalItems(true);
 										}
+									}
+									foreach ($variation->getRelatedRecords() as $edition) {
+										$editionId = $edition->id;
+										$plainEdition = (object)get_object_vars($edition);
+										$volumeData[$item->volumeId]->setEdition($editionId, $plainEdition);
+										$status = $interface->fetch('GroupedWork/statusIndicator.tpl', [
+											'statusInformation' => $record->getStatusInformation(),
+											'viewingIndividualRecord' => 1
+										]);
+										$coverUrl = $record->getBookcoverUrl('small');
+
+										$volumeData[$item->volumeId]->setEditionStatus($editionId, $status);
+										$volumeData[$item->volumeId]->setEditionCover($editionId, $coverUrl);
 									}
 									$numItemsWithVolumes++;
 								}
@@ -859,10 +876,27 @@ class Record_AJAX extends Action {
 
 			$interface->assign('volumes', $volumeData);
 
+			$rememberEditionSelection = false;
+			$holdPromptForEditions = $library->holdPromptForEditions;
+
+			if ($holdPromptForEditions > 0) {
+				$user = UserAccount::getLoggedInUser();
+				if ($user->holdPromptForEdition !== $holdPromptForEditions && $user->rememberHoldPromptForEdition) {
+					$holdPromptForEditions = $user->holdPromptForEdition;
+				}
+				$rememberEditionSelection = true;
+				if ($user->rememberHoldPromptForEdition === 0) {
+					$rememberEditionSelection = false;
+				}
+			}
+
+			$interface->assign('holdPromptForEditions', $holdPromptForEditions);
+			$interface->assign('rememberEditionSelection', $rememberEditionSelection);
+
 			$results = [
 				'title' => 'Select a volume to place a hold on',
 				'modalBody' => $interface->fetch('Record/hold-select-volume-popup.tpl'),
-				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.placeVolumeHold(\'Record\', \'' . $recordSource . '\', \'' . $id . '\');">' . "<i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+				'modalButtons' => '<a href="#" class="btn btn-primary" onclick="return AspenDiscovery.Record.placeVolumeHold(this);">' . "<i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 						'text' => 'Place Hold',
 						'isPublicFacing' => true,
 					]) . '</a>',
@@ -932,7 +966,7 @@ class Record_AJAX extends Action {
 					$location = new Location();
 					$userPickupLocations = $location->getPickupBranches($user);
 					foreach ($userPickupLocations as $tmpLocation) {
-						if ($tmpLocation->code == $pickupBranch) {
+						if (isset($tmpLocation->code) && $tmpLocation->code == $pickupBranch) {
 							$patron = $user;
 							break;
 						}
@@ -994,6 +1028,33 @@ class Record_AJAX extends Action {
 						} else {
 							$nnaDate = time() + $library->defaultNotNeededAfterDays * 24 * 60 * 60;
 							$cancelDate = date('Y-m-d', $nnaDate);
+						}
+					}
+
+					$promptForEdition = 0;
+					$placeHoldOnEdition = 0;
+					if (isset($_REQUEST['promptForEdition'])) {
+						$promptForEdition = (int)$_REQUEST['promptForEdition'];
+						$placeHoldOnEdition = (int)$_REQUEST['placeHoldOnEdition'];
+						if ($promptForEdition > 0 && $placeHoldOnEdition > 1) {
+							$recordId = $_REQUEST['selectedEdition'];
+							if (strpos($recordId, ':') > 0) {
+								[
+									,
+									$shortId,
+								] = explode(':', $recordId, 2);
+							} else {
+								$shortId = $recordId;
+							}
+						}
+
+						$rememberUserEditionPreference = (bool)$_REQUEST['rememberUserEditionPreference'];
+						if ($rememberUserEditionPreference !== $user->rememberHoldPromptForEdition) {
+							$user->setRememberHoldPromptForEdition($rememberUserEditionPreference);
+						}
+
+						if ($placeHoldOnEdition !== $user->holdPromptForEdition) {
+							$user->setHoldPromptForEdition($placeHoldOnEdition);
 						}
 					}
 
@@ -1782,9 +1843,10 @@ class Record_AJAX extends Action {
 	 * @param bool $rememberHoldPickupLocation
 	 * @param MarcRecordDriver $marcRecord
 	 * @param Location[] $locations
+	 * @param bool|null $promptForEdition
 	 * @return bool
 	 */
-	function setupHoldForm(string $recordSource, ?bool &$rememberHoldPickupLocation, MarcRecordDriver $marcRecord, ?array &$locations): bool {
+	function setupHoldForm(string $recordSource, ?bool &$rememberHoldPickupLocation, MarcRecordDriver $marcRecord, ?array &$locations, $selectedVariationId, ?bool $promptForEdition): bool {
 		global $interface;
 		$user = UserAccount::getLoggedInUser();
 		if ($user->getCatalogDriver() == null) {
@@ -1823,8 +1885,27 @@ class Record_AJAX extends Action {
 		}
 		$interface->assign('linkedUsers', $linkedUsers);
 
+		global $library;
+		$rememberEditionSelection = false;
+		$holdPromptForEditions = $library->holdPromptForEditions;
+
+		if ($holdPromptForEditions > 0) {
+			if ($user->holdPromptForEdition !== $holdPromptForEditions && $user->rememberHoldPromptForEdition) {
+				$holdPromptForEditions = $user->holdPromptForEdition;
+			}
+			$rememberEditionSelection = true;
+			if ($user->rememberHoldPromptForEdition === 0) {
+				$rememberEditionSelection = false;
+			}
+		}
+
+		$interface->assign('holdPromptForEditions', $holdPromptForEditions);
+		$interface->assign('rememberEditionSelection', $rememberEditionSelection);
+		$interface->assign('promptForEdition', $promptForEdition);
+
 		//Check to see if the record must be picked up at the holding branch
 		$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
+		$interface->assign('relatedRecord', $relatedRecord);
 		$pickupAt = $relatedRecord->getHoldPickupSetting();
 		$pickupSublocations = [];
 		//1 = restrict to owning location
@@ -1914,7 +1995,7 @@ class Record_AJAX extends Action {
 
 		global $library;
 		//Check to see if we can bypass the holds popup and just place the hold
-		if (!$multipleAccountPickupLocations && !$promptForHoldNotifications && $library->allowRememberPickupLocation) {
+		if (!$multipleAccountPickupLocations && !$promptForHoldNotifications && $library->allowRememberPickupLocation && !$holdPromptForEditions) {
 			//If the patron's preferred pickup location is not valid, then force them to pick a new location
 			if ($preferredPickupLocationIsValid && $preferredPickupSublocationIsValid) {
 				$rememberHoldPickupLocation = $user->rememberHoldPickupLocation;
@@ -1946,7 +2027,64 @@ class Record_AJAX extends Action {
 			// then no need to display a message because the patron cannot choose a preferred pickup location anyway.
 		}
 
+		$editionOptions = [];
+		if ($holdPromptForEditions > 0 && $promptForEdition) {
+			if (count($relatedRecord->recordVariations) > 1) {
+				foreach ($relatedRecord->recordVariations as $variation) {
+					if (($selectedVariationId == -1) || ($selectedVariationId == $variation->databaseId)) {
+						$formatValue = $variation->manifestation->format;
+						global $indexingProfiles;
+						$indexingProfile = $indexingProfiles[$marcRecord->getRecordType()];
+						$formatMap = $indexingProfile->formatMap;
+						//Loop through the format map /** @var FormatMapValue $formatMapValue */
+						//Check for a format with a hold type that is not 'none'
+						foreach ($formatMap as $formatMapValue) {
+							if (strcasecmp($formatMapValue->format, $formatValue) === 0) {
+								$holdType = $formatMapValue->holdType;
+								if ($holdType != 'none') {
+									$format = $formatValue;
+								}
+							}
+						}
+					}
+				}
+				//if we get no result and all hold types are 'none' just return the marc primary format
+				if (empty($format)) {
+					$format = $marcRecord->getPrimaryFormat();
+				}
+			} else {
+				$format = $marcRecord->getPrimaryFormat();
+			}
+			$relatedManifestation = null;
+			$foundManifestation = false;
+			$relatedManifestations = $marcRecord->getGroupedWorkDriver()->getRelatedManifestations();
+			foreach ($relatedManifestations as $relatedManifestation) {
+				if ($relatedManifestation->format == $format) {
+					$foundManifestation = true;
+					break;
+				}
+			}
+
+			if ($foundManifestation) {
+				$variation = null;
+				$foundVariation = false;
+				foreach ($relatedManifestation->getVariations() as $variation) {
+					if ($variation->databaseId == $selectedVariationId) {
+						$foundVariation = true;
+						break;
+					}
+				}
+
+				if ($foundVariation) {
+					$editionOptions = $variation->getRelatedRecords();
+				}
+			}
+		}
+		$interface->assign('editionOptions', $editionOptions);
+
+
 		$locationKeys = array_keys($locations);
+		$interface->assign('preferredPickupLocationIsValid', $preferredPickupLocationIsValid);
 		if (!$preferredPickupLocationIsValid && count($locations) == 2 && !empty($locations[$locationKeys[1]])) {
 			$onlyValidPickupLocation = $locations[$locationKeys[1]]->code;
 			$interface->assign('pickupLocationInvalidMessage', translate([
@@ -1961,6 +2099,8 @@ class Record_AJAX extends Action {
 		}
 
 		$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
+		$interface->assign('rememberHoldPromptForEdition', $user->rememberHoldPromptForEdition);
+		$interface->assign('userHoldPromptForEditionPreference', $user->holdPromptForEdition);
 		$interface->assign('onlyValidPickupLocation', $onlyValidPickupLocation ?? null);
 
 		$interface->assign('pickupLocations', $locations);
@@ -2305,4 +2445,3 @@ class Record_AJAX extends Action {
 		return $results;
 	}
 }
-
