@@ -1259,6 +1259,12 @@ class Campaign extends DataObject {
 					if (empty($campaign->startDate) || empty($campaign->endDate)) {
 						continue;
 					}
+
+					$currentDate = date('Y-m-d');
+					$oneMonthFromNow = date('Y-m-d', strtotime('+1 month'));
+					if ($campaign->startDate > $oneMonthFromNow) {
+						continue;
+					}
 					$userCampaign = new UserCampaign();
 					$userCampaign->userId = $linkedUser->id;
 					$userCampaign->campaignId = $campaign->id;
