@@ -1398,14 +1398,14 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 										//VDX does not support volumes, we'll just prompt for a regular VDX
 										$this->_actions[$variationId][] = getVdxRequestAction($this->getModule(), $source, $id);
 									} elseif ($interLibraryLoanType == 'localIll') {
-										$this->_actions[$variationId][] = getMultiVolumeRequestAction($this->getModule(), $source, $id, $this);
+										$this->_actions[$variationId][] = getMultiVolumeRequestAction($this->getModule(), $source, $id, $this, count($itemsWithoutVolumes));
 									}
 								}else{
 									$this->_actions[$variationId][] = getUntitledVolumeHoldAction($this->getModule(), $source, $id, $variationId);
 								}
 							} else {
 								//The button will show a message to the patron no volumes can be requested
-								$this->_actions[$variationId][] = getNoVolumesCanBeRequestedAction($this->getModule(), $source, $id);
+								$this->_actions[$variationId][] = getNoVolumesCanBeRequestedAction($id);
 							}
 						}else{
 							//We will need to show a popup to select the volume
