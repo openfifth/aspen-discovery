@@ -59,7 +59,7 @@ function getMultiVolumeHoldAction($module, $source, $id) : array {
 	];
 }
 
-function getMultiVolumeRequestAction($module, $source, $id, $recordDriver) : array {
+function getMultiVolumeRequestAction($module, $source, $id, $recordDriver, $hasUntitledVolumes) : array {
 	global $library;
 	$activeLibrary = $library;
 	if (UserAccount::isLoggedIn()) {
@@ -67,10 +67,10 @@ function getMultiVolumeRequestAction($module, $source, $id, $recordDriver) : arr
 		$activeLibrary = $user->getHomeLibrary();
 	}
 
-	if ($activeLibrary->enableMaterialsRequest != 0) {
+	if ($activeLibrary->enableMaterialsRequest != 0 && !$hasUntitledVolumes) {
 		return getRedirectToMaterialsRequestAction($activeLibrary, $id, null, $recordDriver);
 	}else {
-		if (!empty($activeLibrary->localIllEmail)) {
+		if (!empty($activeLibrary->localIllEmail) && !$hasUntitledVolumes) {
 			$redirectParams =[
 				'title' => $recordDriver->getTitle(),
 				'author' => $recordDriver->getPrimaryAuthor() ?? '',
@@ -280,7 +280,7 @@ function getLocalIllRequestAction($module, $source, $id) : array {
 	];
 }
 
-function getNoVolumesCanBeRequestedAction($module, $source, $id) : array {
+function getNoVolumesCanBeRequestedAction($id) : array {
 	//Check to see if the user can do local ILL by PType
 	if (UserAccount::isLoggedIn()) {
 		$user = UserAccount::getActiveUserObj();
