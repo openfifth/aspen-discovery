@@ -391,24 +391,26 @@ class DataObjectUtil {
 							$objectType = 'web_resource_image';
 						}
 					}
+					global $serverName;
 					if (isset($property['storagePath'])) {
-						$destFileName = ($object->id != null) ? $objectType."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
+						$destFileName = ($object->id != null) ? $objectType."_".$serverName."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
 						$destFolder = $property['storagePath'];
 						$destFullPath = $destFolder . '/' . $destFileName;
 						$copyResult = copy($_FILES[$propertyName]["tmp_name"], $destFullPath);
 						$logger->log("Copied file to $destFullPath result: $copyResult", Logger::LOG_DEBUG);
 					} else {
 						$logger->log("Creating thumbnails for $propertyName", Logger::LOG_DEBUG);
+						global $serverName;
 						if (isset($property['path'])) {
 							$destFolder = $property['path'];
-							$destFileName = ($object->id != null) ? $objectType."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
+							$destFileName = ($object->id != null) ? $objectType."_".$serverName."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
 							if (!file_exists($destFolder)) {
 								mkdir($destFolder, 0755, true);
 							}
 							$pathToThumbs = $destFolder . '/thumbnail';
 							$pathToMedium = $destFolder . '/medium';
 						} else {
-							$destFileName = ($object->id != null) ? $objectType."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
+							$destFileName = ($object->id != null) ? $serverName."_".$objectType."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
 							$destFolder = $configArray['Site']['local'] . '/files/original';
 							$pathToThumbs = $configArray['Site']['local'] . '/files/thumbnail';
 							$pathToMedium = $configArray['Site']['local'] . '/files/medium';
@@ -426,11 +428,11 @@ class DataObjectUtil {
 							require_once ROOT_DIR . '/sys/Covers/CoverImageUtils.php';
 
 							if (isset($property['thumbWidth'])) {
-								resizeImage($destFullPath, "{$pathToThumbs}/{$destFileName}", $property['thumbWidth'], $property['thumbWidth']);
+								resizeImage($destFullPath, "$pathToThumbs/$destFileName", $property['thumbWidth'], $property['thumbWidth']);
 							}
 							if (isset($property['mediumWidth'])) {
 								//Create a thumbnail if needed
-								resizeImage($destFullPath, "{$pathToMedium}/{$destFileName}", $property['mediumWidth'], $property['mediumWidth']);
+								resizeImage($destFullPath, "$pathToMedium/$destFileName", $property['mediumWidth'], $property['mediumWidth']);
 							}
 							if (isset($property['maxWidth'])) {
 								//Create a thumbnail if needed
@@ -439,7 +441,7 @@ class DataObjectUtil {
 								if (isset($property['maxHeight'])) {
 									$height = $property['maxHeight'];
 								}
-								resizeImage($destFullPath, "{$destFolder}/{$destFileName}", $width, $height);
+								resizeImage($destFullPath, "$destFolder/$destFileName", $width, $height);
 							}
 						}
 					}
@@ -473,8 +475,9 @@ class DataObjectUtil {
 					};
 					$fileType = ".pdf";
 					//Copy the full image to the correct location
-					//Filename is the name of the object + the original filename
-					$destFileName = ($object->id != null) ? $objectType."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
+					global $serverName;
+					//Filename is the $serverName + name of the object + the original filename
+					$destFileName = ($object->id != null) ? $objectType."_".$serverName."_".$object->id.$fileType : "Temp_".$_FILES[$propertyName]["name"];
 					$destFolder = $property['path'];
 					if (!file_exists($destFolder)) {
 						mkdir($destFolder, 0775, true);
