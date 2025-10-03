@@ -212,7 +212,7 @@
 															<input type="radio" name="editionOption" id="editionOption{$edition->databaseId}" value="{$edition->id}" {if $smarty.foreach.editions.index == 0}checked{/if}> {translate text="Select This Edition" isPublicFacing=true}
 														</div>
 														<div class="edition-cover">
-															<img src="{$relatedRecord->getBookcoverUrl('small')}" class="img-thumbnail {$coverStyle}" alt="{translate text='Book Cover' inAttribute=true isPublicFacing=true}">
+															<img src="{$relatedRecord->getBookcoverUrl('small')}" class="img-thumbnail{if $useOriginalCoverUrls} use-original-covers{/if} {$coverStyle}" alt="{translate text='Book Cover' inAttribute=true isPublicFacing=true}">
 														</div>
 														<div class="edition-data">
 															{$edition->publicationDate}. {$edition->publisher}. {$edition->physical}.<br/>

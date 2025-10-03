@@ -50,9 +50,9 @@ class BookCoverProcessor {
 			}
 		}
 
-		if ($this->checkForEarlyRedirect()) {
-			return true;
-		}
+//		if ($this->checkForEarlyRedirect()) {
+//			return true;
+//		}
 
 		if($this->bookCoverInfo->imageSource == 'upload') {
 			if($this->getUploadedRecordCover($this->id)) {
