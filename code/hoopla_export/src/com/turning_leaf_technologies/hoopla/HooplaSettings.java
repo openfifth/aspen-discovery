@@ -13,20 +13,10 @@ class HooplaSettings {
 	private final String countryCode;
 
 	// Global metadata settings
-	private final boolean runFullUpdateGlobal;
-	private final long lastUpdateOfChangedRecordsGlobal;
-	private final long lastUpdateOfAllRecordsGlobal;
-	private final long lastRecordProcessed;
-
-	// Instant settings
-	private final boolean runFullUpdateInstant;
-	private final long lastUpdateOfChangedRecordsInstant;
-	private final long lastUpdateOfAllRecordsInstant;
-
-	// Flex settings
-	private final boolean runFullUpdateFlex;
-	private final long lastUpdateOfChangedRecordsFlex;
-	private final long lastUpdateOfAllRecordsFlex;
+	private final boolean runFullUpdate;
+	private final long lastUpdateOfChangedRecords;
+	private final long lastUpdateOfAllRecords;
+	private final String lastRecordProcessed;
 
 	// Token settings
 	private final String accessToken;
@@ -37,25 +27,16 @@ class HooplaSettings {
 	public HooplaSettings(ResultSet settingsRS) throws SQLException {
 		settingsId = settingsRS.getLong("id");
 		apiUrl = settingsRS.getString("apiUrl");
-		libraryId = settingsRS.getInt("libraryId");
 		apiUsername = settingsRS.getString("apiUsername");
 		apiPassword = settingsRS.getString("apiPassword");
 		countryCode = settingsRS.getString("countryCode");
 
 		recordExtractionBatchSize = settingsRS.getInt("recordExtractionBatchSize");
 		indexingTime = settingsRS.getInt("indexingTime");
-		runFullUpdateGlobal = settingsRS.getBoolean("runFullUpdateGlobal");
-		lastUpdateOfChangedRecordsGlobal = settingsRS.getLong("lastUpdateOfChangedRecordsGlobal");
-		lastUpdateOfAllRecordsGlobal = settingsRS.getLong("lastUpdateOfAllRecordsGlobal");
-		lastRecordProcessed = settingsRS.getLong("lastRecordProcessed");
-
-		runFullUpdateInstant = settingsRS.getBoolean("runFullUpdateInstant");
-		lastUpdateOfChangedRecordsInstant = settingsRS.getLong("lastUpdateOfChangedRecordsInstant");
-		lastUpdateOfAllRecordsInstant = settingsRS.getLong("lastUpdateOfAllRecordsInstant");
-
-		runFullUpdateFlex = settingsRS.getBoolean("runFullUpdateFlex");
-		lastUpdateOfChangedRecordsFlex = settingsRS.getLong("lastUpdateOfChangedRecordsFlex");
-		lastUpdateOfAllRecordsFlex = settingsRS.getLong("lastUpdateOfAllRecordsFlex");
+		runFullUpdate = settingsRS.getBoolean("runFullUpdate");
+		lastUpdateOfChangedRecords = settingsRS.getLong("lastUpdateOfChangedRecords");
+		lastUpdateOfAllRecords = settingsRS.getLong("lastUpdateOfAllRecords");
+		lastRecordProcessed = settingsRS.getString("lastRecordProcessed");
 
 		accessToken = settingsRS.getString("accessToken");
 		tokenExpirationTime = settingsRS.getLong("tokenExpirationTime");
@@ -83,31 +64,16 @@ class HooplaSettings {
 		return apiPassword;
 	}
 
-	public boolean isRunFullUpdate(String hooplaType) {
-		if (hooplaType.equals("Flex")) {
-			return runFullUpdateFlex;
-		} else if (hooplaType.equals("Instant")) {
-			return runFullUpdateInstant;
-		}
-		return false;
+	public boolean isRunFullUpdate() {
+		return runFullUpdate;
 	}
 
-	public long getLastUpdateOfChangedRecords(String hooplaType) {
-		if (hooplaType.equals("Flex")) {
-			return lastUpdateOfChangedRecordsFlex;
-		} else if (hooplaType.equals("Instant")) {
-			return lastUpdateOfChangedRecordsInstant;
-		}
-		return 0;
+	public long getLastUpdateOfChangedRecords() {
+		return lastUpdateOfChangedRecords;
 	}
 
-	public long getLastUpdateOfAllRecords(String hooplaType) {
-		if (hooplaType.equals("Flex")) {
-			return lastUpdateOfAllRecordsFlex;
-		} else if (hooplaType.equals("Instant")) {
-		return lastUpdateOfAllRecordsInstant;
-		}
-		return 0;
+	public long getLastUpdateOfAllRecords() {
+		return lastUpdateOfAllRecords;
 	}
 
 	public String getAccessToken() {
@@ -130,19 +96,7 @@ class HooplaSettings {
 		return indexingTime;
 	}
 
-	public boolean isRunFullUpdateGlobal() {
-		return runFullUpdateGlobal;
-	}
-
-	public long getLastUpdateOfChangedRecordsGlobal() {
-		return lastUpdateOfChangedRecordsGlobal;
-	}
-
-	public long getLastUpdateOfAllRecordsGlobal() {
-		return lastUpdateOfAllRecordsGlobal;
-	}
-
-	public long getLastRecordProcessed() {
+	public String getLastRecordProcessed() {
 		return lastRecordProcessed;
 	}
 

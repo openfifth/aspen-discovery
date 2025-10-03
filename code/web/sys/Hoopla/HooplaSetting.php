@@ -15,26 +15,13 @@ class HooplaSetting extends DataObject {
 	/** @noinspection PhpUnused */
 	public $regroupAllRecords;
 	/** @noinspection PhpUnused */
-	public $runFullUpdateGlobal;
+	public $runFullUpdate;
 	/** @noinspection PhpUnused */
-	public $lastUpdateOfChangedRecordsGlobal;
+	public $lastUpdateOfChangedRecords;
 	/** @noinspection PhpUnused */
-	public $lastUpdateOfAllRecordsGlobal;
+	public $lastUpdateOfAllRecords;
 	/** @noinspection PhpUnused */
 	public $lastRecordProcessed;
-	public $runFullUpdateInstant;
-	/** @noinspection PhpUnused */
-	public $lastUpdateOfChangedRecordsInstant;
-	/** @noinspection PhpUnused */
-	public $lastUpdateOfAllRecordsInstant;
-	public $hooplaInstantEnabled;
-	/** @noinspection PhpUnused */
-	public $runFullUpdateFlex;
-	/** @noinspection PhpUnused */
-	public $lastUpdateOfChangedRecordsFlex;
-	/** @noinspection PhpUnused */
-	public $lastUpdateOfAllRecordsFlex;
-	public $hooplaFlexEnabled;
 	public $recordExtractionBatchSize;
 	public $indexingTime;
 
@@ -104,8 +91,15 @@ class HooplaSetting extends DataObject {
 				'property' => 'indexingSettingsSection',
 				'type' => 'section',
 				'label' => 'General Indexing Settings',
-				'expandByDefault' => false,
+				'expandByDefault' => true,
 				'properties' => [
+					'runFullUpdate' => [
+						'property' => 'runFullUpdate',
+						'type' => 'checkbox',
+						'label' => 'Run Full Update',
+						'description' => 'Trigger a full metadata reload on the next export run, including Instant and Flex titles',
+						'default' => 0,
+					],
 					'regroupAllRecords' => [
 						'property' => 'regroupAllRecords',
 						'type' => 'checkbox',
@@ -136,25 +130,19 @@ class HooplaSetting extends DataObject {
 						],
 						'default' => '500',
 					],
-					'runFullUpdateGlobal' => [
-						'property' => 'runFullUpdateGlobal',
-						'type' => 'checkbox',
-						'label' => 'Run Full Update for Global Content',
-						'description' => 'Trigger a full global metadata reload on the next export run',
-						'default' => 0,
-					],
-					'lastUpdateOfChangedRecordsGlobal' => [
-						'property' => 'lastUpdateOfChangedRecordsGlobal',
+
+					'lastUpdateOfChangedRecords' => [
+						'property' => 'lastUpdateOfChangedRecords',
 						'type' => 'timestamp',
-						'label' => 'Last Update of Changed Global Records',
-						'description' => 'Timestamp from the most recent incremental global content update',
+						'label' => 'Last Update of Changed Records',
+						'description' => 'The timestamp when just changes were loaded',
 						'default' => 0,
 					],
 					'lastUpdateOfAllRecordsGlobal' => [
-						'property' => 'lastUpdateOfAllRecordsGlobal',
+						'property' => 'lastUpdateOfAllRecords',
 						'type' => 'timestamp',
-						'label' => 'Last Full Update of Global Records',
-						'description' => 'Timestamp from the most recent full global content reload',
+						'label' => 'Last Update of All Records',
+						'description' => 'The timestamp when all records were loaded from the API',
 						'default' => 0,
 						],
 					'lastRecordProcessed' => [
@@ -165,64 +153,6 @@ class HooplaSetting extends DataObject {
 						'default' => 0,
 					],
 				]
-			],
-			'hooplaInstantRecords' => [
-				'property' => 'hooplaInstantRecords',
-				'type' => 'section',
-				'label' => 'Hoopla Instant',
-				'expandByDefault' => false,
-				'properties' => [
-					'runFullUpdateInstant' => [
-						'property' => 'runFullUpdateInstant',
-						'type' => 'checkbox',
-						'label' => 'Run Full Update for Instant',
-						'description' => 'Whether or not a full update of all records should be done on the next pass of indexing',
-						'default' => 0,
-					],
-					'lastUpdateOfChangedRecordsInstant' => [
-						'property' => 'lastUpdateOfChangedRecordsInstant',
-						'type' => 'timestamp',
-						'label' => 'Last Update of Changed Instant Records',
-						'description' => 'The timestamp when just changes were loaded',
-						'default' => 0,
-					],
-					'lastUpdateOfAllRecordsInstant' => [
-						'property' => 'lastUpdateOfAllRecordsInstant',
-						'type' => 'timestamp',
-						'label' => 'Last Update of All Instant Records',
-						'description' => 'The timestamp when all records were loaded',
-						'default' => 0,
-					],
-				],
-			],
-			'hooplaFlexRecords' => [
-				'property' => 'hooplaFlexRecords',
-				'type' => 'section',
-				'label' => 'Hoopla Flex',
-				'expandByDefault' => false,
-				'properties' => [
-					'runFullUpdateFlex' => [
-						'property' => 'runFullUpdateFlex',
-						'type' => 'checkbox',
-						'label' => 'Run Full Update for Flex',
-						'description' => 'Whether or not a full update of all records should be done on the next pass of indexing',
-						'default' => 0,
-					],
-					'lastUpdateOfChangedRecordsFlex' => [
-						'property' => 'lastUpdateOfChangedRecordsFlex',
-						'type' => 'timestamp',
-						'label' => 'Last Update of Changed Flex Records',
-						'description' => 'The timestamp when just changes were loaded',
-						'default' => 0,
-					],
-					'lastUpdateOfAllRecordsFlex' => [
-						'property' => 'lastUpdateOfAllRecordsFlex',
-						'type' => 'timestamp',
-						'label' => 'Last Update of All Flex Records',
-						'description' => 'The timestamp when all records were loaded',
-						'default' => 0,
-					],
-				],
 			],
 			'librarySettingsSection' => [
 				'property' => 'librarySettingsSection',

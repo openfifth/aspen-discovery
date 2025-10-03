@@ -11,6 +11,8 @@ class LibraryHooplaSettings extends DataObject
     public $circulationEnabled;
     public $hooplaInstantEnabled;
     public $hooplaFlexEnabled;
+
+    public $fullUpdate;
     public function getNumericColumnNames(): array
     {
         return [
@@ -98,6 +100,15 @@ class LibraryHooplaSettings extends DataObject
                 'description' => 'Whether or not circulation is enabled within Aspen',
                 'hideInLists' => false,
                 'default' => true,
+                'forcesReindex' => false,
+            ],
+            'runfullUpdateForLibrary' => [
+                'property' => 'runfullUpdateForLibrary',
+                'type' => 'checkbox',
+                'label' => 'Run Full Update for Library',
+                'description' => 'Whether or not run a full update for this library',
+                'hideInLists' => false,
+                'default' => false,
                 'forcesReindex' => false,
             ],
         ];

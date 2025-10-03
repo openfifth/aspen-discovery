@@ -188,20 +188,11 @@ function getUpdates25_10_00(): array {
 					circulationEnabled TINYINT(1) DEFAULT 0,
 					hooplaInstantEnabled TINYINT(1) DEFAULT 1,
 					hooplaFlexEnabled TINYINT(1) DEFAULT 1,
+					fullUpdateForLibrary TINYINT(1) DEFAULT 0,
 					UNIQUE KEY librarySettingHoopla (libraryId, settingId)
 				)'
 			]
 		], //create_library_hoopla_settings_table
-		'drop_unused_hoopla_settings_columns' => [
-			'title' => 'Drop Unused Hoopla Settings',
-			'description' => 'Drop unused Hoopla settings',
-			'continueOnError' => false,
-			'sql' => [
-				"ALTER TABLE hoopla_settings DROP column libraryId",
-				"ALTER TABLE hoopla_settings DROP column hooplaFlexEnabled",
-				"ALTER TABLE hoopla_settings DROP column hooplaInstantEnabled",
-			]
-		], //drop_unused_hoopla_settings
 		'drop_unused_hoopla_scopes_columns' => [
 			'title' => 'Drop Unused Hoopla Scopes Columns',
 			'description' => 'Drop unused Hoopla scopes columns',
@@ -211,17 +202,23 @@ function getUpdates25_10_00(): array {
 				"ALTER TABLE hoopla_scopes DROP column includeFlex",
 			]
 		], //drop_unused_hoopla_scopes_columns
-		'add_global_contents_hoopla_settings' => [
+		'update_hoopla_settings' => [
 			'title' => 'Add Global Contents Hoopla Settings',
-			'description' => 'Add global contents Hoopla settings',
+			'description' => 'Update Hoopla settings',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE hoopla_settings ADD COLUMN runFullUpdateGlobal TINYINT(1) DEFAULT 0",
-				"ALTER TABLE hoopla_settings ADD COLUMN lastUpdateOfChangedRecordsGlobal INT(11) DEFAULT 0",
-				"ALTER TABLE hoopla_settings ADD COLUMN lastUpdateOfAllRecordsGlobal INT(11) DEFAULT 0",
-				"ALTER TABLE hoopla_settings ADD COLUMN lastRecordProcessed INT(11) DEFAULT 0",
+				"ALTER TABLE hoopla_settings ADD COLUMN lastRecordProcessed VARCHAR(30) DEFAULT '0'",
+				"ALTER TABLE hoopla_settings CHANGE COLUMN lastUpdateOfChangedRecordsInstant lastUpdateOfChangedRecords INT(11) DEFAULT 0",
+				"ALTER TABLE hoopla_settings CHANGE COLUMN lastUpdateOfAllRecordsInstant lastUpdateOfAllRecords INT(11) DEFAULT 0",
+				"ALTER TABLE hoopla_settings DROP COLUMN lastUpdateOfChangedRecordsFlex",
+				"ALTER TABLE hoopla_settings DROP COLUMN lastUpdateOfAllRecordsFlex",
+				"ALTER TABLE hoopla_settings DROP COLUMN hooplaFlexEnabled",
+				"ALTER TABLE hoopla_settings DROP COLUMN hooplaInstantEnabled",
+				"ALTER TABLE hoopla_settings DROP COLUMN runFullUpdateFlex",
+				"ALTER TABLE hoopla_settings DROP COLUMN runFullUpdateInstant",
+				"ALTER TABLE hoopla_settings ADD COLUMN runFullUpdate TINYINT(1) DEFAULT 0",
 			]
-		], //add_global_contents_hoopla_settings
+		], //update_hoopla_settings
 		'update_hoopla_export_table' => [
 			'title' => 'Update Hoopla Export Table',
 			'description' => 'Update Hoopla export table',
@@ -230,6 +227,7 @@ function getUpdates25_10_00(): array {
 				"ALTER TABLE hoopla_export DROP COLUMN active",
 				"ALTER TABLE hoopla_export DROP COLUMN hooplaType",
 				"ALTER TABLE hoopla_export CHANGE COLUMN kind format VARCHAR(10) DEFAULT NULL",
+				"ALTER TABLE hoopla_export CHANGE COLUMN price ppuPrice DOUBLE NOT NULL DEFAULT 0",
 			]
 		], //update_hoopla_export_table
 

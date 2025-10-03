@@ -40,6 +40,7 @@ public class HooplaExportMain {
 	private static PreparedStatement addHooplaTitleToDB = null;
 	private static PreparedStatement updateHooplaTitleInDB = null;
 	private static PreparedStatement deleteHooplaItemStmt;
+	private static PreparedStatement updateLastRecordProcessedStmt;
 
 	//Record grouper
 	private static GroupedWorkIndexer groupedWorkIndexer;
@@ -261,7 +262,7 @@ public class HooplaExportMain {
 		try {
 			PreparedStatement getRecordsToReloadStmt = aspenConn.prepareStatement("SELECT * from record_identifiers_to_reload WHERE processed = 0 and type='hoopla'", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement markRecordToReloadAsProcessedStmt = aspenConn.prepareStatement("UPDATE record_identifiers_to_reload SET processed = 1 where id = ?");
-			PreparedStatement getItemDetailsForRecordStmt = aspenConn.prepareStatement("SELECT UNCOMPRESS(rawResponse) as rawResponse, hooplaType FROM hoopla_export where hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			PreparedStatement getItemDetailsForRecordStmt = aspenConn.prepareStatement("SELECT UNCOMPRESS(rawResponse) as rawResponse FROM hoopla_export where hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			ResultSet getRecordsToReloadRS = getRecordsToReloadStmt.executeQuery();
 			int numRecordsToReloadProcessed = 0;
 			int numInstantRecords = 0;
@@ -275,18 +276,11 @@ public class HooplaExportMain {
 				ResultSet getItemDetailsForRecordRS = getItemDetailsForRecordStmt.executeQuery();
 				if (getItemDetailsForRecordRS.next()){
 					String rawResponse = getItemDetailsForRecordRS.getString("rawResponse");
-					String hooplaType = getItemDetailsForRecordRS.getString("hooplaType");
 					try {
 						JSONObject itemDetails = new JSONObject(rawResponse);
 						String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(itemDetails, hooplaId);
 						//Reindex the record
 						getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
-
-						if (hooplaType != null && hooplaType.equalsIgnoreCase("Flex")){
-							numFlexRecords++;
-						} else {
-							numInstantRecords++;
-						}
 
 						markRecordToReloadAsProcessedStmt.setLong(1, recordToReloadId);
 						markRecordToReloadAsProcessedStmt.executeUpdate();
@@ -305,8 +299,6 @@ public class HooplaExportMain {
 			}
 			if (numRecordsToReloadProcessed > 0){
 				logEntry.addNote("Regrouped " + numRecordsToReloadProcessed + " records marked for reprocessing");
-				logEntry.addNote("Regrouped " + numInstantRecords + " Instant records");
-				logEntry.addNote("Regrouped " + numFlexRecords + " Flex records");
 			}
 			getRecordsToReloadRS.close();
 		}catch (Exception e){
@@ -314,6 +306,8 @@ public class HooplaExportMain {
 		}
 	}
 
+/*
+	// TO DO, This will need to be upated with new global content? do we still need to delete items?
 	private static void deleteItems(String hooplaType) {
 		int numDeleted = 0;
 		try {
@@ -348,7 +342,7 @@ public class HooplaExportMain {
 			logger.error("Error deleting " + hooplaType + " items", e);
 			logEntry.addNote("Error deleting " + hooplaType + " items " + e);
 		}
-	}
+	}*/
 
 	private static void loadExistingTitles() {
 		try {
@@ -360,9 +354,7 @@ public class HooplaExportMain {
 						allRecordsRS.getLong("id"),
 						hooplaId,
 						allRecordsRS.getLong("rawChecksum"),
-						allRecordsRS.getBoolean("active"),
-						allRecordsRS.getLong("rawResponseLength"),
-						allRecordsRS.getString("hooplaType")
+						allRecordsRS.getLong("rawResponseLength")
 				);
 				existingRecords.put(hooplaId, newTitle);
 			}
@@ -401,20 +393,14 @@ public class HooplaExportMain {
 				HooplaSettings settings = new HooplaSettings(getSettingsRS);
 				numSettings++;
 
-				// Process Instant Content
-				boolean hooplaInstantEnabled = settings.isHooplaEnabled("Instant");
-				if (hooplaInstantEnabled) {
-					boolean instantUpdated = exportHooplaContent(settings, "Instant");
-					updatesRun |= instantUpdated;
-				}
+				// Extract Global Content
+				updatesRun |= exportHooplaContent(settings);
 
-				// Process Flex Content
-				boolean hooplaFlexEnabled = settings.isHooplaEnabled("Flex");
-				if (hooplaFlexEnabled) {
-					boolean flexUpdated = exportHooplaContent(settings, "Flex");
-					boolean availabilityUpdated = getFlexAvailability(settings);
-					updatesRun = flexUpdated || availabilityUpdated;
-				}
+				//TO DO add entitlements
+
+				// Process Flex Availability
+				updatesRun |= getFlexAvailability(settings);
+
 				if (settings.isRegroupAllRecords()) {
 					regroupAllRecords(aspenConn, settings.getSettingsId(), getGroupedWorkIndexer(), logEntry);
 				}
@@ -430,16 +416,17 @@ public class HooplaExportMain {
 	}
 
 
-	private static boolean exportHooplaContent(HooplaSettings settings, String hooplaType) {
+	private static boolean exportHooplaContent(HooplaSettings settings) {
 		boolean updatedContent = false;
-		boolean doFullReload = settings.isRunFullUpdate(hooplaType);
+		boolean doFullReload = settings.isRunFullUpdate();
 		long settingsId = settings.getSettingsId();
 		String hooplaAPIBaseURL = settings.getApiUrl();
-		int hooplaLibraryId = settings.getLibraryId();
-		long lastUpdateOfChangedRecords = settings.getLastUpdateOfChangedRecords(hooplaType);
-		long lastUpdateOfAllRecords = settings.getLastUpdateOfAllRecords(hooplaType);
+		long lastUpdateOfChangedRecords = settings.getLastUpdateOfChangedRecords();
+		long lastUpdateOfAllRecords = settings.getLastUpdateOfAllRecords();
 		long lastUpdate = Math.max(lastUpdateOfChangedRecords, lastUpdateOfAllRecords);
-		String purchaseModel = hooplaType.equals("Instant") ? "PPU" : "EST";
+		String countryCode = settings.getCountryCode();
+		String lastRecordProcessed = settings.getLastRecordProcessed() != null ? settings.getLastRecordProcessed() : "0";
+		int recordExtractionBatchSize = settings.getRecordExtractionBatchSize();
 		int numRecordsToExtract = 0;
 
 		String accessToken = settings.getAccessToken();
@@ -452,19 +439,19 @@ public class HooplaExportMain {
 
 		if (accessToken == null) {
 			logEntry.incErrors("Could not load access token");
-			return true;
+			return false;
 		}
 
-		logEntry.addNote("Starting " + hooplaType + " content extraction using a batch size of " + settings.getRecordExtractionBatchSize() + " at " + indexingTime);
+		logEntry.addNote("Starting global content extraction using a batch size of " + recordExtractionBatchSize + " at hour " + indexingTime);
 		logEntry.saveResults();
 
 		try {
 			if (doFullReload){
 				//Unset that a full update needs to be done
-				PreparedStatement updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set runFullUpdate" + hooplaType + " = 0 where id = ?");
+				PreparedStatement updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set runFullUpdate = 0 where id = ?");
 				updateSettingsStmt.setLong(1, settingsId);
 				updateSettingsStmt.executeUpdate();
-				logEntry.addNote("Processing full update for " + hooplaType);
+				logEntry.addNote("Processing full update for global content");
 			} else {
 				//We only want to index once a day at 1 am Local Time
 				ZonedDateTime nowLocalTime = ZonedDateTime.now();
@@ -476,7 +463,7 @@ public class HooplaExportMain {
 
 				if (curHour == indexingTime){
 					if (lastUpdateOfChangedRecords >= startOfTodaySeconds) {
-						logger.warn("Already completed today's " + hooplaType + " extraction at " + indexingTime + ". Skipping until tomorrow.");
+						logger.warn("Already completed today's global content extraction at " + indexingTime + ". Skipping until tomorrow.");
 						return false;
 					}
 					//Set the last update time to 32 hours ago (go bigger to get more updates)
@@ -484,36 +471,38 @@ public class HooplaExportMain {
 						lastUpdate = thirtyTwoHoursAgo;
 					}
 					numRetries32HoursAfter = 0;
-					logEntry.addNote("Starting daily " + hooplaType + " content extraction");
+					logEntry.addNote("Starting daily global content extraction");
 				}else{
-					//It's not 1 am Local time, skip for now.
+					//It's not configured indexing time, skip for now.
 					//Figure out when we last indexed this collection.
 					if (lastUpdate >= thirtyTwoHoursAgo) {
 						//Do not index unless it has been 32 hours
 						return false;
 					}
 					// If we don't have updates for 32 hours, we will try 3 times
-					// If we exceed 3 times and fail, we will wait until 1 AM
+					// If we exceed 3 times and fail, we will wait until configured indexing time
 					if (numRetries32HoursAfter >= 3){
 						logger.warn("Exceeded 3 retries for 32 hours catch up, waiting until next indexing time at " + indexingTime);
 						return false;
 					}
 					numRetries32HoursAfter++;
-					logEntry.addNote("Retrying " + hooplaType + " extraction after 32 hours " + numRetries32HoursAfter + " of 3");
+					logEntry.addNote("Retrying global content extraction after 32 hours " + numRetries32HoursAfter + " of 3");
 				}
 			}
 
 			updatedContent = true;
 
 			//Formulate the first call depending on if we are doing a full reload or not
-			String url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content";
+			String startToken = lastRecordProcessed;
+			String url = hooplaAPIBaseURL + "/api/v1/global-contents?countryCodes=" + countryCode;
+
 			if (!doFullReload && lastUpdate > 0) {
 				//Give a 2-minute buffer for the extract
 				lastUpdate -= 120;
 				logEntry.addNote("Extracting records since " + new Date(lastUpdate * 1000));
-				url += "?startTime=" + lastUpdate + "&limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
+				url += "&startTime=" + lastUpdate + "&limit=" + recordExtractionBatchSize;
 			} else {
-				url += "?limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
+				url += "&limit=" + recordExtractionBatchSize;
 			}
 
 			@SuppressWarnings("DuplicatedCode")
@@ -521,121 +510,116 @@ public class HooplaExportMain {
 			headers.put("Authorization", "Bearer " + accessToken);
 			headers.put("Content-Type", "application/json");
 			headers.put("Accept", "application/json");
-			WebServiceResponse response = NetworkUtils.getURL(url, logger, headers);
-			if (!response.isSuccess()){
-				logEntry.incErrors("Could not get titles from " + url + " " + response.getMessage() + " " + response.getResponseCode());
-				return false;
-			}else {
-				JSONObject responseJSON = new JSONObject(response.getMessage());
-				if (responseJSON.has("titles")) {
-					JSONArray responseTitles = responseJSON.getJSONArray("titles");
-					if (responseTitles != null && !responseTitles.isEmpty()) {
-						updateTitlesInDB(responseTitles, false, doFullReload, hooplaType);
-						numRecordsToExtract += responseTitles.length();
-						logEntry.saveResults();
-					}
 
-					String startToken = null;
-					if (responseJSON.has("nextStartToken")) {
-						startToken = responseJSON.get("nextStartToken").toString();
-					}
+			PreparedStatement updateLastRecordProcessedStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastRecordProcessed = ? where id = ?");
+			int numTries = 0;
+			WebServiceResponse response = null;
 
-					int numTries = 0;
-					while (startToken != null) {
-						if (!doFullReload && lastUpdate > 0) {
-							url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content?startTime=" + lastUpdate + "&startToken=" + startToken + "&limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
-						}else {
-							url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content?startToken=" + startToken + "&limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
+			while (startToken != null) {
+				String paginationUrl = url + "&startToken=" + startToken;
+				logger.error("url:" + paginationUrl);
+				response = NetworkUtils.getURL(paginationUrl, logger, headers);
+				if (response.isSuccess()) {
+					JSONObject responseJSON = new JSONObject(response.getMessage());
+					if (responseJSON.has("contents")) {
+						JSONArray responseTitles = responseJSON.getJSONArray("contents");
+						if (responseTitles != null && !responseTitles.isEmpty()) {
+							updateTitlesInDB(responseTitles, false, doFullReload);
+							numRecordsToExtract += responseTitles.length();
+							updatedContent = true;
+							logEntry.saveResults();
 						}
-						response = NetworkUtils.getURL(url, logger, headers);
-						if (response.isSuccess()){
-							responseJSON = new JSONObject(response.getMessage());
-							if (responseJSON.has("titles")) {
-								responseTitles = responseJSON.getJSONArray("titles");
-								if (responseTitles != null && !responseTitles.isEmpty()) {
-									updateTitlesInDB(responseTitles, false, doFullReload, hooplaType);
-									numRecordsToExtract += responseTitles.length();
-								}
+
+						JSONObject metadataJSON = responseJSON.optJSONObject("metadata");
+						if (metadataJSON != null && metadataJSON.has("nextStartToken")) {
+							startToken = metadataJSON.get("nextStartToken").toString();
+							try {
+								updateLastRecordProcessedStmt.setString(1, startToken);
+								updateLastRecordProcessedStmt.setLong(2, settingsId);
+								updateLastRecordProcessedStmt.executeUpdate();
+							} catch (SQLException e) {
+								logEntry.incErrors("Error updating lastRecordProcessed ", e);
 							}
-							if (responseJSON.has("nextStartToken")) {
-								startToken = responseJSON.get("nextStartToken").toString();
-							} else {
-								startToken = null;
-							}
+						} else {
+							startToken = null;
+						}
+
+					}
+				} else {
+					if (response.getResponseCode() == 401 || response.getResponseCode() == 504 || response.getResponseCode() == 503){
+						numTries++;
+						if (numTries >= 3){
+							logEntry.incErrors("Error loading data after 3 attempts from" + url + " " + response.getResponseCode() + " " + response.getMessage());
 						}else{
-							if (response.getResponseCode() == 401 || response.getResponseCode() == 504 || response.getResponseCode() == 503){
-								numTries++;
-								if (numTries >= 3){
-									logEntry.incErrors("Error loading data after 3 attempts for " + hooplaType + " from" + url + " " + response.getResponseCode() + " " + response.getMessage());
-									startToken = null;
-								}else{
-									try {
-										Thread.sleep(1000 * 60 * 2); //Wait for 2 minutes before trying again
-									} catch (InterruptedException e) {
-										logEntry.incErrors("Error sleeping for 2 minutes", e);
-									}
-									accessToken = getAccessToken(settings);
-									headers.put("Authorization", "Bearer " + accessToken);
-								}
-							}else {
-								logEntry.incErrors("Error loading data for " + hooplaType + " from " + url + " " + response.getResponseCode() + " " + response.getMessage());
-								startToken = null;
+							try {
+								Thread.sleep(1000 * 60 * 2); //Wait for 2 minutes before trying again
+							} catch (InterruptedException e) {
+								logEntry.incErrors("Error sleeping for 2 minutes", e);
 							}
+							accessToken = getAccessToken(settings);
+							headers.put("Authorization", "Bearer " + accessToken);
 						}
-
-						logEntry.saveResults();
+					}else {
+						logEntry.incErrors("Error loading global content from " + url + " " + response.getResponseCode() + " " + response.getMessage());
 					}
-					logEntry.addNote("Completed " + numRecordsToExtract + " " + hooplaType + " updates");
-					logEntry.saveResults();
+					try {
+						updateLastRecordProcessedStmt.setString(1, startToken);
+						updateLastRecordProcessedStmt.setLong(2, settingsId);
+						updateLastRecordProcessedStmt.executeUpdate();
+					} catch (SQLException e) {
+						logEntry.incErrors("Error updating lastRecordProcessed ", e);
+					}
+					startToken = null;
 				}
 			}
-
-			//Delete records from Hoopla, but not if we have errors
-			if (doFullReload && !logEntry.hasErrors()){
-				deleteItems(hooplaType);
-			}
+			updateLastRecordProcessedStmt.close();
+			logEntry.saveResults();
+			logEntry.addNote("Completed " + numRecordsToExtract + " global content updates");
+			logEntry.saveResults();
 
 			try{
 				//Set the extract time
 				PreparedStatement updateSettingsStmt = null;
 				if (doFullReload){
 					if (!logEntry.hasErrors()) {
-						updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfAllRecords" + hooplaType + " = ? where id = ?");
+						updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfAllRecords = ?, lastRecordProcessed = 0 where id = ?");
 					} else {
 						//force another full update
-						PreparedStatement reactiveFullUpdateStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set runFullUpdate" + hooplaType + " = 1 where id = ?");
+						PreparedStatement reactiveFullUpdateStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set runFullUpdate = 1 where id = ?");
 						reactiveFullUpdateStmt.setLong(1, settingsId);
 						reactiveFullUpdateStmt.executeUpdate();
 					}
 				}else{
 					// Update the lastUpdateOfChangedRecords if we have a successful response
-					if (response.isSuccess()){
-						updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfChangedRecords" + hooplaType + " = ? where id = ?");
+					if (response != null && response.isSuccess()){
+						updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfChangedRecords = ? where id = ?");
 					}
 				}
 				if (updateSettingsStmt != null) {
 					updateSettingsStmt.setLong(1, startTimeForLogging);
 					updateSettingsStmt.setLong(2, settingsId);
 					updateSettingsStmt.executeUpdate();
+					updateSettingsStmt.close();
 					numRetries32HoursAfter = 0;
 				}
 			} catch (SQLException e) {
-				logEntry.incErrors("Error updating settings for" + hooplaType, e);
+				logEntry.incErrors("Error updating settings", e);
 			}
 		} catch (SQLException e) {
-			logEntry.incErrors("Error updating settings for" + hooplaType, e);
+			logEntry.incErrors("Error updating settings", e);
 		}
 		return updatedContent;
 	}
+
 
 	private static boolean getFlexAvailability(HooplaSettings settings) {
 		// Update all the flex titles availability
 		logEntry.addNote("Starting Flex availability update");
 		logEntry.saveResults();
 		int numUpdates = 0;
-		boolean doFullReloadFlex = settings.isRunFullUpdate("Flex");
+		boolean doFullReloadFlex = settings.isRunFullUpdate();
 		String hooplaAPIBaseURL = settings.getApiUrl();
-		int hooplaLibraryId = settings.getLibraryId();
+		int hooplaLibraryId = 123;
 		String accessToken = settings.getAccessToken();
 		long tokenExpirationTime = settings.getTokenExpirationTime();
 
@@ -759,7 +743,7 @@ public class HooplaExportMain {
 				numSettings++;
 				HooplaSettings settings = new HooplaSettings(getSettingsRS);
 				String hooplaAPIBaseURL = settings.getApiUrl();
-				int hooplaLibraryId = settings.getLibraryId();
+				int hooplaLibraryId = 123;
 
 				String accessToken = getAccessToken(settings);
 				if (accessToken == null) {
@@ -785,7 +769,7 @@ public class HooplaExportMain {
 					if (responseJSON.has("titles")) {
 						JSONArray responseTitles = responseJSON.getJSONArray("titles");
 						if (responseTitles != null && !responseTitles.isEmpty()) {
-							updateTitlesInDB(responseTitles, true, false, singleWorkType);
+							updateTitlesInDB(responseTitles, true, false);
 							logEntry.saveResults();
 
 							if (singleWorkType.equalsIgnoreCase("Flex")) {
@@ -849,7 +833,7 @@ public class HooplaExportMain {
 		}
 	}
 
-	private static void updateTitlesInDB(JSONArray responseTitles, boolean forceRegrouping, boolean doFullReload, String hooplaType) {
+	private static void updateTitlesInDB(JSONArray responseTitles, boolean forceRegrouping, boolean doFullReload) {
 		logEntry.incNumProducts(responseTitles.length());
 		for (int i = 0; i < responseTitles.length(); i++){
 			try {
@@ -859,7 +843,6 @@ public class HooplaExportMain {
 				checksumCalculator.reset();
 				checksumCalculator.update(rawResponse.getBytes());
 				long rawChecksum = checksumCalculator.getValue();
-				boolean curTitleActive = curTitle.getBoolean("active");
 
 				long hooplaId = curTitle.getLong("id"); //formerly titleId was used, but this is not unique for TV series
 
@@ -870,124 +853,96 @@ public class HooplaExportMain {
 					if ((existingTitle.getChecksum() != rawChecksum) || (existingTitle.getRawResponseLength() != rawResponse.length())){
 						recordUpdated = true;
 						logEntry.incUpdated();
-						if (existingTitle.isActive() != curTitleActive) {
-							if (curTitleActive) {
-								logEntry.incAdded();
-							} else {
-								logEntry.incDeleted();
-							}
-						}else{
-							logEntry.incUpdated();
-						}
 					}
 					existingTitle.setFoundInExport(true);
 				}else{
-					if (!curTitleActive){
-						logEntry.incSkipped();
-						continue;
-					}
-					recordUpdated = true;
 					logEntry.incAdded();
 				}
 
-				if (!curTitleActive){
-					//Title is currently active (and if we got this far exists, delete it)
-					//Delete the record if it exists
-
-					//Delete the Flex availability if it's a Flex title
-					if (hooplaType.equalsIgnoreCase("Flex")) {
-						try {
-							PreparedStatement deleteFlexAvailabilityStmt = aspenConn.prepareStatement(
-								"DELETE from hoopla_flex_availability where hooplaId = ?"
-							);
-							deleteFlexAvailabilityStmt.setLong(1, hooplaId);
-							deleteFlexAvailabilityStmt.executeUpdate();
-						} catch (SQLException e) {
-							logEntry.incErrors("Error deleting Flex availability for inactive title " + hooplaId, e);
-						}
-					}
-
-					RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("hoopla", Long.toString(hooplaId));
-					if (result.reindexWork) {
-						getGroupedWorkIndexer().processGroupedWork(result.permanentId);
-					} else if (result.deleteWork) {
-						//Delete the work from solr and the database
-						getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
-					}
-					logEntry.incDeleted();
-					deleteHooplaItemStmt.setLong(1, existingTitle.getId());
-					deleteHooplaItemStmt.executeUpdate();
-					existingRecords.remove(hooplaId);
-				}else {
-					if (existingTitle == null){
-						addHooplaTitleToDB.setLong(1, hooplaId);
-						addHooplaTitleToDB.setBoolean(2, true);
-						addHooplaTitleToDB.setString(3, curTitle.getString("title"));
-						addHooplaTitleToDB.setString(4, curTitle.getString("kind"));
-						addHooplaTitleToDB.setBoolean(5, curTitle.getBoolean("pa"));
-						addHooplaTitleToDB.setBoolean(6, curTitle.getBoolean("demo"));
-						addHooplaTitleToDB.setBoolean(7, curTitle.getBoolean("profanity"));
-						addHooplaTitleToDB.setString(8, curTitle.has("rating") ? curTitle.getString("rating") : "");
-						addHooplaTitleToDB.setBoolean(9, curTitle.getBoolean("abridged"));
-						addHooplaTitleToDB.setBoolean(10, curTitle.getBoolean("children"));
-						// Flex titles don't have a price, so set it to 0.0 or set to 0 if the record has no price
-						if (hooplaType.equalsIgnoreCase("Flex") || !curTitle.has("price")) {
-							addHooplaTitleToDB.setDouble(11, 0.0);
+				if (existingTitle == null){
+					addHooplaTitleToDB.setLong(1, hooplaId);
+					addHooplaTitleToDB.setString(2, curTitle.getString("title"));
+					addHooplaTitleToDB.setString(3, curTitle.getString("format"));
+					addHooplaTitleToDB.setBoolean(4, curTitle.getBoolean("isParentalAdvisory"));
+					addHooplaTitleToDB.setBoolean(5, curTitle.getBoolean("isDemo"));
+					addHooplaTitleToDB.setBoolean(6, curTitle.getBoolean("containsProfanity"));
+					if (curTitle.has("ratings")) {
+						JSONArray ratingsArray = curTitle.getJSONArray("ratings");
+						if (ratingsArray.length() > 0) {
+						addHooplaTitleToDB.setString(7, ratingsArray.getJSONObject(0).getString("ratingValue"));
 						} else {
-							addHooplaTitleToDB.setDouble(11, curTitle.getDouble("price"));
+							addHooplaTitleToDB.setString(7, "");
 						}
-						addHooplaTitleToDB.setLong(12, rawChecksum);
-						addHooplaTitleToDB.setString(13, rawResponse);
-						addHooplaTitleToDB.setLong(14, startTimeForLogging);
-						addHooplaTitleToDB.setString(15, hooplaType);
-						try {
-							addHooplaTitleToDB.executeUpdate();
-
-							String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(curTitle, hooplaId);
-							indexRecord(groupedWorkId);
-						}catch (DataTruncation e) {
-							logEntry.addNote("Record " + hooplaId + " " + curTitle.getString("title") + " contained invalid data " + e);
-						}catch (SQLException e){
-							logEntry.incErrors("Error adding hoopla title to database record " + hooplaId + " " + curTitle.getString("title"), e);
-						}
-					}else if (recordUpdated || doFullReload || forceRegrouping){
-						updateHooplaTitleInDB.setBoolean(1, true);
-						updateHooplaTitleInDB.setString(2, curTitle.getString("title"));
-						updateHooplaTitleInDB.setString(3, curTitle.getString("kind"));
-						updateHooplaTitleInDB.setBoolean(4, curTitle.getBoolean("pa"));
-						updateHooplaTitleInDB.setBoolean(5, curTitle.getBoolean("demo"));
-						updateHooplaTitleInDB.setBoolean(6, curTitle.getBoolean("profanity"));
-						updateHooplaTitleInDB.setString(7, curTitle.has("rating") ? curTitle.getString("rating") : "");
-						updateHooplaTitleInDB.setBoolean(8, curTitle.getBoolean("abridged"));
-						updateHooplaTitleInDB.setBoolean(9, curTitle.getBoolean("children"));
-						// Flex titles don't have a price, so set it to 0.0 or set to 0 if the record has no price
-						if (hooplaType.equalsIgnoreCase("Flex") || !curTitle.has("price")) {
-							updateHooplaTitleInDB.setDouble(10, 0.0);
+					} else {
+						addHooplaTitleToDB.setString(7, "");
+					}
+					addHooplaTitleToDB.setBoolean(8, curTitle.getBoolean("isAbridged"));
+					addHooplaTitleToDB.setBoolean(9, curTitle.getBoolean("isForChildren"));
+					if (curTitle.has("ppuPrices")) {
+						JSONArray ppuPricesArray = curTitle.getJSONArray("ppuPrices");
+						if (ppuPricesArray.length() > 0) {
+						addHooplaTitleToDB.setDouble(10, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
 						} else {
-							updateHooplaTitleInDB.setDouble(10, curTitle.getDouble("price"));
+							addHooplaTitleToDB.setDouble(10, 0.0);
 						}
-						updateHooplaTitleInDB.setLong(11, rawChecksum);
-						updateHooplaTitleInDB.setString(12, rawResponse);
-						updateHooplaTitleInDB.setString(13, hooplaType);
-						updateHooplaTitleInDB.setLong(14, existingTitle.getId());
-
-						try {
-							updateHooplaTitleInDB.executeUpdate();
-
-							String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(curTitle, hooplaId);
-							indexRecord(groupedWorkId);
-						}catch (DataTruncation e) {
-							logEntry.addNote("Record " + hooplaId + " " + curTitle.getString("title") + " contained invalid data " + e);
-						}catch (SQLException e){
-							logEntry.incErrors("Error updating hoopla data in database for record " + hooplaId + " " + curTitle.getString("title"), e);
+					} else {
+						addHooplaTitleToDB.setDouble(10, 0.0);
+					}
+					addHooplaTitleToDB.setLong(11, rawChecksum);
+					addHooplaTitleToDB.setString(12, rawResponse);
+					addHooplaTitleToDB.setLong(13, startTimeForLogging);
+					try {
+						addHooplaTitleToDB.executeUpdate();
+					}catch (DataTruncation e) {
+						logEntry.addNote("Record " + hooplaId + " " + curTitle.getString("title") + " contained invalid data " + e);
+					}catch (SQLException e){
+						logEntry.incErrors("Error adding hoopla title to database record " + hooplaId + " " + curTitle.getString("title"), e);
+					}
+				}else if (recordUpdated || doFullReload || forceRegrouping){
+					updateHooplaTitleInDB.setString(1, curTitle.getString("title"));
+					updateHooplaTitleInDB.setString(2, curTitle.getString("format"));
+					updateHooplaTitleInDB.setBoolean(3, curTitle.getBoolean("isParentalAdvisory"));
+					updateHooplaTitleInDB.setBoolean(4, curTitle.getBoolean("isDemo"));
+					updateHooplaTitleInDB.setBoolean(5, curTitle.getBoolean("containsProfanity"));
+					if (curTitle.has("ratings")) {
+						JSONArray ratingsArray = curTitle.getJSONArray("ratings");
+						if (ratingsArray.length() > 0) {
+						updateHooplaTitleInDB.setString(6, ratingsArray.getJSONObject(0).getString("ratingValue"));
+						} else {
+							updateHooplaTitleInDB.setString(6, "");
 						}
+					} else {
+						updateHooplaTitleInDB.setString(6, "");
+					}
+					updateHooplaTitleInDB.setBoolean(7, curTitle.getBoolean("isAbridged"));
+					updateHooplaTitleInDB.setBoolean(8, curTitle.getBoolean("isForChildren"));
+					if (curTitle.has("ppuPrices")) {
+						JSONArray ppuPricesArray = curTitle.getJSONArray("ppuPrices");
+						if (ppuPricesArray.length() > 0) {
+						updateHooplaTitleInDB.setDouble(9, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
+						} else {
+							updateHooplaTitleInDB.setDouble(9, 0.0);
+						}
+					} else {
+						updateHooplaTitleInDB.setDouble(9, 0.0);
+					}
+					updateHooplaTitleInDB.setLong(10, rawChecksum);
+					updateHooplaTitleInDB.setString(11, rawResponse);
+					updateHooplaTitleInDB.setLong(12, existingTitle.getId());
+
+					try {
+						updateHooplaTitleInDB.executeUpdate();
+					}catch (DataTruncation e) {
+						logEntry.addNote("Record " + hooplaId + " " + curTitle.getString("title") + " contained invalid data " + e);
+					}catch (SQLException e){
+						logEntry.incErrors("Error updating hoopla data in database for record " + hooplaId + " " + curTitle.getString("title"), e);
 					}
 				}
+
 			}catch (Exception e){
-				logEntry.incErrors("Error updating hoopla " + hooplaType + " data", e);
+				logEntry.incErrors("Error updating hoopla data in db", e);
 			}
 		}
-		getGroupedWorkIndexer().commitChanges();
 	}
 
 	private static void indexRecord(String groupedWorkId) {
@@ -1051,10 +1006,10 @@ public class HooplaExportMain {
 			String databaseConnectionInfo = ConfigUtil.cleanIniValue(configIni.get("Database", "database_aspen_jdbc"));
 			if (databaseConnectionInfo != null) {
 				aspenConn = DriverManager.getConnection(databaseConnectionInfo);
-				getAllExistingHooplaItemsStmt = aspenConn.prepareStatement("SELECT id, hooplaId, rawChecksum, active, UNCOMPRESSED_LENGTH(rawResponse) as rawResponseLength, hooplaType from hoopla_export");
-				addHooplaTitleToDB = aspenConn.prepareStatement("INSERT INTO hoopla_export (hooplaId, active, title, kind, pa, demo, profanity, rating, abridged, children, price, rawChecksum, rawResponse, dateFirstDetected, hooplaType) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,COMPRESS(?),?, ?) ");
-				updateHooplaTitleInDB = aspenConn.prepareStatement("UPDATE hoopla_export set active = ?, title = ?, kind = ?, pa = ?, demo = ?, profanity = ?, " +
-						"rating = ?, abridged = ?, children = ?, price = ?, rawChecksum = ?, rawResponse = COMPRESS(?), hooplaType = ? where id = ?");
+				getAllExistingHooplaItemsStmt = aspenConn.prepareStatement("SELECT id, hooplaId, rawChecksum, UNCOMPRESSED_LENGTH(rawResponse) as rawResponseLength from hoopla_export");
+				addHooplaTitleToDB = aspenConn.prepareStatement("INSERT INTO hoopla_export (hooplaId, title, format, pa, demo, profanity, rating, abridged, children, ppuPrice, rawChecksum, rawResponse, dateFirstDetected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,COMPRESS(?),?) ");
+				updateHooplaTitleInDB = aspenConn.prepareStatement("UPDATE hoopla_export set title = ?, format = ?, pa = ?, demo = ?, profanity = ?, " +
+						"rating = ?, abridged = ?, children = ?, ppuPrice = ?, rawChecksum = ?, rawResponse = COMPRESS(?) where id = ?");
 				deleteHooplaItemStmt = aspenConn.prepareStatement("DELETE FROM hoopla_export where id = ?");
 			}else{
 				logger.error("Aspen database connection information was not provided");
