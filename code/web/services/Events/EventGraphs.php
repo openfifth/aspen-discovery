@@ -215,13 +215,13 @@ class Events_EventGraphs extends Admin_Admin {
 					$seriesToGenerate[] = ['label' => "$locationLabel - $eventTypeLabel", 'eventTypeId' => $eventTypeId, 'locationId' => $locationId];
 				}
 			}
-			$eventType = new EventType();
-			$eventType->includeInReports = true;
-			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
+			$eventTypeObj = new EventType();
+			$eventTypeObj->includeInReports = true;
+			$event->joinAdd($eventTypeObj, 'INNER', 'eventType', 'eventTypeId', 'id');
 		} else {
-			$eventType = new EventType();
-			$eventType->includeInReports = true;
-			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
+			$eventTypeObj = new EventType();
+			$eventTypeObj->includeInReports = true;
+			$event->joinAdd($eventTypeObj, 'INNER', 'eventType', 'eventTypeId', 'id');
 		}
 		if (!empty($query)) {
 			$escapedQuery = $userHours->escape('%' . $query . '%');
