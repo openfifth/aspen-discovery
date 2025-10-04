@@ -160,7 +160,7 @@
 					<tr>
 						<td>{if !empty($translateColumnLabels)}{translate text=$label isAdminFacing=true}{else}{$label}{/if}</td>
 						{foreach from=$dataSeries item=seriesData}
-							<td>{if (empty($seriesData.data.$label))}0{else}{$seriesData.data.$label|number_format}{/if}</td>
+							<td>{if (empty($seriesData.data.$label))}0{else}{$seriesData.data.$label|number_format:2}{/if}</td>
 						{/foreach}
 					</tr>
 				{/foreach}
