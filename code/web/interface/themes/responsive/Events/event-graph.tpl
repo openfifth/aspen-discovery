@@ -2,17 +2,10 @@
 	<div id="main-content" class="col-sm-12">
 		<h1>{translate text=$graphTitle isAdminFacing=true}</h1>
 
-		{if $graphOption != '3'}
-			<div class="chart-container" style="position: relative; height:50%; width:100%">
-				<canvas id="chart"></canvas>
-			</div>
-		{/if}
-
-		<h2>{translate text="Filter Options" isAdminFacing=true}</h2>
 		<form>
-		<div>
+
 			<div class="form-group">
-				<label for="timeframe">{translate text="Event hours per" isAdminFacing=true}</label>
+				<label for="timeframe">{translate text="Report Event hours per" isAdminFacing=true}</label>
 				<select name="timeframe" id="timeframe" class="form-control">
 					<option {if $timeframe == 'days'}selected{/if} value="days">{translate text="Day" isAdminFacing=true}</option>
 					<option {if $timeframe == 'weeks'}selected{/if} value="weeks">{translate text="Week" isAdminFacing=true}</option>
@@ -20,6 +13,8 @@
 					<option {if $timeframe == 'years'}selected{/if} value="years">{translate text="Year" isAdminFacing=true}</option>
 				</select>
 			</div>
+
+			{* Date Range *}
 			<div class="form-group">
 				<label for="fromDate">{translate text="Start date" isAdminFacing=true}</label>
 				<input class="form-control" type="date" {if !empty($fromDate)}value="{$fromDate}"{/if} id="fromDate" name="fromDate">
@@ -28,37 +23,10 @@
 				<label for="toDate">{translate text="End date" isAdminFacing=true}</label>
 				<input class="form-control" type="date" {if !empty($toDate)}value="{$toDate}"{/if} id="toDate" name="toDate">
 			</div>
-			<div class="form-group">
-				<label for="type">{translate text="Event type" isAdminFacing=true}</label>
-				<select name="type" id="type" class="form-control">
-					<option {if $eventTypeValue == ''}selected{/if} value="">{translate text="All Types" isAdminFacing=true}</option>
-					{foreach $eventTypes as $id => $type}
-						<option {if $eventTypeValue == $id}selected{/if} value="{$id}">{$type}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="form-group">
-				<label for="location">{translate text="Location" isAdminFacing=true}</label>
-				<select name="location" id="location" class="form-control">
-					<option {if $locationValue == ''}selected{/if} value="">{translate text="All Locations{$libraryRestriction}" isAdminFacing=true}</option>
-					{foreach $locations as $id => $location}
-						<option {if $locationValue == $id}selected{/if} value="{$id}">{$location}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="form-group" {if empty($sublocations)}style="display:none"{/if}>
-				<label for="sublocation">{translate text="Sublocation" isAdminFacing=true}</label>
-				<select name="sublocation" id="sublocation" class="form-control" >
-					<option {if $sublocations && $sublocationValue == ''}selected{/if} value="">All Sublocations</option>
-					{if $sublocations}
-						{foreach $sublocations as $id => $sublocation}
-							<option {if $sublocationValue == $id}selected{/if} value="{$id}">{$sublocation}</option>
-						{/foreach}
-					{/if}
-				</select>
-			</div>
+
+			{* Event Grouping *}
 			<div class="form-group property-row">
-				<label for="graphOption">{translate text="Event Grouping options" isAdminFacing=true}</label>
+				<label for="graphOption">{translate text="Group Events By" isAdminFacing=true}</label>
 				<select name="graphOption" id="graphOption" class="form-control">
 					<option {if $graphOption == '0'}selected{/if} value="0">{translate text="Show total event hours" isAdminFacing=true}</option>
 					<option {if $graphOption == '1'}selected{/if} value="1">{translate text="Group hours by event type" isAdminFacing=true}</option>
@@ -67,40 +35,114 @@
 				</select>
 				<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Groupings with no events will not show" isAdminFacing=true}</small></span>
 			</div>
-			<h3>{translate text="Custom Fields" isAdminFacing=true}</h3>
-			<div class="form-inline">
-			{foreach $checkboxFields as $id => $checkbox}
-				<div class="form-group">
-					<label for="field_{$id}">
-						<input type="checkbox" {if array_key_exists("field_{$id}", $fields) && $fields["field_{$id}"] == 1}checked{/if}  value="1" id="field_{$id}" name="field_{$id}" class="form-control">
-						{$checkbox->name}
-					</label>
+
+			{* Other Filters *}
+			<div class="panel-group" id="filterReportAccordion">
+				<div class='panel panel-default' id='filterReportPanel'>
+					<a data-toggle='collapse' data-parent='#filterReportAccordion' href='#filterReportPanelBody' class="collapsed">
+						<div class='panel-heading'>
+							<div class='panel-title'>
+								{translate text="Report Filtering Options" isAdminFacing=true}
+							</div>
+						</div>
+					</a>
+					<div id='filterReportPanelBody' class='panel-collapse collapse'>
+						<div class='panel-body'>
+							{* Filter by standard fields (event type, location) *}
+							<div class="form-group">
+								<label for="type">{translate text="Event type" isAdminFacing=true}</label>
+								<select name="type" id="type" class="form-control">
+									<option {if $eventTypeValue == ''}selected{/if} value="">{translate text="All Types" isAdminFacing=true}</option>
+									{foreach $eventTypes as $id => $type}
+										<option {if $eventTypeValue == $id}selected{/if} value="{$id}">{$type}</option>
+									{/foreach}
+								</select>
+							</div>
+							<div class="form-group">
+								<label for="location">{translate text="Location" isAdminFacing=true}</label>
+								<select name="location" id="location" class="form-control">
+									<option {if $locationValue == ''}selected{/if} value="">{translate text="All Locations{$libraryRestriction}" isAdminFacing=true}</option>
+									{foreach $locations as $id => $location}
+										<option {if $locationValue == $id}selected{/if} value="{$id}">{$location}</option>
+									{/foreach}
+								</select>
+							</div>
+							<div class="form-group" {if empty($sublocations)}style="display:none"{/if}>
+								<label for="sublocation">{translate text="Sublocation" isAdminFacing=true}</label>
+								<select name="sublocation" id="sublocation" class="form-control" >
+									<option {if $sublocations && $sublocationValue == ''}selected{/if} value="">All Sublocations</option>
+									{if $sublocations}
+										{foreach $sublocations as $id => $sublocation}
+											<option {if $sublocationValue == $id}selected{/if} value="{$id}">{$sublocation}</option>
+										{/foreach}
+									{/if}
+								</select>
+							</div>
+
+							{* Filtering by custom fields *}
+							<div class="panel-group" id="customFieldFilteringAccordion">
+								<div class='panel panel-default active'>
+									<a data-toggle='collapse' data-parent='#customFieldFilteringAccordion' href='#customFieldFilteringPanelBody' class="expanded">
+										<div class='panel-heading'>
+											<div class='panel-title'>
+												{translate text="Filter By Event Fields" isAdminFacing=true}
+											</div>
+										</div>
+									</a>
+									<div id='customFieldFilteringPanelBody' class='panel-collapse in'>
+										<div class='panel-body'>
+											{* Checkbox fields *}
+											<div class="form-inline">
+												{foreach $checkboxFields as $id => $checkbox}
+													<div class="form-group">
+														<label for="field_{$id}">
+															<input type="checkbox" {if array_key_exists("field_{$id}", $fields) && $fields["field_{$id}"] == 1}checked{/if}  value="1" id="field_{$id}" name="field_{$id}" class="form-control">
+															{$checkbox->name}
+														</label>
+													</div>
+												{/foreach}
+											</div>
+											{* Select Fields *}
+											{foreach $selectFields as $id => $select}
+												<div class="form-group">
+													<label for="field_{$id}">{$select->name}</label>
+													<select id="field_{$id}" name="field_{$id}" class="form-control">
+														<option value="">No selection</option>
+														{foreach explode("\n", $select->allowableValues) as $index => $option}
+															<option {if array_key_exists("field_{$id}", $fields) && $fields["field_{$id}"] == $index}selected{/if} value="{$index}">{$option}</option>
+														{/foreach}
+													</select>
+												</div>
+											{/foreach}
+										</div>
+									</div>
+								</div>
+							</div>
+
+							{* Event Search *}
+							<div class="form-group">
+								<label for="query">{translate text="Include Events Matching" isAdminFacing=true}</label><input type="text" id="query" name="query" class="form-control" value="{$query}"/>
+								<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Searches all text fields (title, description, custom text fields)" isAdminFacing=true}</small></span>
+							</div>
+						</div>
+					</div>
+
 				</div>
-			{/foreach}
 			</div>
-			<hr>
-			{foreach $selectFields as $id => $select}
-				<div class="form-group">
-					<label for="field_{$id}">{$select->name}</label>
-					<select id="field_{$id}" name="field_{$id}" class="form-control">
-						<option value="">No selection</option>
-						{foreach explode("\n", $select->allowableValues) as $index => $option}
-							<option {if array_key_exists("field_{$id}", $fields) && $fields["field_{$id}"] == $index}selected{/if} value="{$index}">{$option}</option>
-						{/foreach}
-					</select>
-				</div>
-			{/foreach}
-			<hr>
+
+			<br/>
+
 			<div class="form-group">
-				<label for="query">{translate text="Search" isAdminFacing=true}</label><input type="text" id="query" name="query" class="form-control" value="{$query}"/>
-				<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Searches all text fields (title, description, custom text fields)" isAdminFacing=true}</small></span>
-			</div>
-			<hr>
-			<div class="form-group">
-				<input type="submit" value="Apply Filters" class="form-control btn btn-primary"/>
+				<input type="submit" value="{translate text="Update Report" isAdminFacing=true inAttribute=true}" class="form-control btn btn-primary"/>
 			</div>
 		</form>
 		<hr>
+
+		{if $graphOption != '3'}
+			<div class="chart-container" style="position: relative; height:50%; width:100%">
+				<canvas id="chart"></canvas>
+			</div>
+		{/if}
 
 		<h2>{translate text="Raw Data" isAdminFacing=true}</h2>
 		<div class="adminTableRegion fixed-height-table">
