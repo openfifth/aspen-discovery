@@ -187,6 +187,9 @@ class Events_EventGraphs extends Admin_Admin {
 		$event = new Event();
 		$userHours = new EventInstance();
 		$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
+		$eventTypeObj = new EventType();
+		$eventTypeObj->includeInReports = true;
+		$event->joinAdd($eventTypeObj, 'INNER', 'eventType', 'eventTypeId', 'id');
 
 		if ($separateEventTypes && !$separateLocations && empty($eventType)) {
 			//Group by event types
@@ -215,13 +218,6 @@ class Events_EventGraphs extends Admin_Admin {
 					$seriesToGenerate[] = ['label' => "$locationLabel - $eventTypeLabel", 'eventTypeId' => $eventTypeId, 'locationId' => $locationId];
 				}
 			}
-			$eventTypeObj = new EventType();
-			$eventTypeObj->includeInReports = true;
-			$event->joinAdd($eventTypeObj, 'INNER', 'eventType', 'eventTypeId', 'id');
-		} else {
-			$eventTypeObj = new EventType();
-			$eventTypeObj->includeInReports = true;
-			$event->joinAdd($eventTypeObj, 'INNER', 'eventType', 'eventTypeId', 'id');
 		}
 		if (!empty($query)) {
 			$escapedQuery = $userHours->escape('%' . $query . '%');
@@ -248,6 +244,12 @@ class Events_EventGraphs extends Admin_Admin {
 
 		foreach ($seriesToGenerate as $series) {
 			$userHours = new EventInstance();
+			$event = new Event();
+			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
+			$eventTypeObj = new EventType();
+			$eventTypeObj->includeInReports = true;
+			$event->joinAdd($eventTypeObj, 'INNER', 'eventType', 'eventTypeId', 'id');
+
 			$userHours->selectAdd();
 			$userHours->whereAdd("event_instance.deleted = 0");
 			$userHours->whereAdd("event_instance.status = 1"); // Exclude cancelled events
@@ -267,9 +269,8 @@ class Events_EventGraphs extends Admin_Admin {
 			}
 			$interface->assign('libraryRestriction', $restrictByHomeLibrary ? " at Your Home Library" : "");
 			if (!empty($series['locationId']) || !empty($series['eventTypeId']) || !empty($location) || $restrictByHomeLibrary || !empty($query)) {
-				$event = new Event();
 				if (($separateEventTypes && !empty($series['eventTypeId'])) || !empty($eventType)) {
-					$event->whereAdd("eventTypeId = " . $event->escape($series['eventTypeId']));
+					$eventTypeObj->id = $series['eventTypeId'];
 				}
 				if (($separateLocations && !empty($series['locationId'])) || !empty($location)) {
 					$event->whereAdd("locationId = " . $event->escape($series['locationId']));
@@ -280,7 +281,6 @@ class Events_EventGraphs extends Admin_Admin {
 					$homeLibraryLocations = Location::getLocationList(true);
 					$event->whereAddIn('locationId', array_keys($homeLibraryLocations), true);
 				}
-				$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
 			}
 			if (!empty($query)) {
 				$escapedQuery = $userHours->escape('%' . $query . '%');
