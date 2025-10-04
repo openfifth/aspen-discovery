@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/Hoopla/HooplaScope.php';
-require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSettings.php';
+require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSetting.php';
 
 class HooplaSetting extends DataObject {
 	public $__table = 'hoopla_settings';    // table name
@@ -37,7 +37,7 @@ class HooplaSetting extends DataObject {
 		$hooplaScopeStructure = HooplaScope::getObjectStructure($context);
 		unset($hooplaScopeStructure['settingId']);
 
-		$libraryHooplaSettingsStructure = LibraryHooplaSettings::getObjectStructure($context);
+		$libraryHooplaSettingsStructure = LibraryHooplaSetting::getObjectStructure($context);
 		unset($libraryHooplaSettingsStructure['settingId']);
 		unset($libraryHooplaSettingsStructure['weight']);
 
@@ -168,7 +168,7 @@ class HooplaSetting extends DataObject {
 						'note' => 'Define Hoopla information for each library that uses this collection.',
 						'keyThis' => 'id',
 						'keyOther' => 'settingId',
-						'subObjectType' => 'LibraryHooplaSettings',
+						'subObjectType' => 'LibraryHooplaSetting',
 						'structure' => $libraryHooplaSettingsStructure,
 						'sortable' => false,
 						'storeDb' => true,
@@ -276,7 +276,7 @@ class HooplaSetting extends DataObject {
 		} elseif ($name == "librarySettings") {
 			if (!isset($this->_librarySettings) && $this->id) {
 				$this->_librarySettings = [];
-				$librarySettings = new LibraryHooplaSettings();
+				$librarySettings = new LibraryHooplaSetting();
 				$librarySettings->settingId = $this->id;
 				$librarySettings->find();
 				while ($librarySettings->fetch()) {

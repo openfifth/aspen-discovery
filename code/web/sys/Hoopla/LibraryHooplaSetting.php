@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
-class LibraryHooplaSettings extends DataObject
+class LibraryHooplaSetting extends DataObject
 {
     public $__table = 'library_hoopla_settings';
     public $id;
@@ -11,8 +11,9 @@ class LibraryHooplaSettings extends DataObject
     public $circulationEnabled;
     public $hooplaInstantEnabled;
     public $hooplaFlexEnabled;
-
-    public $fullUpdate;
+    public $fullUpdateForLibrary;
+    public $cleanUpInstant;
+    public $cleanUpFlex;
     public function getNumericColumnNames(): array
     {
         return [
@@ -102,8 +103,8 @@ class LibraryHooplaSettings extends DataObject
                 'default' => true,
                 'forcesReindex' => false,
             ],
-            'runfullUpdateForLibrary' => [
-                'property' => 'runfullUpdateForLibrary',
+            'fullUpdateForLibrary' => [
+                'property' => 'fullUpdateForLibrary',
                 'type' => 'checkbox',
                 'label' => 'Run Full Update for Library',
                 'description' => 'Whether or not run a full update for this library',
@@ -140,4 +141,20 @@ class LibraryHooplaSettings extends DataObject
         }
         return $this->_hooplaSettings;
     }
+
+    public function update(string $context = ''): int|bool
+    {
+        $existingSetting = new LibraryHooplaSetting();
+        $existingSetting->id = $this->id;
+        if ($existingSetting->find(true)) {
+            if ($existingSetting->hooplaInstantEnabled && !$this->hooplaInstantEnabled) {
+                $this->__set('cleanUpInstant', 1);
+            }
+            if ($existingSetting->hooplaFlexEnabled && !$this->hooplaFlexEnabled) {
+                $this->__set('cleanUpFlex', 1);
+            }
+        }
+        return parent::update($context);
+    }
+
 }

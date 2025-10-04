@@ -189,6 +189,8 @@ function getUpdates25_10_00(): array {
 					hooplaInstantEnabled TINYINT(1) DEFAULT 1,
 					hooplaFlexEnabled TINYINT(1) DEFAULT 1,
 					fullUpdateForLibrary TINYINT(1) DEFAULT 0,
+					cleanUpInstant TINYINT(1) DEFAULT 0,
+					cleanUpFlex TINYINT(1) DEFAULT 0,
 					UNIQUE KEY librarySettingHoopla (libraryId, settingId)
 				)'
 			]
@@ -230,6 +232,7 @@ function getUpdates25_10_00(): array {
 				"ALTER TABLE hoopla_export CHANGE COLUMN price ppuPrice DOUBLE NOT NULL DEFAULT 0",
 			]
 		], //update_hoopla_export_table
+
 
 		// Leo Stoyanov - BWS
 		'add_indexes_for_more_user_list_sort_options' => [
