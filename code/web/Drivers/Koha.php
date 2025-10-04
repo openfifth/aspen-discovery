@@ -570,6 +570,7 @@ class Koha extends AbstractIlsDriver {
 			//Check if patron is allowed to auto-renew based on circulation rules
 
 			$circulationRulesKey = "$patronType~$itemType~$checkoutBranch";
+			$rulesFound = [];
 			if (array_key_exists($circulationRulesKey, $circulationRulesForCheckouts)){
 				$circulationRulesForCheckout = $circulationRulesForCheckouts[$circulationRulesKey];
 			} else {
@@ -581,12 +582,17 @@ class Koha extends AbstractIlsDriver {
 					WHERE (categorycode IN ('$patronType', '*') OR categorycode IS NULL)
 					  AND (itemtype IN('$itemType', '*') OR itemtype is null)
 					  AND (branchcode IN ('$checkoutBranch', '*') OR branchcode IS NULL)
-					ORDER BY branchcode desc, categorycode desc, itemtype desc LIMIT 1
+					  AND rule_name like '%renew%'
+					ORDER BY branchcode desc, categorycode desc, itemtype desc
 				";
 				$circulationRulesRS = mysqli_query($this->dbConnection, $circulationRulesSql);
 				if ($circulationRulesRS !== false) {
-					$circulationRulesRow = $circulationRulesRS->fetch_assoc();
-					$circulationRulesForCheckout[] = $circulationRulesRow;
+					while ($circulationRulesRow = $circulationRulesRS->fetch_assoc()) {
+						if (!array_key_exists($circulationRulesRow['rule_name'], $rulesFound)) {
+							$circulationRulesForCheckout[] = $circulationRulesRow;
+							$rulesFound[$circulationRulesRow['rule_name']] = $circulationRulesRow['rule_name'];
+						}
+					}
 					$circulationRulesRS->close();
 				}
 				$timer->logTime("Load circulation rules for checkout");
