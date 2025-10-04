@@ -23,6 +23,19 @@ class EventType extends DataObject {
 	public $_locations;
 
 	static $_objectStructure = [];
+
+	public function getNumericColumnNames(): array {
+		return [
+			'titleCustomizable',
+			'descriptionCustomizable',
+			'coverCustomizable',
+			'eventLength',
+			'lengthCustomizable',
+			'archived',
+			'includeInReports',
+		];
+	}
+
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
