@@ -8,7 +8,7 @@ require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class Events_EventGraphs extends Admin_Admin {
 
-	function launch() {
+	function launch() : void {
 		global $interface;
 
 		$stat = "eventHours";
@@ -60,6 +60,7 @@ class Events_EventGraphs extends Admin_Admin {
 			return str_contains($k, 'field_') && $v != NULL && $v !== '';
 		}, ARRAY_FILTER_USE_BOTH);
 		foreach ($fields as $key => $value) {
+			/** @noinspection PhpArrayUsedOnlyForWriteInspection */
 			$field[$key] = $_REQUEST[$key];
 		}
 		$interface->assign('fields', $fields);
@@ -72,12 +73,11 @@ class Events_EventGraphs extends Admin_Admin {
 		$interface->assign('section', 'Events');
 		$interface->assign('showCSVExportButton', true);
 		$interface->assign('graphTitle', $title);
-		// $this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes, $separateLocations);
+		$this->getAndSetInterfaceDataSeries($timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes, $separateLocations);
 		$interface->assign('stat', $stat);
 		$interface->assign('propName', 'exportToCSV');
 		$title = $interface->getVariable('graphTitle');
-		$this->assignGraphSpecificTitle($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate);
+		$this->assignGraphSpecificTitle($timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate);
 		$this->display('event-graph.tpl', $title);
 	}
 
@@ -108,7 +108,8 @@ class Events_EventGraphs extends Admin_Admin {
 		]);
 	}
 
-	public function buildCSV() {
+	/** @noinspection PhpNoReturnAttributeCanBeAddedInspection */
+	public function buildCSV() : void {
 		global $interface;
 
 		$stat = "eventHours";
@@ -135,23 +136,24 @@ class Events_EventGraphs extends Admin_Admin {
 			return str_contains($k, 'field_') && $v != NULL && $v !== '';
 		}, ARRAY_FILTER_USE_BOTH);
 		foreach ($fields as $key => $value) {
+			/** @noinspection PhpArrayUsedOnlyForWriteInspection */
 			$field[$key] = $_REQUEST[$key];
 		}
 		$query = $_REQUEST['query'] ?? '';
 
-		$this->getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes, $separateLocations);
+		$this->getAndSetInterfaceDataSeries($timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate, $separateEventTypes, $separateLocations);
 		$dataSeries = $interface->getVariable('dataSeries');
 
-		$filename = "AspenUsageData_{$stat}.csv";
+		$filename = "AspenUsageData_$stat.csv";
 		header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 		header("Cache-Control: no-store, no-cache, must-revalidate");
 		header("Cache-Control: post-check=0, pre-check=0", false);
 		header("Pragma: no-cache");
 		header('Content-Type: text/csv; charset=utf-8');
-		header("Content-Disposition: attachment;filename={$filename}");
+		header("Content-Disposition: attachment;filename=$filename");
 		$fp = fopen('php://output', 'w');
 
-		$title = 'Aspen Event Hours' . $this->assignGraphSpecificTitle($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate);
+		$title = 'Aspen Event Hours' . $this->assignGraphSpecificTitle($timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate);
 		if (!empty($title)) {
 			fputcsv($fp, [trim($title)]);
 		}
@@ -173,7 +175,7 @@ class Events_EventGraphs extends Admin_Admin {
 		exit();
 	}
 
-	private function getAndSetInterfaceDataSeries($stat, $timeframe, $eventType, $location, $sublocation = '', $query = '', $fields = [], $fromDate = '', $toDate = '', $separateEventTypes = false, $separateLocations = false): void {
+	private function getAndSetInterfaceDataSeries($timeframe, $eventType, $location, $sublocation = '', $query = '', $fields = [], $fromDate = '', $toDate = '', $separateEventTypes = false, $separateLocations = false): void {
 		global $interface;
 
 		$dataSeries = [];
@@ -181,17 +183,25 @@ class Events_EventGraphs extends Admin_Admin {
 
 		$restrictByHomeLibrary = !UserAccount::userHasPermission('View Event Reports for All Libraries') || UserAccount::userHasPermission('View Event Reports for Home Library');
 		$seriesToGenerate[] = ['label' => 'Total Hours', 'eventTypeId' => $eventType ?? null, 'locationId' => $location ?? null];
+
+		$event = new Event();
+		$userHours = new EventInstance();
+		$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
+
 		if ($separateEventTypes && !$separateLocations && empty($eventType)) {
+			//Group by event types
 			$eventTypes = EventType::getEventTypeList(true);
 			foreach ($eventTypes as $eventId => $eventLabel) {
 				$seriesToGenerate[] = ['label' => $eventLabel, 'eventTypeId' => $eventId, 'locationId' => $location ?? null];
 			}
 		} else if ($separateLocations && !$separateEventTypes && empty($location)) {
+			//Group by locations
 			$locations = Location::getLocationList($restrictByHomeLibrary);
 			foreach ($locations as $locationId => $locationLabel) {
 				$seriesToGenerate[] = ['label' => $locationLabel, 'eventTypeId' => $eventType ?? null, 'locationId' => $locationId];
 			}
 		} else if ($separateEventTypes && $separateLocations) {
+			//Group by both event type and location
 			$eventTypes = EventType::getEventTypeList(true);
 			$locations = Location::getLocationList($restrictByHomeLibrary);
 			if (!empty($location)) {
@@ -208,13 +218,10 @@ class Events_EventGraphs extends Admin_Admin {
 			$eventType = new EventType();
 			$eventType->includeInReports = true;
 			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
-			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
 		} else {
-			$event = new Event();
 			$eventType = new EventType();
 			$eventType->includeInReports = true;
 			$event->joinAdd($eventType, 'INNER', 'eventType', 'eventTypeId', 'id');
-			$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
 		}
 		if (!empty($query)) {
 			$escapedQuery = $userHours->escape('%' . $query . '%');
@@ -271,7 +278,7 @@ class Events_EventGraphs extends Admin_Admin {
 					}
 				} elseif ($restrictByHomeLibrary) {
 					$homeLibraryLocations = Location::getLocationList(true);
-					$event->whereAddIn('locationId', array_keys($homeLibraryLocations), true, 'AND');
+					$event->whereAddIn('locationId', array_keys($homeLibraryLocations), true);
 				}
 				$userHours->joinAdd($event, 'INNER', 'event', 'eventId', 'id');
 			}
@@ -305,29 +312,21 @@ class Events_EventGraphs extends Admin_Admin {
 					'backgroundColor' => 'rgba(255, 99, 132, 0.2)',
 					'data' => [],
 				];
-				$userHours->selectAdd('SUM(length) / 60 AS sumHours');
 			} else {
 				$dataSeries[$series['label']] = GraphingUtils::getDataSeriesArray(count($dataSeries));
-				$userHours->selectAdd('SUM(length) / 60 AS sumHours');
 			}
+			$userHours->selectAdd('SUM(length) / 60 AS sumHours');
 
 			$userHours->find();
 			$totalHoursForSeries = 0;
 			while ($userHours->fetch()) {
-				switch ($timeframe) {
-					case "weeks":
-						$curPeriod = "{$userHours->week}-{$userHours->year}";
-						break;
-					case "months":
-						$curPeriod = "{$userHours->month}-{$userHours->year}";
-						break;
-					case "years":
-						$curPeriod = "{$userHours->year}";
-						break;
-					case "days":
-					default: // Default to hours per day
-						$curPeriod = "{$userHours->date}";
-				}
+				/** @noinspection PhpUndefinedFieldInspection */
+				$curPeriod = match ($timeframe) {
+					"weeks" => "$userHours->week-$userHours->year",
+					"months" => "$userHours->month-$userHours->year",
+					"years" => "$userHours->year",
+					default => "$userHours->date",
+				};
 
 				if (!in_array($curPeriod, $columnLabels)) {
 					$columnLabels[] = $curPeriod;
@@ -341,6 +340,7 @@ class Events_EventGraphs extends Admin_Admin {
 					/** @noinspection PhpUndefinedFieldInspection */
 					$dataSeries[$series['label']]['data'][$curPeriod] = $userHours->sumHours;
 				}
+				/** @noinspection PhpUndefinedFieldInspection */
 				$totalHoursForSeries += $userHours->sumHours;
 			}
 			if ($totalHoursForSeries == 0 && !empty($series['label']) && $series['label'] !== 'Total Hours') {
@@ -367,7 +367,7 @@ class Events_EventGraphs extends Admin_Admin {
 		$interface->assign('translateColumnLabels', false);
 	}
 
-	private function assignGraphSpecificTitle($stat, $timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate) {
+	private function assignGraphSpecificTitle($timeframe, $eventType, $location, $sublocation, $query, $fields, $fromDate, $toDate) : string {
 		global $interface;
 		$title = $interface->getVariable('graphTitle');
 		$title .= " by " . ucfirst(substr($timeframe, 0, -1));
