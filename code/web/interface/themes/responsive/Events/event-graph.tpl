@@ -2,9 +2,11 @@
 	<div id="main-content" class="col-sm-12">
 		<h1>{translate text=$graphTitle isAdminFacing=true}</h1>
 
-		<div class="chart-container" style="position: relative; height:50%; width:100%">
-			<canvas id="chart"></canvas>
-		</div>
+		{if $graphOption != '3'}
+			<div class="chart-container" style="position: relative; height:50%; width:100%">
+				<canvas id="chart"></canvas>
+			</div>
+		{/if}
 
 		<h2>{translate text="Filter Options" isAdminFacing=true}</h2>
 		<form>
@@ -35,18 +37,8 @@
 					{/foreach}
 				</select>
 			</div>
-			<div class="form-group property-row">
-				<label for="type">{translate text="Graph options" isAdminFacing=true}</label>
-				<select name="graphOption" id="graphOption" class="form-control">
-					<option {if $graphOption == '0'}selected{/if} value="0">{translate text="Show total event hours" isAdminFacing=true}</option>
-					<option {if $graphOption == '1'}selected{/if} value="1">{translate text="Group hours by event type" isAdminFacing=true}</option>
-					<option {if $graphOption == '2'}selected{/if} value="2">{translate text="Group hours by location" isAdminFacing=true}</option>
-					<option {if $graphOption == '3'}selected{/if} value="3">{translate text="Group hours by event type at each location (no graph)" isAdminFacing=true}</option>
-				</select>
-				<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Groupings with no events will not show" isAdminFacing=true}</small></span>
-			</div>
 			<div class="form-group">
-				<label for="type">{translate text="Location" isAdminFacing=true}</label>
+				<label for="location">{translate text="Location" isAdminFacing=true}</label>
 				<select name="location" id="location" class="form-control">
 					<option {if $locationValue == ''}selected{/if} value="">{translate text="All Locations{$libraryRestriction}" isAdminFacing=true}</option>
 					{foreach $locations as $id => $location}
@@ -55,7 +47,7 @@
 				</select>
 			</div>
 			<div class="form-group" {if empty($sublocations)}style="display:none"{/if}>
-				<label for="type">{translate text="Sublocation" isAdminFacing=true}</label>
+				<label for="sublocation">{translate text="Sublocation" isAdminFacing=true}</label>
 				<select name="sublocation" id="sublocation" class="form-control" >
 					<option {if $sublocations && $sublocationValue == ''}selected{/if} value="">All Sublocations</option>
 					{if $sublocations}
@@ -64,6 +56,16 @@
 						{/foreach}
 					{/if}
 				</select>
+			</div>
+			<div class="form-group property-row">
+				<label for="graphOption">{translate text="Event Grouping options" isAdminFacing=true}</label>
+				<select name="graphOption" id="graphOption" class="form-control">
+					<option {if $graphOption == '0'}selected{/if} value="0">{translate text="Show total event hours" isAdminFacing=true}</option>
+					<option {if $graphOption == '1'}selected{/if} value="1">{translate text="Group hours by event type" isAdminFacing=true}</option>
+					<option {if $graphOption == '2'}selected{/if} value="2">{translate text="Group hours by location" isAdminFacing=true}</option>
+					<option {if $graphOption == '3'}selected{/if} value="3">{translate text="Group hours by event type at each location (no graph)" isAdminFacing=true}</option>
+				</select>
+				<span class="help-block" style="margin-top:0"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Groupings with no events will not show" isAdminFacing=true}</small></span>
 			</div>
 			<h3>{translate text="Custom Fields" isAdminFacing=true}</h3>
 			<div class="form-inline">
@@ -80,7 +82,7 @@
 			{foreach $selectFields as $id => $select}
 				<div class="form-group">
 					<label for="field_{$id}">{$select->name}</label>
-					<select value="{$id}" id="field_{$id}" name="field_{$id}" class="form-control">
+					<select id="field_{$id}" name="field_{$id}" class="form-control">
 						<option value="">No selection</option>
 						{foreach explode("\n", $select->allowableValues) as $index => $option}
 							<option {if array_key_exists("field_{$id}", $fields) && $fields["field_{$id}"] == $index}selected{/if} value="{$index}">{$option}</option>
