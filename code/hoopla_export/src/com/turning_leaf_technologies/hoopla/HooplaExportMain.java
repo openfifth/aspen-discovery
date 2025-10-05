@@ -41,6 +41,11 @@ public class HooplaExportMain {
 	private static PreparedStatement updateHooplaTitleInDB = null;
 	private static PreparedStatement deleteHooplaItemStmt;
 	private static PreparedStatement updateLastRecordProcessedStmt;
+	private static PreparedStatement getLibraryHooplaSettingsStmt;
+	private static PreparedStatement updateFullUpdateForLibraryStmt;
+	private static PreparedStatement upsertHooplaEntitlementStmt;
+	private static PreparedStatement deleteEntitlementStmt;
+	private static PreparedStatement getExistingEntitlementsForLibraryStmt;
 
 	//Record grouper
 	private static GroupedWorkIndexer groupedWorkIndexer;
@@ -48,6 +53,10 @@ public class HooplaExportMain {
 
 	//Existing records
 	private static HashMap<Long, HooplaTitle> existingRecords = new HashMap<>();
+	private static final HashSet<Long> titlesNeedingReindex = new HashSet<>();
+
+	private static final String HOOPLA_TYPE_INSTANT = "Instant";
+	private static final String HOOPLA_TYPE_FLEX = "Flex";
 
 	//For Checksums
 	private static final CRC32 checksumCalculator = new CRC32();
@@ -389,17 +398,24 @@ public class HooplaExportMain {
 			PreparedStatement getSettingsStmt = aspenConn.prepareStatement("SELECT * from hoopla_settings");
 			ResultSet getSettingsRS = getSettingsStmt.executeQuery();
 			int numSettings = 0;
+			boolean globalContentUpdated = false;
 			while (getSettingsRS.next()) {
 				HooplaSettings settings = new HooplaSettings(getSettingsRS);
 				numSettings++;
 
-				// Extract Global Content
-				updatesRun |= exportHooplaContent(settings);
+				// TO DO, add the check for library setting, if no library enable the neither
+				// insteand or flex, we dont do anything
 
-				//TO DO add entitlements
+				// Extract Global Content
+				if (!globalContentUpdated) {
+					globalContentUpdated = exportHooplaContent(settings);
+					updatesRun |= globalContentUpdated;
+				}
+
+				updatesRun |= exportLibraryEntitlements(settings, globalContentUpdated);
 
 				// Process Flex Availability
-				updatesRun |= getFlexAvailability(settings);
+			//	updatesRun |= getFlexAvailability(settings);
 
 				if (settings.isRegroupAllRecords()) {
 					regroupAllRecords(aspenConn, settings.getSettingsId(), getGroupedWorkIndexer(), logEntry);
@@ -554,7 +570,7 @@ public class HooplaExportMain {
 							try {
 								Thread.sleep(1000 * 60 * 2); //Wait for 2 minutes before trying again
 							} catch (InterruptedException e) {
-								logEntry.incErrors("Error sleeping for 2 minutes", e);
+								logEntry.incErrors("Error sleeping for 2 minutes for global contents", e);
 							}
 							accessToken = getAccessToken(settings);
 							headers.put("Authorization", "Bearer " + accessToken);
@@ -577,40 +593,267 @@ public class HooplaExportMain {
 			logEntry.addNote("Completed " + numRecordsToExtract + " global content updates");
 			logEntry.saveResults();
 
-			try{
-				//Set the extract time
-				PreparedStatement updateSettingsStmt = null;
-				if (doFullReload){
-					if (!logEntry.hasErrors()) {
-						updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfAllRecords = ?, lastRecordProcessed = 0 where id = ?");
-					} else {
-						//force another full update
-						PreparedStatement reactiveFullUpdateStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set runFullUpdate = 1 where id = ?");
-						reactiveFullUpdateStmt.setLong(1, settingsId);
-						reactiveFullUpdateStmt.executeUpdate();
-					}
-				}else{
-					// Update the lastUpdateOfChangedRecords if we have a successful response
-					if (response != null && response.isSuccess()){
-						updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfChangedRecords = ? where id = ?");
-					}
-				}
-				if (updateSettingsStmt != null) {
-					updateSettingsStmt.setLong(1, startTimeForLogging);
-					updateSettingsStmt.setLong(2, settingsId);
-					updateSettingsStmt.executeUpdate();
-					updateSettingsStmt.close();
-					numRetries32HoursAfter = 0;
-				}
-			} catch (SQLException e) {
-				logEntry.incErrors("Error updating settings", e);
-			}
 		} catch (SQLException e) {
 			logEntry.incErrors("Error updating settings", e);
 		}
 		return updatedContent;
 	}
 
+	private static boolean exportLibraryEntitlements(HooplaSettings settings, boolean globalContentUpdated) {
+		ArrayList<HooplaLibrarySettings> librarySettings = loadLibraryHooplaSettings(settings.getSettingsId());
+		if (librarySettings.isEmpty()) {
+			return false;
+		}
+
+		boolean hasUpdates = false;
+		for (HooplaLibrarySettings librarySetting : librarySettings) {
+			boolean libraryUpdates = false;
+			// Skip if the library doesn't have a Hoopla library ID
+			if (!librarySetting.hasHooplaLibraryId()) {
+				continue;
+			}
+			// Skip if the library doesn't have instant or flex enabled
+			if (!librarySetting.isInstantEnabled() && !librarySetting.isFlexEnabled()) {
+				continue;
+			}
+
+			boolean runFullUpdateForLibrary = settings.isRunFullUpdate() || librarySetting.isfullUpdateForLibrary();
+
+			// Export Instant Entitlements only when running full update for library, 
+			// or when global contents get extracted (Full Update or Incremental Updates)
+			if (librarySetting.isInstantEnabled() && (runFullUpdateForLibrary || globalContentUpdated)) {
+				libraryUpdates |= exportLibraryEntitlementsForType(settings, librarySetting, HOOPLA_TYPE_INSTANT, runFullUpdateForLibrary);
+			}
+
+			// Export Flex Entitlements only when running full update for library,
+			// or when global contents get extracted (Full Update or Incremental Updates)
+			if (librarySetting.isFlexEnabled() && (runFullUpdateForLibrary || globalContentUpdated)) {
+				libraryUpdates |= exportLibraryEntitlementsForType(settings, librarySetting, HOOPLA_TYPE_FLEX, runFullUpdateForLibrary);
+			}
+
+			if (libraryUpdates && librarySetting.isfullUpdateForLibrary()) {
+				try {
+					updateFullUpdateForLibraryStmt.setLong(1, librarySetting.getId());
+					updateFullUpdateForLibraryStmt.executeUpdate();
+				} catch (SQLException e) {
+					logEntry.incErrors("Unable to update fullUpdateForLibrary for library setting " + librarySetting.getLibraryId(), e);
+				}
+			}
+
+			if (libraryUpdates) {
+				hasUpdates = true;
+			}
+		}
+
+		// Update the timestamp for the settings after exporting all the library entitlements
+		try{
+			PreparedStatement updateSettingsStmt = null;
+			if (settings.isRunFullUpdate()){
+				if (!logEntry.hasErrors()) {
+					updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfAllRecords = ?, lastRecordProcessed = 0 where id = ?");
+				} else {
+					//force another full update
+					PreparedStatement reactiveFullUpdateStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set runFullUpdate = 1 where id = ?");
+					reactiveFullUpdateStmt.setLong(1, settings.getSettingsId());
+					reactiveFullUpdateStmt.executeUpdate();
+				}
+			}else{
+				// Update the lastUpdateOfChangedRecords only if global content was updated
+				if (globalContentUpdated){
+					updateSettingsStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastUpdateOfChangedRecords = ? where id = ?");
+				}
+			}
+			if (updateSettingsStmt != null) {
+				updateSettingsStmt.setLong(1, startTimeForLogging);
+				updateSettingsStmt.setLong(2, settings.getSettingsId());
+				updateSettingsStmt.executeUpdate();
+				updateSettingsStmt.close();
+				numRetries32HoursAfter = 0;
+			}
+		} catch (SQLException e) {
+			logEntry.incErrors("Error updating settings timestamp", e);
+		}
+
+		return hasUpdates;
+	}
+
+	private static boolean exportLibraryEntitlementsForType(HooplaSettings settings, HooplaLibrarySettings librarySetting, String hooplaType, boolean runFullUpdateForLibrary) {
+		boolean updateEntitlements = false;
+		String hooplaLibraryId = librarySetting.getHooplaLibraryId();
+		if (hooplaLibraryId == null || hooplaLibraryId.isEmpty()) {
+			return false;
+		}
+		String accessToken = settings.getAccessToken();
+		if (accessToken == null || settings.getTokenExpirationTime() < (System.currentTimeMillis() / 1000)) {
+			accessToken = getAccessToken(settings);
+		}
+		if (accessToken == null) {
+			return false;
+		}
+
+		int recordExtractionBatchSize = settings.getRecordExtractionBatchSize();
+		long lastUpdateOfChangedRecords = settings.getLastUpdateOfChangedRecords();
+		long lastUpdateOfAllRecords = settings.getLastUpdateOfAllRecords();
+		long lastUpdate = Math.max(lastUpdateOfChangedRecords, lastUpdateOfAllRecords);
+		String hooplaAPIBaseURL = settings.getApiUrl();
+
+		String url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/entitlements?purchaseModel=" + hooplaType + "&limit=" + recordExtractionBatchSize;
+
+		if (!runFullUpdateForLibrary && lastUpdate > 0) {
+			url += "&startTime=" + lastUpdate;
+		} else {
+			// Full update for library, only get active entitlements
+			url += "&status=active";
+		}
+
+		// Load existing entitlements for library if not a full update
+		HashSet<Long> existingEntitlements = runFullUpdateForLibrary ? loadExistingEntitlementsForLibrary(librarySetting.getLibraryId(), hooplaType) : null;
+
+		HashMap<String, String> headers = new HashMap<>();
+		headers.put("Authorization", "Bearer " + accessToken);
+		headers.put("Content-Type", "application/json");
+		headers.put("Accept", "application/json");
+
+		String startToken = "0";
+		int numEntitlements = 0;
+		int numTries = 0;
+
+		while (startToken != null) {
+			String paginationUrl = url + "&startToken=" + startToken;
+			logger.error("entitlement url: " + paginationUrl);
+			WebServiceResponse response = NetworkUtils.getURL(paginationUrl, logger, headers);
+
+			if (response.isSuccess()) {
+				JSONObject responseJSON = new JSONObject(response.getMessage());
+				JSONArray entitlements = responseJSON.getJSONArray("entitlements");
+				if (entitlements != null && !entitlements.isEmpty()) {
+					numEntitlements += entitlements.length();
+					updateEntitlementsInDB(entitlements, existingEntitlements, runFullUpdateForLibrary, hooplaType, librarySetting.getLibraryId());
+					updateEntitlements = true;
+				}
+
+				JSONObject metadataJSON = responseJSON.optJSONObject("metadata");
+				if (metadataJSON != null && metadataJSON.has("nextStartToken")) {
+					startToken = metadataJSON.get("nextStartToken").toString();
+				} else {
+					startToken = null;
+				}
+
+			} else {
+				if (response.getResponseCode() == 401 || response.getResponseCode() == 504 || response.getResponseCode() == 503){
+					numTries++;
+					if (numTries >= 3){
+						logEntry.incErrors("Error loading entitlements after 3 attempts from" + url + " " + response.getResponseCode() + " " + response.getMessage());
+					}else{
+						try {
+							Thread.sleep(1000 * 60 * 2); //Wait for 2 minutes before trying again
+						} catch (InterruptedException e) {
+							logEntry.incErrors("Error sleeping for 2 minutes for entitlments", e);
+						}
+						accessToken = getAccessToken(settings);
+						headers.put("Authorization", "Bearer " + accessToken);
+					}
+				}else {
+					logEntry.incErrors("Error loading entitlements from" + url + " " + response.getResponseCode() + " " + response.getMessage());
+				}
+				startToken = null;
+			}
+
+		}
+		if (runFullUpdateForLibrary && !existingEntitlements.isEmpty()) {
+			try {
+				for (Long hooplaId : existingEntitlements) {
+					deleteEntitlementStmt.setLong(1, hooplaId);
+					deleteEntitlementStmt.setLong(2, librarySetting.getLibraryId());
+					deleteEntitlementStmt.setString(3, hooplaType);
+					deleteEntitlementStmt.executeUpdate();
+					titlesNeedingReindex.add(hooplaId);
+				}
+			} catch (SQLException e) {
+				logEntry.incErrors("Error setting entitlements inactive for library " + librarySetting.getLibraryId() + " " + hooplaType, e);
+			}
+
+		}
+		logEntry.addNote("Exported " + numEntitlements + " " + hooplaType + " entitlements for library " + librarySetting.getLibraryId());
+		logEntry.saveResults();
+		return updateEntitlements;
+	}
+
+	private static ArrayList<HooplaLibrarySettings> loadLibraryHooplaSettings(long settingsId) {
+		ArrayList<HooplaLibrarySettings> librarySettings = new ArrayList<>();
+		try {
+			getLibraryHooplaSettingsStmt.setLong(1, settingsId);
+			ResultSet librarySettingsRS = getLibraryHooplaSettingsStmt.executeQuery();
+			while (librarySettingsRS.next()) {
+				librarySettings.add(new HooplaLibrarySettings(librarySettingsRS));
+			}
+			librarySettingsRS.close();
+		} catch (SQLException e) {
+			logEntry.incErrors("Error loading Hoopla library settings for settingsId " + settingsId, e);
+		}
+		return librarySettings;
+	}
+
+	private static HashSet<Long> loadExistingEntitlementsForLibrary(long scopeLibraryId, String hooplaType) {
+		HashSet<Long> existingEntitlements = new HashSet<>();
+		try {
+			getExistingEntitlementsForLibraryStmt.setLong(1, scopeLibraryId);
+			getExistingEntitlementsForLibraryStmt.setString(2, hooplaType);
+			ResultSet existingEntitlementsRS = getExistingEntitlementsForLibraryStmt.executeQuery();
+			while (existingEntitlementsRS.next()) {
+				existingEntitlements.add(existingEntitlementsRS.getLong("titleId"));
+			}
+			existingEntitlementsRS.close();
+		} catch (SQLException e) {
+			logEntry.incErrors("Error loading existing Hoopla entitlements for library " + scopeLibraryId + " (" + hooplaType + ")", e);
+		}
+		return existingEntitlements;
+	}
+
+	private static void updateEntitlementsInDB(JSONArray entitlements, HashSet<Long> existingEntitlements, boolean runFullUpdateForLibrary, String hooplaType, long scopeLibraryId) {
+		for (int i = 0; i < entitlements.length(); i++) {
+			try {
+				JSONObject entitlement = entitlements.getJSONObject(i);
+				long hooplaId = entitlement.getLong("contentId");
+				if (runFullUpdateForLibrary) {
+					try {
+						upsertHooplaEntitlementStmt.setLong(1, hooplaId);
+						upsertHooplaEntitlementStmt.setLong(2, scopeLibraryId);
+						upsertHooplaEntitlementStmt.setString(3, hooplaType);
+						upsertHooplaEntitlementStmt.executeUpdate();
+					} catch (SQLException e) {
+						logEntry.incErrors("Error upserting entitlement for title " + hooplaId + " to database", e);
+					}
+					existingEntitlements.remove(hooplaId);
+					titlesNeedingReindex.add(hooplaId);
+				} else {
+					if (entitlement.has("active") && entitlement.getBoolean("active")) {
+						try {
+							upsertHooplaEntitlementStmt.setLong(1, hooplaId);
+							upsertHooplaEntitlementStmt.setLong(2, scopeLibraryId);
+							upsertHooplaEntitlementStmt.setString(3, hooplaType);
+							upsertHooplaEntitlementStmt.executeUpdate();
+							titlesNeedingReindex.add(hooplaId);
+						} catch (SQLException e) {
+							logEntry.incErrors("Error upserting entitlement for title " + hooplaId + " to database", e);
+						}
+					} else {
+						try {
+							deleteEntitlementStmt.setLong(1, hooplaId);
+							deleteEntitlementStmt.setLong(2, scopeLibraryId);
+							deleteEntitlementStmt.setString(3, hooplaType);
+							deleteEntitlementStmt.executeUpdate();
+							titlesNeedingReindex.add(hooplaId);
+						} catch (SQLException e) {
+							logEntry.incErrors("Error deleting entitlement for title " + hooplaId + " from database", e);
+						}
+					}
+				}
+			} catch (JSONException e) {
+				logEntry.incErrors("Error parsing entitlement JSON ", e);
+			}
+		}
+	}
 
 	private static boolean getFlexAvailability(HooplaSettings settings) {
 		// Update all the flex titles availability
@@ -869,7 +1112,7 @@ public class HooplaExportMain {
 					if (curTitle.has("ratings")) {
 						JSONArray ratingsArray = curTitle.getJSONArray("ratings");
 						if (ratingsArray.length() > 0) {
-						addHooplaTitleToDB.setString(7, ratingsArray.getJSONObject(0).getString("ratingValue"));
+							addHooplaTitleToDB.setString(7, ratingsArray.getJSONObject(0).getString("ratingValue"));
 						} else {
 							addHooplaTitleToDB.setString(7, "");
 						}
@@ -881,7 +1124,7 @@ public class HooplaExportMain {
 					if (curTitle.has("ppuPrices")) {
 						JSONArray ppuPricesArray = curTitle.getJSONArray("ppuPrices");
 						if (ppuPricesArray.length() > 0) {
-						addHooplaTitleToDB.setDouble(10, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
+							addHooplaTitleToDB.setDouble(10, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
 						} else {
 							addHooplaTitleToDB.setDouble(10, 0.0);
 						}
@@ -891,6 +1134,7 @@ public class HooplaExportMain {
 					addHooplaTitleToDB.setLong(11, rawChecksum);
 					addHooplaTitleToDB.setString(12, rawResponse);
 					addHooplaTitleToDB.setLong(13, startTimeForLogging);
+					titlesNeedingReindex.add(hooplaId);
 					try {
 						addHooplaTitleToDB.executeUpdate();
 					}catch (DataTruncation e) {
@@ -907,7 +1151,7 @@ public class HooplaExportMain {
 					if (curTitle.has("ratings")) {
 						JSONArray ratingsArray = curTitle.getJSONArray("ratings");
 						if (ratingsArray.length() > 0) {
-						updateHooplaTitleInDB.setString(6, ratingsArray.getJSONObject(0).getString("ratingValue"));
+							updateHooplaTitleInDB.setString(6, ratingsArray.getJSONObject(0).getString("ratingValue"));
 						} else {
 							updateHooplaTitleInDB.setString(6, "");
 						}
@@ -919,7 +1163,7 @@ public class HooplaExportMain {
 					if (curTitle.has("ppuPrices")) {
 						JSONArray ppuPricesArray = curTitle.getJSONArray("ppuPrices");
 						if (ppuPricesArray.length() > 0) {
-						updateHooplaTitleInDB.setDouble(9, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
+							updateHooplaTitleInDB.setDouble(9, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
 						} else {
 							updateHooplaTitleInDB.setDouble(9, 0.0);
 						}
@@ -929,6 +1173,7 @@ public class HooplaExportMain {
 					updateHooplaTitleInDB.setLong(10, rawChecksum);
 					updateHooplaTitleInDB.setString(11, rawResponse);
 					updateHooplaTitleInDB.setLong(12, existingTitle.getId());
+					titlesNeedingReindex.add(hooplaId);
 
 					try {
 						updateHooplaTitleInDB.executeUpdate();
@@ -1011,6 +1256,11 @@ public class HooplaExportMain {
 				updateHooplaTitleInDB = aspenConn.prepareStatement("UPDATE hoopla_export set title = ?, format = ?, pa = ?, demo = ?, profanity = ?, " +
 						"rating = ?, abridged = ?, children = ?, ppuPrice = ?, rawChecksum = ?, rawResponse = COMPRESS(?) where id = ?");
 				deleteHooplaItemStmt = aspenConn.prepareStatement("DELETE FROM hoopla_export where id = ?");
+				getLibraryHooplaSettingsStmt = aspenConn.prepareStatement("SELECT * FROM library_hoopla_settings WHERE settingId = ?");
+				updateFullUpdateForLibraryStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings SET fullUpdateForLibrary = 0 WHERE id = ?");
+				upsertHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, scopeLibraryId, hooplaType) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE hooplaType = VALUES(hooplaType)");
+				deleteEntitlementStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlements WHERE hooplaId = ? AND scopeLibraryId = ? AND hooplaType = ?");
+				getExistingEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT hooplaId FROM hoopla_entitlements WHERE scopeLibraryId = ? AND hooplaType = ?");
 			}else{
 				logger.error("Aspen database connection information was not provided");
 				System.exit(1);
@@ -1030,6 +1280,16 @@ public class HooplaExportMain {
 			updateHooplaTitleInDB = null;
 			deleteHooplaItemStmt.close();
 			deleteHooplaItemStmt = null;
+			getLibraryHooplaSettingsStmt.close();
+			getLibraryHooplaSettingsStmt = null;
+			updateFullUpdateForLibraryStmt.close();
+			updateFullUpdateForLibraryStmt = null;
+			upsertHooplaEntitlementStmt.close();
+			upsertHooplaEntitlementStmt = null;
+			deleteEntitlementStmt.close();
+			deleteEntitlementStmt = null;
+			getExistingEntitlementsForLibraryStmt.close();
+			getExistingEntitlementsForLibraryStmt = null;
 			aspenConn.close();
 			//noinspection UnusedAssignment
 			aspenConn = null;

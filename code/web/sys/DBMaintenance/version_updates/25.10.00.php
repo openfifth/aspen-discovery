@@ -232,6 +232,21 @@ function getUpdates25_10_00(): array {
 				"ALTER TABLE hoopla_export CHANGE COLUMN price ppuPrice DOUBLE NOT NULL DEFAULT 0",
 			]
 		], //update_hoopla_export_table
+		'create_hoopla_entitlements_table' => [
+			'title' => 'Create Hoopla Entitlements Table',
+			'description' => 'Store Hoopla library entitlement data',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS hoopla_entitlements (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					hooplaId INT(11) NOT NULL,
+					scopeLibraryId INT NOT NULL,
+					hooplaType VARCHAR(20) NOT NULL,
+					UNIQUE KEY hooplaEntitlementUnique (hooplaId, scopeLibraryId, hooplaType),
+					KEY hooplaEntitlementLibraryType (scopeLibraryId, hooplaType)
+				)'
+			]
+		], //create_hoopla_entitlements_table
 
 
 		// Leo Stoyanov - BWS
