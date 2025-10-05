@@ -78,12 +78,7 @@ function compareItemBasics($a, $b) :int  {
 	$localComparison = $a['locationKey'] <=> $b['locationKey'];
 	if ($localComparison == 0) {
 		//First sort by shelfLocation
-		$shelfLocationComparison = $a['shelfLocation'] <=> $b['shelfLocation'];
-		if ($shelfLocationComparison == 0) {
-			return $shelfLocationComparison;
-		}else{
-			return $shelfLocationComparison;
-		}
+		return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
 	}
 	return  $localComparison;
 }
@@ -124,7 +119,7 @@ function getSortableDate(string $str) : ?DateTime {
 		return $sortableDateCache[$str];
 	}
 
-	// Day/Day & Day Range (e.g., MAY 6 & MAY 20, 2023 or MAY 6 & 18 2024)
+	// Day/Day & Day Range (e.g., MAY 6 & MAY 20, 2023, or MAY 6 & 18 2024)
 	if (preg_match('/([A-Z]{3,9})\s+(\d{1,2})\s+&\s+([A-Z]{3,9})?\s*(\d{1,2}),\s+(\d{4})/i', $str, $matches)) {
 		$year = end($matches);
 		$month2 = empty($matches[3]) ? $matches[1] :  $matches[3];
@@ -145,6 +140,16 @@ function getSortableDate(string $str) : ?DateTime {
 		return $sortableDateCache[$str];
 	}
 
+	// Day/Day Range (e.g., JUL 8, 15 '24)
+	if (preg_match("/([A-Z]{3})\s+(\d{1,2}),\s(\d{1,2})\s+'(\d{2})/i", $str, $matches)) {
+		$monthAbbr = $matches[1];
+		$day = $matches[3];
+		$dateString = "$monthAbbr $day $matches[4]";
+		$sortableDateCache[$str] = DateTime::createFromFormat('M j y', $dateString);
+		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
+		return $sortableDateCache[$str];
+	}
+
 	// Day/Day Range (e.g., DEC 14/DEC 28 2024)
 	if (preg_match('/([A-Z]{3})\s+(\d{1,2})\/([A-Z]{3})\s+(\d{1,2})\s+(\d{4})/i', $str, $matches)) {
 		$monthAbbr = $matches[3];
@@ -156,9 +161,18 @@ function getSortableDate(string $str) : ?DateTime {
 		return $sortableDateCache[$str];
 	}
 
-	// Standard Month Day, Year (e.g., MARCH 15, 2025 or MAR 15, 2025)
-	if (preg_match('/([A-Z]{3,9})\s+\d{1,2},\s+\d{4}/i', $str, $matches)) {
-		$date = DateTime::createFromFormat('F j, Y', $matches[0]) ?: DateTime::createFromFormat('M j, Y', $matches[0]);
+	// Standard Month Day, Year (e.g., MARCH 15, 2025, MAR 15, 2025, MARCH 15. 2025, MAR 15. 2025, MARCH 15 2025, or MAR 15 2025)
+	if (preg_match('/([A-Z]{3,9}\s+\d{1,2})[,.]?\s+(\d{4})/i', $str, $matches)) {
+		$date = DateTime::createFromFormat('F j Y', "$matches[1] $matches[2]") ?: DateTime::createFromFormat('M j Y', "$matches[1] $matches[2]");
+		if ($date) {
+			$sortableDateCache[$str] = $date;
+			return $sortableDateCache[$str];
+		}
+	}
+
+	// Standard Month Day, 'Year (e.g., MARCH 15, '25, MAR 15, '25, MARCH 15. '25, MAR 15. '25, MARCH 15 '25, or MAR 15 '25)
+	if (preg_match("/([A-Z]{3,9}\s+\d{1,2})[,.]?\s+'(\d{2})/i", $str, $matches)) {
+		$date = DateTime::createFromFormat('M j y', "$matches[1] $matches[2]") ?: DateTime::createFromFormat('F j Y', "$matches[1] $matches[2]");
 		if ($date) {
 			$sortableDateCache[$str] = $date;
 			return $sortableDateCache[$str];
@@ -184,10 +198,19 @@ function getSortableDate(string $str) : ?DateTime {
 	];
 	if (preg_match('/(FALL|WINTER|SPRING|SUMMER|SPR|WIN|SUM|AUTUMN)\s+(\d{4})/i', $str, $matches)) {
 		$monthName = $seasonal_mapping[strtoupper($matches[1])];
-		$dateString = "$monthName 01 {$matches[2]}";
+		$dateString = "$monthName 01 $matches[2]";
 		$sortableDateCache[$str] = DateTime::createFromFormat('F j Y', $dateString);
 		if ($sortableDateCache[$str] === false) $sortableDateCache[$str] = null;
 		return $sortableDateCache[$str];
+	}
+
+	// Standard Month-Day-Year
+	if (preg_match("/(\d{1,2}-\d{1,2}-\d{2,4})/i", $str, $matches)) {
+		$date = DateTime::createFromFormat('m-d-y',$matches[0]) ?: DateTime::createFromFormat('m-d-Y', $matches[0]);
+		if ($date) {
+			$sortableDateCache[$str] = $date;
+			return $sortableDateCache[$str];
+		}
 	}
 
 	// Year-only (e.g., 2022 or '22)
