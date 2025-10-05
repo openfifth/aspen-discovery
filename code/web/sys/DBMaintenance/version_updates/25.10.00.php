@@ -247,6 +247,14 @@ function getUpdates25_10_00(): array {
 				)'
 			]
 		], //create_hoopla_entitlements_table
+		'add_scopeLibraryId_to_hoopla_flex_availability' => [
+			'title' => 'Add scopeLibraryId to hoopla_flex_availability table',
+			'description' => 'Add scopeLibraryId to hoopla_flex_availability table',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE hoopla_flex_availability ADD COLUMN scopeLibraryId INT NOT NULL'
+			]
+		], //add_scopeLibraryId_to_hoopla_flex_availability
 
 
 		// Leo Stoyanov - BWS

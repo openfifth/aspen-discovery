@@ -46,6 +46,9 @@ public class HooplaExportMain {
 	private static PreparedStatement upsertHooplaEntitlementStmt;
 	private static PreparedStatement deleteEntitlementStmt;
 	private static PreparedStatement getExistingEntitlementsForLibraryStmt;
+	private static PreparedStatement getFlexEntitlementsForLibraryStmt;
+	private static PreparedStatement upsertFlexAvailabilityStmt;
+	private static PreparedStatement getExistingFlexAvailabilityStmt;
 
 	//Record grouper
 	private static GroupedWorkIndexer groupedWorkIndexer;
@@ -401,6 +404,7 @@ public class HooplaExportMain {
 			boolean globalContentUpdated = false;
 			while (getSettingsRS.next()) {
 				HooplaSettings settings = new HooplaSettings(getSettingsRS);
+				ArrayList<HooplaLibrarySettings> librarySettings = loadLibraryHooplaSettings(settings.getSettingsId());
 				numSettings++;
 
 				// TO DO, add the check for library setting, if no library enable the neither
@@ -412,10 +416,10 @@ public class HooplaExportMain {
 					updatesRun |= globalContentUpdated;
 				}
 
-				updatesRun |= exportLibraryEntitlements(settings, globalContentUpdated);
+				updatesRun |= exportLibraryEntitlements(settings, globalContentUpdated, librarySettings);
 
 				// Process Flex Availability
-			//	updatesRun |= getFlexAvailability(settings);
+				updatesRun |= getFlexAvailability(settings, librarySettings);
 
 				if (settings.isRegroupAllRecords()) {
 					regroupAllRecords(aspenConn, settings.getSettingsId(), getGroupedWorkIndexer(), logEntry);
@@ -599,8 +603,10 @@ public class HooplaExportMain {
 		return updatedContent;
 	}
 
-	private static boolean exportLibraryEntitlements(HooplaSettings settings, boolean globalContentUpdated) {
-		ArrayList<HooplaLibrarySettings> librarySettings = loadLibraryHooplaSettings(settings.getSettingsId());
+	private static boolean exportLibraryEntitlements(HooplaSettings settings, boolean globalContentUpdated, ArrayList<HooplaLibrarySettings> librarySettings) {
+		logEntry.addNote("Starting library entitlements extraction");
+		logEntry.saveResults();
+
 		if (librarySettings.isEmpty()) {
 			return false;
 		}
@@ -619,7 +625,7 @@ public class HooplaExportMain {
 
 			boolean runFullUpdateForLibrary = settings.isRunFullUpdate() || librarySetting.isfullUpdateForLibrary();
 
-			// Export Instant Entitlements only when running full update for library, 
+			// Export Instant Entitlements only when running full update for library,
 			// or when global contents get extracted (Full Update or Incremental Updates)
 			if (librarySetting.isInstantEnabled() && (runFullUpdateForLibrary || globalContentUpdated)) {
 				libraryUpdates |= exportLibraryEntitlementsForType(settings, librarySetting, HOOPLA_TYPE_INSTANT, runFullUpdateForLibrary);
@@ -801,13 +807,86 @@ public class HooplaExportMain {
 			getExistingEntitlementsForLibraryStmt.setString(2, hooplaType);
 			ResultSet existingEntitlementsRS = getExistingEntitlementsForLibraryStmt.executeQuery();
 			while (existingEntitlementsRS.next()) {
-				existingEntitlements.add(existingEntitlementsRS.getLong("titleId"));
+				existingEntitlements.add(existingEntitlementsRS.getLong("hooplaId"));
 			}
 			existingEntitlementsRS.close();
 		} catch (SQLException e) {
 			logEntry.incErrors("Error loading existing Hoopla entitlements for library " + scopeLibraryId + " (" + hooplaType + ")", e);
 		}
 		return existingEntitlements;
+	}
+
+	private static ArrayList<Long> loadFlexEntitlementsForLibrary(long scopeLibraryId) {
+		ArrayList<Long> flexEntitlements = new ArrayList<>();
+		try {
+			getFlexEntitlementsForLibraryStmt.setLong(1, scopeLibraryId);
+			getFlexEntitlementsForLibraryStmt.setString(2, HOOPLA_TYPE_FLEX);
+			ResultSet flexEntitlementsRS = getFlexEntitlementsForLibraryStmt.executeQuery();
+			while (flexEntitlementsRS.next()) {
+				flexEntitlements.add(flexEntitlementsRS.getLong("hooplaId"));
+			}
+			flexEntitlementsRS.close();
+		} catch (SQLException e) {
+			logEntry.incErrors("Error loading Flex entitlements for library " + scopeLibraryId, e);
+		}
+		return flexEntitlements;
+	}
+
+	private static void updateFlexAvailabilityInDB(JSONArray availabilityArray, long scopeLibraryId) {
+		for (int i = 0; i < availabilityArray.length(); i++) {
+			try {
+				JSONObject availabilityInfo = availabilityArray.getJSONObject(i);
+				if (!availabilityInfo.has("contentId")) {
+					logEntry.incErrors("Flex availability response missing contentId for library " + scopeLibraryId);
+					continue;
+				}
+				long hooplaId = availabilityInfo.getLong("contentId");
+				if (!availabilityInfo.has("availability")) {
+					continue;
+				}
+				JSONObject availability = availabilityInfo.getJSONObject("availability");
+				if (availability.length() > 0) {
+					String status = availability.getString("status");
+					int holdsQueueSize = status.equals("BORROW") ? 0 : availability.getInt("holdsQueueSize");
+					int availableCopies = availability.getInt("availableCopies");
+					int totalCopies = availability.getInt("totalCopies");
+
+					boolean availabilityChanged = false;
+					try {
+						getExistingFlexAvailabilityStmt.setLong(1, hooplaId);
+						getExistingFlexAvailabilityStmt.setLong(2, scopeLibraryId);
+						ResultSet existingAvailabilityRS = getExistingFlexAvailabilityStmt.executeQuery();
+						if (existingAvailabilityRS.next()) {
+							int existingholdsQueueSize = existingAvailabilityRS.getInt("holdsQueueSize");
+							int existingAvailableCopies = existingAvailabilityRS.getInt("availableCopies");
+							int existingTotalCopies = existingAvailabilityRS.getInt("totalCopies");
+							String existingStatus = existingAvailabilityRS.getString("status");
+							if (existingholdsQueueSize != holdsQueueSize || existingAvailableCopies != availableCopies || existingTotalCopies != totalCopies || !Objects.equals(existingStatus, status)) {
+								availabilityChanged = true;
+							}
+						} else {
+							availabilityChanged = true;
+						}
+						existingAvailabilityRS.close();
+
+						if (availabilityChanged) {
+							upsertFlexAvailabilityStmt.setLong(1, hooplaId);
+							upsertFlexAvailabilityStmt.setLong(2, scopeLibraryId);
+							upsertFlexAvailabilityStmt.setInt(3, holdsQueueSize);
+							upsertFlexAvailabilityStmt.setInt(4, availableCopies);
+							upsertFlexAvailabilityStmt.setInt(5, totalCopies);
+							upsertFlexAvailabilityStmt.setString(6, status);
+							upsertFlexAvailabilityStmt.executeUpdate();
+							titlesNeedingReindex.add(hooplaId);
+						}
+					} catch (SQLException e) {
+						logEntry.incErrors("Error updating Flex availability for title " + hooplaId + " (library " + scopeLibraryId + ")", e);
+					}
+				}
+			} catch (JSONException e) {
+				logEntry.incErrors("Error parsing Flex availability JSON for library " + scopeLibraryId, e);
+			}
+		}
 	}
 
 	private static void updateEntitlementsInDB(JSONArray entitlements, HashSet<Long> existingEntitlements, boolean runFullUpdateForLibrary, String hooplaType, long scopeLibraryId) {
@@ -855,124 +934,94 @@ public class HooplaExportMain {
 		}
 	}
 
-	private static boolean getFlexAvailability(HooplaSettings settings) {
-		// Update all the flex titles availability
+	private static boolean getFlexAvailability(HooplaSettings settings, ArrayList<HooplaLibrarySettings> librarySettings) {
 		logEntry.addNote("Starting Flex availability update");
 		logEntry.saveResults();
-		int numUpdates = 0;
-		boolean doFullReloadFlex = settings.isRunFullUpdate();
+
+		if (librarySettings.isEmpty()) {
+			return false;
+		}
+
 		String hooplaAPIBaseURL = settings.getApiUrl();
-		int hooplaLibraryId = 123;
 		String accessToken = settings.getAccessToken();
 		long tokenExpirationTime = settings.getTokenExpirationTime();
-
 		if (accessToken == null || tokenExpirationTime < (System.currentTimeMillis() / 1000)) {
 			accessToken = getAccessToken(settings);
 		}
-
 		if (accessToken == null) {
-			logEntry.incErrors("Could not load access token");
-			return true;
+			logEntry.incErrors("Could not load access token for Flex availability");
+			return false;
 		}
-		try {
-			PreparedStatement getFlexTitlesStmt = aspenConn.prepareStatement("SELECT t.id, t.hooplaId, UNCOMPRESS(t.rawResponse) as rawResponse, fa.holdsQueueSize, fa.availableCopies, fa.totalCopies, fa.status, fa.hooplaId " +
-			"FROM hoopla_export t " +
-			"LEFT JOIN hoopla_flex_availability fa ON t.hooplaId = fa.hooplaId " +
-			"WHERE t.hooplaType = 'Flex' AND t.active = 1");
-			ResultSet flexTitlesRS = getFlexTitlesStmt.executeQuery();
-			PreparedStatement updateFlexAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO hoopla_flex_availability (hooplaId, holdsQueueSize, availableCopies, totalCopies, status) " +
-			"VALUES (?, ?, ?, ?, ?) " +
-			"ON DUPLICATE KEY UPDATE " +
-			"holdsQueueSize = VALUES(holdsQueueSize), " +
-			"availableCopies = VALUES(availableCopies), " +
-			"totalCopies = VALUES(totalCopies), " +
-			"status = VALUES(status)"
-			);
 
-			while (flexTitlesRS.next()) {
-				long hooplaId = flexTitlesRS.getLong("hooplaId");
-				boolean existingInDB = flexTitlesRS.getString("status") != null;
-				int existingHoldsQueueSize = existingInDB ? flexTitlesRS.getInt("holdsQueueSize") : 0;
-				int existingAvailableCopies = existingInDB ? flexTitlesRS.getInt("availableCopies") : 0;
-				int existingTotalCopies = existingInDB ? flexTitlesRS.getInt("totalCopies") : 0;
-				String existingStatus = existingInDB ? flexTitlesRS.getString("status") : null;
+		boolean hasUpdates = false;
+		for (HooplaLibrarySettings librarySetting : librarySettings) {
+			// Skip if the library doesn't have flex enabled
+			if (!librarySetting.isFlexEnabled() || !librarySetting.hasHooplaLibraryId()) {
+				continue;
+			}
+			ArrayList<Long> flexTitleIds = loadFlexEntitlementsForLibrary(librarySetting.getLibraryId());
+			if (flexTitleIds.isEmpty()) {
+				logEntry.incErrors("No Flex entitlements found for library " + librarySetting.getLibraryId() + ", please run full update for this library");
+				logEntry.saveResults();
+				continue;
+			}
 
-				if (!doFullReloadFlex && existingInDB){
-					logEntry.incNumProducts(1);
+			int numFlexTitlesProcessed = 0;
+			// Hardcoded batch size of 1 for now
+			int flexBatchSize = 1;
+			while (numFlexTitlesProcessed < flexTitleIds.size()) {
+				List<Long> flexBatch = flexTitleIds.subList(numFlexTitlesProcessed, numFlexTitlesProcessed + flexBatchSize);
+				StringBuilder contentIdsBuilder = new StringBuilder();
+				for (Long hooplaId : flexBatch) {
+					if (contentIdsBuilder.length() > 0) {
+						contentIdsBuilder.append(',');
+					}
+					contentIdsBuilder.append(hooplaId);
 				}
-
-				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content/info?contentIds=" + hooplaId;
 
 				@SuppressWarnings("DuplicatedCode")
 				HashMap<String, String> headers = new HashMap<>();
 				headers.put("Authorization", "Bearer " + accessToken);
 				headers.put("Content-Type", "application/json");
 				headers.put("Accept", "application/json");
+
+				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/content/info?contentIds=" + contentIdsBuilder;
 				WebServiceResponse response = NetworkUtils.getURL(url, logger, headers);
-				if (!response.isSuccess()){
-					logEntry.incErrors("Could not get availability for title " + hooplaId + " from " + url + " " + response.getMessage());
-					continue;
-				}
-				try {
-					JSONArray availabilityArray = new JSONArray(response.getMessage());
-					if (!availabilityArray.isEmpty()) {
-						JSONObject titleInfo = availabilityArray.getJSONObject(0);
-						long contentId = titleInfo.getLong("contentId");
-						if (hooplaId != contentId) {
-							logEntry.incErrors("Response content ID " + contentId + " mismatch for title " + hooplaId);
-							continue;
-						}
-						JSONObject availability = titleInfo.getJSONObject("availability");
-						if (!availability.isEmpty()) {
-							String newStatus = availability.getString("status");
-							int newHoldsQueueSize = newStatus.equals("BORROW") ? 0 :
-							availability.has("holdsQueueSize") ? availability.getInt("holdsQueueSize") : 0;
-							int newAvailableCopies = availability.getInt("availableCopies");
-							int newTotalCopies = availability.getInt("totalCopies");
-
-
-							boolean needsUpdate =  !existingInDB || existingHoldsQueueSize != newHoldsQueueSize || existingAvailableCopies != newAvailableCopies || existingTotalCopies != newTotalCopies || !Objects.equals(existingStatus, newStatus);
-
-							if (needsUpdate) {
-								try {
-									updateFlexAvailabilityStmt.setLong(1, hooplaId);
-									updateFlexAvailabilityStmt.setInt(2, newHoldsQueueSize);
-									updateFlexAvailabilityStmt.setInt(3, newAvailableCopies);
-									updateFlexAvailabilityStmt.setInt(4, newTotalCopies);
-									updateFlexAvailabilityStmt.setString(5, newStatus);
-									updateFlexAvailabilityStmt.executeUpdate();
-									numUpdates++;
-									logEntry.incAvailabilityChanges();
-
-									String rawResponse = flexTitlesRS.getString("rawResponse");
-									JSONObject curTitle = new JSONObject(rawResponse);
-									String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(curTitle, hooplaId);
-									indexRecord(groupedWorkId);
-								} catch (SQLException e) {
-									logEntry.incErrors("Error updating flex availability for title " + hooplaId, e);
-								}
-							}
-						}
+				if (response.isSuccess()) {
+					try {
+						JSONArray availabilityArray = new JSONArray(response.getMessage());
+						updateFlexAvailabilityInDB(availabilityArray, librarySetting.getLibraryId());
+						numFlexTitlesProcessed += availabilityArray.length();
+					} catch (JSONException e) {
+						logEntry.incErrors("Error parsing Flex availability response for library " + librarySetting.getLibraryId(), e);
 					}
-				} catch (JSONException e) {
-					logEntry.incErrors("Error parsing availability JSON for title " + hooplaId + ". Response: " + response.getMessage(), e);
+				} else {
+					if (response.getResponseCode() == 401 || response.getResponseCode() == 503 || response.getResponseCode() == 504) {
+						try {
+							Thread.sleep(1000 * 60 * 1); //Wait for 1 minutes before trying again
+						} catch (InterruptedException e) {
+							logEntry.incErrors("Error sleeping for 1 minutes for Flex availability", e);
+						}
+						accessToken = getAccessToken(settings);
+						headers.put("Authorization", "Bearer " + accessToken);
+					} else {
+						logEntry.incErrors("Error getting Flex availability from " + url + " " + response.getResponseCode() + " " + response.getMessage());
+						continue;
+					}
 				}
 			}
 
-			if (numUpdates > 0) {
-				logEntry.addNote("Updated availability for " + numUpdates + " Flex titles");
-			} else {
-				logEntry.addNote("No availability changes found for Hoopla Flex titles");
+			if (numFlexTitlesProcessed > 0) {
+				hasUpdates = true;
+				logEntry.addNote("Updated Flex availability for library " + librarySetting.getLibraryId() + " (processed " + numFlexTitlesProcessed + " titles)");
+				logEntry.saveResults();
 			}
-			return true;
-
+			if (hasUpdates) {
+				logEntry.addNote("Completed Flex availability updates.");
+				logEntry.saveResults();
+			}
 		}
-		catch (Exception e) {
-			logEntry.incErrors("Error getting flex availability", e);
-			return false;
-		} finally {
-			logEntry.saveResults();
-		}
+		return hasUpdates;
 	}
 
 	private static void exportSingleHooplaTitle(String singleWorkId, String singleWorkType) {
@@ -1261,6 +1310,9 @@ public class HooplaExportMain {
 				upsertHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, scopeLibraryId, hooplaType) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE hooplaType = VALUES(hooplaType)");
 				deleteEntitlementStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlements WHERE hooplaId = ? AND scopeLibraryId = ? AND hooplaType = ?");
 				getExistingEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT hooplaId FROM hoopla_entitlements WHERE scopeLibraryId = ? AND hooplaType = ?");
+				getFlexEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT hooplaId FROM hoopla_entitlements WHERE scopeLibraryId = ? AND hooplaType = ?");
+				upsertFlexAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO hoopla_flex_availability (hooplaId, scopeLibraryId, holdsQueueSize, availableCopies, totalCopies, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE scopeLibraryId = VALUES(scopeLibraryId), holdsQueueSize = VALUES(holdsQueueSize), availableCopies = VALUES(availableCopies), totalCopies = VALUES(totalCopies), status = VALUES(status)");
+				getExistingFlexAvailabilityStmt = aspenConn.prepareStatement("SELECT holdsQueueSize, availableCopies, totalCopies, status FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
 			}else{
 				logger.error("Aspen database connection information was not provided");
 				System.exit(1);
@@ -1290,6 +1342,13 @@ public class HooplaExportMain {
 			deleteEntitlementStmt = null;
 			getExistingEntitlementsForLibraryStmt.close();
 			getExistingEntitlementsForLibraryStmt = null;
+			getFlexEntitlementsForLibraryStmt.close();
+			getFlexEntitlementsForLibraryStmt = null;
+			upsertFlexAvailabilityStmt.close();
+			upsertFlexAvailabilityStmt = null;
+			getExistingFlexAvailabilityStmt.close();
+			getExistingFlexAvailabilityStmt = null;
+
 			aspenConn.close();
 			//noinspection UnusedAssignment
 			aspenConn = null;
