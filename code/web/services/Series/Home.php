@@ -49,11 +49,12 @@ class Series_Home extends Action {
 		if (isset($_REQUEST['sort'])) {
 			$activeSort = $_REQUEST['sort'];
 		}
-		if (empty($activeSort)) {
-			$activeSort = $series->getDefaultSortMethodName();
-		}
 
 		if ($series->find(true)) {
+			if (empty($activeSort)) {
+				$activeSort = $series->getDefaultSortMethodName();
+			}
+
 			global $library;
 			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 			$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
