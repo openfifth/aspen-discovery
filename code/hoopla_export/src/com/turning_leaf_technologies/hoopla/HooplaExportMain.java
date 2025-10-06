@@ -971,12 +971,12 @@ public class HooplaExportMain {
 			int flexBatchSize = 1;
 			while (numFlexTitlesProcessed < flexTitleIds.size()) {
 				List<Long> flexBatch = flexTitleIds.subList(numFlexTitlesProcessed, numFlexTitlesProcessed + flexBatchSize);
-				StringBuilder contentIdsBuilder = new StringBuilder();
+				StringBuilder contentIdsString = new StringBuilder();
 				for (Long hooplaId : flexBatch) {
-					if (contentIdsBuilder.length() > 0) {
-						contentIdsBuilder.append(',');
+					if (contentIdsString.length() > 0) {
+						contentIdsString.append(',');
 					}
-					contentIdsBuilder.append(hooplaId);
+					contentIdsString.append(hooplaId);
 				}
 
 				@SuppressWarnings("DuplicatedCode")
@@ -985,7 +985,7 @@ public class HooplaExportMain {
 				headers.put("Content-Type", "application/json");
 				headers.put("Accept", "application/json");
 
-				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/content/info?contentIds=" + contentIdsBuilder;
+				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/content/info?contentIds=" + contentIdsString;
 				WebServiceResponse response = NetworkUtils.getURL(url, logger, headers);
 				if (response.isSuccess()) {
 					try {
@@ -1183,7 +1183,6 @@ public class HooplaExportMain {
 					addHooplaTitleToDB.setLong(11, rawChecksum);
 					addHooplaTitleToDB.setString(12, rawResponse);
 					addHooplaTitleToDB.setLong(13, startTimeForLogging);
-					titlesNeedingReindex.add(hooplaId);
 					try {
 						addHooplaTitleToDB.executeUpdate();
 					}catch (DataTruncation e) {
@@ -1222,7 +1221,6 @@ public class HooplaExportMain {
 					updateHooplaTitleInDB.setLong(10, rawChecksum);
 					updateHooplaTitleInDB.setString(11, rawResponse);
 					updateHooplaTitleInDB.setLong(12, existingTitle.getId());
-					titlesNeedingReindex.add(hooplaId);
 
 					try {
 						updateHooplaTitleInDB.executeUpdate();
