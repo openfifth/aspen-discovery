@@ -125,8 +125,15 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE user ADD COLUMN rememberHoldPromptForEdition TINYINT DEFAULT 0',
 				'ALTER TABLE user ADD COLUMN holdPromptForEdition TINYINT DEFAULT 1',
 			]
-		],
-		//addEditionPromptSettingForUser
+		],//addEditionPromptSettingForUser
+		'removeHoldPromptForEditionSettingForUser' => [
+			'title' => 'Remove hold prompt for edition setting',
+			'description' => 'Remove hold prompt for edition setting, only rememberHoldPromptForEdition is needed',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user DROP COLUMN holdPromptForEdition',
+			]
+		],//removeHoldPromptForEditionSettingForUser
 
 		//kodi - Grove
 

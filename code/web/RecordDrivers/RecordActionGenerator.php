@@ -11,6 +11,7 @@ function getUntitledVolumeHoldAction($module, $source, $id, $variationId) : arra
 		'onclick' => "return AspenDiscovery.Record.showPlaceHold('$module', '$source', '$id', '~untitled~', '$variationId', this);",
 		'requireLogin' => false,
 		'type' => 'ils_hold',
+		'subtype' => 'untitled_volume_ils_hold',
 	];
 }
 //Regular ILS holds
@@ -25,6 +26,7 @@ function getHoldRequestAction($module, $source, $id, $variationId) : array {
 		'onclick' => "return AspenDiscovery.Record.showPlaceHold('$module', '$source', '$id', '', '$variationId', this);",
 		'requireLogin' => false,
 		'type' => 'ils_hold',
+		'subtype' => 'standard_ils_hold',
 	];
 }
 
@@ -40,6 +42,7 @@ function getSpecificVolumeHoldAction($module, $source, $id, $volumeInfo) : array
 		'onclick' => "return AspenDiscovery.Record.showPlaceHold('$module', '$source', '$id', '{$volumeInfo['volumeId']}', '', this);",
 		'requireLogin' => false,
 		'type' => 'ils_hold',
+		'subtype' => 'single_volume_ils_hold',
 		'volumeId' => $volumeInfo['volumeId'],
 		'volumeName' => $volumeInfo['volumeName'],
 	];
@@ -56,6 +59,7 @@ function getMultiVolumeHoldAction($module, $source, $id) : array {
 		'onclick' => "return AspenDiscovery.Record.showPlaceHoldVolumes('$module', '$source', '$id', this);",
 		'requireLogin' => false,
 		'type' => 'ils_hold',
+		'subtype' => 'multi_volume_ils_hold',
 	];
 }
 

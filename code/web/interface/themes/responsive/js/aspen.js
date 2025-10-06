@@ -11317,17 +11317,11 @@ AspenDiscovery.GroupedWork = (function(){
 		},
 		showEditionSwiper: function () {
 			var option = $('#selectedEditionOption').val();
-			if (option == 2) {
+			if (option === '2') {
 				$('#editionSelectionSlider').show();
-				$('#editionSelectionOptionRemember label').contents().filter(function () {
-					return this.nodeType === 3;
-				}).last().replaceWith("Always ask me about placing specific editions on hold");
-				$('#editionSelectionOptionRemember').show();
+				$('#editionSelectionOptionRemember').hide();
 			} else {
 				$('#editionSelectionSlider').hide();
-				$('#editionSelectionOptionRemember label').contents().filter(function () {
-					return this.nodeType === 3;
-				}).last().replaceWith("Never ask me about placing specific editions on hold");
 				$('#editionSelectionOptionRemember').show();
 			}
 		}
@@ -13067,10 +13061,7 @@ AspenDiscovery.Record = (function () {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
 				var buttonClicked = $(button);
-				var promptEditionData = buttonClicked.attr('data-promptEdition');
-				if (typeof promptEditionData === 'undefined') {
-					promptEditionData = buttonClicked.attr('data-promptedition');
-				}
+				var promptEditionData = buttonClicked.attr('data-prompt-edition');
 				var promptForEdition = false;
 				if (promptEditionData === "true") {
 					promptForEdition = true;

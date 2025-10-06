@@ -186,15 +186,15 @@
 						</div>
 					{/if}
 					<input type="hidden" name="holdPromptForEditions" id="holdPromptForEditions" value="{$holdPromptForEditions}">
-                    {if $holdPromptForEditions > 0 && count($editionOptions) > 0 && $promptForEdition}
+					{if $holdPromptForEditions > 0 && count($editionOptions) > 0 && $promptForEdition}
 						<div id="editionSelectionOptions" class="form-group">
-							<label class="control-label" for="selectedEditionOption">{translate text="Do you want to place a hold on the first available item or a specific edition?" isPublicFacing=true}</label>
+							<label class="control-label" for="selectedEditionOption">{translate text="Do you want to place a hold on the suggested edition or a specific edition?" isPublicFacing=true}</label>
 							<select name="selectedEditionOption" id="selectedEditionOption" class="form-control"  onchange="AspenDiscovery.GroupedWork.showEditionSwiper()">
-								<option value="1" {if $holdPromptForEditions == 1}selected{/if}>{translate text="Place hold on first available item" isPublicFacing=true}</option>
+								<option value="1" {if $holdPromptForEditions == 1}selected{/if}>{translate text="Place hold on suggested edition" isPublicFacing=true}</option>
 								<option value="2" {if $holdPromptForEditions == 2}selected{/if}>{translate text="Place hold on specific edition" isPublicFacing=true}</option>
 							</select>
 						</div>
-						<div id="editionSelectionSlider" class="horizontalSliders">
+						<div id="editionSelectionSlider" class="horizontalSliders" {if $holdPromptForEditions == 1}style="display: none"{/if}>
 							<div class="row horizontalEditionSelector">
 								<div class="col-xs-12">
 									<div class="slider-container" role="region" id="slider-edition">
@@ -205,21 +205,21 @@
 												{if $smarty.foreach.editions.index ==0}
 													{assign var=firstEdition value=$edition->databaseId}
 												{/if}
-                                                {assign var=current value=$smarty.foreach.editions.index + 1}
+												{assign var=current value=$smarty.foreach.editions.index + 1}
 												<div role="option" tabindex="0" class="slider-slide horizontal-edition-option{if $smarty.foreach.editions.index == 0} active{/if}">
-														<label for="editionOption{$edition->databaseId}">
+													<label for="editionOption{$edition->databaseId}">
 														<div class="edition-radio">
 															<input type="radio" name="editionOption" id="editionOption{$edition->databaseId}" value="{$edition->id}" {if $smarty.foreach.editions.index == 0}checked{/if}> {translate text="Select This Edition" isPublicFacing=true}
 														</div>
 														<div class="edition-cover">
-															<img src="{$relatedRecord->getBookcoverUrl('small')}" class="img-thumbnail{if $useOriginalCoverUrls} use-original-covers{/if} {$coverStyle}" alt="{translate text='Book Cover' inAttribute=true isPublicFacing=true}">
+															<img src="{$edition->getBookcoverUrl('small')}" class="img-thumbnail{if $useOriginalCoverUrls} use-original-covers{/if} {$coverStyle}" alt="{translate text='Book Cover' inAttribute=true isPublicFacing=true}">
 														</div>
 														<div class="edition-data">
 															{$edition->publicationDate}. {$edition->publisher}. {$edition->physical}.<br/>
-                                                            {include file='GroupedWork/statusIndicator.tpl' statusInformation=$relatedRecord->getStatusInformation() viewingIndividualRecord=1}
+															{include file='GroupedWork/statusIndicator.tpl' statusInformation=$relatedRecord->getStatusInformation() viewingIndividualRecord=1}
 															<span>{$current} of {count($editionOptions)}</span>
 														</div>
-														</label>
+													</label>
 												</div>
 											{/foreach}
 										</div>
@@ -231,15 +231,18 @@
 											$('#editionSelectionOptions').show();
 											{if $holdPromptForEditions == 2}
 												$('#editionSelectionSlider').show();
-												$('#editionSelectionOptionRemember').show();
+												$('#editionSelectionOptionRemember').hide();
 											{/if}
-                                            {rdelim});
+										{rdelim});
 									</script>
-							</div>
+								</div>
 							</div>
 						</div>
-						<div id="editionSelectionOptionRemember" class="form-group" style="display:none">
-							<label for="rememberEditionSelection" class="checkbox"><input type="checkbox" name="rememberEditionSelection" id="rememberEditionSelection" {if $rememberEditionSelection}checked{/if}>{if $holdPromptForEditions == 1}{translate text="Never ask me about placing specific editions on hold" isPublicFacing=true}{else}{translate text="Always ask me about placing specific editions on hold" isPublicFacing=true}{/if}</label>
+						<div id="editionSelectionOptionRemember" class="form-group">
+							<label for="rememberEditionSelection" class="checkbox">
+								<input type="checkbox" name="rememberEditionSelection" id="rememberEditionSelection" {if $rememberEditionSelection}checked{/if}>
+								{translate text="Always place holds on suggested edition" isPublicFacing=true}
+							</label>
 						</div>
 					{/if}
 					{if !empty($promptForHoldNotifications)}
@@ -257,9 +260,9 @@
 					{/if}
 					<br>
 					{if $showLogMeOut == 1}
-					<div class="form-group">
-						<label for="autologout" class="checkbox"><input type="checkbox" name="autologout" id="autologout" {if $logMeOutDefault == true}checked="checked"{/if}> {translate text="Log me out after requesting the item." isPublicFacing=true}</label>
-					</div>
+						<div class="form-group">
+							<label for="autologout" class="checkbox"><input type="checkbox" name="autologout" id="autologout" {if $logMeOutDefault == true}checked="checked"{/if}> {translate text="Log me out after requesting the item." isPublicFacing=true}</label>
+						</div>
 					{/if}
 				</div>
 			</fieldset>

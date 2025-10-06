@@ -2271,7 +2271,7 @@ class Library extends DataObject {
 								'type' => 'enum',
 								'values' => [
 									'0' => 'Do not prompt user to pick an edition (default behavior)',
-									'1' => 'Prompt user to pick an edition, but default to using first available',
+									'1' => 'Prompt user to pick an edition, but default to suggested edition',
 									'2' => 'Prompt user to pick an edition',
 								],
 								'label' => 'Prompt for Edition when Placing Holds?',
