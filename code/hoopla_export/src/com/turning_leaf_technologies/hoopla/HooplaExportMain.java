@@ -323,6 +323,40 @@ public class HooplaExportMain {
 		}
 	}
 
+	private static void cleanOrphanRecords() {
+		int numDeleted = 0;
+		try {
+			PreparedStatement getOrphanEntitlementsStmt = aspenConn.prepareStatement("SELECT id, hooplaId from hoopla_entitlements where id not in (SELECT entitlementId from hoopla_entitlement_scopes)");
+			ResultSet orphanEntitlementsRS = getOrphanEntitlementsStmt.executeQuery();
+			while (orphanEntitlementsRS.next()) {
+				long orphanEntitlementId = orphanEntitlementsRS.getLong("id");
+				long orphanHooplaId = orphanEntitlementsRS.getLong("hooplaId");
+				deleteHooplaEntitlementByIdStmt.setLong(1, orphanEntitlementId);
+				deleteHooplaEntitlementByIdStmt.executeUpdate();
+
+				// Remove the record from the grouped work
+				RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("hoopla", Long.toString(orphanHooplaId));
+				if (result.reindexWork) {
+					getGroupedWorkIndexer().processGroupedWork(result.permanentId);
+				} else if (result.deleteWork) {
+					getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
+				}
+				numDeleted++;
+			}
+			titlesNeedingReindex.remove(orphanHooplaId);
+		} catch (SQLException e) {
+			logEntry.incErrors("Error cleaning orphan records", e);
+			logger.error("Error cleaning orphan records", e);
+		} finally {
+			orphanEntitlementsRS.close();
+			getOrphanEntitlementsStmt.close();
+		}
+		if (numDeleted > 0) {
+			logEntry.addNote("Deleted " + numDeleted + " orphan records");
+			logEntry.saveResults();
+		}
+	}
+
 /*
 	// TO DO, This will need to be upated with new global content? do we still need to delete items?
 	private static void deleteItems(String hooplaType) {
@@ -413,7 +447,7 @@ public class HooplaExportMain {
 				numSettings++;
 
 				// TO DO, add the check for library setting, if no library enable the neither
-				// insteand or flex, we dont do anything
+				// instant or flex, we dont do anything
 
 				// Extract Global Content
 				if (!globalContentUpdated) {
@@ -422,6 +456,9 @@ public class HooplaExportMain {
 				}
 
 				updatesRun |= exportLibraryEntitlements(settings, globalContentUpdated, librarySettings);
+
+				// Clean Orphan records
+				cleanOrphanRecords();
 
 				// Process Flex Availability
 				updatesRun |= getFlexAvailability(settings, librarySettings);
