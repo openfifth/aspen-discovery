@@ -200,7 +200,8 @@ class User extends DataObject {
 			'updateMessageIsError',
 			'rememberHoldPickupLocation',
 			'materialsRequestSendEmailOnAssign',
-			'isLocalTestUser'
+			'isLocalTestUser',
+			'rememberHoldPromptForEdition'
 		];
 	}
 
@@ -1626,6 +1627,7 @@ class User extends DataObject {
 
 		$this->__set('noPromptForUserReviews', (isset($_POST['noPromptForUserReviews']) && $_POST['noPromptForUserReviews'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPickupLocation', (isset($_POST['rememberHoldPickupLocation']) && $_POST['rememberHoldPickupLocation'] == 'on') ? 1 : 0);
+		$this->__set('rememberHoldPromptForEdition', (isset($_POST['rememberHoldPromptForEdition']) && $_POST['rememberHoldPromptForEdition'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
@@ -1659,10 +1661,6 @@ class User extends DataObject {
 		if ($library->holdPromptForEditions > 0) {
 			if (isset($_POST['rememberHoldPromptForEdition'])) {
 				$this->setRememberHoldPromptForEdition($_POST['rememberHoldPromptForEdition']);
-			}
-
-			if (isset($_POST['selectedEditionOption'])) {
-				$this->setHoldPromptForEdition($_POST['selectedEditionOption']);
 			}
 		}
 
@@ -3478,16 +3476,12 @@ class User extends DataObject {
 		$this->__set('myLocation2Id', $myLocation2Id);
 	}
 
-	public function setRememberHoldPickupLocation(bool $rememberPickupLocation) {
+	public function setRememberHoldPickupLocation(bool $rememberPickupLocation) : void {
 		$this->__set('rememberHoldPickupLocation', $rememberPickupLocation ? 1 : 0);
 	}
 
-	public function setRememberHoldPromptForEdition(bool $rememberHoldPromptForEdition) {
+	public function setRememberHoldPromptForEdition(bool $rememberHoldPromptForEdition) : void {
 		$this->__set('rememberHoldPromptForEdition', $rememberHoldPromptForEdition ? 1 : 0);
-	}
-
-	public function setHoldPromptForEdition($val) {
-		$this->__set('holdPromptForEdition', $val);
 	}
 
 	function setNumMaterialsRequests($val) {

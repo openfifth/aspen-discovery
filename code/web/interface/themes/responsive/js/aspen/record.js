@@ -6,10 +6,7 @@ AspenDiscovery.Record = (function () {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
 				var buttonClicked = $(button);
-				var promptEditionData = buttonClicked.attr('data-promptEdition');
-				if (typeof promptEditionData === 'undefined') {
-					promptEditionData = buttonClicked.attr('data-promptedition');
-				}
+				var promptEditionData = buttonClicked.attr('data-prompt-edition');
 				var promptForEdition = false;
 				if (promptEditionData === "true") {
 					promptForEdition = true;

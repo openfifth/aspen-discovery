@@ -401,6 +401,9 @@ class Record_AJAX extends Action {
 			}
 
 			$promptForEdition = (isset($_REQUEST['promptForEdition']) && $_REQUEST['promptForEdition'] === "true");
+			if ($user->rememberHoldPromptForEdition) {
+				$promptForEdition = false;
+			}
 
 			$marcRecord = new MarcRecordDriver($id);
 
@@ -1037,6 +1040,7 @@ class Record_AJAX extends Action {
 						$promptForEdition = (int)$_REQUEST['promptForEdition'];
 						$placeHoldOnEdition = (int)$_REQUEST['placeHoldOnEdition'];
 						if ($promptForEdition > 0 && $placeHoldOnEdition > 1) {
+							//Placing a hold on a specific edition
 							$recordId = $_REQUEST['selectedEdition'];
 							if (strpos($recordId, ':') > 0) {
 								[
@@ -1046,15 +1050,12 @@ class Record_AJAX extends Action {
 							} else {
 								$shortId = $recordId;
 							}
-						}
-
-						$rememberUserEditionPreference = (bool)$_REQUEST['rememberUserEditionPreference'];
-						if ($rememberUserEditionPreference !== $user->rememberHoldPromptForEdition) {
-							$user->setRememberHoldPromptForEdition($rememberUserEditionPreference);
-						}
-
-						if ($placeHoldOnEdition !== $user->holdPromptForEdition) {
-							$user->setHoldPromptForEdition($placeHoldOnEdition);
+						}else{
+							//Placing a hold on the suggested edition
+							$rememberUserEditionPreference = (bool)$_REQUEST['rememberUserEditionPreference'];
+							if ($rememberUserEditionPreference !== $user->rememberHoldPromptForEdition) {
+								$user->setRememberHoldPromptForEdition($rememberUserEditionPreference);
+							}
 						}
 					}
 
@@ -1889,6 +1890,7 @@ class Record_AJAX extends Action {
 		$rememberEditionSelection = false;
 		$holdPromptForEditions = $library->holdPromptForEditions;
 
+		//TODO: Combine this with the new prompt for edition selector
 		if ($holdPromptForEditions > 0) {
 			if ($user->holdPromptForEdition !== $holdPromptForEditions && $user->rememberHoldPromptForEdition) {
 				$holdPromptForEditions = $user->holdPromptForEdition;
