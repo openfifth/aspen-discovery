@@ -1,7 +1,8 @@
 <?php
 
 /** @noinspection PhpUnused */
-function getUpdates25_10_00(): array {
+function getUpdates25_10_00(): array
+{
 	return [
 		/*'name' => [
 			 'title' => '',
@@ -240,13 +241,25 @@ function getUpdates25_10_00(): array {
 				'CREATE TABLE IF NOT EXISTS hoopla_entitlements (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					hooplaId INT(11) NOT NULL,
-					scopeLibraryId INT NOT NULL,
 					hooplaType VARCHAR(20) NOT NULL,
-					UNIQUE KEY hooplaEntitlementUnique (hooplaId, scopeLibraryId, hooplaType),
-					KEY hooplaEntitlementLibraryType (scopeLibraryId, hooplaType)
+					UNIQUE KEY hooplaEntitlementUnique (hooplaId, hooplaType),
 				)'
 			]
 		], //create_hoopla_entitlements_table
+		'add_hoopla_entitlement_scopes_table' => [
+			'title' => 'Add hoopla_entitlement_scopes table',
+			'description' => 'Add hoopla_entitlement_scopes table',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS hoopla_entitlement_scopes (
+					entitlementId INT NOT NULL,
+					scopeLibraryId INT NOT NULL,
+					PRIMARY KEY (entitlementId, scopeLibraryId),
+					KEY idx_scopeLibraryId (scopeLibraryId),
+					CONSTRAINT fk_entitlement_scopes_entitlementId FOREIGN KEY (entitlementId) REFERENCES hoopla_entitlements(id) ON DELETE CASCADE ON UPDATE CASCADE
+				)'
+			]
+		], //add_hoopla_entitlement_scopes_table
 		'add_scopeLibraryId_to_hoopla_flex_availability' => [
 			'title' => 'Add scopeLibraryId to hoopla_flex_availability table',
 			'description' => 'Add scopeLibraryId to hoopla_flex_availability table',

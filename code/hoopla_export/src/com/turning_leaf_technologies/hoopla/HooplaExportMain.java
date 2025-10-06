@@ -43,8 +43,13 @@ public class HooplaExportMain {
 	private static PreparedStatement updateLastRecordProcessedStmt;
 	private static PreparedStatement getLibraryHooplaSettingsStmt;
 	private static PreparedStatement updateFullUpdateForLibraryStmt;
-	private static PreparedStatement upsertHooplaEntitlementStmt;
-	private static PreparedStatement deleteEntitlementStmt;
+	private static PreparedStatement getHooplaEntitlementIdStmt;
+	private static PreparedStatement addHooplaEntitlementStmt;
+	private static PreparedStatement getHooplaEntitlementScopeStmt;
+	private static PreparedStatement addHooplaEntitlementScopeStmt;
+	private static PreparedStatement deleteHooplaEntitlementScopeStmt;
+	private static PreparedStatement entitlementHasScopesStmt;
+	private static PreparedStatement deleteHooplaEntitlementByIdStmt;
 	private static PreparedStatement getExistingEntitlementsForLibraryStmt;
 	private static PreparedStatement getFlexEntitlementsForLibraryStmt;
 	private static PreparedStatement upsertFlexAvailabilityStmt;
@@ -712,8 +717,8 @@ public class HooplaExportMain {
 			url += "&status=active";
 		}
 
-		// Load existing entitlements for library if not a full update
-		HashSet<Long> existingEntitlements = runFullUpdateForLibrary ? loadExistingEntitlementsForLibrary(librarySetting.getLibraryId(), hooplaType) : null;
+		// Load existing entitlements for library when running a full update
+		HashMap<Long, Long> existingEntitlements = runFullUpdateForLibrary ? loadExistingEntitlementsForLibrary(librarySetting.getLibraryId(), hooplaType) : null;
 
 		HashMap<String, String> headers = new HashMap<>();
 		headers.put("Authorization", "Bearer " + accessToken);
@@ -766,20 +771,23 @@ public class HooplaExportMain {
 			}
 
 		}
-		if (runFullUpdateForLibrary && !existingEntitlements.isEmpty()) {
-			try {
-				for (Long hooplaId : existingEntitlements) {
-					deleteEntitlementStmt.setLong(1, hooplaId);
-					deleteEntitlementStmt.setLong(2, librarySetting.getLibraryId());
-					deleteEntitlementStmt.setString(3, hooplaType);
-					deleteEntitlementStmt.executeUpdate();
-					titlesNeedingReindex.add(hooplaId);
+		// Clean up the entitlements that are no longer in the API response
+		if (runFullUpdateForLibrary && existingEntitlements != null && !existingEntitlements.isEmpty()) {
+			for (Map.Entry<Long, Long> staleEntitlement : existingEntitlements.entrySet()) {
+				Long hooplaId = staleEntitlement.getKey();
+				Long entitlementId = staleEntitlement.getValue();
+				try {
+					deleteHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+					deleteHooplaEntitlementScopeStmt.setLong(2, librarySetting.getLibraryId());
+					deleteHooplaEntitlementScopeStmt.executeUpdate();
+				} catch (SQLException e) {
+					logEntry.incErrors("Error deleting Hoopla entitlement scope for stale title " + hooplaId + " (library " + librarySetting.getLibraryId() + ")", e);
+					continue;
 				}
-			} catch (SQLException e) {
-				logEntry.incErrors("Error setting entitlements inactive for library " + librarySetting.getLibraryId() + " " + hooplaType, e);
+				titlesNeedingReindex.add(hooplaId);
 			}
-
 		}
+
 		logEntry.addNote("Exported " + numEntitlements + " " + hooplaType + " entitlements for library " + librarySetting.getLibraryId());
 		logEntry.saveResults();
 		return updateEntitlements;
@@ -800,14 +808,17 @@ public class HooplaExportMain {
 		return librarySettings;
 	}
 
-	private static HashSet<Long> loadExistingEntitlementsForLibrary(long scopeLibraryId, String hooplaType) {
-		HashSet<Long> existingEntitlements = new HashSet<>();
+	private static HashMap<Long, Long> loadExistingEntitlementsForLibrary(long scopeLibraryId, String hooplaType) {
+		HashMap<Long, Long> existingEntitlements = new HashMap<>();
 		try {
 			getExistingEntitlementsForLibraryStmt.setLong(1, scopeLibraryId);
 			getExistingEntitlementsForLibraryStmt.setString(2, hooplaType);
 			ResultSet existingEntitlementsRS = getExistingEntitlementsForLibraryStmt.executeQuery();
 			while (existingEntitlementsRS.next()) {
-				existingEntitlements.add(existingEntitlementsRS.getLong("hooplaId"));
+				existingEntitlements.put(
+					existingEntitlementsRS.getLong("hooplaId"),
+					existingEntitlementsRS.getLong("entitlementId")
+				);
 			}
 			existingEntitlementsRS.close();
 		} catch (SQLException e) {
@@ -889,43 +900,92 @@ public class HooplaExportMain {
 		}
 	}
 
-	private static void updateEntitlementsInDB(JSONArray entitlements, HashSet<Long> existingEntitlements, boolean runFullUpdateForLibrary, String hooplaType, long scopeLibraryId) {
+	private static void updateEntitlementsInDB(JSONArray entitlements, HashMap<Long, Long> existingEntitlements, boolean runFullUpdateForLibrary, String hooplaType, long scopeLibraryId) {
 		for (int i = 0; i < entitlements.length(); i++) {
 			try {
 				JSONObject entitlement = entitlements.getJSONObject(i);
 				long hooplaId = entitlement.getLong("contentId");
-				if (runFullUpdateForLibrary) {
-					try {
-						upsertHooplaEntitlementStmt.setLong(1, hooplaId);
-						upsertHooplaEntitlementStmt.setLong(2, scopeLibraryId);
-						upsertHooplaEntitlementStmt.setString(3, hooplaType);
-						upsertHooplaEntitlementStmt.executeUpdate();
-					} catch (SQLException e) {
-						logEntry.incErrors("Error upserting entitlement for title " + hooplaId + " to database", e);
-					}
-					existingEntitlements.remove(hooplaId);
-					titlesNeedingReindex.add(hooplaId);
-				} else {
-					if (entitlement.has("active") && entitlement.getBoolean("active")) {
-						try {
-							upsertHooplaEntitlementStmt.setLong(1, hooplaId);
-							upsertHooplaEntitlementStmt.setLong(2, scopeLibraryId);
-							upsertHooplaEntitlementStmt.setString(3, hooplaType);
-							upsertHooplaEntitlementStmt.executeUpdate();
-							titlesNeedingReindex.add(hooplaId);
-						} catch (SQLException e) {
-							logEntry.incErrors("Error upserting entitlement for title " + hooplaId + " to database", e);
+				Long entitlementId = null;
+				try {
+					getHooplaEntitlementIdStmt.setLong(1, hooplaId);
+					getHooplaEntitlementIdStmt.setString(2, hooplaType);
+					ResultSet entitlementRS = getHooplaEntitlementIdStmt.executeQuery();
+					if (!entitlementRS.next()) {
+						addHooplaEntitlementStmt.setLong(1, hooplaId);
+						addHooplaEntitlementStmt.setString(2, hooplaType);
+						addHooplaEntitlementStmt.executeUpdate();
+						ResultSet generatedKeys = addHooplaEntitlementStmt.getGeneratedKeys();
+						if (generatedKeys.next()) {
+							entitlementId = generatedKeys.getLong(1);
 						}
 					} else {
-						try {
-							deleteEntitlementStmt.setLong(1, hooplaId);
-							deleteEntitlementStmt.setLong(2, scopeLibraryId);
-							deleteEntitlementStmt.setString(3, hooplaType);
-							deleteEntitlementStmt.executeUpdate();
-							titlesNeedingReindex.add(hooplaId);
-						} catch (SQLException e) {
-							logEntry.incErrors("Error deleting entitlement for title " + hooplaId + " from database", e);
+						entitlementId = entitlementRS.getLong("id");
+					}
+					entitlementRS.close();
+				} catch (SQLException e) {
+					logEntry.incErrors("Error inserting Hoopla entitlement for title " + hooplaId + " (" + hooplaType + ")", e);
+				}
+
+				if (runFullUpdateForLibrary) {
+					try {
+						getHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+						getHooplaEntitlementScopeStmt.setLong(2, scopeLibraryId);
+						ResultSet scopeRS = getHooplaEntitlementScopeStmt.executeQuery();
+						if (!scopeRS.next()) {
+							try {
+								addHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+								addHooplaEntitlementScopeStmt.setLong(2, scopeLibraryId);
+								addHooplaEntitlementScopeStmt.executeUpdate();
+							} catch (SQLException e) {
+								logEntry.incErrors("Error inserting Hoopla entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")", e);
+							}
 						}
+					} catch (SQLException e) {
+						logEntry.incErrors("Error checking existing entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")" + " (" + hooplaType + ")", e);
+					}
+
+					if (existingEntitlements != null) {
+						existingEntitlements.remove(hooplaId);
+					}
+					titlesNeedingReindex.add(hooplaId);
+				} else {
+					if (entitlement.getBoolean("active")) {
+						try {
+							getHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+							getHooplaEntitlementScopeStmt.setLong(2, scopeLibraryId);
+							ResultSet scopeRS = getHooplaEntitlementScopeStmt.executeQuery();
+							if (!scopeRS.next()) {
+								try {
+									addHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+									addHooplaEntitlementScopeStmt.setLong(2, scopeLibraryId);
+									addHooplaEntitlementScopeStmt.executeUpdate();
+								} catch (SQLException e) {
+									logEntry.incErrors("Error inserting Hoopla entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")" + " (" + hooplaType + ")", e);
+								}
+							}
+						} catch (SQLException e) {
+							logEntry.incErrors("Error checking existing entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")" + " (" + hooplaType + ")", e);
+						}
+						titlesNeedingReindex.add(hooplaId);
+					} else {
+						try {
+							getHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+							getHooplaEntitlementScopeStmt.setLong(2, scopeLibraryId);
+							ResultSet scopeRS = getHooplaEntitlementScopeStmt.executeQuery();
+							if (scopeRS.next()) {
+								try {
+									deleteHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+									deleteHooplaEntitlementScopeStmt.setLong(2, scopeLibraryId);
+									deleteHooplaEntitlementScopeStmt.executeUpdate();
+								} catch (SQLException e) {
+									logEntry.incErrors("Error deleting Hoopla entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")" + " (" + hooplaType + ")", e);
+								}
+							}
+							scopeRS.close();
+						} catch (SQLException e) {
+							logEntry.incErrors("Error checking existing entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")", e);
+						}
+						titlesNeedingReindex.add(hooplaId);
 					}
 				}
 			} catch (JSONException e) {
@@ -1305,10 +1365,15 @@ public class HooplaExportMain {
 				deleteHooplaItemStmt = aspenConn.prepareStatement("DELETE FROM hoopla_export where id = ?");
 				getLibraryHooplaSettingsStmt = aspenConn.prepareStatement("SELECT * FROM library_hoopla_settings WHERE settingId = ?");
 				updateFullUpdateForLibraryStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings SET fullUpdateForLibrary = 0 WHERE id = ?");
-				upsertHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, scopeLibraryId, hooplaType) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE hooplaType = VALUES(hooplaType)");
-				deleteEntitlementStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlements WHERE hooplaId = ? AND scopeLibraryId = ? AND hooplaType = ?");
-				getExistingEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT hooplaId FROM hoopla_entitlements WHERE scopeLibraryId = ? AND hooplaType = ?");
-				getFlexEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT hooplaId FROM hoopla_entitlements WHERE scopeLibraryId = ? AND hooplaType = ?");
+				getHooplaEntitlementIdStmt = aspenConn.prepareStatement("SELECT id FROM hoopla_entitlements WHERE hooplaId = ? AND hooplaType = ?");
+				addHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, hooplaType) VALUES (?, ?)");
+				getHooplaEntitlementScopeStmt = aspenConn.prepareStatement("SELECT * FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
+				addHooplaEntitlementScopeStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlement_scopes (entitlementId, scopeLibraryId) VALUES (?, ?)");
+				deleteHooplaEntitlementScopeStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
+				entitlementHasScopesStmt = aspenConn.prepareStatement("SELECT count(*) FROM hoopla_entitlement_scopes WHERE entitlementId = ?");
+				deleteHooplaEntitlementByIdStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlements WHERE id = ?");
+				getExistingEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.id AS entitlementId, he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
+				getFlexEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
 				upsertFlexAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO hoopla_flex_availability (hooplaId, scopeLibraryId, holdsQueueSize, availableCopies, totalCopies, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE scopeLibraryId = VALUES(scopeLibraryId), holdsQueueSize = VALUES(holdsQueueSize), availableCopies = VALUES(availableCopies), totalCopies = VALUES(totalCopies), status = VALUES(status)");
 				getExistingFlexAvailabilityStmt = aspenConn.prepareStatement("SELECT holdsQueueSize, availableCopies, totalCopies, status FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
 			}else{
@@ -1334,10 +1399,20 @@ public class HooplaExportMain {
 			getLibraryHooplaSettingsStmt = null;
 			updateFullUpdateForLibraryStmt.close();
 			updateFullUpdateForLibraryStmt = null;
-			upsertHooplaEntitlementStmt.close();
-			upsertHooplaEntitlementStmt = null;
-			deleteEntitlementStmt.close();
-			deleteEntitlementStmt = null;
+			getHooplaEntitlementIdStmt.close();
+			getHooplaEntitlementIdStmt = null;
+			addHooplaEntitlementStmt.close();
+			addHooplaEntitlementStmt = null;
+			getHooplaEntitlementScopeStmt.close();
+			getHooplaEntitlementScopeStmt = null;
+			addHooplaEntitlementScopeStmt.close();
+			addHooplaEntitlementScopeStmt = null;
+			deleteHooplaEntitlementScopeStmt.close();
+			deleteHooplaEntitlementScopeStmt = null;
+			entitlementHasScopesStmt.close();
+			entitlementHasScopesStmt = null;
+			deleteHooplaEntitlementByIdStmt.close();
+			deleteHooplaEntitlementByIdStmt = null;
 			getExistingEntitlementsForLibraryStmt.close();
 			getExistingEntitlementsForLibraryStmt = null;
 			getFlexEntitlementsForLibraryStmt.close();
