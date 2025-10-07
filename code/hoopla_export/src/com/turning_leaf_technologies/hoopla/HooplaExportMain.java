@@ -325,9 +325,11 @@ public class HooplaExportMain {
 
 	private static void cleanOrphanRecords() {
 		int numDeleted = 0;
+		PreparedStatement getOrphanEntitlementsStmt = null;
+		ResultSet orphanEntitlementsRS = null;
 		try {
-			PreparedStatement getOrphanEntitlementsStmt = aspenConn.prepareStatement("SELECT id, hooplaId from hoopla_entitlements where id not in (SELECT entitlementId from hoopla_entitlement_scopes)");
-			ResultSet orphanEntitlementsRS = getOrphanEntitlementsStmt.executeQuery();
+			getOrphanEntitlementsStmt = aspenConn.prepareStatement("SELECT id, hooplaId from hoopla_entitlements where id not in (SELECT entitlementId from hoopla_entitlement_scopes)");
+			orphanEntitlementsRS = getOrphanEntitlementsStmt.executeQuery();
 			while (orphanEntitlementsRS.next()) {
 				long orphanEntitlementId = orphanEntitlementsRS.getLong("id");
 				long orphanHooplaId = orphanEntitlementsRS.getLong("hooplaId");
@@ -342,19 +344,90 @@ public class HooplaExportMain {
 					getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
 				}
 				numDeleted++;
+				titlesNeedingReindex.remove(orphanHooplaId);
 			}
-			titlesNeedingReindex.remove(orphanHooplaId);
 		} catch (SQLException e) {
 			logEntry.incErrors("Error cleaning orphan records", e);
 			logger.error("Error cleaning orphan records", e);
 		} finally {
-			orphanEntitlementsRS.close();
-			getOrphanEntitlementsStmt.close();
+			try {
+				if (orphanEntitlementsRS != null) {
+					orphanEntitlementsRS.close();
+				}
+				if (getOrphanEntitlementsStmt != null) {
+					getOrphanEntitlementsStmt.close();
+				}
+			} catch (Exception e) {
+				logEntry.incErrors("Error cleaning orphan records", e);
+			}
 		}
 		if (numDeleted > 0) {
 			logEntry.addNote("Deleted " + numDeleted + " orphan records");
 			logEntry.saveResults();
 		}
+	}
+
+	private static void flushRecordsToReindex() {
+		if (titlesNeedingReindex.isEmpty()) {
+			return;
+		}
+		logger.info("Flushing " + titlesNeedingReindex.size() + " Hoopla titles for reindex");
+
+		List<Long> idsToProcess = new ArrayList<>(titlesNeedingReindex);
+		int batchSize = 1000;
+		int numProcessed = 0;
+
+		for (int i = 0; i < idsToProcess.size(); i += batchSize) {
+			List<Long> idsToProcessBatch = idsToProcess.subList(i, Math.min(i + batchSize, idsToProcess.size()));
+
+			if (idsToProcessBatch.isEmpty()) {
+				continue;
+			}
+			PreparedStatement getRawResponseForRecordsStmt = null;
+			ResultSet getRawResponseForRecordsRS = null;
+
+			try {
+				StringBuilder idsToProcessString = new StringBuilder();
+				for (int j = 0; j < idsToProcessBatch.size(); j++) {
+					if (j > 0) idsToProcessString.append(",");
+					idsToProcessString.append(idsToProcessBatch.get(j));
+				}
+
+				// Query get rawResponse for the records that are entitled
+				getRawResponseForRecordsStmt =
+				aspenConn.prepareStatement("SELECT DISTINCT he.hooplaId, UNCOMPRESS(hex.rawResponse) as rawResponse " +
+				"FROM hoopla_export hex " +
+				"INNER JOIN hoopla_entitlements he ON hex.hooplaId = he.hooplaId " +
+				"INNER JOIN hoopla_entitlement_scopes hes ON he.id = hes.entitlementId " +
+				"WHERE he.hooplaId IN (" + idsToProcessString + ") ");
+				getRawResponseForRecordsRS = getRawResponseForRecordsStmt.executeQuery();
+				while (getRawResponseForRecordsRS.next()) {
+					long hooplaId = getRawResponseForRecordsRS.getLong("hooplaId");
+					String rawResponse = getRawResponseForRecordsRS.getString("rawResponse");
+					JSONObject curTitleDetails = new JSONObject(rawResponse);
+					String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(curTitleDetails, hooplaId);
+					if (groupedWorkId != null) {
+						indexRecord(groupedWorkId);
+					}
+				}
+			} catch (SQLException e) {
+				logEntry.incErrors("Error getting raw response for records", e);
+			} finally {
+				try {
+					if (getRawResponseForRecordsRS != null) {
+						getRawResponseForRecordsRS.close();
+					}
+					if (getRawResponseForRecordsStmt != null) {
+						getRawResponseForRecordsStmt.close();
+					}
+				} catch (Exception e) {
+					logEntry.incErrors("Error getting raw response for records", e);
+				}
+			}
+		}
+		titlesNeedingReindex.clear();
+		logEntry.addNote("Flushed " + titlesNeedingReindex.size() + " Hoopla titles for reindex");
+		logEntry.saveResults();
 	}
 
 /*
@@ -462,6 +535,9 @@ public class HooplaExportMain {
 
 				// Process Flex Availability
 				updatesRun |= getFlexAvailability(settings, librarySettings);
+
+				// Flush the records to reindex
+				flushRecordsToReindex();
 
 				if (settings.isRegroupAllRecords()) {
 					regroupAllRecords(aspenConn, settings.getSettingsId(), getGroupedWorkIndexer(), logEntry);
