@@ -246,6 +246,14 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE themes ADD COLUMN showButtonShimmer TINYINT(1) DEFAULT 1',
 			]
 		], // themes_show_button_shimmer
+		'add_hide_manifestations_in_mobile_view_setting' => [
+			'title' => 'Add Hide Manifestations in Mobile View Setting',
+			'description' => 'Allow libraries to control whether grouped work formats are condensed on mobile devices.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS hideManifestationsInMobileView TINYINT(1) DEFAULT 1'
+			]
+		], // add_hide_manifestations_in_mobile_view_setting
 
 		//alexander - Open Fifth
 

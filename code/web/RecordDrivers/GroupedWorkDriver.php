@@ -858,6 +858,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 		$alwaysShowMainDetails = $groupedWorkDisplaySettings->alwaysShowSearchResultsMainDetails;
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		foreach ($relatedRecords as $relatedRecord) {
 			if ($isFirst) {
@@ -2149,7 +2150,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 		$timer->logTime("Finished assignment of data based on solr debug info");
 
-		$interface->assign('formatDisplayStyle', $library->getGroupedWorkDisplaySettings()->formatDisplayStyle);
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		//Get Rating
 		$interface->assign('summRating', $this->getRatingData());

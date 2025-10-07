@@ -72,6 +72,7 @@ class GroupedWork_Home extends Action {
 			$interface->assign($detailOption, true);
 		}
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		$this->recordDriver->assignBasicTitleDetails();
 		$timer->logTime('Initialized the Record Driver');

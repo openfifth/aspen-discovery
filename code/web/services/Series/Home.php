@@ -58,6 +58,7 @@ class Series_Home extends Action {
 			global $library;
 			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 			$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+			$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 			// Send list to template so title/description can be displayed:
 			$interface->assign('series', $series);
