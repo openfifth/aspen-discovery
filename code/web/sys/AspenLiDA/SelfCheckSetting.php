@@ -203,7 +203,7 @@ class AspenLiDASelfCheckSetting extends DataObject {
 		return $ret;
 	}
 
-	public function getBarcodeStyles() : array {
+	public function getBarcodeStyles() : ?array {
 		if (!isset($this->_barcodeStyles) && $this->id) {
 			$this->_barcodeStyles = [];
 
