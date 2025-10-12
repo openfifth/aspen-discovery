@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
+
 require_once ROOT_DIR . '/sys/WebBuilder/LibraryWebResource.php';
 require_once ROOT_DIR . '/sys/WebBuilder/WebBuilderAudience.php';
 require_once ROOT_DIR . '/sys/WebBuilder/WebBuilderCategory.php';
@@ -82,8 +84,8 @@ class WebResource extends DB_LibraryLinkedObject {
 			'openInNewTab' => [
 				'property' => 'openInNewTab',
 				'type' => 'checkbox',
-				'label' => 'Open In New Tab',
-				'description' => 'Whether or not the link should open in a new tab',
+				'label' => 'Open in New Tab',
+				'description' => 'Whether or not the link should open in a new tab.',
 				'default' => false,
 				'hideInLists' => true,
 			],
@@ -540,7 +542,7 @@ class WebResource extends DB_LibraryLinkedObject {
 		}
 	}
 
-	public function generatePlacard() {
+	public function generatePlacard(): void {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/Placard.php';
 		//check if placard already exists
 		$placard = new Placard();
@@ -570,9 +572,10 @@ class WebResource extends DB_LibraryLinkedObject {
 	}
 
 	/**
-	 * Get the URL for a specific library
+	 * Get the URL for a specific library.
+	 *
 	 * @param int|null $libraryId The library ID to get the URL for. If null, returns base URL.
-	 * @return string The URL for the library
+	 * @return string The URL for the library.
 	 */
 	public function getUrlForLibrary(int $libraryId = null): string {
 		$url = $this->url;
