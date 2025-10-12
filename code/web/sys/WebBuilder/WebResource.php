@@ -186,10 +186,19 @@ class WebResource extends DB_LibraryLinkedObject {
 			'libraries' => [
 				'property' => 'libraries',
 				'type' => 'multiSelect',
-				'listStyle' => 'checkboxSimple',
+				'listStyle' => 'checkboxWithOptions',
 				'label' => 'Libraries',
-				'description' => 'Define libraries that use these settings',
+				'description' => 'Select which libraries can access this resource. Optionally, provide a library-specific URL for each library.',
 				'values' => $libraryList,
+				'optionsStructure' => [
+					'url' => [
+						'property' => 'url',
+						'type' => 'url',
+						'label' => 'Library-Specific URL (Optional)',
+						'description' => 'If provided, this URL will be used instead of the base resource URL for patrons from this library.',
+						'maxLength' => 500,
+					],
+				],
 				'hideInLists' => true,
 			]
 		];
@@ -283,7 +292,10 @@ class WebResource extends DB_LibraryLinkedObject {
 			$libraryLink->webResourceId = $this->id;
 			$libraryLink->find();
 			while ($libraryLink->fetch()) {
-				$this->_libraries[$libraryLink->libraryId] = $libraryLink->libraryId;
+				// Store in checkboxWithOptions format: libraryId => ['url' => 'url_value']
+				$this->_libraries[$libraryLink->libraryId] = [
+					'url' => $libraryLink->url ?? '',
+				];
 			}
 		}
 		return $this->_libraries;
@@ -336,11 +348,12 @@ class WebResource extends DB_LibraryLinkedObject {
 		if (isset($this->_libraries) && is_array($this->_libraries)) {
 			$this->clearLibraries();
 
-			foreach ($this->_libraries as $libraryId) {
+			// Save new library links with URLs
+			foreach ($this->_libraries as $libraryId => $options) {
 				$libraryLink = new LibraryWebResource();
-
 				$libraryLink->webResourceId = $this->id;
 				$libraryLink->libraryId = $libraryId;
+				$libraryLink->url = $options['url'] ?? null;
 				$libraryLink->insert();
 			}
 			unset($this->_libraries);
@@ -527,7 +540,7 @@ class WebResource extends DB_LibraryLinkedObject {
 		}
 	}
 
-	public function generatePlacard() : void {
+	public function generatePlacard() {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/Placard.php';
 		//check if placard already exists
 		$placard = new Placard();
@@ -554,5 +567,22 @@ class WebResource extends DB_LibraryLinkedObject {
 
 	public function supportsSoftDelete(): bool {
 		return true;
+	}
+
+	/**
+	 * Get the URL for a specific library
+	 * @param int|null $libraryId The library ID to get the URL for. If null, returns base URL.
+	 * @return string The URL for the library
+	 */
+	public function getUrlForLibrary(int $libraryId = null): string {
+		$url = $this->url;
+		if ($libraryId !== null) {
+			$libraries = $this->getLibraries();
+			if (isset($libraries[$libraryId]) && !empty($libraries[$libraryId]['url'])) {
+				$url = $libraries[$libraryId]['url'];
+			}
+		}
+
+		return $url;
 	}
 }

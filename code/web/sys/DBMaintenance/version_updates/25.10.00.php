@@ -168,6 +168,14 @@ function getUpdates25_10_00(): array {
 				'CREATE INDEX idx_callNumberId ON grouped_work_record_items (callNumberId)'
 			],
 		], // add_indexes_for_more_user_list_sort_options
+		'web_resource_library_urls' => [
+			'title' => 'Web Resource Library-Specific URLs',
+			'description' => 'Add support for library-specific URLs in Web Resources, allowing different libraries to use different URLs for the same resource. This enables use cases like Massachusetts statewide databases where each library has their own URL for the same resource.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE library_web_builder_resource ADD COLUMN url VARCHAR(500) DEFAULT NULL"
+			]
+		], //web_resource_library_urls
 		'add_num_total_entries_to_show_in_more_to_grouped_work_facet' => [
 			'title' => 'Add Total Num Entries To Show In More To Grouped Work Facet',
 			'description' => 'Add configurable field to control how many facet values show in the "More..." popup/expansion.',

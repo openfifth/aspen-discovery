@@ -1056,7 +1056,7 @@ class WebBuilder_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getWebResource() {
+	function getWebResource(): array {
 		$result = [
 			'success' => false,
 			'message' => 'Unknown error getting web resource',
@@ -1066,15 +1066,22 @@ class WebBuilder_AJAX extends JSON_Action {
 		$webResource = new WebResource();
 		$webResource->id = $resourceId;
 		if ($webResource->find(true)) {
-			/** @var Location $locationSingleton */ global $locationSingleton;
-			$activeLibrary = $locationSingleton->getActiveLocation();
+			/** @var Location $locationSingleton */
+			global $locationSingleton;
+			$activeLocation = $locationSingleton->getActiveLocation();
 			$canView = $webResource->canView();
+			$libraryId = null;
+			$activeLibrary = Library::getActiveLibrary();
+			if ($activeLibrary != null) {
+				$libraryId = $activeLibrary->libraryId;
+			}
+
 			$result = [
 				'success' => true,
-				'url' => $webResource->url,
-				'requireLogin' => $webResource->requireLoginUnlessInLibrary == "1" ? true : false,
-				'inLibrary' => $activeLibrary != null ? true : false,
-				'openInNewTab' => $webResource->openInNewTab == "1" ? true : false,
+				'url' => $webResource->getUrlForLibrary($libraryId),
+				'requireLogin' => $webResource->requireLoginUnlessInLibrary == "1",
+				'inLibrary' => $activeLocation != null,
+				'openInNewTab' => $webResource->openInNewTab == "1",
 				'canView' => $canView,
 				'userNoAccessTitle' => translate(['text' => 'Access Not Allowed', 'isPublicFacing' => true]),
 				'userNoAccessMessage' => translate(['text' => 'Your library does not provide access to this resource.', 'isPublicFacing' => true]),
