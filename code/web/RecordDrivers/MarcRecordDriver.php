@@ -1572,6 +1572,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 						'requireLogin' => false,
 						'alt' => $alt,
 						'target' => '_blank',
+						'type' => 'access_online'
 					];
 				}
 			}
@@ -2771,10 +2772,12 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	public function isPeriodical() : bool {
 		if ($this->_isPeriodical === null) {
 			$ils = 'Unknown';
-			if ($this->getIndexingProfile()->getAccountProfile() != null) {
-				$ils = $this->getIndexingProfile()->getAccountProfile()->ils;
-
+			if ($this->getIndexingProfile() instanceof IndexingProfile) {
+				if ($this->getIndexingProfile()->getAccountProfile() != null) {
+					$ils = $this->getIndexingProfile()->getAccountProfile()->ils;
+				}
 			}
+
 			//If this is a periodical we may have additional information
 			$isPeriodical = false;
 			require_once ROOT_DIR . '/sys/Indexing/FormatMapValue.php';
