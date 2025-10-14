@@ -23,6 +23,11 @@
 		<th>
 			<strong><u>{translate text="Call Number" isPublicFacing=true}</u></strong>
 		</th>
+		{if !empty($hasBarcode) && $showItemBarcodes}
+			<th>
+				<strong><u>{translate text="Barcode" isPublicFacing=true}</u></strong>
+			</th>
+		{/if}
 		{if !empty($hasNote) && $showItemNotes}
 			<th>
 				<strong><u>{translate text="Note" isPublicFacing=true}</u></strong>

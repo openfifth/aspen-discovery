@@ -88,6 +88,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	//Item details
 	public $showItemDueDates;
 	public $showItemNotes;
+	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
 
 	private $_moreDetailsOptions;
@@ -379,22 +380,6 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'hideInLists' => true,
 						'default' => true,
 					],
-					'showItemDueDates' => [
-						'property' => 'showItemDueDates',
-						'type' => 'checkbox',
-						'label' => 'Show Item Due Dates',
-						'description' => 'Whether or not due dates for items are shown within the copy details.',
-						'hideInLists' => true,
-						'default' => true,
-					],
-					'showItemNotes' => [
-						'property' => 'showItemNotes',
-						'type' => 'checkbox',
-						'label' => 'Show Item Notes',
-						'description' => 'Whether or notes for items are shown within the copy details if available.',
-						'hideInLists' => true,
-						'default' => true,
-					],
 					'preferIlsDescription' => [
 						'property' => 'preferIlsDescription',
 						'type' => 'checkbox',
@@ -402,6 +387,39 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'Whether or not the Description loaded from ILS should be preferred over eContent Description',
 						'hideInLists' => true,
 						'default' => false,
+					],
+					'itemCopyDetailsSection' => [
+						'property' => 'itemCopyDetailsSection',
+						'type' => 'section',
+						'label' => 'Item Copy Details',
+						'renderAsHeading' => true,
+						'hideInLists' => true,
+						'properties' => [
+							'showItemDueDates' => [
+								'property' => 'showItemDueDates',
+								'type' => 'checkbox',
+								'label' => 'Show Item Due Dates',
+								'description' => 'Whether or not due dates for items are shown within the copy details.',
+								'hideInLists' => true,
+								'default' => true,
+							],
+							'showItemNotes' => [
+								'property' => 'showItemNotes',
+								'type' => 'checkbox',
+								'label' => 'Show Item Notes',
+								'description' => 'Whether or notes for items are shown within the copy details if available.',
+								'hideInLists' => true,
+								'default' => true,
+							],
+							'showItemBarcodes' => [
+								'property' => 'showItemBarcodes',
+								'type' => 'checkbox',
+								'label' => 'Show Item Barcodes',
+								'description' => 'Whether or not barcodes for items are shown within the copy details if available.',
+								'hideInLists' => true,
+								'default' => false,
+							],
+						],
 					],
 					'showInMainDetails' => [
 						'property' => 'showInMainDetails',

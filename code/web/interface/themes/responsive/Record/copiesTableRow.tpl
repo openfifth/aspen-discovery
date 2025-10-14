@@ -32,6 +32,11 @@
 				{/foreach}
 			{/if}
 		</td>
+		{if !empty($hasBarcode) && $showItemBarcodes}
+			<td class="holdingsBarcode">
+				{if !empty($holding.barcode)}{$holding.barcode|escape}{/if}
+			</td>
+		{/if}
 		{if !empty($hasNote) && $showItemNotes}
 			<td>
 				{if !empty($holding.note)}{$holding.note}{/if}
