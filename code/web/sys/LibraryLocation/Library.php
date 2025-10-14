@@ -103,6 +103,7 @@ class Library extends DataObject {
 	public $allowCancellingAvailableHolds;
 	public $allowCancellingInTransitHolds;
 	public $allowFreezeHolds;   //tinyint(4)
+	public $allowHoldsToBeGrouped;
 	public $maxDaysToFreeze;
 	public $showHoldButton;
 	public $showHoldButtonInSearchResults;
@@ -2185,6 +2186,15 @@ class Library extends DataObject {
 								'description' => 'Number of days that a user can suspend a hold for. Use -1 for no limit.',
 								'hideInLists' => true,
 								'default' => 365,
+								'permissions' => ['Library ILS Connection'],
+							],
+							'allowHoldsToBeGrouped' => [
+								'property' => 'allowHoldsToBeGrouped',
+								'type' => 'checkbox',
+								'label' => 'Allow Grouping Holds',
+								'description' => 'Whether or not the user can group their holds.',
+								'hideInLists' => true,
+								'default' => 0,
 								'permissions' => ['Library ILS Connection'],
 							],
 							'inSystemPickupsOnly' => [
