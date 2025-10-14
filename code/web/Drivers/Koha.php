@@ -6496,6 +6496,36 @@ class Koha extends AbstractIlsDriver {
 		}
 		$borrowerRS->close();
 
+		// Check if Account Expiry notice is mandatory for this patron's category (Koha 25.05+).
+		$mandatoryExpiryAttributeId = null;
+		if ($this->getKohaVersion() >= 25.05) {
+			$patronResponse = $this->kohaApiUserAgent->get("/api/v1/patrons/" . $patron->unique_ils_id, 'koha.getPatron');
+			if ($patronResponse && isset($patronResponse['content']['category_id'])) {
+				$patronCategoryCode = $patronResponse['content']['category_id'];
+				$categoriesResponse = $this->kohaApiUserAgent->get("/api/v1/patron_categories", 'koha.getPatronCategories');
+				if ($categoriesResponse && isset($categoriesResponse['content'])) {
+					$categoriesData = $categoriesResponse['content'];
+					if (is_array($categoriesData)) {
+						foreach ($categoriesData as $category) {
+							if (isset($category['patron_category_id']) && $category['patron_category_id'] === $patronCategoryCode) {
+								if (!empty($category['enforce_expiry_notice'])) {
+									/** @noinspection SqlResolve */
+									$expiryAttributeSql = "SELECT message_attribute_id FROM message_attributes WHERE message_name = 'Patron_Expiry'";
+									$expiryAttributeRS = mysqli_query($this->dbConnection, $expiryAttributeSql);
+									if ($expiryAttributeRow = $expiryAttributeRS->fetch_assoc()) {
+										$mandatoryExpiryAttributeId = $expiryAttributeRow['message_attribute_id'];
+									}
+									$expiryAttributeRS->close();
+								}
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		$interface->assign('mandatoryExpiryAttributeId', $mandatoryExpiryAttributeId);
+
 		//Lookup which transports are allowed
 		/** @noinspection SqlResolve */
 		$transportSettingSql = "SELECT message_attribute_id, MAX(is_digest) as allowDigests, message_transport_type FROM message_transports GROUP by message_attribute_id, message_transport_type";
@@ -6527,72 +6557,52 @@ class Koha extends AbstractIlsDriver {
 		}
 		$systemPreferencesRS->close();
 
-
-
+		$messageAttributes = [];
 		$messageAttributesSql = "SELECT * FROM message_attributes";
 		$messageAttributesRS = mysqli_query($this->dbConnection, $messageAttributesSql);
 		while ($messageType = $messageAttributesRS->fetch_assoc()) {
-			switch ($messageType['message_name']) {
-				case "Item_Due":
-					$messageType['label'] = 'Item due';
-					break;
-				case "Advance_Notice":
-					$messageType['label'] = 'Advance notice';
-					break;
-				case "Hold_Filled":
-					$messageType['label'] = 'Hold filled';
-					break;
-				case "Item_Check_in":
-					$messageType['label'] = 'Item check-in';
-					break;
-				case "Item_Checkout":
-					$messageType['label'] = 'Item checkout';
-					break;
-				case "Ill_ready":
-					$messageType['label'] = 'ILL ready';
-					break;
-				case "Ill_unavailable":
-					$messageType['label'] = 'ILL unavailable';
-					break;
-				case "Auto_Renewals":
-					$messageType['label'] = 'Auto Renewals';
-					break;
-				case "Ill_update":
-					$messageType['label'] = 'ILL update';
-					break;
-				case "Hold_Reminder":
-					$messageType['label'] = 'Hold Reminder';
-					break;
-				default:
-					$messageType['label'] = $messageType['message_name'];
-			}
+			$messageType['label'] = match ($messageType['message_name']) {
+				"Item_Due" => 'Item Due',
+				"Advance_Notice" => 'Advance Notice',
+				"Hold_Filled" => 'Hold Filled',
+				"Item_Check_in" => 'Item Check-In',
+				"Item_Checkout" => 'Item Checkout',
+				"Ill_ready" => 'ILL Ready',
+				"Ill_unavailable" => 'ILL Unavailable',
+				"Auto_Renewals" => 'Auto Renewals',
+				"Ill_update" => 'ILL Update',
+				"Hold_Reminder" => 'Hold Reminder',
+				"Patron_Expiry" => 'Patron Expiry',
+				default => $messageType['message_name'],
+			};
 			$messageAttributes[] = $messageType;
 		}
 		$messageAttributesRS->close();
 		$activeMessagesAttributes = [];
 		
 		foreach($messageAttributes as $messageAttribute){
-
 			# Check if the ILL Module is enabled and if the attribute's name starts with 'ill_.
 			$isDisableILLModule = !$preferences['ILLModule'] && str_starts_with($messageAttribute['message_name'],"Ill_");
 
 			# Check if MembershipExpiryDaysNotice preference is set.
 			# Also checks if the attribute's name is "Auto_Renewals"
 			# If it is enable then the user will be notified about his account expiration.
-			$isDisableExpiryNotice = $messageAttribute['message_name'] == "Patron_Expiry" && !$preferences['MembershipExpiryDaysNotice'];
+			$isDisableExpiryNotice = $messageAttribute['meassage_name'] == "Patron_Expiry" && !$preferences['MembershipExpiryDaysNotice'];
 
 			# Check if AutoRenewalNotices preference is set according to patron messaging preferences.
 			# Also checks if the attribute's name is "Auto_Renewals"
-			# Notify to the user about renewals.
 			$isDisableAutoRenewal = $messageAttribute['message_name'] == "Auto_Renewals" && $preferences['AutoRenewalNotices'] != 'preferences';
 
 			# Check if patron use recalls and if the attribute's name starts with 'Recall_.
 			$isDisableUseRecalls = !$preferences['UseRecalls'] && str_starts_with($messageAttribute['message_name'],"Recall_");
 
-			if ($isDisableILLModule || $isDisableExpiryNotice || $isDisableAutoRenewal || $isDisableUseRecalls) {
+			// Hide Patron_Expiry if enforce_expiry_notice is set for this patron's category (Koha 25.05+).
+			$isMandatoryExpiryNotice = $messageAttribute['message_name'] == "Patron_Expiry" && $messageAttribute['message_attribute_id'] == $mandatoryExpiryAttributeId;
+
+			if ($isDisableILLModule || $isDisableExpiryNotice || $isDisableAutoRenewal || $isDisableUseRecalls || $isMandatoryExpiryNotice) {
 				continue;
 			}
-			$activeMessagesAttributes [] = $messageAttribute;			
+			$activeMessagesAttributes[] = $messageAttribute;
 		}
 		$interface->assign('messageAttributes', $activeMessagesAttributes);
 
