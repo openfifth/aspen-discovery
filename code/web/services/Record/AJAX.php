@@ -756,11 +756,11 @@ class Record_AJAX extends Action {
 				];
 			}
 
-			// Get a list of volumes with unsuppressed items for the record's variations.
+			// Get a list of volumes with unsuppressed, holdable items for the record's variations.
 			$volumeData = [];
 			foreach ($relatedRecord->recordVariations as $variation) {
 				foreach ($variation->getRecords() as $record) {
-					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData();
+					$unsuppressedVolumeData = $record->getUnsuppressedVolumeData(true);
 					foreach ($unsuppressedVolumeData as $volumeInfo) {
 						if (!isset($volumeData[$volumeInfo->volumeId])) {
 							$volumeData[$volumeInfo->volumeId] = clone($volumeInfo);
