@@ -263,6 +263,9 @@ class MaterialsRequest_RequestsNeedingHolds extends ObjectEditor {
 								if ($newStatusObject->holdFailed || $newStatusObject->holdPlacedSuccessfully || $newStatusObject->holdNotNeeded) {
 									$materialsRequest->holdsCreated = 1;
 								}
+								if ($newStatusObject->checkForHolds == 0) {
+									$materialsRequest->readyForHolds = 0;
+								}
 								$materialsRequest->status = $newStatus;
 								$materialsRequest->dateUpdated = time();
 								$materialsRequest->sendStatusChangeEmail();
