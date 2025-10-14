@@ -3902,6 +3902,10 @@ class MyAccount_AJAX extends JSON_Action {
 				$allowSelectingHoldsToExport = $library->allowSelectingHoldsToExport;
 			}
 
+			$catalogDriver = $user->getCatalogDriver();
+			$patronId = $user->unique_ils_id;
+			$groupedHolds = $catalogDriver->getPatronHoldGroups($patronId);
+
 			$interface->assign('allowSelectingHoldsToExport', $allowSelectingHoldsToExport);
 
 
