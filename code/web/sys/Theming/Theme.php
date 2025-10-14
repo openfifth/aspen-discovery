@@ -496,6 +496,9 @@ class Theme extends DataObject {
 	//Theme accessibility options
 	public $isHighContrast;
 
+	//Color mode options
+	public $isDarkColorScheme;
+
 	//Fonts
 	public $headingFont;
 	public $headingFontDefault;
@@ -702,6 +705,14 @@ class Theme extends DataObject {
 				'label' => 'High Contrast Theme',
 				'description' => 'Do not enable this option for your primary/default theme! Enabling this option will add some accessibility styling enhancements.',
                 'note' => 'Enabling this option will add accessibility and styling enhancements to a High Contrast theme. Not recommended for your default/primary theme.',
+				'required' => false,
+			],
+			'isDarkColorScheme' => [
+				'property' => 'isDarkColorScheme',
+				'type' => 'checkbox',
+				'label' => 'Dark Mode Theme',
+				'description' => 'Adds enhancements to base stylesheet that better compliment themes with a dark color scheme.',
+				'note' => 'Enabling this option will add styling enhancements for dark themes.',
 				'required' => false,
 			],
 			'logoName' => [
@@ -2935,11 +2946,18 @@ class Theme extends DataObject {
 	 * @return string the resulting css
 	 */
 	public function generateCss($saveChanges = false) : string {
+		// Clear cached theme hierarchy to prevent cross-contamination during batch processing.
+		$this->_allAppliedThemes = null;
+		$this->_themeHierarchy = null;
+
 		$allAppliedThemes = $this->getAllAppliedThemes();
 		global $interface;
 		require_once ROOT_DIR . '/sys/Utils/ColorUtils.php';
 		$additionalCSS = '';
 		$appendCSS = true;
+
+		// Bookmark all template variables to prevent cross-contamination between themes during batch processing.
+		$savedTemplateVars = $interface->tpl_vars;
 		$this->applyDefaults();
 		$interface->assign('headerBackgroundColor', $this->headerBackgroundColor);
 		$interface->assign('headerForegroundColor', $this->headerForegroundColor);
@@ -3051,6 +3069,7 @@ class Theme extends DataObject {
 		$interface->assign('dangerButtonHoverForegroundColor', $this->dangerButtonHoverForegroundColor);
 		$interface->assign('dangerButtonHoverBorderColor', $this->dangerButtonHoverBorderColor);
 		$interface->assign('themeIsHighContrast', $this->isHighContrast);
+		$interface->assign('themeIsDarkColorScheme', $this->isDarkColorScheme);
 		$interface->assign('cookieConsentBackgroundColor', $this->cookieConsentBackgroundColor);
 		$interface->assign('cookieConsentButtonColor', $this->cookieConsentButtonColor);
 		$interface->assign('cookieConsentButtonHoverColor', $this->cookieConsentButtonHoverColor);
@@ -3159,9 +3178,10 @@ class Theme extends DataObject {
 		}
 
 		$interface->assign('additionalCSS', $additionalCSS);
-
 		$previousCss = $this->generatedCss;
 		$updatedCss = $interface->fetch('theme.css.tpl');
+		$interface->tpl_vars = $savedTemplateVars;
+
 		if ($updatedCss != $previousCss) {
 			$this->__set('generatedCss', $updatedCss);
 			if ($saveChanges) {
