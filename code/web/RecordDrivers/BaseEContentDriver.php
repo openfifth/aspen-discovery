@@ -90,6 +90,7 @@ abstract class BaseEContentDriver extends MarcRecordDriver {
 					}
 				}
 				$actions[] = [
+					'type' => 'access_online',
 					'url' => $action,
 					'redirectUrl' => $fileOrUrl,
 					'title' => $title,
@@ -118,6 +119,7 @@ abstract class BaseEContentDriver extends MarcRecordDriver {
 						}
 					}
 					$actions[] = [
+						'type' => 'access_online',
 						'url' => $action,
 						'redirectUrl' => $fileOrUrl,
 						'title' => $title,
