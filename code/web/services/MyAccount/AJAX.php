@@ -3920,7 +3920,33 @@ class MyAccount_AJAX extends JSON_Action {
 
 			$catalogDriver = $user->getCatalogDriver();
 			$patronId = $user->unique_ils_id;
-			$groupedHolds = $catalogDriver->getPatronHoldGroups($patronId);
+			$groupedHoldsResponse = $catalogDriver->getPatronHoldGroups($patronId);
+			$groupedHolds = [];
+
+			if (isset($groupedHoldsResponse['content'])) {
+				if (is_string($groupedHoldsResponse['content'])) {
+					// JSON string → decode
+					$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
+				} elseif (is_array($groupedHoldsResponse['content'])) {
+					// Already decoded array
+					$groupedHolds = $groupedHoldsResponse['content'];
+				} else {
+					global $logger;
+					$logger->log(
+						'Unexpected type for groupedHoldsResponse["content"]: ' . gettype($groupedHoldsResponse['content']),
+						Logger::LOG_ERROR
+					);
+				}
+			} elseif (is_array($groupedHoldsResponse)) {
+				// Some drivers might directly return the array of groups
+				$groupedHolds = $groupedHoldsResponse;
+			} else {
+				global $logger;
+				$logger->log(
+					'Unexpected type for groupedHoldsResponse: ' . gettype($groupedHoldsResponse),
+					Logger::LOG_ERROR
+				);
+			}
 
 			$interface->assign('allowSelectingHoldsToExport', $allowSelectingHoldsToExport);
 
@@ -4039,6 +4065,45 @@ class MyAccount_AJAX extends JSON_Action {
 			$allHolds = null;
 			if (!$offlineMode) {
 				$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
+				$hyperHolds = [];
+				$hiddenHoldIds = [];
+
+				if (!empty($groupedHolds) && !empty($allHolds['unavailable'])) {
+					foreach($groupedHolds as $group) {
+						if (!empty($group['holds']) && is_array($group['holds']) && count ($group['holds']) > 1) {
+							$groupBiblioIds = [];
+							$groupHoldIds = [];
+							foreach ($group['holds'] as $hold) {
+								$groupBiblioIds[] = $hold['biblio_id'] ?? null;
+								$groupHoldIds[] = $hold['hold_id'] ?? null;
+							}
+							$matchingHolds = [];
+							foreach ($allHolds['unavailable'] as $holdKey => $holdObj) {
+								if (in_array($holdObj->recordId, $groupBiblioIds)) {
+									$matchingHolds[] = $holdObj;
+									$hiddenHoldIds[] = $holdKey;
+								}
+							}
+							if (count($matchingHolds) > 1) {
+								$hyperHolds[] = [
+									'visual_hold_id' => $group['hold_group_id'] ?? uniqid('group'),
+									'holdCount' => count($matchingHolds),
+									'holds' => $matchingHolds,
+									'type' => 'hyperhold'
+								];
+							}
+						}
+					}
+				}
+
+				if (!empty($hiddenHoldIds)) {
+					foreach ($hiddenHoldIds as $holdKey) {
+						unset($allHolds['unavailable'][$holdKey]);
+					}
+				}
+
+				$interface->assign('hyperHolds', $hyperHolds);
+				$interface->assign('hasHyperHolds', !empty($hyperHolds));
 				$interface->assign('recordList', $allHolds);
 			}
 
