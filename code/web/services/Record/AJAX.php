@@ -629,7 +629,7 @@ class Record_AJAX extends Action {
 				} else {
 					$interface->assign('whileYouWaitTitles', []);
 					if (isset($results['items'])) {
-						$results = $this->getItemHoldForm($user->_homeLocationCode, $results, $shortId, $user);
+						$results = $this->getItemHoldForm($user->getPickupLocationCode(), $results, $shortId, $user);
 						$results['holdFormBypassed'] = true;
 					}
 				}
@@ -941,7 +941,7 @@ class Record_AJAX extends Action {
 					$location = new Location();
 					$userPickupLocations = $location->getPickupBranches($user);
 					foreach ($userPickupLocations as $tmpLocation) {
-						if ($tmpLocation->code == $pickupBranch) {
+						if (isset($tmpLocation->code) && $tmpLocation->code == $pickupBranch) {
 							$patron = $user;
 							break;
 						}
