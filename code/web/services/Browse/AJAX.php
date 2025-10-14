@@ -776,7 +776,7 @@ class Browse_AJAX extends Action {
 		return $browseMode;
 	}
 
-	private $textId;
+	public $textId;
 
 	/**
 	 * @param null $textId Optional Id to set the object's textId to
