@@ -1,4 +1,17 @@
 {assign var="hideCoversFormDisplayed" value=false}
+{if $hasHyperHolds && !empty($hyperHolds)}
+	<h2>{translate text="Hyperholds" isPublicFacing=true}</h2>
+	<p class="alert alert-info">
+		{translate text="Multiple records are on hold for you. The library will fulfill whichever record becomes available first. Once a record is available, it will appear in the 'Ready for Pickup' section." isPublicFacing=true}
+	</p>
+	
+	<div class="striped">
+		{foreach from=$hyperHolds item=hyperHold name="hyperHoldLoop"}
+			{include file="MyAccount/hyperHold.tpl" record=$hyperHold resultIndex=$smarty.foreach.hyperHoldLoop.iteration}
+		{/foreach}
+	</div>
+	<hr>
+{/if}
 {foreach from=$recordList item=sectionData key=sectionKey}
 	{if $sectionKey == 'available' && !$showAvailableHoldsSection}
 		{continue}
