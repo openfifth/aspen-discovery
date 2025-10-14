@@ -4578,7 +4578,6 @@ class Koha extends AbstractIlsDriver {
 						'maxLength' => $pinValidationRules['maxLength'],
 						'onlyDigitsAllowed' => $pinValidationRules['onlyDigitsAllowed'],
 						'showConfirm' => false,
-						'required' => true,
 						'showDescription' => true,
 						'autocomplete' => false,
 					],
@@ -4591,7 +4590,6 @@ class Koha extends AbstractIlsDriver {
 						'maxLength' => $pinValidationRules['maxLength'],
 						'onlyDigitsAllowed' => $pinValidationRules['onlyDigitsAllowed'],
 						'showConfirm' => false,
-						'required' => true,
 						'showDescription' => false,
 						'autocomplete' => false,
 					],
@@ -4756,7 +4754,20 @@ class Koha extends AbstractIlsDriver {
 		global $library;
 		$result = ['success' => false,];
 
-		if (isset($_REQUEST['borrower_password'])) {
+		// Check if password is mandatory before attempting validation.
+		$this->initDatabaseConnection();
+		$sql = "SELECT value FROM systempreferences WHERE variable = 'PatronSelfRegistrationBorrowerMandatoryField';";
+		$results = mysqli_query($this->dbConnection, $sql);
+		$mandatoryFieldsValue = '';
+		if ($curRow = $results->fetch_assoc()) {
+			$mandatoryFieldsValue = $curRow['value'];
+		}
+		$results->close();
+		$requiredFields = explode('|', $mandatoryFieldsValue);
+		$requiredFields = array_flip($requiredFields);
+		$passwordIsRequired = array_key_exists('password', $requiredFields);
+
+		if (isset($_REQUEST['borrower_password']) && $passwordIsRequired) {
 			$password = $_REQUEST['borrower_password'];
 			$pinValidationRules = $this->getPasswordPinValidationRules();
 
