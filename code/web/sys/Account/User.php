@@ -2933,10 +2933,10 @@ class User extends DataObject {
 		return $result;
 	}
 
-	function freezeOverDriveHold($overDriveId, $reactivationDate): array {
+	function freezeOverDriveHold($overDriveId): array {
 		require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 		$overDriveDriver = new OverDriveDriver();
-		return $overDriveDriver->freezeHold($this, $overDriveId, $reactivationDate);
+		return $overDriveDriver->freezeHold($this, $overDriveId);
 	}
 
 	function thawOverDriveHold($overDriveId): array {
