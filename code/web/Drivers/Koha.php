@@ -9336,4 +9336,23 @@ class Koha extends AbstractIlsDriver {
 		}
 		return'No description available';
 	}
+
+	public function getPatronHoldGroups($patronId): ?array {
+		$endpoint = "/api/v1/patrons/{$patronId}/hold_groups";
+		$extraHeaders = ['x-koha-embed: holds'];
+
+		$response = $this->kohaApiUserAgent->get($endpoint, 'koha.getPatronHoldGroups', [], $extraHeaders);
+
+		if ($this->kohaApiUserAgent->getLastResponseCode() === 200) {
+			if (is_array($response)) {
+				return $response;
+			}
+			$decoded = json_decode($response, true);
+
+			if (json_last_error() === JSON_ERROR_NONE) {
+				return $decoded;
+			}
+		}
+		return null;
+	}
 }
