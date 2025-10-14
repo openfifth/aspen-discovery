@@ -2636,15 +2636,15 @@ class SirsiDynixROA extends HorizonAPI {
 		return $result;
 	}
 
-	public function showOutstandingFines() {
+	public function showOutstandingFines(): bool {
 		return true;
 	}
 
-	function getForgotPasswordType() {
+	function getForgotPasswordType(): string {
 		return 'emailResetLink';
 	}
 
-	function getEmailResetPinTemplate() {
+	function getEmailResetPinTemplate(): string {
 		return 'sirsiROAEmailResetPinLink.tpl';
 	}
 
@@ -2695,14 +2695,6 @@ class SirsiDynixROA extends HorizonAPI {
 		}
 
 		return $result;
-	}
-
-	function translateFineMessageType($code) {
-		switch ($code) {
-
-			default:
-				return $code;
-		}
 	}
 
 	public function translateLocation($locationCode) {
