@@ -9355,4 +9355,87 @@ class Koha extends AbstractIlsDriver {
 		}
 		return null;
 	}
+
+	public function groupHolds($patronId, $holdIds, $forceGrouped = false) {
+		$endpoint = "/api/v1/patrons/{$patronId}/hold_groups";
+				$extraHeaders = ['x-koha-embed: holds'];
+
+		$result = [
+			'success' => false,
+			'message' => 'Unknown error occurred'
+		];
+
+		try {
+			if (!$patronId) {
+				$result['message'] = translate([
+					'text' => 'No patron id',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+
+			if (empty($holdIds)) {
+				$result['message'] = translate([
+					'text' => 'No holds to group',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+
+			$requestData = [
+				'hold_ids' => array_map('intval', $holdIds),
+				'force_grouped' => $forceGrouped
+			];
+
+
+			$apiResult = $this->kohaApiUserAgent->post($endpoint, $requestData, 'koha.addPatronHoldGroups', [], $extraHeaders);
+
+			$httpCode = $apiResult['code'] ?? 0;
+			$responseData = $apiResult['content'] ?? null;
+			$success = $httpCode == 201 ? true : false;
+
+			if (!$success) {
+				$curlError = $apiResult['curl_error'] ?? null;
+				if ($curlError) {
+					$result['message'] = "Network or connection error: $curlError";
+					return $result;
+				}
+				if ($httpCode === 0) {
+					$result['message'] = "No response from server, possible network error";
+					return $result;
+				}
+			}
+
+			switch ($httpCode) {
+				case 201:
+					$result['success'] = true;
+					$result['message'] = translate(['text' => 'Holds grouped successfully', 'isPublicFacing' => true]);
+					$result['hold_group'] = $responseData;
+					break;
+				case 400:
+					$result['message'] = translate(['text' => 'Invalid request data', 'isPublicFacing' => true]);
+					if (isset($responseData['error'])) {
+						$result['message'] .= ': ' . $responseData['error'];
+					}
+					break;
+				default:
+					$result['message'] = translate(['text' => 'Unexpected error occurred', 'isPublicFacing' => true]) . " (HTTP $httpCode)";
+					break;
+			}
+
+			if (!$result['success']) {
+				global $logger;
+				$logger->log("Hold Groupeing Error: " . print_r($result, true), Logger::LOG_ERROR);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log('Exception in groupHolds: ' . $e->getMessage(), Logger::LOG_ERROR);
+			$result['message'] = translate([
+				'text' => 'An unexpected error occurred while grouping holds',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
 }
