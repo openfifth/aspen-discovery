@@ -3295,6 +3295,40 @@ AspenDiscovery.Account = (function () {
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
+		},
+		controlGroupedHolds: function () {
+			const url = Globals.path + '/MyAccount/AJAX?method=getHoldGroupsModal';
+
+			$.getJSON(url, function(response) {
+				if(response) {
+					AspenDiscovery.showMessageWithButtons(response.title, response.modalBody, response.modalButtons);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			})
+		},
+		deleteHoldsGroup: function(holdGroupId) {
+			const url = Globals.path + '/MyAccount/AJAX?method=deleteHoldGroup';
+			const params = {
+				holdGroupId: holdGroupId
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message);
+						if (data.success) {
+							setTimeout(function() {
+								location.reload();
+							}, 1500);
+						}
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			})
 		}
 	};
 }(AspenDiscovery.Account || {}));

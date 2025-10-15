@@ -9437,4 +9437,17 @@ class Koha extends AbstractIlsDriver {
 
 		return $result;
 	}
+
+	public function deletePatronHoldGroup($patronId, $holdGroupId): bool {
+		$endpoint = "/api/v1/patrons/{$patronId}/hold_groups/{$holdGroupId}";
+
+		$response = $this->kohaApiUserAgent->delete($endpoint, 'koha.deletePatronHoldGroups');
+		$lastCode = $this->kohaApiUserAgent->getLastResponseCode();
+
+		if ($this->kohaApiUserAgent->getLastResponseCode() === 204) {
+			return true;
+		}
+
+		return false;
+	}	
 }
