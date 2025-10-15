@@ -18,4 +18,11 @@
 		{include file="MyAccount/ilsHold.tpl" record=$hold resultIndex=$smarty.foreach.holdLoop.iteration showCovers=$showCovers}
 	{/foreach}
 </div>
+<div>
+	<form id="controlGroupedHoldsForm">
+			<div class="btn-group">
+				<a href="#" onclick="AspenDiscovery.Account.controlGroupedHolds()" class="btn btn-sm btn-default" aria-description="{translate text="Click here to control grouped holds"}">{translate text="Control Grouped Holds" isPublicFacing=true}</a>
+			</div>
+		</form>
+</div>
 {/strip}
