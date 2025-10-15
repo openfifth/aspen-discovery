@@ -3952,6 +3952,17 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('allowFreezeHolds', false);
 			}
 
+			if ($source === 'ils') {
+				if ($user->getHomeLibrary() != null) {
+					$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
+				} else {
+					$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
+				}
+				$interface->assign('allowHoldsToBeGrouped', $allowHoldsToBeGrouped);
+			} else {
+				$interface->assign('allowHoldsToBeGrouped', false);
+			}
+
 			$showPosition = $user->showHoldPosition();
 			$suspendRequiresReactivationDate = $user->suspendRequiresReactivationDate();
 			$interface->assign('suspendRequiresReactivationDate', $suspendRequiresReactivationDate);
@@ -11569,5 +11580,106 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		return $results;
+	}
+
+	public function groupPatronHolds() {
+
+		if (!UserAccount::isLoggedIn()) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Please log in to groupe holds',
+					'isPublicFacing' => true
+				])
+			];
+		}
+
+
+		$source = $_REQUEST['source'] ?? '';
+		$holdIds = $_REQUEST['holdIds'] ?? [];
+		$availableSort = $_REQUEST['availableSort'] ?? '';
+		$interlibrarySort = $_REQUEST['interlibrarySort'] ?? '';
+		$unavailableSort = $_REQUEST['unavailableSort'] ?? '';
+
+		if (!is_array($holdIds) || count($holdIds) === 0) {
+
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Please select at least one hold to group',
+					'isPublicFacing' => true
+				])
+			];
+		}
+		try {
+			$user = UserAccount::getLoggedInUser();
+			$patronId = $user->unique_ils_id;
+
+			$catalogDriver = $user->getCatalogDriver();
+			if ($catalogDriver->driver instanceof Koha) {
+
+				$groupedHolds = $catalogDriver->groupHolds($patronId, $holdIds);
+
+				if ($groupedHolds['success']) {
+					return [
+						'success' => true,
+						'title' => translate([
+							'text' => 'Success',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'Holds grouped successfully',
+							'isPublicFacing' => true
+						])
+					];
+				} else {
+					return [
+						'success' => false,
+						'title' => translate([
+							'text' => 'Error',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'Failed to group holds',
+							'isPublicFacing' => true
+						])
+						];
+				}
+			} else {
+				return [
+					'succcess' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => 'Your catalog driver does not support this feature at the present time',
+						'isPublicFacing' => true,
+					])
+				];
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log('Error grouping patron holds: ' . $e->getErrorMessage(), Logger::LOG_ERROR);
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'An error occurred while grouping holds',
+					'isPublicFacing' => true,
+				])
+			];
+		}
 	}
 }
