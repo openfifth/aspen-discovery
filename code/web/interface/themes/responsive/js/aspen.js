@@ -4057,7 +4057,7 @@ AspenDiscovery.Account = (function () {
 		},
 
 		createSquareOrder: function (finesFormId, transactionType, token) {
-			this.createGenericOrder(finesFormId, 'Square', transactionType, token);
+			return this.createGenericOrder(finesFormId, 'Square', transactionType, token);
 		},
 
 		createStripeOrder: function (finesFormId, transactionType) {
@@ -11762,33 +11762,15 @@ AspenDiscovery.OverDrive = (function(){
 			AspenDiscovery.loadingMessage();
 			var url = Globals.path + '/OverDrive/AJAX';
 			var params = {
-				patronId : patronId
-				,overDriveId : overDriveId
+				'method' : 'freezeHold',
+				patronId : patronId,
+				overDriveId : overDriveId
 			};
-			//Prompt the user for the date they want to reactivate the hold
-			params['method'] = 'getReactivationDateForm'; // set method for this form
-			$.getJSON(url, params, function(data){
-				// noinspection JSUnresolvedReference
-				AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons)
-			}).error(AspenDiscovery.ajaxFail);
-		},
-
-		// called by ReactivationDateForm when fn freezeHold above has promptForReactivationDate is set
-		doFreezeHoldWithReactivationDate: function(caller){
-			var popUpBoxTitle = $(caller).text() || "Freezing Hold"; // freezing terminology can be customized, so grab text from click button: caller
-			var params = {
-				'method' : 'freezeHold'
-				,patronId : $('#patronId').val()
-				,overDriveId : $('#overDriveId').val()
-				,reactivationDate : $("#reactivationDate").val()
-			};
-			var url = Globals.path + '/OverDrive/AJAX';
-			AspenDiscovery.showMessage(popUpBoxTitle, "Updating your hold.  This may take a minute.");
 			$.getJSON(url, params, function(data){
 				if (data.success) {
-					AspenDiscovery.showMessage("Success", data.message, true, true);
+					AspenDiscovery.showMessage("Successfully Froze Hold", data.message, true, true);
 				} else {
-					AspenDiscovery.showMessage("Error", data.message);
+					AspenDiscovery.showMessage("Failed to Freeze Hold", data.message);
 				}
 			}).error(AspenDiscovery.ajaxFail);
 		},
