@@ -14,6 +14,8 @@ class HooplaLibrarySettings {
 	private final boolean instantEnabled;
 	private final boolean flexEnabled;
 	private final boolean fullUpdateForLibrary;
+	private final boolean cleanUpInstant;
+	private final boolean cleanUpFlex;
 
 	HooplaLibrarySettings(ResultSet settingsRS) throws SQLException {
 		id = settingsRS.getLong("id");
@@ -24,6 +26,8 @@ class HooplaLibrarySettings {
 		instantEnabled = settingsRS.getBoolean("hooplaInstantEnabled");
 		flexEnabled = settingsRS.getBoolean("hooplaFlexEnabled");
 		fullUpdateForLibrary = settingsRS.getBoolean("fullUpdateForLibrary");
+		cleanUpInstant = settingsRS.getBoolean("cleanUpInstant");
+		cleanUpFlex = settingsRS.getBoolean("cleanUpFlex");
 	}
 
 	long getId() {
@@ -60,5 +64,13 @@ class HooplaLibrarySettings {
 
 	boolean isCirculationEnabled() {
 		return circulationEnabled;
+	}
+
+	boolean isCleanUpInstant() {
+		return cleanUpInstant;
+	}
+
+	boolean isCleanUpFlex() {
+		return cleanUpFlex;
 	}
 }

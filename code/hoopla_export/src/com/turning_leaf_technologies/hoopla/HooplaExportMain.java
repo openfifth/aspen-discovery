@@ -54,6 +54,7 @@ public class HooplaExportMain {
 	private static PreparedStatement getFlexEntitlementsForLibraryStmt;
 	private static PreparedStatement upsertFlexAvailabilityStmt;
 	private static PreparedStatement getExistingFlexAvailabilityStmt;
+	private static PreparedStatement deleteFlexAvailabilityForLibraryStmt;
 
 	//Record grouper
 	private static GroupedWorkIndexer groupedWorkIndexer;
@@ -367,6 +368,72 @@ public class HooplaExportMain {
 		}
 	}
 
+	private static boolean cleanupLibraryEntitlements(HooplaLibrarySettings librarySetting) {
+		boolean cleanUpRan = false;
+		if (librarySetting.isCleanUpInstant()) {
+			logEntry.addNote("Cleaning up Instant data for library " + librarySetting.getLibraryId());
+			logEntry.saveResults();
+			HashMap<Long, Long> existingEntitlements = loadExistingEntitlementsForLibrary(librarySetting.getLibraryId(), HOOPLA_TYPE_INSTANT);
+			for (Map.Entry<Long, Long> entry : existingEntitlements.entrySet()) {
+				Long hooplaId = entry.getKey();
+				Long entitlementId = entry.getValue();
+				try {
+				deleteHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+					deleteHooplaEntitlementScopeStmt.setLong(2, librarySetting.getLibraryId());
+					deleteHooplaEntitlementScopeStmt.executeUpdate();
+					titlesNeedingReindex.add(hooplaId);
+				} catch (SQLException e) {
+					logEntry.incErrors("Error deleting Instant entitlement scope for title " + hooplaId + " (library " + librarySetting.getLibraryId() + ")", e);
+				}
+			}
+			// Reset the clean up Instant flag
+			try {
+				PreparedStatement updateLibrarySettingsStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings set cleanUpInstant = 0 where id = ?");
+				updateLibrarySettingsStmt.setLong(1, librarySetting.getId());
+				updateLibrarySettingsStmt.executeUpdate();
+				updateLibrarySettingsStmt.close();
+			} catch (SQLException e) {
+				logEntry.incErrors("Error resetting clean up Instant flag for library " + librarySetting.getLibraryId(), e);
+			}
+			logEntry.addNote("Cleaned up " + existingEntitlements.size() + " Instant entitlements for library " + librarySetting.getLibraryId());
+			logEntry.saveResults();
+			cleanUpRan = true;
+		}
+		if (librarySetting.isCleanUpFlex()) {
+			logEntry.addNote("Cleaning up Flex data for library " + librarySetting.getLibraryId());
+			logEntry.saveResults();
+			HashMap<Long, Long> existingEntitlements = loadExistingEntitlementsForLibrary(librarySetting.getLibraryId(), HOOPLA_TYPE_FLEX);
+			for (Map.Entry<Long, Long> entry : existingEntitlements.entrySet()) {
+				Long hooplaId = entry.getKey();
+				Long entitlementId = entry.getValue();
+				try {
+					deleteHooplaEntitlementScopeStmt.setLong(1, entitlementId);
+					deleteHooplaEntitlementScopeStmt.setLong(2, librarySetting.getLibraryId());
+					deleteHooplaEntitlementScopeStmt.executeUpdate();
+					deleteFlexAvailabilityForLibraryStmt.setLong(1, hooplaId);
+					deleteFlexAvailabilityForLibraryStmt.setLong(2, librarySetting.getLibraryId());
+					deleteFlexAvailabilityForLibraryStmt.executeUpdate();
+					titlesNeedingReindex.add(hooplaId);
+				} catch (SQLException e) {
+					logEntry.incErrors("Error deleting Flex entitlement scope and availability for title " + hooplaId + " (library " + librarySetting.getLibraryId() + ")", e);
+				}
+			}
+			// Reset the clean up Flex flag
+			try {
+				PreparedStatement updateLibrarySettingsStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings set cleanUpFlex = 0 where id = ?");
+				updateLibrarySettingsStmt.setLong(1, librarySetting.getId());
+				updateLibrarySettingsStmt.executeUpdate();
+				updateLibrarySettingsStmt.close();
+			} catch (SQLException e) {
+				logEntry.incErrors("Error resetting clean up Flex flag for library " + librarySetting.getLibraryId(), e);
+			}
+			logEntry.addNote("Cleaned up " + existingEntitlements.size() + " Flex entitlements and availability for library " + librarySetting.getLibraryId());
+			logEntry.saveResults();
+			cleanUpRan = true;
+		}
+		return cleanUpRan;
+	}
+
 	private static void flushRecordsToReindex() {
 		if (titlesNeedingReindex.isEmpty()) {
 			return;
@@ -523,9 +590,23 @@ public class HooplaExportMain {
 				HooplaSettings settings = new HooplaSettings(getSettingsRS);
 				ArrayList<HooplaLibrarySettings> librarySettings = loadLibraryHooplaSettings(settings.getSettingsId());
 				numSettings++;
+				boolean hasEnabledLibrary = false;
+				boolean hasCleanUpLibrary = false;
 
-				// TO DO, add the check for library setting, if no library enable the neither
-				// instant or flex, we dont do anything
+				for (HooplaLibrarySettings librarySetting : librarySettings) {
+					if (librarySetting.isInstantEnabled() || librarySetting.isFlexEnabled()) {
+						hasEnabledLibrary = true;
+					} else if (librarySetting.isCleanUpInstant() || librarySetting.isCleanUpFlex()) {
+						hasCleanUpLibrary = true;
+					}
+				}
+
+				// Nothing enabled or needed for cleanup, skip
+				if (!hasEnabledLibrary && !hasCleanUpLibrary) {
+					logEntry.addNote("No enabled or needed for cleanup libraries, skipping this run");
+					logEntry.saveResults();
+					continue;
+				}
 
 				// Extract Global Content
 				if (!globalContentUpdated) {
@@ -737,6 +818,11 @@ public class HooplaExportMain {
 		boolean hasUpdates = false;
 		for (HooplaLibrarySettings librarySetting : librarySettings) {
 			boolean libraryUpdates = false;
+			boolean cleanUpRan = false;
+			// Check if we need to do the clean up
+			if (librarySetting.isCleanUpInstant() || librarySetting.isCleanUpFlex()) {
+				cleanUpRan |= cleanupLibraryEntitlements(librarySetting);
+			}
 			// Skip if the library doesn't have a Hoopla library ID
 			if (!librarySetting.hasHooplaLibraryId()) {
 				continue;
@@ -769,7 +855,7 @@ public class HooplaExportMain {
 				}
 			}
 
-			if (libraryUpdates) {
+			if (libraryUpdates || cleanUpRan) {
 				hasUpdates = true;
 			}
 		}
@@ -893,20 +979,33 @@ public class HooplaExportMain {
 
 		}
 		// Clean up the entitlements that are no longer in the API response
+		// If Flex, also clean up the availability
 		if (runFullUpdateForLibrary && existingEntitlements != null && !existingEntitlements.isEmpty()) {
-			for (Map.Entry<Long, Long> staleEntitlement : existingEntitlements.entrySet()) {
-				Long hooplaId = staleEntitlement.getKey();
-				Long entitlementId = staleEntitlement.getValue();
+			int numRemainingEntitlements = 0;
+			for (Map.Entry<Long, Long> remainingEntitlement : existingEntitlements.entrySet()) {
+				Long hooplaId = remainingEntitlement.getKey();
+				Long entitlementId = remainingEntitlement.getValue();
 				try {
 					deleteHooplaEntitlementScopeStmt.setLong(1, entitlementId);
 					deleteHooplaEntitlementScopeStmt.setLong(2, librarySetting.getLibraryId());
 					deleteHooplaEntitlementScopeStmt.executeUpdate();
 				} catch (SQLException e) {
 					logEntry.incErrors("Error deleting Hoopla entitlement scope for stale title " + hooplaId + " (library " + librarySetting.getLibraryId() + ")", e);
-					continue;
 				}
+				if (hooplaType.equals(HOOPLA_TYPE_FLEX)) {
+					try {
+						deleteFlexAvailabilityForLibraryStmt.setLong(1, hooplaId);
+						deleteFlexAvailabilityForLibraryStmt.setLong(2, librarySetting.getLibraryId());
+						deleteFlexAvailabilityForLibraryStmt.executeUpdate();
+					} catch (SQLException e) {
+						logEntry.incErrors("Error deleting Flex availability for stale title " + hooplaId + " (library " + librarySetting.getLibraryId() + ")", e);
+					}
+				}
+				numRemainingEntitlements++;
 				titlesNeedingReindex.add(hooplaId);
 			}
+			logEntry.addNote("Cleaned up " + numRemainingEntitlements + " remaining " + hooplaType + " entitlements for library " + librarySetting.getLibraryId());
+			logEntry.saveResults();
 		}
 
 		logEntry.addNote("Exported " + numEntitlements + " " + hooplaType + " entitlements for library " + librarySetting.getLibraryId());
@@ -1104,6 +1203,13 @@ public class HooplaExportMain {
 								}
 							}
 							scopeRS.close();
+							try {
+								deleteFlexAvailabilityForLibraryStmt.setLong(1, hooplaId);
+								deleteFlexAvailabilityForLibraryStmt.setLong(2, scopeLibraryId);
+								deleteFlexAvailabilityForLibraryStmt.executeUpdate();
+							} catch (SQLException e) {
+								logEntry.incErrors("Error deleting Flex availability for entitlement ID " + entitlementId + " (library " + scopeLibraryId + ")", e);
+							}
 						} catch (SQLException e) {
 							logEntry.incErrors("Error checking existing entitlement scope for title " + hooplaId + " (library " + scopeLibraryId + ")", e);
 						}
@@ -1498,6 +1604,7 @@ public class HooplaExportMain {
 				getFlexEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
 				upsertFlexAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO hoopla_flex_availability (hooplaId, scopeLibraryId, holdsQueueSize, availableCopies, totalCopies, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE scopeLibraryId = VALUES(scopeLibraryId), holdsQueueSize = VALUES(holdsQueueSize), availableCopies = VALUES(availableCopies), totalCopies = VALUES(totalCopies), status = VALUES(status)");
 				getExistingFlexAvailabilityStmt = aspenConn.prepareStatement("SELECT holdsQueueSize, availableCopies, totalCopies, status FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
+				deleteFlexAvailabilityForLibraryStmt = aspenConn.prepareStatement("DELETE FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
 			}else{
 				logger.error("Aspen database connection information was not provided");
 				System.exit(1);
@@ -1543,6 +1650,8 @@ public class HooplaExportMain {
 			upsertFlexAvailabilityStmt = null;
 			getExistingFlexAvailabilityStmt.close();
 			getExistingFlexAvailabilityStmt = null;
+			deleteFlexAvailabilityForLibraryStmt.close();
+			deleteFlexAvailabilityForLibraryStmt = null;
 
 			aspenConn.close();
 			//noinspection UnusedAssignment
