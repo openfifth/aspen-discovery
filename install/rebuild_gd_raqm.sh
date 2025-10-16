@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+OLDIFS=$IFS
 IFS=$'\n\t'
 
 USER_HOME=$(getent passwd "${SUDO_USER:-$USER}" | cut -d: -f6)
@@ -159,4 +160,5 @@ log "Cleaning build artefacts"
          "$USER_HOME/.php-src-probe" \
          "$USER_HOME"/php"${PHP_VER}"_*.{xz,dsc,asc} 2>/dev/null || true
 
+IFS=$OLDIFS
 log "All done: libgd with RAQM and recompiled php-gd are now live!"
