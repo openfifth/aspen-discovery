@@ -12,13 +12,6 @@ if command -v apt-get &> /dev/null; then
         rm -f /etc/apt/sources.list.d/php.list
     fi
 
-    # Comment out bullseye-backports if it exists (no longer supported: https://backports.debian.org/Instructions/).
-    if grep -q "bullseye-backports" /etc/apt/sources.list 2>/dev/null; then
-        echo "Disabling bullseye-backports repository (no longer available)..."
-        sed -i 's/^deb.*bullseye-backports.*/#&/' /etc/apt/sources.list
-        sed -i 's/^deb-src.*bullseye-backports.*/#&/' /etc/apt/sources.list
-    fi
-
     # Clean and update package lists.
     echo "Updating package lists..."
     apt-get clean
