@@ -11,8 +11,6 @@ public class HooplaScope {
 	private long id;
 	private String name;
 	private int excludeTitlesWithCopiesFromOtherVendors;
-	private boolean includeInstant;
-	private boolean includeFlex;
 	private boolean includeEBooks;
 	private float maxCostPerCheckoutEBooks;
 	private boolean includeEComics;
@@ -50,22 +48,6 @@ public class HooplaScope {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public boolean isIncludeInstant() {
-		return includeInstant;
-	}
-
-	void setIncludeInstant(boolean includeInstant) {
-		this.includeInstant = includeInstant;
-	}
-
-	public boolean isIncludeFlex() {
-		return includeFlex;
-	}
-
-	void setIncludeFlex(boolean includeFlex) {
-		this.includeFlex = includeFlex;
 	}
 
 	public boolean isIncludeEBooks() {
@@ -266,18 +248,11 @@ public class HooplaScope {
 
 	private String lastIdentifier = null;
 	private boolean lastIdentifierResult = false;
-	public boolean isOkToAdd(String identifier, String kind, float price, boolean abridged, boolean pa, boolean profanity, boolean isAdult, boolean isTeen, boolean isKids, String rating, HashSet<String> genres, String hooplaType, Logger logger) {
+	public boolean isOkToAdd(String identifier, String format, float price, boolean abridged, boolean pa, boolean profanity, boolean isAdult, boolean isTeen, boolean isKids, String rating, HashSet<String> genres, Logger logger) {
 		if (lastIdentifier != null && lastIdentifier.equals(identifier)){
 			return lastIdentifierResult;
 		}
 		boolean okToAdd = true;
-		if (hooplaType != null) {
-			if (hooplaType.equalsIgnoreCase("Instant")) {
-				okToAdd = includeInstant;
-			} else if (hooplaType.equalsIgnoreCase("Flex")) {
-				okToAdd = includeFlex;
-			} 
-		}
 
 		if (!okToAdd) {
 			lastIdentifier = identifier;
@@ -285,8 +260,8 @@ public class HooplaScope {
 			return false;
 		}
 
-		//Filter by kind and price
-		switch (kind) {
+		//Filter by format and price
+		switch (format) {
 			case "EBOOK":
 				okToAdd = (includeEBooks && price <= maxCostPerCheckoutEBooks);
 				break;
@@ -309,7 +284,7 @@ public class HooplaScope {
 				okToAdd = (includeBingePass && price <= maxCostPerCheckoutBingePass);
 				break;
 			default:
-				logger.error("Unknown kind " + kind);
+				logger.error("Unknown format " + format);
 		}
 		if (okToAdd && excludeAbridged && abridged) {
 			okToAdd = false;

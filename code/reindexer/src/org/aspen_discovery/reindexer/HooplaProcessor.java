@@ -27,15 +27,18 @@ class HooplaProcessor {
 	private PreparedStatement doubleDecodeRawResponseStmt;
 	private PreparedStatement updateRawResponseStmt;
 	private PreparedStatement getFlexAvailabilityStmt;
+	private PreparedStatement getEntitlementsByHooplaIdStmt;
+
 	HooplaProcessor(GroupedWorkIndexer indexer, Connection dbConn, Logger logger) {
 		this.indexer = indexer;
 		this.logger = logger;
 
 		try {
-			getProductInfoStmt = dbConn.prepareStatement("SELECT id, hooplaId, active, title, kind, pa, demo, profanity, rating, abridged, children, price, rawChecksum, UNCOMPRESS(rawResponse) as rawResponse, dateFirstDetected, hooplaType from hoopla_export where hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
+			getProductInfoStmt = dbConn.prepareStatement("SELECT id, hooplaId, title, format, pa, demo, profanity, rating, abridged, children, ppuPrice, rawChecksum, UNCOMPRESS(rawResponse) as rawResponse, dateFirstDetected from hoopla_export where hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
 			doubleDecodeRawResponseStmt = dbConn.prepareStatement("SELECT UNCOMPRESS(UNCOMPRESS(rawResponse)) as rawResponse from hoopla_export where id = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
 			updateRawResponseStmt = dbConn.prepareStatement("UPDATE hoopla_export SET rawResponse = COMPRESS(?) where id = ?");
-			getFlexAvailabilityStmt = dbConn.prepareStatement("SELECT * from hoopla_flex_availability where hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
+			getFlexAvailabilityStmt = dbConn.prepareStatement("SELECT * from hoopla_flex_availability where hooplaId = ? and scopeLibraryId = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
+			getEntitlementsByHooplaIdStmt = dbConn.prepareStatement("SELECT he.hooplaType, hes.scopeLibraryId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE he.hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
 		} catch (SQLException e) {
 			logger.error("Error setting up hoopla processor", e);
 		}
@@ -46,19 +49,21 @@ class HooplaProcessor {
 			getProductInfoStmt.setString(1, identifier);
 			ResultSet productRS = getProductInfoStmt.executeQuery();
 			if (productRS.next()) {
-				//Make sure the record isn't deleted
-				if (!productRS.getBoolean("active")){
-					logger.debug("Hoopla product " + identifier + " is inactive, skipping");
+				// Check if the record has any entitlements
+				long hooplaId = productRS.getLong("hooplaId");
+				HashMap<Long, String> entitlementsByScope = loadEntitlementsForTitle(hooplaId);
+				if (entitlementsByScope.isEmpty()) {
+					logger.warn("Hoopla title " + identifier + ", hooplaId " + hooplaId + " has no entitlements, skipping");
 					return;
 				}
+
 				byte[] rawResponseBytes = productRS.getBytes("rawResponse");
 				if (rawResponseBytes == null){
 					logEntry.incErrors("rawResponse for Hoopla title " + identifier + " was null skipping");
 					return;
 				}
-				String kind = productRS.getString("kind");
-				float price = productRS.getFloat("price");
-				String hooplaType = productRS.getString("hooplaType");
+				String format = productRS.getString("format");
+				float price = productRS.getFloat("ppuPrice");
 
 				RecordInfo hooplaRecord = groupedWork.addRelatedRecord("hoopla", identifier);
 				hooplaRecord.setRecordIdentifier("hoopla", identifier);
@@ -68,7 +73,7 @@ class HooplaProcessor {
 
 				String formatCategory;
 				String primaryFormat;
-				switch (kind) {
+				switch (format) {
 					case "MOVIE":
 					case "TELEVISION":
 						formatCategory = "Movies";
@@ -96,12 +101,12 @@ class HooplaProcessor {
 						primaryFormat = "Binge Pass";
 						break;
 					default:
-						logger.error("Unhandled hoopla kind " + kind);
-						formatCategory = kind;
-						primaryFormat = kind;
+						logger.error("Unhandled hoopla format " + format);
+						formatCategory = format;
+						primaryFormat = format;
 						break;
 				}
-				if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Format is " + primaryFormat + " based on kind of " + kind, 2);}
+				if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Format is " + primaryFormat + " based on format of " + format, 2);}
 
 				hooplaRecord.addFormat(primaryFormat);
 				hooplaRecord.addFormatCategory(formatCategory);
@@ -134,7 +139,7 @@ class HooplaProcessor {
 				if (rawResponse.has("artist")){
 					primaryAuthor = rawResponse.getString("artist");
 					//Don't swap artist names for music since these are typically group names.
-					if (!kind.equals("MUSIC")) {
+					if (!format.equals("MUSIC")) {
 						primaryAuthor = AspenStringUtils.swapFirstLastNames(primaryAuthor);
 					}
 				}else if (rawResponse.has("publisher")){
@@ -154,7 +159,7 @@ class HooplaProcessor {
 					groupedWork.addSeriesWithVolume(series, volume, 2);
 				}
 
-				boolean children = rawResponse.getBoolean("children");
+				boolean children = productRS.getBoolean("children");
 				boolean isAdult = false;
 				boolean isTeen = false;
 				boolean isKids = false;
@@ -192,8 +197,8 @@ class HooplaProcessor {
 						}
 					}
 
-					if (!foundAudience && rawResponse.has("rating")) {
-						String rating = rawResponse.getString("rating");
+					if (!foundAudience && rawResponse.has("ratings")) {
+						String rating = productRS.getString("rating");
 						//noinspection SpellCheckingInspection
 						if (rating.equals("TVMA") || rating.equals("M") || rating.equals("NC17")) {
 							isAdult = true;
@@ -201,7 +206,7 @@ class HooplaProcessor {
 							groupedWork.addTargetAudienceFull("Adult");
 							if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Target/full target audience is Adult based on Hoopla rating", 2);}
 						} else {
-							if (kind.equals("MOVIE") || kind.equals("TELEVISION")) {
+							if (format.equals("MOVIE") || format.equals("TELEVISION")) {
 								switch (rating) {
 									case "R":
 									case "NR":
@@ -252,7 +257,7 @@ class HooplaProcessor {
 										logger.debug("rating " + rating);
 										break;
 								}
-							} else if (kind.equals("COMIC")) {
+							} else if (format.equals("COMIC")) {
 								switch (rating) {
 									case "E":
 										isKids = true;
@@ -354,8 +359,8 @@ class HooplaProcessor {
 
 				HashMap<String, Integer> literaryForm = new HashMap<>();
 				HashMap<String, Integer> literaryFormFull = new HashMap<>();
-				if (rawResponse.has("fiction")){
-					if (rawResponse.getBoolean("fiction")){
+				if (rawResponse.has("isFiction")){
+					if (rawResponse.getBoolean("isFiction")){
 						Util.addToMapWithCount(literaryForm, "Fiction");
 						Util.addToMapWithCount(literaryFormFull, "Fiction");
 						if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Literary Form is fiction based on Hoopla record", 2);}
@@ -375,7 +380,7 @@ class HooplaProcessor {
 				String publisher = rawResponse.getString("publisher");
 				groupedWork.addPublisher(publisher);
 				//publication date
-				Object yearObj = rawResponse.get("year");
+				Object yearObj = rawResponse.get("releaseYear");
 				String releaseYear = yearObj.toString();
 
 				groupedWork.addPublicationDate(releaseYear);
@@ -396,53 +401,6 @@ class HooplaProcessor {
 				String upc = rawResponse.getString("upc");
 				groupedWork.addUpc(upc);
 
-				ItemInfo itemInfo = new ItemInfo();
-				itemInfo.setItemIdentifier(identifier);
-				itemInfo.seteContentSource("Hoopla");
-				itemInfo.setIsEContent(true);
-				itemInfo.seteContentUrl(rawResponse.getString("url"));
-				itemInfo.setShelfLocation("Online Hoopla Collection");
-				itemInfo.setDetailedLocation("Online Hoopla Collection");
-				itemInfo.setCallNumber("Online Hoopla");
-				itemInfo.setSortableCallNumber("Online Hoopla");
-				itemInfo.setFormat(primaryFormat);
-				itemInfo.setFormatCategory(formatCategory);
-
-				if (hooplaType.equalsIgnoreCase("Flex")){
-					itemInfo.seteContentSubSource("Flex");
-					getFlexAvailabilityStmt.setString(1, identifier);
-					ResultSet flexAvailabilityRS = getFlexAvailabilityStmt.executeQuery();
-					if (flexAvailabilityRS.next()){
-						int totalCopies = flexAvailabilityRS.getInt("totalCopies");
-						int availableCopies = flexAvailabilityRS.getInt("availableCopies");
-						itemInfo.setNumCopies(totalCopies);
-						itemInfo.setAvailable(availableCopies > 0);
-
-						if (availableCopies > 0){
-							itemInfo.setDetailedStatus("Available Online");
-							itemInfo.setGroupedStatus("Available Online");
-							itemInfo.setHoldable(false);
-						}else{
-							itemInfo.setDetailedStatus("Checked Out");
-							itemInfo.setGroupedStatus("Checked Out");
-							itemInfo.setHoldable(true);
-						}
-					}
-					flexAvailabilityRS.close();
-				}else{
-					//Hoopla instant is always 1 copy unlimited use
-					itemInfo.seteContentSubSource("Instant");
-					itemInfo.setNumCopies(1);
-					itemInfo.setAvailable(true);
-					itemInfo.setDetailedStatus("Available Online");
-					itemInfo.setGroupedStatus("Available Online");
-					itemInfo.setHoldable(false);
-				}
-				itemInfo.setInLibraryUseOnly(false);
-
-				Date dateAdded = new Date(productRS.getLong("dateFirstDetected") * 1000);
-				itemInfo.setDateAdded(dateAdded);
-
 				boolean abridged = productRS.getBoolean("abridged");
 				boolean pa = productRS.getBoolean("pa");
 				boolean profanity = productRS.getBoolean("profanity");
@@ -451,8 +409,76 @@ class HooplaProcessor {
 				for (Scope scope : indexer.getScopes()) {
 					boolean okToAdd;
 					HooplaScope hooplaScope = scope.getHooplaScope();
+					if (hooplaScope == null){
+						continue;
+					}
+
+					Long scopeLibraryId = scope.getLibraryId();
+					if (scopeLibraryId == null){
+						continue;
+					}
+					String hooplaType = entitlementsByScope.get(scopeLibraryId);
+					if (hooplaType == null){
+						continue;
+					}
+					ItemInfo itemInfo = new ItemInfo();
+					itemInfo.setItemIdentifier(identifier);
+					itemInfo.seteContentSource("Hoopla");
+					itemInfo.setIsEContent(true);
+					itemInfo.seteContentUrl(rawResponse.getString("url"));
+					itemInfo.setShelfLocation("Online Hoopla Collection");
+					itemInfo.setDetailedLocation("Online Hoopla Collection");
+					itemInfo.setCallNumber("Online Hoopla");
+					itemInfo.setSortableCallNumber("Online Hoopla");
+					itemInfo.setFormat(primaryFormat);
+					itemInfo.setFormatCategory(formatCategory);
+
+					if (hooplaType.equalsIgnoreCase("Flex")){
+						itemInfo.seteContentSubSource("Flex");
+						ResultSet flexAvailabilityRS = null;
+						try {
+							getFlexAvailabilityStmt.setLong(1, hooplaId);
+							getFlexAvailabilityStmt.setLong(2, scopeLibraryId);
+							flexAvailabilityRS = getFlexAvailabilityStmt.executeQuery();
+							if (flexAvailabilityRS.next()){
+								int totalCopies = flexAvailabilityRS.getInt("totalCopies");
+								int availableCopies = flexAvailabilityRS.getInt("availableCopies");
+								int holdsQueueSize = flexAvailabilityRS.getInt("holdsQueueSize");
+								itemInfo.setNumCopies(totalCopies);
+								itemInfo.setAvailable(availableCopies > 0);
+
+								if (availableCopies > 0){
+									itemInfo.setDetailedStatus("Available Online");
+									itemInfo.setGroupedStatus("Available Online");
+									itemInfo.setHoldable(false);
+								}else{
+									itemInfo.setDetailedStatus("Checked Out");
+									itemInfo.setGroupedStatus("Checked Out");
+									itemInfo.setHoldable(true);
+								}
+							}
+						} catch (SQLException e) {
+							logger.error("Error getting Flex availability for title " + hooplaId + " for library " + scopeLibraryId + ")", e);
+						} finally {
+							if (flexAvailabilityRS != null) {
+								flexAvailabilityRS.close();
+							}
+						}
+					}else{
+						//Hoopla instant is always 1 copy unlimited use
+						itemInfo.seteContentSubSource("Instant");
+						itemInfo.setNumCopies(1);
+						itemInfo.setAvailable(true);
+						itemInfo.setDetailedStatus("Available Online");
+						itemInfo.setGroupedStatus("Available Online");
+						itemInfo.setHoldable(false);
+					}
+					itemInfo.setInLibraryUseOnly(false);
+
+					Date dateAdded = new Date(productRS.getLong("dateFirstDetected") * 1000);
+					itemInfo.setDateAdded(dateAdded);
 					if (hooplaScope != null){
-						okToAdd = hooplaScope.isOkToAdd(identifier, kind, price, abridged, pa, profanity, isAdult, isTeen, isKids, rating, genresToAdd, hooplaType, logger);
+						okToAdd = hooplaScope.isOkToAdd(identifier, format, price, abridged, pa, profanity, isAdult, isTeen, isKids, rating, genresToAdd, logger);
 					}else{
 						okToAdd = false;
 					}
@@ -461,11 +487,9 @@ class HooplaProcessor {
 						groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
 						scopingInfo.setLibraryOwned(true);
 						scopingInfo.setLocallyOwned(true);
+						hooplaRecord.addItem(itemInfo);
 					}
 				}
-
-				hooplaRecord.addItem(itemInfo);
-
 			}
 			productRS.close();
 		}catch (NullPointerException e) {
@@ -492,6 +516,24 @@ class HooplaProcessor {
 		doubleDecodeRawResponseRS.close();
 
 		return null;
+	}
+
+	private HashMap<Long, String> loadEntitlementsForTitle(long hooplaId) throws SQLException {
+		HashMap<Long, String> entitlementsByScope = new HashMap<>();
+		getEntitlementsByHooplaIdStmt.setLong(1, hooplaId);
+		ResultSet entitlementsByHooplaIdRS = getEntitlementsByHooplaIdStmt.executeQuery();
+		try {
+			while (entitlementsByHooplaIdRS.next()) {
+				long scopeLibraryId = entitlementsByHooplaIdRS.getLong("scopeLibraryId");
+				String hooplaType = entitlementsByHooplaIdRS.getString("hooplaType");
+				entitlementsByScope.put(scopeLibraryId, hooplaType);
+			}
+		}finally {
+			if (entitlementsByHooplaIdRS != null) {
+				entitlementsByHooplaIdRS.close();
+			}
+		}
+		return entitlementsByScope;
 	}
 
 }
