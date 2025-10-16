@@ -376,6 +376,7 @@ public class HooplaExportMain {
 		List<Long> idsToProcess = new ArrayList<>(titlesNeedingReindex);
 		int batchSize = 1000;
 		int numProcessed = 0;
+		int numNoMetadata = 0;
 
 		for (int i = 0; i < idsToProcess.size(); i += batchSize) {
 			List<Long> idsToProcessBatch = idsToProcess.subList(i, Math.min(i + batchSize, idsToProcess.size()));
@@ -385,6 +386,7 @@ public class HooplaExportMain {
 			}
 			PreparedStatement getRawResponseForRecordsStmt = null;
 			ResultSet getRawResponseForRecordsRS = null;
+			int numHasMetadata = 0;
 
 			try {
 				StringBuilder idsToProcessString = new StringBuilder();
@@ -402,6 +404,8 @@ public class HooplaExportMain {
 				"WHERE he.hooplaId IN (" + idsToProcessString + ") ");
 				getRawResponseForRecordsRS = getRawResponseForRecordsStmt.executeQuery();
 				while (getRawResponseForRecordsRS.next()) {
+					numHasMetadata++;
+					logEntry.incNumProducts(1);
 					long hooplaId = getRawResponseForRecordsRS.getLong("hooplaId");
 					String rawResponse = getRawResponseForRecordsRS.getString("rawResponse");
 					JSONObject curTitleDetails = new JSONObject(rawResponse);
@@ -410,6 +414,7 @@ public class HooplaExportMain {
 						indexRecord(groupedWorkId);
 					}
 				}
+				numNoMetadata += idsToProcessBatch.size() - numHasMetadata;
 			} catch (SQLException e) {
 				logEntry.incErrors("Error getting raw response for records", e);
 			} finally {
@@ -425,9 +430,9 @@ public class HooplaExportMain {
 				}
 			}
 		}
-		titlesNeedingReindex.clear();
-		logEntry.addNote("Flushed " + titlesNeedingReindex.size() + " Hoopla titles for reindex");
+		logEntry.addNote("Flushed " + titlesNeedingReindex.size() + " Hoopla titles for reindex" + ", " + numNoMetadata + " records without metadata");
 		logEntry.saveResults();
+		titlesNeedingReindex.clear();
 	}
 
 /*
@@ -814,7 +819,10 @@ public class HooplaExportMain {
 		if (accessToken == null) {
 			return false;
 		}
-
+		if (runFullUpdateForLibrary) {
+			logEntry.addNote("Running entitlements full update for library " + librarySetting.getLibraryId() + " (" + hooplaType + ")");
+			logEntry.saveResults();
+		}
 		int recordExtractionBatchSize = settings.getRecordExtractionBatchSize();
 		long lastUpdateOfChangedRecords = settings.getLastUpdateOfChangedRecords();
 		long lastUpdateOfAllRecords = settings.getLastUpdateOfAllRecords();
@@ -1002,6 +1010,7 @@ public class HooplaExportMain {
 							upsertFlexAvailabilityStmt.setString(6, status);
 							upsertFlexAvailabilityStmt.executeUpdate();
 							titlesNeedingReindex.add(hooplaId);
+							logEntry.incAvailabilityChanges();
 						}
 					} catch (SQLException e) {
 						logEntry.incErrors("Error updating Flex availability for title " + hooplaId + " (library " + scopeLibraryId + ")", e);
@@ -1479,7 +1488,7 @@ public class HooplaExportMain {
 				getLibraryHooplaSettingsStmt = aspenConn.prepareStatement("SELECT * FROM library_hoopla_settings WHERE settingId = ?");
 				updateFullUpdateForLibraryStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings SET fullUpdateForLibrary = 0 WHERE id = ?");
 				getHooplaEntitlementIdStmt = aspenConn.prepareStatement("SELECT id FROM hoopla_entitlements WHERE hooplaId = ? AND hooplaType = ?");
-				addHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, hooplaType) VALUES (?, ?)");
+				addHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, hooplaType) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS);
 				getHooplaEntitlementScopeStmt = aspenConn.prepareStatement("SELECT * FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
 				addHooplaEntitlementScopeStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlement_scopes (entitlementId, scopeLibraryId) VALUES (?, ?)");
 				deleteHooplaEntitlementScopeStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
