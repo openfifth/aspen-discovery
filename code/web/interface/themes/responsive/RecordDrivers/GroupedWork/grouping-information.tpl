@@ -34,6 +34,20 @@
 	</div>
 {/if}
 
+{if !empty($manualGroupingInfo)}
+	<div id="manualGroupingInfo">
+		<h4>{translate text="Manual Grouping Information" isPublicFacing=true}</h4>
+		<table class="table-striped table table-condensed notranslate">
+			<tr><th>{translate text="Manual Group ID" isPublicFacing=true}</th><td>{$manualGroupingInfo->id}</td></tr>
+			<tr><th>{translate text="Manual Group Title" isPublicFacing=true}</th><td>{$manualGroupingInfo->title}</td></tr>
+			{if !empty($manualGroupingInfo->description)}<tr><th>{translate text="Description" isPublicFacing=true}</th><td>{$manualGroupingInfo->description|nl2br}</td></tr>{/if}
+			<tr><th>{translate text="Created By" isPublicFacing=true}</th><td>{$manualGroupingInfo->created_by_display}</td></tr>
+			<tr><th>{translate text="Date Created" isPublicFacing=true}</th><td>{$manualGroupingInfo->date_created|date_format}</td></tr>
+			<tr><th>{translate text="Last Updated" isPublicFacing=true}</th><td>{$manualGroupingInfo->last_updated|date_format}</td></tr>
+		</table>
+	</div>
+{/if}
+
 {if (!empty($alternateTitles))}
 	<h4>{translate text="Alternate Titles and Authors" isPublicFacing=true}</h4>
 	<table class="table-striped table table-condensed notranslate">

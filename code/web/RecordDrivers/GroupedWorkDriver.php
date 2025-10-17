@@ -2564,6 +2564,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$interface->assign('primaryIdentifiers', $this->getPrimaryIdentifiers());
 
 		$interface->assign('specifiedDisplayInfo', $this->getSpecifiedDisplayInfo());
+
+		$interface->assign('manualGroupingInfo', $this->getManualGroupingInfo());
 	}
 
 	public function getSpecifiedDisplayInfo() {
@@ -2604,6 +2606,18 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				}
 			}
 			return $alternateTitles;
+		}
+		return null;
+	}
+
+	public function getManualGroupingInfo(): ?ManualGroupedWork {
+		if (UserAccount::userHasPermission('Manually Group and Ungroup Works')) {
+			require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+			$manualGroupedWork = new ManualGroupedWork();
+			$manualGroupedWork->grouped_work_permanent_id = $this->getPermanentId();
+			if ($manualGroupedWork->find(true)) {
+				return $manualGroupedWork;
+			}
 		}
 		return null;
 	}
