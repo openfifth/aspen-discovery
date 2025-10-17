@@ -149,9 +149,13 @@ class LibraryHooplaSetting extends DataObject
         if ($existingSetting->find(true)) {
             if ($existingSetting->hooplaInstantEnabled && !$this->hooplaInstantEnabled) {
                 $this->__set('cleanUpInstant', 1);
+            } elseif (!$existingSetting->hooplaInstantEnabled && $this->hooplaInstantEnabled) {
+                $this->__set('cleanUpInstant', 0);
             }
             if ($existingSetting->hooplaFlexEnabled && !$this->hooplaFlexEnabled) {
                 $this->__set('cleanUpFlex', 1);
+            } elseif (!$existingSetting->hooplaFlexEnabled && $this->hooplaFlexEnabled) {
+                $this->__set('cleanUpFlex', 0);
             }
         }
         return parent::update($context);
