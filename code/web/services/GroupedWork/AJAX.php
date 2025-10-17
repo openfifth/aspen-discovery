@@ -2403,6 +2403,20 @@ class GroupedWork_AJAX extends JSON_Action {
 		$currentSourceLabel = $recordType !== '' ? ucwords(str_replace('_', ' ', strtolower($recordType))) : '';
 		$currentReferenceLabel = $currentSourceLabel !== '' && $recordId !== '' ? $currentSourceLabel . ' (ID: ' . $recordId . ')' : $recordId;
 
+		if (empty($groupedWorkId)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'No grouped work ID was provided.',
+					'isAdminFacing' => true,
+				]),
+				'title' => translate([
+					'text' => 'Cover Update Failed',
+					'isAdminFacing' => true,
+				]),
+			];
+		}
+
 		if (UserAccount::isLoggedIn() && (UserAccount::userHasPermission('Upload Covers'))) {
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 			$groupedWork = new GroupedWork();
