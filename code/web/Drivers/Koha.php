@@ -9413,6 +9413,10 @@ class Koha extends AbstractIlsDriver {
 					$result['hold_group'] = $responseData;
 					break;
 				case 400:
+					if (isset($responseData['error_code']) && $responseData['error_code'] === 'HoldAlreadyBelongsToHoldGroup') {
+						$responseData['success'] = false;
+						return $responseData;
+					}
 					$result['message'] = translate(['text' => 'Invalid request data', 'isPublicFacing' => true]);
 					if (isset($responseData['error'])) {
 						$result['message'] .= ': ' . $responseData['error'];
