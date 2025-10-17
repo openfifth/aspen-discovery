@@ -398,7 +398,6 @@ function updateConfigForScoping($configArray) {
  */
 function getSubdomainsToTestFromServerName($fullServerName, array $subdomainsToTest): array {
 	$serverComponents = explode('.', $fullServerName);
-	$tempSubdomain = '';
 	if (count($serverComponents) >= 3) {
 		// Handle multi-level subdomains by extracting all subdomain combinations.
 		// and add to the array in order of most to least specific
@@ -409,9 +408,9 @@ function getSubdomainsToTestFromServerName($fullServerName, array $subdomainsToT
 		for ($i = count($subdomainParts); $i >= 1; $i--) {
 			$subdomainToTest = implode('.', array_slice($subdomainParts, 0, $i));
 			$subdomainsToTest[] = $subdomainToTest;
-			if ($i == count($subdomainParts)) {
-				// Use the full subdomain for test indicator processing.
-				$tempSubdomain = $subdomainToTest;
+			$subdomainWithoutTestIndicator = getSubdomainWithoutTestIndicator($subdomainToTest);
+			if ($subdomainWithoutTestIndicator != null) {
+				$subdomainsToTest[] = $subdomainWithoutTestIndicator;
 			}
 		}
 	} elseif (count($serverComponents) == 2) {
@@ -419,15 +418,23 @@ function getSubdomainsToTestFromServerName($fullServerName, array $subdomainsToT
 		//If the second component is localhost.
 		if (strcasecmp($serverComponents[1], 'localhost') == 0) {
 			$subdomainsToTest[] = $serverComponents[0];
-			$tempSubdomain = $serverComponents[0];
+			$subdomainWithoutTestIndicator = getSubdomainWithoutTestIndicator($serverComponents[0]);
+			if ($subdomainWithoutTestIndicator != null) {
+				$subdomainsToTest[] = $subdomainWithoutTestIndicator;
+			}
 		}
 	}
-	//Trim off test indicator when doing lookups for library/location
-	$lastChar = substr($tempSubdomain, -1);
-	if ($lastChar == '2' || $lastChar == '3' || $lastChar == 't' || $lastChar == 'd' || $lastChar == 'x') {
-		$subdomainsToTest[] = substr($tempSubdomain, 0, -1);
-	} elseif (strpos($tempSubdomain, '-test') !== false) {
-		$subdomainsToTest[] = str_replace('-test', '', $tempSubdomain);
-	}
+
 	return $subdomainsToTest;
+}
+
+function getSubdomainWithoutTestIndicator($originalSubdomain) : ?string {
+	//Trim off test indicator when doing lookups for library/location
+	$lastChar = substr($originalSubdomain, -1);
+	if ($lastChar == '2' || $lastChar == '3' || $lastChar == 't' || $lastChar == 'd' || $lastChar == 'x') {
+		return substr($originalSubdomain, 0, -1);
+	} elseif (str_contains($originalSubdomain, '-test')) {
+		return str_replace('-test', '', $originalSubdomain);
+	}
+	return null;
 }
