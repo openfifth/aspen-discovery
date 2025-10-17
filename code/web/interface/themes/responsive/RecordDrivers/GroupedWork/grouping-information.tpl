@@ -38,7 +38,7 @@
 	<div id="manualGroupingInfo">
 		<h4>{translate text="Manual Grouping Information" isPublicFacing=true}</h4>
 		<table class="table-striped table table-condensed notranslate">
-			<tr><th>{translate text="Manual Group ID" isPublicFacing=true}</th><td>{$manualGroupingInfo->id}</td></tr>
+			<tr><th>{translate text="Manual Group ID" isPublicFacing=true}</th><td><a href="/Admin/ManualGroupedWorks?objectAction=edit&id={$manualGroupingInfo->id}" class="btn btn-sm btn-default"><i class="fas fa-external-link-alt" role="presentation"></i> {$manualGroupingInfo->id}</a></td></tr>
 			<tr><th>{translate text="Manual Group Title" isPublicFacing=true}</th><td>{$manualGroupingInfo->title}</td></tr>
 			{if !empty($manualGroupingInfo->description)}<tr><th>{translate text="Description" isPublicFacing=true}</th><td>{$manualGroupingInfo->description|nl2br}</td></tr>{/if}
 			<tr><th>{translate text="Created By" isPublicFacing=true}</th><td>{$manualGroupingInfo->created_by_display}</td></tr>

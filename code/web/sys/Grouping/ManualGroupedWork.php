@@ -104,9 +104,9 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	/**
-	 * @return mixed
+	 * @return string|null
 	 */
-	public function getGroupedWorkPermanentId(): string {
+	public function getGroupedWorkPermanentId(): ?string {
 		return $this->grouped_work_permanent_id;
 	}
 
