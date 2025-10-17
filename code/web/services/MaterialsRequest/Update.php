@@ -41,7 +41,7 @@ class MaterialsRequest_Update extends Admin_Admin {
 				$user->update();
 				$processForm = false;
 			} elseif (UserAccount::userHasPermission('Manage Library Materials Requests') && $requestUser && ($user->getHomeLibrary() == null || ($requestUser->getHomeLibrary()->libraryId == $user->getHomeLibrary()->libraryId))) {
-				// Process form because user is an admin for the their home library.
+				// Process form because user is an admin for their home library.
 			} elseif ($user->id != $materialsRequest->createdBy) {
 				$user->updateMessage = translate([
 					'text' => 'Sorry, you do not have permission to update this materials request.',

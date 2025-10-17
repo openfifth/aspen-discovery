@@ -239,7 +239,7 @@ class MaterialsRequest_RequestsNeedingHolds extends ObjectEditor {
 	}
 
 	/** @noinspection PhpUnused */
-	function updateRequestStatus()  : void {
+	function updateRequestStatus(): void {
 		global $interface;
 		$newStatus = $_REQUEST['newStatus'];
 		if ($newStatus == 'unselected') {
