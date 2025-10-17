@@ -46,7 +46,7 @@ class Grouping_Record {
 	public string $_class = '';
 	public array $_actions = [];
 	/** @var Grouping_Item[] */
-	private array $_items;
+	private ?array $_items;
 
 	/** @var  IlsVolumeInfo[] */
 	private array $_volumeData;
