@@ -209,7 +209,7 @@ public class HooplaExportMain {
 			//Mark that indexing has finished
 			logEntry.setFinished();
 
-			if (!updatesRun) {
+			if (!updatesRun && !logEntry.hasErrors()) {
 				//delete the log entry
 				try {
 					PreparedStatement deleteLogEntryStmt = aspenConn.prepareStatement("DELETE from hoopla_export_log WHERE id = " + logEntry.getLogEntryId());
@@ -324,7 +324,7 @@ public class HooplaExportMain {
 		}
 	}
 
-	private static void cleanOrphanRecords() {
+	private static boolean cleanOrphanRecords() {
 		int numDeleted = 0;
 		PreparedStatement getOrphanEntitlementsStmt = null;
 		ResultSet orphanEntitlementsRS = null;
@@ -363,9 +363,10 @@ public class HooplaExportMain {
 			}
 		}
 		if (numDeleted > 0) {
-			logEntry.addNote("Deleted " + numDeleted + " orphan records");
+			logEntry.addNote("Deleted " + numDeleted + " orphan entitlements");
 			logEntry.saveResults();
 		}
+		return numDeleted > 0;
 	}
 
 	private static boolean cleanupLibraryEntitlements(HooplaLibrarySettings librarySetting) {
@@ -434,9 +435,9 @@ public class HooplaExportMain {
 		return cleanUpRan;
 	}
 
-	private static void flushRecordsToReindex() {
+	private static boolean flushRecordsToReindex() {
 		if (titlesNeedingReindex.isEmpty()) {
-			return;
+			return false;
 		}
 		logger.info("Flushing " + titlesNeedingReindex.size() + " Hoopla titles for reindex");
 
@@ -479,6 +480,7 @@ public class HooplaExportMain {
 					String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(curTitleDetails, hooplaId);
 					if (groupedWorkId != null) {
 						indexRecord(groupedWorkId);
+						numProcessed++;
 					}
 				}
 				numNoMetadata += idsToProcessBatch.size() - numHasMetadata;
@@ -497,9 +499,10 @@ public class HooplaExportMain {
 				}
 			}
 		}
-		logEntry.addNote("Flushed " + titlesNeedingReindex.size() + " Hoopla titles for reindex" + ", " + numNoMetadata + " records without metadata");
+		logEntry.addNote("Flushed " + titlesNeedingReindex.size() + " Hoopla titles for reindex" + ", processed " + numProcessed + " titles, " + numNoMetadata + " titles without metadata");
 		logEntry.saveResults();
 		titlesNeedingReindex.clear();
+		return true;
 	}
 
 /*
@@ -617,13 +620,13 @@ public class HooplaExportMain {
 				updatesRun |= exportLibraryEntitlements(settings, globalContentUpdated, librarySettings);
 
 				// Clean Orphan records
-				cleanOrphanRecords();
+				updatesRun |= cleanOrphanRecords();
 
 				// Process Flex Availability
 				updatesRun |= getFlexAvailability(settings, librarySettings);
 
 				// Flush the records to reindex
-				flushRecordsToReindex();
+				updatesRun |= flushRecordsToReindex();
 
 				if (settings.isRegroupAllRecords()) {
 					regroupAllRecords(aspenConn, settings.getSettingsId(), getGroupedWorkIndexer(), logEntry);
@@ -1414,7 +1417,6 @@ public class HooplaExportMain {
 	}
 
 	private static void updateTitlesInDB(JSONArray responseTitles, boolean forceRegrouping, boolean doFullReload) {
-		logEntry.incNumProducts(responseTitles.length());
 		for (int i = 0; i < responseTitles.length(); i++){
 			try {
 				JSONObject curTitle = responseTitles.getJSONObject(i);
