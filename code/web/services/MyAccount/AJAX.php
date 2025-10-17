@@ -10742,163 +10742,85 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	public function groupPatronHolds() {
+		global $interface;
+		global $logger;
 
 		if (!UserAccount::isLoggedIn()) {
 			return [
 				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'Please log in to groupe holds',
-					'isPublicFacing' => true
-				])
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Please log in to group holds', 'isPublicFacing' => true])
 			];
 		}
 
-
-		$source = $_REQUEST['source'] ?? '';
 		$holdIds = $_REQUEST['holdIds'] ?? [];
-		$availableSort = $_REQUEST['availableSort'] ?? '';
-		$interlibrarySort = $_REQUEST['interlibrarySort'] ?? '';
-		$unavailableSort = $_REQUEST['unavailableSort'] ?? '';
+		$forceGrouped = $_REQUEST['forceGrouped'] ?? false;
+
+		// Convert string to array if needed
+		if (is_string($holdIds)) {
+			$holdIds = array_filter(array_map('trim', explode(',', $holdIds)));
+		}
 
 		if (!is_array($holdIds) || count($holdIds) === 0) {
-
 			return [
 				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'Please select at least one hold to group',
-					'isPublicFacing' => true
-				])
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Please select at least one hold to group', 'isPublicFacing' => true])
 			];
 		}
+
 		try {
 			$user = UserAccount::getLoggedInUser();
 			$patronId = $user->unique_ils_id;
-
 			$catalogDriver = $user->getCatalogDriver();
-			if ($catalogDriver->driver instanceof Koha) {
 
-				$groupedHolds = $catalogDriver->groupHolds($patronId, $holdIds);
+			if ($catalogDriver->driver instanceof Koha) {
+				// Pass forceGrouped to groupHolds
+				$groupedHolds = $catalogDriver->groupHolds($patronId, $holdIds, $forceGrouped);
+				$logger->log("==== ERROR CODE === : " .  print_r($groupedHolds, true), Logger::LOG_ERROR);
+
+				// Check if holds are already in a group
+				if (isset($groupedHolds['error_code']) && $groupedHolds['error_code'] === 'HoldAlreadyBelongsToHoldGroup') {
+					$interface->assign('conflictIds', $groupedHolds['hold_ids'] ?? []);
+					return [
+						'success' => false,
+						'specialError' => 'holdAlreadyGrouped',
+						'title' => translate(['text' => 'Holds Already Grouped', 'isPublicFacing' => true]),
+						'modalBody' => $interface->fetch('HoldGroups/forceGroupedHoldsModal.tpl'),
+						'modalButtons' => "<button class='tool btn btn-danger' id='forcegroupHoldsGroupBtn' onclick='AspenDiscovery.Account.forceGroupHolds(" . json_encode($holdIds) . "); return false;'>"  
+								. translate(['text' => 'Continue to Group Holds', 'isPublicFacing' => true]) . "</button>",
+					];
+				}
 
 				if ($groupedHolds['success']) {
 					return [
 						'success' => true,
-						'title' => translate([
-							'text' => 'Success',
-							'isPublicFacing' => true,
-						]),
-						'message' => translate([
-							'text' => 'Holds grouped successfully',
-							'isPublicFacing' => true
-						])
+						'title' => translate(['text' => 'Success', 'isPublicFacing' => true]),
+						'message' => translate(['text' => 'Holds grouped successfully', 'isPublicFacing' => true])
 					];
 				} else {
 					return [
 						'success' => false,
-						'title' => translate([
-							'text' => 'Error',
-							'isPublicFacing' => true,
-						]),
-						'message' => translate([
-							'text' => 'Failed to group holds',
-							'isPublicFacing' => true
-						])
-						];
+						'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+						'message' => translate(['text' => 'Failed to group holds', 'isPublicFacing' => true])
+					];
 				}
 			} else {
 				return [
-					'succcess' => false,
-					'title' => translate([
-						'text' => 'Error',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => 'Your catalog driver does not support this feature at the present time',
-						'isPublicFacing' => true,
-					])
+					'success' => false,
+					'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+					'message' => translate(['text' => 'Your catalog driver does not support this feature', 'isPublicFacing' => true])
 				];
 			}
 		} catch (Exception $e) {
 			global $logger;
-			$logger->log('Error grouping patron holds: ' . $e->getErrorMessage(), Logger::LOG_ERROR);
+			$logger->log('Error grouping patron holds: ' . $e->getMessage(), Logger::LOG_ERROR);
 			return [
 				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'An error occurred while grouping holds',
-					'isPublicFacing' => true,
-				])
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'An error occurred while grouping holds', 'isPublicFacing' => true])
 			];
 		}
-	}
-
-	public function getHoldGroupsModal() {
-		require_once ROOT_DIR . '/sys/User/Hold.php';
-
-		global $interface;
-		
-		$user = UserAccount::getLoggedInUser();
-		if (!$user) {
-			return [
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in to alter hold groups.  Please close this dialog and login again.',
-					'isPublicFacing' => true,
-				])
-				];
-		}
-
-		$userHold = new Hold();
-		$userHold->userId =  $user;
-		global $logger;
-		$logger->log("USER: " . $user, Logger::LOG_ERROR);
-		$holdGroupMap = [];
-
-		if ($userHold->find()) {
-			do {
-				if (!empty($userHold->visualHoldGroupId)) {
-					$holdGroupMap[$userHold->visualHoldGroupId] = $userHold->holdGroupId;
-				}
-			} while ($userHold->fetch());
-		}
-
-		if (empty($holdGroupMap)) {
-			return [
-				'title' => translate([
-					'text' => 'No Hold Groups',
-					'isPublicFacing' => true,
-				]),
-				'modalBody' => $interface->fetch('HoldGroups/controlGroupedHoldsModal.tpl'),
-				'modalButtons' => null,
-			];
-		}
-
-		$interface->assign('holdGroupMap', $holdGroupMap);
-
-		return [
-			'title' => translate([
-				'text' => 'Grouped Holds',
-				'isPublicFacing' => true,
-			]),
-			'modalBody' => $interface->fetch('HoldGroups/controlGroupedHoldsModal.tpl'),
-			'modalButtons' => "<button class='tool btn btn-danger' id='deleteHoldGroupBtn' onclick='AspenDiscovery.Account.deleteHoldsGroup($(\"#holdGroupSelect\").val()); return false;'>" . translate([
-				'text' => 'Delete Hold Group',
-				'isPublicFacing' => true,
-			]) . "</button>",
-		];
 	}
 
 	public function deleteHoldGroup() {
@@ -10983,5 +10905,4 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		}
 	}
-
 }
