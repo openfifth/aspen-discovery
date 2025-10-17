@@ -25,6 +25,16 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'add_theme_soft_delete_columns' => [
+			'title' => 'Add Soft Delete Columns to Themes',
+			'description' => 'Add metadata needed to support Object Restorations for Themes.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE themes ADD COLUMN deleted TINYINT(1) DEFAULT 0',
+				'ALTER TABLE themes ADD COLUMN dateDeleted INT(11) DEFAULT 0',
+				'ALTER TABLE themes ADD COLUMN deletedBy INT(11) DEFAULT NULL',
+			],
+		], //add_theme_soft_delete_columns
 
 		//alexander - Open Fifth
 
