@@ -48,7 +48,7 @@ public class PalaceProjectProcessor {
 				allCollections.put(collectionInfo.id, collectionInfo);
 			}
 		} catch (SQLException e) {
-			logger.error("Error setting up hoopla processor", e);
+			logger.error("Error setting up Palace Project processor", e);
 		}
 	}
 
