@@ -923,11 +923,11 @@ class User extends DataObject {
 						return false;
 					}
 				} elseif ($source == 'hoopla') {
-					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->hooplaLibraryID > 0;
+					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->getHooplaLibraryID() > 0;
 				} elseif ($source == 'hoopla_flex') {
-					$libraryHooplaScope = $userHomeLibrary->getHooplaScope();
-					$isFlexAvilable = $libraryHooplaScope ? $libraryHooplaScope->includeFlex : false;
-					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->hooplaLibraryID > 0 && $isFlexAvilable;
+					$primaryHooplaSetting = $userHomeLibrary->getPrimaryHooplaSetting();
+					$isFlexAvilable = $primaryHooplaSetting ? $primaryHooplaSetting->hooplaFlexEnabled : false;
+					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->getHooplaLibraryID() > 0 && $isFlexAvilable;
 				} elseif ($source == 'cloud_library') {
 					return array_key_exists('Cloud Library', $enabledModules) && ($userHomeLibrary->cloudLibraryScope > 0);
 				} elseif ($source == 'axis360') {

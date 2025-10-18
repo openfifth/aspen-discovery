@@ -10,8 +10,6 @@ class HooplaScope extends DataObject {
 	public /** @noinspection PhpUnused */
 		$excludeTitlesWithCopiesFromOtherVendors;
 	/** @noinspection PhpUnused */
-	public $includeInstant;
-	public $includeFlex;
 	public /** @noinspection PhpUnused */
 		$includeEBooks;
 	public /** @noinspection PhpUnused */

@@ -204,7 +204,7 @@ class HooplaSetting extends DataObject {
 	}
 
 	public function __toString() {
-		return 'Library ' . $this->libraryId . ' (' . $this->apiUsername . ')';
+		return 'Hoopla ' . ' (' . $this->apiUsername . ')';
 	}
 
 	public function update(string $context = '') : int|bool {

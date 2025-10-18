@@ -104,6 +104,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 		$interface->assign('dateFirstDetected', $this->dateFirstDetected);
 
 		$interface->assign('hooplaExtract', $this->hooplaRawMetadata);
+		$interface->assign('hooplaType', $this->getHooplaType());
 		return 'RecordDrivers/Hoopla/staff-view.tpl';
 	}
 
@@ -136,7 +137,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 */
 	public function getTableOfContents() {
 		$tableOfContents = [];
-		$segments = $this->hooplaRawMetadata->segments;
+		$segments = $this->hooplaRawMetadata->segments ?? [];
 		if (!empty($segments)) {
 			foreach ($segments as $segment) {
 				$label = $segment->name;
@@ -265,7 +266,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 				/** @var Library $searchLibrary */
 				$searchLibrary = Library::getSearchLibrary();
-				if ($searchLibrary->hooplaLibraryID > 0) { // Library is enabled for Hoopla patron action integration
+				if ($searchLibrary->getHooplaLibraryID() > 0) { // Library is enabled for Hoopla patron action integration
 					$id = $this->id;
 					$hooplaType = $this->getHooplaType();
 					if (!$isAvailable) {
@@ -341,15 +342,15 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getFormats() {
-		if ($this->hooplaExtract->kind == "MOVIE" || $this->hooplaExtract->kind == "TELEVISION") {
+		if ($this->hooplaExtract->format == "MOVIE" || $this->hooplaExtract->format == "TELEVISION") {
 			return ['eVideo'];
-		} elseif ($this->hooplaExtract->kind == "AUDIOBOOK") {
+		} elseif ($this->hooplaExtract->format == "AUDIOBOOK") {
 			return ['eAudiobook'];
-		} elseif ($this->hooplaExtract->kind == "EBOOK") {
+		} elseif ($this->hooplaExtract->format == "EBOOK") {
 			return ['eBook'];
-		} elseif ($this->hooplaExtract->kind == "ECOMIC") {
+		} elseif ($this->hooplaExtract->format == "ECOMIC") {
 			return ['eComic'];
-		} elseif ($this->hooplaExtract->kind == "MUSIC") {
+		} elseif ($this->hooplaExtract->format == "MUSIC") {
 			return ['eMusic'];
 		} else {
 			return ['eBook'];
@@ -362,14 +363,14 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return  array
 	 */
 	function getFormatCategory() : string|array|null {
-		if ($this->hooplaExtract->kind == "AUDIOBOOK") {
+		if ($this->hooplaExtract->format == "AUDIOBOOK") {
 			return [
 				'eBook',
 				'Audio Books',
 			];
-		} elseif ($this->hooplaExtract->kind == "MOVIE" || $this->hooplaExtract->kind == "TELEVISION") {
+		} elseif ($this->hooplaExtract->format == "MOVIE" || $this->hooplaExtract->format == "TELEVISION") {
 			return ['Movies'];
-		} elseif ($this->hooplaExtract->kind == "MUSIC") {
+		} elseif ($this->hooplaExtract->format == "MUSIC") {
 			return ['Music'];
 		} else {
 			return ['eBook'];
@@ -385,11 +386,22 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getHooplaType() : string {
-		if (!empty($this->hooplaExtract->hooplaType)) {
-			return $this->hooplaExtract->hooplaType;
-		} else {
+		global $library;
+		$scopeLibraryId = $library->hooplaScopeId;
+		if ($scopeLibraryId == null) {
 			return 'Instant';
 		}
+		require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
+		require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
+
+		$hooplaEntitlement = new HooplaEntitlement();
+		$hooplaEntitlement->hooplaId = $this->getUniqueID();
+		$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
+		$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$scopeLibraryId);
+		if ($hooplaEntitlement->find(true)) {
+			return $hooplaEntitlement->hooplaType;
+		}
+		return 'Instant';
 	}
 
 	/**
@@ -427,7 +439,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getPublicationDates() {
-		return [$this->hooplaRawMetadata->year];
+		return [$this->hooplaRawMetadata->releaseYear];
 	}
 
 	public function getRecordType() {
@@ -506,7 +518,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 		/** @var Library $searchLibrary */
 		$searchLibrary = Library::getSearchLibrary();
-		if ($searchLibrary->hooplaLibraryID > 0) { // Library is enabled for Hoopla patron action integration
+		if ($searchLibrary->getHooplaLibraryID() > 0) { // Library is enabled for Hoopla patron action integration
 			$hooplaType = $this->getHooplaType();
 			$title = translate([
 				'text' => 'Check Out Hoopla',

@@ -342,8 +342,7 @@ class HooplaProcessor {
 					groupedWork.addAuthor2Role(artistsWithRoleToAdd);
 					groupedWork.addKeywords(artistsToAdd);
 				}
-
-				JSONArray genres = rawResponse.getJSONArray("genres");
+				JSONArray genres = rawResponse.has("genres") ? rawResponse.getJSONArray("genres") : new JSONArray();
 				HashSet<String> genresToAdd = new HashSet<>();
 				HashSet<String> topicsToAdd = new HashSet<>();
 				for (int i = 0; i < genres.length(); i++) {
@@ -356,7 +355,6 @@ class HooplaProcessor {
 				groupedWork.addGenreFacet(genresToAdd);
 				groupedWork.addTopicFacet(topicsToAdd);
 				groupedWork.addTopic(topicsToAdd);
-
 				HashMap<String, Integer> literaryForm = new HashMap<>();
 				HashMap<String, Integer> literaryFormFull = new HashMap<>();
 				if (rawResponse.has("isFiction")){
@@ -482,11 +480,29 @@ class HooplaProcessor {
 					}else{
 						okToAdd = false;
 					}
-					if (okToAdd) {
+			 /*  	if (okToAdd) {
 						ScopingInfo scopingInfo = itemInfo.addScope(scope);
 						groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
 						scopingInfo.setLibraryOwned(true);
 						scopingInfo.setLocallyOwned(true);
+					}
+					hooplaRecord.addItem(itemInfo); */
+
+					if (okToAdd) {
+						ScopingInfo scopingInfo = itemInfo.addScope(scope);
+						groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
+						if (scope.isLibraryScope()) {
+							scopingInfo.setLibraryOwned(true);
+							scopingInfo.setLocallyOwned(true);
+						} else {
+							scopingInfo.setLocallyOwned(true);
+							Scope libraryScope = scope.getLibraryScope();
+							if (libraryScope != null) {
+								ScopingInfo libraryScopingInfo = itemInfo.addScope(libraryScope);
+								groupedWork.addScopingInfo(libraryScope.getScopeName(), libraryScopingInfo);
+								libraryScopingInfo.setLibraryOwned(true);
+							}
+						}
 						hooplaRecord.addItem(itemInfo);
 					}
 				}

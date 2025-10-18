@@ -242,13 +242,13 @@ function getUpdates25_10_00(): array
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					hooplaId INT(11) NOT NULL,
 					hooplaType VARCHAR(20) NOT NULL,
-					UNIQUE KEY hooplaEntitlementUnique (hooplaId, hooplaType),
+					UNIQUE KEY hooplaEntitlementUnique (hooplaId, hooplaType)
 				)'
 			]
 		], //create_hoopla_entitlements_table
-		'add_hoopla_entitlement_scopes_table' => [
-			'title' => 'Add hoopla_entitlement_scopes table',
-			'description' => 'Add hoopla_entitlement_scopes table',
+		'create_hoopla_entitlement_scopes_table' => [
+			'title' => 'Create hoopla_entitlement_scopes table',
+			'description' => 'Create hoopla_entitlement_scopes table',
 			'continueOnError' => false,
 			'sql' => [
 				'CREATE TABLE IF NOT EXISTS hoopla_entitlement_scopes (
@@ -259,7 +259,7 @@ function getUpdates25_10_00(): array
 					CONSTRAINT fk_entitlement_scopes_entitlementId FOREIGN KEY (entitlementId) REFERENCES hoopla_entitlements(id) ON DELETE CASCADE ON UPDATE CASCADE
 				)'
 			]
-		], //add_hoopla_entitlement_scopes_table
+		], //create_hoopla_entitlement_scopes_table
 		'add_scopeLibraryId_to_hoopla_flex_availability' => [
 			'title' => 'Add scopeLibraryId to hoopla_flex_availability table',
 			'description' => 'Add scopeLibraryId to hoopla_flex_availability table',
@@ -268,6 +268,14 @@ function getUpdates25_10_00(): array
 				'ALTER TABLE hoopla_flex_availability ADD COLUMN scopeLibraryId INT NOT NULL'
 			]
 		], //add_scopeLibraryId_to_hoopla_flex_availability
+		'drop_hooplaLibraryID_from_library_table' => [
+			'title' => 'Drop hooplaLibraryID from library table',
+			'description' => 'Drop hooplaLibraryID from library table',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library DROP COLUMN hooplaLibraryID',
+			]
+		], //drop_hooplaLibraryID_from_library_table
 
 
 		// Leo Stoyanov - BWS

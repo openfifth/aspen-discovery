@@ -170,7 +170,6 @@ class Library extends DataObject {
 		$repeatInWorldCat;
 	public $repeatInCloudSource;
 	public $cloudSourceBaseUrl;
-	public $hooplaLibraryID;
 	public /** @noinspection PhpUnused */
 		$hooplaScopeId;
 	public /** @noinspection PhpUnused */
@@ -5884,6 +5883,29 @@ class Library extends DataObject {
 			}
 		}
 		return $this->_libraryHooplaSettings;
+	}
+
+	public function getPrimaryHooplaSetting(): ?LibraryHooplaSetting {
+		$libraryHooplaSettings = $this->getLibraryHooplaSettings();
+		foreach ($libraryHooplaSettings as $libraryHooplaSetting) {
+			if ($libraryHooplaSetting->libraryId == $this->libraryId) {
+				return $libraryHooplaSetting;
+			}
+		}
+		return null;
+	}
+
+	public function getHooplaLibraryID(): int {
+		$libraryHooplaSetting = $this->getPrimaryHooplaSetting();
+		if ($libraryHooplaSetting != null) {
+			if ($libraryHooplaSetting->circulationEnabled) {
+				return $libraryHooplaSetting->hooplaLibraryID;
+			}else{
+				return 0;
+			}
+		}else{
+			return 0;
+		}
 	}
 
 	public function saveHooplaSettings() : void {
