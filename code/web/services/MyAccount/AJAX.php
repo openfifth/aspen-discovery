@@ -3932,6 +3932,29 @@ class MyAccount_AJAX extends JSON_Action {
 				);
 			}
 
+			$linkedUsers = $user->getLinkedUsers();
+			foreach ($linkedUsers as $linkedUser) {
+				$linkedDriver = $linkedUser->getCatalogDriver();
+				if ($linkedDriver) {
+					$linkResp = $linkedDriver->getPatronHoldGroups($linkedUser->unique_ils_id);
+					if (isset($linkResp['content'])) {
+						$linkGroups = is_string($linkResp['content'])
+							? json_decode($linkResp['content'], true)
+							: $linkResp['content'];
+					} else {
+						$linkGroups = is_array($linkResp) ? $linkResp : [];
+					}
+
+					foreach ($linkGroups as &$lg) {
+						$lg['linked_user_id'] = $linkedUser->id;
+						$lg['linked_user_name'] = $linkedUser->displayName;
+					}
+					unset($lg);
+
+					$groupedHolds = array_merge($groupedHolds, $linkGroups);
+				}
+			}
+
 			$interface->assign('allowSelectingHoldsToExport', $allowSelectingHoldsToExport);
 
 
