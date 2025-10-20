@@ -4108,7 +4108,8 @@ class MyAccount_AJAX extends JSON_Action {
 									'hold_group_id' => $group['hold_group_id'],
 									'holdCount' => count($matchingHolds),
 									'holds' => $matchingHolds,
-									'type' => 'hyperhold'
+									'type' => 'hyperhold',
+									'userName' => $group['linked_user_name'] ?? $user->displayName,
 								];
 							}
 						}
