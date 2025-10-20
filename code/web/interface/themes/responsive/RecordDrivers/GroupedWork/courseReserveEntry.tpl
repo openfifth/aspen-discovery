@@ -79,13 +79,11 @@
 			</div>
 
 			{* Formats Section *}
-				<div class="row">
-					<div class="{if empty($hasHiddenFormats) && $hideInMobile && count($relatedManifestations) > 1}hidden-xs {/if}col-sm-12" id="relatedManifestationsValue{$summId|escape}">
-					{* Hide Formats section on mobile view, unless there is a single format or a format has been selected by the user *}
-					{* relatedManifestationsValue ID is used by the Formats button *}
-
-					{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
-
+			<div class="row">
+				<div class="{if empty($hasHiddenFormats) && $hideInMobile && count($relatedManifestations) > 1}hidden-xs {/if}col-sm-12" id="relatedManifestationsValue{$summId|escape}">
+				{* Hide Formats section on mobile view, unless there is a single format or a format has been selected by the user *}
+				{* relatedManifestationsValue ID is used by the Formats button *}
+				{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
 				</div>
 			</div>
 
