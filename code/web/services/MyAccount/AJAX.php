@@ -11717,7 +11717,7 @@ class MyAccount_AJAX extends JSON_Action {
 						'specialError' => 'holdAlreadyGrouped',
 						'title' => translate(['text' => 'Holds Already Grouped', 'isPublicFacing' => true]),
 						'modalBody' => $interface->fetch('HoldGroups/forceGroupedHoldsModal.tpl'),
-						'modalButtons' => "<button class='tool btn btn-danger' id='forcegroupHoldsGroupBtn' onclick='AspenDiscovery.Account.forceGroupHolds(" . json_encode($holdIds) . "); return false;'>"  
+						'modalButtons' => "<button class='tool btn btn-danger' id='forcegroupHoldsGroupBtn' onclick='AspenDiscovery.Account.forceGroupHolds(" . json_encode($holdIds) . ", " . json_encode($userIds) . "); return false;'>"  
 								. translate(['text' => 'Continue to Group Holds', 'isPublicFacing' => true]) . "</button>",
 					];
 				}
