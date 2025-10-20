@@ -6,7 +6,7 @@
 		<strong>{translate text="Hyperhold Group" isPublicFacing=true}:</strong> {$record.visual_hold_id}
 		&nbsp;|&nbsp;
 		<strong>{translate text="Number of Holds in Group" isPublicFacing=true}:</strong> {$record.holdCount}
-		
+        <strong>{translate text="On Hold For" isPublicFacing=true}:</strong> {$record.userName}		
 		<a href="#" onclick="$('#hyperhold_details_{$record.visual_hold_id}').toggle(); return false;" class="btn btn-sm btn-default" style="margin-left: 15px;">
 			<i class="fas fa-list"></i> {translate text="View All Records" isPublicFacing=true} ({$record.holdCount})
 		</a>
