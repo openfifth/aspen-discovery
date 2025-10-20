@@ -11617,6 +11617,20 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$holdIds = $_REQUEST['holdIds'] ?? [];
 		$forceGrouped = $_REQUEST['forceGrouped'] ?? false;
+		$userIds = $_REQUEST['userIds'] ?? null;
+
+
+		if (!is_array($userIds)) {
+			$userIds = [$userIds];
+		}
+
+		if (count(array_unique($userIds)) > 1) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'You cannot group holds from different users', 'isPublicFacing' => true])
+			];
+		}
 
 		// Convert string to array if needed
 		if (is_string($holdIds)) {
@@ -11632,9 +11646,42 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		try {
-			$user = UserAccount::getLoggedInUser();
-			$patronId = $user->unique_ils_id;
-			$catalogDriver = $user->getCatalogDriver();
+			$userId = $userIds[0];
+			$currentUser = UserAccount::getLoggedInUser();
+			$targetUser = new User();
+			$targetUser->id = $userId;
+
+			if (!$targetUser->find(true)) {
+				return [
+					'success' => false,
+					'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+					'message' => translate(['text' => 'Invalid user specified', 'isPublicFacing' => true])
+				];
+			}
+
+			$canManage = false;
+			if ($currentUser == $userId) {
+				$canManage = true;
+			} else {
+				$linkedUsers = $currentUser->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					if ($linkedUser->id == $userId) {
+						$canManage = true;
+						break;
+					}
+				}
+			}
+
+			if (!$canManage) {
+				return [
+					'success' => false,
+					'title' => translate(['text' => 'Error' , 'isPublicFacing' => true]),
+					'message' => translate(['text' => 'You do not have permission to manage this user\'s holds.', 'isPublicFacing' => true])
+				];
+			}
+
+			$patronId = $targetUser->unique_ils_id;
+			$catalogDriver = $targetUser->getCatalogDriver();
 
 			if ($catalogDriver->driver instanceof Koha) {
 				// Pass forceGrouped to groupHolds
