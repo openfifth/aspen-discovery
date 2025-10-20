@@ -1,8 +1,17 @@
 {if $formatDisplayStyle == 1}
 	{* Short Mobile Entry adapts based on manifestation count *}
 	<div class="visible-xs">
+		{* Determine if there were hidden Formats for this entry *}
+		{assign var=hasHiddenFormats value=false}
+		{foreach from=$relatedManifestations item=relatedManifestation}
+			{if $relatedManifestation->hasHiddenFormats()}
+				{assign var=hasHiddenFormats value=true}
+			{/if}
+		{/foreach}
+
+
 		{assign var=hideInMobile value=$hideManifestationsInMobileView|default:1}
-		{if $hideInMobile && count($relatedManifestations) > 1}
+		{if empty($hasHiddenFormats) && $hideInMobile && count($relatedManifestations) > 1}
 			<div class="hidethisdiv{$summId|escape} result-label col-sm-4 col-xs-12">
 				{translate text="Formats" isPublicFacing=true}
 			</div>
@@ -15,7 +24,7 @@
 	</div>
 
 	{* Formats Section *}
-	<div class="{if $hideInMobile && count($relatedManifestations) > 1}hidden-xs {/if}col-xs-12 formatDisplayVertical" id="relatedManifestationsValue{$summId|escape}">
+	<div class="{if empty($hasHiddenFormats) && $hideInMobile && count($relatedManifestations) > 1}hidden-xs {/if}col-xs-12 formatDisplayVertical" id="relatedManifestationsValue{$summId|escape}">
 		{* Hide Formats section on mobile view, unless there is a single format or a format has been selected by the user *}
 		{* relatedManifestationsValue ID is used by the Formats button *}
 		{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
