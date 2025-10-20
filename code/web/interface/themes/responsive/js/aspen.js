@@ -5135,6 +5135,7 @@ AspenDiscovery.Account = (function () {
 		},
 		groupSelectedPendingHolds:  function (source, availableSort, interlibrarySort, unavailableSort) {
 			let selectedHolds = [];
+			let userIds = [];
 
 			$("input[name*='select']:checked").each(function() {
 				const nameAttr = $(this).attr('name');
@@ -5142,8 +5143,14 @@ AspenDiscovery.Account = (function () {
 					const idMatches = nameAttr.match(/\d+/g);
 					if (idMatches && idMatches.length >= 3) {
 						const holdId = idMatches[2];
+						const userId = idMatches[0];
+
 						if (holdId && !selectedHolds.includes(holdId)) {
 							selectedHolds.push(holdId);
+						}
+
+						if (userId && !userIds.includes(userId)) {
+							userIds.push(userId);
 						}
 					}
 				}
@@ -5155,7 +5162,8 @@ AspenDiscovery.Account = (function () {
 				holdIds: selectedHolds,
 				availableSort: availableSort,
 				interlibrarySort: interlibrarySort,
-				unavailableSort: unavailableSort
+				unavailableSort: unavailableSort,
+				userIds: userIds
 			};
 
 			$.getJSON(url, params, function(data) {
