@@ -3909,10 +3909,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 			if (isset($groupedHoldsResponse['content'])) {
 				if (is_string($groupedHoldsResponse['content'])) {
-					// JSON string → decode
 					$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
 				} elseif (is_array($groupedHoldsResponse['content'])) {
-					// Already decoded array
 					$groupedHolds = $groupedHoldsResponse['content'];
 				} else {
 					global $logger;
@@ -3922,7 +3920,6 @@ class MyAccount_AJAX extends JSON_Action {
 					);
 				}
 			} elseif (is_array($groupedHoldsResponse)) {
-				// Some drivers might directly return the array of groups
 				$groupedHolds = $groupedHoldsResponse;
 			} else {
 				global $logger;

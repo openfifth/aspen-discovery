@@ -3320,13 +3320,11 @@ AspenDiscovery.Account = (function () {
 				return;
 			}
 
-			// Go straight to groupPatronHolds
 			$.getJSON(Globals.path + "/MyAccount/AJAX?method=groupPatronHolds", {
 				source: 'ils',
 				holdIds: selectedHolds,
 				forceGrouped: false
 			}, function(data) {
-				// Otherwise show success/error message
 				if (data.success) {
 					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 					setTimeout(function() { window.location.reload(); }, 1500);
