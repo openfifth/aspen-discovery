@@ -30,13 +30,11 @@
 
 <script>
 	$(document).on('change', '.select-hyperhold-group', function() {
-		var groupId = $(this).closest('.hyperhold-group').attr('id'); // e.g., "hyperhold_123"
+		var groupId = $(this).closest('.hyperhold-group').attr('id');
 		if (!groupId) return;
 
-		// Get the numeric part: 123
 		var idNum = groupId.split('_')[1];
 
-		// Find all existing checkboxes in the hyperhold details
 		$('#hyperhold_details_' + idNum + ' input[type="checkbox"]').prop('checked', $(this).is(':checked'));
 	});
 </script>
