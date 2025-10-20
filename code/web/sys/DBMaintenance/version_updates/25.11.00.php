@@ -30,7 +30,7 @@ function getUpdates25_11_00(): array {
 			'description' => 'Add option to show item barcodes in copy details.',
 			'continueOnError' => true,
 			'sql' => [
-				"ALTER TABLE grouped_work_display_settings ADD COLUMN showItemBarcodes TINYINT(1) DEFAULT 0",
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showItemBarcodes TINYINT(1) DEFAULT 0",
 			],
 		],
 
