@@ -5526,11 +5526,13 @@ AspenDiscovery.Account = (function () {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			})
 		},
-		deleteHoldsGroup: function(holdGroupId, visualHoldId) {
+		deleteHoldsGroup: function(holdGroupId, visualHoldId, userId) {
+
 			const url = Globals.path + '/MyAccount/AJAX?method=requestDeleteHoldGroupConfirmation';
 			const params = {
 				holdGroupId: holdGroupId,
-				visualHoldId: visualHoldId
+				visualHoldId: visualHoldId,
+				userId: userId
 			};
 
 			$.getJSON(url, params, function(data) {
@@ -5606,10 +5608,12 @@ AspenDiscovery.Account = (function () {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
 		},
-		confirmDeleteHoldGroup: function(holdGroupId) {
+		confirmDeleteHoldGroup: function(holdGroupId, visualHoldId, userId) {
 			const url = Globals.path + '/MyAccount/AJAX?method=deleteHoldGroup';
 			const params = {
-				holdGroupId: holdGroupId
+				holdGroupId: holdGroupId,
+				visualHoldId: visualHoldId,
+				userId: userId
 			};
 
 			$.getJSON(url, params, function(data) {
