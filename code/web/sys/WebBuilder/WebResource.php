@@ -155,8 +155,8 @@ class WebResource extends DB_LibraryLinkedObject {
 				'property' => 'allowAccessByLibrary',
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
-				'label' => 'Allow Access to patrons of these home libraries',
-				'description' => 'Define what libraries should have access to the web resource',
+				'label' => 'Allow Access to Patrons of These Home Libraries',
+				'description' => 'Define what patrons\' home libraries should have access to the web resource.',
 				'values' => $libraryList,
 				'hideInLists' => false,
 			],
@@ -197,7 +197,7 @@ class WebResource extends DB_LibraryLinkedObject {
 						'property' => 'url',
 						'type' => 'url',
 						'label' => 'Library-Specific URL (Optional)',
-						'description' => 'If provided, this URL will be used instead of the base resource URL for patrons from this library.',
+						'description' => 'If provided, this URL will be used instead of the base resource URL for patrons viewing this library catalog.',
 						'maxLength' => 500,
 					],
 				],
@@ -348,9 +348,15 @@ class WebResource extends DB_LibraryLinkedObject {
 
 	public function saveLibraries() : void {
 		if (isset($this->_libraries) && is_array($this->_libraries)) {
-			$this->clearLibraries();
+			$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Web Resources'));
+			// Clear only libraries the user has permission to modify.
+			foreach ($libraryList as $libraryId => $libraryName) {
+				$libraryLink = new LibraryWebResource();
+				$libraryLink->webResourceId = $this->id;
+				$libraryLink->libraryId = $libraryId;
+				$libraryLink->delete(true);
+			}
 
-			// Save new library links with URLs
 			foreach ($this->_libraries as $libraryId => $options) {
 				$libraryLink = new LibraryWebResource();
 				$libraryLink->webResourceId = $this->id;
@@ -390,13 +396,6 @@ class WebResource extends DB_LibraryLinkedObject {
 			}
 			unset($this->_categories);
 		}
-	}
-
-	private function clearLibraries() : void {
-		//Delete links to the libraries
-		$libraryLink = new LibraryWebResource();
-		$libraryLink->webResourceId = $this->id;
-		$libraryLink->delete(true);
 	}
 
 	private function clearAudiences() : void {
@@ -529,11 +528,16 @@ class WebResource extends DB_LibraryLinkedObject {
 
 	public function saveAllowableLibraries() : void {
 		if (isset($this->_allowAccessByLibrary) && is_array($this->_allowAccessByLibrary)) {
-			$this->clearAllowableLibraries();
+			$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Web Resources'));
+			foreach ($libraryList as $libraryId => $libraryName) {
+				$link = new WebResourceAccessLibrary();
+				$link->webResourceId = $this->id;
+				$link->libraryId = $libraryId;
+				$link->delete(true);
+			}
 
 			foreach ($this->_allowAccessByLibrary as $libraryId) {
 				$link = new WebResourceAccessLibrary();
-
 				$link->webResourceId = $this->id;
 				$link->libraryId = $libraryId;
 				$link->insert();

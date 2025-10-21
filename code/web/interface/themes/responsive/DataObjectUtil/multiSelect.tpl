@@ -54,7 +54,7 @@
 								<div class="col-xs-12">
 									<label for="{$propName}_{$propertyValue|escapeCSS}" style="cursor: pointer;">
 										<input class="{$propName}Checkbox" id="{$propName}_{$propertyValue|escapeCSS}" name='{$propName}[{$propertyValue}][_checked]' type="checkbox" value='1' {if $isChecked}checked='checked'{/if} {if !empty($property.readOnly)}readonly disabled{/if} onchange="AspenDiscovery.Admin.toggleCheckboxOptions('{$propName}_{$propertyValue|escapeCSS}');">
-										<strong>{if !empty($property.translateValues)}{translate text=$propertyName|escape inAttribute=true isPublicFacing=$property.isPublicFacing isAdminFacing=$property.isAdminFacing }{else}{$propertyName|escape}{/if}</strong>
+										{if !empty($property.translateValues)}{translate text=$propertyName|escape inAttribute=true isPublicFacing=$property.isPublicFacing isAdminFacing=$property.isAdminFacing }{else}{$propertyName|escape}{/if}
 									</label>
 								</div>
 							</div>
@@ -62,7 +62,7 @@
 								{if !empty($property.optionsStructure)}
 									{foreach from=$property.optionsStructure key=optionKey item=optionProperty}
 										<div class="form-group">
-											<label for="{$propName}_{$propertyValue|escapeCSS}_{$optionKey}">
+											<label for="{$propName}_{$propertyValue|escapeCSS}_{$optionKey}" style="font-weight: normal;">
 												{$optionProperty.label}
 												{if !empty($optionProperty.description)}
 													<a id="{$propName}_{$propertyValue|escapeCSS}_{$optionKey}_tooltip" class="text-info" role="tooltip" tabindex="0" data-toggle="tooltip" data-placement="right" data-title="{$optionProperty.description|escape}">
