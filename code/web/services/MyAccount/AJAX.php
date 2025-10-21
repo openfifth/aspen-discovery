@@ -12058,6 +12058,38 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
+	public function requestDeleteHoldGroupConfirmation() {
+		global $interface;
+
+		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
+		$visualHoldId = $_REQUEST['visualHoldId'] ?? '';
+
+		if (empty($holdGroupId)) {
+			return [
+				'success' => false,
+				'title' => 'Error',
+				'message' => 'No hold group specified.'
+			];
+		}
+
+		$interface->assign('holdGroupId', $holdGroupId);
+		$interface->assign('visualHoldId', $visualHoldId);
+		
+
+		return [
+			'success' => true,
+			'title' => translate([
+				'text' => 'Confirm Ungroup',
+				'isPublicFacing' => true
+			]),
+			'modalBody' => $interface->fetch('HoldGroups/confirmDeleteHoldGroup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.confirmDeleteHoldGroup(" . json_encode($holdGroupId) . ", " . json_encode($visualHoldId) . "); return false;'>" .  translate([
+				'text' => "Ungroup Holds",
+				'isPublicFacing' => true,
+			]) . "</button>",
+			];
+	}
+
 	public function deleteHoldGroup() {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		$user = UserAccount::getLoggedInUser();
@@ -12077,7 +12109,6 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
-		$logger->log("Hold groupid: " . $holdGroupId, Logger::LOG_ERROR);
 
 		if (empty($holdGroupId)) {
 			return [
