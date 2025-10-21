@@ -546,6 +546,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			'url' => $this->hooplaRawMetadata->url,
 			'title' => $title,
 			'requireLogin' => false,
+			'type' => 'hoopla_access_online',
 		];
 		return $accessLink;
 	}
