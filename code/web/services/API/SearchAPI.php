@@ -535,11 +535,11 @@ class SearchAPI extends AbstractAPI {
 						$checkEntriesInLast1Hours = false;
 					}
 					if ($checkEntriesInLast34Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 34 * 60 * 60)) {
-						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 26 hours");
+						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 34 hours. Last Finish Time was $lastFinishTime.");
 					} elseif ($checkEntriesInLast24Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 24 * 60 * 60)) {
-						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 24 hours");
+						$this->addCheck($checks, $aspenModule->name, self::STATUS_CRITICAL, "No log entries for $aspenModule->name have completed in the last 24 hours. Last Finish Time was $lastFinishTime.");
 					} elseif ($checkEntriesInLast1Hours && !$isFirstEntryRunning && ($lastFinishTime < time() - 60 * 60) && date('H') >= 8 && date('H') < 21) {
-						$this->addCheck($checks, $aspenModule->name, self::STATUS_WARN, "No log entries for $aspenModule->name have completed in the last 1 hours");
+						$this->addCheck($checks, $aspenModule->name, self::STATUS_WARN, "No log entries for $aspenModule->name have completed in the last 1 hours. Last Finish Time was $lastFinishTime.");
 					} else {
 						if ($logErrors > 0) {
 							$this->addCheck($checks, $aspenModule->name, self::STATUS_WARN, "The last $logErrors log entry for $aspenModule->name had errors");
