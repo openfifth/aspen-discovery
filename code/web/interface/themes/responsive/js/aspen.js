@@ -9367,20 +9367,16 @@ AspenDiscovery.Account = (function () {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			})
 		},
-		deleteHoldsGroup: function(holdGroupId) {
-			const url = Globals.path + '/MyAccount/AJAX?method=deleteHoldGroup';
+		deleteHoldsGroup: function(holdGroupId, visualHoldId) {
+			const url = Globals.path + '/MyAccount/AJAX?method=requestDeleteHoldGroupConfirmation';
 			const params = {
-				holdGroupId: holdGroupId
+				holdGroupId: holdGroupId,
+				visualHoldId: visualHoldId
 			};
 
 			$.getJSON(url, params, function(data) {
 				if (data.success) {
-					AspenDiscovery.showMessage(data.title, data.message);
-						if (data.success) {
-							setTimeout(function() {
-								location.reload();
-							}, 1500);
-						}
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
@@ -9444,6 +9440,25 @@ AspenDiscovery.Account = (function () {
 				if (data.success) {
 					AspenDiscovery.showMessage(data.title, data.message, false, true, false, false);
 					setTimeout(function() { window.location.reload(); }, 1500);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
+		confirmDeleteHoldGroup: function(holdGroupId) {
+			const url = Globals.path + '/MyAccount/AJAX?method=deleteHoldGroup';
+			const params = {
+				holdGroupId: holdGroupId
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message);
+					setTimeout(function() {
+						location.reload();
+					}, 1500);
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
