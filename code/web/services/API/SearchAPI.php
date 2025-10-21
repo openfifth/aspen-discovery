@@ -458,7 +458,6 @@ class SearchAPI extends AbstractAPI {
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
 					}
-					$numEntriesToCheck = 1;
 					$logEntry->limit(0, $numEntriesToCheck * $numSettings);
 					$logErrors = 0;
 					$logEntry->find();
@@ -483,7 +482,7 @@ class SearchAPI extends AbstractAPI {
 						}
 						if ($isFirstEntry) {
 							$lastUpdateTime = max($logEntry->startTime, $logEntry->lastUpdate);
-							if (($currentTime - $logEntry->lastUpdate) <= 6 * 60) {
+							if (($currentTime - $lastUpdateTime) <= 6 * 60) {
 								$isFirstEntryRunning = true;
 							}
 						}
