@@ -190,7 +190,7 @@
 								{include file="GroupedWork/metadataBlocks.tpl"}
 							</div>
 							<div class="metadata-action" style="margin-left:auto; flex-shrink:0;">
-								<a href="#" class="btn btn-primary btn-sm" aria-label="{translate text='Place a hold on this grouped work' isPublicFacing=true}">
+								<a href="#" id="hyperholdGroupedWorkButton" class="btn btn-primary btn-sm" aria-label="{translate text='Place a hold on this grouped work' isPublicFacing=true}" onclick="AspenDiscovery.Record.placeHyperhold('{$summId}', '{$variationId}'); return false;">
 									{translate text="Place Hyperhold" isPublicFacing=true}
 								</a>
 							</div>
