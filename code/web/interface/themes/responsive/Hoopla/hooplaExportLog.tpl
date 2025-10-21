@@ -19,7 +19,8 @@
 						<th>{translate text="Products Added" isAdminFacing=true}</th>
 						<th>{translate text="Products Deleted" isAdminFacing=true}</th>
 						<th>{translate text="Products Updated" isAdminFacing=true}</th>
-						<th>{translate text="Products Skipped" isAdminFacing=true}</th>
+						<th>{translate text="Entitlements Updated" isAdminFacing=true}</th>
+						<th>{translate text="Entitlements Deleted" isAdminFacing=true}</th>
 						<th>{translate text="Num Availability Changes" isAdminFacing=true}</th>
 						<th>{translate text="Notes" isAdminFacing=true}</th>
 					</tr>
@@ -39,7 +40,8 @@
 							<td>{$logEntry->numAdded}</td>
 							<td>{$logEntry->numDeleted}</td>
 							<td>{$logEntry->numUpdated}</td>
-							<td>{$logEntry->numSkipped}</td>
+							<td>{$logEntry->numEntitlementsUpdated}</td>
+							<td>{$logEntry->numEntitlementsDeleted}</td>
 							<td>{$logEntry->numAvailabilityChanges}</td>
 							<td><a href="#" onclick="return AspenDiscovery.Admin.showExtractNotes('{$logEntry->id}', 'hoopla');">{translate text="Show Notes" isAdminFacing=true}</a></td>
 						</tr>

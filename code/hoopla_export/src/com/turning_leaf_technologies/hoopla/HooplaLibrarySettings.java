@@ -9,6 +9,7 @@ class HooplaLibrarySettings {
 	private final long id;
 	private final long settingId;
 	private final long libraryId;
+	private final String displayName;
 	private final String hooplaLibraryId;
 	private final boolean circulationEnabled;
 	private final boolean instantEnabled;
@@ -21,6 +22,7 @@ class HooplaLibrarySettings {
 		id = settingsRS.getLong("id");
 		settingId = settingsRS.getLong("settingId");
 		libraryId = settingsRS.getLong("libraryId");
+		displayName = settingsRS.getString("displayName");
 		hooplaLibraryId = settingsRS.getString("hooplaLibraryID");
 		circulationEnabled = settingsRS.getBoolean("circulationEnabled");
 		instantEnabled = settingsRS.getBoolean("hooplaInstantEnabled");
@@ -40,6 +42,10 @@ class HooplaLibrarySettings {
 
 	long getLibraryId() {
 		return libraryId;
+	}
+
+	String getLibraryDisplayName() {
+		return displayName;
 	}
 
 	String getHooplaLibraryId() {

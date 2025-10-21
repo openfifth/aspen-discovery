@@ -24,8 +24,9 @@ class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
-	private int numSkipped = 0;
 	private int numInvalidRecords = 0;
+	private int numEntitlementsUpdated = 0;
+	private int numEntitlementsDeleted = 0;
 	private int numAvailabilityChanges = 0;
 	private final Logger logger;
 
@@ -34,7 +35,7 @@ class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 		this.startTime = new Date();
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into hoopla_export_log (startTime) VALUES (?)", PreparedStatement.RETURN_GENERATED_KEYS);
-			updateLogEntry = dbConn.prepareStatement("UPDATE hoopla_export_log SET lastUpdate = ?, endTime = ?, notes = ?, numProducts = ?, numErrors = ?, numAdded = ?, numUpdated = ?, numDeleted = ?, numSkipped = ?, numRegrouped =?, numChangedAfterGrouping = ?, numInvalidRecords = ?, numAvailabilityChanges = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS);
+			updateLogEntry = dbConn.prepareStatement("UPDATE hoopla_export_log SET lastUpdate = ?, endTime = ?, notes = ?, numProducts = ?, numErrors = ?, numAdded = ?, numUpdated = ?, numDeleted = ?, numRegrouped =?, numChangedAfterGrouping = ?, numInvalidRecords = ?, numAvailabilityChanges = ?, numEntitlementsUpdated = ?, numEntitlementsDeleted = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS);
 		} catch (SQLException e) {
 			logger.error("Error creating prepared statements to update log", e);
 		}
@@ -96,11 +97,12 @@ class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 				updateLogEntry.setInt(++curCol, numAdded);
 				updateLogEntry.setInt(++curCol, numUpdated);
 				updateLogEntry.setInt(++curCol, numDeleted);
-				updateLogEntry.setInt(++curCol, numSkipped);
 				updateLogEntry.setInt(++curCol, numRegrouped);
 				updateLogEntry.setInt(++curCol, numChangedAfterGrouping);
 				updateLogEntry.setInt(++curCol, numInvalidRecords);
 				updateLogEntry.setInt(++curCol, numAvailabilityChanges);
+				updateLogEntry.setInt(++curCol, numEntitlementsUpdated);
+				updateLogEntry.setInt(++curCol, numEntitlementsDeleted);
 				updateLogEntry.setLong(++curCol, logEntryId);
 				updateLogEntry.executeUpdate();
 			}
@@ -151,12 +153,9 @@ class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 		return numErrors > 0;
 	}
 
-	void incSkipped() {
-		numSkipped++;
-	}
 
 	int getNumChanges() {
-		return numUpdated + numDeleted + numAdded + numAvailabilityChanges;
+		return numUpdated + numDeleted + numAdded + numAvailabilityChanges + numEntitlementsUpdated + numEntitlementsDeleted;
 	}
 
 	public void incRecordsRegrouped() {
@@ -184,5 +183,11 @@ class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 
 	public long getLogEntryId() {
 		return logEntryId;
+	}
+	public void incEntitlementsUpdated() {
+		numEntitlementsUpdated++;
+	}
+	public void incEntitlementsDeleted() {
+		numEntitlementsDeleted++;
 	}
 }

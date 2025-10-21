@@ -276,6 +276,16 @@ function getUpdates25_10_00(): array
 				'ALTER TABLE library DROP COLUMN hooplaLibraryID',
 			]
 		], //drop_hooplaLibraryID_from_library_table
+		'update_hoopla_export_log' => [
+			'title' => 'Add entitlements to hoopla export log',
+			'description' => 'Add entitlements to hoopla export log',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE hoopla_export_log ADD COLUMN numEntitlementsUpdated INT DEFAULT 0',
+				'ALTER TABLE hoopla_export_log ADD COLUMN numEntitlementsDeleted INT DEFAULT 0',
+				'ALTER TABLE hoopla_export_log DROP COLUMN numSkipped',
+			]
+		], //update_hoopla_export_log
 
 
 		// Leo Stoyanov - BWS
