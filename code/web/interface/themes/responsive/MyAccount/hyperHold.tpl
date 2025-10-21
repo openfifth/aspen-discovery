@@ -21,8 +21,8 @@
 <div>
 	<form id="controlGroupedHoldsForm">
 		<div class="btn-group">
-			<a href="#" onclick="AspenDiscovery.Account.controlGroupedHolds()" class="btn btn-sm btn-default" aria-description="{translate text="Click here to control grouped holds"}">{translate text="Control Grouped Holds" isPublicFacing=true}</a>
-			<a href="#" onclick="AspenDiscovery.Account.requestGroupConfirmation()" class="btn btn-sm btn-default" aria-description="{translate text="Click here to group selected holds"}">{translate text="Group Selected Holds" isPublicFacing=true}</a>
+			<a href="#" onclick="AspenDiscovery.Account.requestGroupConfirmation()" class="btn btn-sm btn-default" aria-description="{translate text="Click here to group selected holds"}">{translate text="Regroup Selected Holds" isPublicFacing=true}</a>
+			<a href="#" onclick="AspenDiscovery.Account.deleteHoldsGroup({$record.hold_group_id}, {$record.visual_hold_id})" class="btn btn-sm btn-warning" aria-description="{Translate text='Click to here to delete hold group'} {$record.visual_hold_id}">{translate text="Ungroup Hold Group " isPublicFacing=true}{$record.visual_hold_id}</a>
 		</div>
 	</form>
 </div>
