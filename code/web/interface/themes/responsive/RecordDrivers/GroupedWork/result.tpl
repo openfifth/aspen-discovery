@@ -184,6 +184,21 @@
 						</div>
 					{/if}
 
+					{if $allowHoldsToBeGrouped}
+						<div class="col-xs-12" style="display: flex; flex-wrap: wrap; align-items: flex-start; margin-top:10px;">
+							<div class="metadata-columns" style="display: flex; flex-wrap: wrap; flex:1;">
+								{include file="GroupedWork/metadataBlocks.tpl"}
+							</div>
+							<div class="metadata-action" style="margin-left:auto; flex-shrink:0;">
+								<a href="#" class="btn btn-primary btn-sm" aria-label="{translate text='Place a hold on this grouped work' isPublicFacing=true}">
+									{translate text="Place Hyperhold" isPublicFacing=true}
+								</a>
+							</div>
+						</div>
+					{else}
+						{include file="GroupedWork/metadataBlocks.tpl"}
+					{/if}
+
 					{include file="GroupedWork/relatedLists.tpl" isSearchResults=true}
 
 					{include file="GroupedWork/readingHistoryIndicator.tpl" isSearchResults=true}
