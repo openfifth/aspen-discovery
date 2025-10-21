@@ -64,6 +64,7 @@ class Events_AJAX extends JSON_Action {
 			])
 		];
 		if (!empty($_REQUEST['eventTypeId'])) {
+			global $activeLanguage;
 			$eventType = new EventType();
 			$eventType->id = $_REQUEST['eventTypeId'];
 			if ($eventType->find(true)) {
@@ -75,10 +76,12 @@ class Events_AJAX extends JSON_Action {
 					$fieldHTML[] = $interface->fetch('DataObjectUtil/property.tpl');
 				}
 				$locations = $eventType->getLocations();
+				$editFormInstructions = $eventType->getTextBlockTranslation('editFormInstructions', $activeLanguage->code, true);
 				$result = [
 					'success' => true,
 					'eventType' => $eventType->jsonSerialize(),
 					'typeFields' => $fieldHTML,
+					'editFormInstructions' => $editFormInstructions,
 					'locationIds' => json_encode(array_keys($locations)),
 				];
 			}

@@ -9846,9 +9846,11 @@ AspenDiscovery.Events = (function(){
 						$("#propertyRowtitle").hide();
 						$("#propertyRowinfoSection").hide();
 						$("#propertyRowscheduleSection").hide();
+                        $("#editFormInstructions").html("");
 						$("#description").text("");
 						return false;
 					} else {
+                        $("#editFormInstructions").html(data.editFormInstructions);
 						eventType = data.eventType;
 						$("#title").val(eventType.title);
 						if (!eventType.titleCustomizable) {
