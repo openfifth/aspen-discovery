@@ -15796,7 +15796,49 @@ AspenDiscovery.Record = (function () {
 				}
 			);
 			return false;
-		}
+		},
+		placeHyperhold: function(groupedWorkId, variationId) {
+			$.getJSON(Globals.path + '/Record/AJAX?method=requestHyperholdConfirmation', {
+				groupedWorkId: groupedWorkId,
+				variationId: variationId
+			}, function(data){
+				if (data.success) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
+		toggleBibs: function() {
+			$('.bibs-list').slideToggle();
+		},
+		submitHyperhold: function(groupedWorkId) {
+			const selected = [];
+			$('input[name="hyperholdRecord[]"]:checked').each(function () {
+				selected.push($(this).val());
+			});
+			
+			const pickupBranch = $('#hyperholdPickupBranch').val();
+
+			const params = {
+				groupedWorkId: groupedWorkId,
+				records: JSON.stringify(selected),
+				pickupBranch: pickupBranch
+			}
+
+			$.getJSON(Globals.path + '/Record/AJAX?method=submitHyperhold', params, function (data) {
+				AspenDiscovery.showMessage(data.title, data.message);
+				if (data.success) {
+					setTimeout(function() {
+						window.location.reload();
+					}, 1500);
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
+			});
+		},
 	};
 }(AspenDiscovery.Record || {}));
 $(document).ready(function(){

@@ -2495,4 +2495,209 @@ class Record_AJAX extends JSON_Action {
 			'modalButtons' => "",
 		];
 	}
+
+	public function requestHyperholdConfirmation() {
+		global $interface;
+
+		$groupedWorkId = $_REQUEST['groupedWorkId'] ?? null;
+		$variationId = $_REQUEST['variationId'] ?? null;
+
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Please log in to place holds', 'isPublicFacing' => true])
+			];
+		}
+
+		if (empty($groupedWorkId)) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'No Grouped Work Selected', 'isPublicFacing' => true])
+			];
+		}
+		
+		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+		$groupedWorkDriver = new GroupedWorkDriver($groupedWorkId);
+
+		if (!$groupedWorkDriver->isValid()) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Invalid Grouped Work', 'isPublicFacing' => true])
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
+		$location = new Location();
+		$pickupBranches = $location->getPickupBranches($user);
+
+		$relatedManifestations = $groupedWorkDriver->getRelatedManifestations();
+		
+		$formats = [];
+		foreach ($relatedManifestations as $formatName => $manifestation) {
+			
+			$relatedRecords = $manifestation->getRelatedRecords();
+			
+			$records = [];
+			foreach ($relatedRecords as $record) {
+				$driver = $record->getDriver();
+				$items = $record->getItems();
+				
+				$copies = [];
+				foreach ($items as $item) {
+					$copies[] = [
+						'itemId' => $item->itemId,
+						'location' => $item->shelfLocation,
+						'callNumber' => $item->callNumber,
+						'status' => $item->status,
+					];
+				}
+				
+				$records[] = [
+					'id' => $record->id,
+					'title' => $driver->getTitle(),
+					'author' => $driver->getPrimaryAuthor(),
+					'copies' => $copies,
+					'copyCount' => count($copies),
+				];
+			}
+						
+			$formats[] = [
+				'name' => $formatName,
+				'recordCount' => count($records),
+				'records' => $records
+			];
+		}
+		
+		$interface->assign('groupedWorkId', $groupedWorkId);
+		$interface->assign('formats', $formats);
+		$interface->assign('pickupLocations', $pickupBranches);
+		$interface->assign('user', $user);
+
+		return [
+			'success' => true,
+			'title' => translate(['text' => 'Confirm Hyperhold', 'isPublicFacing' => true]),
+			'modalBody' => $interface->fetch('Record/hyperholds-hold-popup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Record.submitHyperhold(\"{$groupedWorkId}\"); return false;'>" . 
+				translate(['text' => "Confirm Hold", 'isPublicFacing' => true]) . "</button>" . 
+				"<button class='tool btn btn-primary' onclick='AspenDiscovery.Record.toggleBibs(); return false;'>" . translate(['text' => "Show Bibs", 'isPublicFacing' => true]) . "</button>",
+		];
+	}
+
+	public function submitHyperhold() {
+		$groupedWorkId = $_REQUEST['groupedWorkId'] ?? null;
+		$recordsJson = $_REQUEST['records'] ?? '[]';
+		$records = json_decode($recordsJson, true);
+		$pickupBranch = $_REQUEST['pickupBranch'] ?? null;
+
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Please log in to place holds', 'isPublicFacing' => true])
+			];
+		}
+
+		if (empty($groupedWorkId) || empty($records)) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'No records selected for Hyperhold', 'isPublicFacing' => true])
+			];
+		}
+
+		if (empty($pickupBranch)) {
+			$pickupBranch = $user->getPickupLocationCode();
+		}
+
+		$catalogDriver = $user->getCatalogDriver();
+		$patronId = $user->unique_ils_id;
+	
+		// Place holds on each selected record
+		$successCount = 0;
+		$failedRecords = [];
+		$realHoldIds = [];
+
+		foreach ($records as $recordId) {
+			$holdResult = $catalogDriver->placeHold($user, $recordId, $pickupBranch, null);
+
+			if (!empty($holdResult['success'])) {
+				$successCount++;
+			} else {
+				$failedRecords[] = $recordId;
+			}
+		}
+
+		// If we don’t yet have enough real hold IDs, fall back to extracting from patron holds
+		if ($successCount > 1 && count($realHoldIds) < $successCount) {
+			// Force refresh of holds to get the newly placed ones
+			$user->forceReloadOfHolds();
+			$patronHolds = $catalogDriver->getHolds($user);
+
+			// Combine unavailable & available arrays
+			$holdsToCheck = array_merge(
+				$patronHolds['unavailable'] ?? [],
+				$patronHolds['available'] ?? []
+			);
+
+			foreach ($holdsToCheck as $holdObj) {
+				if (!is_object($holdObj)) continue;
+				$cancelId = $holdObj->cancelId ?? null;
+				$realHoldIds[] = (int)$cancelId;
+			}
+		}
+
+		$realHoldIds = array_unique(array_filter($realHoldIds));
+
+		// Attempt grouping if multiple holds
+		if (count($realHoldIds) > 1) {
+			$groupResult = $catalogDriver->groupHolds($patronId, $realHoldIds);
+
+			if (!empty($groupResult['success'])) {
+				return [
+					'success' => true,
+					'title' => translate(['text' => 'Hyperhold Placed', 'isPublicFacing' => true]),
+					'message' => translate([
+						'text' => "Successfully placed and grouped holds on %1% editions.",
+						1 => $successCount,
+						'isPublicFacing' => true
+					])
+				];
+			}
+
+			return [
+				'success' => true,
+				'title' => translate(['text' => 'Holds Placed', 'isPublicFacing' => true]),
+				'message' => translate([
+					'text' => "Placed holds on %1% editions, but could not group them: " . ($groupResult['message'] ?? 'unknown error'),
+					1 => $successCount,
+					'isPublicFacing' => true
+				])
+			];
+		}
+
+		// Single hold success
+		if ($successCount > 0) {
+			return [
+				'success' => true,
+				'title' => translate(['text' => 'Hold Placed', 'isPublicFacing' => true]),
+				'message' => translate([
+					'text' => "Successfully placed hold on %1% edition.",
+					1 => $successCount,
+					'isPublicFacing' => true
+				])
+			];
+		}
+
+		// No holds placed
+		return [
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+			'message' => translate(['text' => 'Failed to place holds', 'isPublicFacing' => true])
+		];
+	}
 }
