@@ -96,6 +96,15 @@ function getUpdates25_10_00(): array {
 				'ALTER TABLE series ADD COLUMN sortMethod TINYINT DEFAULT 1'
 			]
 		], //add_series_sort_method
+		'increase_length_of_library_email_for_custom_forms' => [
+			'title' => 'Increase length of library email for custom forms',
+			'description' => 'Increase length of library email for custom forms',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_web_builder_custom_form CHANGE COLUMN emailResultsTo emailResultsTo varchar(250) DEFAULT ""',
+				'ALTER TABLE web_builder_custom_form CHANGE COLUMN emailResultsTo emailResultsTo varchar(250) DEFAULT ""'
+			]
+		], //increase_length_of_library_email_for_custom_forms
 
 		//katherine - Grove
 		'add_include_in_reports_option_to_event_type' => [
