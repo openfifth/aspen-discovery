@@ -9850,7 +9850,7 @@ AspenDiscovery.Events = (function(){
 						$("#description").text("");
 						return false;
 					} else {
-                        $("#editFormInstructions").html(data.editFormInstructions);
+						$("#editFormInstructions").html(data.editFormInstructions);
 						eventType = data.eventType;
 						$("#title").val(eventType.title);
 						if (!eventType.titleCustomizable) {
