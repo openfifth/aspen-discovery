@@ -321,7 +321,7 @@ class Series extends DataObject {
 		if ($sortName != null) {
 			if ($sortName == 'volume') {
 				$sortMethod = 1;
-			}elseif ($sortName == 'displayName') {
+			}elseif ($sortName == 'displayName' || $sortName == 'title') {
 				$sortMethod = 2;
 			}elseif ($sortName == 'pubDate') {
 				$sortMethod = 3;
@@ -351,9 +351,9 @@ class Series extends DataObject {
 		}else if ($sortMethod == 2) {
 			$seriesMember->orderBy('displayName');
 		}else if ($sortMethod == 3) {
-			$seriesMember->orderBy('pubDate');
+			$seriesMember->orderBy('pubDate, displayName');
 		}else if ($sortMethod == 4) {
-			$seriesMember->orderBy('pubDate desc');
+			$seriesMember->orderBy('pubDate desc, displayName');
 		}else{
 			$seriesMember->orderBy('weight');
 		}

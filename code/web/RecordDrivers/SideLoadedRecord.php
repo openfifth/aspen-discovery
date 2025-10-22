@@ -152,6 +152,7 @@ class SideLoadedRecord extends BaseEContentDriver {
 			$fileOrUrl = isset($urlInfo['url']) ? $urlInfo['url'] : $urlInfo['file'];
 			if (strlen($fileOrUrl) > 0) {
 				$actions[] = [
+					'type' => 'sideload_access_online',
 					'url' => $action,
 					'redirectUrl' => $fileOrUrl,
 					'title' => $title,
