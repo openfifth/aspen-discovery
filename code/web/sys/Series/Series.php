@@ -253,12 +253,11 @@ class Series extends DataObject {
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
 		$originalSeriesMembers = $this->getSeriesMembers($sortName, false, $includePlaceholders);
 		$seriesMembers = [];
-		$idsBySource = [];
+		$idsBySource = [
+			'GroupedWork' => []
+		];
+		$source = "GroupedWork";  // All series currently come from groupedWorks
 		foreach ($originalSeriesMembers as $seriesMember) {
-			$source = "GroupedWork";  // All series currently come from groupedWorks
-			if (!array_key_exists($source, $idsBySource)) {
-				$idsBySource[$source] = [];
-			}
 			if (!empty($seriesMember->groupedWorkPermanentId)) {
 				$idsBySource[$source][$seriesMember->groupedWorkPermanentId] = $seriesMember->groupedWorkPermanentId;
 			}
@@ -279,13 +278,12 @@ class Series extends DataObject {
 		}
 
 		//Filter to remove anything that is not part of this scope.
-		$sourceType = 'GroupedWork';
 		/** @var SearchObject_GroupedWorkSearcher2|false $searchObject */
-		$searchObject = SearchObjectFactory::initSearchObject($sourceType);
+		$searchObject = SearchObjectFactory::initSearchObject($source);
 		if ($searchObject === false) {
-			AspenError::raiseError("Unknown Series Member Source $sourceType");
+			AspenError::raiseError("Unknown Series Member Source $source");
 		}
-		$allSeriesMemberIds = $idsBySource[$sourceType];
+		$allSeriesMemberIds = $idsBySource[$source];
 		$scopedRecords = $searchObject->getScopedRecordIds($allSeriesMemberIds);
 
 		//Remove anything that isn't in the scope from the series
@@ -295,9 +293,9 @@ class Series extends DataObject {
 		while ($changeMade) {
 			$changeMade = false;
 			foreach ($seriesMembers as $key => $seriesMember) {
-				if ($seriesMember['source'] == $sourceType && in_array($seriesMember['sourceId'], $missingWorks)) {
+				if ($seriesMember['source'] == $source && in_array($seriesMember['sourceId'], $missingWorks)) {
 					unset($seriesMembers[$key]);
-					unset($idsBySource[$sourceType][$key]);
+					unset($idsBySource[$source][$key]);
 					$changeMade = true;
 					break;
 				}
