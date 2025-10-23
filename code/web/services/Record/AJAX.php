@@ -353,6 +353,41 @@ class Record_AJAX extends JSON_Action {
 
 			$marcRecord = new MarcRecordDriver($id);
 
+			$allowEditionSelection = (isset($_REQUEST['allowEditionSelection']) && $_REQUEST['allowEditionSelection'] == '1');
+			$interface->assign('allowEditionSelection', $allowEditionSelection);
+
+			$currentFormat = null;
+			if (isset($_REQUEST['format']) && !empty($_REQUEST['format'])) {
+				$currentFormat = $_REQUEST['format'];
+			} elseif ($selectedVariationId !== -1) {
+				$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
+				if ($groupedWorkDriver) {
+					$relatedRecord = $groupedWorkDriver->getRelatedRecord($marcRecord->getIdWithSource());
+					if ($relatedRecord && !empty($relatedRecord->recordVariations)) {
+						foreach ($relatedRecord->recordVariations as $variation) {
+							if ((string)$variation->databaseId === (string)$selectedVariationId) {
+								$currentFormat = $variation->manifestation->format ?? null;
+								break;
+							}
+						}
+					}
+				}
+			}
+
+			if ($currentFormat === null) {
+				$currentFormat = $marcRecord->getPrimaryFormat();
+			}
+
+			$interface->assign('currentFormat', $currentFormat);
+
+			if ($allowEditionSelection) {
+				$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
+				if ($groupedWorkDriver) {
+					$editions = $this->getHoldableEditionsForFormat($groupedWorkDriver, $recordSource, $currentFormat);
+					$interface->assign('editions', $editions);
+				}
+			}
+ 
 			require_once ROOT_DIR . '/sys/Account/User.php';
 			$isOnHold = $user->isRecordOnHold($recordSource, $id);
 			$interface->assign('isOnHold', $isOnHold);
@@ -2713,5 +2748,56 @@ class Record_AJAX extends JSON_Action {
 			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
 			'message' => translate(['text' => 'Failed to place holds', 'isPublicFacing' => true])
 		];
+	}
+
+	private function getHoldableEditionsForFormat($groupedWorkDriver, $recordSource, $targetFormat): array {
+		$editions = [];
+
+		if (!$groupedWorkDriver || !$groupedWorkDriver->isValid()) {
+			return $editions;
+		}
+
+		$relatedRecords = $groupedWorkDriver->getRelatedRecords();
+
+		foreach ($relatedRecords as $relatedRecord) {
+			if ($relatedRecord->source != $recordSource) {
+				continue;
+			}
+
+			$recordFormat = null;
+			if (!empty($relatedRecord->recordVariations)) {
+				foreach ($relatedRecord->recordVariations as $variation) {
+					if ($variation->manifestation) {
+						$recordFormat = $variation->manifestation->format;
+						break;
+					}
+				}
+			}
+			
+			// Skip if format doesn't match
+			if ($recordFormat !== $targetFormat) {
+				continue;
+			}
+
+			$actions = $relatedRecord->getActions();
+			$isHoldable = false;
+			foreach ($actions as $action) {
+				if (isset($action['type']) && $action['type'] === 'ils_hold') {
+					$isHoldable = true;
+					break;
+				}
+			}
+
+			if ($isHoldable) {
+				$recordDriver = RecordDriverFactory::initRecordDriverById($relatedRecord->id);
+				$editions[] = [
+					'id' => $relatedRecord->id,
+					'title' => $recordDriver ? $recordDriver->getTitle() : '',
+					'author' => $recordDriver ? $recordDriver->getPrimaryAuthor() : '',
+				];
+			}
+		}
+
+		return $editions;
 	}
 }

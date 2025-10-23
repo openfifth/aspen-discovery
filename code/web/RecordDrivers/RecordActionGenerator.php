@@ -3,7 +3,7 @@
 function getUntitledVolumeHoldAction($module, $source, $id, $variationId) : array {
 	return [
 		'title' => translate([
-			'text' => 'Place Hold',
+			'text' => 'Place Hold one',
 			'isPublicFacing' => true,
 		]),
 		'url' => '',
@@ -15,7 +15,7 @@ function getUntitledVolumeHoldAction($module, $source, $id, $variationId) : arra
 	];
 }
 //Regular ILS holds
-function getHoldRequestAction($module, $source, $id, $variationId) : array {
+function getHoldRequestAction($module, $source, $id, $variationId, $format) : array {
 	return [
 		'title' => translate([
 			'text' => 'Place Hold',
@@ -23,7 +23,7 @@ function getHoldRequestAction($module, $source, $id, $variationId) : array {
 		]),
 		'url' => '',
 		'id' => "actionButton$id",
-		'onclick' => "return AspenDiscovery.Record.showPlaceHold('$module', '$source', '$id', '', '$variationId', this);",
+		'onclick' => "return AspenDiscovery.Record.showPlaceHold('$module', '$source', '$id', '', '$variationId', this, true, '$format');",
 		'requireLogin' => false,
 		'type' => 'ils_hold',
 		'subtype' => 'standard_ils_hold',
@@ -51,7 +51,7 @@ function getSpecificVolumeHoldAction($module, $source, $id, $volumeInfo) : array
 function getMultiVolumeHoldAction($module, $source, $id) : array {
 	return [
 		'title' => translate([
-			'text' => 'Place Hold',
+			'text' => 'Place Hold three',
 			'isPublicFacing' => true,
 		]),
 		'url' => '',
