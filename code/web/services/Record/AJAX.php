@@ -2585,8 +2585,25 @@ class Record_AJAX extends Action {
 
 		$catalogDriver = $user->getCatalogDriver();
 		$patronId = $user->unique_ils_id;
-	
-		// Place holds on each selected record
+
+		// Get existing hold IDs
+		$existingHoldIds = [];
+		if (count($records) > 1) {
+			$existingHolds = $catalogDriver->getHolds($user);
+			$existingHoldsToCheck = array_merge(
+				$existingHolds['unavailable'] ?? [],
+				$existingHolds['available'] ?? []
+			);
+			
+			foreach ($existingHoldsToCheck as $holdObj) {
+				if (!is_object($holdObj)) continue;
+				$cancelId = $holdObj->cancelId ?? null;
+				if ($cancelId) {
+					$existingHoldIds[] = (int)$cancelId;
+				}
+			}
+		}
+
 		$successCount = 0;
 		$failedRecords = [];
 		$realHoldIds = [];
@@ -2601,28 +2618,31 @@ class Record_AJAX extends Action {
 			}
 		}
 
-		// If we don’t yet have enough real hold IDs, fall back to extracting from patron holds
-		if ($successCount > 1 && count($realHoldIds) < $successCount) {
-			// Force refresh of holds to get the newly placed ones
+		if ($successCount > 1) {
 			$user->forceReloadOfHolds();
 			$patronHolds = $catalogDriver->getHolds($user);
 
-			// Combine unavailable & available arrays
 			$holdsToCheck = array_merge(
 				$patronHolds['unavailable'] ?? [],
 				$patronHolds['available'] ?? []
 			);
 
+			// Build the array from patron holds, excluding existing holds
 			foreach ($holdsToCheck as $holdObj) {
 				if (!is_object($holdObj)) continue;
 				$cancelId = $holdObj->cancelId ?? null;
-				$realHoldIds[] = (int)$cancelId;
+				if ($cancelId) {
+					$holdIdInt = (int)$cancelId;
+					// Only include if this is a new hold
+					if (!in_array($holdIdInt, $existingHoldIds)) {
+						$realHoldIds[] = $holdIdInt;
+					}
+				}
 			}
 		}
 
 		$realHoldIds = array_unique(array_filter($realHoldIds));
 
-		// Attempt grouping if multiple holds
 		if (count($realHoldIds) > 1) {
 			$groupResult = $catalogDriver->groupHolds($patronId, $realHoldIds);
 
