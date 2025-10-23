@@ -25,6 +25,13 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'indexing_profile_displayTitleStripRegex' => [
+			'title' => 'Indexing Profile - Display Title Strip Regex',
+			'description' => 'Add regex field to the Indexing Profile to strip text from display titles of ILS records.',
+			'sql' => [
+				'ALTER TABLE indexing_profiles ADD COLUMN IF NOT EXISTS displayTitleStripRegex TEXT'
+			]
+		], //indexing_profile_displayTitleStripRegex
 
 		//alexander - Open Fifth
 

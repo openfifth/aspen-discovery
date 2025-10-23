@@ -1583,7 +1583,8 @@ abstract class MarcRecordProcessor {
 					format,
 					formatCategory,
 					false,
-					recordInfo
+					recordInfo,
+					this
 				);
 			}
 			//title full

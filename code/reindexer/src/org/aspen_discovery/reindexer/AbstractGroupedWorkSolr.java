@@ -424,10 +424,14 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	private final static Pattern punctuationPattern = Pattern.compile("[.\\\\/()\\[\\]:;]");
 
 	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory) {
-		this.setTitle(shortTitle, subTitle, displayTitle, sortableTitle, recordFormat, formatCategory, false, null);
+		this.setTitle(shortTitle, subTitle, displayTitle, sortableTitle, recordFormat, formatCategory, false, null, null);
 	}
 
 	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo) {
+		this.setTitle(shortTitle, subTitle, displayTitle, sortableTitle, recordFormat, formatCategory, isDisplayInfo, recordInfo, null);
+	}
+
+	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo, MarcRecordProcessor processor) {
 		if (shortTitle != null) {
 			shortTitle = AspenStringUtils.trimTrailingPunctuation(shortTitle);
 
@@ -511,6 +515,14 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 					setSubTitle(subTitle);
 					subTitle = AspenStringUtils.trimTrailingPunctuation(subTitle);
 					this.displayTitle = shortTitle.concat(": ").concat(subTitle);
+				}
+
+				// Apply regex stripping to display title for ILS records only.
+				if (processor instanceof IlsRecordProcessor) {
+					IlsRecordProcessor ilsProcessor = (IlsRecordProcessor) processor;
+					if (ilsProcessor.settings != null && ilsProcessor.settings.getDisplayTitleStripPattern() != null) {
+						this.displayTitle = ilsProcessor.settings.getDisplayTitleStripPattern().matcher(this.displayTitle).replaceAll("").trim();
+					}
 				}
 			}
 
