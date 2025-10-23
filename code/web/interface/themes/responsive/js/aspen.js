@@ -14954,7 +14954,7 @@ AspenDiscovery.Record = (function () {
 	// noinspection JSUnusedGlobalSymbols
 	return {
 		volumeHoldInProgress: false,
-		showPlaceHold: function (module, source, id, volume, variationId, button) {
+		showPlaceHold: function (module, source, id, volume, variationId, button, allowEditionSelection, format) {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
 				var buttonClicked = $(button);
@@ -14970,6 +14970,14 @@ AspenDiscovery.Record = (function () {
 				}
 				if (variationId !== undefined) {
 					url += "&variationId=" + variationId;
+				}
+
+				if (allowEditionSelection !== undefined && allowEditionSelection === true) {
+					url += "&allowEditionSelection=1";
+				}
+
+				if (format !== undefined && format !== '') {
+					url += "&format=" + encodeURIComponent(format);
 				}
 
 				AspenDiscovery.toggleButtonSpinner(button, true);
@@ -15016,7 +15024,7 @@ AspenDiscovery.Record = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					AspenDiscovery.Record.showPlaceHold(module, source, id, volume, variationId, button);
+					AspenDiscovery.Record.showPlaceHold(module, source, id, volume, variationId, button, allowFormatSelection);
 				}, false);
 			}
 			return false;
