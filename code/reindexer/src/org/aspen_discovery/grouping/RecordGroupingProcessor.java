@@ -1078,16 +1078,11 @@ public class RecordGroupingProcessor {
 		//Perform record grouping on the record
 		String title;
 		String subTitle;
-		if (itemDetails.has("titleTitle")){
-			title = itemDetails.getString("titleTitle");
-			subTitle = itemDetails.getString("title");
-		}else {
-			title = itemDetails.getString("title");
-			if (itemDetails.has("subtitle")){
-				subTitle = itemDetails.getString("subtitle");
-			}else{
-				subTitle = "";
-			}
+		title = itemDetails.getString("title");
+		if (itemDetails.has("subtitle")){
+			subTitle = itemDetails.getString("subtitle");
+		}else{
+			subTitle = "";
 		}
 		String mediaType = itemDetails.getString("format");
 		String primaryFormat;

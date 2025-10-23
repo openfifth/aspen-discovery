@@ -116,11 +116,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	public function getTitle() {
 		//if episode or subtitle data, match what is displayed in search results
 		if (!empty($this->hooplaRawMetadata->episode)) {
-			if (!empty($this->hooplaRawMetadata->titleTitle)) {
-				return $this->hooplaRawMetadata->titleTitle . ': ' . $this->hooplaExtract->title;
-			} else {
-				return $this->hooplaExtract->title;
-			}
+			return $this->hooplaExtract->title;
 		} elseif (!empty($this->hooplaRawMetadata->subtitle)) {
 			return $this->hooplaExtract->title . ': ' . $this->hooplaRawMetadata->subtitle;
 		} else {
@@ -386,22 +382,22 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getHooplaType() : string {
-		global $library;
-		$scopeLibraryId = $library->hooplaScopeId;
-		if ($scopeLibraryId == null) {
-			return 'Instant';
-		}
-		require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
-		require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
+		require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
+		$searchLibrary = Library::getSearchLibrary();
+		if ($searchLibrary && $searchLibrary->libraryId) {
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
 
-		$hooplaEntitlement = new HooplaEntitlement();
-		$hooplaEntitlement->hooplaId = $this->getUniqueID();
-		$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
-		$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$scopeLibraryId);
-		if ($hooplaEntitlement->find(true)) {
-			return $hooplaEntitlement->hooplaType;
+			$hooplaEntitlement = new HooplaEntitlement();
+			$hooplaEntitlement->hooplaId = $this->getUniqueID();
+			$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
+			$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$searchLibrary->libraryId);
+			if ($hooplaEntitlement->find(true)) {
+				return $hooplaEntitlement->hooplaType;
+			}
 		}
 		return 'Instant';
+
 	}
 
 	/**

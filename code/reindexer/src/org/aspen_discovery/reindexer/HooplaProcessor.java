@@ -121,10 +121,10 @@ class HooplaProcessor {
 				}
 				JSONObject rawResponse = new JSONObject(rawResponseString);
 
-				if (rawResponse.has("titleTitle")){
-					title = rawResponse.getString("titleTitle");
-					subTitle = rawResponse.getString("title");
-				}else if (rawResponse.has("subtitle")){
+				if (rawResponse.has("title")){
+					title = rawResponse.getString("title");
+				}
+				if (rawResponse.has("subtitle")){
 					subTitle = rawResponse.getString("subtitle");
 				}
 
@@ -404,23 +404,12 @@ class HooplaProcessor {
 				boolean profanity = productRS.getBoolean("profanity");
 				String rating = productRS.getString("rating");
 
-				for (Scope scope : indexer.getScopes()) {
-					boolean okToAdd;
-					HooplaScope hooplaScope = scope.getHooplaScope();
-					if (hooplaScope == null){
-						continue;
-					}
-
-					Long scopeLibraryId = scope.getLibraryId();
-					if (scopeLibraryId == null){
-						continue;
-					}
+				for (Long scopeLibraryId : entitlementsByScope.keySet()) {
 					String hooplaType = entitlementsByScope.get(scopeLibraryId);
 					if (hooplaType == null){
 						continue;
 					}
 					ItemInfo itemInfo = new ItemInfo();
-					itemInfo.setItemIdentifier(identifier);
 					itemInfo.seteContentSource("Hoopla");
 					itemInfo.setIsEContent(true);
 					itemInfo.seteContentUrl(rawResponse.getString("url"));
@@ -432,6 +421,7 @@ class HooplaProcessor {
 					itemInfo.setFormatCategory(formatCategory);
 
 					if (hooplaType.equalsIgnoreCase("Flex")){
+						itemInfo.setItemIdentifier(identifier + ":" + scopeLibraryId);
 						itemInfo.seteContentSubSource("Flex");
 						ResultSet flexAvailabilityRS = null;
 						try {
@@ -463,6 +453,7 @@ class HooplaProcessor {
 							}
 						}
 					}else{
+						itemInfo.setItemIdentifier(identifier);
 						//Hoopla instant is always 1 copy unlimited use
 						itemInfo.seteContentSubSource("Instant");
 						itemInfo.setNumCopies(1);
@@ -475,19 +466,30 @@ class HooplaProcessor {
 
 					Date dateAdded = new Date(productRS.getLong("dateFirstDetected") * 1000);
 					itemInfo.setDateAdded(dateAdded);
-					if (hooplaScope != null){
-						okToAdd = hooplaScope.isOkToAdd(identifier, format, price, abridged, pa, profanity, isAdult, isTeen, isKids, rating, genresToAdd, logger);
-					}else{
-						okToAdd = false;
-					}
-			 /*  	if (okToAdd) {
-						ScopingInfo scopingInfo = itemInfo.addScope(scope);
-						groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
-						scopingInfo.setLibraryOwned(true);
-						scopingInfo.setLocallyOwned(true);
-					}
-					hooplaRecord.addItem(itemInfo); */
 
+					for (Scope scope : indexer.getScopes()) {
+						boolean okToAdd;
+						Long curScopeLibraryId = scope.getLibraryId();
+						if (curScopeLibraryId == null || !curScopeLibraryId.equals(scopeLibraryId)){
+							continue;
+						}
+						HooplaScope hooplaScope = scope.getHooplaScope();
+						if (hooplaScope != null){
+							okToAdd = hooplaScope.isOkToAdd(identifier, format, price, abridged, pa, profanity, isAdult, isTeen, isKids, rating, genresToAdd, logger);
+						} else {
+							okToAdd = false;
+						}
+						if (okToAdd) {
+							ScopingInfo scopingInfo = itemInfo.addScope(scope);
+							groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
+							scopingInfo.setLibraryOwned(true);
+							scopingInfo.setLocallyOwned(true);
+						}
+					}
+
+					hooplaRecord.addItem(itemInfo);
+				}
+/*
 					if (okToAdd) {
 						ScopingInfo scopingInfo = itemInfo.addScope(scope);
 						groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
@@ -505,7 +507,7 @@ class HooplaProcessor {
 						}
 						hooplaRecord.addItem(itemInfo);
 					}
-				}
+				}*/
 			}
 			productRS.close();
 		}catch (NullPointerException e) {
