@@ -61,14 +61,14 @@ class GroupedWorksSolrConnector2 extends Solr {
 	/**
 	 * Retrieves a document specified by the ID.
 	 *
-	 * @param array $ids A list of document to retrieve from Solr
+	 * @param ?array $ids A list of document to retrieve from Solr
 	 * @param ?string $fieldsToReturn An optional list of fields to return separated by commas
 	 * @param bool $applyScoping whether scoping should be applied to the search
 	 * @return    array                            The requested resources
 	 * @throws    AspenError
 	 */
-	function getRecords(array $ids, ?string $fieldsToReturn = null, bool $applyScoping = false) : array {
-		if (count($ids) == 0) {
+	function getRecords(?array $ids, ?string $fieldsToReturn = null, bool $applyScoping = false) : array {
+		if (empty($ids)) {
 			return [];
 		}
 		//Solr does not seem to be able to return more than 50 records at a time,
