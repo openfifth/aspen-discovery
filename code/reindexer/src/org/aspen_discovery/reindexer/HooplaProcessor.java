@@ -404,23 +404,30 @@ class HooplaProcessor {
 				boolean profanity = productRS.getBoolean("profanity");
 				String rating = productRS.getString("rating");
 
+				ItemInfo baseItemInfo = new ItemInfo();
+				baseItemInfo.setIsEContent(true);
+				baseItemInfo.seteContentUrl(rawResponse.getString("url"));
+				baseItemInfo.setShelfLocation("Online Hoopla Collection");
+				baseItemInfo.setDetailedLocation("Online Hoopla Collection");
+				baseItemInfo.setCallNumber("Online Hoopla");
+				baseItemInfo.setSortableCallNumber("Online Hoopla");
+				baseItemInfo.setFormat(primaryFormat);
+				baseItemInfo.setFormatCategory(formatCategory);
+				baseItemInfo.setInLibraryUseOnly(false);
+				Date dateAdded = new Date(productRS.getLong("dateFirstDetected") * 1000);
+				baseItemInfo.setDateAdded(dateAdded);
+
+				ItemInfo instantItemInfo = null;
+				ItemInfo itemInfo;
 				for (Long scopeLibraryId : entitlementsByScope.keySet()) {
 					String hooplaType = entitlementsByScope.get(scopeLibraryId);
 					if (hooplaType == null){
 						continue;
 					}
-					ItemInfo itemInfo = new ItemInfo();
-					itemInfo.seteContentSource("Hoopla");
-					itemInfo.setIsEContent(true);
-					itemInfo.seteContentUrl(rawResponse.getString("url"));
-					itemInfo.setShelfLocation("Online Hoopla Collection");
-					itemInfo.setDetailedLocation("Online Hoopla Collection");
-					itemInfo.setCallNumber("Online Hoopla");
-					itemInfo.setSortableCallNumber("Online Hoopla");
-					itemInfo.setFormat(primaryFormat);
-					itemInfo.setFormatCategory(formatCategory);
-
 					if (hooplaType.equalsIgnoreCase("Flex")){
+						itemInfo = new ItemInfo();
+						itemInfo.copyFrom(baseItemInfo);
+						itemInfo.seteContentSource("Hoopla");
 						itemInfo.setItemIdentifier(identifier + ":" + scopeLibraryId);
 						itemInfo.seteContentSubSource("Flex");
 						ResultSet flexAvailabilityRS = null;
@@ -453,19 +460,21 @@ class HooplaProcessor {
 							}
 						}
 					}else{
-						itemInfo.setItemIdentifier(identifier);
-						//Hoopla instant is always 1 copy unlimited use
-						itemInfo.seteContentSubSource("Instant");
-						itemInfo.setNumCopies(1);
-						itemInfo.setAvailable(true);
-						itemInfo.setDetailedStatus("Available Online");
-						itemInfo.setGroupedStatus("Available Online");
-						itemInfo.setHoldable(false);
+						if (instantItemInfo == null){
+							instantItemInfo = new ItemInfo();
+							instantItemInfo.copyFrom(baseItemInfo);
+							instantItemInfo.seteContentSource("Hoopla");
+							instantItemInfo.setItemIdentifier(identifier);
+							//Hoopla instant is always 1 copy unlimited use
+							instantItemInfo.seteContentSubSource("Instant");
+							instantItemInfo.setNumCopies(1);
+							instantItemInfo.setAvailable(true);
+							instantItemInfo.setDetailedStatus("Available Online");
+							instantItemInfo.setGroupedStatus("Available Online");
+							instantItemInfo.setHoldable(false);
+						}
+						itemInfo = instantItemInfo;
 					}
-					itemInfo.setInLibraryUseOnly(false);
-
-					Date dateAdded = new Date(productRS.getLong("dateFirstDetected") * 1000);
-					itemInfo.setDateAdded(dateAdded);
 
 					for (Scope scope : indexer.getScopes()) {
 						boolean okToAdd;
@@ -486,8 +495,8 @@ class HooplaProcessor {
 							scopingInfo.setLocallyOwned(true);
 						}
 					}
-
 					hooplaRecord.addItem(itemInfo);
+
 				}
 /*
 					if (okToAdd) {
