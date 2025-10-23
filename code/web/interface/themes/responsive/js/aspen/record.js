@@ -859,9 +859,6 @@ AspenDiscovery.Record = (function () {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
 		},
-		toggleBibs: function() {
-			$('.bibs-list').slideToggle();
-		},
 		submitHyperhold: function(groupedWorkId) {
 			const selected = [];
 			$('input[name="hyperholdRecord[]"]:checked').each(function () {

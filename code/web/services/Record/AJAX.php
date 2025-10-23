@@ -2582,8 +2582,7 @@ class Record_AJAX extends JSON_Action {
 			'title' => translate(['text' => 'Confirm Hyperhold', 'isPublicFacing' => true]),
 			'modalBody' => $interface->fetch('Record/hyperholds-hold-popup.tpl'),
 			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Record.submitHyperhold(\"{$groupedWorkId}\"); return false;'>" . 
-				translate(['text' => "Confirm Hold", 'isPublicFacing' => true]) . "</button>" . 
-				"<button class='tool btn btn-primary' onclick='AspenDiscovery.Record.toggleBibs(); return false;'>" . translate(['text' => "Show Bibs", 'isPublicFacing' => true]) . "</button>",
+				translate(['text' => "Confirm Hold", 'isPublicFacing' => true]) . "</button>",
 		];
 	}
 
