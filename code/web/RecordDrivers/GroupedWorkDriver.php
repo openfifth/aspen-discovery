@@ -594,11 +594,11 @@ class GroupedWorkDriver extends IndexRecordDriver {
 
 		$interface->assign('summUrl', $url);
 
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
-			$interface->assign('summFullTitle', $this->getTitle());
+			$interface->assign('summFullTitle', $title);
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
 			$interface->assign('summSubTitle', $this->getSubtitle());
@@ -826,9 +826,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -1270,9 +1270,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$linkUrl .= '?searchId=' . $interface->get_template_vars('searchId') . '&amp;recordIndex=' . $interface->get_template_vars('recordIndex') . '&amp;page=' . $interface->get_template_vars('page');
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -1350,9 +1350,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$linkUrl .= '?searchId=' . $interface->get_template_vars('searchId') . '&amp;recordIndex=' . $interface->get_template_vars('recordIndex') . '&amp;page=' . $interface->get_template_vars('page');
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -1429,9 +1429,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$linkUrl .= '?searchId=' . $interface->get_template_vars('searchId') . '&amp;recordIndex=' . $interface->get_template_vars('recordIndex') . '&amp;page=' . $interface->get_template_vars('page');
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -2041,9 +2041,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
