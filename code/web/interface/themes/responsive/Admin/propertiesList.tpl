@@ -85,7 +85,7 @@
 		<table class="adminTable table table-striped table-condensed smallText table-sticky" id="adminTable" aria-label="List of Objects">
 			<thead>
 				<tr>
-					{if $canCompare || $canBatchUpdate || $canExportToCSV}
+					{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 						<th>{translate text='Select' isAdminFacing=true}</th>
 					{/if}
 					{foreach from=$structure item=property key=id}
@@ -101,7 +101,7 @@
 					{foreach from=$dataList item=dataItem key=id}
 						{assign var=canEdit value=$dataItem->canActiveUserEdit()}
 					<tr class='{cycle values="odd,even"} {if !empty($dataItem->class)}{$dataItem->class}{/if}'>
-						{if $canCompare || $canBatchUpdate || $canExportToCSV}
+						{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 							<td><input type="checkbox" class="selectedObject" name="selectedObject[{$id}]" aria-label="Select Item {$id}"> </td>
 						{/if}
 						{foreach from=$structure item=property}
@@ -226,7 +226,7 @@
 
 	{if !empty($pageLinks.all)}<div class="text-center">{$pageLinks.all}</div>{/if}
 
-	{if $canCompare || $canBatchUpdate || $canExportToCSV}
+	{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 		<div class="btn-group">
 			<button type='button' class="btn btn-default" onclick="$('.selectedObject').prop( 'checked', true );return false">{translate text='Select All' isAdminFacing=true}</button>
 			<button type='button' class="btn btn-default" onclick="$('.selectedObject').prop( 'checked', false );return false">{translate text='Deselect All' isAdminFacing=true}</button>
