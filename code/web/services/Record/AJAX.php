@@ -659,16 +659,37 @@ class Record_AJAX extends JSON_Action {
 					'success' => true,
 				];
 				if ($holdType != 'none') {
+					$groupedWorkId = '';
+					if ($allowEditionSelection) {
+						$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
+						if ($groupedWorkDriver) {
+							$groupedWorkId = $groupedWorkDriver->getPermanentId();
+						}
+					}
 					if ($isOnHold) {
-						$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHoldForm();'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+						if ($allowEditionSelection) {
+							$results['modalButtons'] = "buttin type='submit' name='submit' id=requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+								'text' => "Yes, Place Hold",
+								'isPublicFacing' => true,
+							]) . "</button";
+						} else {
+								$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHoldForm();'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 								'text' => "Yes, Place Hold",
 								'isPublicFacing' => true,
 							]) . "</button>";
+						}
 					} else {
-						$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHoldForm();'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+						if ($allowEditionSelection) {
+							$results['modalButtons'] = "<button type='submit' name='submit' id=requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 								'text' => "Submit Hold Request",
 								'isPublicFacing' => true,
 							]) . "</button>";
+						} else {
+							$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHoldForm();'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+								'text' => "Submit Hold Request",
+								'isPublicFacing' => true,
+							]) . "</button>";
+						}
 					}
 				}
 			}
