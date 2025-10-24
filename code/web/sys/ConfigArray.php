@@ -40,7 +40,7 @@ function getTranslationMap($name) {
 	global $serverName;
 	global $memCache;
 	$mapValues = $memCache->get('translation_map_' . $serverName . '_' . $name);
-	if ($mapValues != false && $mapValues != null && !isset($_REQUEST['reload'])) {
+	if ($mapValues !== false && $mapValues !== null && !isset($_REQUEST['reload'])) {
 		return $mapValues;
 	}
 
