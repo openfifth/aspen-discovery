@@ -39,10 +39,6 @@
 												<strong>{$edition.title|escape}</strong>
 												{if $edition.author} by {$edition.author|escape}{/if}
 												<br>
-												<small class="text-muted">
-													{if $edition.publisher}{$edition.publisher|escape}{/if}
-													{if $edition.publicationDate} - {$edition.publicationDate}{/if}
-												</small>
 											</label>
 										</li>
 									{/foreach}
