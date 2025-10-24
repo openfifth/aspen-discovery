@@ -9454,4 +9454,46 @@ class Koha extends AbstractIlsDriver {
 
 		return false;
 	}	
+
+	/**
+	 * Check if this driver supports hyperholds grouping
+	 * @return bol
+	*/
+	public function supportsHyperholdsGrouping() {
+		return $this->isDisplayAddHoldGroupsEnabledInKoha();
+	}
+
+	/**
+	 * Check if displayAddHoldGroups system preference is enabled in Koha
+	 * @return bool
+	*/
+	private function isDisplayAddHoldGroupsEnabledInKoha() {
+		global $logger;
+
+		try {
+			$this->initDatabaseConnection();
+
+			if (!$this->dbConnection) {
+				$logger->log("Could not connect to Koha databse to check displayAddHoldGroups setting", Logger::LOG_ERROR);
+			}
+
+			$sql = "SELECT value FROM systempreferences WHERE variable = 'displayAddHoldGroups'";
+			$result = mysqli_query($this->dbConnection, $sql);
+
+			if ($result) {
+				$row = $result->fetch_assoc();
+				$result->close();
+
+				if ($row && isset($row['value'])) {
+					$value = $row['value'];
+					return ($value === '1' || strtolower($value) === 'on');
+				}
+			}
+
+			return false;
+		} catch (Exception $e) {
+			$logger->log("Error checking Koha displayAddHoldGroups setting: " . $e->getMessage(), Logger::LOG_ERROR);
+		}
+
+	}
 }
