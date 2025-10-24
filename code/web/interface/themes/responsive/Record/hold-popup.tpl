@@ -32,7 +32,7 @@
 										<li class="edition-item mb-2" style="display: none;">
 											<label>
 												<input type="checkbox" 
-													name="selectedEditions[]" 
+													name="hyperholdRecord[]" 
 													value="{$edition.id}" 
 													checked="checked"
 													class="edition-checkbox">
@@ -110,7 +110,7 @@
 						<div id="pickupLocationOptions" class="form-group">
 							<label class="control-label" for="pickupBranch">{translate text="I want to pick this up at" isPublicFacing=true} </label>
 							<div class="controls">
-								<select name="pickupBranch" id="pickupBranch" class="form-control" onchange="AspenDiscovery.Record.generateSublocationSelect();">
+								<select name="pickupBranch" id="pickupBranch hyperholdPickupBranch" class="form-control" onchange="AspenDiscovery.Record.generateSublocationSelect();">
 									{if count($pickupLocations) > 0}
 										{foreach from=$pickupLocations item=location}
 											{if is_string($location)}
