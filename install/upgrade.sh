@@ -13,10 +13,10 @@ fi
 
 echo "Starting upgrade of $1 to version $2"
 
-service crond stop
+systemctl stop crond 
 pkill -9 java
 
-yum -y update
+dnf -y update
 
 cd /usr/local/aspen-discovery
 git pull origin $2
@@ -41,7 +41,7 @@ read waitOver
 cd /usr/local/aspen-discovery/data_dir_setup
 /usr/local/aspen-discovery/data_dir_setup/update_solr_files.sh $1
 
-service mysqld restart
+systemctl restart mariadb 
 sleep 10
 apachectl graceful
 sleep 5
@@ -49,7 +49,7 @@ sleep 5
 cd /usr/local/aspen-discovery
 git gc
 
-service crond start
+systemctl start crond
 
 echo "Upgrade completed."
 
