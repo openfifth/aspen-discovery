@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/SolrConnector/Solr.php';
 
 abstract class SolrDataObject extends DataObject {
@@ -11,7 +11,7 @@ abstract class SolrDataObject extends DataObject {
 		return $this->updateDetailed($context );
 	}
 
-	private bool $updateStarted = false;
+	private $updateStarted = false;
 
 	function updateDetailed(string $context = '', $insertInSolr = true) : int|bool {
 		if ($this->updateStarted) {
@@ -100,8 +100,8 @@ abstract class SolrDataObject extends DataObject {
 		return true;
 	}
 
-	protected bool $_quickReindex = false;
-	private bool $saveStarted = false;
+	protected $_quickReindex = false;
+	private $saveStarted = false;
 
 	function saveToSolr($quick = false) : bool|AspenError {
 		if ($this->saveStarted) {

@@ -498,10 +498,10 @@ class Grouping_Record {
 	private array $_allActions = [];
 
 	/**
-	 * @param string $variationId The variation to get actions for
+	 * @param ?string $variationId The variation to get actions for
 	 * @return array
 	 */
-	public function getActions(string $variationId = ''): array {
+	public function getActions(?string $variationId = ''): array {
 		if (empty($variationId)) {
 			$variationId = 'any';
 		}

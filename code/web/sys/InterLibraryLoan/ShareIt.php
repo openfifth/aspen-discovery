@@ -79,6 +79,10 @@ class ShareIt {
 							break;
 						}
 					}
+					$pubYear = '';
+					if (is_array($curResult->pubYear)) {
+						$pubYear = implode(', ', $curResult->pubYear);
+					}
 
 					$curTitleInfo = [
 						'id' => $agControlId,
@@ -86,7 +90,7 @@ class ShareIt {
 						'title' => $curResult->title,
 						'author' => $curResult->author,
 						'format' => $format,
-						'pubDate' => implode(', ', $curResult->pubYear)
+						'pubDate' => $pubYear
 					];
 					$shareItTitles[] = $curTitleInfo;
 
@@ -119,21 +123,15 @@ class ShareIt {
 		return $results['searchLink'];
 	}
 
-	private function getShareItIndex(string $index): string {
-		switch ($index) {
-			case 'Author':
-				return 'author';
-			case 'Title':
-				return 'title';
-			case 'Subject':
-				return 'subject';
-			case 'StartOfTitle':
-				return 'title_begin_with';
-			case 'Series':
-				return 'title_series';
-			default:
-				return 'all_headings';
-		}
+	private function getShareItIndex(?string $index): string {
+		return match ($index) {
+			'Author' => 'author',
+			'Title' => 'title',
+			'Subject' => 'subject',
+			'StartOfTitle' => 'title_begin_with',
+			'Series' => 'title_series',
+			default => 'all_headings',
+		};
 	}
 
 	private function getLinkForControlId(CurlWrapper $searchRequestWrapper, string $searchUrl, string $agControlId) : string {
