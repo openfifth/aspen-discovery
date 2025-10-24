@@ -2178,12 +2178,27 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$timer->logTime("Assigned all information to show search results");
 
 		$user = UserAccount::getActiveUserObj();
-		$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
+		$accountProfile = $library->getAccountProfile();
+		$allowHoldsToBeGrouped = false;
 
-
-		if ($user) {
-			if ($user->getHomeLibrary() != null) {
-				$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
+		if ($accountProfile) {
+			$ils = $accountProfile ? $accountProfile->ils : '';
+			if ($ils == 'koha') {
+				try {
+					require_once ROOT_DIR . '/Drivers/Koha.php';
+					$kohaDriver = new Koha($accountProfile);
+					if ($kohaDriver->supportsHyperholdsGrouping()) {
+						$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
+						if ($user) {
+							if ($user->getHomeLibrary() != null) {
+								$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
+							}
+						}
+					}
+				} catch (Exception $e) {
+					global $logger;
+					$logger->log("Error checking Koha hyperhold grouping support: " . $e->getMessage(), Logger::LOG_ERROR);
+				}
 			}
 		}
 

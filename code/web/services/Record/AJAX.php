@@ -692,8 +692,25 @@ class Record_AJAX extends Action {
 					'success' => true,
 				];
 				if ($holdType != 'none') {
+					$accountProfile = $library->getAccountProfile();
+					$allowHoldsToBeGrouped = false;
 					$groupedWorkId = '';
-					if ($allowEditionSelection) {
+					if ($accountProfile) {
+						$ils = $accountProfile ? $accountProfile->ils : '';
+						if ($ils == 'koha') {
+							require_once ROOT_DIR . '/Drivers/Koha.php';
+							$kohaDriver = new Koha($accountProfile);
+							if ($kohaDriver->supportsHyperholdsGrouping()) {
+								$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
+								if ($user) {
+									if ($user->getHomeLibrary() != null) {
+										$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
+									}
+								}
+							}
+						}
+					}
+					if ($allowEditionSelection && $allowHoldsToBeGrouped) {
 						$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
 						if ($groupedWorkDriver) {
 							$groupedWorkId = $groupedWorkDriver->getPermanentId();
@@ -712,7 +729,7 @@ class Record_AJAX extends Action {
 							]) . "</button>";
 						}
 					} else {
-						if ($allowEditionSelection) {
+						if ($allowEditionSelection && $allowHoldsToBeGrouped) {
 							$results['modalButtons'] = "<button type='submit' name='submit' id=requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 								'text' => "Submit Hold Request",
 								'isPublicFacing' => true,
