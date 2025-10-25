@@ -2677,7 +2677,8 @@ class SirsiDynixROA extends HorizonAPI {
 		$sessionToken = $this->getStaffSessionToken();
 		if ($sessionToken) {
 			$webServiceURL = $this->getWebServiceURL();
-			if ($userID = $patron->unique_ils_id) {
+			$userID = $patron->unique_ils_id;
+			if (!empty($userID)) {
 				$updatePatronInfoParametersClass = $this->getWebServiceResponse('getPatronInfo', $this->getWebServiceURL() . '/user/patron/key/' . $userID, null, $sessionToken);
 				if ($updatePatronInfoParametersClass) {
 					$updatePatronInfoParameters = json_decode(json_encode($updatePatronInfoParametersClass), true);
