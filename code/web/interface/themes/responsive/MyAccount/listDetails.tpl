@@ -1,4 +1,5 @@
 {strip}
+	<div class="row">
     {if $showCovers == true}
 		<div class="coversColumn col-xs-3 col-sm-3 col-md-3 col-lg-2 text-center" aria-hidden="true" role="presentation">
 			<a href="/MyAccount/MyList/{$list->id}" class="alignleft listResultImage">
@@ -53,4 +54,5 @@
 	</div>
 
 </div>
+	</div>
 {/strip}
