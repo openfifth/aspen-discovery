@@ -84,6 +84,7 @@
                         {if count($lists) > 0}
 							<button id="deleteSelectedListsBtn" onclick="return AspenDiscovery.Account.deleteSelectedLists()" class="btn btn-sm btn-danger" disabled>{translate text="Delete Selected Lists" isPublicFacing=true}</button>
                         {/if}
+						<button class="btn btn-sm btn-default" onclick="return AspenDiscovery.Account.showCreateListGroupForm('-1')">{translate text="Create a New List Group" isPublicFacing=true}</button>
                         {if !empty($showConvertListsFromClassic)}
 							<a href="/MyAccount/ImportListsFromClassic" class="btn btn-sm btn-default">{translate text="Import From Old Catalog" isPublicFacing=true}</a>
                         {/if}
