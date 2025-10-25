@@ -20,6 +20,7 @@ class UserList extends DataObject {
 	public $nytListModified;
 	public $dateDeleted;
 	public $deletedBy;
+	public $listGroupId;
 
 	public function getUniquenessFields(): array {
 		return ['id'];
@@ -58,6 +59,7 @@ class UserList extends DataObject {
 			'searchable',
 			'displayListAuthor',
 			'deleteFromIndex',
+			'listGroupId'
 		];
 	}
 
