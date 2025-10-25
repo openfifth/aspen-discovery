@@ -99,7 +99,7 @@
 							var newGroupName = $('#addToListGroup-NewName').val().trim().toLowerCase();
 							var exists = false;
                             {foreach from=$userListGroups item="listGroup"}
-							if (newGroupName === "{$listGroup.title|escape:'js'}".toLowerCase()) {
+							if (newGroupName === "{$listGroup->title|escape:'js'}".toLowerCase()) {
 								exists = true;
 							}
                             {/foreach}
@@ -124,7 +124,7 @@
 						<select name="nestedWithinGroup" id="addToListGroup-Nested" class="form-control form-control-sm">
 							<option value="none" selected>{translate text='No, do not nest within another group' isPublicFacing=true}</option>
                             {foreach from=$userListGroups item="listGroup"}
-								<option value="{$listGroup.id}">{$listGroup.name|escape:"html"}</option>
+								<option value="{$listGroup->id}">{$listGroup->title|escape:"html"}</option>
                             {/foreach}
 						</select>
 					</div>
@@ -139,7 +139,7 @@
 				<div class="col-sm-9">
 					<select name="listGroup" id="addToList-listGroup" class="form-control form-control-sm">
                         {foreach from=$userListGroups item="listGroup"}
-							<option value="{$listGroup.id}" {if $userListGroupLastViewed === $listGroup.id}selected{/if}>{$listGroup.name|escape:"html"}</option>
+							<option value="{$listGroup->id}" {if $userListGroupLastViewed === $listGroup->id}selected{/if}>{$listGroup->title|escape:"html"}</option>
                         {/foreach}
 					</select>
 				</div>
