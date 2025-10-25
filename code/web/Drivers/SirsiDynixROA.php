@@ -1239,6 +1239,21 @@ class SirsiDynixROA extends HorizonAPI {
 					$curHold->pickupLocationName = $curPickupBranch->code;
 				}
 
+				//Check to see if the hold is coming from in or out of the libary's hold group
+				if (empty($holdGroups)) {
+					$inHoldGroup = true;
+				}else {
+					$inHoldGroup = false;
+					foreach ($holdGroups as $holdGroup) {
+						if (isset($hold->fields->selectedItem)) {
+							if (in_array($hold->fields->selectedItem->fields->currentLibrary->key, $holdGroup->getLocationCodes())) {
+								$inHoldGroup = true;
+								break;
+							}
+						}
+					}
+				}
+
 				$curHold->status = ucfirst(strtolower($hold->fields->status));
 				$isLocalIllHold = false;
 				$currentLocation = '';
@@ -1249,6 +1264,12 @@ class SirsiDynixROA extends HorizonAPI {
 					if (in_array(strtoupper($currentLocation), ['ILL', 'ILLSHIPPED', 'ILLPENDING', 'ILL_WYLD'])) {
 						$isLocalIllHold = true;
 						$curHold->status = str_replace('_', ' ', $currentLocation);
+					}elseif ($currentLocation == 'INTRANSIT') {
+						//treat the hold as local ILL if the item was shipped from outside the hold group
+						if (!$inHoldGroup) {
+							$isLocalIllHold = true;
+							$curHold->status = str_replace('_', ' ', $currentLocation);
+						}
 					}
 				}
 				if ($isLocalIllHold){
@@ -1268,6 +1289,9 @@ class SirsiDynixROA extends HorizonAPI {
 				$curHold->canFreeze = true;
 				$curHold->locationUpdateable = true;
 				if (in_array(strtoupper($curHold->status), ['TRANSIT', 'EXPIRED', 'INSHIPPING', 'ILL WYLD', 'ILLPENDING', 'ILLSHIPPED'])) {
+					$curHold->locationUpdateable = false;
+					$curHold->canFreeze = false;
+				}else if ($isLocalIllHold && !$inHoldGroup && strtoupper($curHold->status) == 'INTRANSIT') {
 					$curHold->locationUpdateable = false;
 					$curHold->canFreeze = false;
 				}
@@ -1313,18 +1337,6 @@ class SirsiDynixROA extends HorizonAPI {
 					$curHold->locationUpdateable = false;
 					if (!$library->allowCancellingAvailableHolds) {
 						$curHold->cancelable = false;
-					}
-					//Do not allow holds that are outside the active hold group from being canceled.
-					if (empty($holdGroups)) {
-						$inHoldGroup = true;
-					}else {
-						$inHoldGroup = false;
-						foreach ($holdGroups as $holdGroup) {
-							if (in_array($hold->fields->selectedItem->fields->currentLibrary->key, $holdGroup->getLocationCodes())) {
-								$inHoldGroup = true;
-								break;
-							}
-						}
 					}
 					if (!$inHoldGroup) {
 						$curHold->cancelable = false;
@@ -1388,13 +1400,21 @@ class SirsiDynixROA extends HorizonAPI {
 	 * @access  public
 	 */
 	function placeSirsiHold(User $patron, string $recordId, ?string $itemId, ?string $volume = null, ?string $pickupBranch = null, string $type = 'request', ?string $cancelIfNotFilledByDate = null, bool $forceVolumeHold = false, bool $useBooksByMail = false) : array {
-		//Get the session token for the user
 		$staffSessionToken = $this->getStaffSessionToken();
 		$sessionToken = $this->getSessionToken($patron);
-		if (!$staffSessionToken) {
+
+		// If the patron's session token is unavailable, check if staff can place holds on their behalf.
+		// This handles the Materials Requests case where staff is NOT masquerading.
+		if (empty($sessionToken) && !empty($staffSessionToken)) {
+			if (!UserAccount::isUserMasquerading() && UserAccount::userHasPermission('Place Holds For Materials Requests')) {
+				$sessionToken = $staffSessionToken;
+			}
+		}
+
+		if (empty($sessionToken)) {
 			$result['success'] = false;
 			$result['message'] = translate([
-				'text' => "Sorry, it does not look like you are logged in currently.  Please login and try again",
+				'text' => "Sorry, it does not look like you are logged in currently. Please log in and try again.",
 				'isPublicFacing' => true,
 			]);
 
@@ -1403,7 +1423,7 @@ class SirsiDynixROA extends HorizonAPI {
 				'isPublicFacing' => true,
 			]);
 			$result['api']['message'] = translate([
-				'text' => 'Sorry, it does not look like you are logged in currently.  Please login and try again',
+				'text' => 'Sorry, it does not look like you are logged in currently. Please log in and try again.',
 				'isPublicFacing' => true,
 			]);
 			return $result;

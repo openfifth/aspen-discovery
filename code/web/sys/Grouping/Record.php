@@ -46,7 +46,7 @@ class Grouping_Record {
 	public string $_class = '';
 	public array $_actions = [];
 	/** @var Grouping_Item[] */
-	private array $_items;
+	private array $_items = [];
 
 	/** @var  IlsVolumeInfo[] */
 	private array $_volumeData;
@@ -417,11 +417,9 @@ class Grouping_Record {
 	 * @return ?Grouping_Item
 	 */
 	public function getItemById(string $itemId = ''): ?Grouping_Item {
-		if ($this->_items != null) {
-			foreach ($this->_items as $item) {
-				if ($item->itemId == $itemId) {
-					return $item;
-				}
+		foreach ($this->_items as $item) {
+			if ($item->itemId == $itemId) {
+				return $item;
 			}
 		}
 		return null;
@@ -440,22 +438,20 @@ class Grouping_Record {
 			if (!isset($this->_itemSummary[$variationId])) {
 				$this->_itemSummary[$variationId] = [];
 			}
-			if ($this->_items != null) {
-				foreach ($this->_items as $item) {
-					if (!$item->isVirtual && ($variationId == 'any' || $variationId == $item->variationId)) {
-						$key = $item->getSummaryKey();
-						$itemSummary = $item->getSummary();
-						//Get the correct variation
-						$itemSummary['format'] = $this->getFormat();
-						foreach ($this->recordVariations as $variationLabel => $recordVariation) {
-							if ($recordVariation->databaseId == $item->variationId) {
-								$itemSummary['format'] = $variationLabel;
-								break;
-							}
+			foreach ($this->_items as $item) {
+				if (!$item->isVirtual && ($variationId == 'any' || $variationId == $item->variationId)) {
+					$key = $item->getSummaryKey();
+					$itemSummary = $item->getSummary();
+					//Get the correct variation
+					$itemSummary['format'] = $this->getFormat();
+					foreach ($this->recordVariations as $variationLabel => $recordVariation) {
+						if ($recordVariation->databaseId == $item->variationId) {
+							$itemSummary['format'] = $variationLabel;
+							break;
 						}
-						$this->addItemDetails($variationId,$key . $item->itemId, $itemSummary);
-						$this->addItemSummary($variationId, $key, $itemSummary, $item->groupedStatus);
 					}
+					$this->addItemDetails($variationId,$key . $item->itemId, $itemSummary);
+					$this->addItemSummary($variationId, $key, $itemSummary, $item->groupedStatus);
 				}
 			}
 			$this->sortItemDetails($variationId);
@@ -502,10 +498,10 @@ class Grouping_Record {
 	private array $_allActions = [];
 
 	/**
-	 * @param string $variationId The variation to get actions for
+	 * @param ?string $variationId The variation to get actions for
 	 * @return array
 	 */
-	public function getActions(string $variationId = ''): array {
+	public function getActions(?string $variationId = ''): array {
 		if (empty($variationId)) {
 			$variationId = 'any';
 		}
@@ -522,12 +518,10 @@ class Grouping_Record {
 				$actionsToReturn = [];
 			}
 			if (empty($actionsToReturn) && $this->getDriver() != null) {
-				if ($this->_items != null) {
-					foreach ($this->_items as $item) {
-						if ($item->variationId == $variationId || $variationId == 'any') {
-							$item->setActions($this->getDriver()->getItemActions($item));
-							$actionsToReturn = array_merge($actionsToReturn, $item->getActions());
-						}
+				foreach ($this->_items as $item) {
+					if ($item->variationId == $variationId || $variationId == 'any') {
+						$item->setActions($this->getDriver()->getItemActions($item));
+						$actionsToReturn = array_merge($actionsToReturn, $item->getActions());
 					}
 				}
 			}
@@ -641,9 +635,9 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @return null|Grouping_Item[]
+	 * @return Grouping_Item[]
 	 */
-	public function getItems() : ?array {
+	public function getItems() : array {
 		return $this->_items;
 	}
 
