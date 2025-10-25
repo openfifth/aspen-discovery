@@ -1589,8 +1589,8 @@ class MyAccount_AJAX extends JSON_Action {
 						$listGroup = new UserListGroup();
 						$listGroup->title = $_REQUEST['addToListGroupNewName'];
 						$listGroup->userId = $user->id;
-						if ($addToListGroupNested != 'none' && is_numeric($addToListGroupNested)) {
-							$listGroup->parentId = intval($addToListGroupNested);
+						if ($addToListGroupNested != 'none') {
+							$listGroup->parentGroupId = $addToListGroupNested;
 						}
 						$listGroup->insert();
 						$list->listGroupId = $listGroup->id;
