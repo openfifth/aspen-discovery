@@ -52,16 +52,49 @@ class Lists extends MyAccount {
 
 		$interface->assign('pageLinks', $pager->getLinks());
 
-		$listGroupLastViewed = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
-		$interface->assign('listGroupLastViewed', $listGroupLastViewed);
+		$activeListGroup = [];
+		$groupId = null;
+		if (isset($_REQUEST['groupId'])) {
+			$groupId = $_REQUEST['groupId'];
+			if ($groupId == -1) {
+				$activeListGroup = UserAccount::getActiveUserObj()->getUnassignedListsForListGroups();
+				$activeListGroupDetails = new UserListGroup();
+				$activeListGroupDetails->title = 'Unassigned Lists';
+				$activeListGroupTitle = 'Unassigned Lists';
+			} else {
+				$listGroup = new UserListGroup();
+				$listGroup->id = $groupId;
+				$listGroup->userId = UserAccount::getActiveUserId();
+				if ($listGroup->find(true)) {
+					$activeListGroupDetails = $listGroup;
+					$userList = new UserList();
+					$userList->listGroupId = $listGroup->id;
+					$userList->find();
+					while ($userList->fetch()) {
+						$activeListGroup[] = clone $userList;
+					}
 
-		$listGroups = [];
-		$listGroup = new UserListGroup();
-		$listGroup->userId = UserAccount::getActiveUserId();
-		$listGroup->find();
-		while ($listGroup->fetch()) {
-			$listGroups[] = clone $listGroup;
+					$activeListGroupTitle = UserListGroup::getFullGroupTitle($listGroup);
+				} else {
+					$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
+					$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+					$activeListGroupTitle = UserListGroup::getFullGroupTitle(UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj()));
+
+				}
+			}
+		} else {
+			$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
+			$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+			$activeListGroupTitle = UserListGroup::getFullGroupTitle(UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj()));
 		}
+
+		$interface->assign('groupId', $groupId);
+		$interface->assign('activeListGroup', $activeListGroup);
+		$interface->assign('activeListGroupDetails', $activeListGroupDetails);
+		$interface->assign('activeListGroupTitle', $activeListGroupTitle);
+
+		$listGroup = new UserListGroup();
+		$listGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		$interface->assign('listGroups', $listGroups);
 
 		$this->display('../MyAccount/lists.tpl', 'My Lists');

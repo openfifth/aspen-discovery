@@ -76,6 +76,17 @@ class UserListGroup extends DataObject {
 		}
 	}
 
+	public static function getLastViewedGroupDetailsForUser(user $user): ?UserListGroup {
+		$lastViewed = new UserListGroup();
+		$lastViewed->userId = $user->id;
+		$lastViewed->id = $user->lastListGroupViewed;
+		if ($lastViewed->find(true)) {
+			return $lastViewed;
+		} else {
+			return null;
+		}
+	}
+
 	public static function getLastAddedGroupForUser(user $user): ?UserListGroup {
 		$lastAdded = new UserListGroup();
 		$lastAdded->userId = $user->id;
@@ -95,17 +106,62 @@ class UserListGroup extends DataObject {
 		return $userList->count();
 	}
 
-	function getLists() {
-		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-		$userList = new UserList();
-		$userList->listGroupId = $this->id;
-		$userList->orderBy('title ASC');
-		$userList->find();
-		$lists = [];
-		while ($userList->fetch()) {
-			$lists[] = clone $userList;
+	function getListGroups(user $user) {
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+
+		$group = new UserListGroup();
+		$group->userId = $user->id;
+		$group->orderBy('title DESC');
+		$allGroups = [];
+		if ($group->find()) {
+			while ($group->fetch()) {
+				$allGroups[$group->id] = clone($group);
+			}
 		}
-		return $lists;
+
+		$groups = [];
+		foreach ($allGroups as $id => $grp) {
+			$titleParts = [];
+			$current = $grp;
+			$level = 0;
+			while ($current->parentGroupId && isset($allGroups[$current->parentGroupId]) && $level < 3) {
+				array_unshift($titleParts, $allGroups[$current->parentGroupId]->title);
+				$current = $allGroups[$current->parentGroupId];
+				$level++;
+			}
+			$titleParts[] = $grp->title;
+			$grp->title = implode(' » ', $titleParts);
+			$groups[] = $grp;
+		}
+
+		return $groups;
+	}
+
+	public static function getFullGroupTitle(UserListGroup $group): string {
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+
+		$titleParts = [];
+		$current = $group;
+		$level = 0;
+
+		// Load all parent groups for the user
+		$allGroups = [];
+		$parent = new UserListGroup();
+		$parent->userId = $group->userId;
+		$parent->find();
+		while ($parent->fetch()) {
+			$allGroups[$parent->id] = clone($parent);
+		}
+
+		// Build title chain
+		while ($current->parentGroupId && isset($allGroups[$current->parentGroupId]) && $level < 3) {
+			array_unshift($titleParts, $allGroups[$current->parentGroupId]->title);
+			$current = $allGroups[$current->parentGroupId];
+			$level++;
+		}
+		$titleParts[] = $group->title;
+
+		return implode(' » ', $titleParts);
 	}
 
 	public function getUniquenessFields(): array {

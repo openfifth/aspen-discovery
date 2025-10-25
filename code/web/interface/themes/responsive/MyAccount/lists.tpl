@@ -1,21 +1,41 @@
 {strip}
 	<h1>{translate text="Your Lists" isPublicFacing=true}</h1>
 	{if !empty($listGroups)}
-		<div class="row" style="padding-bottom:1em;">
+		<div class="row">
 			<div class="form-group">
-				<div class="col-xs-12">
+				<div class="col-xs-12" style="padding-bottom:.5em;">
 					<select id="listGroupSelect" name="listGroupSelect" class="form-control" onchange="return AspenDiscovery.Account.loadListGroupData();">
 	                    {foreach from=$listGroups item=listGroup}
-							<option value="{$listGroup->id}" {if $inListGroup && $listGroup->id == $userList->listGroupId}selected{/if}>{$listGroup->title|escape:"html"}</option>
+							<option value="{$listGroup->id}" {if $listGroup->id == $groupId}selected{/if}>{$listGroup->title|escape:"html"}</option>
 	                    {/foreach}
+						<option value="-1"{if $groupId == -1} selected="selected"{/if}>{translate text="Unassigned Lists" isPublicFacing=true}</option>
 					</select>
+				</div>
+			</div>
+		</div>
+		<h2 id="activeListGroupTitle">{$activeListGroupDetails->title}</h2>
+	    <div class="row">
+	        {if $groupId != -1}
+			<div class="col-xs-12">
+				<div class="btn-toolbar" role="toolbar" style="padding-bottom:.5em;">
+					<div class="btn-group btn-group-sm">
+						<button class="btn btn-default" onclick="return AspenDiscovery.Account.showEditListGroupNameForm('{$groupId}')">{translate text="Rename List Group" isPublicFacing=true}</button>
+						<button class="btn btn-default" onclick="return AspenDiscovery.Account.showEditListGroupParentForm('{$groupId}', '{$activeListGroupDetails->parentGroupId}')">{translate text="Move List Group" isPublicFacing=true}</button>
+						<button class="btn btn-warning" onclick="return AspenDiscovery.Account.deleteGroupListAction('{$groupId}')">{translate text="Delete List Group" isPublicFacing=true}</button>
+					</div>
+				</div>
+			</div>
+	        {/if}
+			<div class="col-xs-12">
+				<div style="padding-bottom:1em;">
+					<button class="btn btn-default" onclick="return AspenDiscovery.Account.showCreateListForm()">{translate text="Create a New List Group" isPublicFacing=true}</button>
 				</div>
 			</div>
 		</div>
 		<div class="row">
 			<div class="col-xs-12">
                 <div id="listGroupListData">
-	                {foreach from=$listGroupLastViewed item=list key="resultIndex"}
+	                {foreach from=$activeListGroup item=list key="resultIndex"}
                         {include file='MyAccount/listDetails.tpl' list=$list}
                     {/foreach}
                 </div>

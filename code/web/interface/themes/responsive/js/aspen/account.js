@@ -2956,14 +2956,67 @@ AspenDiscovery.Account = (function () {
 		},
 		loadListGroupData: function () {
 			var groupId = $('#listGroupSelect').val();
-			var url = Globals.path + "/MyAccount/AJAX?method=getListGroup&groupId=" + groupId;
+			var url = new URL(window.location.href);
+			url.searchParams.set('groupId', groupId);
+			window.location.href = url.toString();
+		},
+		deleteGroupListAction: function (groupId) {
+			const url = Globals.path + '/MyAccount/AJAX?method=getDeleteListForm';
 			$.getJSON(url, function (data) {
-				if (data.success) {
-					$("#listGroupListData").html(data.lists);
-				} else {
-					$("#listGroupListData").html(data.message);
-				}
+				const {title, modalBody, modalButtons} = data;
+				AspenDiscovery.showMessageWithButtons(title, modalBody, modalButtons, false, '', false, false, true);
 			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+		doDeleteGroupList: function () {
+			return false;
+		},
+		showEditListGroupParentForm: function (groupId, parentId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupParentForm&groupId=" + groupId + "&parentId=" + parentId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		editListGroupParentForm: function () {
+			var url = Globals.path + '/MyAccount/AJAX?method=editListGroupParent';
+			var newData = new FormData($("#moveListGroupForm")[0]);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: newData,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
+			return false;
+		},
+		showEditListGroupNameForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupNameForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		editListGroupNameForm: function () {
+			var url = Globals.path + '/MyAccount/AJAX?method=editListGroupName';
+			var newData = new FormData($("#renameListGroupForm")[0]);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: newData,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
 			return false;
 		}
 	};

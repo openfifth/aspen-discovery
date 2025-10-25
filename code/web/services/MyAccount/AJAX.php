@@ -1774,14 +1774,8 @@ class MyAccount_AJAX extends JSON_Action {
 		$interface->assign('validListNames', $validListNames);
 
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
-		$userListGroups = [];
 		$listGroup = new UserListGroup();
-		$listGroup->userId = UserAccount::getActiveUserId();
-		$listGroup->orderBy('title');
-		$listGroup->find();
-		while ($listGroup->fetch()) {
-			$userListGroups[] = clone $listGroup;
-		}
+		$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		$interface->assign('userListGroups', $userListGroups);
 
 		$user = UserAccount::getActiveUserObj();
@@ -10677,45 +10671,178 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function getListGroup() {
-		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+	/** @noinspection PhpUnused */
+	function getEditListGroupParentForm(): array {
+		global $interface;
+		if (isset($_REQUEST['groupId'])) {
+			$groupId = $_REQUEST['groupId'];
+			$parentId = $_REQUEST['parentId'];
+			$listGroups = [];
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$listGroups = $group->getListGroups(UserAccount::getActiveUserObj());
+			$interface->assign('groupId', $groupId);
+			$interface->assign('parentId', $parentId);
+			$interface->assign('listGroups', $listGroups);
+			return [
+				'title' => translate([
+					'text' => 'Move List Group',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => $interface->fetch('MyAccount/editListGroupParent.tpl'),
+				'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#moveListGroupForm\").submit()'>" . translate([
+						'text' => 'Save',
+						'isPublicFacing' => true,
+					]) . "</button>",
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'You must provide the id of the group to modify',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function editListGroupParent(): array {
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Something went wrong.',
+			'title' => translate([
+				'text' => 'Moving List Group',
 				'isPublicFacing' => true,
 			]),
-			'lists' => '',
+			'message' => translate([
+				'text' => 'Sorry your list group was unabled to be moved.',
+				'isPublicFacing' => true,
+			]),
 		];
 
-		if (isset($_REQUEST['groupId']) && ctype_digit($_REQUEST['groupId'])) {
-			global $interface;
-			$user = UserAccount::getActiveUserObj();
-			$groupId = $_REQUEST['groupId'];
-			$listGroup = new UserListGroup();
-			$listGroup->id = $groupId;
-			$listGroup->userId = UserAccount::getActiveUserId();
-			if ($listGroup->find(true)) {
-				$lists = $listGroup->getLists();
-				$result['success'] = true;
-				$user->lastListGroupViewed = $groupId;
-				$user->update();
-				$count = 1;
-				foreach ($lists as $list) {
-					$interface->assign('resultIndex', $count);
-					$interface->assign('list', $list);
-					$interface->assign('showCovers', true);
-					$result['lists'] .= $interface->fetch('MyAccount/listDetails.tpl');
-					$count++;
+		$groupId = $_REQUEST['groupId'];
+		$listGroupMoveId = $_REQUEST['listGroupMove'];
+		if ($groupId && $listGroupMoveId) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$group->id = $groupId;
+			$group->userId = UserAccount::getActiveUserId();
+			if ($group->find(true)) {
+				$group->parentGroupId = $listGroupMoveId;
+				if ($group->update()) {
+					$result = [
+						'success' => true,
+						'title' => translate([
+							'text' => 'Moving List Group',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'Your list group was successfully moved.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$result['message'] = translate([
+						'text' => 'The list group could not be updated.',
+						'isPublicFacing' => true,
+					]);
 				}
 			} else {
 				$result['message'] = translate([
-					'text' => 'List group not found.',
+					'text' => 'The specified group could not be found.',
 					'isPublicFacing' => true,
 				]);
 			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'You must provide the id of the group to modify and the new parent group.',
+				'isPublicFacing' => true,
+			]);
 		}
 
 		return $result;
 	}
+
+	/** @noinspection PhpUnused */
+	function getEditListGroupNameForm(): array {
+		global $interface;
+		if (isset($_REQUEST['groupId'])) {
+			$groupId = $_REQUEST['groupId'];
+			$interface->assign('groupId', $groupId);
+			return [
+				'title' => translate([
+					'text' => 'Rename List Group',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => $interface->fetch('MyAccount/editListGroupName.tpl'),
+				'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#renameListGroupForm\").submit()'>" . translate([
+						'text' => 'Save',
+						'isPublicFacing' => true,
+					]) . "</button>",
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'You must provide the id of the group to modify',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function editListGroupName(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Rename List Group',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Sorry your list group was unabled to be renamed.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$groupId = $_REQUEST['groupId'];
+		$newName = $_REQUEST['listGroupNameNew'];
+		if ($groupId && $newName) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$group->id = $groupId;
+			$group->userId = UserAccount::getActiveUserId();
+			if ($group->find(true)) {
+				$group->title = $newName;
+				if ($group->update()) {
+					$result = [
+						'success' => true,
+						'message' => translate([
+							'text' => 'Your list group was successfully renamed.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$result['message'] = translate([
+						'text' => 'The list group could not be updated.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The specified group could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'You must provide the id of the group to modify and a new title.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+
 }
