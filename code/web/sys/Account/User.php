@@ -77,6 +77,9 @@ class User extends DataObject {
 	public $holdPromptForEdition;
 
 	public $lastListUsed;
+	public $lastListGroupAdded;
+	public $lastListGroupViewed;
+
 	public $browseAddToHome;
 
 	public $lastLoginValidation;
@@ -5756,6 +5759,8 @@ class User extends DataObject {
 		unset($return['myLocation2Id']);
 		unset($return['pickupLocationId']);
 		unset($return['lastListUsed']);
+		unset($return['lastListGroupAdded']);
+		unset($return['lastListGroupViewed']);
 		unset($return['twoFactorAuthSettingId']);
 		return $return;
 	}
