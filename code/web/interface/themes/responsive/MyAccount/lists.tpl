@@ -28,17 +28,21 @@
 	        {/if}
 			<div class="col-xs-12">
 				<div style="padding-bottom:1em;">
-					<button class="btn btn-default" onclick="return AspenDiscovery.Account.showCreateListForm()">{translate text="Create a New List Group" isPublicFacing=true}</button>
+					<button class="btn btn-default" onclick="return AspenDiscovery.Account.showCreateListGroupForm('{$groupId}')">{translate text="Create a New List Group" isPublicFacing=true}</button>
 				</div>
 			</div>
 		</div>
 		<div class="row">
 			<div class="col-xs-12">
-                <div id="listGroupListData">
+				{if empty($activeListGroup)}
+					<div class="alert alert-info">
+						{translate text="There are no lists in this group." isPublicFacing=true}
+					</div>
+				{else}
 	                {foreach from=$activeListGroup item=list key="resultIndex"}
                         {include file='MyAccount/listDetails.tpl' list=$list}
                     {/foreach}
-                </div>
+				{/if}
 			</div>
 		</div>
 	{else}
