@@ -1780,17 +1780,13 @@ class MyAccount_AJAX extends JSON_Action {
 		$listGroup->orderBy('title');
 		$listGroup->find();
 		while ($listGroup->fetch()) {
-			$userListGroups[] = clone($listGroup);
+			$userListGroups[] = clone $listGroup;
 		}
 		$interface->assign('userListGroups', $userListGroups);
 
-		$userListGroupLastViewed = -1;
-		$userListGroupLastAdded = -1;
-		if ((count($userListGroups)) > 0) {
-			$user = UserAccount::getActiveUserObj();
-			$userListGroupLastAdded = $user->lastListGroupAdded;
-			$userListGroupLastViewed = $user->lastListGroupViewed;
-		}
+		$user = UserAccount::getActiveUserObj();
+		$userListGroupLastAdded = $user->lastListGroupAdded;
+		$userListGroupLastViewed = $user->lastListGroupViewed;
 		$interface->assign('userListGroupLastAdded', $userListGroupLastAdded);
 		$interface->assign('userListGroupLastViewed', $userListGroupLastViewed);
 
@@ -10679,5 +10675,47 @@ class MyAccount_AJAX extends JSON_Action {
 					'isAdminFacing' => 'true',
 				]) . "</button>",
 		];
+	}
+
+	function getListGroup() {
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$result = [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Something went wrong.',
+				'isPublicFacing' => true,
+			]),
+			'lists' => '',
+		];
+
+		if (isset($_REQUEST['groupId']) && ctype_digit($_REQUEST['groupId'])) {
+			global $interface;
+			$user = UserAccount::getActiveUserObj();
+			$groupId = $_REQUEST['groupId'];
+			$listGroup = new UserListGroup();
+			$listGroup->id = $groupId;
+			$listGroup->userId = UserAccount::getActiveUserId();
+			if ($listGroup->find(true)) {
+				$lists = $listGroup->getLists();
+				$result['success'] = true;
+				$user->lastListGroupViewed = $groupId;
+				$user->update();
+				$count = 1;
+				foreach ($lists as $list) {
+					$interface->assign('resultIndex', $count);
+					$interface->assign('list', $list);
+					$interface->assign('showCovers', true);
+					$result['lists'] .= $interface->fetch('MyAccount/listDetails.tpl');
+					$count++;
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'List group not found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		}
+
+		return $result;
 	}
 }

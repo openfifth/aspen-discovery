@@ -2953,6 +2953,18 @@ AspenDiscovery.Account = (function () {
 			} else {
 				$('#selectedEditionOptionsContainer').hide();
 			}
+		},
+		loadListGroupData: function () {
+			var groupId = $('#listGroupSelect').val();
+			var url = Globals.path + "/MyAccount/AJAX?method=getListGroup&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					$("#listGroupListData").html(data.lists);
+				} else {
+					$("#listGroupListData").html(data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
 		}
 	};
 }(AspenDiscovery.Account || {}));

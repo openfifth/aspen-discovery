@@ -58,12 +58,54 @@ class UserListGroup extends DataObject {
 		return self::$_objectStructure[$context];
 	}
 
+	public static function getLastViewedGroupForUser(user $user): ?array {
+		$lastViewed = new UserListGroup();
+		$lastViewed->userId = $user->id;
+		$lastViewed->id = $user->lastListGroupViewed;
+		if ($lastViewed->find(true)) {
+			$lists = [];
+			$listGroup = new UserList();
+			$listGroup->listGroupId = $lastViewed->id;
+			$listGroup->find();
+			while ($listGroup->fetch()) {
+				$lists[] = clone $listGroup;
+			}
+			return $lists;
+		} else {
+			return null;
+		}
+	}
+
+	public static function getLastAddedGroupForUser(user $user): ?UserListGroup {
+		$lastAdded = new UserListGroup();
+		$lastAdded->userId = $user->id;
+		$lastAdded->id = $user->lastListGroupAdded;
+		if ($lastAdded->find(true)) {
+			return $lastAdded;
+		} else {
+			return null;
+		}
+	}
+
 	function numValidLists() {
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();
 		$userList->listGroupId = $this->id;
 
 		return $userList->count();
+	}
+
+	function getLists() {
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$userList = new UserList();
+		$userList->listGroupId = $this->id;
+		$userList->orderBy('title ASC');
+		$userList->find();
+		$lists = [];
+		while ($userList->fetch()) {
+			$lists[] = clone $userList;
+		}
+		return $lists;
 	}
 
 	public function getUniquenessFields(): array {

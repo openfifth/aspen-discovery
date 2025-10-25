@@ -52,6 +52,9 @@ class Lists extends MyAccount {
 
 		$interface->assign('pageLinks', $pager->getLinks());
 
+		$listGroupLastViewed = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
+		$interface->assign('listGroupLastViewed', $listGroupLastViewed);
+
 		$listGroups = [];
 		$listGroup = new UserListGroup();
 		$listGroup->userId = UserAccount::getActiveUserId();
