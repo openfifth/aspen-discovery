@@ -244,6 +244,33 @@ class MyAccount_MyList extends MyAccount {
 		}
 		$interface->assign('activeFilters', $activeFilters);
 
+		$inListGroup = false;
+		if ($list->listGroupId > 0) {
+			$inListGroup = true;
+		}
+		$interface->assign('inListGroup', $inListGroup);
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$listGroupInfo = null;
+		if ($inListGroup) {
+			$listGroup = new UserListGroup();
+			$listGroup->id = $list->listGroupId;
+			if ($listGroup->find(true)) {
+				$listGroupInfo = clone $listGroup;
+			}
+		}
+		$interface->assign('listGroupInfo', $listGroupInfo);
+
+		$userListGroups = [];
+		$listGroup = new UserListGroup();
+		$listGroup->userId = $list->user_id;
+		$listGroup->find();
+		while ($listGroup->fetch()) {
+			$userListGroups[] = clone $listGroup;
+		}
+		$interface->assign('userListGroups', $userListGroups);
+
+
 		$this->buildListForDisplay($list, $userCanEdit, $activeSort, $defaultPageSize, $activeFilters);
 
 		if (UserAccount::isLoggedIn()) {

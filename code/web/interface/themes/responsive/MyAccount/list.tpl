@@ -23,6 +23,13 @@
 				<div>
 					<input type="hidden" name="myListActionHead" id="myListActionHead" class="form">
 					<h1 id="listTitle">{$userList->title|escape:"html"}</h1>
+					{if $inListGroup}
+						<div id="listGroup">
+							<p class="text-muted">
+								<small>{translate text='Part of the list group: %1%' 1=$listGroupName isPublicFacing=true}</small>
+							</p>
+						</div>
+					{/if}
 					{if !empty($notes)}
 						<div id="listNotes">
 						{foreach from=$notes item="note"}
@@ -83,6 +90,22 @@
 										</div>
 									</div>
 								</div>
+								{if !empty($userListGroups)}
+									<div class="form-group">
+										<label for="listGroupSelect" class="col-sm-3 control-label">{translate text="List Group" isPublicFacing=true}</label>
+										<div class="col-sm-9">
+											<select id="listGroupSelect" name="listGroupSelect" class="form-control">
+												<option value="0">{translate text="No Group" isPublicFacing=true}</option>
+												{foreach from=$userListGroups item=listGroup}
+													<option value="{$listGroup->id}" {if $inListGroup && $listGroup->id == $userList->listGroupId}selected{/if}>{$listGroup->name|escape:"html"}</option>
+												{/foreach}
+											</select>
+											<div class="form-text text-muted">
+												<small>{translate text="Select a group to associate this list with. List groups can be used to organize multiple lists and set permissions for viewing and editing." isPublicFacing=true}</small>
+											</div>
+										</div>
+									</div>
+								{/if}
 								{if in_array('Include Lists In Search Results', $userPermissions)}
 									<div class="form-group" id="searchableRow" {if $userList->public == 0}style="display: none"{/if}>
 										<label for="searchable" class="col-sm-3 control-label">{translate text="Show in search results" isPublicFacing=true}</label>
