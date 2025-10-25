@@ -78,6 +78,6 @@ class UserListGroup extends DataObject {
 		];
 	}
 	public function supportsSoftDelete(): bool {
-		return true;
+		return false;
 	}
 }
