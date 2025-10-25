@@ -36,7 +36,7 @@ function getUpdates25_11_00(): array {
 			'description' => 'Add column to track last viewed list group for users',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE user ADD COLUMN lastGroupListViewed INT(11) DEFAULT NULL',
+				'ALTER TABLE user ADD COLUMN lastListGroupViewed INT(11) DEFAULT NULL',
 			]
 		],
 		//add_last_used_group_list_view_to_user
@@ -45,7 +45,7 @@ function getUpdates25_11_00(): array {
 			'description' => 'Add column to track last added list group for users',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE user ADD COLUMN lastGroupListAdded INT(11) DEFAULT NULL',
+				'ALTER TABLE user ADD COLUMN lastListGroupAdded INT(11) DEFAULT NULL',
 			]
 		],
 		//add_last_used_group_list_added_to_user
@@ -54,7 +54,7 @@ function getUpdates25_11_00(): array {
 			'description' => 'Add column to track group list id for user lists',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE user_list ADD COLUMN groupListId INT(11) DEFAULT -1',
+				'ALTER TABLE user_list ADD COLUMN listGroupId INT(11) DEFAULT -1',
 			]
 		],
 		//add_group_list_id_to_user_list
