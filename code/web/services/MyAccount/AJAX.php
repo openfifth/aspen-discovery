@@ -10844,5 +10844,61 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
+	function getCreateListGroupForm(): array {
+		global $interface;
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$listGroup = new UserListGroup();
+		$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
+		$interface->assign('userListGroups', $userListGroups);
+		$groupId = null;
+		if ($_REQUEST['groupId']) {
+			$groupId = $_REQUEST['groupId'];
+		}
+		$interface->assign('groupId', $groupId);
+		return [
+			'title' => translate([
+				'text' => 'Create New List Group',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/createListGroupForm.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.createListGroup()'>" . translate([
+					'text' => 'Create List Group',
+					'isPublicFacing' => true,
+				]) . "</button>",
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function createListGroup(): array {
+		$result = [];
+		if (UserAccount::isLoggedIn()) {
+			$user = UserAccount::getLoggedInUser();
+			$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
+			if (strlen(trim($title)) == 0) {
+				$result['success'] = "false";
+				$result['message'] = "You must provide a title for the list";
+			} else {
+				$parentId = $_REQUEST['nestedGroupId'] ?? -1;
+				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+				$listGroup = new UserListGroup();
+				$listGroup->userId = $user->id;
+				$listGroup->title = $title;
+				$listGroup->parentGroupId = $parentId;
+				if ($listGroup->insert()) {
+					$result['success'] = "true";
+					$result['message'] = "List group $listGroup->title created successfully";
+				} else {
+					$result['success'] = "false";
+					$result['message'] = "Could not create list group";
+				}
+			}
+		} else {
+			$result['success'] = "false";
+			$result['message'] = "You must be logged in to create a list";
+		}
+
+		return $result;
+	}
 
 }

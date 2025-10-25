@@ -3018,6 +3018,32 @@ AspenDiscovery.Account = (function () {
 				processData: false
 			});
 			return false;
+		},
+		showCreateListGroupForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getCreateListGroupForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		createListGroup: function () {
+			var groupName = $('#newListGroupName').val();
+			var nestedGroupId = $('#newListGroupNesting').val();
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				'method': 'createListGroup',
+				title: groupName,
+				nestedGroupId: nestedGroupId
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.showMessage("Added Successfully", data.message, true, true);
+				} else {
+					AspenDiscovery.showMessage("Error", data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
 		}
 	};
 }(AspenDiscovery.Account || {}));
