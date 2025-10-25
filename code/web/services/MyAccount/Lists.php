@@ -1,6 +1,7 @@
 <?php
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 
 class Lists extends MyAccount {
 
@@ -50,6 +51,15 @@ class Lists extends MyAccount {
 		$pager = new Pager($options);
 
 		$interface->assign('pageLinks', $pager->getLinks());
+
+		$listGroups = [];
+		$listGroup = new UserListGroup();
+		$listGroup->userId = UserAccount::getActiveUserId();
+		$listGroup->find();
+		while ($listGroup->fetch()) {
+			$listGroups[] = clone $listGroup;
+		}
+		$interface->assign('listGroups', $listGroups);
 
 		$this->display('../MyAccount/lists.tpl', 'My Lists');
 
