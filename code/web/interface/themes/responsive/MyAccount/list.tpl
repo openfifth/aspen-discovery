@@ -26,7 +26,7 @@
 					{if $inListGroup}
 						<div id="listGroup">
 							<p class="text-muted">
-								<small>{translate text='Part of the list group: %1%' 1=$listGroupName isPublicFacing=true}</small>
+								<small>{translate text='Part of the list group: %1%' 1=$listGroupInfo->title isPublicFacing=true}</small>
 							</p>
 						</div>
 					{/if}
@@ -97,7 +97,7 @@
 											<select id="listGroupSelect" name="listGroupSelect" class="form-control">
 												<option value="0">{translate text="No Group" isPublicFacing=true}</option>
 												{foreach from=$userListGroups item=listGroup}
-													<option value="{$listGroup->id}" {if $inListGroup && $listGroup->id == $userList->listGroupId}selected{/if}>{$listGroup->name|escape:"html"}</option>
+													<option value="{$listGroup->id}" {if $inListGroup && $listGroup->id == $userList->listGroupId}selected{/if}>{$listGroup->title|escape:"html"}</option>
 												{/foreach}
 											</select>
 											<div class="form-text text-muted">
