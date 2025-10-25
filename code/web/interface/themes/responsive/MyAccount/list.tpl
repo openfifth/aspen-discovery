@@ -95,13 +95,13 @@
 										<label for="listGroupSelect" class="col-sm-3 control-label">{translate text="List Group" isPublicFacing=true}</label>
 										<div class="col-sm-9">
 											<select id="listGroupSelect" name="listGroupSelect" class="form-control">
-												<option value="0">{translate text="No Group" isPublicFacing=true}</option>
+												<option value="-1">{translate text="No Group" isPublicFacing=true}</option>
 												{foreach from=$userListGroups item=listGroup}
 													<option value="{$listGroup->id}" {if $inListGroup && $listGroup->id == $userList->listGroupId}selected{/if}>{$listGroup->title|escape:"html"}</option>
 												{/foreach}
 											</select>
 											<div class="form-text text-muted">
-												<small>{translate text="Select a group to associate this list with. List groups can be used to organize multiple lists and set permissions for viewing and editing." isPublicFacing=true}</small>
+												<small>{translate text="Select a group to associate this list with. List groups can be used to organize multiple lists." isPublicFacing=true}</small>
 											</div>
 										</div>
 									</div>
