@@ -42,6 +42,10 @@ AspenDiscovery.Account = (function () {
 				title = $('#listTitle option:selected').text();
 			}
 
+			var addToListGroupOption = $('#addToListGroup-Options').val();
+			var addToListGroupNewName = $('#addToListGroup-NewName').val();
+			var addToListGroupNested = $('#addToListGroup-Nested').val();
+
 			var desc = $("#listDesc").val();
 			var url = Globals.path + "/MyAccount/AJAX";
 			var params = {
@@ -52,7 +56,10 @@ AspenDiscovery.Account = (function () {
 				displayListAuthor: isDisplayListAuthor,
 				desc: desc,
 				source: source,
-				sourceId: sourceId
+				sourceId: sourceId,
+				addToListGroupOption: addToListGroupOption,
+				addToListGroupNewName: addToListGroupNewName,
+				addToListGroupNested: addToListGroupNested
 			};
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {

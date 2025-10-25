@@ -58,6 +58,93 @@
 			</div>
 		{/if}
 		{/if}
+
+        {*Options for adding to a list group*}
+		<div class="form-group" style="padding-top: 1em;">
+			<label for="addToListGroup-Options" class="col-sm-3 control-label">{translate text='Add To List Group?' isPublicFacing=true}</label>
+			<div class="col-sm-9">
+				<select name="addToListGroup-Options" id="addToListGroup-Options" class="form-control form-control-sm">
+					<option value="none" {if empty($userListGroups)}selected{/if}>{translate text='No, do not add to a group' isPublicFacing=true}</option>
+					<option value="new">{translate text='Yes, create a new group' isPublicFacing=true}</option>
+                    {if !empty($userListGroups)}<option value="existing">{translate text='Yes, add to an existing group' isPublicFacing=true}</option>{/if}
+				</select>
+				<script>
+					$(document).ready(function(){
+						$('#addToListGroup-Options').change(function(){
+							var selectedOption = $(this).val();
+							if (selectedOption === 'new') {
+								$('#addToListGroup-New').show();
+								$('#addToListGroup-Existing').hide();
+							} else if (selectedOption === 'existing') {
+								$('#addToListGroup-New').hide();
+								$('#addToListGroup-Existing').show();
+							} else {
+								$('#addToListGroup-New').hide();
+								$('#addToListGroup-Existing').hide();
+							}
+						});
+					});
+				</script>
+			</div>
+		</div>
+
+        {*Show the new group name and nesting options if "new" is selected*}
+		<div class="form-group" id="addToListGroup-New" style="display: none;">
+			<label for="addToListGroup-NewName" class="col-sm-3 control-label">{translate text='New List Group Name' isPublicFacing=true}</label>
+			<div class="col-sm-9">
+				<input type="text" name="newListGroupName" id="addToListGroup-NewName" class="form-control form-control-sm"/>
+				<script>
+					$(document).ready(function() {
+						$('#addListForm').submit(function(e) {
+							var newGroupName = $('#addToListGroup-NewName').val().trim().toLowerCase();
+							var exists = false;
+                            {foreach from=$userListGroups item="listGroup"}
+							if (newGroupName === "{$listGroup.title|escape:'js'}".toLowerCase()) {
+								exists = true;
+							}
+                            {/foreach}
+							if ($('#addToListGroup-Options').val() === 'new' && exists) {
+								$('#newListGroupName-validation').show();
+								e.preventDefault();
+							} else {
+								$('#newListGroupName-validation').hide();
+							}
+						});
+					});
+				</script>
+				<div id="newListGroupName-validation" style="display:none;">
+					<small class="text-danger">{translate text='A list group with this name already exists.' isPublicFacing=true}</small>
+				</div>
+			</div>
+
+            {if !empty($userListGroups)}
+				<div id="addToListGroup-New-NestingGroups">
+					<label for="addToListGroup-Nested" class="col-sm-3 control-label">{translate text='Nest within another group?' isPublicFacing=true}</label>
+					<div class="col-sm-9">
+						<select name="nestedWithinGroup" id="addToListGroup-Nested" class="form-control form-control-sm">
+							<option value="none" selected>{translate text='No, do not nest within another group' isPublicFacing=true}</option>
+                            {foreach from=$userListGroups item="listGroup"}
+								<option value="{$listGroup.id}">{$listGroup.name|escape:"html"}</option>
+                            {/foreach}
+						</select>
+					</div>
+				</div>
+            {/if}
+		</div>
+
+        {*Show the existing group selection if "existing" is selected*}
+        {if !empty($userListGroups)}
+			<div class="form-group" id="addToListGroup-Existing" style="display: none;">
+				<label for="addToList-listGroup" class="col-sm-3">{translate text='Choose a List Group' isPublicFacing=true}</label>
+				<div class="col-sm-9">
+					<select name="listGroup" id="addToList-listGroup" class="form-control form-control-sm">
+                        {foreach from=$userListGroups item="listGroup"}
+							<option value="{$listGroup.id}" {if $userListGroupLastViewed === $listGroup.id}selected{/if}>{$listGroup.name|escape:"html"}</option>
+                        {/foreach}
+					</select>
+				</div>
+			</div>
+        {/if}
 	<input type="hidden" name="source" value="{if !empty($source)}{$source}{/if}">
 		<input type="hidden" name="sourceId" value="{if !empty($sourceId)}{$sourceId}{/if}">
 	</form>

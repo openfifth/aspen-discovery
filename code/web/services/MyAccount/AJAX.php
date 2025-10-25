@@ -1578,6 +1578,28 @@ class MyAccount_AJAX extends JSON_Action {
 				$list->public = isset($_REQUEST['public']) && $_REQUEST['public'] == 'true';
 				$list->searchable = isset($_REQUEST['searchable']) && $_REQUEST['searchable'] == 'true';
 				$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && $_REQUEST['displayListAuthor'] == 'true';
+
+				$list->listGroupId = -1;
+				if (isset($_REQUEST['addToListGroupOption'])) {
+					$addToListGroupOption = $_REQUEST['addToListGroupOption'];
+					$addToListGroupNested = isset($_REQUEST['addToListGroupNested']) ? $_REQUEST['addToListGroupNested'] : 'none';
+					if ($addToListGroupOption == 'new') {
+						//Create a new list group
+						require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+						$listGroup = new UserListGroup();
+						$listGroup->title = $_REQUEST['addToListGroupNewName'];
+						$listGroup->userId = $user->id;
+						if ($addToListGroupNested != 'none' && is_numeric($addToListGroupNested)) {
+							$listGroup->parentId = intval($addToListGroupNested);
+						}
+						$listGroup->insert();
+						$list->listGroupId = $listGroup->id;
+					} elseif ($addToListGroupOption == "existing" && is_numeric($addToListGroupOption)) {
+						//Add to an existing list group
+						$list->listGroupId = intval($addToListGroupOption);
+					}
+				}
+
 				if ($existingList) {
 					$list->update();
 				} else {
@@ -1750,6 +1772,27 @@ class MyAccount_AJAX extends JSON_Action {
 			$validListNames = [];
 		}
 		$interface->assign('validListNames', $validListNames);
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$userListGroups = [];
+		$listGroup = new UserListGroup();
+		$listGroup->userId = UserAccount::getActiveUserId();
+		$listGroup->orderBy('title');
+		$listGroup->find();
+		while ($listGroup->fetch()) {
+			$userListGroups[] = clone($listGroup);
+		}
+		$interface->assign('userListGroups', $userListGroups);
+
+		$userListGroupLastViewed = -1;
+		$userListGroupLastAdded = -1;
+		if ((count($userListGroups)) > 0) {
+			$user = UserAccount::getActiveUserObj();
+			$userListGroupLastAdded = $user->lastListGroupAdded;
+			$userListGroupLastViewed = $user->lastListGroupViewed;
+		}
+		$interface->assign('userListGroupLastAdded', $userListGroupLastAdded);
+		$interface->assign('userListGroupLastViewed', $userListGroupLastViewed);
 
 		return [
 			'title' => translate([
