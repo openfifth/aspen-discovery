@@ -10901,4 +10901,107 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
+	function getDeleteListGroupForm(): array {
+		$groupId = $_REQUEST['groupId'] ?? null;
+		$modalBody = translate([
+			'text' => 'Are you sure you want to delete the list group? If any lists remain in the group, they will be unassigned. This action cannot be undone.',
+			'isPublicFacing' => true
+		]);
+
+		$modalButtons = '<button id="confirmDeleteListGroup" class="tool btn btn-danger" onclick="AspenDiscovery.Account.deleteListGroup(' . $groupId . ')">' . translate([
+				'text' => 'Yes',
+				'isPublicFacing' => true
+			]) . '</button>';
+		$modalButtons .= '<button id="cancelDeleteListGroup" class="tool btn btn-default" onclick="AspenDiscovery.closeLightbox()">' . translate([
+				'text' => 'No',
+				'isPublicFacing' => true
+			]) . '</button>';
+
+		return [
+			'title' => translate([
+				'text' => 'Delete List Group?',
+				'isPublicFacing' => true
+			]),
+			'modalBody' => $modalBody,
+			'modalButtons' => $modalButtons
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function deleteListGroup(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Delete List Group',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Sorry, the list group could not be deleted.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$groupId = $_REQUEST['groupId'] ?? null;
+		if ($groupId) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$group->id = $groupId;
+			$group->userId = UserAccount::getActiveUserId();
+			if ($group->find(true)) {
+				if ($group->delete()) {
+					// Unassign any lists that were in this group
+					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+					$userList = new UserList();
+					$userList->listGroupId = $groupId;
+					$userList->user_id = UserAccount::getActiveUserId();
+					$userList->find();
+					while ($userList->fetch()) {
+						$userList->listGroupId = -1;
+						$userList->update();
+					}
+
+					// Unassign any sub-groups that were in this group
+					$subGroup = new UserListGroup();
+					$subGroup->parentGroupId = $groupId;
+					$subGroup->userId = UserAccount::getActiveUserId();
+					$subGroup->find();
+					while ($subGroup->fetch()) {
+						$subGroup->parentGroupId = -1;
+						$subGroup->update();
+					}
+
+					$result = [
+						'success' => true,
+						'title' => translate([
+							'text' => 'Delete List Group',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'The list group was successfully deleted.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$result['message'] = translate([
+						'text' => 'The list group could not be deleted.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The specified group could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'You must provide the id of the group to delete.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+
+	}
 }

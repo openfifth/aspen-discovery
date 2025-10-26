@@ -2960,17 +2960,6 @@ AspenDiscovery.Account = (function () {
 			url.searchParams.set('groupId', groupId);
 			window.location.href = url.toString();
 		},
-		deleteGroupListAction: function (groupId) {
-			const url = Globals.path + '/MyAccount/AJAX?method=getDeleteListForm';
-			$.getJSON(url, function (data) {
-				const {title, modalBody, modalButtons} = data;
-				AspenDiscovery.showMessageWithButtons(title, modalBody, modalButtons, false, '', false, false, true);
-			}).fail(AspenDiscovery.ajaxFail);
-			return false;
-		},
-		doDeleteGroupList: function () {
-			return false;
-		},
 		showEditListGroupParentForm: function (groupId, parentId) {
 			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupParentForm&groupId=" + groupId + "&parentId=" + parentId;
 			$.getJSON(url, function (data) {
@@ -3044,6 +3033,26 @@ AspenDiscovery.Account = (function () {
 				}
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
-		}
+		},
+		showDeleteListGroupForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getDeleteListGroupForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		deleteListGroup: function (groupId) {
+			$('#confirmDeleteListGroup .fa-spinner').show();
+			$('#confirmDeleteListGroup').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=deleteListGroup&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists";
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
 	};
 }(AspenDiscovery.Account || {}));
