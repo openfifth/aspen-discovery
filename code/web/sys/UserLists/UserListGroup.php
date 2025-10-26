@@ -98,6 +98,24 @@ class UserListGroup extends DataObject {
 		}
 	}
 
+	function getListsForGroup(user $user): ?array {
+		$group = new UserListGroup();
+		$group->userId = $user->id;
+		$group->id = $this->id;
+		if ($group->find(true)) {
+			$lists = [];
+			$listGroup = new UserList();
+			$listGroup->listGroupId = $group->id;
+			$listGroup->find();
+			while ($listGroup->fetch()) {
+				$lists[] = clone $listGroup;
+			}
+			return $lists;
+		} else {
+			return null;
+		}
+	}
+
 	function numValidLists() {
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();

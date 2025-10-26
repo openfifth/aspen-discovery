@@ -53,6 +53,8 @@ class Lists extends MyAccount {
 		$interface->assign('pageLinks', $pager->getLinks());
 
 		$activeListGroup = [];
+		$listGroup = new UserListGroup();
+		$listGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		$groupId = null;
 		if (isset($_REQUEST['groupId'])) {
 			$groupId = $_REQUEST['groupId'];
@@ -60,7 +62,6 @@ class Lists extends MyAccount {
 				$activeListGroup = UserAccount::getActiveUserObj()->getUnassignedListsForListGroups();
 				$activeListGroupDetails = new UserListGroup();
 				$activeListGroupDetails->title = 'Unassigned Lists';
-				$activeListGroupTitle = 'Unassigned Lists';
 			} else {
 				$listGroup = new UserListGroup();
 				$listGroup->id = $groupId;
@@ -80,15 +81,17 @@ class Lists extends MyAccount {
 			}
 		} else {
 			$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
-			$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+			if (empty($activeListGroup) && count($listGroups) > 0) {
+				$activeListGroup = $listGroup->getListsForGroup(UserAccount::getActiveUserObj());
+				$activeListGroupDetails = $listGroups[0];
+			} else {
+				$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+			}
 		}
 
 		$interface->assign('groupId', $groupId);
 		$interface->assign('activeListGroup', $activeListGroup);
 		$interface->assign('activeListGroupDetails', $activeListGroupDetails);
-
-		$listGroup = new UserListGroup();
-		$listGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		$interface->assign('listGroups', $listGroups);
 
 		$this->display('../MyAccount/lists.tpl', 'My Lists');
