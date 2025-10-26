@@ -126,7 +126,6 @@ class UserListGroup extends DataObject {
 
 	function getListGroups(user $user) {
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
-
 		$group = new UserListGroup();
 		$group->userId = $user->id;
 		$group->orderBy('title DESC');
@@ -137,17 +136,27 @@ class UserListGroup extends DataObject {
 			}
 		}
 
+		$originalTitles = [];
+		foreach ($allGroups as $id => $grp) {
+			$originalTitles[$id] = $grp->title;
+		}
+
 		$groups = [];
 		foreach ($allGroups as $id => $grp) {
 			$titleParts = [];
 			$current = $grp;
 			$level = 0;
+			$visited = [];
 			while ($current->parentGroupId && isset($allGroups[$current->parentGroupId]) && $level < 3) {
-				array_unshift($titleParts, $allGroups[$current->parentGroupId]->title);
+				if (in_array($current->parentGroupId, $visited)) {
+					break; // Prevent duplicates
+				}
+				$visited[] = $current->parentGroupId;
 				$current = $allGroups[$current->parentGroupId];
+				array_unshift($titleParts, $originalTitles[$current->id]);
 				$level++;
 			}
-			$titleParts[] = $grp->title;
+			$titleParts[] = $originalTitles[$grp->id];
 			$grp->title = implode(' » ', $titleParts);
 			$groups[] = $grp;
 		}
