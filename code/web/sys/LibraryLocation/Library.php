@@ -227,8 +227,8 @@ class Library extends DataObject {
 		$eContentLinkRules;
 	public $novelistSettingId;
 	public $syndeticsSettingId;
-	public /** @noinspection PhpUnused */
-		$allowAutomaticSearchReplacements;
+	public $allowAutomaticSearchReplacements;
+	public $allowAutomaticFaceting;
 
 	public /** @noinspection PhpUnused */
 		$worldCatUrl;
@@ -3065,6 +3065,14 @@ class Library extends DataObject {
 						'description' => 'Turn on to allow Aspen Discovery to replace search terms that have no results if the current search term looks like a misspelling.',
 						'hideInLists' => true,
 						'default' => true,
+					],
+					'allowAutomaticFaceting' => [
+						'property' => 'allowAutomaticFaceting',
+						'type' => 'checkbox',
+						'label' => 'Allow Facets to be applied to searches automatically',
+						'description' => "This allows facets to be automatically applied to Keyword Searches to better represent the context of a user's search.",
+						'hideInLists' => true,
+						'default' => false,
 					],
 
 					'searchBoxSection' => [
