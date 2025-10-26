@@ -1,5 +1,13 @@
 <h2 aria-label="Catalog Search Results" style="font-size:0;margin:0;line-height:0;"><span class="hidden">{translate text='Catalog Search Results' isPublicFacing=true}</h2>
 <div id="searchInfo">
+	{if !empty($hasAutomaticFacetsApplied)}
+		<div id="replacement-search-info-block" class="alert alert-warning" role="alert">
+			<div class="pull-left replacement-search-info-text"><i class='fas fa-exclamation-triangle fa-2xl' role="presentation" style="padding-right: 10px;padding-top: 12px;"></i></div>
+			<div id="replacement-search-info"><span class="replacement-search-info-text">{translate text="We automatically narrowed your search to deliver more relevant results." isPublicFacing=true}</span></div>
+			<div id="replacement-search-info"><span class="replacement-search-info-text"><a href='{$searchUrlWithoutAutomaticFiltering}' class="btn btn-default btn-sm">{translate text="Restore original search" isPublicFacing=true}</a></span></div>
+		</div>
+	{/if}
+
 	{* Recommendations *}
 	{if !empty($topRecommendations)}
 		{foreach from=$topRecommendations item="recommendations"}
@@ -17,14 +25,14 @@
 		{/if}
 
 		{if !empty($replacedIndex)}
-			<div id="replacement-search-info-block">
+			<div id="replacement-search-info-block" class="alert alert-info" role="alert">
 				<div id="replacement-search-info"><span class="replacement-search-info-text">{translate text="Showing Results using Keyword index" isPublicFacing=true}</span></div>
 				<div id="original-search-info"><span class="replacement-search-info-text"><a href='{$oldSearchUrl}'>{translate text="Search instead using %1% index" 1=$replacedIndexLabel isPublicFacing=true}</a></span></div>
 			</div>
 		{/if}
 
 		{if !empty($replacedScope)}
-			<div id="replacement-search-info-block">
+			<div id="replacement-search-info-block" class="alert alert-info" role="alert">
 				<div id="replacement-search-info"><span class="replacement-search-info-text">{translate text="Showing Results for %1%" 1=$globalScopeLabel isPublicFacing=true}</span> {$replacedScope}</div>
 				<div id="original-search-info"><span class="replacement-search-info-text"><a href='{$oldSearchUrl}'>{translate text="Search %1% instead" 1=$replacedScopeLabel isPublicFacing=true}</a></span></div>
 			</div>

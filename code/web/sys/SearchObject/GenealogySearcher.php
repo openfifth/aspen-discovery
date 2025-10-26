@@ -69,12 +69,8 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @param string $searchSource
-	 * @return  boolean
 	 */
-	public function init($searchSource = 'genealogy') {
+	public function init(?string $searchSource = 'genealogy') : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init('genealogy');
 
@@ -122,7 +118,7 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * @access  public
 	 * @return  boolean
 	 */
-	public function initAdvancedFacets() {
+	public function initAdvancedFacets() : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init();
 
@@ -150,9 +146,9 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * Return the field (index) searched by a basic search
 	 *
 	 * @access  public
-	 * @return  string   The searched index
+	 * @return  ?string   The searched index
 	 */
-	public function getSearchIndex() {
+	public function getSearchIndex() : ?string {
 		// Use normal parent method for non-advanced searches.
 		if ($this->searchType == $this->basicSearchType) {
 			return parent::getSearchIndex();
@@ -180,20 +176,10 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * Set an overriding array of record IDs.
 	 *
 	 * @access  public
-	 * @param array $ids Record IDs to load
+	 * @param string[] $ids Record IDs to load
 	 */
-	public function setQueryIDs($ids) {
+	public function setQueryIDs(array $ids) : void {
 		$this->query = 'id:(' . implode(' OR ', $ids) . ')';
-	}
-
-	/**
-	 * Set an overriding string.
-	 *
-	 * @access  public
-	 * @param string $newQuery Query string
-	 */
-	public function setQueryString($newQuery) {
-		$this->query = $newQuery;
 	}
 
 	/**
@@ -202,7 +188,7 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * @access  public
 	 * @param string $newSort Sort string
 	 */
-	public function setFacetSortOrder($newSort) {
+	public function setFacetSortOrder(string $newSort) : void {
 		// As of Solr 1.4 valid values are:
 		// 'count' = relevancy ranked
 		// 'index' = index order, most likely alphabetical
@@ -526,7 +512,7 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 		return 'genealogySearches';
 	}
 
-	public function supportsSuggestions() {
+	public function supportsSuggestions() : bool {
 		return true;
 	}
 
