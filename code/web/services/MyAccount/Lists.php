@@ -73,25 +73,19 @@ class Lists extends MyAccount {
 					while ($userList->fetch()) {
 						$activeListGroup[] = clone $userList;
 					}
-
-					$activeListGroupTitle = UserListGroup::getFullGroupTitle($listGroup);
 				} else {
 					$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
 					$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
-					$activeListGroupTitle = UserListGroup::getFullGroupTitle(UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj()));
-
 				}
 			}
 		} else {
 			$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
 			$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
-			$activeListGroupTitle = UserListGroup::getFullGroupTitle(UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj()));
 		}
 
 		$interface->assign('groupId', $groupId);
 		$interface->assign('activeListGroup', $activeListGroup);
 		$interface->assign('activeListGroupDetails', $activeListGroupDetails);
-		$interface->assign('activeListGroupTitle', $activeListGroupTitle);
 
 		$listGroup = new UserListGroup();
 		$listGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
