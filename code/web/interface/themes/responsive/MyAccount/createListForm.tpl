@@ -89,36 +89,38 @@
 		</div>
 
         {*Show the new group name and nesting options if "new" is selected*}
-		<div class="form-group" id="addToListGroup-New" style="display: none;">
-			<label for="addToListGroup-NewName" class="col-sm-3 control-label">{translate text='New List Group Name' isPublicFacing=true}</label>
-			<div class="col-sm-9">
-				<input type="text" name="newListGroupName" id="addToListGroup-NewName" class="form-control form-control-sm"/>
-				<script>
-					$(document).ready(function() {
-						$('#addListForm').submit(function(e) {
-							var newGroupName = $('#addToListGroup-NewName').val().trim().toLowerCase();
-							var exists = false;
-                            {foreach from=$userListGroups item="listGroup"}
-							if (newGroupName === "{$listGroup->title|escape:'js'}".toLowerCase()) {
-								exists = true;
-							}
-                            {/foreach}
-							if ($('#addToListGroup-Options').val() === 'new' && exists) {
-								$('#newListGroupName-validation').show();
-								e.preventDefault();
-							} else {
-								$('#newListGroupName-validation').hide();
-							}
+		<div id="addToListGroup-New" style="display: none;">
+			<div class="form-group">
+				<label for="addToListGroup-NewName" class="col-sm-3 control-label">{translate text='New List Group Name' isPublicFacing=true}</label>
+				<div class="col-sm-9">
+					<input type="text" name="newListGroupName" id="addToListGroup-NewName" class="form-control form-control-sm"/>
+					<script>
+						$(document).ready(function() {
+							$('#addListForm').submit(function(e) {
+								var newGroupName = $('#addToListGroup-NewName').val().trim().toLowerCase();
+								var exists = false;
+	                            {foreach from=$userListGroups item="listGroup"}
+								if (newGroupName === "{$listGroup->title|escape:'js'}".toLowerCase()) {
+									exists = true;
+								}
+	                            {/foreach}
+								if ($('#addToListGroup-Options').val() === 'new' && exists) {
+									$('#newListGroupName-validation').show();
+									e.preventDefault();
+								} else {
+									$('#newListGroupName-validation').hide();
+								}
+							});
 						});
-					});
-				</script>
-				<div id="newListGroupName-validation" style="display:none;">
-					<small class="text-danger">{translate text='A list group with this name already exists.' isPublicFacing=true}</small>
+					</script>
+					<div id="newListGroupName-validation" style="display:none;">
+						<small class="text-danger">{translate text='A list group with this name already exists.' isPublicFacing=true}</small>
+					</div>
 				</div>
 			</div>
 
             {if !empty($userListGroups)}
-				<div id="addToListGroup-New-NestingGroups">
+				<div id="addToListGroup-New-NestingGroups" class="form-group">
 					<label for="addToListGroup-Nested" class="col-sm-3 control-label">{translate text='Nest within another group?' isPublicFacing=true}</label>
 					<div class="col-sm-9">
 						<select name="nestedWithinGroup" id="addToListGroup-Nested" class="form-control form-control-sm">
