@@ -531,10 +531,13 @@ class Translator {
 		$googleSettings = $this->getGoogleTranslationSettings();
 		if (!is_null($googleSettings)) {
 			if ($this->googleTranslateWrapper === null) {
+				global $configArray;
+				$serverUrl = $configArray['Site']['url'];
 				$this->googleTranslateWrapper = new CurlWrapper();
 				$headers = [
 					"X-goog-api-key: $googleSettings->googleTranslateKey",
-					"Content-Type: application/json; charset=utf-8"
+					"Content-Type: application/json; charset=utf-8",
+					"Referer: $serverUrl"
 				];
 				$this->googleTranslateWrapper->addCustomHeaders($headers, false);
 			}
