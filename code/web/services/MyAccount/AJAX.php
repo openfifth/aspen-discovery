@@ -11963,11 +11963,11 @@ class MyAccount_AJAX extends JSON_Action {
 			$holdIds = array_filter(array_map('trim', explode(',', $holdIds)));
 		}
 
-		if (!is_array($holdIds) || count($holdIds) === 0) {
+		if (!is_array($holdIds) || count($holdIds) <= 1) {
 			return [
 				'success' => false,
 				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
-				'message' => translate(['text' => 'Please select at least one hold to group', 'isPublicFacing' => true])
+				'message' => translate(['text' => 'Please select at least two holds to group', 'isPublicFacing' => true])
 			];
 		}
 
