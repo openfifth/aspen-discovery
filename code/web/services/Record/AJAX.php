@@ -357,6 +357,23 @@ class Record_AJAX extends JSON_Action {
 			$interface->assign('allowEditionSelection', $allowEditionSelection);
 
 			$currentFormat = null;
+			$accountProfile = $library->getAccountProfile();
+			$allowHoldsToBeGrouped = false;
+			if ($accountProfile) {
+				$ils = $accountProfile ? $accountProfile->ils : '';
+				if ($ils == 'koha') {
+					require_once ROOT_DIR . '/Drivers/Koha.php';
+					$kohaDriver = new Koha($accountProfile);
+					if ($kohaDriver->supportsHyperholdsGrouping()) {
+						$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
+						if ($user) {
+							if ($user->getHomeLibrary() != null) {
+								$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
+							}
+						}
+					}
+				}
+			}
 			if (isset($_REQUEST['format']) && !empty($_REQUEST['format'])) {
 				$currentFormat = $_REQUEST['format'];
 			} elseif ($selectedVariationId !== -1) {
@@ -379,6 +396,7 @@ class Record_AJAX extends JSON_Action {
 			}
 
 			$interface->assign('currentFormat', $currentFormat);
+			$interface->assign('allowHoldsToBeGrouped', $allowHoldsToBeGrouped);
 
 			if ($allowEditionSelection) {
 				$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
