@@ -103,9 +103,9 @@ class Admin_Themes extends ObjectEditor {
 			$themeBreadcrumbs = [];
 			foreach ($themes as $theme) {
 				if ($theme->id == $this->activeObject->id) {
-					$themeBreadcrumbs[] = new Breadcrumb('', $theme->themeName);
+					$themeBreadcrumbs[] = new Breadcrumb('', $theme->themeName, false);
 				} else {
-					$themeBreadcrumbs[] = new Breadcrumb('/Admin/Themes?objectAction=edit&id=' . $theme->id, $theme->themeName);
+					$themeBreadcrumbs[] = new Breadcrumb('/Admin/Themes?objectAction=edit&id=' . $theme->id, $theme->themeName, false);
 				}
 			}
 			$breadcrumbs = array_merge($breadcrumbs, array_reverse($themeBreadcrumbs));
