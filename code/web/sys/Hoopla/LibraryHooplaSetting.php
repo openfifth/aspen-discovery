@@ -82,7 +82,7 @@ class LibraryHooplaSetting extends DataObject
                 'label' => 'Hoopla Instant Enabled',
                 'description' => 'Whether or not Hoopla Instant is enabled',
                 'hideInLists' => false,
-                'default' => true,
+                'default' => false,
                 'forcesReindex' => false,
             ],
             'hooplaFlexEnabled' => [
@@ -91,7 +91,7 @@ class LibraryHooplaSetting extends DataObject
                 'label' => 'Hoopla Flex Enabled',
                 'description' => 'Whether or not Hoopla Flex is enabled',
                 'hideInLists' => false,
-                'default' => true,
+                'default' => false,
                 'forcesReindex' => false,
             ],
             'circulationEnabled' => [
