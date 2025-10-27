@@ -95,7 +95,7 @@ class Translator {
 		$allowTermCreation = ($this->translationModeActive() && (UserAccount::userHasPermission('Translate Aspen'))) || $fromLiDA;
 		//We will allow adding terms to the database even if we aren't in translation mode if the user is a translator, and we have the ability to do google translations.
 		$googleSettings = $this->getGoogleTranslationSettings();
-		if (!is_null($googleSettings) && $activeLanguage->code != 'en') {
+		if (!is_null($googleSettings) && !empty($activeLanguage) && $activeLanguage->code != 'en') {
 			//Allow automatic translation if tf the user has permission to translate Aspen
 			if (UserAccount::userHasPermission('Translate Aspen')) {
 				$allowTermCreation = true;
