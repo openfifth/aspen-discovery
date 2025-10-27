@@ -16,7 +16,7 @@
 				<input type="hidden" name="variationId" id="variationId" value="{$variationId}">
 			{/if}
 			<fieldset>
-				{if !empty($allowEditionSelection) && !empty($editions)}
+				{if !empty($allowEditionSelection) && !empty($editions) && $allowHoldsToBeGrouped}
 					<div id="editionSelectionSection" class="form-group">
 						<h4>{translate text='Select editions to place holds on' isPublicFacing=true} ({$currentFormat})</h4>
 						<p class="alert alert-info">
