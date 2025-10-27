@@ -52,8 +52,7 @@ function getUpdates25_11_00(): array {
 					libraryId INT NOT NULL
 				)',
 			]
-
-		]
+		], //calendary_display_setting_library
 
 		// Myranda - Grove
 
