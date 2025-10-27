@@ -8,6 +8,7 @@ class Translation extends DataObject {
 	public $languageId;
 	public $translation;
 	public $translated;
+	public $googleTranslated;
 	public $needsReview;
 	public $lastCheckInCommunity;
 
