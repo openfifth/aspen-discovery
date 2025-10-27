@@ -2556,6 +2556,8 @@ class Record_AJAX extends Action {
 	}
 
 	public function requestHyperholdConfirmation() {
+		require_once ROOT_DIR . '/sys/Account/User.php';
+
 		global $interface;
 
 		$groupedWorkId = $_REQUEST['groupedWorkId'] ?? null;
@@ -2586,6 +2588,29 @@ class Record_AJAX extends Action {
 				'success' => false,
 				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
 				'message' => translate(['text' => 'Please log in to place holds', 'isPublicFacing' => true])
+			];
+		}
+
+		$userObject = new User();
+		$userObject->id = $user;
+		if($userObject->find(true)) {
+			$user = $userObject; 
+		} else {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Unable to load user record.', 'isPublicFacing' => true])
+			];
+		}
+
+		if (empty($user->unique_ils_id)) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Unable to place hold', 'isPublicFacing' => true]),
+				'message' => '<p>' . translate([
+					'text' => 'This account is not associated with a library, please contact your library.',
+					'isPublicFacing' => true,
+				]) . '</p>',
 			];
 		}
 
