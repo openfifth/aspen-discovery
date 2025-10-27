@@ -5,15 +5,15 @@ require_once ROOT_DIR . '/sys/SolrConnector/GroupedWorksSolrConnector.php';
 
 class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkSearcher {
 	// Field List
-	public static $fields_to_return = 'auth_author2,author2-role,id,mpaa_rating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,num_titles,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,display_description,fountas_pinnell,last_indexed,lc_subject,bisac_subject';
+	public static string $fields_to_return = 'auth_author2,author2-role,id,mpaa_rating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,num_titles,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,display_description,fountas_pinnell,last_indexed,lc_subject,bisac_subject';
 
 	// Display Modes //
-	public $viewOptions = [
+	public array $viewOptions = [
 		'list',
 		'covers',
 	];
 
-	private $fieldsToReturn = null;
+	private ?string $fieldsToReturn = null;
 
 	/**
 	 * Constructor. Initialise some details about the server
@@ -87,14 +87,14 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 	 *                                     method (true)?
 	 * @param bool $recommendations Should we process recommendations along with the search itself?
 	 * @param bool $preventQueryModification Should we allow the search engine to modify the query or is it already a well formatted query
-	 * @return  AspenError|array
+	 * @return  AspenError|array|null
 	 */
 	public function processSearch($returnIndexErrors = false, $recommendations = false, $preventQueryModification = false) : AspenError|array|null{
 		global $timer;
 		global $solrScope;
 
 		if ($this->searchSource == 'econtent') {
-			$this->addHiddenFilter("econtent_source_{$solrScope}", '*');
+			$this->addHiddenFilter("econtent_source_$solrScope", '*');
 		}
 
 		// Our search has already been processed in init()
@@ -110,7 +110,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		if ($preventQueryModification) {
 			$query = $search;
 		} else {
-			$query = $this->indexEngine->buildQuery($search, false);
+			$query = $this->indexEngine->buildQuery($search);
 		}
 		$timer->logTime("build query in grouped work searcher");
 		if (($query instanceof AspenError)) {
@@ -132,7 +132,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			if ($field === '') {
 				unset($this->filterList[$field]);
 			}
-			if (strpos($field, '_') !== false) {
+			if (str_contains($field, '_')) {
 				$lastUnderscore = strrpos($field, '_');
 				$shortFieldName = substr($field, 0, $lastUnderscore + 1);
 				$oldScope = substr($field, $lastUnderscore + 1);
@@ -166,7 +166,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 				$facetInfo = $facetConfig[$field];
 				if ($facetInfo->multiSelect) {
 					$facetKey = empty($facetInfo->id) ? $facetInfo->facetName : $facetInfo->id;
-					$fieldPrefix = "{!tag={$facetKey}}";
+					$fieldPrefix = "{!tag=$facetKey}";
 					$multiSelect = true;
 				}
 			}
@@ -174,21 +174,21 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			foreach ($filter as $value) {
 				$isAvailabilityToggle = false;
 				$isAvailableAt = false;
-				if (strpos($field, 'availability_toggle') === 0) {
+				if (str_starts_with($field, 'availability_toggle')) {
 					$availabilityToggleValue = $value;
 					$isAvailabilityToggle = true;
-				} elseif (strpos($field, 'available_at') === 0) {
+				} elseif (str_starts_with($field, 'available_at')) {
 					$availabilityAtValues[] = $value;
 					$isAvailableAt = true;
-				} elseif (strpos($field, 'format_category') === 0) {
+				} elseif (str_starts_with($field, 'format_category')) {
 					$formatCategoryValues[] = $value;
-				} elseif (strpos($field, 'format') === 0) {
+				} elseif (str_starts_with($field, 'format')) {
 					$formatValues[] = $value;
 					$formatsAreMultiSelect = $multiSelect;
 				}
 				// Special case -- allow trailing wildcards:
 				$okToAdd = false;
-				if (substr($value, -1) == '*') {
+				if (str_ends_with($value, '*')) {
 					$okToAdd = true;
 				} elseif (preg_match('/\\A\\[.*?\\sTO\\s.*?]\\z/', $value)) {
 					$okToAdd = true;
@@ -236,7 +236,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		//Check to see if we should apply a default filter
 		if ($availabilityToggleValue == null) {
 			global $library;
-			$location = Location::getSearchLocation(null);
+			$location = Location::getSearchLocation();
 			if ($location != null) {
 				$groupedWorkDisplaySettings = $location->getGroupedWorkDisplaySettings();
 			} else {
@@ -244,7 +244,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			}
 			$availabilityToggleValue = $groupedWorkDisplaySettings->defaultAvailabilityToggle;
 
-			$filterQuery['availability_toggle_' . $solrScope] = "availability_toggle_{$solrScope}:\"{$availabilityToggleValue}\"";
+			$filterQuery['availability_toggle_' . $solrScope] = "availability_toggle_$solrScope:\"$availabilityToggleValue\"";
 		}
 
 		//Check to see if we have both a format and availability facet applied.
@@ -276,7 +276,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		}
 
 		//Check to see if we have both a format and available at facet applied
-		$availableAtByFormatFieldName = null;
 		if (!empty($availabilityAtValues) && (!empty($formatCategoryValues) || !empty($formatValues))) {
 			global $solrScope;
 			$availabilityByFormatFilter = "";
@@ -328,7 +327,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			foreach ($facetConfig as $facetField => $facetInfo) {
 				if ($facetInfo instanceof FacetSetting) {
 					$facetName = $facetInfo->facetName;
-					if (strpos($facetName, 'availability_toggle') === 0) {
+					if (str_starts_with($facetName, 'availability_toggle')) {
 						if (!empty($availabilityByFormatFieldName)) {
 							foreach ($availabilityByFormatFieldNames as $availabilityByFormatFieldName) {
 								$facetSet['field'][$facetField] = $facetField;
@@ -339,15 +338,13 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 					} else {
 						if ($facetInfo->multiSelect) {
 							$facetKey = empty($facetInfo->id) ? $facetInfo->facetName : $facetInfo->id;
-							$facetSet['field'][$facetField] = "{!ex={$facetKey}}" . $facetField;
-						} elseif (strpos($facetName, 'availability_toggle') === 0 || strpos($facetName, 'availability_by_format') === 0) {
+							$facetSet['field'][$facetField] = "{!ex=$facetKey}" . $facetField;
+						} elseif (str_starts_with($facetName, 'availability_by_format')) {
 							$facetSet['field'][$facetField] = '{!ex=avail}' . $facetField;
 						} else {
 							$facetSet['field'][$facetField] = $facetField;
 						}
 					}
-				} else {
-					$options['facet.field'][] = $facetInfo;
 				}
 			}
 			if ($this->facetOffset != null) {
@@ -383,8 +380,8 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			}
 		}
 		if (!empty($this->facetSearchTerm) && !empty($this->facetSearchField)) {
-			$this->facetOptions["f.{$this->facetSearchField}.facet.contains"] = $this->facetSearchTerm;
-			$this->facetOptions["f.{$this->facetSearchField}.facet.contains.ignoreCase"] = 'true';
+			$this->facetOptions["f.$this->facetSearchField.facet.contains"] = $this->facetSearchTerm;
+			$this->facetOptions["f.$this->facetSearchField.facet.contains.ignoreCase"] = 'true';
 		}
 		if (!empty($this->facetOptions)) {
 			$facetSet['additionalOptions'] = $this->facetOptions;
@@ -422,7 +419,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		$fieldsToReturn = $this->getFieldsToReturn();
 
 		$handler = $this->index;
-		if (preg_match('/^\\"[^\\"]+?\\"$/', $this->query)) {
+		if (preg_match('/^"[^\"]+?\"$/', $this->query)) {
 			if ($handler == 'Keyword') {
 				$handler = 'KeywordProper';
 			} elseif ($handler == 'Author') {
@@ -431,8 +428,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 				$handler = 'SubjectProper';
 			} elseif ($handler == 'AllFields') {
 				$handler = 'KeywordProper';
-			} elseif ($handler == 'Title') {
-				$handler = 'TitleProper';
 			} elseif ($handler == 'Title') {
 				$handler = 'TitleProper';
 			} elseif ($handler == 'Series') {
@@ -543,7 +538,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 	/**
 	 * @param String $fields - a list of comma separated fields to return
 	 */
-	function setFieldsToReturn($fields) {
+	function setFieldsToReturn(string $fields) : void {
 		$this->fieldsToReturn = $fields;
 	}
 
@@ -555,7 +550,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		} else {
 			$fieldsToReturn = SearchObject_GroupedWorkSearcher::$fields_to_return;
 			global $solrScope;
-			if ($solrScope != false) {
+			if ($solrScope) {
 				$fieldsToReturn .= ',format_' . $solrScope;
 				$fieldsToReturn .= ',format_category_' . $solrScope;
 				$fieldsToReturn .= ',collection_' . $solrScope;
@@ -618,10 +613,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 		return $scopedFieldName;
 	}
 
-	/**
-	 * @param $field
-	 * @return string
-	 */
 	protected function getScopedFieldName(string $field): string {
 		global $solrScope;
 		if ($solrScope) {
@@ -647,10 +638,6 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 				$field = 'local_time_since_added_' . $solrScope;
 			} elseif ($field === 'itype') {
 				$field = 'itype_' . $solrScope;
-			} elseif ($field === 'shelf_location') {
-				$field = 'shelf_location_' . $solrScope;
-			} elseif ($field === 'detailed_location') {
-				$field = 'detailed_location_' . $solrScope;
 			} elseif ($field === 'collection_group' || $field === 'collection') {
 				$field = 'collection_' . $solrScope;
 			}
@@ -667,7 +654,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 	 *                                  set to null to get all configured values.
 	 * @return  array   Facets data arrays
 	 */
-	public function getFacetList($filter = null) {
+	public function getFacetList($filter = null) : array {
 		global $solrScope;
 		global $timer;
 		// If there is no filter, we'll use all facets as the filter:
@@ -732,9 +719,9 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			if (!in_array($field, $validFields) || count($data) < 1) {
 				$isValid = false;
 				//Check to see if we are overriding availability toggle
-				if (strpos($field, 'availability_by_format') === 0) {
+				if (str_starts_with($field, 'availability_by_format')) {
 					foreach ($validFields as $validFieldName) {
-						if (strpos($validFieldName, 'availability_toggle') === 0) {
+						if (str_starts_with($validFieldName, 'availability_toggle')) {
 							$field = $validFieldName;
 							$isValid = true;
 							break;
@@ -759,7 +746,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			$doBranchProcessing = false;
 
 			//Marmot specific processing to do custom resorting of facets.
-			if (str_starts_with($field, 'owning_library') && isset($currentLibrary) && !is_null($currentLibrary)) {
+			if (str_starts_with($field, 'owning_library') && isset($currentLibrary)) {
 				$doInstitutionProcessing = true;
 			}
 			if (str_starts_with($field, 'owning_location') && (!is_null($relatedLocationFacets) || !is_null($activeLocationFacet))) {
@@ -790,11 +777,11 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 					if (in_array($facet[0], $this->filterList[$field])) {
 						$currentSettings['isApplied'] = true;
 						$list[$field]['hasApplied'] = true;
-						$currentSettings['removalUrl'] = $this->renderLinkWithoutFilter("$field:{$facet[0]}");
+						$currentSettings['removalUrl'] = $this->renderLinkWithoutFilter("$field:$facet[0]");
 					}
 				}
 
-				//Setup the key to allow sorting alphabetically if needed.
+				//Set up the key to allow sorting alphabetically if needed.
 				$valueKey = $facet[0];
 				$okToAdd = true;
 				//Don't include empty settings since they don't work properly with Solr

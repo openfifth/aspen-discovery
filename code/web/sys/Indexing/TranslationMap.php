@@ -11,7 +11,7 @@ class TranslationMap extends DataObject {
 	public /** @noinspection PhpUnused */
 		$usesRegularExpressions;
 	/** @var TranslationMapValue[] */
-	private $_translationMapValues;
+	protected $_translationMapValues;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {

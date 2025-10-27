@@ -55,11 +55,8 @@ class SearchObject_OpenArchivesSearcher extends SearchObject_SolrSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @return  boolean
 	 */
-	public function init($searchSource = null) {
+	public function init(?string $searchSource = null) : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init('open_archives');
 
@@ -141,7 +138,7 @@ class SearchObject_OpenArchivesSearcher extends SearchObject_SolrSearcher {
 		return 'openArchivesSearches';
 	}
 
-	public function supportsSuggestions() {
+	public function supportsSuggestions() : bool {
 		return true;
 	}
 
