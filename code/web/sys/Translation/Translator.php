@@ -547,6 +547,7 @@ class Translator {
 			];
 
 			$response = $this->googleTranslateWrapper->curlPostBodyData($url, $postBody);
+			global $logger;
 			if (!empty($response)) {
 				$jsonResponse = json_decode($response);
 				if (isset($jsonResponse->data->translations)) {
@@ -555,7 +556,12 @@ class Translator {
 						$translation = $translations[0];
 						return $translation->translatedText;
 					}
+				}else{
+					$logger->log("Did not get a good result from google translator", Logger::LOG_WARNING);
+					$logger->log($response, Logger::LOG_WARNING);
 				}
+			}else{
+				$logger->log("Got an empty result from google translator", Logger::LOG_WARNING);
 			}
 		}
 		return null;
