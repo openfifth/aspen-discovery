@@ -38,7 +38,7 @@ function getUpdates25_11_00(): array {
 					weight INT DEFAULT 0,
 					displayedOnline TINYINT(1) DEFAULT 0,
 					printedCalendar TINYINT(1) DEFAULT 0,
-    				printedAgenda TINYINT(1) DEFAULT 0
+					printedAgenda TINYINT(1) DEFAULT 0
     				)',
 			]
 		], //event_field_calendar_options
@@ -47,9 +47,9 @@ function getUpdates25_11_00(): array {
 			'description' => 'Create calendar_display_setting_library_table.',
 			'sql' => [
 				'CREATE TABLE IF NOT EXISTS calendar_display_setting_library (
-    				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    				calendarDisplaySettingId INT NOT NULL,
-   					libraryId INT NOT NULL
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					libraryId INT NOT NULL
                 )',
 			]
 
