@@ -39,7 +39,7 @@ function getUpdates25_11_00(): array {
 					displayedOnline TINYINT(1) DEFAULT 0,
 					printedCalendar TINYINT(1) DEFAULT 0,
 					printedAgenda TINYINT(1) DEFAULT 0
-    				)',
+					)',
 			]
 		], //event_field_calendar_options
 		'calendary_display_setting_library' => [
@@ -50,7 +50,7 @@ function getUpdates25_11_00(): array {
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					calendarDisplaySettingId INT NOT NULL,
 					libraryId INT NOT NULL
-                )',
+				)',
 			]
 
 		]
