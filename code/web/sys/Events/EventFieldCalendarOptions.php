@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpMissingFieldTypeInspection */
 require_once ROOT_DIR . '/sys/Events/EventField.php';
 require_once ROOT_DIR . '/sys/Events/EventFieldSetField.php';
 require_once ROOT_DIR . '/sys/Events/EventType.php';

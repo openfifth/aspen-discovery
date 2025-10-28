@@ -103,7 +103,7 @@ class EventField extends DataObject {
 			/*			$fieldList[-3] = "Title - The title of the event";
 						$fieldList[-2] = "Time - The time of the event";
 						$fieldList[-1] = "Cover - The image for the event";*/
-			$fieldList[0] = "Description - The description for the event";
+			$fieldList[-2] = "Description - The description for the event";
 		}
 		$object = new EventField();
 		$object->orderBy('name');

@@ -55,7 +55,7 @@ class CalendarDisplaySetting extends DataObject {
 			'eventFields' => [
 				'property' => 'eventFields',
 				'type' => 'oneToMany',
-				'label' => 'Event Information',
+				'label' => 'Fields To Display on Calendars',
 				'description' => 'The fields for event information to show in the calendar',
 				'keyThis' => 'id',
 				'keyOther' => 'calendarDisplaySettingId',
@@ -151,7 +151,7 @@ class CalendarDisplaySetting extends DataObject {
 			$formField->orderBy('weight');
 			$formField->find();
 			while ($formField->fetch()) {
-				$this->_eventFields[$formField->eventFieldId] = clone $formField;
+				$this->_eventFields[$formField->id] = clone $formField;
 			}
 		}
 		return $this->_eventFields;

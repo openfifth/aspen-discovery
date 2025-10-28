@@ -64,7 +64,7 @@
 										{foreach from=$event.eventFields key=eventFieldName item=eventField}
 											<div class="calendar-event-title" id="calendar-event-{$eventFieldName}">
 												{foreach from=$eventField item=value}
-													{$value}
+													{$value}&nbsp;
 												{/foreach}
 											</div>
 										{/foreach}

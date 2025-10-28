@@ -351,9 +351,7 @@ class Events_Calendar extends Action {
 			$eventFieldIds[] = $eventFieldOptions->eventFieldId;
 		}
 		foreach ($eventFieldIds as $eventFieldId) {
-			if ($eventFieldId == -1) {
-				$eventFieldNames[] = "cover";
-			} elseif ($eventFieldId == 0) {
+			if ($eventFieldId == -2) {
 				$eventFieldNames[] = "description";
 			} else {
 				$eventField = new EventField();
