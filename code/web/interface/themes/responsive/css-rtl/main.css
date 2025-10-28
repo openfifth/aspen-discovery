@@ -8144,7 +8144,7 @@ hr.menu {
 #horizontal-menu-bar-container.fullWidth {
   padding: 0 1em 0 1em;
 }
-#horizontal-menu-bar-container .dropdown-toggle:after {
+#horizontal-menu-bar-container .dropdown-toggle:not(#header-menu-dropdown):after {
   display: inline-block;
   width: 0;
   height: 0;
