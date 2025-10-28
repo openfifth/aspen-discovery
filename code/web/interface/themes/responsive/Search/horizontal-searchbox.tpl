@@ -51,7 +51,8 @@
 							{/literal}
 						</script>
 						{foreach from=$searchIndexes item=searchDesc key=searchVal}
-							<option value="{$searchVal}"{if !empty($searchIndex) && $searchIndex == $searchVal} selected="selected"{/if}>{translate text=$searchDesc inAttribute=true isPublicFacing=true}</option>
+							{* The descriptions are already translated and do not need to be retranslated *}
+							<option value="{$searchVal}"{if !empty($searchIndex) && $searchIndex == $searchVal} selected="selected"{/if}>{$searchDesc}</option>
 						{/foreach}
 
 						{* Add Advanced Search *}
