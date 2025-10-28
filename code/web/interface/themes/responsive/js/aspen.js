@@ -14097,11 +14097,26 @@ AspenDiscovery.Record = (function () {
 								let cleanId = recordId.replace(/^ils:/, '');
 								let actionButton = $('#actionButton' + cleanId);
 								let relatedActionButton = $('#relatedRecordactionButton' + cleanId);
-								
-								if (actionButton.length > 0) {
-									$(buttonHtml).insertBefore(actionButton);
-								} else if (relatedActionButton.length > 0) {
-									$(buttonHtml).insertBefore(relatedActionButton);
+
+								let formatLabel = '';
+								let container = actionButton.closest('.formatType, .resultItemFormat, .btn-toolbar'); // adjust selector to your DOM
+								if (container.length) {
+									formatLabel = container.find('.formatCategory, .formatType').text().trim().replace(/\s+/g, '');
+								}
+
+								let uniqueKey = recordId + (formatLabel ? '_' + formatLabel : '');
+								let safeId = uniqueKey.replace(/[^A-Za-z0-9_-]/g, '_');
+
+								// Avoid duplicate insertions
+								if ($("#onHoldAction" + safeId).length === 0) {
+									let modifiedButton = $(buttonHtml).clone();
+									modifiedButton.attr('id', 'onHoldAction' + safeId);
+
+									if (actionButton.length > 0) {
+										modifiedButton.insertBefore(actionButton);
+									} else if (relatedActionButton.length > 0){
+										modifiedButton.insertBefore(relatedActionButton);
+									}
 								}
 							}
 						})
