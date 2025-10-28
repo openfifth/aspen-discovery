@@ -11,6 +11,7 @@ class GoogleApiSetting extends DataObject {
 	public $googleAnalyticsDomainName;
 	public $googleBooksKey;
 	public $googleMapsKey;
+	public $googleTranslateKey;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -70,6 +71,13 @@ class GoogleApiSetting extends DataObject {
 				'type' => 'storedPassword',
 				'label' => 'Google Maps Key',
 				'description' => 'The Google maps API key to use',
+				'hideInLists' => true,
+			],
+			'googleTranslateKey' => [
+				'property' => 'googleTranslateKey',
+				'type' => 'storedPassword',
+				'label' => 'Google Translate Key',
+				'description' => 'The Google Translate API key to use',
 				'hideInLists' => true,
 			],
 		];
