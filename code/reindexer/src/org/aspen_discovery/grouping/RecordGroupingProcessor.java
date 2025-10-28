@@ -311,7 +311,7 @@ public class RecordGroupingProcessor {
 		if (overridePermanentId != null) {
 			groupedWorkPermanentId = overridePermanentId;
 			groupedWork.overridePermanentId(groupedWorkPermanentId);
-            logger.debug("Using override record grouping for {} -> {}.", primaryIdentifierString, groupedWorkPermanentId);
+			logger.debug("Using override record grouping for {} -> {}.", primaryIdentifierString, groupedWorkPermanentId);
 		} else if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
 			// Check to see if we need to ungroup the record.
 			groupedWork.makeUnique(primaryIdentifierString);
