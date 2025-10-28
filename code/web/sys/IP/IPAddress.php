@@ -610,7 +610,6 @@ class IPAddress extends DataObject {
 				IPAddress::$_showDebuggingInformation = false;
 			}
 		}
-		// return true;
 		return IPAddress::$_showDebuggingInformation;
 	}
 
