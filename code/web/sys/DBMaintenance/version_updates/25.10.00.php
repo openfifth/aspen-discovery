@@ -196,6 +196,114 @@ function getUpdates25_10_00(): array
 				)'
 			]
 		], //create_library_hoopla_settings_table
+		'create_hoopla_entitlements_table' => [
+			'title' => 'Create Hoopla Entitlements Table',
+			'description' => 'Store Hoopla library entitlement data',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS hoopla_entitlements (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					hooplaId INT(11) NOT NULL,
+					hooplaType VARCHAR(20) NOT NULL,
+					UNIQUE KEY hooplaEntitlementUnique (hooplaId, hooplaType)
+				)'
+			]
+		], //create_hoopla_entitlements_table
+		'create_hoopla_entitlement_scopes_table' => [
+			'title' => 'Create hoopla_entitlement_scopes table',
+			'description' => 'Create hoopla_entitlement_scopes table',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS hoopla_entitlement_scopes (
+					entitlementId INT NOT NULL,
+					scopeLibraryId INT NOT NULL,
+					PRIMARY KEY (entitlementId, scopeLibraryId),
+					KEY idx_scopeLibraryId (scopeLibraryId),
+					CONSTRAINT fk_entitlement_scopes_entitlementId FOREIGN KEY (entitlementId) REFERENCES hoopla_entitlements(id) ON DELETE CASCADE ON UPDATE CASCADE
+				)'
+			]
+		], //create_hoopla_entitlement_scopes_table
+		'add_scopeLibraryId_to_hoopla_flex_availability' => [
+			'title' => 'Add scopeLibraryId to hoopla_flex_availability table',
+			'description' => 'Add scopeLibraryId to hoopla_flex_availability table',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE hoopla_flex_availability ADD COLUMN scopeLibraryId INT NULL'
+			]
+		], //add_scopeLibraryId_to_hoopla_flex_availability
+		'migrate_hoopla_data_to_new_structure' => [
+			'title' => 'Migrate Legacy Hoopla Data',
+			'description' => 'Populate new Hoopla tables so existing libraries retain access prior to configuration changes',
+			'continueOnError' => false,
+			'sql' => [
+				// Populate library_hoopla_settings using library-hoopla scopes
+				"INSERT IGNORE INTO library_hoopla_settings (weight, settingId, libraryId, hooplaLibraryID, circulationEnabled, hooplaInstantEnabled, hooplaFlexEnabled)
+					SELECT
+						COALESCE((SELECT MAX(existing.weight) + 1 FROM library_hoopla_settings existing WHERE existing.libraryId = l.libraryId), 0) AS weight,
+						hs.settingId,
+						l.libraryId,
+						CASE WHEN l.hooplaLibraryID IS NULL OR l.hooplaLibraryID = 0 THEN NULL ELSE CAST(l.hooplaLibraryID AS CHAR) END AS hooplaLibraryID,
+						CASE WHEN l.hooplaLibraryID IS NOT NULL AND l.hooplaLibraryID <> 0 THEN 1 ELSE 0 END AS circulationEnabled,
+						CASE WHEN hs.includeInstant = 1 AND s.hooplaInstantEnabled = 1 THEN 1 ELSE 0 END AS hooplaInstantEnabled,
+						CASE WHEN hs.includeFlex = 1 AND s.hooplaFlexEnabled = 1 THEN 1 ELSE 0 END AS hooplaFlexEnabled
+					FROM library l
+					INNER JOIN hoopla_scopes hs ON hs.id = l.hooplaScopeId
+					INNER JOIN hoopla_settings s ON s.id = hs.settingId
+					WHERE l.hooplaScopeId > -1",
+				// Populate new entitlements table for Instant content
+				"INSERT IGNORE INTO hoopla_entitlements (hooplaId, hooplaType)
+					SELECT DISTINCT he.hooplaId, 'Instant'
+					FROM hoopla_export he
+					WHERE he.hooplaId IS NOT NULL
+						AND (he.hooplaType IS NULL OR UPPER(he.hooplaType) <> 'FLEX')",
+				// Populate new entitlements table for Flex content
+				"INSERT IGNORE INTO hoopla_entitlements (hooplaId, hooplaType)
+					SELECT DISTINCT hfa.hooplaId, 'Flex'
+					FROM hoopla_flex_availability hfa
+					WHERE hfa.hooplaId IS NOT NULL",
+				// Attach Instant entitlements to all libraries that previously had Instant enabled
+				"INSERT IGNORE INTO hoopla_entitlement_scopes (entitlementId, scopeLibraryId)
+					SELECT he.id, lhs.libraryId
+					FROM hoopla_entitlements he
+					INNER JOIN library_hoopla_settings lhs ON lhs.hooplaInstantEnabled = 1
+					WHERE he.hooplaType = 'Instant'",
+				// Attach Flex entitlements to libraries that previously had Flex enabled
+				"INSERT IGNORE INTO hoopla_entitlement_scopes (entitlementId, scopeLibraryId)
+					SELECT he.id, lhs.libraryId
+					FROM hoopla_entitlements he
+					INNER JOIN library_hoopla_settings lhs ON lhs.hooplaFlexEnabled = 1
+					WHERE he.hooplaType = 'Flex'",
+				// Backfill scopeLibraryId on existing Flex availability rows
+				"UPDATE hoopla_flex_availability hfa
+					LEFT JOIN (
+						SELECT lhs.libraryId
+						FROM library_hoopla_settings lhs
+						WHERE lhs.hooplaFlexEnabled = 1
+						ORDER BY lhs.libraryId
+						LIMIT 1
+					) flex ON 1 = 1
+					SET hfa.scopeLibraryId = CASE WHEN flex.libraryId IS NULL THEN 0 ELSE flex.libraryId END
+					WHERE hfa.scopeLibraryId IS NULL",
+				// Populate the higher timestamps into the fields we will keep
+				"UPDATE hoopla_settings
+					SET lastUpdateOfChangedRecordsInstant = GREATEST(
+						COALESCE(lastUpdateOfChangedRecordsInstant, 0),
+						COALESCE(lastUpdateOfChangedRecordsFlex, 0)
+					),
+					lastUpdateOfAllRecordsInstant = GREATEST(
+						COALESCE(lastUpdateOfAllRecordsInstant, 0),
+						COALESCE(lastUpdateOfAllRecordsFlex, 0)
+					)"
+			]
+		], //migrate_hoopla_data_to_new_structure
+		'reset_scopeLibraryId_to_not_null' => [
+			'title' => 'Reset scopeLibraryId to not null',
+			'description' => 'Reset scopeLibraryId to not null',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE hoopla_flex_availability MODIFY COLUMN scopeLibraryId INT NOT NULL'
+			]
+		], //reset_scopeLibraryId_to_not_null
 		'drop_unused_hoopla_scopes_columns' => [
 			'title' => 'Drop Unused Hoopla Scopes Columns',
 			'description' => 'Drop unused Hoopla scopes columns',
@@ -229,45 +337,10 @@ function getUpdates25_10_00(): array
 			'sql' => [
 				"ALTER TABLE hoopla_export DROP COLUMN active",
 				"ALTER TABLE hoopla_export DROP COLUMN hooplaType",
-				"ALTER TABLE hoopla_export CHANGE COLUMN kind format VARCHAR(10) DEFAULT NULL",
+				"ALTER TABLE hoopla_export CHANGE COLUMN kind format VARCHAR(50) DEFAULT NULL",
 				"ALTER TABLE hoopla_export CHANGE COLUMN price ppuPrice DOUBLE NOT NULL DEFAULT 0",
 			]
 		], //update_hoopla_export_table
-		'create_hoopla_entitlements_table' => [
-			'title' => 'Create Hoopla Entitlements Table',
-			'description' => 'Store Hoopla library entitlement data',
-			'continueOnError' => false,
-			'sql' => [
-				'CREATE TABLE IF NOT EXISTS hoopla_entitlements (
-					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-					hooplaId INT(11) NOT NULL,
-					hooplaType VARCHAR(20) NOT NULL,
-					UNIQUE KEY hooplaEntitlementUnique (hooplaId, hooplaType)
-				)'
-			]
-		], //create_hoopla_entitlements_table
-		'create_hoopla_entitlement_scopes_table' => [
-			'title' => 'Create hoopla_entitlement_scopes table',
-			'description' => 'Create hoopla_entitlement_scopes table',
-			'continueOnError' => false,
-			'sql' => [
-				'CREATE TABLE IF NOT EXISTS hoopla_entitlement_scopes (
-					entitlementId INT NOT NULL,
-					scopeLibraryId INT NOT NULL,
-					PRIMARY KEY (entitlementId, scopeLibraryId),
-					KEY idx_scopeLibraryId (scopeLibraryId),
-					CONSTRAINT fk_entitlement_scopes_entitlementId FOREIGN KEY (entitlementId) REFERENCES hoopla_entitlements(id) ON DELETE CASCADE ON UPDATE CASCADE
-				)'
-			]
-		], //create_hoopla_entitlement_scopes_table
-		'add_scopeLibraryId_to_hoopla_flex_availability' => [
-			'title' => 'Add scopeLibraryId to hoopla_flex_availability table',
-			'description' => 'Add scopeLibraryId to hoopla_flex_availability table',
-			'continueOnError' => false,
-			'sql' => [
-				'ALTER TABLE hoopla_flex_availability ADD COLUMN scopeLibraryId INT NOT NULL'
-			]
-		], //add_scopeLibraryId_to_hoopla_flex_availability
 		'drop_hooplaLibraryID_from_library_table' => [
 			'title' => 'Drop hooplaLibraryID from library table',
 			'description' => 'Drop hooplaLibraryID from library table',
