@@ -2722,14 +2722,38 @@ class Record_AJAX extends Action {
 		$successCount = 0;
 		$failedRecords = [];
 		$realHoldIds = [];
+		$successfulRecords = [];
 
 		foreach ($records as $recordId) {
 			$holdResult = $catalogDriver->placeHold($user, $recordId, $pickupBranch, null);
 
 			if (!empty($holdResult['success'])) {
 				$successCount++;
+				$successfulRecords[] = $recordId;
 			} else {
 				$failedRecords[] = $recordId;
+			}
+		}
+
+		$viewHoldsActions = [];
+		if ($successCount > 0) {
+			$thisUser = translate([
+				'text' => 'You',
+				'isOublicFacing' => true,
+			]);
+			if (!empty($user->parentUser)) {
+				$thisUser = $user->displayName;
+			}
+
+			$viewHoldsText = translate([
+				'text' => 'On Hold for %1%',
+				1 => $thisUser,
+				'isPublicFacing' => true,
+				'inAttribute' => true
+			]);
+
+			foreach ($successfulRecords as $recordId) {
+				$viewHoldsActions[$recordId] = "<a id='onHoldAction{$recordId}' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='{$viewHoldsText}'>{$viewHoldsText}</a>";
 			}
 		}
 
@@ -2769,7 +2793,8 @@ class Record_AJAX extends Action {
 						'text' => "Successfully placed and grouped holds on %1% editions.",
 						1 => $successCount,
 						'isPublicFacing' => true
-					])
+					]),
+					'viewHoldsActions' => $viewHoldsActions
 				];
 			} else {
 				return [
@@ -2779,7 +2804,8 @@ class Record_AJAX extends Action {
 						'text' => "Placed holds on %1% editions, but could not group them: " . ($groupResult['message'] ?? 'unknown error'),
 						1 => $successCount,
 						'isPublicFacing' => true
-					])
+					]),
+					'viewHoldsActions' => $viewHoldsActions
 				];
 			}
 		}
@@ -2793,7 +2819,8 @@ class Record_AJAX extends Action {
 					'text' => "Successfully placed hold on %1% edition.",
 					1 => $successCount,
 					'isPublicFacing' => true
-				])
+				]),
+				'viewHoldsActions' => $viewHoldsActions
 			];
 		}
 
