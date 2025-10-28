@@ -872,6 +872,8 @@ AspenDiscovery.Record = (function () {
 			$('input[name="hyperholdRecord[]"]:checked').each(function () {
 				selected.push($(this).val());
 			});
+
+			console.log("SELECTED RECORDS:", selected);
 			
 			const pickupBranch = $('#hyperholdPickupBranch').val();
 
@@ -882,11 +884,29 @@ AspenDiscovery.Record = (function () {
 			}
 
 			$.getJSON(Globals.path + '/Record/AJAX?method=submitHyperhold', params, function (data) {
-				AspenDiscovery.showMessage(data.title, data.message);
 				if (data.success) {
-					setTimeout(function() {
-						window.location.reload();
-					}, 1500);
+					AspenDiscovery.showMessage(data.title, data.message);
+
+					if (data.viewHoldsActions) {
+						$.each(data.viewHoldsActions, function(recordId, buttonHtml) {
+							let existingButton = $("#onHoldAction" + recordId);
+
+							 if (existingButton.length === 0) {
+								let cleanId = recordId.replace(/^ils:/, '');
+								let actionButton = $('#actionButton' + cleanId);
+								let relatedActionButton = $('#relatedRecordactionButton' + cleanId);
+								
+								if (actionButton.length > 0) {
+									$(buttonHtml).insertBefore(actionButton);
+								} else if (relatedActionButton.length > 0) {
+									$(buttonHtml).insertBefore(relatedActionButton);
+								}
+							}
+						})
+					}
+					AspenDiscovery.Account.loadMenuData();
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
 				}
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
