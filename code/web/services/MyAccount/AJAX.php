@@ -4019,6 +4019,7 @@ class MyAccount_AJAX extends JSON_Action {
 		global $offlineMode;
 		if (!$offlineMode || $interface->getVariable('enableEContentWhileOffline')) {
 			global $library;
+			global $logger;
 
 			$source = $_REQUEST['source'];
 			$interface->assign('source', $source);
@@ -4031,55 +4032,73 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]);
 			} else {
-				$catalogDriver = $user->getCatalogDriver();
-				$patronId = $user->unique_ils_id;
-				$groupedHoldsResponse = $catalogDriver->getPatronHoldGroups($patronId);
-				$groupedHolds = [];
+				$accountProfile = $library->getAccountProfile();
+				$allowHoldsToBeGrouped = false;
+				if ($accountProfile) {
+					$ils = $accountProfile->ils;
+					if ($ils == 'koha') {
+						require_once ROOT_DIR . '/Drivers/Koha.php';
+						$kohaDriver = new Koha($accountProfile);
+						if ($kohaDriver->supportsHyperholdsGrouping()) {
+							$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
+							if ($user) {
+								if ($user->getHomeLibrary() != null) {
+									$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
+								}
+							}
+							if ($allowHoldsToBeGrouped) {
+								$catalogDriver = $user->getCatalogDriver();
+								$patronId = $user->unique_ils_id;
+								$groupedHoldsResponse = $catalogDriver->getPatronHoldGroups($patronId);
+								$groupedHolds = [];
 
-				if (isset($groupedHoldsResponse['content'])) {
-					if (is_string($groupedHoldsResponse['content'])) {
-						$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
-					} elseif (is_array($groupedHoldsResponse['content'])) {
-						$groupedHolds = $groupedHoldsResponse['content'];
-					} else {
-						global $logger;
-						$logger->log(
-							'Unexpected type for groupedHoldsResponse["content"]: ' . gettype($groupedHoldsResponse['content']),
-							Logger::LOG_ERROR
-						);
-					}
-				} elseif (is_array($groupedHoldsResponse)) {
-					$groupedHolds = $groupedHoldsResponse;
-				} else {
-					global $logger;
-					$logger->log(
-						'Unexpected type for groupedHoldsResponse: ' . gettype($groupedHoldsResponse),
-						Logger::LOG_ERROR
-					);
-				}
+								if (isset($groupedHoldsResponse['content'])) {
+									if (is_string($groupedHoldsResponse['content'])) {
+										$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
+									} elseif (is_array($groupedHoldsResponse['content'])) {
+										$groupedHolds = $groupedHoldsResponse['content'];
+									} else {
+										$logger->log(
+											'Unexpected type for groupedHoldsResponse["content"]: ' . gettype($groupedHoldsResponse['content']),
+											Logger::LOG_ERROR
+										);
+									}
+								} elseif (is_array($groupedHoldsResponse)) {
+									$groupedHolds = $groupedHoldsResponse;
+								} else {
+									$logger->log(
+										'Unexpected type for groupedHoldsResponse: ' . gettype($groupedHoldsResponse),
+										Logger::LOG_ERROR
+									);
+								}
 
-				$linkedUsers = $user->getLinkedUsers();
-				foreach ($linkedUsers as $linkedUser) {
-					$linkedDriver = $linkedUser->getCatalogDriver();
-					if ($linkedDriver) {
-						$linkResp = $linkedDriver->getPatronHoldGroups($linkedUser->unique_ils_id);
-						if (isset($linkResp['content'])) {
-							$linkGroups = is_string($linkResp['content'])
-								? json_decode($linkResp['content'], true)
-								: $linkResp['content'];
-						} else {
-							$linkGroups = is_array($linkResp) ? $linkResp : [];
+								$linkedUsers = $user->getLinkedUsers();
+								foreach ($linkedUsers as $linkedUser) {
+									$linkedDriver = $linkedUser->getCatalogDriver();
+									if ($linkedDriver) {
+										$linkResp = $linkedDriver->getPatronHoldGroups($linkedUser->unique_ils_id);
+										if (isset($linkResp['content'])) {
+											$linkGroups = is_string($linkResp['content'])
+												? json_decode($linkResp['content'], true)
+												: $linkResp['content'];
+										} else {
+											$linkGroups = is_array($linkResp) ? $linkResp : [];
+										}
+
+										foreach ($linkGroups as &$lg) {
+											$lg['linked_user_id'] = $linkedUser->id;
+											$lg['linked_user_name'] = $linkedUser->displayName;
+										}
+										unset($lg);
+
+										$groupedHolds = array_merge($groupedHolds, $linkGroups);
+									}
+								}
+							}
 						}
-
-						foreach ($linkGroups as &$lg) {
-							$lg['linked_user_id'] = $linkedUser->id;
-							$lg['linked_user_name'] = $linkedUser->displayName;
-						}
-						unset($lg);
-
-						$groupedHolds = array_merge($groupedHolds, $linkGroups);
 					}
 				}
+				
 				
 				$selectedUser = $this->setFilterLinkedUser();
 
