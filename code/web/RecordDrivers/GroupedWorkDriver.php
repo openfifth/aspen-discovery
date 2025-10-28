@@ -2546,6 +2546,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 
 		$interface->assign('alternateTitles', $this->getAlternateTitles());
 
+		$interface->assign('recordGroupingOverrides', $this->getRecordGroupingOverrides());
+
 		$interface->assign('primaryIdentifiers', $this->getPrimaryIdentifiers());
 
 		$interface->assign('specifiedDisplayInfo', $this->getSpecifiedDisplayInfo());
@@ -3699,5 +3701,24 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		} else {
 			return '';
 		}
+	}
+
+	public function getRecordGroupingOverrides(): ?array {
+		if (UserAccount::userHasPermission('Manually Group and Ungroup Works')) {
+			require_once ROOT_DIR . '/sys/Grouping/RecordGroupingOverride.php';
+			$override = new RecordGroupingOverride();
+			$permanentId = $this->getPermanentId();
+			$overrides = [];
+			if (!empty($permanentId)) {
+				$override->grouped_work_permanent_id = $permanentId;
+				if ($override->find()) {
+					while ($override->fetch()) {
+						$overrides[$override->id] = clone $override;
+					}
+				}
+			}
+			return $overrides;
+		}
+		return null;
 	}
 }
