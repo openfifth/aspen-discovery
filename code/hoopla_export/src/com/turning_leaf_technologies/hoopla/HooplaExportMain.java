@@ -1286,6 +1286,7 @@ public class HooplaExportMain {
 
 				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/content/info?contentIds=" + contentIdsString;
 				WebServiceResponse response = NetworkUtils.getURL(url, logger, headers);
+				int numTries = 0;
 				if (response.isSuccess()) {
 					try {
 						JSONArray availabilityArray = new JSONArray(response.getMessage());
@@ -1296,16 +1297,18 @@ public class HooplaExportMain {
 					}
 				} else {
 					if (response.getResponseCode() == 401 || response.getResponseCode() == 503 || response.getResponseCode() == 504) {
-						try {
-							Thread.sleep(1000 * 60 * 1); //Wait for 1 minutes before trying again
-						} catch (InterruptedException e) {
-							logEntry.incErrors("Error sleeping for 1 minutes for Flex availability", e);
+						numTries++;
+						if (numTries >= 3){
+							logEntry.incErrors("Error getting Flex availability after 3 attempts from " + url + " " + response.getResponseCode() + " " + response.getMessage());
+						} else {
+							try {
+								Thread.sleep(1000 * 60 * 1); //Wait for 1 minutes before trying again
+							} catch (InterruptedException e) {
+								logEntry.incErrors("Error sleeping for 1 minutes for Flex availability", e);
+							}
 						}
-						accessToken = getAccessToken(settings);
-						headers.put("Authorization", "Bearer " + accessToken);
 					} else {
 						logEntry.incErrors("Error getting Flex availability from " + url + " " + response.getResponseCode() + " " + response.getMessage());
-						continue;
 					}
 				}
 			}
