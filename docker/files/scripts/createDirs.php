@@ -1,7 +1,7 @@
 <?php
 
-//Capture any error as ErrorException
-set_error_handler("customErrorHandler");
+require_once __DIR__ . '/../logger/DockerLogger.php';
+DockerLogger::init('BACKEND');
 
 $newOwner = "www-data"; // default user
 //Check how many arguments has been passed to the script
@@ -9,18 +9,17 @@ if (count($argv) == 2) {
 	$newOwner = $argv[1];
 }
 
-echo "%    --> Owner: $newOwner\n";
+DockerLogger::info("Setting owner: {$newOwner}");
 
 $siteName = getenv('SITE_NAME');
-echo "%    --> Site name: $siteName\n";
+DockerLogger::info("Site name: {$siteName}");
 $configDir = getenv('CONFIG_DIRECTORY');
-echo "%    --> Config directory: $configDir\n";
+DockerLogger::info("Config directory: {$configDir}");
 
 //Check if passed user is valid
 exec("id $newOwner", $output, $exitCode);
 if ($exitCode !== 0) {
-	echo "%   ERROR: The requested user was not found.\n ";
-	die();
+	DockerLogger::error("The requested user was not found: {$newOwner}");
 }
 
 $aspenDir = '/usr/local/aspen-discovery';
@@ -32,6 +31,7 @@ try {
 		exec("mkdir -p $tmpDir");
 		exec("chown -R $newOwner $tmpDir");
 		exec("chmod -R 755 $tmpDir");
+		DockerLogger::info("Created temp smarty directory: {$tmpDir}");
 	}
 
 	//Create data directory and sub-directories
@@ -40,6 +40,7 @@ try {
 		exec("mkdir -p $dataDir");
 		exec("chmod -R 755 $dataDir");
 		exec("chown -R $newOwner $dataDir");
+		DockerLogger::info("Created data directory: {$dataDir}");
 	}
 
 	$subdirectories = ['images', 'files', 'fonts'];
@@ -72,11 +73,11 @@ try {
 			exec("rm $dataDir/$file");
 		}
 	}
-} catch (ErrorException $e) {
-	echo "%   ERROR CREATING DIRECTORIES: $dataDir\n";
-	echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
-	echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
-	die(1);
+	
+	DockerLogger::info("Data directory structure created successfully");
+	
+} catch (Exception $e) {
+	DockerLogger::error("Error creating directories: " . $e->getMessage());
 }
 
 try {
@@ -113,7 +114,6 @@ try {
 	//Images directory
 	exec("chmod -R 755 $aspenDir/code/web/images");
 	exec("chown -R $newOwner $aspenDir/code/web/images");
-
 
 	//Logs directory
 	$logDir = "/var/log/aspen-discovery/$siteName";
@@ -158,11 +158,10 @@ try {
 	$phpDir = "/etc/php/$phpVersion";
 	copy("$configDir/conf/php-fpm.conf", $phpDir . "/fpm/pool.d/php-fpm.conf");
 
-} catch (ErrorException $e) {
-	echo "%   ERROR ASSIGNING PERMISSIONS AND OWNERSHIPS\n";
-	echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
-	echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
-	die(1);
+	DockerLogger::info("Permissions and ownership assigned successfully");
+
+} catch (Exception $e) {
+	DockerLogger::error("Error assigning permissions and ownership: " . $e->getMessage());
 }
 
 function recursive_copy($src, $dst): void {
@@ -179,19 +178,4 @@ function recursive_copy($src, $dst): void {
 	}
 	closedir($dir);
 }
-
-/**
- * @throws ErrorException
- */
-function customErrorHandler(int $errno, string $errstr, string $errfile, int $errline): void {
-	if (!(error_reporting() & $errno)) {
-		// This error code is not included in error_reporting.
-		return;
-	}
-	if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
-		// Do not throw an Exception for deprecation warnings as new or unexpected
-		// deprecations would break the application.
-		return;
-	}
-	throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-}
+?>
