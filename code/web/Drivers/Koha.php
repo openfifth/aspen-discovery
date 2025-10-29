@@ -9269,4 +9269,165 @@ class Koha extends AbstractIlsDriver {
 	public function hasAdditionalFineFields(): bool {
 		return true;
 	}
+
+	public function getPatronHoldGroups($patronId): ?array {
+		$endpoint = "/api/v1/patrons/{$patronId}/hold_groups";
+		$extraHeaders = ['x-koha-embed: holds'];
+
+		$response = $this->kohaApiUserAgent->get($endpoint, 'koha.getPatronHoldGroups', [], $extraHeaders);
+
+		if ($this->kohaApiUserAgent->getLastResponseCode() === 200) {
+			if (is_array($response)) {
+				return $response;
+			}
+			$decoded = json_decode($response, true);
+
+			if (json_last_error() === JSON_ERROR_NONE) {
+				return $decoded;
+			}
+		}
+		return null;
+	}
+
+	public function groupHolds($patronId, $holdIds, $forceGrouped = false) {
+		$endpoint = "/api/v1/patrons/{$patronId}/hold_groups";
+				$extraHeaders = ['x-koha-embed: holds'];
+
+		$result = [
+			'success' => false,
+			'message' => 'Unknown error occurred'
+		];
+
+		try {
+			if (!$patronId) {
+				$result['message'] = translate([
+					'text' => 'No patron id',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+
+			if (empty($holdIds)) {
+				$result['message'] = translate([
+					'text' => 'No holds to group',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+
+			$requestData = [
+				'hold_ids' => array_map('intval', $holdIds),
+				'force_grouped' => $forceGrouped
+			];
+
+
+			$apiResult = $this->kohaApiUserAgent->post($endpoint, $requestData, 'koha.addPatronHoldGroups', [], $extraHeaders);
+
+			$httpCode = $apiResult['code'] ?? 0;
+			$responseData = $apiResult['content'] ?? null;
+			$success = $httpCode == 201 ? true : false;
+
+			if (!$success) {
+				$curlError = $apiResult['curl_error'] ?? null;
+				if ($curlError) {
+					$result['message'] = "Network or connection error: $curlError";
+					return $result;
+				}
+				if ($httpCode === 0) {
+					$result['message'] = "No response from server, possible network error";
+					return $result;
+				}
+			}
+
+			switch ($httpCode) {
+				case 201:
+					$result['success'] = true;
+					$result['message'] = translate(['text' => 'Holds grouped successfully', 'isPublicFacing' => true]);
+					$result['hold_group'] = $responseData;
+					break;
+				case 400:
+					if (isset($responseData['error_code']) && $responseData['error_code'] === 'HoldAlreadyBelongsToHoldGroup') {
+						$responseData['success'] = false;
+						return $responseData;
+					}
+					$result['message'] = translate(['text' => 'Invalid request data', 'isPublicFacing' => true]);
+					if (isset($responseData['error'])) {
+						$result['message'] .= ': ' . $responseData['error'];
+					}
+					break;
+				default:
+					$result['message'] = translate(['text' => 'Unexpected error occurred', 'isPublicFacing' => true]) . " (HTTP $httpCode)";
+					break;
+			}
+
+			if (!$result['success']) {
+				global $logger;
+				$logger->log("Hold Groupeing Error: " . print_r($result, true), Logger::LOG_ERROR);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log('Exception in groupHolds: ' . $e->getMessage(), Logger::LOG_ERROR);
+			$result['message'] = translate([
+				'text' => 'An unexpected error occurred while grouping holds',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	public function deletePatronHoldGroup($patronId, $holdGroupId): bool {
+		$endpoint = "/api/v1/patrons/{$patronId}/hold_groups/{$holdGroupId}";
+
+		$response = $this->kohaApiUserAgent->delete($endpoint, 'koha.deletePatronHoldGroups');
+		$lastCode = $this->kohaApiUserAgent->getLastResponseCode();
+
+		if ($this->kohaApiUserAgent->getLastResponseCode() === 204) {
+			return true;
+		}
+
+		return false;
+	}	
+
+	/**
+	 * Check if this driver supports hyperholds grouping
+	 * @return bol
+	*/
+	public function supportsHyperholdsGrouping() {
+		return $this->isDisplayAddHoldGroupsEnabledInKoha();
+	}
+
+	/**
+	 * Check if displayAddHoldGroups system preference is enabled in Koha
+	 * @return bool
+	*/
+	private function isDisplayAddHoldGroupsEnabledInKoha() {
+		global $logger;
+
+		try {
+			$this->initDatabaseConnection();
+
+			if (!$this->dbConnection) {
+				$logger->log("Could not connect to Koha databse to check displayAddHoldGroups setting", Logger::LOG_ERROR);
+			}
+
+			$sql = "SELECT value FROM systempreferences WHERE variable = 'displayAddHoldGroups'";
+			$result = mysqli_query($this->dbConnection, $sql);
+
+			if ($result) {
+				$row = $result->fetch_assoc();
+				$result->close();
+
+				if ($row && isset($row['value'])) {
+					$value = $row['value'];
+					return ($value === '1' || strtolower($value) === 'on');
+				}
+			}
+
+			return false;
+		} catch (Exception $e) {
+			$logger->log("Error checking Koha displayAddHoldGroups setting: " . $e->getMessage(), Logger::LOG_ERROR);
+		}
+
+	}
 }

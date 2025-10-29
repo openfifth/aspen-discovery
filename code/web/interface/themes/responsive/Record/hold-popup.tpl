@@ -16,6 +16,39 @@
 				<input type="hidden" name="variationId" id="variationId" value="{$variationId}">
 			{/if}
 			<fieldset>
+				{if !empty($allowEditionSelection) && !empty($editions) && $allowHoldsToBeGrouped}
+					<div id="editionSelectionSection" class="form-group">
+						<h4>{translate text='Select editions to place holds on' isPublicFacing=true} ({$currentFormat})</h4>
+						<p class="alert alert-info">
+							{translate text="Select which editions of this format you want to place holds on. By default, all editions are selected." isPublicFacing=true}
+						</p>
+						
+						<div class="editions-list">
+							<ul class="list-unstyled">
+								<li>
+									<a href="#" id="toggleEditions">See Editions</a>
+								</li>
+									{foreach from=$editions item=edition}
+										<li class="edition-item mb-2" style="display: none;">
+											<label>
+												<input type="checkbox" 
+													name="hyperholdRecord[]" 
+													value="{$edition.id}" 
+													checked="checked"
+													class="edition-checkbox">
+												<strong>{$edition.title|escape}</strong>
+												{if $edition.author} by {$edition.author|escape}{/if}
+												<br>
+											</label>
+										</li>
+									{/foreach}
+							</ul>
+						</div>
+						
+						<hr>
+					</div>	
+				{/if}
+
 				<div class="holdsSummary">
 					<input type="hidden" name="holdCount" id="holdCount" value="1">
 					<div class="alert alert-warning" id="overHoldCountWarning" {if empty($showOverHoldLimit)}style="display:none"{/if}>
@@ -73,7 +106,7 @@
 						<div id="pickupLocationOptions" class="form-group">
 							<label class="control-label" for="pickupBranch">{translate text="I want to pick this up at" isPublicFacing=true} </label>
 							<div class="controls">
-								<select name="pickupBranch" id="pickupBranch" class="form-control" onchange="AspenDiscovery.Record.generateSublocationSelect();">
+								<select name="pickupBranch" id="pickupBranch hyperholdPickupBranch" class="form-control" onchange="AspenDiscovery.Record.generateSublocationSelect();">
 									{if count($pickupLocations) > 0}
 										{foreach from=$pickupLocations item=location}
 											{if is_string($location)}
@@ -273,3 +306,14 @@
 	{/if}
 </div>
 {/strip}
+<script>
+	$('#toggleEditions').on('click', function(e){
+		e.preventDefault();
+		$('.edition-item').toggle(); 
+		if ($('.edition-item:visible').length) {
+			$(this).text('Hide Editions');
+		} else {
+			$(this).text('See Editions');
+		}
+	});
+</script>

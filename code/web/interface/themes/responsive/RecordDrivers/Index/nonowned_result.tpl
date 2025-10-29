@@ -42,6 +42,7 @@
 			{/if}
 
 			<div class="row related-manifestations-header">
+				six
 				<div class="col-xs-12 result-label related-manifestations-label">
 					{translate text="Choose a Format" isPublicFacing=true}
 				</div>
