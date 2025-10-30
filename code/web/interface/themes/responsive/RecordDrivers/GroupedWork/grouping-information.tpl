@@ -66,7 +66,6 @@
 		<tr>
 			<th>{translate text="Source" isPublicFacing=true}</th>
 			<th>{translate text="Record ID" isPublicFacing=true}</th>
-			<th>{translate text="Added By" isPublicFacing=true}</th>
 			<th>{translate text="Date Added" isPublicFacing=true}</th>
 			{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
 				<th>{translate text="Actions" isPublicFacing=true}</th>
@@ -77,7 +76,6 @@
 			<tr id="recordGroupingOverride{$override->id}">
 				<td>{$override->source}</td>
 				<td>{$override->record_id}</td>
-				<td>{$override->addedByName}</td>
 				<td>{$override->date_added|date_format}</td>
 				{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
 					<td><a onclick="AspenDiscovery.GroupedWork.deleteRecordGroupingOverride('{$override->id}')" class="btn btn-danger btn-sm">{translate text="Delete" isPublicFacing=true}</a></td>
