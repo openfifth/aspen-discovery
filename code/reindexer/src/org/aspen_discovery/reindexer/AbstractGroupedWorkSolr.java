@@ -14,6 +14,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected String id;
 
 	protected HashMap<String, RecordInfo> relatedRecords = new HashMap<>();
+	protected HashSet<String> overriddenRecords = new HashSet<>();
 
 	protected String acceleratedReaderInterestLevel;
 	protected String acceleratedReaderReadingLevel;
@@ -419,6 +420,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		this.id = id.toLowerCase(Locale.ROOT);
 	}
 
+	public void setOverriddenRecords(HashSet<String> overriddenRecords) {
+		this.overriddenRecords = overriddenRecords;
+	}
+
 	private final static Pattern removeBracketsPattern = Pattern.compile("\\[.*?]");
 	private final static Pattern commonSubtitlePattern = Pattern.compile("(?i)([(]?(?:\\s?a\\s?|\\s?the\\s?)?audio cd|book club kit|large print[)]?)$");
 	private final static Pattern punctuationPattern = Pattern.compile("[.\\\\/()\\[\\]:;]");
@@ -430,6 +435,11 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo) {
 		if (shortTitle != null) {
 			shortTitle = AspenStringUtils.trimTrailingPunctuation(shortTitle);
+			boolean isOverridden = false;
+			if (recordInfo != null) {
+				String recordKey = recordInfo.getSource() + ":" + recordInfo.getRecordIdentifier();
+				isOverridden = overriddenRecords.contains(recordKey);
+			}
 
 			// Figure out if we want to use this title or if the one we have is better.
 			boolean updateTitle = false;
@@ -439,33 +449,36 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 			} else {
 				// Skip unavailable records for title selection if we have any other title.
 				if (recordInfo == null || !recordInfo.hasNotForLoanStatus()) {
-					// Only overwrite if we get a better format.
-					if (formatCategory.equals("Books")) {
-						// We have a book, update if we didn't have a book before.
-						if (!formatCategory.equals(titleFormat)) {
-							updateTitle = true;
-							// Or, update if we had a book before and this title is longer.
-						} else if (shortTitle.length() > this.title.length()) {
-							updateTitle = true;
-						} else if (hasNotForLoanRecord) {
-							// Not for loan record was processed first, and it updated the title, so make sure to override it.
-							updateTitle = true;
-						}
-					} else if (formatCategory.equals("eBook")) {
-						// Update if the format we had before is not a book.
-						if (!titleFormat.equals("Books")) {
-							// And the new format was not an eBook or the new title is longer than what we had before.
+					// Only overwrite if there is a better format.
+					// Do not overwrite if the record was manually moved to this work.
+					if (!isOverridden) {
+						if (formatCategory.equals("Books")) {
+							// There is a book, update if no book from before.
 							if (!formatCategory.equals(titleFormat)) {
 								updateTitle = true;
-								// Or, update if we had a book before and this title is longer.
+								// Or, update if there was a book before, but this title is longer.
 							} else if (shortTitle.length() > this.title.length()) {
 								updateTitle = true;
+							} else if (hasNotForLoanRecord) {
+								// Not for loan record was processed first, and it updated the title, so make sure to override it.
+								updateTitle = true;
 							}
-						}
-					} else if (!titleFormat.equals("Books") && !titleFormat.equals("eBook")) {
-						// If we don't have a Book or an eBook, then we can update the title if we get a longer title.
-						if (shortTitle.length() > this.title.length()) {
-							updateTitle = true;
+						} else if (formatCategory.equals("eBook")) {
+							// Update if the format from before is not a book.
+							if (!titleFormat.equals("Books")) {
+								// And the new format was not an eBook or the new title is longer from before.
+								if (!formatCategory.equals(titleFormat)) {
+									updateTitle = true;
+									// Or, update if there was a book before, but this title is longer.
+								} else if (shortTitle.length() > this.title.length()) {
+									updateTitle = true;
+								}
+							}
+						} else if (!titleFormat.equals("Books") && !titleFormat.equals("eBook")) {
+							// If there isn't a Book or an eBook, then update the title if there is a longer title.
+							if (shortTitle.length() > this.title.length()) {
+								updateTitle = true;
+							}
 						}
 					}
 				}
@@ -593,21 +606,31 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		return mostUsedAuthor;
 	}
 
-	void setAuthorDisplay(String newAuthor, String formatCategory) {
+	void setAuthorDisplay(String newAuthor) {
+		this.setAuthorDisplay(newAuthor, "Books", null);
+	}
+
+	void setAuthorDisplay(String newAuthor, String formatCategory, RecordInfo recordInfo) {
+		boolean isOverridden = false;
+		if (recordInfo != null) {
+			String recordKey = recordInfo.getSource() + ":" + recordInfo.getRecordIdentifier();
+			isOverridden = overriddenRecords.contains(recordKey);
+		}
+
 		boolean updateAuthor = false;
 		if (this.authorDisplay == null) {
 			updateAuthor = true;
 		} else {
-			if (formatCategory.equals("Books")) {
-				//We have a book, update if we didn't have a book before
-				if (!formatCategory.equals(authorFormat)) {
-					updateAuthor = true;
-				}
-			} else if (formatCategory.equals("eBook")) {
-				//Update if the format we had before is not a book
-				if (!authorFormat.equals("Books")) {
-					//And the new format was not an eBook or the new title is longer than what we had before
+			// Do not overwrite if the record was manually moved to this work.
+			if (!isOverridden) {
+				if (formatCategory.equals("Books")) {
+					// There is a book, update if no book from before.
 					if (!formatCategory.equals(authorFormat)) {
+						updateAuthor = true;
+					}
+				} else if (formatCategory.equals("eBook")) {
+					// Update if the format from before was neither a Book nor eBook.
+					if (!authorFormat.equals("Books") && !formatCategory.equals(authorFormat)) {
 						updateAuthor = true;
 					}
 				}
@@ -1378,7 +1401,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	/**
 	 * Get the RecordInfo for a specific source and identifier.
 	 *
-	 * @param source The source of the record (e.g. "koha").
+	 * @param source The source of the record (e.g. "ils").
 	 * @param recordIdentifier The identifier of the record.
 	 * @return The {@code RecordInfo} object if found, null otherwise.
 	 */

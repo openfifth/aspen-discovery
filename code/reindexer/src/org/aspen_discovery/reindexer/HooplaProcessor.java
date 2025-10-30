@@ -126,7 +126,7 @@ class HooplaProcessor {
 				String fullTitle = title + " " + subTitle;
 				fullTitle = fullTitle.trim();
 				String sortableTitle = AspenStringUtils.makeValueSortable(title);
-				groupedWork.setTitle(title, subTitle, title, sortableTitle, primaryFormat, formatCategory);
+				groupedWork.setTitle(title, subTitle, title, sortableTitle, primaryFormat, formatCategory, false, hooplaRecord);
 				groupedWork.addFullTitle(fullTitle);
 
 
@@ -142,7 +142,7 @@ class HooplaProcessor {
 				}
 				groupedWork.setAuthor(primaryAuthor);
 				groupedWork.setAuthAuthor(primaryAuthor);
-				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory);
+				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, hooplaRecord);
 
 				if (rawResponse.has("series")){
 					String series = rawResponse.getString("series");
