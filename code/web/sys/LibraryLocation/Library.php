@@ -1445,6 +1445,7 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => 1,
 						'permissions' => ['Library ILS Options'],
+						'relatedIls' => ['koha', 'sierra', 'symphony'],
 					],
 					'allowLinkedAccounts' => [
 						'property' => 'allowLinkedAccounts',
@@ -1783,6 +1784,7 @@ class Library extends DataObject {
 								'default' => 0,
 								'readOnly' => false,
 								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['koha'],
 							],
 							'allowDateOfBirthUpdates' => [
 								'property' => 'allowDateOfBirthUpdates',
@@ -3672,6 +3674,7 @@ class Library extends DataObject {
 					'Administer Course Reserves',
 					'Library ILS Connection',
 				],
+				'relatedIls' => ['koha', 'symphony'],
 				'properties' => [
 					'enableCourseReserves' => [
 						'property' => 'enableCourseReserves',
@@ -3786,6 +3789,7 @@ class Library extends DataObject {
 						'storeDb' => true,
 						'canAddNew' => true,
 						'canDelete' => true,
+						'relatedIls' => ['koha'],
 					],
 
 					'innReachSection' => [
