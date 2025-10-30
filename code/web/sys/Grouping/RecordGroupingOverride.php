@@ -12,6 +12,10 @@ class RecordGroupingOverride extends DataObject {
 
 	static array $_objectStructure = [];
 
+	public function getUniquenessFields(): array {
+		return ['source', 'record_id'];
+	}
+
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
@@ -135,6 +139,14 @@ class RecordGroupingOverride extends DataObject {
 	}
 
 	public function insert(string $context = ''): bool|int {
+		$existingOverride = new RecordGroupingOverride();
+		$existingOverride->source = $this->source;
+		$existingOverride->record_id = $this->record_id;
+		if ($existingOverride->find(true)) {
+			$this->setLastError("An override already exists for source '$this->source' and record_id '$this->record_id' (ID: $existingOverride->id).");
+			return false;
+		}
+
 		if (empty($this->date_added)) {
 			$this->date_added = time();
 		}
