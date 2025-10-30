@@ -923,8 +923,8 @@ public class HooplaExportMain {
 						addHooplaTitleToDB.setString(8, curTitle.has("rating") ? curTitle.getString("rating") : "");
 						addHooplaTitleToDB.setBoolean(9, curTitle.getBoolean("abridged"));
 						addHooplaTitleToDB.setBoolean(10, curTitle.getBoolean("children"));
-						// Flex titles don't have a price so set it to 0.0
-						if (hooplaType.equalsIgnoreCase("Flex")) {
+						// Flex titles don't have a price, so set it to 0.0 or set to 0 if the record has no price
+						if (hooplaType.equalsIgnoreCase("Flex") || !curTitle.has("price")) {
 							addHooplaTitleToDB.setDouble(11, 0.0);
 						} else {
 							addHooplaTitleToDB.setDouble(11, curTitle.getDouble("price"));
