@@ -359,7 +359,7 @@ public class GroupedWorkIndexer {
 			return;
 		}
 
-		// Check if series module is enabled
+		// Check if the series module is enabled
 		try {
 			PreparedStatement seriesModuleEnabledStmt = dbConn.prepareStatement("SELECT enabled FROM modules WHERE name = 'series'");
 			ResultSet enabledRS = seriesModuleEnabledStmt.executeQuery();

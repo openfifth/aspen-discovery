@@ -146,7 +146,7 @@ public class RecordGroupingProcessor {
 	 * @param source - The source of the record being removed
 	 * @param id     - The id of the record being removed
 	 */
-	public RemoveRecordFromWorkResult removeRecordFromGroupedWork(String source, String id) {
+	public synchronized RemoveRecordFromWorkResult removeRecordFromGroupedWork(String source, String id) {
 		RemoveRecordFromWorkResult result = new RemoveRecordFromWorkResult();
 		try {
 			//Check to see if the identifier is in the grouped work primary identifiers table
@@ -175,7 +175,7 @@ public class RecordGroupingProcessor {
 			}//If not true, already deleted skip this
 			getWorkForPrimaryIdentifierRS.close();
 		} catch (Exception e) {
-			logEntry.incErrors("Error processing deleted bibs", e);
+			logEntry.incErrors("Error processing removing record from grouped work", e);
 		}
 		return result;
 	}
