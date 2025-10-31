@@ -428,17 +428,13 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 						scopingDetailsForScope.add(scopingInfo.getScopingDetails());
 					}
 
-					HashSet<String> formatsForItem;
-					HashSet<String> formatsCategoriesForItem;
+					ArrayList<String> formatsForItem;
+					ArrayList<String> formatsCategoriesForItem;
 					HashSet<String> availableAtForItem = new HashSet<>();
 					availabilityToggleForItem.reset();
 
 					String readerName = "Libby";
 
-					//Loading reader name here isn't really needed since it gets set for the item based on scope
-//					if ((scopingInfo.getScope().getOverDriveScope()) != null){
-//						readerName = scopingInfo.getScope().getOverDriveScope().getReaderName();
-//					}
 					ItemInfo curItem = scopingInfo.getItem();
 					try {
 						formatsForItem = curItem.getFormatsForIndexing();
@@ -629,30 +625,27 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 		//logger.info("Work " + id + " processed " + relatedScopes.size() + " scopes");
 	}
 
-	private void loadScopedEditionInformation(HashSet<String> editionInfo, String scopePrefix, HashSet<String> formatsForItem, HashSet<String> formatsCategoriesForItem, HashSet<String> availableAtForItem, AvailabilityToggleInfo availabilityToggleForItem) {
+	private void loadScopedEditionInformation(HashSet<String> editionInfo, String scopePrefix, ArrayList<String> formatsForItem, ArrayList<String> formatsCategoriesForItem, HashSet<String> availableAtForItem, AvailabilityToggleInfo availabilityToggleForItem) {
 		if (formatsCategoriesForItem.isEmpty()){
 			formatsCategoriesForItem.add("");
 		}
 		if (availableAtForItem.isEmpty()) {
 			availableAtForItem.add("none");
 		}
-		HashSet<String> availabilityToggleValues = availabilityToggleForItem.getValues();
+		ArrayList<String> availabilityToggleValues = availabilityToggleForItem.getValues();
+		ArrayList<String> availableAtForItemArray = new ArrayList<>(availableAtForItem);
 		for (String formatCategory : formatsCategoriesForItem) {
-			String scopeAndFormatCategory = scopePrefix + formatCategory;
+			String scopeAndFormatCategory = scopePrefix + formatCategory.replace(' ', '_');
 			for (String format : formatsForItem) {
-				String scopeFormatCategoryFormat = scopeAndFormatCategory  + "#" + format;
+				String scopeFormatCategoryFormat = scopeAndFormatCategory  + "#" + format.replace(' ', '_');
 				for (String availabilityToggle : availabilityToggleValues) {
 					StringBuilder baseEditionBuilder = new StringBuilder(scopeFormatCategoryFormat)
 						.append("#")
 						.append(availabilityToggle)
 						.append("#");
 
-					for (String availableAtLocation : availableAtForItem) {
-						StringBuilder editionBuilder = new StringBuilder(baseEditionBuilder);
-						String editionString = editionBuilder.append(availableAtLocation)
-							.append("#")
-							.toString() // Get the final String
-							.replace(' ', '_');
+					for (String availableAtLocation : availableAtForItemArray) {
+						String editionString = baseEditionBuilder + availableAtLocation.replace(' ', '_') + "#"; // Get the final String
 						editionInfo.add(editionString);
 					}
 				}
@@ -740,7 +733,7 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 		return daysSinceAdded;
 	}
 
-	private void loadScopedFormatInfo(HashSet<String> scopedFormats, HashSet<String> scopedFormatCategories, String scopePrefix, HashSet<String> formatsForItem, HashSet<String> formatsCategoriesForItem) {
+	private void loadScopedFormatInfo(HashSet<String> scopedFormats, HashSet<String> scopedFormatCategories, String scopePrefix, ArrayList<String> formatsForItem, ArrayList<String> formatsCategoriesForItem) {
 		for (String format : formatsForItem) {
 			scopedFormats.add(scopePrefix + format);
 		}
