@@ -29,9 +29,10 @@ public class AspenEventsIndexer {
 	private final EventsIndexerLogEntry logEntry;
 	private final HashMap<Long, AspenEvent> eventInstances = new HashMap<>();
 	private final HashSet<String> librariesToShowFor = new HashSet<>();
+	private final HashMap<Long, String> librariesToShowSeparatelyFor = new HashMap<>();
 	private final static CRC32 checksumCalculator = new CRC32();
 	private final String coverPath;
-
+	private int eventsSearchSetting;
 	private final List<String> idsToDelete = new ArrayList<>();
 
 	private final ConcurrentUpdateHttp2SolrClient solrUpdateServer;
@@ -74,11 +75,32 @@ public class AspenEventsIndexer {
 				logEntry.incNumEvents(eventCountRS.getInt("COUNT(*)"));
 			}
 
-			PreparedStatement getLibraryScopesStmt = aspenConn.prepareStatement("SELECT subdomain from library inner join library_events_setting on library.libraryId = library_events_setting.libraryId WHERE settingSource = 'aspenEvents' AND settingId = ?");
+			//retrieve the scoping setting for the indexing setting
+			PreparedStatement getLibraryScopeSettingStmt = aspenConn.prepareStatement("SELECT * from events_indexing_settings WHERE id = ?");
+			getLibraryScopeSettingStmt.setLong(1, settingsId);
+			ResultSet getLibraryScopeSettingRS = getLibraryScopeSettingStmt.executeQuery();
+			if (getLibraryScopeSettingRS.next()) {
+				this.eventsSearchSetting = getLibraryScopeSettingRS.getInt("eventsSearchSetting");
+			}
+
+			PreparedStatement getLibraryScopesStmt = aspenConn.prepareStatement("SELECT library.libraryId, subdomain from library inner join library_events_setting on library.libraryId = library_events_setting.libraryId WHERE settingSource = 'aspenEvents' AND settingId = ?");
 			getLibraryScopesStmt.setLong(1, settingsId);
 			ResultSet getLibraryScopesRS = getLibraryScopesStmt.executeQuery();
-			while (getLibraryScopesRS.next()){
-				librariesToShowFor.add(getLibraryScopesRS.getString("subdomain").toLowerCase());
+			if (eventsSearchSetting != 3) {
+				while (getLibraryScopesRS.next()){
+					librariesToShowFor.add(getLibraryScopesRS.getString("subdomain").toLowerCase());
+				}
+			} else { //libraries on single setting want their own individual scopes
+				while (getLibraryScopesRS.next()){
+					librariesToShowSeparatelyFor.put(getLibraryScopesRS.getLong("libraryId"), getLibraryScopesRS.getString("subdomain").toLowerCase());
+				}
+			}
+
+			//add subdomains who want to show events from all libraries
+			PreparedStatement getLibrariesToShowAllForStmt = aspenConn.prepareStatement("SELECT l.subdomain FROM library AS l INNER JOIN library_events_setting AS les ON l.libraryId = les.libraryId INNER JOIN events_indexing_settings AS eis ON les.settingId = eis.id WHERE les.settingSource = 'aspenEvents' AND eis.eventsSearchSetting = 0");
+			ResultSet getLibrariesToShowAllForRS = getLibrariesToShowAllForStmt.executeQuery();
+			while (getLibrariesToShowAllForRS.next()) {
+				librariesToShowFor.add(getLibrariesToShowAllForRS.getString("subdomain").toLowerCase());
 			}
 
 			PreparedStatement eventsStmt;
@@ -242,8 +264,14 @@ public class AspenEventsIndexer {
 
 				solrDocument.addField("description", eventInfo.getDescription());
 
+				if (eventsSearchSetting == 3) {
+					librariesToShowFor.add(librariesToShowSeparatelyFor.get(eventInfo.getLocationId()));
+				}
+
 				// Libraries scopes
 				solrDocument.addField("library_scopes", librariesToShowFor);
+
+				librariesToShowFor.remove(librariesToShowSeparatelyFor.get(eventInfo.getLocationId()));
 
 				solrDocument.addField("boost", boost);
 				solrUpdateServer.add(solrDocument);
