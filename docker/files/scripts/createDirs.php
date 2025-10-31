@@ -29,8 +29,7 @@ try {
 	$tmpDir = "$aspenDir/tmp/smarty/compile";
 	if (!file_exists($tmpDir)) {
 		exec("mkdir -p $tmpDir");
-		exec("chown -R $newOwner $tmpDir");
-		exec("chmod -R 755 $tmpDir");
+		DockerLogger::setPermissions($tmpDir, $newOwner, '755');
 		DockerLogger::info("Created temp smarty directory: {$tmpDir}");
 	}
 
@@ -38,8 +37,7 @@ try {
 	$dataDir = "/data/aspen-discovery/$siteName";
 	if (!file_exists($dataDir)) {
 		exec("mkdir -p $dataDir");
-		exec("chmod -R 755 $dataDir");
-		exec("chown -R $newOwner $dataDir");
+		DockerLogger::setPermissions($dataDir, $newOwner, '755');
 		DockerLogger::info("Created data directory: {$dataDir}");
 	}
 
@@ -53,8 +51,7 @@ try {
 	if (!file_exists("/data/aspen-discovery/accelerated_reader")) {
 		exec("mkdir -p /data/aspen-discovery/accelerated_reader");
 	}
-	exec("chmod -R 755 /data/aspen-discovery/accelerated_reader");
-	exec("chown -R $newOwner /data/aspen-discovery/accelerated_reader");
+	DockerLogger::setPermissions("/data/aspen-discovery/accelerated_reader", $newOwner, '755');
 
 	//Copy just necessary directories
 	recursive_copy("$aspenDir/data_dir_setup/", $dataDir);
@@ -84,69 +81,56 @@ try {
 	//Assign owners and permissions
 
 	//Aspen directory
-	exec("chown -v -R $newOwner $aspenDir/tmp");
-	exec("chmod -R 755 $dataDir");
-
-	exec("chown -R $newOwner $aspenDir/code/web");
-	exec("chown -R $newOwner $aspenDir/sites");
-	exec("chown -R $newOwner $aspenDir/sites/default");
+	DockerLogger::setPermissions("$aspenDir/tmp", $newOwner, '755');
+	DockerLogger::setPermissions($dataDir, $newOwner, '755');
+	DockerLogger::setPermissions("$aspenDir/code/web", $newOwner, '755');
+	DockerLogger::setPermissions("$aspenDir/sites", $newOwner, '755');
+	DockerLogger::setPermissions("$aspenDir/sites/default", $newOwner, '755');
 
 	//Data directory
-	exec("chmod -R 755 $dataDir");
-	exec("chown -R $newOwner $dataDir");
-
-	exec("chmod -R 755 $dataDir/covers");
-	exec("chown -R $newOwner $dataDir/covers");
-
-	exec("chmod -R 755 $dataDir/uploads");
-	exec("chown -R $newOwner $dataDir/uploads");
-
-	exec("chown -R root:root $dataDir/sql_backup");
+	DockerLogger::setPermissions($dataDir, $newOwner, '755');
+	DockerLogger::setPermissions("$dataDir/covers", $newOwner, '755');
+	DockerLogger::setPermissions("$dataDir/uploads", $newOwner, '755');
+	DockerLogger::setPermissions("$dataDir/sql_backup", 'root', '755');
 
 	//Files directory
-	exec("chmod -R 755 $aspenDir/code/web/files");
-	exec("chown -R $newOwner $aspenDir/code/web/files");
+	DockerLogger::setPermissions("$aspenDir/code/web/files", $newOwner, '755');
 
 	//Fonts directory
-	exec("chmod -R 755 $aspenDir/code/web/fonts");
-	exec("chown -R $newOwner $aspenDir/code/web/fonts");
+	DockerLogger::setPermissions("$aspenDir/code/web/fonts", $newOwner, '755');
 
 	//Images directory
-	exec("chmod -R 755 $aspenDir/code/web/images");
-	exec("chown -R $newOwner $aspenDir/code/web/images");
+	DockerLogger::setPermissions("$aspenDir/code/web/images", $newOwner, '755');
 
 	//Logs directory
 	$logDir = "/var/log/aspen-discovery/$siteName";
 	if (!file_exists($logDir)) {
 		exec("mkdir -p $logDir");
-		exec("chmod -R 755 $logDir");
+		DockerLogger::setPermissions($logDir, $newOwner, '755');
 	}
 
 	$logDir2 = "/var/log/aspen-discovery/$siteName/logs";
 	if (!file_exists($logDir2)) {
 		exec("mkdir -p $logDir2");
-		exec("chmod -R 755 $logDir2");
+		DockerLogger::setPermissions($logDir2, $newOwner, '755');
 	}
 
-	exec("chown -R $newOwner $logDir");
-	exec("chown -R $newOwner $logDir/logs");
+	DockerLogger::setPermissions($logDir, $newOwner, '755');
+	DockerLogger::setPermissions("$logDir/logs", $newOwner, '755');
 	
 	//Conf directory
-	exec("chmod -R 755 $configDir/conf");
-	exec("chown $newOwner $configDir/conf");
-	exec("chown $newOwner $configDir/conf/config*");
-	exec("chown $newOwner $configDir/conf/php-fpm.conf");
-	exec("chown root:root $configDir/httpd-$siteName.conf");
-	exec("chown root:root $configDir/conf/crontab_settings.txt");
-	exec("chmod 0644 $configDir/conf/crontab_settings.txt");
-	exec("chown root:root $configDir/conf/crontab");
-	exec("chmod 0644 $configDir/conf/crontab");
+	DockerLogger::setPermissions("$configDir/conf", $newOwner, '755');
+	DockerLogger::setPermissions("$configDir/conf/config*", $newOwner, '755');
+	DockerLogger::setPermissions("$configDir/conf/php-fpm.conf", $newOwner, '755');
+	DockerLogger::setPermissions("$configDir/httpd-$siteName.conf", 'root', '644');
+	DockerLogger::setPermissions("$configDir/conf/crontab_settings.txt", 'root', '644');
+	DockerLogger::setPermissions("$configDir/conf/crontab", 'root', '644');
 
 	if (file_exists("$configDir/conf/log4j")) {
-		exec("chown $newOwner $configDir/conf/log4j*");
+		DockerLogger::setPermissions("$configDir/conf/log4j*", $newOwner, '755');
 	}
 	if (file_exists("$configDir/conf/passkey")) {
-		exec("chown $newOwner $configDir/conf/passkey");
+		DockerLogger::setPermissions("$configDir/conf/passkey", $newOwner, '755');
 	}
 
 	//Copy the httpd conf file
