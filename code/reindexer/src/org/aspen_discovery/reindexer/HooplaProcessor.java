@@ -149,13 +149,11 @@ class HooplaProcessor {
 				groupedWork.setAuthAuthor(primaryAuthor);
 				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, hooplaRecord);
 
-				if (rawResponse.has("series")){
-					String series = rawResponse.getString("series");
+				String series = rawResponse.optString("seriesName", rawResponse.optString("series", ""));
+
+				if (!series.isEmpty()){
 					groupedWork.addSeries(series);
-					String volume = "";
-					if (rawResponse.has("episode")){
-						volume = rawResponse.get("episode").toString();
-					}
+					String volume = rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
 					groupedWork.addSeriesWithVolume(series, volume, 2);
 				}
 
@@ -357,8 +355,8 @@ class HooplaProcessor {
 				groupedWork.addTopic(topicsToAdd);
 				HashMap<String, Integer> literaryForm = new HashMap<>();
 				HashMap<String, Integer> literaryFormFull = new HashMap<>();
-				if (rawResponse.has("isFiction")){
-					if (rawResponse.getBoolean("isFiction")){
+				if (rawResponse.has("isFiction") || rawResponse.has("fiction")){
+					if (rawResponse.optBoolean("isFiction", rawResponse.optBoolean("fiction", false))){
 						Util.addToMapWithCount(literaryForm, "Fiction");
 						Util.addToMapWithCount(literaryFormFull, "Fiction");
 						if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Literary Form is fiction based on Hoopla record", 2);}
@@ -378,8 +376,7 @@ class HooplaProcessor {
 				String publisher = rawResponse.getString("publisher");
 				groupedWork.addPublisher(publisher);
 				//publication date
-				Object yearObj = rawResponse.get("releaseYear");
-				String releaseYear = yearObj.toString();
+				String releaseYear = rawResponse.optString("releaseYear", rawResponse.optString("year", ""));
 
 				groupedWork.addPublicationDate(releaseYear);
 				//physical description
