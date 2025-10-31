@@ -596,9 +596,9 @@ class Koha extends AbstractIlsDriver {
 				$circulationRulesSql = "
 					SELECT * FROM circulation_rules
 					WHERE (categorycode IN ('$patronType', '*') OR categorycode IS NULL)
-					  AND (itemtype IN('$itemType', '*') OR itemtype is null)
-					  AND (branchcode IN ('$circBranch', '*') OR branchcode IS NULL)
-					  AND rule_name like '%renew%'
+					AND (itemtype IN('$itemType', '*') OR itemtype is null)
+					AND (branchcode IN ('$circBranch', '*') OR branchcode IS NULL)
+					AND rule_name like '%renew%'
 					ORDER BY branchcode desc, categorycode desc, itemtype desc
 				";
 				$circulationRulesRS = mysqli_query($this->dbConnection, $circulationRulesSql);
