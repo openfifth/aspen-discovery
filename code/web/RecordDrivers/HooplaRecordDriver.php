@@ -115,7 +115,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 */
 	public function getTitle() {
 		//if episode or subtitle data, match what is displayed in search results
-		if (!empty($this->hooplaRawMetadata->episode)) {
+		if (!empty($this->hooplaRawMetadata->episode) && !empty($this->hooplaRawMetadata->episodeNumber)) {
 			return $this->hooplaExtract->title;
 		} elseif (!empty($this->hooplaRawMetadata->subtitle)) {
 			return $this->hooplaExtract->title . ': ' . $this->hooplaRawMetadata->subtitle;
@@ -435,7 +435,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getPublicationDates() {
-		return [$this->hooplaRawMetadata->releaseYear];
+		return [$this->hooplaRawMetadata->releaseYear ?? $this->hooplaRawMetadata->year ?? ''];
 	}
 
 	public function getRecordType() {
