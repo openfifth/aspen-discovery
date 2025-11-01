@@ -43,6 +43,13 @@ function getUpdates25_11_00(): array {
 		//kirstien - Grove
 
 		//kodi - Grove
+		'events_search_setting' => [
+			'title' => 'Events Search Setting',
+			'description' => 'Add column to events_indexing_settings for search scope settings.',
+			'sql' => [
+				'ALTER TABLE events_indexing_settings ADD COLUMN eventsSearchSetting INT DEFAULT 1'
+			]
+		],
 		'event_field_calendar_options' => [
 			'title' => 'Event Field Calendar Options',
 			'description' => 'Create event_field_calendar_options table.',

@@ -58,6 +58,19 @@ class EventsIndexingSetting extends DataObject {
 				'label' => 'Last Update Of Changed Events',
 				'readOnly' => 1,
 			],
+			'eventsSearchSetting' => [
+				'property' => 'eventsSearchSetting',
+				'type' => 'enum',
+				'label' => 'Events Search Scope',
+				'description' => 'The search scope for events.',
+				'values' => [
+					'0' => 'All events for all libraries',
+					'1' => 'All events at any selected library',
+					'2' => 'Events for the selected library only',
+				],
+				'default' => '1',
+				'hideInLists' => true,
+			],
 			'libraries' => [
 				'property' => 'libraries',
 				'type' => 'multiSelect',
