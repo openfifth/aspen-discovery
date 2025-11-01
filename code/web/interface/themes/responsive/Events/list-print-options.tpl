@@ -10,6 +10,16 @@
 		<div class="col-md-6">
 			<h4 class="bold">{translate text="Calendar View Options" isPublicFacing=true}</h4>
 			<h5>({translate text="Landscape Orientation" isPublicFacing=true})</h5>
+			{if !empty($eventFieldNamesCalendar)}
+				{foreach from=$eventFieldNamesCalendar item=eventField}
+					<div class="form-group checkbox">
+						<label for="{$eventField}">
+							<input type="checkbox" name="{$eventField}" id="{$eventField}">
+							<strong>{$eventField}</strong>
+						</label>
+					</div>
+				{/foreach}
+			{/if}
 			<div class="form-group checkbox">
 				<label for="endTime">
 					<input type="checkbox" name="endTime" id="endTime">
@@ -31,6 +41,16 @@
 					<strong>{translate text="Description" isPublicFacing=true}</strong>
 				</label>
 			</div>
+			{if !empty($eventFieldNamesAgenda)}
+				{foreach from=$eventFieldNamesAgenda item=eventField}
+					<div class="form-group checkbox">
+						<label for="{$eventField}">
+							<input type="checkbox" name="{$eventField}" id="{$eventField}">
+							<strong>{$eventField}</strong>
+						</label>
+					</div>
+				{/foreach}
+			{/if}
 		</div>
 	</div>
 {/strip}
