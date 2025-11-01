@@ -6,6 +6,11 @@ class Events_Calendar extends Action {
 		global $interface;
 		global $timer;
 
+		$calendarDisplaySettingId = $this->getCalendarDisplaySettingId();
+		$eventFieldsToShow = [];
+		if (!empty($calendarDisplaySettingId)) {
+			$eventFieldsToShow = $this->getEventFieldsToShow($calendarDisplaySettingId);
+		}
 		// Include Search Engine Class
 		require_once ROOT_DIR . '/sys/SolrConnector/Solr.php';
 
@@ -222,6 +227,7 @@ class Events_Calendar extends Action {
 							$isCancelled = true;
 						}
 						$url = "";
+						$eventFields = [];
 						if (preg_match('`^communico`', $result['id'])){
 							$url = '/Communico/' . $result['id'] . '/Event';
 						}
@@ -237,6 +243,21 @@ class Events_Calendar extends Action {
 						elseif (preg_match('`^aspen`', $result['id'])){
 							$url = '/AspenEvents/' . $result['id'] . '/Event';
 						}
+
+						if (!empty($eventFieldsToShow)) {
+							foreach ($eventFieldsToShow as $field) {
+								$fieldName = str_replace(" ", "_", $field);
+								$pattern = '/custom_([a-z]+)_'.$fieldName.'/i';
+								$keys = array_keys($result);
+								$matches = preg_grep($pattern, $keys);
+								if (!empty($matches)) {
+									foreach($matches as $match) {
+										$eventFields[$match] = $result[$match];
+									}
+								}
+							}
+						}
+
 						$description = $result['description'];
 						$eventDayObj['events'][] = [
 							'id' => $result['id'],
@@ -245,6 +266,7 @@ class Events_Calendar extends Action {
 							'formattedTime' => $formattedTime,
 							'isCancelled' => $isCancelled,
 							'description' => $description,
+							'eventFields' => $eventFields,
 						];
 					}
 				}
@@ -272,7 +294,7 @@ class Events_Calendar extends Action {
 		}
 		$interface->assign('weeks', $weeks);
 
-		$headerImage = $this->getHeaderImage();
+		$headerImage = $this->getHeaderImage($calendarDisplaySettingId);
 		$interface->assign('headerImage', $headerImage['image'] ?? '');
 		$interface->assign('headerAlt', $headerImage['altText'] ?? '');
 
@@ -291,9 +313,10 @@ class Events_Calendar extends Action {
 		return $breadcrumbs;
 	}
 
-	function getHeaderImage() {
+	function getHeaderImage(int $calendarDisplaySettingId = 0) {
 		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
 		$setting = new CalendarDisplaySetting();
+		$setting->id = $calendarDisplaySettingId;
 		$headerImage = [];
 		if ($setting->find(true)) {
 			$headerImage["image"] =  !empty($setting->cover) ? "/files/original/" . $setting->cover : '';
@@ -301,4 +324,44 @@ class Events_Calendar extends Action {
 		}
 		return $headerImage;
 	}
+
+	function getCalendarDisplaySettingId() {
+		global $library;
+		$calendarDisplaySettingId = 0;
+		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySettingLibrary.php';
+		$setting = new CalendarDisplaySettingLibrary();
+		$setting->libraryId = $library->id;
+		if ($setting->find(true)) {
+			$calendarDisplaySettingId = $setting->calendarDisplaySettingId;
+		}
+		return $calendarDisplaySettingId;
+	}
+
+	function getEventFieldsToShow($calendarDisplaySettingId) {
+		$eventFieldIds = [];
+		$eventFieldNames = [];
+		require_once ROOT_DIR . '/sys/Events/EventFieldCalendarOptions.php';
+		require_once ROOT_DIR . '/sys/Events/EventField.php';
+		$eventFieldOptions = new EventFieldCalendarOptions();
+		$eventFieldOptions->calendarDislpaySettingId = $calendarDisplaySettingId;
+		$eventFieldOptions->displayedOnline = 1;
+		$eventFieldOptions->orderBy('weight');
+		$eventFieldOptions->find();
+		while ($eventFieldOptions->fetch()) {
+			$eventFieldIds[] = $eventFieldOptions->eventFieldId;
+		}
+		foreach ($eventFieldIds as $eventFieldId) {
+			if ($eventFieldId == -2) {
+				$eventFieldNames[] = "description";
+			} else {
+				$eventField = new EventField();
+				$eventField->id = $eventFieldId;
+				if ($eventField->find(true)) {
+					$eventFieldNames[] = $eventField->name;
+				}
+			}
+		}
+		return $eventFieldNames;
+	}
+
 }

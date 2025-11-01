@@ -43,6 +43,32 @@ function getUpdates25_11_00(): array {
 		//kirstien - Grove
 
 		//kodi - Grove
+		'event_field_calendar_options' => [
+			'title' => 'Event Field Calendar Options',
+			'description' => 'Create event_field_calendar_options table.',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS event_field_calendar_options (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					eventFieldId INT NOT NULL,
+					weight INT DEFAULT 0,
+					displayedOnline TINYINT(1) DEFAULT 0,
+					printedCalendar TINYINT(1) DEFAULT 0,
+					printedAgenda TINYINT(1) DEFAULT 0
+					)',
+			]
+		], //event_field_calendar_options
+		'calendary_display_setting_library' => [
+			'title' => 'Calendar Settings by Library',
+			'description' => 'Create calendar_display_setting_library_table.',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS calendar_display_setting_library (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					libraryId INT NOT NULL
+				)',
+			]
+		], //calendary_display_setting_library
 
 		// Myranda - Grove
 
