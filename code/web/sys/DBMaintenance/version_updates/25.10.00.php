@@ -275,17 +275,44 @@ function getUpdates25_10_00(): array
 					FROM hoopla_entitlements he
 					INNER JOIN library_hoopla_settings lhs ON lhs.hooplaFlexEnabled = 1
 					WHERE he.hooplaType = 'Flex'",
-				// Backfill scopeLibraryId on existing Flex availability rows
+				// Assign a flex-enabled library to legacy availability rows missing scopeLibraryId
 				"UPDATE hoopla_flex_availability hfa
-					LEFT JOIN (
-						SELECT lhs.libraryId
-						FROM library_hoopla_settings lhs
-						WHERE lhs.hooplaFlexEnabled = 1
-						ORDER BY lhs.libraryId
-						LIMIT 1
-					) flex ON 1 = 1
-					SET hfa.scopeLibraryId = CASE WHEN flex.libraryId IS NULL THEN 0 ELSE flex.libraryId END
-					WHERE hfa.scopeLibraryId IS NULL",
+					JOIN (
+						SELECT base.id,
+							COALESCE(MIN(lhs.libraryId), 0) AS targetLibraryId
+							FROM hoopla_flex_availability base
+							LEFT JOIN hoopla_entitlements he ON he.hooplaId = base.hooplaId AND he.hooplaType = 'Flex'
+							LEFT JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id
+							LEFT JOIN library_hoopla_settings lhs ON lhs.libraryId = hes.scopeLibraryId AND lhs.hooplaFlexEnabled = 1
+							WHERE base.scopeLibraryId IS NULL OR base.scopeLibraryId = 0
+							GROUP BY base.id
+						) picked ON picked.id = hfa.id
+					SET hfa.scopeLibraryId = picked.targetLibraryId
+					WHERE picked.targetLibraryId <> 0",
+				// Duplicate availability rows so each flex-enabled library receives a copy
+				"INSERT INTO hoopla_flex_availability (hooplaId, holdsQueueSize, availableCopies, totalCopies, status, scopeLibraryId)
+					SELECT base.hooplaId,
+						base.holdsQueueSize,
+						base.availableCopies,
+						base.totalCopies,
+						base.status,
+						lhs.libraryId
+					FROM (
+							SELECT hfa.*
+							FROM hoopla_flex_availability hfa
+							JOIN (
+								SELECT hooplaId, MIN(id) AS minId
+								FROM hoopla_flex_availability
+								GROUP BY hooplaId
+							) first_row ON first_row.hooplaId = hfa.hooplaId AND first_row.minId = hfa.id
+						) base
+					JOIN hoopla_entitlements he ON he.hooplaId = base.hooplaId AND he.hooplaType = 'Flex'
+					JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id
+					JOIN library_hoopla_settings lhs ON lhs.libraryId = hes.scopeLibraryId AND lhs.hooplaFlexEnabled = 1
+					LEFT JOIN hoopla_flex_availability existing
+						ON existing.hooplaId = base.hooplaId
+						AND existing.scopeLibraryId = lhs.libraryId
+					WHERE existing.id IS NULL",
 				// Populate the higher timestamps into the fields we will keep
 				"UPDATE hoopla_settings
 					SET lastUpdateOfChangedRecordsInstant = GREATEST(
