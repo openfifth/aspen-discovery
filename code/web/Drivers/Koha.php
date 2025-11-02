@@ -6524,7 +6524,6 @@ class Koha extends AbstractIlsDriver {
 				}
 			}
 		}
-		$interface->assign('mandatoryExpiryAttributeId', $mandatoryExpiryAttributeId);
 
 		//Lookup which transports are allowed
 		/** @noinspection SqlResolve */
