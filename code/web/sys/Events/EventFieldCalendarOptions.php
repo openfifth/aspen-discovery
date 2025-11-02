@@ -36,8 +36,8 @@ class EventFieldCalendarOptions extends DataObject
 				'description' => 'The sort order',
 				'default' => 0,
 			],
-			'calendarSettingId' => [
-				'property' => 'calendarSettingId',
+			'calendarDisplaySettingId' => [
+				'property' => 'calendarDisplaySettingId',
 				'type' => 'label',
 				'label' => 'Calendar Setting Id',
 				'description' => 'The id of the calendar setting',

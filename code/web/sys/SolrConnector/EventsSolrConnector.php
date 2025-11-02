@@ -11,12 +11,12 @@ class EventsSolrConnector extends Solr {
 	/**
 	 * @return string
 	 */
-	function getSearchSpecsFile() {
+	function getSearchSpecsFile() : string {
 		return ROOT_DIR . '/../../sites/default/conf/eventsSearchSpecs.yaml';
 	}
 
 	/** return string */
-	public function getSearchesFile() {
+	public function getSearchesFile() : string {
 		return 'eventsSearches';
 	}
 
@@ -26,9 +26,8 @@ class EventsSolrConnector extends Solr {
 	 * @param Location $searchLocation
 	 * @return array
 	 */
-	public function getScopingFilters($searchLibrary, $searchLocation) {
+	public function getScopingFilters($searchLibrary, $searchLocation) : array {
 		global $library;
-		global $solrScope;
 		$filter = [];
 		if (!$library) {
 			//MDN: This does happen when called within migration tools
@@ -41,7 +40,7 @@ class EventsSolrConnector extends Solr {
 		return $filter;
 	}
 
-	public function getBoostFactors($searchLibrary, $searchLocation, $searchTerm, $searchIndex) {
+	public function getBoostFactors($searchLibrary, $searchLocation, $searchTerm, $searchIndex) : array {
 		$boostFactors = [];
 
 		$userLocation = null;
@@ -71,9 +70,6 @@ class EventsSolrConnector extends Solr {
 
 		if ($userLocation != null) {
 			$boostFactors[] = 'product(boost,termfreq(branch,' . urlencode($locationName). '))';
-			$now = time();
-			$ninetyDays = $now + 90 * 24 * 60 * 60;
-			//$boostFactors[] = "scale(start_date_sort,$now,$ninetyDays))";
 		}else{
 			$boostFactors[] = "boost";
 		}

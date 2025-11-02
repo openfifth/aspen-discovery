@@ -2,7 +2,7 @@
 
 
 class Events_Calendar extends Action {
-	function launch() {
+	function launch() : void {
 		global $interface;
 		global $timer;
 
@@ -16,6 +16,12 @@ class Events_Calendar extends Action {
 
 		$today = new DateTime();
 		$useWeek = 0;
+		$week = 0;
+		$month = 0;
+		$paddedMonth = 0;
+		$lastDayInMonth = 0;
+		$formattedWeekYear = '';
+		$formattedMonthYear = '';
 		if (!empty($_REQUEST['week'])) {
 			$week = $_REQUEST['week'];
 			$interface->assign("weekNumber", $week);
@@ -43,7 +49,7 @@ class Events_Calendar extends Action {
 		if ($useWeek) {
 			$paddedWeek = str_pad($week, 2, '0', STR_PAD_LEFT);
 			$weekFilter = $year . '-' . $paddedWeek;
-			$calendarStart = "{$year}W{$paddedWeek}";
+			$calendarStart = "{$year}W$paddedWeek";
 			$calendarStartDay = strtotime($calendarStart . " - 1 days"); // So that the week starts on Sunday
 			$formattedWeekYear = date("M j, Y", $calendarStartDay) . " - " . date("M j, Y", strtotime($calendarStart . "+ 5 days"));
 			$month = date("n", strtotime($calendarStart));
@@ -69,7 +75,6 @@ class Events_Calendar extends Action {
 				$nextYear++;
 			}
 			$nextLink = "/Events/Calendar?week=$nextWeek&year=$nextYear";
-			$interface->assign('nextLink', $nextLink);
 		} else {
 			$paddedMonth = str_pad($month, 2, '0', STR_PAD_LEFT);
 			$monthFilter = $year . '-' . $paddedMonth;
@@ -97,9 +102,8 @@ class Events_Calendar extends Action {
 				$nextYear++;
 			}
 			$nextLink = "/Events/Calendar?month=$nextMonth&year=$nextYear";
-			$interface->assign('nextLink', $nextLink);
 		}
-
+		$interface->assign('nextLink', $nextLink);
 
 
 		// Initialise from the current search globals
@@ -140,10 +144,9 @@ class Events_Calendar extends Action {
 		$timer->logTime('Setup Search');
 
 		// Process Search
-		$result = $searchObject->processSearch(true, true);
-		if ($result instanceof AspenError) {
-			/** @var AspenError $result */
-			AspenError::raiseError($result->getMessage());
+		$searchResult = $searchObject->processSearch(true, true);
+		if ($searchResult instanceof AspenError) {
+			AspenError::raiseError($searchResult->getMessage());
 		}
 		$timer->logTime('Process Search');
 
@@ -162,7 +165,7 @@ class Events_Calendar extends Action {
 
 		$defaultTimezone = new DateTimeZone(date_default_timezone_get());
 
-		//Setup the calendar display
+		//Set up the calendar display
 		//Get a list of weeks for the month
 		$weeks = [];
 		if ($useWeek) {
@@ -173,6 +176,7 @@ class Events_Calendar extends Action {
 			$maxDay = date("d", strtotime($calendarStart . " + 6 days"));
 		} else {
 			$dayNum = 1;
+			/** @noinspection PhpSuspiciousNameCombinationInspection */
 			$maxDay = cal_days_in_month(CAL_GREGORIAN, $month, $year);
 		}
 		for ($i = 0; $i < 5; $i++) {
@@ -182,9 +186,7 @@ class Events_Calendar extends Action {
 
 			$startDayIndex = 0;
 			if ($i == 0) {
-				if ($useWeek) {
-					$startDayIndex = 0;
-				} else {
+				if (!$useWeek) {
 					$startDayIndex = $calendarStartDay->format('N');
 				}
 				for ($j = 0; $j < $startDayIndex; $j++) {
@@ -228,31 +230,38 @@ class Events_Calendar extends Action {
 						}
 						$url = "";
 						$eventFields = [];
-						if (preg_match('`^communico`', $result['id'])){
+						if (str_starts_with($result['id'], 'communico')){
 							$url = '/Communico/' . $result['id'] . '/Event';
 						}
-						elseif (preg_match('`^libcal`', $result['id'])){
+						elseif (str_starts_with($result['id'], 'libcal')){
 							$url = '/Springshare/' . $result['id'] . '/Event';
 						}
-						elseif (preg_match('`^lc_`', $result['id'])){
+						elseif (str_starts_with($result['id'], 'lc_')){
 							$url = '/LibraryMarket/' . $result['id'] . '/Event';
 						}
-						elseif (preg_match('`^assabet`', $result['id'])){
+						elseif (str_starts_with($result['id'], 'assabet')){
 							$url = '/Assabet/' . $result['id'] . '/Event';
 						}
-						elseif (preg_match('`^aspen`', $result['id'])){
+						elseif (str_starts_with($result['id'], 'aspen')){
 							$url = '/AspenEvents/' . $result['id'] . '/Event';
 						}
 
 						if (!empty($eventFieldsToShow)) {
 							foreach ($eventFieldsToShow as $field) {
 								$fieldName = str_replace(" ", "_", $field);
-								$pattern = '/custom_([a-z]+)_'.$fieldName.'/i';
-								$keys = array_keys($result);
-								$matches = preg_grep($pattern, $keys);
-								if (!empty($matches)) {
-									foreach($matches as $match) {
-										$eventFields[$match] = $result[$match];
+								if (in_array($fieldName, ['branch', 'room', 'description'])) {
+									//If the event does not have the field set, ignore it
+									if (!empty($result[$fieldName])) {
+										$eventFields[$fieldName] = $result[$fieldName];
+									}
+								}else{
+									$pattern = '/custom_([a-z]+)_'.$fieldName.'/i';
+									$keys = array_keys($result);
+									$matches = preg_grep($pattern, $keys);
+									if (!empty($matches)) {
+										foreach($matches as $match) {
+											$eventFields[$match] = $result[$match];
+										}
 									}
 								}
 							}
@@ -288,7 +297,7 @@ class Events_Calendar extends Action {
 			$weeks[] = $week;
 			if ($useWeek) {
 				break;
-			} else if (!$useWeek && $dayNum > $maxDay) {
+			} else if ($dayNum > $maxDay) {
 				break;
 			}
 		}
@@ -313,7 +322,7 @@ class Events_Calendar extends Action {
 		return $breadcrumbs;
 	}
 
-	function getHeaderImage(int $calendarDisplaySettingId = 0) {
+	function getHeaderImage(int $calendarDisplaySettingId = 0) : array {
 		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
 		$setting = new CalendarDisplaySetting();
 		$setting->id = $calendarDisplaySettingId;
@@ -325,7 +334,7 @@ class Events_Calendar extends Action {
 		return $headerImage;
 	}
 
-	function getCalendarDisplaySettingId() {
+	function getCalendarDisplaySettingId() : int {
 		global $library;
 		$calendarDisplaySettingId = 0;
 		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySettingLibrary.php';
@@ -337,13 +346,13 @@ class Events_Calendar extends Action {
 		return $calendarDisplaySettingId;
 	}
 
-	function getEventFieldsToShow($calendarDisplaySettingId) {
+	function getEventFieldsToShow($calendarDisplaySettingId) : array {
 		$eventFieldIds = [];
 		$eventFieldNames = [];
 		require_once ROOT_DIR . '/sys/Events/EventFieldCalendarOptions.php';
 		require_once ROOT_DIR . '/sys/Events/EventField.php';
 		$eventFieldOptions = new EventFieldCalendarOptions();
-		$eventFieldOptions->calendarDislpaySettingId = $calendarDisplaySettingId;
+		$eventFieldOptions->calendarDisplaySettingId = $calendarDisplaySettingId;
 		$eventFieldOptions->displayedOnline = 1;
 		$eventFieldOptions->orderBy('weight');
 		$eventFieldOptions->find();
@@ -351,7 +360,11 @@ class Events_Calendar extends Action {
 			$eventFieldIds[] = $eventFieldOptions->eventFieldId;
 		}
 		foreach ($eventFieldIds as $eventFieldId) {
-			if ($eventFieldId == -2) {
+			if ($eventFieldId == -4) {
+				$eventFieldNames[] = 'room';
+			} else if ($eventFieldId == -3) {
+				$eventFieldNames[] = "branch";
+			} else if ($eventFieldId == -2) {
 				$eventFieldNames[] = "description";
 			} else {
 				$eventField = new EventField();

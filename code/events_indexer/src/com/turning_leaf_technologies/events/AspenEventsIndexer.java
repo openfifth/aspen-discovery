@@ -74,8 +74,7 @@ public class AspenEventsIndexer {
 			lastDateToIndex.add(DAY_OF_YEAR, this.numberOfDaysToIndex);
 
 			// Get the total number of events to update the log
-			PreparedStatement eventCountStmt = aspenConn.prepareStatement("SELECT COUNT(*) FROM event_instance LEFT JOIN event ON event_instance.eventId = event.id WHERE event_instance.deleted = 0 AND event.locationID IN (SELECT locationId from location_events_setting WHERE settingId = ?);");
-			eventCountStmt.setLong(1, settingsId);
+			PreparedStatement eventCountStmt = aspenConn.prepareStatement("SELECT COUNT(*) FROM event_instance LEFT JOIN event ON event_instance.eventId = event.id WHERE event_instance.deleted = 0;");
 			ResultSet eventCountRS = eventCountStmt.executeQuery();
 			if (eventCountRS.next()) {
 				logEntry.incNumEvents(eventCountRS.getInt("COUNT(*)"));

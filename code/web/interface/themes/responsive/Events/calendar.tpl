@@ -62,9 +62,9 @@
 									</div>
 									{if !empty($event.eventFields)}
 										{foreach from=$event.eventFields key=eventFieldName item=eventField}
-											<div class="calendar-event-title" id="calendar-event-{$eventFieldName}">
+											<div class="calendar-event-field" id="calendar-event-{$eventFieldName}">
 												{foreach from=$eventField item=value}
-													{$value}&nbsp;
+													{str_replace(',',', ',$value)}&nbsp;
 												{/foreach}
 											</div>
 										{/foreach}
