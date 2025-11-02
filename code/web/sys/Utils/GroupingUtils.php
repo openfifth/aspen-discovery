@@ -35,7 +35,7 @@ function compareItems($a, $b) :int  {
 	$basicComparison = compareItemBasics($a, $b);
 	if ($basicComparison == 0) {
 		//If this is not a periodical, do not attempt date comparisons
-		return $a['callNumber'] <=> $b['callNumber'];
+		return strnatcasecmp($a['callNumber'], $b['callNumber']);
 	}else{
 		return $basicComparison;
 	}
@@ -54,7 +54,7 @@ function comparePeriodicalItems($a, $b) :int  {
 		$dateB = getSortableDate($b['callNumber']);
 		if (is_null($dateA) && is_null($dateB)) {
 			//No date found, just compare the call numbers
-			return $b['callNumber'] <=> $a['callNumber'];
+			return strnatcasecmp($b['callNumber'], $a['callNumber']);
 		}elseif (is_null($dateA)) {
 			return 1;
 		}elseif (is_null($dateB)) {

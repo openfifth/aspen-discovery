@@ -515,6 +515,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			$actions[] = [
 				'onclick' => "return AspenDiscovery.Hoopla.getCheckOutPrompts('$this->id', '$hooplaType', this)",
 				'title' => $title,
+				'type' => 'hoopla_checkout'
 			];
 
 		} else {

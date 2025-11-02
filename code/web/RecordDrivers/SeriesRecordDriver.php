@@ -80,11 +80,7 @@ class SeriesRecordDriver extends IndexRecordDriver {
 		} else {
 			$interface->assign('summAudience', '');
 		}
-		if (isset($this->fields['num_titles'])) {
-			$interface->assign('summNumTitles', $this->fields['num_titles']);
-		} else {
-			$interface->assign('summNumTitles', 0);
-		}
+
 		$interface->assign('summUrl', $this->getAbsoluteUrl());
 
 		global $solrScope;
@@ -94,7 +90,15 @@ class SeriesRecordDriver extends IndexRecordDriver {
 			$interface->assign('isNew', false);
 		}
 
-		$listObject = $this->getSeriesObject();
+		$seriesObject = $this->getSeriesObject();
+		if ($seriesObject) {
+			$seriesTitles = $seriesObject->getTitles();
+			$interface->assign('summNumTitles', count($seriesTitles['seriesMembers']));
+		}else{
+			$seriesTitles = $seriesObject->getTitles();
+			$interface->assign('summNumTitles', 0);
+		}
+
 
 		if ($showListsAppearingOn) {
 			//Check to see if there are lists the record is on
@@ -240,7 +244,7 @@ class SeriesRecordDriver extends IndexRecordDriver {
 		return !empty($this->fields['audience']) ? $this->fields['audience'] : '';
 	}
 
-	private function getSeriesObject() {
+	private function getSeriesObject() : Series|false {
 		if ($this->seriesObject == null) {
 			require_once ROOT_DIR . '/sys/Series/Series.php';
 			$this->seriesObject = new Series();

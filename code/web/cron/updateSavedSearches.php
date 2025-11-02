@@ -138,7 +138,7 @@ $searchUpdateLogEntry->addNote("Finished updating saved searches");
 $searchUpdateLogEntry->endTime = time();
 $searchUpdateLogEntry->update();
 
-$cronLogEntry->notes .= "<br/>Imported a total of " . $searchUpdateLogEntry->numUpdated. " searches";
+$cronLogEntry->notes .= "<br/>Updated a total of " . $searchUpdateLogEntry->numUpdated. " searches";
 $cronLogEntry->endTime = time();
 $cronLogEntry->update();
 

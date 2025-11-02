@@ -73,7 +73,7 @@ class GroupedWorkEContentSortingGroup extends DataObject {
 				'allowEdit' => false,
 				'canEdit' => false,
 				'canAddNew' => true,
-				'canDelete' => false,
+				'canDelete' => true,
 			],
 		];
 

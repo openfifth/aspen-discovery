@@ -1516,23 +1516,41 @@ class ItemAPI extends AbstractAPI {
 		unset($volumeDataDB);
 
 		//Sort the volumes so locally owned volumes are shown first
-		$volumeSorter = function (IlsVolumeInfo $a, IlsVolumeInfo $b) {
-			if ($a->hasLocalItems() && !$b->hasLocalItems()) {
+		$isPeriodical = $marcRecord->isPeriodical();
+		global $library;
+		$showVolumesWithLocalCopiesFirst = $library->showVolumesWithLocalCopiesFirst;
+		$volumeSorter = function (IlsVolumeInfo $a, IlsVolumeInfo $b) use ($isPeriodical, $showVolumesWithLocalCopiesFirst) {
+			if ($showVolumesWithLocalCopiesFirst && ($a->hasLocalItems() && !$b->hasLocalItems())) {
 				return -1;
-			} elseif ($b->hasLocalItems() && !$a->hasLocalItems()) {
+			} elseif ($showVolumesWithLocalCopiesFirst && ($b->hasLocalItems() && !$a->hasLocalItems())) {
 				return 1;
 			} else {
 				if ($a->displayOrder > $b->displayOrder) {
-					return 1;
+					return $isPeriodical ? -1 : 1;
 				} elseif ($b->displayOrder > $a->displayOrder) {
-					return -1;
+					return $isPeriodical ? 1: -1;
 				} else {
-					return 0;
+					require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
+					if ($isPeriodical) {
+						$dateA = getSortableDate($a->displayLabel);
+						$dateB = getSortableDate($b->displayLabel);
+						if (is_null($dateA) && is_null($dateB)) {
+							//No date found, just compare the call numbers
+							return strnatcasecmp($b->displayLabel, $a->displayLabel);
+						}elseif (is_null($dateA)) {
+							return 1;
+						}elseif (is_null($dateB)) {
+							return -1;
+						}else{
+							return $dateB <=> $dateA;
+						}
+					}else{
+						return strnatcasecmp($a->displayLabel, $b->displayLabel);
+					}
 				}
 			}
 		};
 
-		global $library;
 		if ($library->showVolumesWithLocalCopiesFirst) {
 			uasort($volumeData, $volumeSorter);
 		}

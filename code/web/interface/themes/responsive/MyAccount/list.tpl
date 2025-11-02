@@ -175,16 +175,18 @@
 												{foreach from=$availableFilters.format key=formatName item=formatCount}
 													<li>
 														<label class="user-list-format-filter-option">
-															<input type="checkbox" class="user-list-format-filter-checkbox" value="{$formatName|escape}" 
+															<input type="checkbox" class="user-list-format-filter-checkbox" value="{$formatName|escape}"
 																{if !empty($activeFilters) && !empty($activeFilters.format) && in_array($formatName, $activeFilters.format)}checked{/if}>
 															{$formatName|escape} ({$formatCount})
 														</label>
 													</li>
 												{/foreach}
 											{/if}
-											<li class="divider"></li>
-											<li><a href="#" id="user-list-clear-all-formats">{translate text="Clear All" isPublicFacing=true}</a></li>
-											<li><a href="#" id="user-list-apply-format-filters" class="btn btn-primary btn-sm" style="margin: 5px 15px;">{translate text="Apply Filters" isPublicFacing=true}</a></li>
+											<div class="filter-actions-sticky">
+												<li class="divider"></li>
+												<li style="text-align: center;"><a href="#" id="user-list-clear-all-formats">{translate text="Clear All" isPublicFacing=true}</a></li>
+												<li style="text-align: center; margin: 5px 0;"><a href="#" id="user-list-apply-format-filters" class="btn btn-primary btn-sm">{translate text="Apply Filters" isPublicFacing=true}</a></li>
+											</div>
 										</ul>
 									</div>
 									{/if}

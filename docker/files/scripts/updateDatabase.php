@@ -1,8 +1,10 @@
 <?php
 
+require_once __DIR__ . '/../logger/DockerLogger.php';
+DockerLogger::init('BACKEND');
+
 // Set server name
 $_SERVER['SERVER_NAME'] = getenv('SITE_NAME');
-
 
 require_once __DIR__ . '/../../../code/web/bootstrap.php';
 require_once __DIR__ . '/../../../code/web/bootstrap_aspen.php';
@@ -17,28 +19,35 @@ if (file_exists(ROOT_DIR . '/sys/Greenhouse/CompanionSystem.php')) {
 global $configArray;
 global $serverName;
 
+DockerLogger::info("Running pending database updates");
+
 # Run Updates
 $completedUpdates = runPendingDatabaseUpdates();
-print("Success " . $completedUpdates['success'] . "\n");
-print("Message " . $completedUpdates['message']. "\n");
+DockerLogger::info("Database updates completed - Success: " . $completedUpdates['success']);
+DockerLogger::info("Update message: " . $completedUpdates['message']);
+
 if (isset($completedUpdates['errors']) && $completedUpdates['errors']){
-	print("Errors : \n");
+	DockerLogger::warn("Database update errors found:");
 	foreach ($completedUpdates['errors'] as $errorArray) {
 		foreach($errorArray as $updateName => $error){
 			if(empty($error)){
 				continue;
 			} else{
-				print("Update name : $updateName \n");
-				print("Error : $error \n");
+				DockerLogger::warn("Update '{$updateName}': {$error}");
 			}
 		}
 	}
 }
 
-# Update CSS
-print("Updating Css for All Themes\n");
-$test = updateCssForAllThemes();
-print("Success updating CSS for All Themes\n");
+# Update CSS
+DockerLogger::info("Updating CSS for all themes");
+$result = updateCssForAllThemes();
+if ($result['success'] != true) {
+	DockerLogger::warn("Error updating CSS: " . $result['message']);
+} else {
+	DockerLogger::info($result['message']);
+}
+
 
 function updateCssForAllThemes() : array {
 
@@ -194,9 +203,9 @@ function runDatabaseUpdate(&$availableUpdates, $updateName): array {
 		}
 	}
 
-	#if ($updateOk) {
-		markUpdateAsRun($updateName);
-	#}
+
+	markUpdateAsRun($updateName);
+
 
 	$availableUpdates[$updateName] = $updateToRun;
 
@@ -266,3 +275,4 @@ function markUpdateAsRun($update_key) {
 		$aspen_db->query("INSERT INTO db_update (update_key) VALUES (" . $aspen_db->quote($update_key) . ")");
 	}
 }
+?>

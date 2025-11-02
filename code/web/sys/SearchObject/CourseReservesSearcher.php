@@ -55,12 +55,8 @@ class SearchObject_CourseReservesSearcher extends SearchObject_SolrSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @param string $searchSource
-	 * @return  boolean
 	 */
-	public function init($searchSource = null) {
+	public function init(?string $searchSource = null) : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init('course_reserves');
 
@@ -162,7 +158,7 @@ class SearchObject_CourseReservesSearcher extends SearchObject_SolrSearcher {
 		return 'courseReservesSearches';
 	}
 
-	public function supportsSuggestions() {
+	public function supportsSuggestions() : bool {
 		return true;
 	}
 
