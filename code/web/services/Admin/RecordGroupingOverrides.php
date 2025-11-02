@@ -42,7 +42,7 @@ class Admin_RecordGroupingOverrides extends ObjectEditor {
 	}
 
 	function getInstructions(): string {
-		return 'Manage record-level grouping overrides. These force specific records to stay in specific grouped works regardless of the automatic grouping algorithm.';
+		return 'https://help.aspendiscovery.org/grouping';
 	}
 
 	function getBreadcrumbs(): array {
