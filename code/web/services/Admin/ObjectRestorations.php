@@ -36,6 +36,7 @@ class Admin_ObjectRestorations extends ObjectEditor {
 		'ImageUpload'           => ['titleColumn' => 'title', 'classFile' => '/sys/File/ImageUpload.php'],
 		'FileUpload'            => ['titleColumn' => 'title', 'classFile' => '/sys/File/FileUpload.php'],
 		'Placard'               => ['titleColumn' => 'title', 'classFile' => '/sys/LocalEnrichment/Placard.php'],
+		'Theme'                 => ['titleColumn' => 'displayName', 'classFile' => '/sys/Theming/Theme.php'],
 	];
 	private array $cachedRows;
 
