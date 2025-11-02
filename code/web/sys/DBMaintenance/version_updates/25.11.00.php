@@ -82,6 +82,14 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'grouped_work_display_settings_showItemBarcodes' => [
+			'title' => 'Grouped Work Display Settings - Show Item Barcodes',
+			'description' => 'Add option to show item barcodes in copy details.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showItemBarcodes TINYINT(1) DEFAULT 0",
+			],
+		], //grouped_work_display_settings_showItemBarcodes
 		'add_theme_soft_delete_columns' => [
 			'title' => 'Add Soft Delete Columns to Themes',
 			'description' => 'Add metadata needed to support Object Restorations for Themes.',
