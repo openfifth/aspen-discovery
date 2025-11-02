@@ -228,7 +228,9 @@ function getUpdates25_10_00(): array
 			'description' => 'Add scopeLibraryId to hoopla_flex_availability table',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE hoopla_flex_availability ADD COLUMN scopeLibraryId INT NULL'
+				'ALTER TABLE hoopla_flex_availability ADD COLUMN scopeLibraryId INT NULL',
+				'ALTER TABLE hoopla_flex_availability DROP INDEX hooplaId',
+				'ALTER TABLE hoopla_flex_availability ADD UNIQUE KEY hooplaFlexScopeUnique (hooplaId, scopeLibraryId)'
 			]
 		], //add_scopeLibraryId_to_hoopla_flex_availability
 		'migrate_hoopla_data_to_new_structure' => [
