@@ -1,7 +1,7 @@
 {strip}
 <form method="post" action="" name="popupForm" class="form-horizontal" id="moveRecordForm">
 	<div class="alert alert-info">
-		{translate text="This will move only this specific record to another grouped work. The record will stay in the target work even after reindexing." isAdminFacing=true}
+		{translate text="This will move only this specific record to another grouped work. The record will persist within the target work after reindexing." isAdminFacing=true}
 	</div>
 	<div class="alert alert-info">
 		<div class="row">
