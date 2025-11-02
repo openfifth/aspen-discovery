@@ -105,3 +105,8 @@
 # Update the Talpa ISBN Mapping Table #
 #########################
 */5 * * * *    aspen   php /usr/local/aspen-discovery/code/web/cron/talpaIsbns.php test.localhostaspen
+
+#######################################################
+# Update holds and checkouts for Community Engagement #
+#######################################################
+59 23 * * * root php /usr/local/aspen-discovery/code/web/cron/updateCommunityEngagementMilestones.php test.localhostaspen

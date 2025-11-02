@@ -88,6 +88,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	//Item details
 	public $showItemDueDates;
 	public $showItemNotes;
+	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
 
 	private $_moreDetailsOptions;
@@ -379,11 +380,19 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'hideInLists' => true,
 						'default' => true,
 					],
+					'preferIlsDescription' => [
+						'property' => 'preferIlsDescription',
+						'type' => 'checkbox',
+						'label' => 'Prefer ILS Description',
+						'description' => 'Whether or not the Description loaded from ILS should be preferred over eContent Description',
+						'hideInLists' => true,
+						'default' => false,
+					],
 					'showItemDueDates' => [
 						'property' => 'showItemDueDates',
 						'type' => 'checkbox',
 						'label' => 'Show Item Due Dates',
-						'description' => 'Whether or not due dates for items are shown within the copy details.',
+						'description' => 'Whether due dates for items are shown within the copy details.',
 						'hideInLists' => true,
 						'default' => true,
 					],
@@ -391,15 +400,15 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'property' => 'showItemNotes',
 						'type' => 'checkbox',
 						'label' => 'Show Item Notes',
-						'description' => 'Whether or notes for items are shown within the copy details if available.',
+						'description' => 'Whether notes for items are shown within the copy details if available.',
 						'hideInLists' => true,
 						'default' => true,
 					],
-					'preferIlsDescription' => [
-						'property' => 'preferIlsDescription',
+					'showItemBarcodes' => [
+						'property' => 'showItemBarcodes',
 						'type' => 'checkbox',
-						'label' => 'Prefer ILS Description',
-						'description' => 'Whether or not the Description loaded from ILS should be preferred over eContent Description',
+						'label' => 'Show Item Barcodes',
+						'description' => 'Whether barcodes for items are shown within the copy details if available.',
 						'hideInLists' => true,
 						'default' => false,
 					],
