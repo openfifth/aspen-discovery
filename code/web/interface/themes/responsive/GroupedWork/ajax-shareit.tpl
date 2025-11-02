@@ -6,7 +6,7 @@
 		{translate text="Author" isPublicFacing=true}
 	</th>
 	<th>
-		{translate text="Pub. Date" isPublicFacing=true}
+		{translate text="Publication. Date" isPublicFacing=true}
 	</th>
 	<th>
 		{translate text="Format" isPublicFacing=true}

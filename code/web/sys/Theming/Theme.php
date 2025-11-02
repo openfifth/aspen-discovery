@@ -10,6 +10,9 @@ class Theme extends DataObject {
 	public $logoName;
 	public $favicon;
 	public $defaultCover;
+	public $deleted;
+	public $dateDeleted;
+	public $deletedBy;
 	public $logoApp;
 	public $headerLogoApp;
 	public $headerLogoAlignmentApp;
@@ -2822,8 +2825,10 @@ class Theme extends DataObject {
 	}
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
-		$this->clearLibraries();
-		$this->clearLocations();
+		if ($hardDelete) {
+			$this->clearLibraries();
+			$this->clearLocations();
+		}
 		$this->clearDefaultCovers();
 		return parent::delete($useWhere, $hardDelete);
 	}
@@ -3774,5 +3779,9 @@ class Theme extends DataObject {
 			}
 		}
 		return $this->_themeHierarchy;
+	}
+
+	public function supportsSoftDelete(): bool {
+		return true;
 	}
 }

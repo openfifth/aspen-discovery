@@ -63,6 +63,7 @@ class Location extends DataObject {
 	public $phone;
 	public $secondaryPhoneNumber;
 	public $contactEmail;
+	public $useLocationNameForMaps;
 	public $latitude;
 	public $longitude;
 	public $unit;
@@ -519,6 +520,14 @@ class Location extends DataObject {
 				'editPermissions' => ['Location Address and Hours Settings'],
 				'affectsLiDA' => true,
 			],
+				'useLocationNameForMaps' => [
+				'property' => 'useLocationNameForMaps',
+				'type' => 'checkbox',
+				'label' => 'Use Library Name for Google Maps',
+				'description' => 'Use the library name for the map displayed on the "Library Hours & Locations" popup instead of the longitude and latitude',
+				'hideInLists' => true,
+				'default' => 0,
+			],
 			'unit' => [
 				'property' => 'unit',
 				'type' => 'text',
@@ -807,6 +816,7 @@ class Location extends DataObject {
 				'label' => 'Grouped Work Display Settings',
 				'hideInLists' => false,
 				'permissions' => ['Location Catalog Options'],
+				'forcesReindex' => true,
 			],
 
 			'searchingSection' => [
@@ -2158,18 +2168,21 @@ class Location extends DataObject {
 	}
 
 	public function getCloudLibraryScope(): int {
-		if ($this->_cloudLibraryScope === null && $this->locationId) {
-			require_once ROOT_DIR . '/sys/CloudLibrary/LocationCloudLibraryScope.php';
-			$locationCloudLibraryScope = new LocationCloudLibraryScope();
-			$locationCloudLibraryScope->locationId = $this->locationId;
-			if ($locationCloudLibraryScope->find(true)) {
-				require_once ROOT_DIR . '/sys/CloudLibrary/CloudLibraryScope.php';
-				$cloudLibraryScope = new CloudLibraryScope();
-				$cloudLibraryScope->id = $locationCloudLibraryScope->scopeId;
-				if ($cloudLibraryScope->find(true)) {
-					$this->_cloudLibraryScope = $cloudLibraryScope->id;
+		if ($this->_cloudLibraryScope === null) {
+			if ($this->locationId) {
+				require_once ROOT_DIR . '/sys/CloudLibrary/LocationCloudLibraryScope.php';
+				$locationCloudLibraryScope = new LocationCloudLibraryScope();
+				$locationCloudLibraryScope->locationId = $this->locationId;
+				if ($locationCloudLibraryScope->find(true)) {
+					require_once ROOT_DIR . '/sys/CloudLibrary/CloudLibraryScope.php';
+					$cloudLibraryScope = new CloudLibraryScope();
+					$cloudLibraryScope->id = $locationCloudLibraryScope->scopeId;
+					if ($cloudLibraryScope->find(true)) {
+						$this->_cloudLibraryScope = $cloudLibraryScope->id;
+					}
 				}
 			}
+
 			// If still not set, default to '-1', which corresponds to 'none'.
 			if ($this->_cloudLibraryScope === null) {
 				$this->_cloudLibraryScope = -1;

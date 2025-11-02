@@ -135,4 +135,9 @@
 #######################
 */59 8-19` * * * root php /usr/local/aspen-discovery/code/web/cron/sendILSMessages.php {sitename}
 
+#######################################################
+# Update holds and checkouts for Community Engagement #
+#######################################################
+59 23 * * * root php /usr/local/aspen-discovery/code/web/cron/updateCommunityEngagementMilestones.php {sitename}
+
 # Debian needs a blank line at the end of cron, make sure to add additional cron lines above this.
