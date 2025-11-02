@@ -1,10 +1,4 @@
 {strip}
-	{* resize the columns when  including the lastcheckin box
- xs-5 : 41.6667%
- xs-4 : 33.3333%  (1/3)
- xs-3 : 25%       (1/4)
- xs-2 : 16.6667% (1/6)
- *}
 <thead>
 	<tr>
 		{if !empty($showVolume)}
@@ -23,6 +17,11 @@
 		<th>
 			<strong><u>{translate text="Call Number" isPublicFacing=true}</u></strong>
 		</th>
+		{if !empty($hasBarcode) && $showItemBarcodes}
+			<th>
+				<strong><u>{translate text="Barcode" isPublicFacing=true}</u></strong>
+			</th>
+		{/if}
 		{if !empty($hasNote) && $showItemNotes}
 			<th>
 				<strong><u>{translate text="Note" isPublicFacing=true}</u></strong>

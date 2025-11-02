@@ -1,86 +1,74 @@
 <?php
 
-//Capture any error as ErrorException
-set_error_handler("customErrorHandler");
+require_once __DIR__ . '/../logger/DockerLogger.php';
+DockerLogger::init('APACHE');
 
 if (count($argv) < 2) {
-	echo "To create new configuration files, a directory (where the files will be stored) will be necessary as argument.\n";
-	die();
+	DockerLogger::error("Apache configuration file required as argument");
 } elseif (count($argv) > 2) {
-	echo "Too many arguments have been passed. The script just needs a directory to start\n";
-	die(1);
+	DockerLogger::error("Too many arguments");
 }
 
 $apacheConfFile = $argv[1];
 
 if (is_dir($apacheConfFile)) {
-	echo "'$apacheConfFile' is a directory.\n";
-	die(1);
+	DockerLogger::error("Path is a directory, expected file: {$apacheConfFile}");
 }
 
-echo "%   --> Copying apache configurations...\n";
+if (!file_exists($apacheConfFile)) {
+	DockerLogger::error("Apache configuration file not found: {$apacheConfFile}");
+}
+
+DockerLogger::info("Configuring Apache with: {$apacheConfFile}");
 
 try {
-		//Copy the httpd conf file
-		$apacheDir = "/etc/apache2";
-		$dockerDir = "/usr/local/aspen-discovery/docker";
-		$fileName = basename($apacheConfFile);
-		copy("$apacheConfFile", "$apacheDir/sites-enabled/$fileName");
+	//Copy the httpd conf file
+	$apacheDir = "/etc/apache2";
+	$dockerDir = "/usr/local/aspen-discovery/docker";
+	$fileName = basename($apacheConfFile);
+	
+	if (!copy($apacheConfFile, "$apacheDir/sites-enabled/$fileName")) {
+		DockerLogger::error("Failed to copy Apache configuration");
+	}
+	
+	DockerLogger::info("Apache configuration copied successfully");
 
-		// Copy data-alias.conf to allow apache accessing files that are not in the served path
-		$dataAliasConf = "$apacheDir/conf-enabled/data-alias.conf";
-		copy("$dockerDir/files/apache/data-alias.conf", "$apacheDir/conf-available/data-alias.conf");
-		if (!$dataAliasConf){
-			exec('2enconf data-alias', $output);
+	// Copy data-alias.conf with sitename replacement
+	if (file_exists("$dockerDir/files/apache2/data-alias.conf")) {
+		$sitename = getenv('SITE_NAME');
+		if (!$sitename) {
+			DockerLogger::error("SITE_NAME environment variable is required");
 		}
 
+		$dataAliasContent = file_get_contents("$dockerDir/files/apache2/data-alias.conf");
+		$dataAliasContent = str_replace('{sitename}', $sitename, $dataAliasContent);
 
-} catch (ErrorException $e) {
-	echo "%   ERROR ASSIGNING PERMISSIONS AND OWNERSHIPS\n";
-	echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
-	echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
-	die(1);
-}
-
-/**
- * @throws ErrorException
- */
-function customErrorHandler(int $errno, string $errstr, string $errfile, int $errline): void {
-	if (!(error_reporting() & $errno)) {
-		// This error code is not included in error_reporting.
-		return;
-	}
-	if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
-		// Do not throw an Exception for deprecation warnings as new or unexpected
-		// deprecations would break the application.
-		return;
-	}
-	throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-}
-
-function replaceVariables($filename, $variables): void {
-	$contents = file($filename);
-	$fHnd = fopen($filename, 'w');
-	foreach ($contents as $line) {
-		foreach ($variables as $name => $value) {
-			$line = str_replace('{' . $name . '}', $value, $line);
-		}
-		fwrite($fHnd, $line);
-	}
-	fclose($fHnd);
-}
-
-function recursive_copy($src, $dst): void {
-	$dir = opendir($src);
-	@mkdir($dst);
-	while (($file = readdir($dir))) {
-		if (($file != '.') && ($file != '..')) {
-			if (is_dir($src . '/' . $file)) {
-				recursive_copy($src . '/' . $file, $dst . '/' . $file);
-			} else {
-				copy($src . '/' . $file, $dst . '/' . $file);
-			}
+		if (file_put_contents("$apacheDir/conf-enabled/data-alias.conf", $dataAliasContent) === false) {
+			DockerLogger::warn("Failed to write data-alias configuration");
+		} else {
+			DockerLogger::info("Data alias configuration copied with sitename: $sitename");
 		}
 	}
-	closedir($dir);
+
+	// Validate Apache configuration
+	$output = [];
+	$returnCode = 0;
+	exec("apache2 -t 2>&1", $output, $returnCode);
+	
+	if ($returnCode !== 0) {
+		DockerLogger::warn("Apache configuration validation failed:");
+		foreach ($output as $line) {
+			DockerLogger::warn($line);
+		}
+		DockerLogger::error("Apache configuration is invalid");
+	}
+	
+	DockerLogger::info("Apache configuration setup completed successfully");
+
+} catch (Exception $e) {
+	DockerLogger::error("Apache configuration failed: " . $e->getMessage());
 }
+
+
+
+?>
