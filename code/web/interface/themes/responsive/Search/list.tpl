@@ -1,4 +1,4 @@
-<h2 aria-label="Catalog Search Results" style="font-size:0;margin:0;line-height:0;"><span class="hidden">{translate text='Catalog Search Results' isPublicFacing=true}</h2>
+<h1 class="hiddenTitle">{translate text='Catalog Search Results' isPublicFacing=true}</h1>
 <div id="searchInfo">
 	{if !empty($hasAutomaticFacetsApplied)}
 		<div id="replacement-search-info-block" class="alert alert-warning" role="alert">
