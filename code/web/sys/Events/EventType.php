@@ -64,6 +64,14 @@ class EventType extends DataObject {
 				'default' => true,
 				'description' => 'Can users change the title for individual events of this type?',
 			],
+			'editFormInstructions' => [
+				'property' => 'editFormInstructions',
+				'type' => 'translatableTextBlock',
+				'label' => 'Instructions',
+				'description' => 'Instructions for administrators creating events of this type.',
+				'defaultTextFile' => '',
+				'hideInLists' => true,
+			],
 			'description' => [
 				'property' => 'description',
 				'type' => 'html',
@@ -157,6 +165,7 @@ class EventType extends DataObject {
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
 			$this->saveLocations();
+			$this->saveTextBlockTranslations('editFormInstructions');
 		}
 		return $ret;
 	}
@@ -166,6 +175,7 @@ class EventType extends DataObject {
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
 			$this->saveLocations();
+			$this->saveTextBlockTranslations('editFormInstructions');
 		}
 		return $ret;
 	}

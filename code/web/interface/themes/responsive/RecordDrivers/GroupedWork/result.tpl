@@ -125,7 +125,7 @@
 					{if !empty($showPublicationDate) && $showPublicationDate}
 						{if $alwaysShowSearchResultsMainDetails || $summPubDate}
 
-							<div class="result-label col-sm-4 col-xs-12">{translate text="Pub. Date" isPublicFacing=true} </div>
+							<div class="result-label col-sm-4 col-xs-12">{translate text="Publication Date" isPublicFacing=true} </div>
 							<div class="result-value col-sm-8 col-xs-12">
 								{if !empty($summPubDate)}
 									{$summPubDate|escape}
@@ -139,7 +139,7 @@
 
 					{if !empty($showPlaceOfPublication) && $showPlaceOfPublication}
 						{if $alwaysShowSearchResultsMainDetails || $summPlaceOfPublication}
-							<div class="result-label col-sm-4 col-xs-12">{translate text="Pub. Places" isPublicFacing=true} </div>
+							<div class="result-label col-sm-4 col-xs-12">{translate text="Publication Places" isPublicFacing=true} </div>
 							<div class="result-value col-sm-8 col-xs-12">
 								{if !empty($summPlaceOfPublication)}
 									{$summPlaceOfPublication|escape}

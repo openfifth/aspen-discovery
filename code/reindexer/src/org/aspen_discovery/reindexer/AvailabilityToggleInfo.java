@@ -1,13 +1,13 @@
 package org.aspen_discovery.reindexer;
 
-import java.util.HashSet;
+import java.util.ArrayList;
 
 public class AvailabilityToggleInfo {
 	public boolean local;
 	public boolean available;
 	public boolean availableOnline;
 
-	public HashSet<String> getValues(){
+	public ArrayList<String> getValues(){
 		if (local) {
 			if (available) {
 				if (availableOnline) {
@@ -44,14 +44,14 @@ public class AvailabilityToggleInfo {
 	private final static String availableStr = "available";
 	private final static String availableOnlineStr = "available_online";
 
-	private final static HashSet<String> globalOnly = new HashSet<>();
-	private final static HashSet<String> globalLocal = new HashSet<>();
-	private final static HashSet<String> globalLocalAvailable = new HashSet<>();
-	private final static HashSet<String> globalLocalAvailableOnline = new HashSet<>();
-	private final static HashSet<String> globalLocalOnline = new HashSet<>();
-	private final static HashSet<String> globalAvailable = new HashSet<>();
-	private final static HashSet<String> globalAvailableOnline = new HashSet<>();
-	private final static HashSet<String> globalOnline = new HashSet<>();
+	private final static ArrayList<String> globalOnly = new ArrayList<>();
+	private final static ArrayList<String> globalLocal = new ArrayList<>();
+	private final static ArrayList<String> globalLocalAvailable = new ArrayList<>();
+	private final static ArrayList<String> globalLocalAvailableOnline = new ArrayList<>();
+	private final static ArrayList<String> globalLocalOnline = new ArrayList<>();
+	private final static ArrayList<String> globalAvailable = new ArrayList<>();
+	private final static ArrayList<String> globalAvailableOnline = new ArrayList<>();
+	private final static ArrayList<String> globalOnline = new ArrayList<>();
 
 	static {
 		globalOnly.add(globalStr);
