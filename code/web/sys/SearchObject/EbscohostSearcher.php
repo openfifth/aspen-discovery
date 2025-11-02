@@ -59,12 +59,8 @@ class SearchObject_EbscohostSearcher extends SearchObject_BaseSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @param string $searchSource
-	 * @return  boolean
 	 */
-	public function init($searchSource = null) {
+	public function init(?string $searchSource = null) : bool {
 		//********************
 		// Check if we have a saved search to restore -- if restored successfully,
 		// our work here is done; if there is an error, we should report failure;

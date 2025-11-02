@@ -93,7 +93,7 @@ if ($aspenUsage->getInstance() != 'aspen_internal') {
 	if (!$isValidServerName) {
 		http_response_code(404);
 		if (IPAddress::showDebuggingInformation()) {
-			echo("<html><head><title>Invalid Request</title></head><body>Invalid Host $aspenUsage->getInstance(), valid instances are " . implode(', ', $validServerNames) . "</body></html>");
+			echo("<html><head><title>Invalid Request</title></head><body>Invalid Host {$aspenUsage->getInstance()}, valid instances are " . implode(', ', $validServerNames) . "</body></html>");
 		} else {
 			echo("<html><head><title>Invalid Request</title></head><body>Invalid Host</body></html>");
 		}
@@ -386,6 +386,7 @@ function getValidServerNames(): array {
 				$validServerNames[] = "{$subdomain}t.$mainServer";
 				if ($mainServerBase != null) {
 					$validServerNames[] = "{$subdomain}t.$mainServerBase";
+					$validServerNames[] = "{$subdomain}x.$mainServerBase";
 				}
 			}
 		}
@@ -402,6 +403,7 @@ function getValidServerNames(): array {
 				$validServerNames[] = "{$code}x.$mainServer";
 				if ($mainServerBase != null) {
 					$validServerNames[] = "{$code}t.$mainServerBase";
+					$validServerNames[] = "{$code}x.$mainServerBase";
 				}
 			}
 		}
@@ -416,8 +418,10 @@ function getValidServerNames(): array {
 				}
 				if ($isTestServer) {
 					$validServerNames[] = "{$subdomain}t.$mainServer";
+					$validServerNames[] = "{$subdomain}x.$mainServer";
 					if ($mainServerBase != null) {
 						$validServerNames[] = "{$subdomain}t.$mainServerBase";
+						$validServerNames[] = "{$subdomain}x.$mainServerBase";
 					}
 				}
 			}

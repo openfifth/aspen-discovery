@@ -1364,39 +1364,37 @@ function isSpammySearchTerm($lookfor): bool {
 	}
 	$lookfor = $decoded;
 
-	if (strpos($lookfor, 'DBMS_PIPE.RECEIVE_MESSAGE') !== false) {
+	if (str_contains($lookfor, 'DBMS_PIPE.RECEIVE_MESSAGE')) {
 		return true;
-	} elseif (strpos($lookfor, 'PG_SLEEP') !== false) {
+	} elseif (str_contains($lookfor, 'PG_SLEEP')) {
 		return true;
-	} elseif (strpos($lookfor, 'SELECT') !== false) {
+	} elseif (str_contains($lookfor, 'SELECT')) {
 		return true;
-	} elseif (strpos($lookfor, 'SLEEP') !== false) {
+	} elseif (str_contains($lookfor, 'ORDER BY')) {
 		return true;
-	} elseif (strpos($lookfor, 'ORDER BY') !== false) {
+	} elseif (str_contains($lookfor, 'WAITFOR')) {
 		return true;
-	} elseif (strpos($lookfor, 'WAITFOR') !== false) {
+	} elseif (str_contains($lookfor, 'nvOpzp')) {
 		return true;
-	} elseif (strpos($lookfor, 'nvOpzp') !== false) {
+	} elseif (str_contains($lookfor, 'window.location')) {
 		return true;
-	} elseif (strpos($lookfor, 'window.location') !== false) {
+	} elseif (str_contains($lookfor, 'window.top')) {
 		return true;
-	} elseif (strpos($lookfor, 'window.top') !== false) {
+	} elseif (str_contains($lookfor, 'nslookup')) {
 		return true;
-	} elseif (strpos($lookfor, 'nslookup') !== false) {
+	} elseif (str_contains($lookfor, 'if(')) {
 		return true;
-	} elseif (strpos($lookfor, 'if(') !== false) {
+	} elseif (str_contains($lookfor, 'now(')) {
 		return true;
-	} elseif (strpos($lookfor, 'now(') !== false) {
+	} elseif (str_contains($lookfor, 'sysdate()')) {
 		return true;
-	} elseif (strpos($lookfor, 'sysdate()') !== false) {
+	} elseif (str_contains($lookfor, 'sleep(')) {
 		return true;
-	} elseif (strpos($lookfor, 'sleep(') !== false) {
+	} elseif (str_contains($lookfor, 'cast(')) {
 		return true;
-	} elseif (strpos($lookfor, 'cast(') !== false) {
+	} elseif (str_contains($lookfor, 'current_database')) {
 		return true;
-	} elseif (strpos($lookfor, 'current_database') !== false) {
-		return true;
-	} elseif (strpos($lookfor, 'response.write') !== false) {
+	} elseif (str_contains($lookfor, 'response.write')) {
 		return true;
 	}
 

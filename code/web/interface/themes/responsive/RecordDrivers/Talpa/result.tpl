@@ -30,7 +30,7 @@
 {*					 Title Row*}
 
 					<div class="col-xs-12">
-						<h3 style="margin-top:0"><span class="result-index">{$resultIndex})</span>&nbsp;
+						<h2 style="margin:0;font-size:inherit;"><span class="result-index">{$resultIndex})</span>&nbsp;
 							{if !$talpaResult}
 								<a href="{$summUrl}" class="result-title notranslate" aria-label="{$summTitle|removeTrailingPunctuation|escapeCSS} {if !empty($summSubTitle)}{if $summSubTitle|removeTrailingPunctuation} {$summSubTitle|removeTrailingPunctuation|highlight|escapeCSS|truncate:180:'...'}{/if}{/if}">
 									{if !$summTitle|removeTrailingPunctuation} {translate text='Title not available' isPublicFacing=true}{else}{$summTitle|removeTrailingPunctuation|highlight|truncate:180:"..."}{/if}
@@ -49,7 +49,7 @@
 
 
 
-						</h3>
+						</h2>
 					</div>
 
 
@@ -133,7 +133,7 @@
 						{if !empty($showPublicationDate) && $showPublicationDate}
 							{if $summPubDate}
 
-								<div class="result-label col-sm-4 col-xs-12">{translate text="Pub. Date" isPublicFacing=true} </div>
+								<div class="result-label col-sm-4 col-xs-12">{translate text="Publication Date" isPublicFacing=true} </div>
 								<div class="result-value col-sm-8 col-xs-12">
 									{if !empty($summPubDate)}
 										{$summPubDate|escape}
@@ -146,7 +146,7 @@
 
 						{if !empty($showPlaceOfPublication) && $showPlaceOfPublication && !$talpaResult}
 							{if $alwaysShowSearchResultsMainDetails || $summPlaceOfPublication}
-								<div class="result-label col-sm-4 col-xs-12">{translate text="Pub. Places" isPublicFacing=true} </div>
+								<div class="result-label col-sm-4 col-xs-12">{translate text="Publication Places" isPublicFacing=true} </div>
 								<div class="result-value col-sm-8 col-xs-12">
 									{if !empty($summPlaceOfPublication)}
 										{$summPlaceOfPublication|escape}
