@@ -125,4 +125,20 @@ class AspenUsage extends DataObject {
 	public function incEmailsFailed() : void {
 		$this->__set('emailsFailed', $this->emailsFailed+1);
 	}
+
+	public function incGroupedWorkSearches() {
+		$this->__set('groupedWorkSearches', $this->groupedWorkSearches+1);
+	}
+
+	public function incTimedOutSearchesWithHighLoad() {
+		$this->__set('timedOutSearchesWithHighLoad', $this->timedOutSearchesWithHighLoad+1);
+	}
+
+	public function incTimedOutSearches() {
+		$this->__set('timedOutSearches', $this->timedOutSearches+1);
+	}
+
+	public function incSearchesWithErrors() {
+		$this->__set('searchesWithErrors', $this->searchesWithErrors+1);
+	}
 }

@@ -2264,12 +2264,12 @@ class UserAPI extends AbstractAPI {
 				$pickupLocations = [];
 				foreach ($tmpPickupLocations as $pickupLocation) {
 					if (!is_string($pickupLocation)) {
-						//$pickupLocationArray = $pickupLocation->toArray();
 						$pickupLocationArray = [];
 						$pickupLocationArray['locationId'] = (string)$pickupLocation->locationId;
 						$pickupLocationArray['libraryId'] = (string)$pickupLocation->libraryId;
 						$pickupLocationArray['locationCode'] = (string)$pickupLocation->code;
 						$pickupLocationArray['code'] = (string)$pickupLocation->code;
+						$pickupLocationArray['historicCode'] = (string)$pickupLocation->historicCode;
 						$pickupLocationArray['displayName'] = (string)$pickupLocation->displayName;
 						$pickupLocations[] = $pickupLocationArray;
 					}
@@ -2295,14 +2295,14 @@ class UserAPI extends AbstractAPI {
 							$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
 							$pickupLocations = array_filter($pickupLocations, function ($location) use ($validLocationCodesFromILS) {
 								foreach ($validLocationCodesFromILS as $validCode) {
-									if (strpos($validCode, $location['locationCode']) === 0) {
+									if (str_starts_with($validCode, $location['locationCode'])) {
 										return true;
 									}
 								}
 								return false;
 							});
 							$pickupLocations = array_values($pickupLocations);
-						} else {
+						} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
 							$pickupLocations = [];
 						}
 					}

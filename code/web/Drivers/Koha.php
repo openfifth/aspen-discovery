@@ -6587,7 +6587,7 @@ class Koha extends AbstractIlsDriver {
 			# Check if MembershipExpiryDaysNotice preference is set.
 			# Also checks if the attribute's name is "Auto_Renewals"
 			# If it is enable then the user will be notified about his account expiration.
-			$isDisableExpiryNotice = $messageAttribute['meassage_name'] == "Patron_Expiry" && !$preferences['MembershipExpiryDaysNotice'];
+			$isDisableExpiryNotice = $messageAttribute['message_name'] == "Patron_Expiry" && !$preferences['MembershipExpiryDaysNotice'];
 
 			# Check if AutoRenewalNotices preference is set according to patron messaging preferences.
 			# Also checks if the attribute's name is "Auto_Renewals"
@@ -6596,7 +6596,6 @@ class Koha extends AbstractIlsDriver {
 			# Check if patron use recalls and if the attribute's name starts with 'Recall_.
 			$isDisableUseRecalls = !$preferences['UseRecalls'] && str_starts_with($messageAttribute['message_name'],"Recall_");
 
-			// Hide Patron_Expiry if enforce_expiry_notice is set for this patron's category (Koha 25.05+).
 			$isMandatoryExpiryNotice = $messageAttribute['message_name'] == "Patron_Expiry" && $messageAttribute['message_attribute_id'] == $mandatoryExpiryAttributeId;
 
 			if ($isDisableILLModule || $isDisableExpiryNotice || $isDisableAutoRenewal || $isDisableUseRecalls || $isMandatoryExpiryNotice) {

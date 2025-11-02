@@ -13,6 +13,7 @@ public class ExistingLocation {
 		this.code = code;
 	}
 
+	@SuppressWarnings("unused")
 	public String getName() {
 		return name;
 	}
