@@ -49,6 +49,7 @@ class SystemVariables extends DataObject {
 	public $removeTheWordSeriesFromEndOfSeries;
 	public $disable_user_agent_logging;
 	public $logFrequentCrons;
+	public $clearCachedValues;
 
 
 	static $_objectStructure = [];
@@ -396,6 +397,13 @@ class SystemVariables extends DataObject {
 				'note' => 'Frequent jobs include: ' . implode(', ', $frequentJobs) . '.',
 				'default' => false,
 			],
+			'clearCachedValues' => [
+				'property' => 'clearCachedValues',
+				'type' => 'checkbox',
+				'label' => 'Clear Cached Values',
+				'description' => 'Clear all entries from the cached_values table.',
+				'default' => false,
+			]
 		];
 
 		if (!UserAccount::getActiveUserObj()->isAspenAdminUser()) {
@@ -471,6 +479,19 @@ class SystemVariables extends DataObject {
 	}
 
 	public function update(string $context = '') : int|bool {
+		$cleanupSuccess = null;
+		if (!empty($this->clearCachedValues)) {
+			require_once ROOT_DIR . '/sys/MemoryCache/CachedValue.php';
+			$cachedValue = new CachedValue();
+			try {
+				$cachedValue->deleteAll();
+				$cleanupSuccess = true;
+			} catch (Exception $e) {
+				$cleanupSuccess = false;
+			}
+			$this->clearCachedValues = 0;
+		}
+
 		if ($this->trackIpAddresses == 0) {
 			//Delete all previously stored usage stats.
 			$usageByIP = new UsageByIPAddress();
@@ -483,6 +504,28 @@ class SystemVariables extends DataObject {
 			$userAgent = new UserAgent();
 			$userAgent->delete(true);
 		}
-		return parent::update($context);
+		$updateResult = parent::update($context);
+
+		if ($cleanupSuccess !== null) {
+			$user = UserAccount::getActiveUserObj();
+			if ($user != null) {
+				if ($cleanupSuccess) {
+					$user->updateMessage = translate([
+						'text' => 'Cached values were cleared successfully.',
+						'isAdminFacing' => true,
+					]);
+					$user->updateMessageIsError = 0;
+				} else {
+					$user->updateMessage = translate([
+						'text' => 'Cached values could not be cleared.',
+						'isAdminFacing' => true,
+					]);
+					$user->updateMessageIsError = 1;
+				}
+				$user->update();
+			}
+		}
+
+		return $updateResult;
 	}
 }

@@ -98,6 +98,13 @@ function getUpdates25_11_00(): array {
 		// Myranda - Grove
 
 		//Yanjun Li - ByWater
+		'addSystemVariableClearCachedValues' => [
+			'title' => 'Add System Variable to clear Cached Values table',
+			'description' => 'Add a system variable to clear cached values.',
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN clearCachedValues TINYINT(1) NOT NULL DEFAULT 0;',
+			]
+		], //addSystemVariableClearCachedValues
 
 		// Leo Stoyanov - BWS
 		'record_grouping_overrides' => [
