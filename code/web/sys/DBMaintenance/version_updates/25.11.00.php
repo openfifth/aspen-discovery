@@ -37,19 +37,29 @@ function getUpdates25_11_00(): array {
 				'ALTER TABLE translations ADD COLUMN googleTranslated TINYINT DEFAULT 0',
 			]
 		], //translator_indicate_google_translations
+		'event_search_options' => [
+			'title' => 'Event Search Options',
+			'description' => 'Event Search Options (for Aspen Events)',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN aspenEventsToInclude INT DEFAULT 2',
+				'UPDATE library SET aspenEventsToInclude = 1 WHERE isConsortialCatalog = 1'
+			]
+		], //event_search_options
+		'remove_location_event_settings' => [
+			'title' => 'Remove Location Event Settings',
+			'description' => 'Remove Location Event Settings',
+			'continueOnError' => false,
+			'sql' => [
+				'DROP TABLE location_events_setting'
+			]
+		], //event_search_options
 
 		//katherine - Grove
 
 		//kirstien - Grove
 
 		//kodi - Grove
-		'events_search_setting' => [
-			'title' => 'Events Search Setting',
-			'description' => 'Add column to events_indexing_settings for search scope settings.',
-			'sql' => [
-				'ALTER TABLE events_indexing_settings ADD COLUMN eventsSearchSetting INT DEFAULT 1'
-			]
-		],
 		'event_field_calendar_options' => [
 			'title' => 'Event Field Calendar Options',
 			'description' => 'Create event_field_calendar_options table.',
@@ -62,10 +72,10 @@ function getUpdates25_11_00(): array {
 					displayedOnline TINYINT(1) DEFAULT 0,
 					printedCalendar TINYINT(1) DEFAULT 0,
 					printedAgenda TINYINT(1) DEFAULT 0
-					)',
+				) ENGINE = InnoDB',
 			]
 		], //event_field_calendar_options
-		'calendary_display_setting_library' => [
+		'calendar_display_setting_library' => [
 			'title' => 'Calendar Settings by Library',
 			'description' => 'Create calendar_display_setting_library_table.',
 			'sql' => [
@@ -73,9 +83,9 @@ function getUpdates25_11_00(): array {
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					calendarDisplaySettingId INT NOT NULL,
 					libraryId INT NOT NULL
-				)',
+				) ENGINE = InnoDB',
 			]
-		], //calendary_display_setting_library
+		], //calendar_display_setting_library
 
 		// Myranda - Grove
 
