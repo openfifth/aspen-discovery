@@ -102,6 +102,13 @@ function getUpdates25_11_00(): array {
 		], //add_theme_soft_delete_columns
 
 		//alexander - Open Fifth
+		'add_use_library_name_for_maps' => [
+			'title' => 'Add Use Library Name For Maps',
+			'description' => 'Allow libraries to use library name for google maps',
+			'sql' => [
+				"ALTER TABLE location ADD COLUMN useLocationNameForMaps TINYINT(1) DEFAULT 0",
+			]
+		], //add_use_library_name_for_maps
 		'change_data_types_for_grapes_js_columns' => [
 			'title' => 'Change Data Types For Grapes JS Columns',
 			'description' => 'Update column types to allow for longer pages',

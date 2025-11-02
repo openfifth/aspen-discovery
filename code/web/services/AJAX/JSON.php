@@ -492,6 +492,7 @@ class AJAX_JSON extends Action {
 				'latitude' => floatval($locationToProcess->latitude),
 				'homeLink' => (!empty($locationToProcess->homeLink) && $locationToProcess->homeLink !== 'default') ? $locationToProcess->homeLink : ((!empty($parentLibrary->homeLink) && $parentLibrary->homeLink !== 'default') ? $parentLibrary->homeLink : null),
 				'hoursMessage' => Location::getLibraryHoursMessage($locationToProcess->locationId, true),
+				'useLocationNameForMaps' => $locationToProcess->useLocationNameForMaps,
 			];
 
 			if (!empty($mapsKey)) {
