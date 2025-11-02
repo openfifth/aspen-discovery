@@ -42,7 +42,7 @@
 			{else}
 				<span class="{if !empty($holding.availability)}available{else}checkedout{/if}">
 					{if $holding.onOrderCopies > 1}{$holding.onOrderCopies}&nbsp;{/if}
-					{translate text=$holding.statusFull isPublicFacing=true}{if $holding.holdable == 0 && $showHoldButton} <label class='notHoldable' title='{if !empty($holding.nonHoldableReason)}{$holding.nonHoldableReason}{/if}'>(Not Holdable)</label>{/if}
+					{translate text=$holding.statusFull isPublicFacing=true}{if $holding.holdable == 0 && $showHoldButton} <label class='notHoldable' title='{if !empty($holding.nonHoldableReason)}{$holding.nonHoldableReason}{/if}'>({translate text="Not Holdable" isPublicFacing=true})</label>{/if}
 				</span>
 			{/if}
 		</td>

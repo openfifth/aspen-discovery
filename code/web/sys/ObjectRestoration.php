@@ -43,7 +43,7 @@ class ObjectRestoration extends DataObject {
 			'title' => [
 				'property' => 'title',
 				'type' => 'label',
-				'label' => 'Title',
+				'label' => 'Title / Name',
 			],
 			'userInfo' => [
 				'property' => 'userInfo',

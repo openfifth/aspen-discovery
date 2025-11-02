@@ -691,7 +691,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	/** @noinspection PhpUnused */
 	public function get880Title() : string {
 		$this->loadAlternateGraphicRepresentations();
-		return $this->_alternateGraphicRepresentations['title'];
+		return $this->_alternateGraphicRepresentations['title'] ?? '';
 	}
 
 	/** @noinspection PhpUnused */

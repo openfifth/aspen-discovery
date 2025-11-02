@@ -171,7 +171,6 @@ class ExternalReviews {
 			// @codeCoverageIgnoreEnd
 		}
 
-		$review = [];
 		$i = 0;
 		foreach ($sourceList as $source => $sourceInfo) {
 			$nodes = $xmlDoc->getElementsByTagName($source);
@@ -179,6 +178,10 @@ class ExternalReviews {
 				// Load reviews
 				$url = $baseUrl . '/index.aspx?isbn=' . $this->isbn . '/' . $sourceInfo['file'] . '&client=' . $settings->syndeticsKey . '&type=rw12,hw7';
 				$http = $client->curlGetPage($url);
+
+				if (empty($http)) {
+					continue;
+				}
 
 				$xmlDoc2 = new DomDocument();
 				$xmlDoc2->preserveWhiteSpace = FALSE;
