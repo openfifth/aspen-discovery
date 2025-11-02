@@ -44,6 +44,22 @@ class DockerLogger {
 		self::log('ERROR', $message);
 		exit(1);
 	}
+
+	/**
+	* Set ownership and permissions using LOCAL_USER_ID strategy
+	*/
+	public static function setPermissions($path, $owner = 'www-data', $permissions = '755') {
+		if (!file_exists($path)) {
+			self::warn("Path does not exist: {$path}");
+			return;
+		}
+
+		$recursive = is_dir($path) ? '-R ' : '';
+		exec("chown {$recursive}{$owner} {$path}");
+		exec("chmod {$recursive}{$permissions} {$path}");
+
+		self::info("Set permissions {$permissions} and owner {$owner} for: {$path}");
+	}
 }
 
 // Auto-initialize

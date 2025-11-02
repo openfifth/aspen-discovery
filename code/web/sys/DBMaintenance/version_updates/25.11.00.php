@@ -43,12 +43,63 @@ function getUpdates25_11_00(): array {
 		//kirstien - Grove
 
 		//kodi - Grove
+		'events_search_setting' => [
+			'title' => 'Events Search Setting',
+			'description' => 'Add column to events_indexing_settings for search scope settings.',
+			'sql' => [
+				'ALTER TABLE events_indexing_settings ADD COLUMN eventsSearchSetting INT DEFAULT 1'
+			]
+		],
+		'event_field_calendar_options' => [
+			'title' => 'Event Field Calendar Options',
+			'description' => 'Create event_field_calendar_options table.',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS event_field_calendar_options (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					eventFieldId INT NOT NULL,
+					weight INT DEFAULT 0,
+					displayedOnline TINYINT(1) DEFAULT 0,
+					printedCalendar TINYINT(1) DEFAULT 0,
+					printedAgenda TINYINT(1) DEFAULT 0
+					)',
+			]
+		], //event_field_calendar_options
+		'calendary_display_setting_library' => [
+			'title' => 'Calendar Settings by Library',
+			'description' => 'Create calendar_display_setting_library_table.',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS calendar_display_setting_library (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					libraryId INT NOT NULL
+				)',
+			]
+		], //calendary_display_setting_library
 
 		// Myranda - Grove
 
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'grouped_work_display_settings_showItemBarcodes' => [
+			'title' => 'Grouped Work Display Settings - Show Item Barcodes',
+			'description' => 'Add option to show item barcodes in copy details.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showItemBarcodes TINYINT(1) DEFAULT 0",
+			],
+		], //grouped_work_display_settings_showItemBarcodes
+		'add_theme_soft_delete_columns' => [
+			'title' => 'Add Soft Delete Columns to Themes',
+			'description' => 'Add metadata needed to support Object Restorations for Themes.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS deleted TINYINT(1) DEFAULT 0",
+				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS dateDeleted INT(11) DEFAULT 0",
+				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS deletedBy INT(11) DEFAULT NULL",
+			],
+		], //add_theme_soft_delete_columns
 
 		//alexander - Open Fifth
 		'add_use_library_name_for_maps' => [
@@ -58,6 +109,16 @@ function getUpdates25_11_00(): array {
 				"ALTER TABLE location ADD COLUMN useLocationNameForMaps TINYINT(1) DEFAULT 0",
 			]
 		], //add_use_library_name_for_maps
+		'change_data_types_for_grapes_js_columns' => [
+			'title' => 'Change Data Types For Grapes JS Columns',
+			'description' => 'Update column types to allow for longer pages',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grapes_web_builder MODIFY templateContent LONGTEXT",
+				"ALTER TABLE grapes_web_builder MODIFY htmlData LONGTEXT",
+				"ALTER TABLE grapes_web_builder MODIFY cssData LONGTEXT",
+			]
+		], //change_data_types_for_grapes_js_columns
 
 		//chloe - Open Fifth
 
