@@ -10577,6 +10577,9 @@ a.browse-thumbnail.active {
     margin: 3px 5px;
   }
 }
+.calendar-event-title {
+  font-weight: bold;
+}
 .calendar-event-time {
   font-size: 12px;
 }
