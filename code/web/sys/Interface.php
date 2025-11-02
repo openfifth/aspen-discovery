@@ -375,7 +375,9 @@ class UInterface extends Smarty {
 				if (count($allIds) > 0) {
 					$themeNames = $tmpTheme->fetchAll('id', 'displayName');
 					foreach ($allIds as $id) {
-						$allActiveThemes[$id] = $themeNames[$id];
+						if (array_key_exists($id, $themeNames)) {
+							$allActiveThemes[$id] = $themeNames[$id];
+						}
 					}
 				}
 			}
