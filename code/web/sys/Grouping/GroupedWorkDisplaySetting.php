@@ -738,8 +738,9 @@ class GroupedWorkDisplaySetting extends DataObject {
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
 				'label' => 'Libraries',
-				'description' => 'Define libraries that use this browse category group',
+				'description' => 'Define libraries that use this Grouped Work Display setting.',
 				'values' => $libraryList,
+				'forcesReindex' => true,
 			],
 
 			'locations' => [
@@ -747,8 +748,9 @@ class GroupedWorkDisplaySetting extends DataObject {
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
 				'label' => 'Locations',
-				'description' => 'Define locations that use this browse category group',
+				'description' => 'Define locations that use this Grouped Work Display setting.',
 				'values' => $locationList,
+				'forcesReindex' => true,
 			],
 		];
 
