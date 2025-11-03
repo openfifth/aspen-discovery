@@ -85,7 +85,7 @@ class Axis360Processor {
 				if (rawResponse.has("subTitle")) {
 					subTitle = rawResponse.getString("subTitle");
 				}
-				groupedWork.setTitle(title, subTitle, title, title, primaryFormat, formatCategory, false, axis360Record);
+				groupedWork.setTitle(title, subTitle, title, formatCategory, false, axis360Record);
 
 				String primaryAuthor = productRS.getString("primaryAuthor");
 				groupedWork.setAuthor(primaryAuthor);

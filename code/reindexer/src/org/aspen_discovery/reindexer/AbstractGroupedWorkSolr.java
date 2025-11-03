@@ -25,6 +25,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected HashSet<String> authorAdditional = new HashSet<>();
 	protected String authorDisplay;
 	protected String authorFormat;
+	protected boolean authorFromOverriddenRecord = false;
 	protected HashSet<String> author2 = new HashSet<>();
 	protected HashSet<String> authAuthor2 = new HashSet<>();
 	protected HashSet<String> author2Role = new HashSet<>();
@@ -94,6 +95,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected HashSet<String> titleNew = new HashSet<>();
 	protected String titleSort;
 	protected String titleFormat = "";
+	protected boolean titleFromOverriddenRecord = false;
 	private boolean hasNotForLoanRecord = false;
 	protected HashSet<String> topics = new HashSet<>();
 	protected HashSet<String> topicFacets = new HashSet<>();
@@ -424,15 +426,11 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		this.overriddenRecords = overriddenRecords;
 	}
 
-	private final static Pattern removeBracketsPattern = Pattern.compile("\\[.*?]");
+	//private final static Pattern removeBracketsPattern = Pattern.compile("\\[.*?]");
 	private final static Pattern commonSubtitlePattern = Pattern.compile("(?i)([(]?(?:\\s?a\\s?|\\s?the\\s?)?audio cd|book club kit|large print[)]?)$");
 	private final static Pattern punctuationPattern = Pattern.compile("[.\\\\/()\\[\\]:;]");
 
-	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory) {
-		this.setTitle(shortTitle, subTitle, displayTitle, sortableTitle, recordFormat, formatCategory, false, null);
-	}
-
-	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo) {
+	void setTitle(String shortTitle, String subTitle, String sortableTitle, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo) {
 		if (shortTitle != null) {
 			shortTitle = AspenStringUtils.trimTrailingPunctuation(shortTitle);
 			boolean isOverridden = false;
@@ -441,7 +439,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 				isOverridden = overriddenRecords.contains(recordKey);
 			}
 
-			// Figure out if we want to use this title or if the one we have is better.
+			// Determine whether to use this title or if the chosen one is better.
 			boolean updateTitle = false;
 			if (this.title == null) {
 				updateTitle = true;
@@ -452,7 +450,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 					// Only overwrite if there is a better format.
 					// Do not overwrite if the record was manually moved to this work.
 					if (!isOverridden) {
-						if (formatCategory.equals("Books")) {
+						// If the current title is from an overridden record, replace it with this non-overridden record.
+						if (titleFromOverriddenRecord) {
+							updateTitle = true;
+						} else if (formatCategory.equals("Books")) {
 							// There is a book, update if no book from before.
 							if (!formatCategory.equals(titleFormat)) {
 								updateTitle = true;
@@ -499,6 +500,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 				//}
 				this.title = shortTitle;
 				this.titleFormat = formatCategory;
+				this.titleFromOverriddenRecord = isOverridden;
 				//Strip out anything in brackets unless that would cause us to show nothing
 //				tmpTitle = removeBracketsPattern.matcher(sortableTitle).replaceAll("").trim();
 //				if (!tmpTitle.isEmpty()) {
@@ -623,7 +625,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		} else {
 			// Do not overwrite if the record was manually moved to this work.
 			if (!isOverridden) {
-				if (formatCategory.equals("Books")) {
+				// If the current author is from an overridden record, replace it with this non-overridden record.
+				if (authorFromOverriddenRecord) {
+					updateAuthor = true;
+				} else if (formatCategory.equals("Books")) {
 					// There is a book, update if no book from before.
 					if (!formatCategory.equals(authorFormat)) {
 						updateAuthor = true;
@@ -639,6 +644,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		if (updateAuthor) {
 			this.authorDisplay = AspenStringUtils.trimTrailingPunctuation(newAuthor);
 			authorFormat = formatCategory;
+			this.authorFromOverriddenRecord = isOverridden;
 		}
 	}
 

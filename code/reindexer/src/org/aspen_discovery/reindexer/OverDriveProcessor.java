@@ -199,7 +199,7 @@ class OverDriveProcessor {
 
 						String fullTitle = title + " " + subtitle;
 						fullTitle = fullTitle.trim();
-						groupedWork.setTitle(title, subtitle, title, metadata.get("sortTitle"), primaryFormat, formatCategory, false, overDriveRecord);
+						groupedWork.setTitle(title, subtitle, metadata.get("sortTitle"), formatCategory, false, overDriveRecord);
 						groupedWork.addFullTitle(fullTitle);
 
 						if (series != null && !series.isEmpty()) {

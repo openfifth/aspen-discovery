@@ -1641,7 +1641,7 @@ public class GroupedWorkIndexer {
 					if (groupedWork.isDebugEnabled()) {
 						groupedWork.addDebugMessage("Setting title to " + title + " based on display info", 2);
 					}
-					groupedWork.setTitle(title, "", title, AspenStringUtils.makeValueSortable(title), "", "", true, null);
+					groupedWork.setTitle(title, "", AspenStringUtils.makeValueSortable(title), "", true, null);
 					groupedWork.clearSubTitle();
 				}else{
 					if (groupedWork.isDebugEnabled()) {

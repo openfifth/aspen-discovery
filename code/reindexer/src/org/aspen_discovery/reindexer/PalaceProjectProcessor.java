@@ -131,7 +131,7 @@ public class PalaceProjectProcessor {
 				if (metadata.has("sortAs")){
 					sortableTitle = metadata.getString("sortAs");
 				}
-				groupedWork.setTitle(title, subTitle, title, sortableTitle, primaryFormat, formatCategory, false, palaceProjectRecord);
+				groupedWork.setTitle(title, subTitle, sortableTitle, formatCategory, false, palaceProjectRecord);
 				groupedWork.addFullTitle(fullTitle);
 
 				String primaryAuthor = "";
