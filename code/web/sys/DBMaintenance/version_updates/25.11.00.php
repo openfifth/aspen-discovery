@@ -54,6 +54,14 @@ function getUpdates25_11_00(): array {
 				'DROP TABLE location_events_setting'
 			]
 		], //event_search_options
+		'force_full_events_index_25_11' => [
+			'title' => 'Force Full Events Index 25.11',
+			'description' => 'Method…',
+			'continueOnError' => false,
+			'sql' => [
+				'UPDATE events_indexing_settings set runFullUpdate = 1'
+			]
+		], //event_search_options
 
 		//katherine - Grove
 
