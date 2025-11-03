@@ -504,16 +504,7 @@ class Koha extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/Indexing/IlsRecord.php';
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
-		/** @noinspection SqlResolve */
-		$circControlSql = "SELECT value FROM systempreferences WHERE variable = 'CircControl'";
-		$circControlResult = mysqli_query($this->dbConnection, $circControlSql);
-		$circControl = 'PatronLibrary';
-		if ($circControlResult !== false) {
-			if ($circControlRow = $circControlResult->fetch_assoc()) {
-				$circControl = $circControlRow['value'];
-			}
-			$circControlResult->close();
-		}
+		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
 		foreach ($allRows as $curRow) {
 			$curCheckout = new Checkout();
 			$curCheckout->type = 'ils';
@@ -2353,16 +2344,7 @@ class Koha extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/Indexing/IlsRecord.php';
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
-		/** @noinspection SqlResolve */
-		$circControlSql = "SELECT value FROM systempreferences WHERE variable = 'CircControl'";
-		$circControlResult = mysqli_query($this->dbConnection, $circControlSql);
-		$circControl = 'PatronLibrary';
-		if ($circControlResult !== false) {
-			if ($circControlRow = $circControlResult->fetch_assoc()) {
-				$circControl = $circControlRow['value'];
-			}
-			$circControlResult->close();
-		}
+		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
 
 		foreach ($allRows as $curRow) {
 			//Each row in the table represents a hold
@@ -3003,16 +2985,7 @@ class Koha extends AbstractIlsDriver {
 			$renewResponse = $this->getXMLWebServiceResponse($renewURL);
 			ExternalRequestLogEntry::logRequest('koha.renewCheckout', 'GET', $renewURL, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $renewResponse, []);
 
-			/** @noinspection SqlResolve */
-			$circControlSql = "SELECT value FROM systempreferences WHERE variable = 'CircControl'";
-			$circControlResult = mysqli_query($this->dbConnection, $circControlSql);
-			$circControl = 'PatronLibrary';
-			if ($circControlResult !== false) {
-				if ($circControlRow = $circControlResult->fetch_assoc()) {
-					$circControl = $circControlRow['value'];
-				}
-				$circControlResult->close();
-			}
+			$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
 
 			//Parse the result
 			if (isset($renewResponse->success) && ($renewResponse->success == 1)) {
