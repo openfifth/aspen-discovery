@@ -7705,6 +7705,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$panEntryMethodElement = '';
 		$fundCode = '';
 		$reference = ''; // revenue code
+		$wsldUrl = '';
 
 		// TODO: refactor - extract method(s)
 		
@@ -7716,88 +7717,72 @@ class MyAccount_AJAX extends JSON_Action {
 		$hash = hash_hmac('sha256', $credentialsStr, base64_decode($pay360Settings->privateKey), true);
 		$encodedHash = base64_encode($hash);
 
-		// prepare body
-		$requestBody = new SimpleXMLElement('<scpSimpleInvokeRequest></scpSimpleInvokeRequest>');
-
-		// prepare credentials
-		$credentials = $requestBody->addChild('credentials', '', '');
-		$credentials->addAttribute('xmlns', $credentialsNameSpace);
-
-		$subject = $credentials->addChild('subject', '', '');
-		$subject->addChild('subjectType', $pay360Setting->subjectType, '');
-		$subject->addChild('identifier', $pay360Setting->identifer, '');
-		$subject->addChild('systemCode', $pay360Setting->systemCode, '');
-
-		$requestIdentification = $credentials->addChild('requestIdentification', '', '');
-		$requestIdentification->addChild('uniqueReference', $payment->id, '');
-		$requestIdentification->addChild('timeStamp', $timestamp, '');
-
-		$signature = $credentials->addChild('signature', '', '');
-		$signature->addChild('algorithm', $pay360Settings->algorithm);
-		$signature->addChild('hmacKeyID', $pay360Settings->hmacKeyId);
-		$signature->addChild('digest', $encodedHash);
-
-		// prepare requestTypeElement
-		$requestTypeElement = $requestBody->addChild('requestTypeElement', 'payOnly', '');
-		$requestTypeElement->addAttribute('xmlns', $baseNamespace . '/base');
-
-		// prepare requestIdElement
-		$requestIdElement = $requestBody->addChild('requestIdElement', '', '');
-		$requestIdElement->addAttribute('xmlns', $baseNamespace . '/base');
-
-		// prepare routingElement
-		$routingElement = $requestBody->addChild('routingElement', '', '');
-		$requestIdElement->addAttribute('xmlns', $baseNamespace . '/base');
-		$routingElement->addChild('returnUrl', $pay360Settings->returnUrl, '');
-		$routingElement->addChild('backUrl', $pay360Settings->backUrl, '');
-		$routingElement->addChild('siteId', $pay360Settings->siteId, '');
-		$routingElement->addChild('scpId', $pay360Settings->scpId, '');
-
-		// prepare panEntryMethodElement
-		$panEntryMethodElement = $requestBody->addChild('panEntryMethodElement', $panEntryMethodElement, '');
-		$requestIdElement->addAttribute('xmlns', $baseNamespace . '/simple');
-
-		// prepare saleElement
-		$saleElement = $requestBody->addChild('saleElement', '', '');
-		$saleElement->addAttribute('xmlns', $baseNamespace . '/simple');
-		$saleSummary = $saleElement->addChild('saleSummary', '', '');
-		$saleSummary->addAttribute('xmlns', $baseNamespace . '/base');
-		$saleSummary->addChild('description', $payment->message); // will be replaced by in-line items
-		$saleSummary->addChild('amountInMinorUnits', $amountInMinorUnits);
-
-		// prepare itemsElement
-		$itemsElement = $requestBody->addChild('itemsElement', '', '');
-
-
-		foreach($finesSelected as $fine) {	
-			$fine = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true) : [];
-			$itemSummary = $itemsElement->addChild('itemSummary', '', '');
-			$itemSummary->addChild('description', $fine->reason);
-			$itemSummary->addChild('ammountInMinorUnits', $fine->amountVal);
-			$itemSummary->addChild('reference', $reference);
-
-			$itemsElement->addChild('tax', $fine->vatCode); // TODO: make this customisable in the settings page
-
-			$igItemDetails = $itemsElement->addChild('IgItemDetails', '', '');
-			$igItemDetails->addChild('fundCode', $fundCode, '');
-			$igItemDetails->addChild('additionalReference', $fine->fineId, '');
-			$igItemDetails->addChild('narrative', $fine->reason, '');
-			$igItemDetails->addChild('customerInfo', $fine->message, '');
-
-		}
-
-		$headers = [
-			'Content-Type: application/xml',
-			'Content-Length: ' . strlen($requestBody),
+		$client = new SoapClient($wsldUrl);
+		$params = [
+		    'credentials' => [
+		        '_' => '',
+		        'xmlns' => $credentialsNameSpace,
+		        'subject' => [
+		            'subjectType' => $pay360Setting->subjectType,
+		            'identifier' => $pay360Setting->identifer,
+		            'systemCode' => $pay360Setting->systemCode,
+		        ],
+		        'requestIdentification' => [
+		            'uniqueReference' => $payment->id,
+		            'timeStamp' => $timestamp,
+		        ],
+		        'signature' => [
+		            'algorithm' => $pay360Settings->algorithm,
+		            'hmacKeyID' => $pay360Settings->hmacKeyId,
+		            'digest' => $encodedHash,
+		        ],
+		    ],
+		    'requestTypeElement' => [
+		        '_' => 'payOnly',
+		        'xmlns' => $baseNamespace . '/base',
+		    ],
+		    'requestIdElement' => [
+		        '_' => '',
+		        'xmlns' => $baseNamespace . '/base',
+		    ],
+		    'routingElement' => [
+		        'xmlns' => $baseNamespace . '/base',
+		        'returnUrl' => $pay360Settings->returnUrl,
+		        'backUrl' => $pay360Settings->backUrl,
+		        'siteId' => $pay360Settings->siteId,
+		        'scpId' => $pay360Settings->scpId,
+		    ],
+		    'panEntryMethodElement' => [
+		        '_' => $panEntryMethodElement,
+		        'xmlns' => $baseNamespace . '/simple',
+		    ],
+		    'saleElement' => [
+		        'xmlns' => $baseNamespace . '/simple',
+		        'saleSummary' => [
+		            'xmlns' => $baseNamespace . '/base',
+		            'description' => $payment->message,
+		            'amountInMinorUnits' => $amountInMinorUnits,
+		        ],
+		    ],
+		    'itemsElement' => array_map(function($fine) use ($patron, $reference, $fundCode) {
+		        $fine = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true) : [];
+		        return [
+		            'itemSummary' => [
+		                'description' => $fine->reason,
+		                'ammountInMinorUnits' => $fine->amountVal,
+		                'reference' => $reference,
+		            ],
+		            'tax' => $fine->vatCode,
+		            'IgItemDetails' => [
+		                'fundCode' => $fundCode,
+		                'additionalReference' => $fine->fineId,
+		                'narrative' => $fine->reason,
+		                'customerInfo' => $fine->message,
+		            ],
+		        ];
+		    }, $finesSelected),
 		];
-
-
-		$curlWrapper = new CurlWrapper();
-		$curlWrapper->addCustomHeaders($headers, true); 
-		$response = $curlWrapper->curlPostPage($pay360Settings->baseUrl, $requestBody);
-
-		// TODO: handle response
-		// TODO: redirect user to pay360 interface
+		$response = $client->scpSimpleInvokeRequest($params);
 
 		return [
 			'success' => true,
