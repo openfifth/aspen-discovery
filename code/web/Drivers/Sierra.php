@@ -509,6 +509,7 @@ class Sierra extends Millennium {
 			return [
 				'success' => false,
 				'message' => 'Missing record or patron; unable to retrieve valid pickup locations',
+				'useDefaultLocationFiltering' => true,
 			];
 		}
 		$patronId = $patron->unique_ils_id;
@@ -535,10 +536,11 @@ class Sierra extends Millennium {
 		} else {
 			$message = 'Unable to retrieve valid pickup locations from Sierra. ';
 			$message .= $pickupLocationsResponse->name ?? '';
-			$message .= $pickupLocationsResponse->description ? ': ' . $pickupLocationsResponse->description : '';
+			$message .= !empty($pickupLocationsResponse->description) ? ': ' . $pickupLocationsResponse->description : '';
 			return [
 				'success' => false,
 				'message' => $message,
+				'useDefaultLocationFiltering' => true,
 			];
 		}
 	}
@@ -2120,7 +2122,7 @@ class Sierra extends Millennium {
 			if ($selfRegistrationForm->selfRegUseAgency) {
 				$params['fixedFields']['158'] = [
 					'label' => 'Patron Agency',
-					'value' => $selfRegistrationForm->selfRegAgency
+					'value' => (string)$selfRegistrationForm->selfRegAgency
 				];
 			}
 			if ($selfRegistrationForm->addSelfRegNote) {
@@ -3681,7 +3683,9 @@ class Sierra extends Millennium {
 		$datetime21DaysAgo = new DateTime();
 		date_sub($datetime21DaysAgo, new DateInterval('P21D'));
 		$loadHoldReadyForPickup = $user->canReceiveILSNotification('hold_ready');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Holds Ready For Pickup? $loadHoldReadyForPickup<br/>";
 		$loadHoldExpiresSoon = $user->canReceiveILSNotification('hold_expire');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Holds Expire Soon? $loadHoldExpiresSoon<br/>";
 		$numMessagesAdded = 0;
 		if ($loadHoldReadyForPickup || $loadHoldExpiresSoon) {
 			//Look for holds for the patron that have been put on the hold shelf in the last 24 hours
@@ -3701,23 +3705,29 @@ class Sierra extends Millennium {
 					$existingMessage->messageId = $curRow['id'];
 					$onHoldshelfTime = strtotime($curRow['on_holdshelf_gmt']);
 					$expireHoldshelfTime = strtotime($curRow['expire_holdshelf_gmt']);
+					$cronLogEntry->notes .= "&nbsp;&nbsp;&nbsp;&nbsp;- Processing hold with onHoldshelfTime of $onHoldshelfTime and expireHoldshelfTime of $expireHoldshelfTime.<br/>";
 					if ($onHoldshelfTime > $dateTime24HoursFromNow->getTimestamp()) {
 						if ($loadHoldReadyForPickup) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'hold_ready', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'hold_ready', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}elseif ($expireHoldshelfTime >= $datetimeNow->getTimestamp() && $expireHoldshelfTime <= $dateTime24HoursFromNow) {
 						if ($loadHoldExpiresSoon) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'hold_expire', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'hold_expire', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}
 				}
 			}
 		}
 		$loadCheckoutDueSoon = $user->canReceiveILSNotification('checkout_due_soon');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Checkouts Due Soon? $loadHoldReadyForPickup<br/>";
 		$loadOverdue1 = $user->canReceiveILSNotification('overdue_1');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Overdue 1? $loadOverdue1<br/>";
 		$loadOverdue7 = $user->canReceiveILSNotification('overdue_7');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Overdue 7? $loadOverdue7<br/>";
 		$loadOverdue14 = $user->canReceiveILSNotification('overdue_14');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Overdue 14? $loadOverdue14<br/>";
 		$loadBilled = $user->canReceiveILSNotification('billed');
+		$cronLogEntry->notes .= "&nbsp;&nbsp;- Checking Billed? $loadBilled<br/>";
 		if ($loadCheckoutDueSoon || $loadOverdue1 || $loadOverdue7 || $loadOverdue14 || $loadBilled) {
 			//Load checkouts for the patron
 			$getCheckoutsNeedingNoticesStmt = "select sierra_view.checkout.*, record_num as patron_record_num from sierra_view.checkout inner join sierra_view.record_metadata on patron_record_id = sierra_view.record_metadata.id where due_gmt < $1 AND record_num = $2";
@@ -3734,25 +3744,26 @@ class Sierra extends Millennium {
 					//For Sierra, we will use the message id as the hold or checkout
 					$existingMessage->messageId = $curRow['id'];
 					$dueDateTime = strtotime($curRow['due_gmt']);
+					$cronLogEntry->notes .= "&nbsp;&nbsp;&nbsp;&nbsp;- Processing checkout with dueDateTime of $dueDateTime.<br/>";
 					if ($dueDateTime <= $datetime21DaysAgo->getTimestamp()) {
 						if ($loadBilled) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'billed', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'billed', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}elseif ($dueDateTime <= $datetime14DaysAgo->getTimestamp()) {
 						if ($loadOverdue14) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'overdue_14', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'overdue_14', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}elseif ($dueDateTime <= $datetime7DaysAgo->getTimestamp()) {
 						if ($loadOverdue7) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'overdue_7', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'overdue_7', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}elseif ($dueDateTime <= $datetime24HoursAgo->getTimestamp()) {
 						if ($loadOverdue1) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'overdue_1', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'overdue_1', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}elseif ($dueDateTime <= $dateTime3DaysFromNow->getTimestamp()) {
 						if ($loadCheckoutDueSoon) {
-							$numMessagesAdded += $this->createIlsMessage($user, 'checkout_due_soon', $ilsNotificationSetting, $existingMessage);
+							$numMessagesAdded += $this->createIlsMessage($user, 'checkout_due_soon', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
 					}
 				}
@@ -3819,11 +3830,11 @@ class Sierra extends Millennium {
 	 *
 	 * @param User $user
 	 * @param string $messageCode
-	 * @param ILSMessageType|null $ilsMessageType
 	 * @param UserILSMessage $existingMessage
+	 * @param ?CronLogEntry $cronLogEntry
 	 * @return int
 	 */
-	private function createIlsMessage(User $user, string $messageCode, ILSNotificationSetting $ilsNotificationSetting, UserILSMessage $existingMessage) : int {
+	private function createIlsMessage(User $user, string $messageCode, ILSNotificationSetting $ilsNotificationSetting, UserILSMessage $existingMessage, ?CronLogEntry $cronLogEntry) : int {
 		$existingMessage->type = $messageCode;
 		if (!$existingMessage->find(true)) {
 			$ilsMessageType = $ilsNotificationSetting->getMessageTypeByCode($messageCode);
@@ -3833,9 +3844,14 @@ class Sierra extends Millennium {
 				$existingMessage->content = $ilsMessageType->getTextBlockTranslation('messageBody', $user->interfaceLanguage, true);
 				$existingMessage->dateQueued = time();
 				if ($existingMessage->insert()) {
+					$cronLogEntry->notes .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ILS Message was created.<br/>";
 					return 1;
+				}else{
+					$cronLogEntry->notes .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- Inserting the message failed.<br/>";
 				}
 			}
+		}else{
+			$cronLogEntry->notes .= "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- ILS Message has already been created.<br/>";
 		}
 		return 0;
 	}

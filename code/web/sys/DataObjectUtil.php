@@ -230,15 +230,16 @@ class DataObjectUtil {
 				}
 			}
 		} elseif ($property['type'] == 'timestamp') {
-			if (empty($_REQUEST[$propertyName])) {
-				$object->setProperty($propertyName, 0, $property);
-			} else {
-				try {
-					$timeValue = new DateTime($_REQUEST[$propertyName]);
-					$object->setProperty($propertyName, $timeValue->getTimestamp(), $property);
-				} catch (Exception $e) {
-					//Could not load the timestamp
+			if (empty($property['readOnly']) || empty($object->getPrimaryKeyValue())) {
+				if (empty($_REQUEST[$propertyName])) {
 					$object->setProperty($propertyName, 0, $property);
+				} else {
+					try {
+						$timeValue = new DateTime($_REQUEST[$propertyName]);
+						$object->setProperty($propertyName, $timeValue->getTimestamp(), $property);
+					} catch (Exception) {
+						$object->setProperty($propertyName, 0, $property);
+					}
 				}
 			}
 		} elseif ($property['type'] == 'integer') {
