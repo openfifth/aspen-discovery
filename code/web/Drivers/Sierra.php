@@ -1402,6 +1402,9 @@ class Sierra extends Millennium {
 
 	public function getPatronInfoByUsername($username) {
 		global $library;
+		if (empty($library->usernameField)) {
+			return false;
+		}
 		$params = [
 			'varFieldTag' => $library->usernameField,
 			'varFieldContent' => $username,
@@ -1414,6 +1417,8 @@ class Sierra extends Millennium {
 
 		$response = $this->_callUrl('sierra.findPatronByBarcode', $sierraUrl);
 		if (!$response) {
+			return false;
+		} else if (isset($response->httpStatus) && ($response->httpStatus != 200)) {
 			return false;
 		} else {
 			if ($response->deleted || $response->suppressed) {
