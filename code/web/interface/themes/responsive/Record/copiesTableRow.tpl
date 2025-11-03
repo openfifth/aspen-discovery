@@ -1,10 +1,4 @@
 {strip}
-	{* resize the columns when  including the lastcheckin box
- xs-5 : 41.6667%
- xs-4 : 33.3333%  (1/3)
- xs-3 : 25%       (1/4)
- xs-2 : 16.6667% (1/6)
- *}
 	<tr class="{if !empty($hiddenCopy)} hiddenCopy{/if}"{if !empty($hiddenCopy)} style="display: none"{/if}>
 		{if !empty($showVolume)}
 			<td>
@@ -32,6 +26,11 @@
 				{/foreach}
 			{/if}
 		</td>
+		{if !empty($hasBarcode) && $showItemBarcodes}
+			<td class="holdingsBarcode">
+				{if !empty($holding.barcode)}{$holding.barcode|escape}{/if}
+			</td>
+		{/if}
 		{if !empty($hasNote) && $showItemNotes}
 			<td>
 				{if !empty($holding.note)}{$holding.note}{/if}

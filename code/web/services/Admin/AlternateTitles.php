@@ -46,7 +46,7 @@ class Admin_AlternateTitles extends ObjectEditor {
 	}
 
 	function getInstructions(): string {
-		return 'https://help.aspendiscovery.org/help/catalog/groupedworks';
+		return 'https://help.aspendiscovery.org/grouping';
 	}
 
 	function getBreadcrumbs(): array {
