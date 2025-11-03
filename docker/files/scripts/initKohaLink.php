@@ -1,14 +1,18 @@
 <?php
 
+require_once __DIR__ . '/../logger/DockerLogger.php';
+DockerLogger::init('BACKEND');
+
 $enableKoha = strtolower(getenv('ENABLE_KOHA'));
 
 if ($enableKoha !== 'yes') {
-	echo "%    --> Koha was not enabled\n";
-	die(0);
+	DockerLogger::info("Koha integration not enabled");
+	exit(0);
 }
 
-//Load Koha's Database
+DockerLogger::info("Initializing Koha integration");
 
+//Load Koha's Database
 $variables = [
 	'sitename' => getenv('SITE_NAME'),
 	'ilsUrl' => getenv('KOHA_OPAC_URL'),
@@ -27,6 +31,14 @@ $variables = [
 	'ilsClientSecret' => getenv('KOHA_CLIENT_SECRET'),
 ];
 
+// Validate required Koha variables
+$requiredKohaVars = ['ilsUrl', 'ilsDatabaseHost', 'ilsDatabaseUser', 'ilsDatabasePassword', 'ilsDatabaseName'];
+foreach ($requiredKohaVars as $var) {
+	if (empty($variables[$var])) {
+		DockerLogger::error("Missing required Koha environment variable: {$var}");
+	}
+}
+
 $databaseName = $variables['databaseName'];
 $databasePort = $variables['databasePort'];
 $databaseHost = $variables['databaseHost'];
@@ -36,64 +48,54 @@ $databaseDsn = "mysql:host=$databaseHost;port=$databasePort;dbname=$databaseName
 
 $aspenDir = '/usr/local/aspen-discovery';
 
-// Capture any error as ErrorException
-set_error_handler("customErrorHandler");
-
 // Prepare test statement
 try {
 	$statement = "SELECT driver FROM account_profiles WHERE driver = 'Koha';";
 	$aspenDatabase = new PDO($databaseDsn, $databaseUser, $databasePassword);
 	$updateUserStmt = $aspenDatabase->prepare($statement);
 } catch (PDOException $e) {
-	echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
-	echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
-	die(1);
+	DockerLogger::error("Database connection failed: " . $e->getMessage());
 }
 
 // Check if ils tables have already been initialized
-
 try {
 	$updateUserStmt->execute();
 	$result = $updateUserStmt->fetchAll();
-	if (empty($result)) {
-		throw new PDOException();
+	if (!empty($result)) {
+		DockerLogger::info("Koha integration already initialized");
+		exit(0);
 	}
-	echo "%    --> Ils tables has already been initialized!\n";
-	die(0);
 } catch (PDOException $e) {
-	// Ils table is still empty
+	DockerLogger::info("Koha integration not found, initializing...");
 }
 
 try {
-// Attempt to get the system's temp directory
+	// Attempt to get the system's temp directory
 	$tmp_dir = rtrim(sys_get_temp_dir(), "/");
-	echo("%    --> Loading Koha information to database...\r\n");
-	copy("$aspenDir/install/koha_connection.sql", "$tmp_dir/koha_connection_{$variables['sitename']}.sql");
+	DockerLogger::info("Loading Koha configuration to database");
+	
+	if (!copy("$aspenDir/install/koha_connection.sql", "$tmp_dir/koha_connection_{$variables['sitename']}.sql")) {
+		DockerLogger::error("Failed to copy Koha connection template");
+	}
+	
 	replaceVariables("$tmp_dir/koha_connection_{$variables['sitename']}.sql", $variables);
-	exec("mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h{$variables['databaseHost']} -P{$variables['databasePort']} {$variables['databaseName']} < $tmp_dir/koha_connection_{$variables['sitename']}.sql");
+	
+	$mysqlCmd = "mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h{$variables['databaseHost']} -P{$variables['databasePort']} {$variables['databaseName']} < $tmp_dir/koha_connection_{$variables['sitename']}.sql";
+	exec($mysqlCmd, $output, $returnCode);
+	
+	if ($returnCode !== 0) {
+		DockerLogger::error("Failed to load Koha configuration to database");
+	}
+	
+	// Clean up temp file
+	unlink("$tmp_dir/koha_connection_{$variables['sitename']}.sql");
+	
 } catch (Exception $e) {
-	echo "%   ERROR MESSAGE : " . $e->getMessage() . "\n";
-	echo "%   IN : " . $e->getFile() . ":" . $e->getLine() . "\n";
-	die(1);
+	DockerLogger::error("Koha initialization failed: " . $e->getMessage());
 }
 
-echo "%    --> Koha link established successfully\n";
+DockerLogger::info("Koha integration established successfully");
 
-
-
-
-function customErrorHandler(int $errno, string $errstr, string $errfile, int $errline): void {
-	if (!(error_reporting() & $errno)) {
-		// This error code is not included in error_reporting.
-		return;
-	}
-	if ($errno === E_DEPRECATED || $errno === E_USER_DEPRECATED) {
-		// Do not throw an Exception for deprecation warnings as new or unexpected
-		// deprecations would break the application.
-		return;
-	}
-	throw new ErrorException($errstr, 0, $errno, $errfile, $errline);
-}
 function replaceVariables($filename, $variables): void {
 	$contents = file($filename);
 	$fHnd = fopen($filename, 'w');
@@ -105,3 +107,4 @@ function replaceVariables($filename, $variables): void {
 	}
 	fclose($fHnd);
 }
+?>

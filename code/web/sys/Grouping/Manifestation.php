@@ -75,7 +75,9 @@ class Grouping_Manifestation {
 		}
 
 		usort($this->_variations, function(Grouping_Variation $a, Grouping_Variation $b) use ($sortMethod, $sortAvailableFirst, $eContentSourceWeights) {
-			$availabilityComparison = $sortAvailableFirst ? $b->getStatusInformation()->isAvailableOnline() <=> $a->getStatusInformation()->isAvailableOnline() : 0;
+			//The Available Online flag does not seem to be being set properly within status information.
+			//Therefore, compare the Grouped Status which for eContent can only be Available Online, Checked Out, or On Order
+			$availabilityComparison = $sortAvailableFirst ? $a->getStatusInformation()->getGroupedStatus() <=> $b->getStatusInformation()->getGroupedStatus() : 0;
 			if ($availabilityComparison == 0) {
 				if ($sortMethod == 1) {
 					return strnatcasecmp($a->econtentSource, $b->econtentSource);
@@ -91,7 +93,11 @@ class Grouping_Manifestation {
 					}
 				}
 			}else{
-				return $availabilityComparison;
+				if ($a->getStatusInformation()->getGroupedStatus() === 'Available Online') {
+					return -1;
+				}else{
+					return 1;
+				}
 			}
 		});
 	}
@@ -254,7 +260,7 @@ class Grouping_Manifestation {
 				$manifestationIsAvailable = true;
 			} elseif ($this->getStatusInformation()->isAvailable()) {
 				foreach ($this->getItemSummary() as $itemSummary) {
-					if (strlen($itemSummary['shelfLocation']) && substr_compare($itemSummary['shelfLocation'], $selectedDetailedAvailability, 0)) {
+					if (strlen($itemSummary['shelfLocation']) && substr_compare($itemSummary['shelfLocation'], $selectedDetailedAvailability, 0, strlen($selectedDetailedAvailability)) == 0) {
 						if ($itemSummary['available']) {
 							$manifestationIsAvailable = true;
 							break;

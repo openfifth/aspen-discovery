@@ -1551,6 +1551,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			'ratingData' => $this->getRatingData(),
 			'format' => $this->getFormats(),
 			'language' => $this->getLanguage(),
+			'primary_isbn' => $this->getPrimaryIsbn(),
+			'primary_upc' => $this->getPrimaryUPC(),
 		];
 	}
 
@@ -1685,6 +1687,14 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	public function getPrimaryIsbn() {
 		if (isset($this->fields['primary_isbn'])) {
 			return $this->fields['primary_isbn'];
+		} else {
+			return null;
+		}
+	}
+
+	public function getPrimaryUPC() {
+		if (isset($this->fields['primary_upc'])) {
+			return $this->fields['primary_upc'];
 		} else {
 			return null;
 		}

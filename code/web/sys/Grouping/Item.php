@@ -13,8 +13,8 @@ class Grouping_Item {
 	public bool $isEContent;
 	public string $itemId;
 	public ?string $eContentSource;
-	public string $groupedStatus;
-	public string $status;
+	public ?string $groupedStatus;
+	public ?string $status;
 	public bool $locallyOwned;
 	public string $holdable;
 	public string $inLibraryUseOnly;

@@ -903,7 +903,7 @@ pre a{ldelim}
 	color: {$primaryForegroundColor}
 {rdelim}
 
-.calendar-event-time{ldelim}
+.calendar-event-time, .calendar-event-field{ldelim}
     color: {$primaryForegroundColor};
 {rdelim}
 
@@ -939,10 +939,21 @@ pre a{ldelim}
 		color-scheme: dark;
 	{rdelim}
 
+    .ui-autocomplete,
+    .rd-container{ldelim}
+        background-color: {$bodyBackgroundColor};
+    {rdelim}
+
     .table-striped > tbody > tr:nth-child(odd) > td,
     .table-striped > tbody > tr:nth-child(odd) > th,
+    .table .table,
     .striped > .row:nth-child(odd){ldelim}
         background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 5%);
+    {rdelim}
+
+    .table-hover > tbody > tr:hover > td,
+    .table-hover > tbody > tr:hover > th{ldelim}
+        background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 20%);
     {rdelim}
 
     .bg-overdue{ldelim}
@@ -959,6 +970,11 @@ pre a{ldelim}
         background-color: {$linkColor};
         border-color: {$linkColor};
         background-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A//www.w3.org/2000/svg'%20viewBox%3D'-4%20-4%208%208'%3E%3Ccircle%20r%3D'3'%20fill%3D'%23212529'/%3E%3C/svg%3E");
+    {rdelim}
+
+    .form-control-sm{ldelim}
+        background-color: {$bodyBackgroundColor};
+        color: {$bodyTextColor};
     {rdelim}
 
     .help-block:not(.alert),

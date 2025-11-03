@@ -691,7 +691,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	/** @noinspection PhpUnused */
 	public function get880Title() : string {
 		$this->loadAlternateGraphicRepresentations();
-		return $this->_alternateGraphicRepresentations['title'];
+		return $this->_alternateGraphicRepresentations['title'] ?? '';
 	}
 
 	/** @noinspection PhpUnused */
@@ -1947,6 +1947,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		$interface->assign('show856LinksAsTab', $library->getGroupedWorkDisplaySettings()->show856LinksAsTab);
 		$interface->assign('showItemDueDates', $library->getGroupedWorkDisplaySettings()->showItemDueDates);
 		$interface->assign('showItemNotes', $library->getGroupedWorkDisplaySettings()->showItemNotes);
+		$interface->assign('showItemBarcodes', $library->getGroupedWorkDisplaySettings()->showItemBarcodes);
 
 		if ($library->getGroupedWorkDisplaySettings()->show856LinksAsTab && count($links) > 0) {
 			$moreDetailsOptions['links'] = [
@@ -2605,7 +2606,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 					//Divide the items into sections and create the status summary
 					$this->holdingSections = [];
 					$itemsFromMarc = [];
-					if (!empty($indexingProfile->noteSubfield) || !empty($indexingProfile->dueDate) || !empty($indexingProfile->itemUrl)) {
+					if (!empty($indexingProfile->noteSubfield) || !empty($indexingProfile->dueDate) || !empty($indexingProfile->itemUrl) || !empty($indexingProfile->barcode)) {
 						//Get items from the marc record
 						$itemFields = $this->getMarcRecord()->getFields($indexingProfile->itemTag);
 						/** @var File_MARC_Data_Field $field */
@@ -2696,6 +2697,18 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 								}
 							}
 						}
+						if (!empty($indexingProfile->barcode)) {
+							if (array_key_exists($copyInfo['itemId'], $itemsFromMarc)) {
+								$itemField = $itemsFromMarc[$copyInfo['itemId']];
+								$copyInfo['barcode'] = '';
+								if (!empty($itemField)) {
+									$barcodeSubfield = $itemField->getSubfield($indexingProfile->barcode);
+									if ($barcodeSubfield != null && !empty($barcodeSubfield->getData())) {
+										$copyInfo['barcode'] = $barcodeSubfield->getData();
+									}
+								}
+							}
+						}
 						$this->holdingSections[$sectionName]['holdings'][] = $copyInfo;
 					}
 
@@ -2738,6 +2751,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		$hasVolume = false;
 		$hasNote = false;
 		$hasDueDate = false;
+		$hasBarcode = false;
 		foreach ($this->holdings as $holding) {
 			if ($holding['lastCheckinDate']) {
 				$hasLastCheckinData = true;
@@ -2751,11 +2765,15 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			if (!empty($holding['dueDate'])) {
 				$hasDueDate = true;
 			}
+			if (!empty($holding['barcode'])) {
+				$hasBarcode = true;
+			}
 		}
 		$interface->assign('hasLastCheckinData', $hasLastCheckinData);
 		$interface->assign('hasVolume', $hasVolume);
 		$interface->assign('hasNote', $hasNote);
 		$interface->assign('hasDueDate', $hasDueDate);
+		$interface->assign('hasBarcode', $hasBarcode);
 		$interface->assign('holdings', $this->holdings);
 		$interface->assign('sections', $this->holdingSections);
 		$interface->assign('statusSummary', $this->statusSummary);

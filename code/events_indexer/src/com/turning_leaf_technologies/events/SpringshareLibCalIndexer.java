@@ -668,7 +668,7 @@ class SpringshareLibCalIndexer {
 		//run index events
 		logEntry.addNote("Checking for orphaned events...");
 		try {
-			PreparedStatement getEventsSitesToIndexStmt = aspenConn.prepareStatement("SELECT unique(settingsId) from springshare_libcal_events where settingsId not in (select id from springshare_libcal_settings) and deleted = 0");
+			PreparedStatement getEventsSitesToIndexStmt = aspenConn.prepareStatement("SELECT DISTINCT(settingsId) from springshare_libcal_events where settingsId not in (select id from springshare_libcal_settings) and deleted = 0");
 			PreparedStatement deleteOrphans = aspenConn.prepareStatement("UPDATE springshare_libcal_events SET deleted = 1 where settingsId = ?");
 			ResultSet eventsSitesRS = getEventsSitesToIndexStmt.executeQuery();
 			while (eventsSitesRS.next()) {

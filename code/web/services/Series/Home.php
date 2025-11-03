@@ -162,7 +162,7 @@ class Series_Home extends Action {
 			],
 			'displayName' => [
 				'desc' => 'Title',
-				'selected' => $sortName == 'displayName',
+				'selected' => $sortName == 'displayName' || $sortName == 'title',
 				'sortUrl' => "/Series/$list->id?sort=displayName",
 			],
 			'pubDate' => [

@@ -143,6 +143,11 @@ abstract class DataObject implements JsonSerializable {
 			$includeDeleted = property_exists($this, '_includeDeleted') ? $this->_includeDeleted : false;
 			$deletedPropIsSet = property_exists($this, 'deleted') && ($this->deleted !== null);
 			if (!$includeDeleted && !$deletedPropIsSet) {
+				// If there are existing OR conditions, wrap them in parentheses to ensure
+				// the deleted filter applies to all results (SQL operator precedence issue).
+				if (!empty($this->__where) && stripos($this->__where, ' OR ') !== false) {
+					$this->__where = '(' . $this->__where . ')';
+				}
 				$this->whereAdd($this->__table . '.deleted = 0');
 			}
 		}
@@ -670,6 +675,11 @@ abstract class DataObject implements JsonSerializable {
 			$includeDeleted = property_exists($this, '_includeDeleted') ? $this->_includeDeleted : false;
 			$deletedPropIsSet = property_exists($this, 'deleted') && ($this->deleted !== null);
 			if (!$includeDeleted && !$deletedPropIsSet) {
+				// If there are existing OR conditions, wrap them in parentheses to ensure
+				// the deleted filter applies to all results (SQL operator precedence issue).
+				if (!empty($this->__where) && stripos($this->__where, ' OR ') !== false) {
+					$this->__where = '(' . $this->__where . ')';
+				}
 				$this->whereAdd($this->__table . '.deleted = 0');
 			}
 		}
@@ -1108,37 +1118,42 @@ abstract class DataObject implements JsonSerializable {
 					$newValue = 1;
 				}
 			}
+
+			//Check to see if the property changed more than just a little bit (not "1" vs 1 or 03 vs 3)
+			$propertyChangedMoreThanSlightly = $this->$propertyName != $newValue || (is_null($this->$propertyName) && !is_null($newValue));
 			$this->$propertyName = $newValue;
-			$this->handlePropertyChangeEffects($propertyName, $oldValue, $newValue, $propertyStructure, 'changed');
-			//Add the change to the history unless tracking the history is off (passwords)
-			if ($propertyStructure != null && $propertyStructure['type'] != 'password' && $propertyStructure['type'] != 'storedPassword') {
-				if ($this->objectHistoryEnabled()) {
-					require_once ROOT_DIR . '/sys/DB/DataObjectHistory.php';
-					$history = new DataObjectHistory();
-					$history->objectType = get_class($this);
-					$primaryKey = $this->__primaryKey;
-					if (!empty($this->$primaryKey)) {
-						if (is_array($oldValue)) {
-							$oldValue = implode(',', $oldValue);
+			if ($propertyChangedMoreThanSlightly) {
+				$this->handlePropertyChangeEffects($propertyName, $oldValue, $newValue, $propertyStructure, 'changed');
+				//Add the change to the history unless tracking the history is off (passwords)
+				if ($propertyStructure != null && $propertyStructure['type'] != 'password' && $propertyStructure['type'] != 'storedPassword') {
+					if ($this->objectHistoryEnabled()) {
+						require_once ROOT_DIR . '/sys/DB/DataObjectHistory.php';
+						$history = new DataObjectHistory();
+						$history->objectType = get_class($this);
+						$primaryKey = $this->__primaryKey;
+						if (!empty($this->$primaryKey)) {
+							if (is_array($oldValue)) {
+								$oldValue = implode(',', $oldValue);
+							}
+							if (is_array($newValue)) {
+								$newValue = implode(',', $newValue);
+							}
+							if (strlen($oldValue) >= 65535) {
+								$oldValue = 'Too long to track history';
+							}
+							if (strlen($newValue) >= 65535) {
+								$newValue = 'Too long to track history';
+							}
+							$history->actionType = 2;
+							$history->objectId = $this->$primaryKey;
+							$history->oldValue = $oldValue;
+							require_once ROOT_DIR . '/sys/DataObjectUtil.php';
+							$history->propertyName = DataObjectUtil::getHistoryPropertyName($this, $propertyName);
+							$history->newValue = $newValue;
+							$history->changedBy = UserAccount::getActiveUserId();
+							$history->changeDate = time();
+							$history->insert();
 						}
-						if (is_array($newValue)) {
-							$newValue = implode(',', $newValue);
-						}
-						if (strlen($oldValue) >= 65535) {
-							$oldValue = 'Too long to track history';
-						}
-						if (strlen($newValue) >= 65535) {
-							$newValue = 'Too long to track history';
-						}
-						$history->actionType = 2;
-						$history->objectId = $this->$primaryKey;
-						$history->oldValue = $oldValue;
-						require_once ROOT_DIR . '/sys/DataObjectUtil.php';
-						$history->propertyName = DataObjectUtil::getHistoryPropertyName($this, $propertyName);
-						$history->newValue = $newValue;
-						$history->changedBy = UserAccount::getActiveUserId();
-						$history->changeDate = time();
-						$history->insert();
 					}
 				}
 			}
