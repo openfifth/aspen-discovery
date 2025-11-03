@@ -9402,14 +9402,21 @@ a.placard-link {
   margin-right: auto;
 }
 .browse-category div:focus {
-  outline: none;
+  outline: 2px solid #3174af;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
 }
 .browse-category div:hover {
   text-decoration: underline;
 }
 .browse-category.selected {
-  border: 2px solid #3497d1;
+  border: 3px solid #3497d1;
   font-size: 20px;
+}
+.browse-category.selected div:focus {
+  outline: 2px solid #3174af;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
 }
 #selected-browse-label {
   background-color: #fff;
