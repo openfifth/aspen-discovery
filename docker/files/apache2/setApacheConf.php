@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../scripts/DockerLogger.php';
+require_once __DIR__ . '/../logger/DockerLogger.php';
 DockerLogger::init('APACHE');
 
 if (count($argv) < 2) {
@@ -33,30 +33,20 @@ try {
 	
 	DockerLogger::info("Apache configuration copied successfully");
 
-	// Copy data-alias.conf to allow apache accessing files that are not in the served path
+	// Copy data-alias.conf with sitename replacement
 	if (file_exists("$dockerDir/files/apache2/data-alias.conf")) {
-		if (!copy("$dockerDir/files/apache2/data-alias.conf", "$apacheDir/conf-enabled/data-alias.conf")) {
-			DockerLogger::warn("Failed to copy data-alias configuration");
-		} else {
-			DockerLogger::info("Data alias configuration copied");
+		$sitename = getenv('SITE_NAME');
+		if (!$sitename) {
+			DockerLogger::error("SITE_NAME environment variable is required");
 		}
-	}
 
-	// Copy PHP-FPM configuration if it exists
-	$phpFpmSource = "$dockerDir/files/php_fpm/php-fpm.conf";
-	if (file_exists($phpFpmSource)) {
-		$phpVersion = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
-		$phpFpmTarget = "/etc/php/$phpVersion/fpm/pool.d/www.conf";
-		
-		// Read template and replace variables
-		$phpFpmContent = file_get_contents($phpFpmSource);
-		$phpFpmPort = getenv('PHP_FPM_PORT') ?: '9000';
-		$phpFpmContent = str_replace('{phpFpmPort}', $phpFpmPort, $phpFpmContent);
-		
-		if (file_put_contents($phpFpmTarget, $phpFpmContent) === false) {
-			DockerLogger::warn("Failed to write PHP-FPM configuration");
+		$dataAliasContent = file_get_contents("$dockerDir/files/apache2/data-alias.conf");
+		$dataAliasContent = str_replace('{sitename}', $sitename, $dataAliasContent);
+
+		if (file_put_contents("$apacheDir/conf-enabled/data-alias.conf", $dataAliasContent) === false) {
+			DockerLogger::warn("Failed to write data-alias configuration");
 		} else {
-			DockerLogger::info("PHP-FPM configuration updated");
+			DockerLogger::info("Data alias configuration copied with sitename: $sitename");
 		}
 	}
 
@@ -78,4 +68,7 @@ try {
 } catch (Exception $e) {
 	DockerLogger::error("Apache configuration failed: " . $e->getMessage());
 }
+
+
+
 ?>

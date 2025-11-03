@@ -10,15 +10,25 @@
 		<div class="col-md-6">
 			<h4 class="bold">{translate text="Calendar View Options" isPublicFacing=true}</h4>
 			<h5>({translate text="Landscape Orientation" isPublicFacing=true})</h5>
+			{if !empty($eventFieldNamesCalendar)}
+				{foreach from=$eventFieldNamesCalendar item=eventField}
+					<div class="form-group checkbox">
+						<label for="calendar_{$eventField}">
+							<input type="checkbox" name="calendar_{$eventField}" id="calendar_{$eventField}" checked>
+							<strong>{$eventField}</strong>
+						</label>
+					</div>
+				{/foreach}
+			{/if}
 			<div class="form-group checkbox">
 				<label for="endTime">
 					<input type="checkbox" name="endTime" id="endTime">
 					<strong>{translate text="End Time" isPublicFacing=true}</strong>
 					<span id="endTimeHelpBlock" class="help-block" style="margin-top:0">
-	                    <small><i class="fas fa-info-circle"></i>
-		                    {translate text="If unchecked, end time may still show when there is space." isPublicFacing=true}
-	                    </small>
-	                </span>
+						<small><i class="fas fa-info-circle"></i>
+							{translate text="If unchecked, end time may still show when there is space." isPublicFacing=true}
+						</small>
+					</span>
 				</label>
 			</div>
 		</div>
@@ -31,6 +41,16 @@
 					<strong>{translate text="Description" isPublicFacing=true}</strong>
 				</label>
 			</div>
+			{if !empty($eventFieldNamesAgenda)}
+				{foreach from=$eventFieldNamesAgenda item=eventField}
+					<div class="form-group checkbox">
+						<label for="agenda_{$eventField}">
+							<input type="checkbox" name="agenda_{$eventField}" id="agenda_{$eventField}" checked>
+							<strong>{$eventField}</strong>
+						</label>
+					</div>
+				{/foreach}
+			{/if}
 		</div>
 	</div>
 {/strip}

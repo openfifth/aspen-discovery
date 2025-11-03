@@ -52,7 +52,7 @@
 		{/if}
 		<link rel="search" type="application/opensearchdescription+xml" title="{$site.title|escape} Catalog Search" href="/Search/OpenSearch?method=describe">
 		{include file="cssAndJsIncludes.tpl"}
-		{$themeCss}
+		{if !empty($themeCss)}{$themeCss}{/if}
 		{if !empty($loadRecaptcha)}
 			<script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 		{/if}
