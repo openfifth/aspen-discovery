@@ -74,6 +74,14 @@ AspenDiscovery.Browse = (function(){
 				AspenDiscovery.Browse.changeBrowseCategory(categoryId);
 			});
 
+			// Handle keyboard navigation (tabbing) to scroll carousel.
+			browseCategoryCarousel.on('focus', 'li div', function(){
+				var $item = $(this).closest('li');
+				if ($('#browse-category-picker .jcarousel-control-prev').css('display') !== 'none') {
+					$("#browse-category-carousel").jcarousel('scroll', $item, true);
+				}
+			});
+
 			if ($('#browse-category-picker .jcarousel-control-prev').css('display') !== 'none') {
 				// only enable if the carousel features are being used.
 				// as of now, basalt & vail are not. plb 12-1-2014

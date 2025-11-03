@@ -492,9 +492,12 @@ class Library extends DataObject {
 	// LIBKEY
 	public $libKeySettingId;
 
-	// Talpa /
+	// Talpa
 	public $enableTalpaSearch;
 	public $talpaSettingsId;
+
+	// Aspen Events
+	public $aspenEventsToInclude;
 
 	/** @noinspection PhpUnused */
 	public $allowUpdatingHolidaysFromILS;
@@ -691,16 +694,6 @@ class Library extends DataObject {
 		while ($compriseSetting->fetch()) {
 			$compriseSettings[$compriseSetting->id] = $compriseSetting->customerName;
 		}
-
-//		require_once ROOT_DIR . '/sys/ECommerce/ProPaySetting.php';
-//		$proPaySetting = new ProPaySetting();
-//		$proPaySetting->orderBy('name');
-//		$proPaySettings = [];
-//		$proPaySetting->find();
-//		$proPaySettings[-1] = 'none';
-//		while ($proPaySetting->fetch()) {
-//			$proPaySettings[$proPaySetting->id] = $proPaySetting->name;
-//		}
 
 		require_once ROOT_DIR . '/sys/ECommerce/PayPalSetting.php';
 		$payPalSetting = new PayPalSetting();
@@ -3388,6 +3381,27 @@ class Library extends DataObject {
 				],
 			],
 
+			//Event Display
+			'eventSection' => [
+				'property' => 'eventSection',
+				'type' => 'section',
+				'label' => 'Events',
+				'hideInLists' => true,
+				'properties' => [
+					'aspenEventsToInclude' => [
+						'property' => 'aspenEventsToInclude',
+						'type' => 'enum',
+						'label' => 'Aspen Events to Include',
+						'description' => 'Which events to include when searching this library',
+						'values' => [
+							'1' => 'All events at all locations',
+							'2' => "Events that occur at one of this library's locations",
+						],
+						'default' => '2',
+					]
+				]
+			],
+
 			// Full Record Display //
 			'fullRecordSection' => [
 				'property' => 'fullRecordSection',
@@ -4656,6 +4670,9 @@ class Library extends DataObject {
 		if (!array_key_exists('Palace Project', $enabledModules)) {
 			unset($structure['palaceProjectSection']);
 		}
+		if (!array_key_exists('Events', $enabledModules)) {
+			unset($structure['eventSection']);
+		}
 		if (!$catalog || !$catalog->hasIlsConsentSupport()) {
 			unset($structure['dataProtectionRegulations']['properties']['ilsConsentEnabled']);
 		}
@@ -4683,7 +4700,6 @@ class Library extends DataObject {
 
 	static function hasCommunityEngagementEnabled(): bool {
 		global $enabledModules;
-		global $library;
 
 		if (array_key_exists('Community Engagement', $enabledModules)) {
 			return true;

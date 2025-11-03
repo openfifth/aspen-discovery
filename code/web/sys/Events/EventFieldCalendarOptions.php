@@ -36,8 +36,8 @@ class EventFieldCalendarOptions extends DataObject
 				'description' => 'The sort order',
 				'default' => 0,
 			],
-			'calendarSettingId' => [
-				'property' => 'calendarSettingId',
+			'calendarDisplaySettingId' => [
+				'property' => 'calendarDisplaySettingId',
 				'type' => 'label',
 				'label' => 'Calendar Setting Id',
 				'description' => 'The id of the calendar setting',
@@ -52,16 +52,19 @@ class EventFieldCalendarOptions extends DataObject
 				'property' => 'displayedOnline',
 				'type' => 'checkbox',
 				'label' => 'Displayed Online',
+				'default' => 1
 			],
 			'printedCalendar' => [
 				'property' => 'printedCalendar',
 				'type' => 'checkbox',
 				'label' => 'Printed Calendar',
+				'default' => 1
 			],
 			'printedAgenda' => [
 				'property' => 'printedAgenda',
 				'type' => 'checkbox',
 				'label' => 'Printed Agenda',
+				'default' => 1
 			]
 		];
 
