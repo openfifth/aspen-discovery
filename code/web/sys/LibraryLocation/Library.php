@@ -3388,8 +3388,8 @@ class Library extends DataObject {
 				'label' => 'Events',
 				'hideInLists' => true,
 				'properties' => [
-					'eventsSearchSetting' => [
-						'property' => 'eventsSearchSetting',
+					'aspenEventsToInclude' => [
+						'property' => 'aspenEventsToInclude',
 						'type' => 'enum',
 						'label' => 'Aspen Events to Include',
 						'description' => 'Which events to include when searching this library',
