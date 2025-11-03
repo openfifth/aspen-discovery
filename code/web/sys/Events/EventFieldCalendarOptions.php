@@ -52,16 +52,19 @@ class EventFieldCalendarOptions extends DataObject
 				'property' => 'displayedOnline',
 				'type' => 'checkbox',
 				'label' => 'Displayed Online',
+				'default' => 1
 			],
 			'printedCalendar' => [
 				'property' => 'printedCalendar',
 				'type' => 'checkbox',
 				'label' => 'Printed Calendar',
+				'default' => 1
 			],
 			'printedAgenda' => [
 				'property' => 'printedAgenda',
 				'type' => 'checkbox',
 				'label' => 'Printed Agenda',
+				'default' => 1
 			]
 		];
 
