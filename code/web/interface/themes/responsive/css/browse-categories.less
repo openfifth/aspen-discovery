@@ -81,7 +81,9 @@
   div {
     cursor: pointer;
     &:focus {
-      outline: none; // hide outlining of clicked category
+      outline: 2px solid #3174af;
+      outline-offset: -2px;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
     }
     &:hover {
       text-decoration: underline; // emulate link behavior
@@ -90,9 +92,16 @@
     margin-left: auto;
     margin-right: auto;
   }
+
   &.selected {
-    border: 2px solid @selectedCategoryBorderColor;
-    font-size: @browse-category-font-size; // decreased size of increase, set relative to base font size  plb 9-17-2014
+    border: 3px solid @selectedCategoryBorderColor;
+    font-size: @browse-category-font-size;
+
+    div:focus {
+      outline: 2px solid #3174af;
+      outline-offset: -2px;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
+    }
   }
 }
 
