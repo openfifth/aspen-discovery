@@ -97,8 +97,16 @@ class EventField extends DataObject {
 		return 0;
 	}
 
-	public static function getEventFieldList(): array {
+	public static function getEventFieldList(bool $forCalendarOptions = false): array {
 		$fieldList = [];
+		if ($forCalendarOptions) {
+			/*			$fieldList[-3] = "Title - The title of the event";
+						$fieldList[-2] = "Time - The time of the event";
+						$fieldList[-1] = "Cover - The image for the event";*/
+			$fieldList[-3] = "Branch - The Branch where the event is held";
+			$fieldList[-4] = "Room - The Room where the event is held";
+			$fieldList[-2] = "Description - The description for the event";
+		}
 		$object = new EventField();
 		$object->orderBy('name');
 		$object->find();

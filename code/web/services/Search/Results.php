@@ -14,7 +14,7 @@ class Search_Results extends ResultsAction {
 		global $memoryWatcher;
 		global $library;
 		global $aspenUsage;
-		$aspenUsage->groupedWorkSearches++;
+		$aspenUsage->incGroupedWorkSearches();
 
 		$this->validateAndProcessSearchParameters();
 		$searchSource = !empty($_REQUEST['searchSource']) ? $_REQUEST['searchSource'] : 'local';
@@ -63,19 +63,12 @@ class Search_Results extends ResultsAction {
 				$availableLabel,
 				$availableOnlineLabel,
 			] = $this->getAvailabilityToggleLabels();
-			switch ($replacedScope) {
-				case 'local':
-					$replacedScopeLabel = $localLabel;
-					break;
-				case 'available':
-					$replacedScopeLabel = $availableLabel;
-					break;
-				case 'available_online':
-					$replacedScopeLabel = $availableOnlineLabel;
-					break;
-				default:
-					$replacedScopeLabel = 'Unknown';
-			}
+			$replacedScopeLabel = match ($replacedScope) {
+				'local' => $localLabel,
+				'available' => $availableLabel,
+				'available_online' => $availableOnlineLabel,
+				default => 'Unknown',
+			};
 			$interface->assign('replacedScope', $replacedScope);
 			$interface->assign('replacedScopeLabel', $replacedScopeLabel);
 			$interface->assign('globalScopeLabel', $superScopeLabel);
@@ -107,6 +100,7 @@ class Search_Results extends ResultsAction {
 			$interface->assign($detailOption, true);
 		}
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 
 		// Include Search Engine Class
@@ -226,7 +220,11 @@ class Search_Results extends ResultsAction {
 		// Display of query is not right when reusing the global search object
 		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
 		$searchObject = SearchObjectFactory::initSearchObject();
-		$searchObject->init($searchSource);
+		$allowFaceting  = $library->allowAutomaticFaceting;
+		if (isset($_REQUEST['disableAutomaticFiltering'])) {
+			$allowFaceting = false;
+		}
+		$searchObject->init($searchSource, null, $allowFaceting);
 		$searchObject->setPrimarySearch(true);
 		$timer->logTime("Init Search Object");
 		$memoryWatcher->logMemory("Init Search Object");
@@ -244,10 +242,39 @@ class Search_Results extends ResultsAction {
 			exit;
 		} elseif ($searchObject->getView() == 'ris') {
 			$searchObject->buildRisExport();
+			exit;
 		}
 		$displayMode = $searchObject->getView();
 		if ($displayMode == 'covers') {
 			$searchObject->setLimit(24); // a set of 24 covers looks better in display
+		}
+
+		// Process Search
+		$result = $searchObject->processSearch(true, true);
+
+		$hasAutomaticFacetsApplied = $searchObject->hasAutomaticFacetsApplied();
+		//Check to see if automatic filters gave us nothing
+		if ($hasAutomaticFacetsApplied && $searchObject->getResultTotal() == 0) {
+			$searchObject = SearchObjectFactory::initSearchObject();
+			$searchObject->init($searchSource);
+			$result = $searchObject->processSearch(true, true);
+			$hasAutomaticFacetsApplied = false;
+		}
+
+		$displayQuery = $searchObject->displayQuery();
+		$originalUrl = $searchObject->renderSearchUrl();
+		$pageTitle = 'Search Results';
+
+		$interface->assign('hasAutomaticFacetsApplied', $hasAutomaticFacetsApplied);
+		if ($hasAutomaticFacetsApplied) {
+			if (isset($_REQUEST['lookfor'])) {
+				$lookFor = urlencode($_REQUEST['lookfor']);
+			}else{
+				$lookFor = '';
+			}
+			$interface->assign('searchUrlWithoutAutomaticFiltering',  "/Search/Results?lookfor=$lookFor&disableAutomaticFiltering");
+		}else{
+			$interface->assign('searchUrlWithoutAutomaticFiltering', $originalUrl);
 		}
 
 		// Set Interface Variables
@@ -256,8 +283,6 @@ class Search_Results extends ResultsAction {
 		// Hide Covers when the user has set that setting on the Search Results Page
 		$this->setShowCovers();
 
-		$displayQuery = $searchObject->displayQuery();
-		$pageTitle = 'Search Results';
 		$interface->assign('sortList', $searchObject->getSortList());
 		$interface->assign('rssLink', $searchObject->getRSSUrl());
 		$interface->assign('excelLink', $searchObject->getExcelUrl());
@@ -266,7 +291,6 @@ class Search_Results extends ResultsAction {
 		$timer->logTime('Setup Search');
 
 		// Process Search
-		$result = $searchObject->processSearch(true, true);
 		if ($result == null) {
 			$timeoutMessage = "Ooops, your search timed out. Try a simpler search if possible.";
 			global $configArray;
@@ -274,48 +298,45 @@ class Search_Results extends ResultsAction {
 				//Get the number of CPUs available
 				$numCPUs = (int)shell_exec("cat /proc/cpuinfo | grep processor | wc -l");
 
-				//Check load (use the 5 minute load)
+				//Check load (use the 5-minute load)
 				$load = sys_getloadavg();
 				$loadPerCpu = $load[1] / $numCPUs;
 				if ($loadPerCpu > 1.5) {
 					$timeoutMessage = "Ooops, your search timed out. Our servers are busy helping other people, please try your search again.";
-					$aspenUsage->timedOutSearchesWithHighLoad++;
+					$aspenUsage->incTimedOutSearchesWithHighLoad();
 				} else {
-					$aspenUsage->timedOutSearches++;
+					$aspenUsage->incTimedOutSearches();
 				}
 			} else {
-				$aspenUsage->timedOutSearches++;
+				$aspenUsage->incTimedOutSearches();
 			}
 			$interface->assign('error', $timeoutMessage);
 			$this->display('searchError.tpl', 'Error in Search', '');
 			return;
 		} elseif ($result instanceof AspenError || !empty($result['error'])) {
-			$aspenUsage->searchesWithErrors++;
+			$aspenUsage->incSearchesWithErrors();
 			//Don't record an error, but send it to issues just to be sure everything looks good
 			global $serverName;
 			$logSearchError = true;
 			//Don't send error message for spammy searches
 			foreach ($searchObject->getSearchTerms() as $term) {
 				if (isset($term['lookfor'])) {
-					if (strpos($term['lookfor'], 'DBMS_PIPE.RECEIVE_MESSAGE') !== false) {
+					if (str_contains($term['lookfor'], 'DBMS_PIPE.RECEIVE_MESSAGE')) {
 						$logSearchError = false;
 						break;
-					} elseif (strpos($term['lookfor'], 'PG_SLEEP') !== false) {
+					} elseif (str_contains($term['lookfor'], 'PG_SLEEP')) {
 						$logSearchError = false;
 						break;
-					} elseif (strpos($term['lookfor'], 'SELECT') !== false) {
+					} elseif (str_contains($term['lookfor'], 'SELECT')) {
 						$logSearchError = false;
 						break;
-					} elseif (strpos($term['lookfor'], 'SLEEP') !== false) {
+					} elseif (str_contains($term['lookfor'], 'ORDER BY')) {
 						$logSearchError = false;
 						break;
-					} elseif (strpos($term['lookfor'], 'ORDER BY') !== false) {
+					} elseif (str_contains($term['lookfor'], 'WAITFOR')) {
 						$logSearchError = false;
 						break;
-					} elseif (strpos($term['lookfor'], 'WAITFOR') !== false) {
-						$logSearchError = false;
-						break;
-					} elseif (strpos($term['lookfor'], 'nvOpzp') !== false) {
+					} elseif (str_contains($term['lookfor'], 'nvOpzp')) {
 						$logSearchError = false;
 						break;
 					}
@@ -332,7 +353,7 @@ class Search_Results extends ResultsAction {
 						$emailErrorDetails = $_SERVER['REQUEST_URI'] . "\nIP Address: " . IPAddress::getActiveIp() . "\n" . $result['error']['msg'];
 						$mailer->send($systemVariables->searchErrorEmail, "$serverName Error processing catalog search", $emailErrorDetails);
 					}
-				} catch (Exception $e) {
+				} catch (Exception) {
 					//This happens when the table has not been created
 				}
 			}
@@ -357,7 +378,7 @@ class Search_Results extends ResultsAction {
 		$interface->assign('searchIndex', $searchObject->getSearchIndex());
 
 		// We'll need recommendations no matter how many results we found:
-		$interface->assign('topRecommendations', $searchObject->getRecommendationsTemplates('top'));
+		$interface->assign('topRecommendations', $searchObject->getRecommendationsTemplates());
 		$interface->assign('sideRecommendations', $searchObject->getRecommendationsTemplates('side'));
 
 		// 'Finish' the search... complete timers and log search history.
@@ -365,7 +386,7 @@ class Search_Results extends ResultsAction {
 		$interface->assign('time', round($searchObject->getTotalSpeed(), 2));
 		$interface->assign('savedSearch', $searchObject->isSavedSearch());
 		$interface->assign('searchId', $searchObject->getSearchId());
-		$currentPage = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+		$currentPage = $_REQUEST['page'] ?? 1;
 		$interface->assign('page', $currentPage);
 
 		//Enable and disable functionality based on library settings
@@ -436,7 +457,7 @@ class Search_Results extends ResultsAction {
 			$interface->assign('searchSuggestions', $allSuggestions);
 		}
 
-		// No Results Actions //
+		// No Results Action //
 		if ($searchObject->getResultTotal() == 0) {
 			//Check to see if we can automatically replace the search with a spelling result
 			$disallowReplacements = isset($_REQUEST['disallowReplacements']) || isset($_REQUEST['replacementTerm']);
@@ -448,7 +469,7 @@ class Search_Results extends ResultsAction {
 						if (!$disallowReplacements) {
 							//We can automatically redirect to the keyword scope
 							$newUrl = $interface->getVariable('keywordResultsLink');
-							if (strpos($newUrl, '?') !== false) {
+							if (str_contains($newUrl, '?')) {
 								$newUrl .= '&disallowReplacements&replacedIndex=' . $interface->getVariable('originalSearchIndex');
 							} else {
 								$newUrl .= '?disallowReplacements&replacedIndex=' . $interface->getVariable('originalSearchIndex');
@@ -461,7 +482,7 @@ class Search_Results extends ResultsAction {
 					if (!$disallowReplacements) {
 						//We can automatically redirect to the global results
 						$newUrl = $interface->getVariable('globalResultsLink');
-						if (strpos($newUrl, '?') !== false) {
+						if (str_contains($newUrl, '?')) {
 							$newUrl .= '&disallowReplacements&replacedScope=' . $interface->getVariable('originalScope');
 						} else {
 							$newUrl .= '?disallowReplacements&replacedScope=' . $interface->getVariable('originalScope');
@@ -475,7 +496,7 @@ class Search_Results extends ResultsAction {
 			// Spelling checks we will only do with no applied facets.
 			if (!$disallowReplacements && !$hasAppliedFacets) {
 				// We can try to find a suggestion, but only if we are not doing a phrase search.
-				if (strpos($searchObject->displayQuery(), '"') === false) {
+				if (!str_contains($searchObject->displayQuery(), '"')) {
 					// Rerank the suggestions by distance and frequency from the original search.
 					// Pick the smallest distance and highest frequency.
 					$closestSuggestion = null;
@@ -504,7 +525,7 @@ class Search_Results extends ResultsAction {
 						$replacementSearchObject = SearchObjectFactory::initSearchObject();
 						$replacementSearchObject->init($searchSource, $closestSuggestion['phrase']);
 						$replacementSearchObject->setPrimarySearch(false);
-						$replacementSearchObject->processSearch(true, false);
+						$replacementSearchObject->processSearch(true);
 						if ($replacementSearchObject->getResultTotal() > 0) {
 							//Get search results for the new search
 							// The above assignments probably do nothing when there is a redirect below
@@ -530,15 +551,15 @@ class Search_Results extends ResultsAction {
 			if ($error !== false) {
 				// If it's a parse error or the user specified an invalid field, we
 				// should display an appropriate message:
-				if (stristr($error['msg'], 'org.apache.lucene.queryParser.ParseException') || preg_match('/^undefined field/', $error['msg'])) {
+				if (stristr($error['msg'], 'org.apache.lucene.queryParser.ParseException') || str_starts_with($error['msg'], 'undefined field')) {
 					$interface->assign('parseError', $error['msg']);
 
-					if (preg_match('/^undefined field/', $error['msg'])) {
+					if (str_starts_with($error['msg'], 'undefined field')) {
 						// Setup to try as a possible subtitle search
-						$fieldName = trim(str_replace('undefined field', '', $error['msg'], $replaced)); // strip out the phrase 'undefined field' to get just the fieldname
+						$fieldName = trim(str_replace('undefined field', '', $error['msg'], $replaced)); // strip out the phrase 'undefined field' to get just the field name
 						$original = urlencode("$fieldName:");
 						if ($replaced === 1 && !empty($fieldName) && strpos($_SERVER['REQUEST_URI'], $original)) {
-							// ensure only 1 replacement was done, that the fieldname isn't an empty string, and the label is in fact in the Search URL
+							// ensure only 1 replacement was done, that the field name isn't an empty string, and the label is in fact in the Search URL
 							$new = urlencode("$fieldName :"); // include space in between the field name & colon to avoid the parse error
 							$thisUrl = str_replace($original, $new, $_SERVER['REQUEST_URI'], $replaced);
 							if ($replaced === 1) { // ensure only one modification was made
@@ -564,12 +585,11 @@ class Search_Results extends ResultsAction {
 			$_SESSION['searchId'] = $searchObject->getSearchId();
 			if ($record['recordtype'] == 'list') {
 				$listId = substr($record['id'], 4);
-				header("Location: " . "/MyAccount/MyList/{$listId}");
-				exit();
+				header("Location: " . "/MyAccount/MyList/$listId");
 			} else {
 				header("Location: " . "/GroupedWork/{$record['id']}/Home");
-				exit();
 			}
+			exit();
 
 		} else {
 			$timer->logTime('save search');
@@ -669,7 +689,7 @@ class Search_Results extends ResultsAction {
 				]);
 				$keywordSearchObject->disableSpelling();
 				$keywordSearchObject->clearFacets();
-				$keywordSearchObject->processSearch(false, false, false);
+				$keywordSearchObject->processSearch();
 				if ($keywordSearchObject->getResultTotal() > 0) {
 					$interface->assign('hasKeywordResults', true);
 					$interface->assign('keywordResultsLink', $keywordSearchObject->renderSearchUrl());
@@ -699,19 +719,12 @@ class Search_Results extends ResultsAction {
 						$availableLabel,
 						$availableOnlineLabel,
 					] = $this->getAvailabilityToggleLabels();
-					switch ($searchObject->selectedAvailabilityToggleValue) {
-						case 'local':
-							$originalScopeLabel = $localLabel;
-							break;
-						case 'available':
-							$originalScopeLabel = $availableLabel;
-							break;
-						case 'available_online':
-							$originalScopeLabel = $availableOnlineLabel;
-							break;
-						default:
-							$originalScopeLabel = 'Unknown';
-					}
+					$originalScopeLabel = match ($searchObject->selectedAvailabilityToggleValue) {
+						'local' => $localLabel,
+						'available' => $availableLabel,
+						'available_online' => $availableOnlineLabel,
+						default => 'Unknown',
+					};
 
 					$interface->assign('originalScope', $searchObject->selectedAvailabilityToggleValue);
 					$interface->assign('originalScopeLabel', $originalScopeLabel);
@@ -724,7 +737,7 @@ class Search_Results extends ResultsAction {
 					$globalSearchObject->removeFilter('availability_toggle');
 					$globalSearchObject->addFilter('availability_toggle:global');
 					$globalSearchObject->disableSpelling();
-					$globalSearchObject->processSearch(false, false, false);
+					$globalSearchObject->processSearch();
 					if ($globalSearchObject->getResultTotal() > 0) {
 						$interface->assign('hasGlobalResults', true);
 						$interface->assign('globalResultsLink', $globalSearchObject->renderLinkWithFilter('availability_toggle', 'global'));
@@ -738,7 +751,7 @@ class Search_Results extends ResultsAction {
 		return false;
 	}
 
-	private function loadPlacards() {
+	private function loadPlacards() : void {
 		if (empty($_REQUEST['lookfor'])) {
 			return;
 		}
@@ -757,7 +770,7 @@ class Search_Results extends ResultsAction {
 				global $interface;
 				$interface->assign('placard', $placardToDisplay);
 			}
-		} catch (Exception $e) {
+		} catch (Exception) {
 			//Placards are not defined yet
 		}
 	}
@@ -770,8 +783,8 @@ class Search_Results extends ResultsAction {
 	 * @return array
 	 */
 	private function getAvailabilityToggleLabels(): array {
-		$searchLibrary = Library::getSearchLibrary(null);
-		$searchLocation = Location::getSearchLocation(null);
+		$searchLibrary = Library::getSearchLibrary();
+		$searchLocation = Location::getSearchLocation();
 
 		if ($searchLocation) {
 			$groupedWorkDisplaySettings = $searchLocation->getGroupedWorkDisplaySettings();
@@ -780,11 +793,19 @@ class Search_Results extends ResultsAction {
 		}
 		$superScopeLabel = $groupedWorkDisplaySettings->availabilityToggleLabelSuperScope;
 		$localLabel = $groupedWorkDisplaySettings->availabilityToggleLabelLocal;
-		$localLabel = str_ireplace('{display name}', $searchLocation->displayName, $localLabel);
-		$availableLabel = $groupedWorkDisplaySettings->availabilityToggleLabelAvailable;
-		$availableLabel = str_ireplace('{display name}', $searchLocation->displayName, $availableLabel);
-		$availableOnlineLabel = $groupedWorkDisplaySettings->availabilityToggleLabelAvailableOnline;
-		$availableOnlineLabel = str_ireplace('{display name}', $searchLocation->displayName, $availableOnlineLabel);
+		if ($searchLocation != null) {
+			$localLabel = str_ireplace('{display name}', $searchLocation->displayName, $localLabel);
+			$availableLabel = $groupedWorkDisplaySettings->availabilityToggleLabelAvailable;
+			$availableLabel = str_ireplace('{display name}', $searchLocation->displayName, $availableLabel);
+			$availableOnlineLabel = $groupedWorkDisplaySettings->availabilityToggleLabelAvailableOnline;
+			$availableOnlineLabel = str_ireplace('{display name}', $searchLocation->displayName, $availableOnlineLabel);
+		}else {
+			$localLabel = str_ireplace('{display name}', $searchLibrary->displayName, $localLabel);
+			$availableLabel = $groupedWorkDisplaySettings->availabilityToggleLabelAvailable;
+			$availableLabel = str_ireplace('{display name}', $searchLibrary->displayName, $availableLabel);
+			$availableOnlineLabel = $groupedWorkDisplaySettings->availabilityToggleLabelAvailableOnline;
+			$availableOnlineLabel = str_ireplace('{display name}', $searchLibrary->displayName, $availableOnlineLabel);
+		}
 		return [
 			$superScopeLabel,
 			$localLabel,

@@ -55,6 +55,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('canFetchFromCommunity', $this->canFetchFromCommunity());
 		$interface->assign('hasMultiStepAddNew', $this->hasMultiStepAddNew());
 		$interface->assign('linkedObjectNotifications', $this->getLinkedObjectNotifications());
+		$interface->assign('editFormInstructions', $this->getEditFormInstructions());
 
 		$interface->assign('objectType', $this->getObjectType());
 		$interface->assign('toolName', $this->getToolName());
@@ -1025,6 +1026,27 @@ abstract class ObjectEditor extends Admin_Admin {
 									]);
 							}
 						}
+					}
+				}
+			}
+		}
+		return $result;
+	}
+
+	function getEditFormInstructions() {
+		global $activeLanguage;
+		$result = null;
+		if (!empty($_REQUEST['id'])) {
+			if ($_REQUEST['action'] == 'Events') {
+				require_once ROOT_DIR . '/sys/Events/Event.php';
+				$event = new Event();
+				$event->id = $_REQUEST['id'];
+				if ($event->find(true)) {
+					require_once ROOT_DIR . '/sys/Events/EventType.php';
+					$eventType = new EventType();
+					$eventType->id = $event->eventType;
+					if ($eventType->find(true)) {
+						$result = $eventType->getTextBlockTranslation('editFormInstructions', $activeLanguage->code, true);
 					}
 				}
 			}

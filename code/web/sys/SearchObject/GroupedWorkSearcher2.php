@@ -8,12 +8,12 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	public static string $fields_to_return = 'auth_author2,author2-role,id,mpaa_rating,title_display,title_full,title_short,subtitle_display,author,author_display,isbn,upc,issn,series,series_with_volume,recordtype,display_description,literary_form,literary_form_full,publisherStr,publishDate,publishDateSort,placeOfPublication,subject_facet,topic_facet,primary_isbn,primary_upc,accelerated_reader_point_value,accelerated_reader_reading_level,accelerated_reader_interest_level,lexile_code,lexile_score,fountas_pinnell,last_indexed,lc_subject,bisac_subject,format,format_category,language,ils_description';
 
 	// Display Modes //
-	public $viewOptions = [
+	public array $viewOptions = [
 		'list',
 		'covers',
 	];
 
-	private $fieldsToReturn = null;
+	private ?string $fieldsToReturn = null;
 
 	/**
 	 * Constructor. Initialise some details about the server
@@ -89,7 +89,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * @param bool $preventQueryModification Should we allow the search engine
 	 *                                             to modify the query or is it already
 	 *                                             a well formatted query
-	 * @return  array|AspenError
+	 * @return  array|AspenError|null
 	 */
 	public function processSearch($returnIndexErrors = false, $recommendations = false, $preventQueryModification = false) : AspenError|array|null {
 		global $timer;
@@ -112,7 +112,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		if ($preventQueryModification) {
 			$query = $search;
 		} else {
-			$query = $this->indexEngine->buildQuery($search, false);
+			$query = $this->indexEngine->buildQuery($search);
 		}
 		$timer->logTime("build query in grouped work searcher");
 		if (($query instanceof AspenError)) {
@@ -135,9 +135,9 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			if ($field === '') {
 				unset($this->filterList[$field]);
 			}
-			if (strpos($field, 'custom_facet_') === 0) {
+			if (str_starts_with($field, 'custom_facet_')) {
 				$this->filterList[$field] = $filter;
-			}else if (strpos($field, '_') !== false) {
+			}else if (str_contains($field, '_')) {
 				$lastUnderscore = strrpos($field, '_');
 				$shortFieldName = substr($field, 0, $lastUnderscore + 1);
 				$oldScope = substr($field, $lastUnderscore + 1);
@@ -186,7 +186,6 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 				} else {
 					if (in_array($field, $validFields)) {
 						$facetName = $field;
-						$multiSelect = false;
 					} else {
 						//Unknown field
 						continue;
@@ -197,7 +196,9 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			foreach ($filter as $value) {
 				if ($facetName == 'availability_toggle' || $facetName == "availability_toggle_$solrScope") {
 					$this->selectedAvailabilityToggleValue = $value;
-					$availabilityToggleId = $facetInfo->id;
+					if (!empty($facetInfo)) {
+						$availabilityToggleId = $facetInfo->id;
+					}
 				} elseif ($facetName == 'available_at' || $facetName == "available_at_$solrScope") {
 					$selectedAvailableAtValues[] = $value;
 				} elseif ($facetName == 'format_category') {
@@ -211,7 +212,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 
 				// Special case -- allow trailing wildcards:
 				$okToAdd = false;
-				if (substr($value, -1) == '*') {
+				if (str_ends_with($value, '*')) {
 					$okToAdd = true;
 				} elseif (preg_match('/\\A\\[.*?\\sTO\\s.*?]\\z/', $value)) {
 					$okToAdd = true;
@@ -247,7 +248,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		//Check to see if we should apply a default filter
 		if ($this->selectedAvailabilityToggleValue == null && !$this->disableDefaultAvailabilityToggle) {
 			global $library;
-			$location = Location::getSearchLocation(null);
+			$location = Location::getSearchLocation();
 			if ($location != null) {
 				$groupedWorkDisplaySettings = $location->getGroupedWorkDisplaySettings();
 			} else {
@@ -379,8 +380,8 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 			}
 		}
 		if (!empty($this->facetSearchTerm) && !empty($this->facetSearchField)) {
-			$this->facetOptions["f.{$this->facetSearchField}.facet.contains"] = $this->facetSearchTerm;
-			$this->facetOptions["f.{$this->facetSearchField}.facet.contains.ignoreCase"] = 'true';
+			$this->facetOptions["f.$this->facetSearchField.facet.contains"] = $this->facetSearchTerm;
+			$this->facetOptions["f.$this->facetSearchField.facet.contains.ignoreCase"] = 'true';
 		}
 		if (!empty($this->facetOptions)) {
 			$facetSet['additionalOptions'] = $this->facetOptions;
@@ -418,7 +419,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		$fieldsToReturn = $this->getFieldsToReturn();
 
 		$handler = $this->index;
-		if (preg_match('/^\\"[^\\"]+?\\"$/', $this->query)) {
+		if (preg_match('/^"[^\"]+?\"$/', $this->query)) {
 			if ($handler == 'Keyword') {
 				$handler = 'KeywordProper';
 			} elseif ($handler == 'Author') {
@@ -427,8 +428,6 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 				$handler = 'SubjectProper';
 			} elseif ($handler == 'AllFields') {
 				$handler = 'KeywordProper';
-			} elseif ($handler == 'Title') {
-				$handler = 'TitleProper';
 			} elseif ($handler == 'Title') {
 				$handler = 'TitleProper';
 			} elseif ($handler == 'Series') {
@@ -527,7 +526,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		return $this->indexResult;
 	}
 
-	function setAppliedFilters($filterList) {
+	function setAppliedFilters($filterList): void {
 		$updatedFilterList = [];
 		$facetConfig = $this->getFacetConfig();
 		$validFields = $this->loadValidFields();
@@ -555,7 +554,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	/**
 	 * @param String $fields - a list of comma separated fields to return
 	 */
-	function setFieldsToReturn($fields) {
+	function setFieldsToReturn(string $fields) : void {
 		$this->fieldsToReturn = $fields;
 	}
 
@@ -592,20 +591,16 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * @return string
 	 */
 	protected function getUnscopedFieldName(string $scopedFieldName): string {
-		if (strpos($scopedFieldName, 'availability_toggle_') === 0) {
+		if (str_starts_with($scopedFieldName, 'availability_toggle_')) {
 			$scopedFieldName = 'availability_toggle';
-		} elseif (strpos($scopedFieldName, 'available_at') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'available_at')) {
 			$scopedFieldName = 'available_at';
-		} elseif (strpos($scopedFieldName, 'local_time_since_added') === 0) {
+		} elseif (str_starts_with($scopedFieldName, 'local_time_since_added')) {
 			$scopedFieldName = 'local_time_since_added';
 		}
 		return $scopedFieldName;
 	}
 
-	/**
-	 * @param $field
-	 * @return string
-	 */
 	protected function getScopedFieldName(string $field): string {
 		global $solrScope;
 		if ($solrScope) {
@@ -629,11 +624,11 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 *
 	 * @access  public
 	 * @param array $filter Array of field => on-screen description
-	 *                                  listing all of the desired facet fields;
+	 *                                  listing all the desired facet fields;
 	 *                                  set to null to get all configured values.
 	 * @return  array   Facets data arrays
 	 */
-	public function getFacetList($filter = null) {
+	public function getFacetList($filter = null): array {
 		global $solrScope;
 		global $timer;
 		// If there is no filter, we'll use all facets as the filter:
@@ -729,10 +724,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		foreach ($allFacets as $field => $data) {
 			// Skip filtered fields and empty arrays:
 			if (!in_array($field, $validFields) || count($data) < 1) {
-				$isValid = false;
-				if (!$isValid) {
-					continue;
-				}
+				continue;
 			}
 			// Initialize the settings for the current field
 			$list[$field] = [];
@@ -751,7 +743,6 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 
 			$foundInstitution = false;
 			$doInstitutionProcessing = false;
-			$foundBranch = false;
 			$doBranchProcessing = false;
 
 			//Marmot specific processing to do custom resorting of facets.
@@ -773,7 +764,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 				$currentSettings = [];
 				$facetValue = $facet[0];
 
-				if ($isScopedField && strpos($facetValue, '#') !== false) {
+				if ($isScopedField && str_contains($facetValue, '#')) {
 					$facetValue = substr($facetValue, strpos($facetValue, '#') + 1);
 				}
 				$currentSettings['value'] = $facetValue;
@@ -793,7 +784,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 					if (in_array($facetValue, $this->filterList[$field])) {
 						$currentSettings['isApplied'] = true;
 						$list[$field]['hasApplied'] = true;
-						$currentSettings['removalUrl'] = $this->renderLinkWithoutFilter("$field:{$facetValue}");
+						$currentSettings['removalUrl'] = $this->renderLinkWithoutFilter("$field:$facetValue");
 					}
 				}
 
@@ -809,7 +800,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 					$currentSettings['countIsApproximate'] = false;
 				}
 
-				//Setup the key to allow sorting alphabetically if needed.
+				//Set up the key to allow sorting alphabetically if needed.
 				$valueKey = $facetValue;
 				$okToAdd = true;
 				//Don't include empty settings since they don't work properly with Solr
@@ -834,24 +825,18 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 					if (strlen($facetValue) > 0) {
 						if ($activeLocationFacet != null && $facetValue == $activeLocationFacet) {
 							$valueKey = '1' . $valueKey;
-							$foundBranch = true;
-							$numValidRelatedLocations++;
 						} elseif (isset($currentLibrary) && ($facetValue == $currentLibrary->facetLabel . ' On Order')) {
 							$valueKey = '1' . $valueKey;
-							$numValidRelatedLocations++;
 						} elseif (!is_null($relatedLocationFacets) && in_array($facetValue, $relatedLocationFacets)) {
 							$valueKey = '2' . $valueKey;
-							$numValidRelatedLocations++;
 						} elseif (!is_null($relatedHomeLocationFacets) && in_array($facetValue, $relatedHomeLocationFacets)) {
 							$valueKey = '2' . $valueKey;
-							$numValidRelatedLocations++;
 						} elseif (!is_null($additionalAvailableAtLocations) && in_array($facetValue, $additionalAvailableAtLocations)) {
 							$valueKey = '3' . $valueKey;
-							$numValidRelatedLocations++;
 						} else {
 							$valueKey = '4' . $valueKey;
-							$numValidRelatedLocations++;
 						}
+						$numValidRelatedLocations++;
 					}
 				}
 
@@ -879,24 +864,6 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 					'url' => null,
 				];
 			}
-//			if (!$foundBranch && $doBranchProcessing && !empty($activeLocationFacet)) {
-//				$list[$field]['list']['1' . $activeLocationFacet] = [
-//					'value' => $translate ? translate([
-//						'text' => $activeLocationFacet,
-//						'isPublicFacing' => true,
-//						'escape' => true
-//					]) : htmlentities($activeLocationFacet),
-//					'display' => $translate ? translate([
-//						'text' => $activeLocationFacet,
-//						'isPublicFacing' => true,
-//						'escape' => true
-//					]) : htmlentities($activeLocationFacet),
-//					'count' => 0,
-//					'isApplied' => false,
-//					'url' => null,
-//				];
-//				$numValidRelatedLocations++;
-//			}
 
 			if ($doBranchProcessing || $doInstitutionProcessing) {
 				ksort($list[$field]['list']);
@@ -952,7 +919,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		return in_array($fieldName, SearchObject_GroupedWorkSearcher2::$scopedFields);
 	}
 
-	public function getResultRecordSet() {
+	public function getResultRecordSet(): array {
 		$recordSet = parent::getResultRecordSet();
 		foreach ($recordSet as $index => $record) {
 			$recordSet[$index] = $this->cleanScopedFieldsForRecord($record);
@@ -970,7 +937,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 				if (is_array($fieldData)) {
 					$unscopedFieldValues = [];
 					foreach ($fieldData as $valueIndex => $fieldValue) {
-						if (strpos($fieldValue, $solrScopeWithSeparator) === 0) {
+						if (str_starts_with($fieldValue, $solrScopeWithSeparator)) {
 							$unscopedFieldValues[] = substr($fieldValue, $solrScopeLength);
 						} else {
 							unset($fieldData[$valueIndex]);
@@ -1006,11 +973,10 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * Retrieves a document specified by an isbn.
 	 *
 	 * @param string[] $isbn An array of isbns to check
-	 * @access  public
-	 * @return  string              The requested resource
+	 * @return  ?array              The requested resource
 	 * @throws  AspenError
 	 */
-	function getRecordByIsbn($isbn) {
+	function getRecordByIsbn(array $isbn) : ?array{
 		$recordData = $this->indexEngine->getRecordByIsbn($isbn, $this->getFieldsToReturn());
 		if ($recordData != null) {
 			$recordData = $this->cleanScopedFieldsForRecord($recordData);
@@ -1022,11 +988,10 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * Retrieves a document specified by the ID.
 	 *
 	 * @param string $id The document to retrieve from Solr
-	 * @access  public
 	 * @return  array              The requested resource
 	 * @throws  AspenError
 	 */
-	function getRecord($id) {
+	function getRecord($id): array {
 		$recordData = $this->indexEngine->getRecord($id, $this->getFieldsToReturn());
 		if ($recordData != null) {
 			$recordData = $this->cleanScopedFieldsForRecord($recordData);
@@ -1038,7 +1003,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * Retrieves a document specified by the ID.
 	 *
 	 * @param string[] $ids An array of documents to retrieve from Solr
-	 * @param ?string $fieldsToReturn A comma delimited list of fields to return
+	 * @param ?string $fieldsToReturn A comma-delimited list of fields to return
 	 * @access  public
 	 * @return  array             Record Drivers for the results
 	 * @throws  AspenError
@@ -1055,7 +1020,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		return $this->indexEngine->getRecords($ids, 'id', true);
 	}
 
-	public function getRecordDriverForResult($record) {
+	public function getRecordDriverForResult($record): GroupedWorkDriver {
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		$record = $this->cleanScopedFieldsForRecord($record);
 		return new GroupedWorkDriver($record);
@@ -1078,7 +1043,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		foreach ($facets as $facet) {
 			if (!empty($facet->numTotalEntriesToShowInMore)) {
 				$facetName = $this->getScopedFieldName($facet->getFacetName($this->searchVersion));
-				$this->facetOptions["f.{$facetName}.facet.limit"] = $facet->numTotalEntriesToShowInMore;
+				$this->facetOptions["f.$facetName.facet.limit"] = $facet->numTotalEntriesToShowInMore;
 			}
 		}
 	}

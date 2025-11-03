@@ -1,6 +1,5 @@
 package org.aspen_discovery.reindexer;
 
-import com.turning_leaf_technologies.indexing.IndexingProfile;
 import org.aspen_discovery.format_classification.MarcRecordFormatClassifier;
 import com.turning_leaf_technologies.indexing.BaseIndexingSettings;
 import com.turning_leaf_technologies.logging.BaseIndexingLogEntry;
@@ -367,7 +366,7 @@ abstract class MarcRecordProcessor {
 	}
 
 	void updateGroupedWorkSolrDataBasedOnStandardMarcData(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, ArrayList<ItemInfo> printItems, String identifier, String format, String formatCategory, boolean hasParentRecord) {
-		loadTitles(groupedWork, record, format, formatCategory, hasParentRecord, identifier);
+		loadTitles(groupedWork, record, formatCategory, hasParentRecord, identifier);
 		loadAuthors(groupedWork, record, identifier, formatCategory);
 		loadSubjects(groupedWork, record);
 
@@ -1550,23 +1549,18 @@ abstract class MarcRecordProcessor {
 			}
 			contributors.add(contributor.toString());
 		}
-		groupedWork.addAuthor2Role(contributors);
 
-		//author_display = 100acq:110a:260b:710a:245c, first
-		//#ARL-95 Do not show display author from the 710 or from the 245c since neither are truly authors
-		//#ARL-200 Do not show display author from the 260b since it is also not the author
-		//DIS-413 Add subfield q to the display
+		groupedWork.addAuthor2Role(contributors);
 		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100acq:110ab");
 		if (displayAuthor != null && displayAuthor.indexOf(';') > 0){
 			displayAuthor = displayAuthor.substring(0, displayAuthor.indexOf(';') -1);
 		}
-		groupedWork.setAuthorDisplay(displayAuthor, formatCategory);
+
+		RecordInfo recordInfo = groupedWork.getRecordInfo(profileType, identifier);
+		groupedWork.setAuthorDisplay(displayAuthor, formatCategory, recordInfo);
 	}
 
-	private void loadTitles(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, String format, String formatCategory, boolean hasParentRecord, String identifier) {
-		//title (full title done by index process by concatenating short and subtitle
-
-		//title short
+	private void loadTitles(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, String formatCategory, boolean hasParentRecord, String identifier) {
 		DataField titleField = record.getDataField(245);
 		String authorInTitleField = null;
 		if (titleField != null) {
@@ -1578,16 +1572,13 @@ abstract class MarcRecordProcessor {
 				groupedWork.setTitle(
 					titleField.getSubfieldsAsString("a"),
 					subTitle,
-					titleField.getSubfieldsAsString("abfgnp", " "),
 					this.getSortableTitle(record),
-					format,
 					formatCategory,
 					false,
 					recordInfo,
 					this
 				);
 			}
-			//title full
 			authorInTitleField = titleField.getSubfieldsAsString("c");
 		}
 		String standardAuthorData = MarcUtil.getFirstFieldVal(record, "100abcdq:110ab");
