@@ -487,6 +487,7 @@ class GroupedWork_AJAX extends JSON_Action {
 		global $library;
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		//Indicate we are showing search results, so we don't get hold buttons
 		$interface->assign('displayingSearchResults', true);

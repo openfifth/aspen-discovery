@@ -37,19 +37,37 @@ function getUpdates25_11_00(): array {
 				'ALTER TABLE translations ADD COLUMN googleTranslated TINYINT DEFAULT 0',
 			]
 		], //translator_indicate_google_translations
+		'event_search_options' => [
+			'title' => 'Event Search Options',
+			'description' => 'Event Search Options (for Aspen Events)',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN aspenEventsToInclude INT DEFAULT 2',
+				'UPDATE library SET aspenEventsToInclude = 1 WHERE isConsortialCatalog = 1'
+			]
+		], //event_search_options
+		'remove_location_event_settings' => [
+			'title' => 'Remove Location Event Settings',
+			'description' => 'Remove Location Event Settings',
+			'continueOnError' => false,
+			'sql' => [
+				'DROP TABLE location_events_setting'
+			]
+		], //event_search_options
+		'force_full_events_index_25_11' => [
+			'title' => 'Force Full Events Index 25.11',
+			'description' => 'Method…',
+			'continueOnError' => false,
+			'sql' => [
+				'UPDATE events_indexing_settings set runFullUpdate = 1'
+			]
+		], //event_search_options
 
 		//katherine - Grove
 
 		//kirstien - Grove
 
 		//kodi - Grove
-		'events_search_setting' => [
-			'title' => 'Events Search Setting',
-			'description' => 'Add column to events_indexing_settings for search scope settings.',
-			'sql' => [
-				'ALTER TABLE events_indexing_settings ADD COLUMN eventsSearchSetting INT DEFAULT 1'
-			]
-		],
 		'event_field_calendar_options' => [
 			'title' => 'Event Field Calendar Options',
 			'description' => 'Create event_field_calendar_options table.',
@@ -62,10 +80,10 @@ function getUpdates25_11_00(): array {
 					displayedOnline TINYINT(1) DEFAULT 0,
 					printedCalendar TINYINT(1) DEFAULT 0,
 					printedAgenda TINYINT(1) DEFAULT 0
-					)',
+				) ENGINE = InnoDB',
 			]
 		], //event_field_calendar_options
-		'calendary_display_setting_library' => [
+		'calendar_display_setting_library' => [
 			'title' => 'Calendar Settings by Library',
 			'description' => 'Create calendar_display_setting_library_table.',
 			'sql' => [
@@ -73,9 +91,9 @@ function getUpdates25_11_00(): array {
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					calendarDisplaySettingId INT NOT NULL,
 					libraryId INT NOT NULL
-				)',
+				) ENGINE = InnoDB',
 			]
-		], //calendary_display_setting_library
+		], //calendar_display_setting_library
 
 		// Myranda - Grove
 
@@ -100,6 +118,14 @@ function getUpdates25_11_00(): array {
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
 			]
 		], //record_grouping_overrides
+		'add_hide_manifestations_in_mobile_view_setting' => [
+			'title' => 'Add Hide Manifestations in Mobile View Setting',
+			'description' => 'Allow libraries to control whether grouped work formats are condensed on mobile devices.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS hideManifestationsInMobileView TINYINT(1) DEFAULT 1'
+			]
+		], // add_hide_manifestations_in_mobile_view_setting
 		'grouped_work_display_settings_showItemBarcodes' => [
 			'title' => 'Grouped Work Display Settings - Show Item Barcodes',
 			'description' => 'Add option to show item barcodes in copy details.',
