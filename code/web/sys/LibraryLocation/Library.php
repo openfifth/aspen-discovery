@@ -3387,7 +3387,6 @@ class Library extends DataObject {
 				'type' => 'section',
 				'label' => 'Events',
 				'hideInLists' => true,
-				'permissions' => [],
 				'properties' => [
 					'eventsSearchSetting' => [
 						'property' => 'eventsSearchSetting',
