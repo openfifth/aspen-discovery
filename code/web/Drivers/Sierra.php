@@ -3683,7 +3683,9 @@ class Sierra extends Millennium {
 		$datetime21DaysAgo = new DateTime();
 		date_sub($datetime21DaysAgo, new DateInterval('P21D'));
 		$loadHoldReadyForPickup = $user->canReceiveILSNotification('hold_ready');
+		$cronLogEntry->notes .= "  - Checking Holds Ready For Pickup? $loadHoldReadyForPickup<br/>";
 		$loadHoldExpiresSoon = $user->canReceiveILSNotification('hold_expire');
+		$cronLogEntry->notes .= "  - Checking Holds Expire Soon? $loadHoldExpiresSoon<br/>";
 		$numMessagesAdded = 0;
 		if ($loadHoldReadyForPickup || $loadHoldExpiresSoon) {
 			//Look for holds for the patron that have been put on the hold shelf in the last 24 hours
@@ -3703,6 +3705,7 @@ class Sierra extends Millennium {
 					$existingMessage->messageId = $curRow['id'];
 					$onHoldshelfTime = strtotime($curRow['on_holdshelf_gmt']);
 					$expireHoldshelfTime = strtotime($curRow['expire_holdshelf_gmt']);
+					$cronLogEntry->notes .= "    - Processing hold with onHoldshelfTime of $onHoldshelfTime and expireHoldshelfTime of $expireHoldshelfTime.<br/>";
 					if ($onHoldshelfTime > $dateTime24HoursFromNow->getTimestamp()) {
 						if ($loadHoldReadyForPickup) {
 							$numMessagesAdded += $this->createIlsMessage($user, 'hold_ready', $ilsNotificationSetting, $existingMessage);
@@ -3716,10 +3719,15 @@ class Sierra extends Millennium {
 			}
 		}
 		$loadCheckoutDueSoon = $user->canReceiveILSNotification('checkout_due_soon');
+		$cronLogEntry->notes .= "  - Checking Checkouts Due Soon? $loadHoldReadyForPickup<br/>";
 		$loadOverdue1 = $user->canReceiveILSNotification('overdue_1');
+		$cronLogEntry->notes .= "  - Checking Overdue 1? $loadOverdue1<br/>";
 		$loadOverdue7 = $user->canReceiveILSNotification('overdue_7');
+		$cronLogEntry->notes .= "  - Checking Overdue 7? $loadOverdue7<br/>";
 		$loadOverdue14 = $user->canReceiveILSNotification('overdue_14');
+		$cronLogEntry->notes .= "  - Checking Overdue 14? $loadOverdue14<br/>";
 		$loadBilled = $user->canReceiveILSNotification('billed');
+		$cronLogEntry->notes .= "  - Checking Billed? $loadBilled<br/>";
 		if ($loadCheckoutDueSoon || $loadOverdue1 || $loadOverdue7 || $loadOverdue14 || $loadBilled) {
 			//Load checkouts for the patron
 			$getCheckoutsNeedingNoticesStmt = "select sierra_view.checkout.*, record_num as patron_record_num from sierra_view.checkout inner join sierra_view.record_metadata on patron_record_id = sierra_view.record_metadata.id where due_gmt < $1 AND record_num = $2";
@@ -3736,6 +3744,7 @@ class Sierra extends Millennium {
 					//For Sierra, we will use the message id as the hold or checkout
 					$existingMessage->messageId = $curRow['id'];
 					$dueDateTime = strtotime($curRow['due_gmt']);
+					$cronLogEntry->notes .= "    - Processing checkout with dueDateTime of $dueDateTime.<br/>";
 					if ($dueDateTime <= $datetime21DaysAgo->getTimestamp()) {
 						if ($loadBilled) {
 							$numMessagesAdded += $this->createIlsMessage($user, 'billed', $ilsNotificationSetting, $existingMessage);
