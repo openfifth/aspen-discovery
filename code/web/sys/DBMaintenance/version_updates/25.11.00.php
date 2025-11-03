@@ -54,6 +54,14 @@ function getUpdates25_11_00(): array {
 				'DROP TABLE location_events_setting'
 			]
 		], //event_search_options
+		'force_full_events_index_25_11' => [
+			'title' => 'Force Full Events Index 25.11',
+			'description' => 'Method…',
+			'continueOnError' => false,
+			'sql' => [
+				'UPDATE events_indexing_settings set runFullUpdate = 1'
+			]
+		], //event_search_options
 
 		//katherine - Grove
 
@@ -92,6 +100,14 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'add_hide_manifestations_in_mobile_view_setting' => [
+			'title' => 'Add Hide Manifestations in Mobile View Setting',
+			'description' => 'Allow libraries to control whether grouped work formats are condensed on mobile devices.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS hideManifestationsInMobileView TINYINT(1) DEFAULT 1'
+			]
+		], // add_hide_manifestations_in_mobile_view_setting
 		'grouped_work_display_settings_showItemBarcodes' => [
 			'title' => 'Grouped Work Display Settings - Show Item Barcodes',
 			'description' => 'Add option to show item barcodes in copy details.',

@@ -52,6 +52,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $facetGroupId;
 
 	public $formatDisplayStyle;
+	public $hideManifestationsInMobileView;
 	public $formatSortingGroupId;
 	public $eContentSortingGroupId;
 
@@ -273,6 +274,14 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'label' => 'Format Display Style',
 						'description' => 'The display style of individual formats within the grouped work.',
 						'default' => 1
+					],
+					'hideManifestationsInMobileView' => [
+						'property' => 'hideManifestationsInMobileView',
+						'type' => 'checkbox',
+						'label' => 'Hide Manifestations in Mobile View',
+						'description' => 'When enabled, collapse grouped work formats into a toggle on small screens.',
+						'default' => 1,
+						'hideInLists' => true,
 					],
 					'eContentSortingGroupId' => [
 						'property' => 'eContentSortingGroupId',

@@ -100,6 +100,7 @@ class Search_Results extends ResultsAction {
 			$interface->assign($detailOption, true);
 		}
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 
 		// Include Search Engine Class
