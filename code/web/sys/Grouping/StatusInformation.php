@@ -126,10 +126,10 @@ class Grouping_StatusInformation {
 	}
 
 	/**
-	 * @param string $groupedStatus
+	 * @param ?string $groupedStatus
 	 */
-	public function setGroupedStatus(string $groupedStatus): void {
-		$this->_groupedStatus = $groupedStatus;
+	public function setGroupedStatus(?string $groupedStatus): void {
+		$this->_groupedStatus = $groupedStatus ?? "Currently Unavailable";
 	}
 
 	/**

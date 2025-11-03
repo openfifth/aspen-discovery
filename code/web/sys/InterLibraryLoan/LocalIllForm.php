@@ -41,7 +41,7 @@ class LocalIllForm extends DataObject {
 			],
 			'introText' => [
 				'property' => 'introText',
-				'type' => 'textarea',
+				'type' => 'html',
 				'label' => 'Intro Text',
 				'description' => 'Introductory Text to be displayed at the top of the form',
 				'maxLength' => 5000,
@@ -73,7 +73,7 @@ class LocalIllForm extends DataObject {
 			],
 			'feeInformationText' => [
 				'property' => 'feeInformationText',
-				'type' => 'textarea',
+				'type' => 'html',
 				'label' => 'Fee Information Text',
 				'description' => 'Text to be displayed to give additional information about the fees charged.',
 				'maxLength' => 5000,

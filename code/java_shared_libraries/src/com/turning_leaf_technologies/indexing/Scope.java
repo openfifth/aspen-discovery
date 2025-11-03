@@ -2,6 +2,7 @@ package com.turning_leaf_technologies.indexing;
 
 import org.marc4j.marc.Record;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.TreeSet;
@@ -22,7 +23,7 @@ public class Scope implements Comparable<Scope>{
 	//Determine if this is a library scope or location scope and store related information
 	private boolean isLibraryScope;
 	//If this is a library scope, we want to store pointers to the individual location scopes
-	private final HashSet<Scope> locationScopes = new HashSet<>();
+	private final ArrayList<Scope> locationScopes = new ArrayList<>();
 
 	private boolean isLocationScope;
 	private Scope libraryScope;
@@ -30,9 +31,9 @@ public class Scope implements Comparable<Scope>{
 	//Called restrictOwningBranchesAndSystems in PHP admin interface
 	private boolean restrictOwningLibraryAndLocationFacets;
 	private boolean isConsortialCatalog;
-	private final HashSet<InclusionRule> ownershipRules = new HashSet<>();
+	private final ArrayList<InclusionRule> ownershipRules = new ArrayList<>();
 	//Inclusion rules indicate records owned by someone else that should be shown within the scope
-	private final HashSet<InclusionRule> inclusionRules = new HashSet<>();
+	private final ArrayList<InclusionRule> inclusionRules = new ArrayList<>();
 	private String ilsCode;
 
 	private int publicListsToInclude;
@@ -119,7 +120,7 @@ public class Scope implements Comparable<Scope>{
 	 * Determine if the item is part of the current scope based on location code and other information
 	 */
 	public boolean isItemOwnedByScope(String itemIdentifier, String recordType, String locationCode, String subLocationCode, String iType, TreeSet<String> audiences, String audiencesAsString, String format, String shelfLocation, String collectionCode, boolean isHoldable, boolean isOnOrder, boolean isEContent, Record marcRecord, DebugLogger debugLogger){
-		for(InclusionRule curRule: ownershipRules){
+		for (InclusionRule curRule: ownershipRules){
 			if (curRule.isItemIncluded(itemIdentifier, recordType, locationCode, subLocationCode, iType, audiences, audiencesAsString, format, shelfLocation, collectionCode, isHoldable, isOnOrder, isEContent, marcRecord, debugLogger)){
 				return true;
 			}
@@ -162,15 +163,21 @@ public class Scope implements Comparable<Scope>{
 	}
 
 	void addOwnershipRule(InclusionRule ownershipRule) {
-		ownershipRules.add(ownershipRule);
+		if (!ownershipRules.contains( ownershipRule ) ) {
+			ownershipRules.add(ownershipRule);
+		}
 	}
 
 	void addInclusionRule(InclusionRule inclusionRule) {
-		inclusionRules.add(inclusionRule);
+		if (!inclusionRules.contains( inclusionRule ) ) {
+			inclusionRules.add(inclusionRule);
+		}
 	}
 
 	void addLocationScope(Scope locationScope) {
-		this.locationScopes.add(locationScope);
+		if (!locationScopes.contains( locationScope ) ) {
+			this.locationScopes.add(locationScope);
+		}
 	}
 
 	void setLibraryScope(Scope libraryScope) {
@@ -190,7 +197,7 @@ public class Scope implements Comparable<Scope>{
 		this.restrictOwningLibraryAndLocationFacets = restrictOwningLibraryAndLocationFacets;
 	}
 
-	public HashSet<Scope> getLocationScopes() {
+	public ArrayList<Scope> getLocationScopes() {
 		return locationScopes;
 	}
 

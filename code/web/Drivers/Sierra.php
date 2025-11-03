@@ -509,6 +509,7 @@ class Sierra extends Millennium {
 			return [
 				'success' => false,
 				'message' => 'Missing record or patron; unable to retrieve valid pickup locations',
+				'useDefaultLocationFiltering' => true,
 			];
 		}
 		$patronId = $patron->unique_ils_id;
@@ -535,10 +536,11 @@ class Sierra extends Millennium {
 		} else {
 			$message = 'Unable to retrieve valid pickup locations from Sierra. ';
 			$message .= $pickupLocationsResponse->name ?? '';
-			$message .= $pickupLocationsResponse->description ? ': ' . $pickupLocationsResponse->description : '';
+			$message .= !empty($pickupLocationsResponse->description) ? ': ' . $pickupLocationsResponse->description : '';
 			return [
 				'success' => false,
 				'message' => $message,
+				'useDefaultLocationFiltering' => true,
 			];
 		}
 	}
@@ -1698,7 +1700,7 @@ class Sierra extends Millennium {
 				if (isset($_REQUEST['phone'])) {
 					$patron->phone = $_REQUEST['phone'];
 					$tmpPhone = new stdClass();
-					$tmpPhone->type = 'p';
+					$tmpPhone->type = 't';
 					$tmpPhone->number = $_REQUEST['phone'];
 					$params['phones'][] = $tmpPhone;
 				}
@@ -1710,7 +1712,7 @@ class Sierra extends Millennium {
 				if (isset($_REQUEST['workPhone'])) {
 					$patron->_workPhone = $_REQUEST['workPhone'];
 					$tmpPhone = new stdClass();
-					$tmpPhone->type = 't';
+					$tmpPhone->type = 'p';
 					$tmpPhone->number = $_REQUEST['workPhone'];
 					$params['phones'][] = $tmpPhone;
 				}
@@ -2120,7 +2122,7 @@ class Sierra extends Millennium {
 			if ($selfRegistrationForm->selfRegUseAgency) {
 				$params['fixedFields']['158'] = [
 					'label' => 'Patron Agency',
-					'value' => $selfRegistrationForm->selfRegAgency
+					'value' => (string)$selfRegistrationForm->selfRegAgency
 				];
 			}
 			if ($selfRegistrationForm->addSelfRegNote) {
