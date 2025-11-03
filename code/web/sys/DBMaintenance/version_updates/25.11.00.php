@@ -100,6 +100,24 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'record_grouping_overrides' => [
+			'title' => 'Create Record Grouping Overrides Table',
+			'description' => 'Create table to store record-level grouping overrides that force specific records to stay in specific grouped works.',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS record_grouping_overrides (
+					id INT AUTO_INCREMENT PRIMARY KEY,
+					source VARCHAR(50) NOT NULL,
+					record_id VARCHAR(50) NOT NULL,
+					grouped_work_permanent_id VARCHAR(40) NOT NULL,
+					added_by INT,
+					date_added INT,
+					UNIQUE KEY unique_record (source, record_id),
+					KEY grouped_work_permanent_id_idx (grouped_work_permanent_id),
+					KEY date_added_idx (date_added)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+			]
+		], //record_grouping_overrides
 		'add_hide_manifestations_in_mobile_view_setting' => [
 			'title' => 'Add Hide Manifestations in Mobile View Setting',
 			'description' => 'Allow libraries to control whether grouped work formats are condensed on mobile devices.',

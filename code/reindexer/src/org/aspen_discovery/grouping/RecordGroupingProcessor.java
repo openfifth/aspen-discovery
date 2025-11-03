@@ -62,14 +62,13 @@ public class RecordGroupingProcessor {
 	private PreparedStatement getCloudLibraryRecordStmt;
 	private PreparedStatement getHooplaRecordStmt;
 	private PreparedStatement getPalaceProjectRecordStmt;
-
 	private PreparedStatement getProductIdForPalaceProjectIdStmt;
-
+	private PreparedStatement getRecordGroupingOverrideStmt;
 
 	HashMap<String, HashMap<String, String>> translationMaps = new HashMap<>();
 
-	//A list of grouped works that have been manually merged.
 	private final HashSet<String> recordsToNotGroup = new HashSet<>();
+	private final HashMap<String, String> recordGroupingOverrides = new HashMap<>();
 	private final Long updateTime = new Date().getTime() / 1000;
 
 	protected static long numAuthorAuthoritiesUsed = 0;
@@ -96,6 +95,7 @@ public class RecordGroupingProcessor {
 	public void close(){
 		translationMaps.clear();
 		recordsToNotGroup.clear();
+		recordGroupingOverrides.clear();
 		updatedAndInsertedWorksThisRun.clear();
 		formatsWarned.clear();
 		try {
@@ -133,6 +133,7 @@ public class RecordGroupingProcessor {
 			getHooplaRecordStmt.close();
 			getPalaceProjectRecordStmt.close();
 			getProductIdForPalaceProjectIdStmt.close();
+			getRecordGroupingOverrideStmt.close();
 
 		} catch (Exception e) {
 			logEntry.incErrors("Error closing prepared statements in record grouping processor", e);
@@ -270,6 +271,18 @@ public class RecordGroupingProcessor {
 			nonGroupedRecordsRS.close();
 			recordsToNotGroupStmt.close();
 
+			PreparedStatement recordGroupingOverridesStmt = dbConnection.prepareStatement("SELECT source, record_id, grouped_work_permanent_id FROM record_grouping_overrides");
+			ResultSet recordGroupingOverridesRS = recordGroupingOverridesStmt.executeQuery();
+			while (recordGroupingOverridesRS.next()) {
+				String identifier = recordGroupingOverridesRS.getString("source") + ":" + recordGroupingOverridesRS.getString("record_id");
+				String permanentId = recordGroupingOverridesRS.getString("grouped_work_permanent_id");
+				recordGroupingOverrides.put(identifier.toLowerCase(), permanentId);
+			}
+			recordGroupingOverridesRS.close();
+			recordGroupingOverridesStmt.close();
+
+			getRecordGroupingOverrideStmt = dbConnection.prepareStatement("SELECT grouped_work_permanent_id FROM record_grouping_overrides WHERE source = ? AND record_id = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+
 			getWorkByAlternateTitleAuthorStmt = dbConnection.prepareStatement("SELECT permanent_id from grouped_work_alternate_titles where alternateTitle = ? and alternateAuthor = ? and alternateGroupingCategory = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
 
@@ -292,9 +305,15 @@ public class RecordGroupingProcessor {
 	void addGroupedWorkToDatabase(RecordIdentifier primaryIdentifier, GroupedWork groupedWork, boolean primaryDataChanged, String originalGroupedWorkId) {
 		String groupedWorkPermanentId = groupedWork.getPermanentId();
 
-		//Check to see if we need to ungroup the record.
+		// Check to see if there is a record grouping override.
 		String primaryIdentifierString = primaryIdentifier.toString();
-		if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
+		String overridePermanentId = recordGroupingOverrides.get(primaryIdentifierString.toLowerCase());
+		if (overridePermanentId != null) {
+			groupedWorkPermanentId = overridePermanentId;
+			groupedWork.overridePermanentId(groupedWorkPermanentId);
+			logger.debug("Using override record grouping for {} -> {}.", primaryIdentifierString, groupedWorkPermanentId);
+		} else if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
+			// Check to see if we need to ungroup the record.
 			groupedWork.makeUnique(primaryIdentifierString);
 			groupedWorkPermanentId = groupedWork.getPermanentId();
 		}else{
