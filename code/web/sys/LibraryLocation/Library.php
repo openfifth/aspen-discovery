@@ -3389,15 +3389,17 @@ class Library extends DataObject {
 				'hideInLists' => true,
 				'permissions' => [],
 				'properties' => [
-					'property' => 'eventsSearchSetting',
-					'type' => 'enum',
-					'label' => 'Aspen Events to Include',
-					'description' => 'Which events to include when searching this library',
-					'values' => [
-						'1' => 'All events at all locations',
-						'2' => "Events that occur at one of this library's locations",
-					],
-					'default' => '2',
+					'eventsSearchSetting' => [
+						'property' => 'eventsSearchSetting',
+						'type' => 'enum',
+						'label' => 'Aspen Events to Include',
+						'description' => 'Which events to include when searching this library',
+						'values' => [
+							'1' => 'All events at all locations',
+							'2' => "Events that occur at one of this library's locations",
+						],
+						'default' => '2',
+					]
 				]
 			],
 
