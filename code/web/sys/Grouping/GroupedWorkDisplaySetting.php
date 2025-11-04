@@ -704,7 +704,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 					'showInSearchResultsMainDetails' => [
 						'property' => 'showInSearchResultsMainDetails',
 						'type' => 'multiSelect',
-						'label' => 'Optional details to show for a record in search results : ',
+						'label' => 'Optional details to show for a record in search results',
 						'description' => 'Selected details will be shown in the main details section of a record on a search results page.',
 						'listStyle' => 'checkboxSimple',
 						'values' => self::$searchResultsMainDetailsOptions,
