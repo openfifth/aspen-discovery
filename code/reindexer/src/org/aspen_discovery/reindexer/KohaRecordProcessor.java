@@ -196,10 +196,10 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 		status = getStatusFromSubfield(itemField, '4', "Damaged");
 		if (status != null) return new ItemStatus(status, ItemStatus.FROM_STATUS_FIELD, this, recordIdentifier);
 
-		status = getStatusFromSubfield(itemField, 'q', "Checked Out");
+		status = getStatusFromSubfield(itemField, '7', "Library Use Only"); // Not for Loan
 		if (status != null) return new ItemStatus(status, ItemStatus.FROM_STATUS_FIELD, this, recordIdentifier);
 
-		status = getStatusFromSubfield(itemField, '7', "Library Use Only"); //not for loan
+		status = getStatusFromSubfield(itemField, 'q', "Checked Out");
 		if (status != null) return new ItemStatus(status, ItemStatus.FROM_STATUS_FIELD, this, recordIdentifier);
 
 		status = getStatusFromSubfield(itemField, 'k', null);
