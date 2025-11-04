@@ -504,6 +504,7 @@ class Koha extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/Indexing/IlsRecord.php';
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
+		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
 		foreach ($allRows as $curRow) {
 			$curCheckout = new Checkout();
 			$curCheckout->type = 'ils';
@@ -563,13 +564,19 @@ class Koha extends AbstractIlsDriver {
 
 			$patronType = $patron->patronType;
 			$itemType = $curRow['itype'];
-			$checkoutBranch = $curRow['branchcode'];
+			if ($circControl == 'PatronLibrary') {
+				$circBranch = $patron->getHomeLocationCode();
+			} else if ($circControl == 'PickupLibrary') {
+				$circBranch = Library::getActiveLibrary()->subdomain;
+			} else {
+				$circBranch = $curRow['branchcode'];
+			}
 
 			$curCheckout->returnClaim = '';
 
 			//Check if patron is allowed to auto-renew based on circulation rules
 
-			$circulationRulesKey = "$patronType~$itemType~$checkoutBranch";
+			$circulationRulesKey = "$patronType~$itemType~$circBranch";
 			$rulesFound = [];
 			if (array_key_exists($circulationRulesKey, $circulationRulesForCheckouts)){
 				$circulationRulesForCheckout = $circulationRulesForCheckouts[$circulationRulesKey];
@@ -580,9 +587,9 @@ class Koha extends AbstractIlsDriver {
 				$circulationRulesSql = "
 					SELECT * FROM circulation_rules
 					WHERE (categorycode IN ('$patronType', '*') OR categorycode IS NULL)
-					  AND (itemtype IN('$itemType', '*') OR itemtype is null)
-					  AND (branchcode IN ('$checkoutBranch', '*') OR branchcode IS NULL)
-					  AND rule_name like '%renew%'
+					AND (itemtype IN('$itemType', '*') OR itemtype is null)
+					AND (branchcode IN ('$circBranch', '*') OR branchcode IS NULL)
+					AND rule_name like '%renew%'
 					ORDER BY branchcode desc, categorycode desc, itemtype desc
 				";
 				$circulationRulesRS = mysqli_query($this->dbConnection, $circulationRulesSql);
@@ -2337,6 +2344,8 @@ class Koha extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/Indexing/IlsRecord.php';
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
+		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+
 		foreach ($allRows as $curRow) {
 			//Each row in the table represents a hold
 			$curHold = new Hold();
@@ -2417,9 +2426,15 @@ class Koha extends AbstractIlsDriver {
 				if($this->getKohaVersion() >= 22.11) {
 					$patronType = $patron->patronType;
 					$itemType = $curRow['itype'];
-					$checkoutBranch = $curRow['branchcode'];
+					if ($circControl == 'PatronLibrary') {
+						$circBranch = $patron->getHomeLocationCode();
+					} else if ($circControl == 'PickupLibrary') {
+						$circBranch = Library::getActiveLibrary()->subdomain;
+					} else {
+						$circBranch = $curRow['branchcode'];
+					}
 					/** @noinspection SqlResolve */
-					$issuingRulesSql = "SELECT *  FROM circulation_rules where rule_name =  'waiting_hold_cancellation' AND (categorycode IN ('$patronType', '*') OR categorycode IS NULL) and (itemtype IN('$itemType', '*') OR itemtype is null) and (branchcode IN ('$checkoutBranch', '*') OR branchcode IS NULL) order by branchcode desc, categorycode desc, itemtype desc limit 1";
+					$issuingRulesSql = "SELECT *  FROM circulation_rules where rule_name =  'waiting_hold_cancellation' AND (categorycode IN ('$patronType', '*') OR categorycode IS NULL) and (itemtype IN('$itemType', '*') OR itemtype is null) and (branchcode IN ('$circBranch', '*') OR branchcode IS NULL) order by branchcode desc, categorycode desc, itemtype desc limit 1";
 					$issuingRulesRS = mysqli_query($this->dbConnection, $issuingRulesSql);
 					if ($issuingRulesRS !== false) {
 						if ($issuingRulesRow = $issuingRulesRS->fetch_assoc()) {
@@ -2970,6 +2985,8 @@ class Koha extends AbstractIlsDriver {
 			$renewResponse = $this->getXMLWebServiceResponse($renewURL);
 			ExternalRequestLogEntry::logRequest('koha.renewCheckout', 'GET', $renewURL, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $renewResponse, []);
 
+			$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+
 			//Parse the result
 			if (isset($renewResponse->success) && ($renewResponse->success == 1)) {
 				$renewResults = mysqli_query($this->dbConnection, $renewSql);
@@ -2977,14 +2994,20 @@ class Koha extends AbstractIlsDriver {
 				while ($curRow = mysqli_fetch_assoc($renewResults)) {
 					$patronType = $patron->patronType;
 					$itemType = $curRow['itype'];
-					$checkoutBranch = $curRow['branchcode'];
+					if ($circControl == 'PatronLibrary') {
+						$circBranch = $patron->getHomeLocationCode();
+					} else if ($circControl == 'PickupLibrary') {
+						$circBranch = Library::getActiveLibrary()->subdomain;
+					} else {
+						$circBranch = $curRow['branchcode'];
+					}
 					if ($this->getKohaVersion() >= 22.11) {
 						$renewCount = $curRow['renewals_count'];
 					} else {
 						$renewCount = $curRow['renewals'];
 					}
 					/** @noinspection SqlResolve */
-					$issuingRulesSql = "SELECT *  FROM circulation_rules where rule_name =  'renewalsallowed' AND (categorycode IN ('$patronType', '*') OR categorycode IS NULL) and (itemtype IN('$itemType', '*') OR itemtype is null) and (branchcode IN ('$checkoutBranch', '*') OR branchcode IS NULL) order by branchcode desc, categorycode desc, itemtype desc limit 1";
+					$issuingRulesSql = "SELECT *  FROM circulation_rules where rule_name =  'renewalsallowed' AND (categorycode IN ('$patronType', '*') OR categorycode IS NULL) and (itemtype IN('$itemType', '*') OR itemtype is null) and (branchcode IN ('$circBranch', '*') OR branchcode IS NULL) order by branchcode desc, categorycode desc, itemtype desc limit 1";
 					$issuingRulesRS = mysqli_query($this->dbConnection, $issuingRulesSql);
 					if ($issuingRulesRS !== false) {
 						if ($issuingRulesRow = $issuingRulesRS->fetch_assoc()) {
