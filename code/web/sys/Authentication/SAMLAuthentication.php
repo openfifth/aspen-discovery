@@ -521,11 +521,17 @@ class SAMLAuthentication{
 		if(!$tmpUser->insert()) {
 			global $logger;
 			$logger->log(print_r($tmpUser->getLastError(), true), Logger::LOG_ERROR);
-			$logger->log('Error creating Aspen ssoArray ' . print_r($this->searchArray($user, 'ssoUniqueAttribute'), true), Logger::LOG_ERROR);
+			$logger->log('Error creating Aspen user from ssoArray ' . print_r($this->searchArray($user, 'ssoUniqueAttribute'), true), Logger::LOG_ERROR);
 			return false;
 		}
 
-		return UserAccount::findNewAspenUser('username', $this->searchArray($user, 'ssoUniqueAttribute'));
+		$userFromLookup = UserAccount::findNewAspenUser('unique_ils_id', $this->searchArray($user,'ssoUniqueAttribute'));
+		if (!$userFromLookup) {
+			global $logger;
+			$logger->log('Could not find new aspen user based on unique_ils_id ' . $this->searchArray($user,'ssoUniqueAttribute'), Logger::LOG_WARNING);
+		}else{
+			return $userFromLookup;
+		}
 	}
 
 	private function newSSOSession($id) {
