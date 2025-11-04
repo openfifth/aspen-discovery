@@ -719,15 +719,15 @@ abstract class MarcRecordProcessor {
 		LinkedHashSet<String> translatedAudiencesFull;
 		if (settings == null) {
 			translatedAudiencesFull = indexer.translateSystemCollection("target_audience_full", targetAudiences, identifier);
-			if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Full target audience is " + translatedAudiencesFull + " based on system target_audience translation map", 2);}
+			if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Full target audience is " + translatedAudiencesFull + " based on system target_audience translation map", 2);}
 		}else {
 			translatedAudiencesFull = settings.translateCollection("target_audience_full", targetAudiences, identifier, indexer.getLogEntry(), logger, true);
-			if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Full target audience is " + translatedAudiencesFull + " based on target_audience translation map in settings", 2);}
+			if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Full target audience is " + translatedAudiencesFull + " based on target_audience translation map in settings", 2);}
 		}
 		if (!unknownAudienceLabel.equals("Unknown") && translatedAudiencesFull.contains("Unknown")){
 			translatedAudiencesFull.remove("Unknown");
 			translatedAudiencesFull.add(unknownAudienceLabel);
-			if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Updating unknown full target audience to " + unknownAudienceLabel, 2);}
+			if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Updating unknown full target audience to " + unknownAudienceLabel, 2);}
 		}
 		groupedWork.addTargetAudiencesFull(translatedAudiencesFull);
 	}
@@ -1115,7 +1115,6 @@ abstract class MarcRecordProcessor {
 			//noinspection SpellCheckingInspection
 			countryList.put("BV", "Bouvet Island (Bouvetoya)");
 			countryList.put("BR", "Brazil");
-			//noinspection SpellCheckingInspection
 			countryList.put("IO", "British Indian Ocean Territory (Chagos Archipelago)");
 			countryList.put("VG", "British Virgin Islands");
 			//noinspection SpellCheckingInspection
@@ -1139,7 +1138,6 @@ abstract class MarcRecordProcessor {
 			countryList.put("CD", "Congo");
 			countryList.put("CG", "Congo the");
 			countryList.put("CK", "Cook Islands");
-			//noinspection SpellCheckingInspection
 			countryList.put("CR", "Costa Rica");
 			//noinspection SpellCheckingInspection
 			countryList.put("CI", "Cote d'Ivoire");
@@ -1158,7 +1156,6 @@ abstract class MarcRecordProcessor {
 			countryList.put("ER", "Eritrea");
 			countryList.put("EE", "Estonia");
 			countryList.put("ET", "Ethiopia");
-			//noinspection SpellCheckingInspection
 			countryList.put("FO", "Faroe Islands");
 			//noinspection SpellCheckingInspection
 			countryList.put("FK", "Falkland Islands (Malvinas)");
