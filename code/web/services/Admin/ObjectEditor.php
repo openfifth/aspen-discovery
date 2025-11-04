@@ -676,23 +676,20 @@ abstract class ObjectEditor extends Admin_Admin {
 			$samePatron = false;
 		}
 		if ($samePatron) {
-			//Save or create a new object
-			$id = isset($_REQUEST['id']) ? $_REQUEST['id'] : '';
+			// Save or create a new object.
+			$id = $_REQUEST['id'] ?? '';
 			if (empty($id) || $id < 0) {
-				//Insert a new record
 				$curObject = $this->insertObject($structure);
-				if ($curObject == false) {
-					//The session lastError is updated
+				if (!$curObject) {
+					// The session lastError is updated.
 					$errorOccurred = true;
 				} else {
 					$id = $curObject->getPrimaryKeyValue();
 				}
 			} else {
-				//Work with an existing record
 				$curObject = $this->getExistingObjectById($id);
 				if (!is_null($curObject)) {
 					if ($objectAction == 'save') {
-						//Update the object
 						$user = UserAccount::getActiveUserObj();
 						$fieldLocks = $this->getFieldLocks();
 						if (UserAccount::userHasPermission('Lock Administration Fields')) {
@@ -701,31 +698,30 @@ abstract class ObjectEditor extends Admin_Admin {
 						$structure = $curObject->updateStructureForEditingObject($structure);
 						$validationResults = $this->updateFromUI($curObject, $structure, $fieldLocks);
 						if ($validationResults['validatedOk']) {
-							//Always save since has changes does not check sub objects for changes (which it should)
+							// Always save since has changes does not check sub objects for changes (which it should).
 							$ret = $curObject->update($this->getContext());
 							if ($ret === false) {
 								if ($curObject->getLastError()) {
 									$errorDescription = $curObject->getLastError();
 								} else {
 									$errorDescription = translate([
-										'text' => 'Unknown Error',
+										'text' => 'An unknown error has occurred. Please try again later.',
 										'isPublicFacing' => true,
 									]);
 								}
-								$user->updateMessage = "An error occurred updating {$this->getObjectType()} with id of $id <br/>{$errorDescription}";
+								$user->updateMessage = "An error occurred updating {$this->getObjectType()} with ID of $id: <br/>$errorDescription";
 								$user->updateMessageIsError = true;
 								$user->update();
 								$errorOccurred = true;
 							}
 						} else {
 							$errorDescription = implode('<br/>', $validationResults['errors']);
-							$user->updateMessage = "An error occurred validating {$this->getObjectType()} with id of $id <br/>{$errorDescription}";
+							$user->updateMessage = "An error occurred validating {$this->getObjectType()} with ID of $id: <br/>$errorDescription";
 							$user->updateMessageIsError = true;
 							$user->update();
 							$errorOccurred = true;
 						}
 					} elseif ($objectAction == 'delete') {
-						//Delete the record
 						$deletionBlockInfo = $curObject->getDeletionBlockInformation($structure);
 						if (!$deletionBlockInfo['preventDeletion']) {
 							$ret = $curObject->delete();
@@ -745,7 +741,6 @@ abstract class ObjectEditor extends Admin_Admin {
 						}
 					}
 				} else {
-					//Couldn't find the record.  Something went haywire.
 					$user = UserAccount::getActiveUserObj();
 					$user->updateMessage = "An error occurred, could not find {$this->getObjectType()} with id of $id";
 					$user->updateMessageIsError = true;

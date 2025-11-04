@@ -85,7 +85,7 @@ class ManualGroupedWork extends DataObject {
 				'label' => 'Records',
 				'description' => 'The records to include in this manual group.',
 				'infoBullets' => [
-					'In the table below, select the source of the record, input its identifier value, and select the identifier\'s type.',
+					'In the table below, select the source of the record, select the identifier\'s type, and input its identifier value.',
 					'The "Resolved Record ID" field cannot be edited and will be automatically populated with the record\'s primary identifier if a record is found.',
 				],
 				'keyThis' => 'id',
@@ -111,6 +111,9 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	public function insert($context = ''): bool|int {
+		if (empty($this->created_by)) {
+			$this->created_by = UserAccount::getActiveUserId();
+		}
 		if (empty($this->date_created)) {
 			$this->date_created = time();
 		}
@@ -241,8 +244,9 @@ class ManualGroupedWork extends DataObject {
 		$record->type = $type;
 		$record->identifier_type = $identifierType;
 		$record->user_provided_identifier = $identifier;
-		if (!$record->resolvePrimaryIdentifier()) {
-			$this->displayMessageToUser("Unable to resolve identifier '{$record->user_provided_identifier}' for type '{$record->type}'.", true);
+		$resolveResult = $record->resolvePrimaryIdentifier();
+		if (is_array($resolveResult) && !$resolveResult['success']) {
+			$this->displayMessageToUser($resolveResult['message'], true);
 			return false;
 		}
 
@@ -316,6 +320,11 @@ class ManualGroupedWork extends DataObject {
 					$record->delete();
 					continue;
 				}
+
+				if (!empty($record->id)) {
+					continue;
+				}
+
 				if ($record->identifier_type === 'record_id') {
 					// Validate the record ID exists in the system.
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
@@ -328,8 +337,9 @@ class ManualGroupedWork extends DataObject {
 					}
 					$record->identifier = $record->user_provided_identifier;
 				} else {
-					if (!$record->resolvePrimaryIdentifier()) {
-						$this->displayMessageToUser("Unable to resolve identifier '{$record->user_provided_identifier}'.", true);
+					$resolveResult = $record->resolvePrimaryIdentifier();
+					if (is_array($resolveResult) && !$resolveResult['success']) {
+						$this->displayMessageToUser($resolveResult['message'], true);
 						continue;
 					}
 				}
@@ -348,18 +358,24 @@ class ManualGroupedWork extends DataObject {
 				$existing->identifier = $record->identifier;
 				if ($existing->find(true)) {
 					if ($existing->manually_grouped_work_id != $this->id) {
-						$this->displayMessageToUser("Record '{$record->identifier}' is already in another manual group.", false);
+						$this->displayMessageToUser("Record '{$record->identifier}' is already in another manual group.", true);
+					} else {
+						$this->displayMessageToUser("Record '{$record->identifier}' is already in this manual group.", true);
 					}
 					continue;
 				}
 
 				try {
-					$record->insert();
+					$insertResult = $record->insert();
+					if ($insertResult === false) {
+						global $logger;
+						$logger->log("Failed to insert record to group " . $this->id . ". Data: " . json_encode($record->toArray()), Logger::LOG_ERROR);
+						$this->displayMessageToUser("Failed to add record '{$record->identifier}' from source '{$record->type}' to manual group.", true);
+					}
 				} catch (Exception $e) {
 					global $logger;
 					$logger->log("Error inserting record to group " . $this->id . ": " . $e->getMessage() . " Data: " . json_encode($record->toArray()), Logger::LOG_ERROR);
 					$this->displayMessageToUser("Error inserting record to group {$this->id}: {$e->getMessage()}.", true);
-					continue;
 				}
 			}
 

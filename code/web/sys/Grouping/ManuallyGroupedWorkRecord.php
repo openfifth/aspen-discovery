@@ -39,7 +39,7 @@ class ManuallyGroupedWorkRecord extends DataObject {
 			$availableSources['axis360'] = 'Boundless';
 		}
 		if (array_key_exists('Cloud Library', $enabledModules)) {
-			$availableSources['cloud_library'] = 'cloudLibrary';
+			$availableSources['cloud_library'] = 'Cloud Library';
 		}
 		if (array_key_exists('Hoopla', $enabledModules)) {
 			$availableSources['hoopla'] = 'Hoopla';
@@ -64,29 +64,20 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				'label' => 'Manually Grouped Work Id',
 				'description' => 'The id of the manually grouped work this record belongs to',
 			],
+			'date_added' => [
+				'property' => 'date_added',
+				'type' => 'timestamp',
+				'label' => 'Date Added',
+				'description' => 'The date this record was added to the group',
+				'readOnly' => true,
+				'hideInLists' => true,
+			],
 			'type' => [
 				'property' => 'type',
 				'type' => 'enum',
 				'values' => $availableSources,
 				'label' => 'Source',
 				'description' => 'The source of the record',
-				'required' => true,
-			],
-			'identifier' => [
-				'property' => 'identifier',
-				'type' => 'text',
-				'label' => 'Resolved Record ID',
-				'description' => 'The actual system identifier for the record, resolved from user input.',
-				'readOnly' => true,
-				'readOnlyWhenNew' => true,
-				'placeholder' => 'Record identifier will populate here...',
-			],
-			'user_provided_identifier' => [
-				'property' => 'user_provided_identifier',
-				'type' => 'text',
-				'maxLength' => 255,
-				'label' => 'Identifier Value',
-				'description' => 'Enter the Record ID, ISBN, or Barcode here.',
 				'required' => true,
 			],
 			'identifier_type' => [
@@ -102,13 +93,22 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				'default' => 'record_id',
 				'required' => true,
 			],
-			'date_added' => [
-				'property' => 'date_added',
-				'type' => 'timestamp',
-				'label' => 'Date Added',
-				'description' => 'The date this record was added to the group',
+			'user_provided_identifier' => [
+				'property' => 'user_provided_identifier',
+				'type' => 'text',
+				'maxLength' => 255,
+				'label' => 'Identifier Value',
+				'description' => 'Enter the Record ID, ISBN, or Barcode here.',
+				'required' => true,
+			],
+			'identifier' => [
+				'property' => 'identifier',
+				'type' => 'text',
+				'label' => 'Resolved Record ID',
+				'description' => 'The actual system identifier for the record, resolved from user input.',
 				'readOnly' => true,
-				'hideInLists' => true,
+				'readOnlyWhenNew' => true,
+				'placeholder' => 'Record identifier will populate here...',
 			],
 			'indexed' => [
 				'property' => 'indexed',
@@ -195,8 +195,8 @@ class ManuallyGroupedWorkRecord extends DataObject {
 		$searchObject->init();
 		$recordData = $searchObject->getRecordByIsbn($searchIsbns);
 
+		global $logger;
 		if ($recordData && isset($recordData['id'])) {
-			global $logger;
 			$logger->log("Record data: " . print_r($recordData, true), Logger::LOG_ERROR);
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
@@ -219,7 +219,6 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				}
 			}
 		} else {
-			global $logger;
 			$logger->log("No record found for ISBN: $isbn", Logger::LOG_ERROR);
 		}
 
@@ -229,9 +228,11 @@ class ManuallyGroupedWorkRecord extends DataObject {
 	/**
 	 * Resolve this record's identifier if it's a barcode or ISBN to the primary record ID.
 	 * Updates $this->identifier to the primary record identifier.
-	 * @return bool True if the identifier is resolved or no resolution needed; false to skip this record.
+	 *
+	 * @return array|bool True if the identifier is resolved or no resolution needed;
+	 *                    Array with 'success' => false and 'message' => error message if resolution fails
 	 */
-	public function resolvePrimaryIdentifier(): bool {
+	public function resolvePrimaryIdentifier(): bool|array {
 		if ($this->identifier_type === 'barcode' || $this->identifier_type === 'isbn') {
 			if ($this->identifier_type === 'barcode') {
 				$result = $this->getPrimaryIdentifierByBarcode($this->user_provided_identifier, $this->type);
@@ -242,9 +243,16 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				$this->identifier = $result['identifier'];
 				return true;
 			}
-			global $logger;
-			$logger->log("Could not find record for {$this->identifier_type} '{$this->user_provided_identifier}' in source '{$this->type}'", Logger::LOG_ERROR);
-			return false;
+
+			if ($this->identifier_type === 'barcode') {
+				$errorMessage = "No item found with barcode '{$this->user_provided_identifier}' in source '{$this->type}'.";
+			} else {
+				$errorMessage = "No record found with ISBN '{$this->user_provided_identifier}' in source '{$this->type}'.";
+			}
+			return [
+				'success' => false,
+				'message' => $errorMessage
+			];
 		}
 		return true;
 	}
