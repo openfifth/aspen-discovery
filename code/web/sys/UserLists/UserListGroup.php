@@ -161,6 +161,10 @@ class UserListGroup extends DataObject {
 			$groups[] = $grp;
 		}
 
+		uasort($groups, function($a, $b) {
+			return strnatcasecmp($a->title, $b->title);
+		});
+
 		return $groups;
 	}
 

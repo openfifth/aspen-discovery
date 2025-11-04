@@ -28,7 +28,7 @@
 	        {/if}
 			<div class="col-xs-12">
 				<div style="padding-bottom:1em;">
-					<button class="btn btn-default" onclick="return AspenDiscovery.Account.showCreateListGroupForm('{$activeListGroupDetails->id}')">{translate text="Create a New List Group" isPublicFacing=true}</button>
+					<button class="btn btn-default btn-sm" onclick="return AspenDiscovery.Account.showCreateListGroupForm('{$activeListGroupDetails->id}')">{translate text="Create a New List Group" isPublicFacing=true}</button>
 				</div>
 			</div>
 		</div>
