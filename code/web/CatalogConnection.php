@@ -1965,6 +1965,9 @@ class CatalogConnection {
 				$user = new User();
 				$user->id = $userNotificationToken->userId;
 				if ($user->find(true)) {
+					$barcode = $user->getBarcode();
+					$cronLogEntry->notes .= "- Updating User with $barcode.<br/>";
+					$cronLogEntry->update();
 					if ($user->canReceiveNotifications('notifyAccount')) {
 						$userResult = $this->driver->updateAccountNotifications($user, $ilsNotificationSetting, $cronLogEntry);
 						if ($userResult['success']) {
@@ -1975,6 +1978,10 @@ class CatalogConnection {
 							$result['success'] = false;
 						}
 					}
+				}else{
+					$cronLogEntry->numErrors++;
+					$cronLogEntry->notes .= "Could not find user {$userNotificationToken->userId}.<br/>";
+					$cronLogEntry->update();
 				}
 			}
 			if (!is_null($cronLogEntry)) {

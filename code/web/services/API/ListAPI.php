@@ -624,6 +624,8 @@ class ListAPI extends AbstractAPI {
 							'ratingData' => $title['ratingData'],
 							'format' => $title['format'],
 							'language' => $title['language'],
+							'primary_isbn' => $title['primary_isbn'],
+							'primary_upc' => $title['primary_upc'],
 						];
 					}
 				} else if (!$isLida) { //if not LiDA look at all the things
@@ -646,6 +648,8 @@ class ListAPI extends AbstractAPI {
 						'ratingData' => $title['ratingData'],
 						'format' => $title['format'],
 						'language' => $title['language'],
+						'primary_isbn' => $title['primary_isbn'],
+						'primary_upc' => $title['primary_upc'],
 					];
 				}
 			}

@@ -169,9 +169,20 @@
 									{/if}
 								{elseif $property.type == 'multiSelect'}
 									{if is_array($propValue) && count($propValue) > 0}
-										{foreach from=$property.values item=propertyName key=propertyValue}
-											{if array_key_exists($propertyValue, $propValue)}{$propertyName|escape}<br/>{/if}
+										{assign var=numShown value=0}
+										{assign var=numSelected value=0}
+										{foreach from=$property.values item=propertyName key=propertyValue name="multiSelectValues"}
+											{if array_key_exists($propertyValue, $propValue)}
+												{assign var=numSelected value=$numSelected+1}
+												{if $numShown < 4}
+													{$propertyName|escape}<br/>
+													{assign var=numShown value=$numShown+1}
+												{/if}
+											{/if}
 										{/foreach}
+										{if $numSelected >= 4}
+											{translate text="and %1% more values" 1=$numSelected-3 isAdminFacing='true'}
+										{/if}
 									{else}
 										{translate text="No values selected" isAdminFacing='true'}
 									{/if}

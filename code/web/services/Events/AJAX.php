@@ -64,6 +64,7 @@ class Events_AJAX extends JSON_Action {
 			])
 		];
 		if (!empty($_REQUEST['eventTypeId'])) {
+			global $activeLanguage;
 			$eventType = new EventType();
 			$eventType->id = $_REQUEST['eventTypeId'];
 			if ($eventType->find(true)) {
@@ -75,10 +76,12 @@ class Events_AJAX extends JSON_Action {
 					$fieldHTML[] = $interface->fetch('DataObjectUtil/property.tpl');
 				}
 				$locations = $eventType->getLocations();
+				$editFormInstructions = $eventType->getTextBlockTranslation('editFormInstructions', $activeLanguage->code, true);
 				$result = [
 					'success' => true,
 					'eventType' => $eventType->jsonSerialize(),
 					'typeFields' => $fieldHTML,
+					'editFormInstructions' => $editFormInstructions,
 					'locationIds' => json_encode(array_keys($locations)),
 				];
 			}
@@ -352,9 +355,69 @@ class Events_AJAX extends JSON_Action {
 
 	function getListPrintOptions() {
 		global $interface;
+		global $library;
 		$interface->assign('week', strip_tags($_REQUEST['week']));
 		$interface->assign('month', strip_tags($_REQUEST['month']));
 		$interface->assign('year', strip_tags($_REQUEST['year']));
+
+		$calendarDisplaySettingId = 0;
+		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySettingLibrary.php';
+		$setting = new CalendarDisplaySettingLibrary();
+		$setting->libraryId = $library->id;
+		if ($setting->find(true)) {
+			$calendarDisplaySettingId = $setting->calendarDisplaySettingId;
+		}
+
+		$eventFieldIds = [];
+		$eventFieldNamesCalendar = [];
+		$eventFieldNamesAgenda = [];
+		if (!empty ($calendarDisplaySettingId)) {
+			require_once ROOT_DIR . '/sys/Events/EventFieldCalendarOptions.php';
+			require_once ROOT_DIR . '/sys/Events/EventField.php';
+			$printedCalendarOptions = new EventFieldCalendarOptions();
+			$printedCalendarOptions->calendarDislpaySettingId = $calendarDisplaySettingId;
+			$printedCalendarOptions->printedCalendar = 1;
+			$printedCalendarOptions->orderBy('weight');
+			$printedCalendarOptions->find();
+			while ($printedCalendarOptions->fetch()) {
+				$eventFieldIds[$printedCalendarOptions->eventFieldId] = 'calendar';
+			}
+
+			$printedAgendaOptions = new EventFieldCalendarOptions();
+			$printedAgendaOptions->calendarDislpaySettingId = $calendarDisplaySettingId;
+			$printedAgendaOptions->printedAgenda = 1;
+			$printedAgendaOptions->orderBy('weight');
+			$printedAgendaOptions->find();
+			while ($printedAgendaOptions->fetch()) {
+				if (!array_key_exists ($printedAgendaOptions->eventFieldId, $eventFieldIds)) {
+					$eventFieldIds[$printedAgendaOptions->eventFieldId] = 'agenda';
+				} else {
+					$eventFieldIds[$printedAgendaOptions->eventFieldId] = 'both';
+				}
+			}
+
+			foreach ($eventFieldIds as $eventFieldId => $printOption) {
+				if ($eventFieldId == 0) {
+					$eventFieldNames[] = "description";
+				} else {
+					$eventField = new EventField();
+					$eventField->id = $eventFieldId;
+					if ($eventField->find(true)) {
+						if ($printOption == 'calendar') {
+							$eventFieldNamesCalendar[] = $eventField->name;
+						} else if ($printOption == 'agenda') {
+							$eventFieldNamesAgenda[] = $eventField->name;
+						} else {
+							$eventFieldNamesCalendar[] = $eventField->name;
+							$eventFieldNamesAgenda[] = $eventField->name;
+						}
+					}
+				}
+			}
+		}
+
+		$interface->assign('eventFieldNamesCalendar', $eventFieldNamesCalendar);
+		$interface->assign('eventFieldNamesAgenda', $eventFieldNamesAgenda);
 
 		return [
 			'title' => translate([

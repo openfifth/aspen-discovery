@@ -199,7 +199,7 @@ class OverDriveProcessor {
 
 						String fullTitle = title + " " + subtitle;
 						fullTitle = fullTitle.trim();
-						groupedWork.setTitle(title, subtitle, title, metadata.get("sortTitle"), primaryFormat, formatCategory);
+						groupedWork.setTitle(title, subtitle, metadata.get("sortTitle"), formatCategory, false, overDriveRecord);
 						groupedWork.addFullTitle(fullTitle);
 
 						if (series != null && !series.isEmpty()) {
@@ -208,7 +208,7 @@ class OverDriveProcessor {
 						}
 						groupedWork.setAuthor(productRS.getString("primaryCreatorName"));
 						groupedWork.setAuthAuthor(productRS.getString("primaryCreatorName"));
-						groupedWork.setAuthorDisplay(productRS.getString("primaryCreatorName"), formatCategory);
+						groupedWork.setAuthorDisplay(productRS.getString("primaryCreatorName"), formatCategory, overDriveRecord);
 						if (rawMetadataDecoded != null) {
 							//Loop through all creators and add them as alternate author names
 							JSONArray creators = rawMetadataDecoded.getJSONArray("creators");

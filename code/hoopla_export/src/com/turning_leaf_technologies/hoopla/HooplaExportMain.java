@@ -20,7 +20,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.text.SimpleDateFormat;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -35,7 +34,6 @@ public class HooplaExportMain {
 
 	private static Long startTimeForLogging;
 	private static HooplaExtractLogEntry logEntry;
-	private static String hooplaAPIBaseURL;
 
 	private static Connection aspenConn;
 	private static PreparedStatement getAllExistingHooplaItemsStmt;
@@ -60,7 +58,7 @@ public class HooplaExportMain {
 		boolean extractSingleWork = false;
 		String singleWorkId = null;
 		String singleWorkType = null;
-		String hooplaType = null;
+		String hooplaType;
 		if (args.length == 0) {
 			serverName = AspenStringUtils.getInputFromCommandLine("Please enter the server name");
 			if (serverName.isEmpty()) {
@@ -70,14 +68,13 @@ public class HooplaExportMain {
 			String extractSingleWorkResponse = AspenStringUtils.getInputFromCommandLine("Process a single work? (y/N)");
 			if (extractSingleWorkResponse.equalsIgnoreCase("y")) {
 				extractSingleWork = true;
-				String extractSingleWorkType = AspenStringUtils.getInputFromCommandLine("Enter the type of work to extract (Instant/Flex)");
+				String extractSingleWorkType = AspenStringUtils.getInputFromCommandLine("Enter the type of work to extract (INSTANT/Flex)");
 				if (extractSingleWorkType.equalsIgnoreCase("Instant")) {
 					singleWorkType = "Instant";
 				} else if (extractSingleWorkType.equalsIgnoreCase("Flex")) {
 					singleWorkType = "Flex";
 				} else {
-					System.out.println("Invalid work type. Please enter Instant or Flex.");
-					System.exit(1);
+					singleWorkType = "Instant";
 				}
 
 			}
@@ -100,6 +97,15 @@ public class HooplaExportMain {
 						if (args.length > 3) {
 							singleWorkId = args[3];
 						}
+					} else {
+						String extractSingleWorkType = AspenStringUtils.getInputFromCommandLine("Enter the type of work to extract (INSTANT/Flex)");
+						if (extractSingleWorkType.equalsIgnoreCase("Instant")) {
+							singleWorkType = "Instant";
+						} else if (extractSingleWorkType.equalsIgnoreCase("Flex")) {
+							singleWorkType = "Flex";
+						} else {
+							singleWorkType = "Instant";
+						}
 					}
 				}
 			}
@@ -117,7 +123,7 @@ public class HooplaExportMain {
 		long timeAtStart = new Date().getTime();
 
 		while (true) {
-			//Hoopla only needs to run once a day so just run it in cron
+			//Hoopla only needs to run once a day, so run it in cron
 			Date startTime = new Date();
 			startTimeForLogging = startTime.getTime() / 1000;
 			logger.info(startTime + ": Starting Hoopla Export");
@@ -128,7 +134,7 @@ public class HooplaExportMain {
 			//Connect to the Aspen database
 			aspenConn = connectToDatabase();
 
-			//Check to see if the jar has changes before processing records, and if so quit
+			//Check to see if the jar has changes before processing records, and if so, quit
 			if (myChecksumAtStart != JarUtil.getChecksumForJar(logger, processName, "./" + processName + ".jar")){
 				IndexingUtils.markNightlyIndexNeeded(aspenConn, logger);
 				disconnectDatabase(aspenConn);
@@ -200,7 +206,7 @@ public class HooplaExportMain {
 				break;
 			}
 
-			//Check to see if the jar has changes, and if so quit
+			//Check to see if the jar has changes, and if so, quit
 			if (myChecksumAtStart != JarUtil.getChecksumForJar(logger, processName, "./" + processName + ".jar")){
 				IndexingUtils.markNightlyIndexNeeded(aspenConn, logger);
 				disconnectDatabase(aspenConn);
@@ -211,7 +217,7 @@ public class HooplaExportMain {
 				disconnectDatabase(aspenConn);
 				break;
 			}
-			//Check to see if it's between midnight and 1 am and the jar has been running more than 15 hours.  If so, restart just to clean up memory.
+			//Check to see if it's between midnight and 1 am, and the jar has been running more than 15 hours.  If so, restart just to clean up memory.
 			GregorianCalendar nowAsCalendar = new GregorianCalendar();
 			Date now = new Date();
 			nowAsCalendar.setTime(now);
@@ -229,7 +235,7 @@ public class HooplaExportMain {
 
 			disconnectDatabase(aspenConn);
 
-			//Check to see if nightly indexing is running and if so, wait until it is done.
+			//Check to see if nightly indexing is running, and if so, wait until it is done.
 			if (IndexingUtils.isNightlyIndexRunning(configIni, serverName, logger)) {
 				//Quit and we will restart after if finishes
 				System.exit(0);
@@ -471,9 +477,9 @@ public class HooplaExportMain {
 				if (curHour == indexingTime){
 					if (lastUpdateOfChangedRecords >= startOfTodaySeconds) {
 						logger.warn("Already completed today's " + hooplaType + " extraction at " + indexingTime + ". Skipping until tomorrow.");
-						return updatedContent;
+						return false;
 					}
-					//Set last update time to 32 hours ago (go bigger to get more updates)
+					//Set the last update time to 32 hours ago (go bigger to get more updates)
 					if (thirtyTwoHoursAgo < lastUpdate){
 						lastUpdate = thirtyTwoHoursAgo;
 					}
@@ -483,14 +489,14 @@ public class HooplaExportMain {
 					//It's not 1 am Local time, skip for now.
 					//Figure out when we last indexed this collection.
 					if (lastUpdate >= thirtyTwoHoursAgo) {
-						//Go ahead and index even if we are off schedule
-						return updatedContent;
+						//Do not index unless it has been 32 hours
+						return false;
 					}
 					// If we don't have updates for 32 hours, we will try 3 times
 					// If we exceed 3 times and fail, we will wait until 1 AM
 					if (numRetries32HoursAfter >= 3){
 						logger.warn("Exceeded 3 retries for 32 hours catch up, waiting until next indexing time at " + indexingTime);
-						return updatedContent;
+						return false;
 					}
 					numRetries32HoursAfter++;
 					logEntry.addNote("Retrying " + hooplaType + " extraction after 32 hours " + numRetries32HoursAfter + " of 3");
@@ -510,6 +516,7 @@ public class HooplaExportMain {
 				url += "?limit=" + settings.getRecordExtractionBatchSize() + "&purchaseModel=" + purchaseModel;
 			}
 
+			@SuppressWarnings("DuplicatedCode")
 			HashMap<String, String> headers = new HashMap<>();
 			headers.put("Authorization", "Bearer " + accessToken);
 			headers.put("Content-Type", "application/json");
@@ -517,7 +524,7 @@ public class HooplaExportMain {
 			WebServiceResponse response = NetworkUtils.getURL(url, logger, headers);
 			if (!response.isSuccess()){
 				logEntry.incErrors("Could not get titles from " + url + " " + response.getMessage() + " " + response.getResponseCode());
-				return updatedContent;
+				return false;
 			}else {
 				JSONObject responseJSON = new JSONObject(response.getMessage());
 				if (responseJSON.has("titles")) {
@@ -658,9 +665,9 @@ public class HooplaExportMain {
 			while (flexTitlesRS.next()) {
 				long hooplaId = flexTitlesRS.getLong("hooplaId");
 				boolean existingInDB = flexTitlesRS.getString("status") != null;
-				Integer existingHoldsQueueSize = existingInDB ? flexTitlesRS.getInt("holdsQueueSize") : 0;
-				Integer existingAvailableCopies = existingInDB ? flexTitlesRS.getInt("availableCopies") : 0;
-				Integer existingTotalCopies = existingInDB ? flexTitlesRS.getInt("totalCopies") : 0;
+				int existingHoldsQueueSize = existingInDB ? flexTitlesRS.getInt("holdsQueueSize") : 0;
+				int existingAvailableCopies = existingInDB ? flexTitlesRS.getInt("availableCopies") : 0;
+				int existingTotalCopies = existingInDB ? flexTitlesRS.getInt("totalCopies") : 0;
 				String existingStatus = existingInDB ? flexTitlesRS.getString("status") : null;
 
 				if (!doFullReloadFlex && existingInDB){
@@ -669,6 +676,7 @@ public class HooplaExportMain {
 
 				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content/info?contentIds=" + hooplaId;
 
+				@SuppressWarnings("DuplicatedCode")
 				HashMap<String, String> headers = new HashMap<>();
 				headers.put("Authorization", "Bearer " + accessToken);
 				headers.put("Content-Type", "application/json");
@@ -680,15 +688,15 @@ public class HooplaExportMain {
 				}
 				try {
 					JSONArray availabilityArray = new JSONArray(response.getMessage());
-					if (availabilityArray.length() > 0) {
+					if (!availabilityArray.isEmpty()) {
 						JSONObject titleInfo = availabilityArray.getJSONObject(0);
-						Long contentId = titleInfo.getLong("contentId");
+						long contentId = titleInfo.getLong("contentId");
 						if (hooplaId != contentId) {
 							logEntry.incErrors("Response content ID " + contentId + " mismatch for title " + hooplaId);
 							continue;
 						}
 						JSONObject availability = titleInfo.getJSONObject("availability");
-						if (availability.length() > 0) {
+						if (!availability.isEmpty()) {
 							String newStatus = availability.getString("status");
 							int newHoldsQueueSize = newStatus.equals("BORROW") ? 0 :
 							availability.has("holdsQueueSize") ? availability.getInt("holdsQueueSize") : 0;
@@ -726,11 +734,10 @@ public class HooplaExportMain {
 
 			if (numUpdates > 0) {
 				logEntry.addNote("Updated availability for " + numUpdates + " Flex titles");
-				return true;
 			} else {
 				logEntry.addNote("No availability changes found for Hoopla Flex titles");
-				return true;
 			}
+			return true;
 
 		}
 		catch (Exception e) {
@@ -782,7 +789,7 @@ public class HooplaExportMain {
 							logEntry.saveResults();
 
 							if (singleWorkType.equalsIgnoreCase("Flex")) {
-								if (responseTitles != null && !responseTitles.isEmpty()) {
+								if (!responseTitles.isEmpty()) {
 									JSONObject titleObj = responseTitles.getJSONObject(0);
 									boolean isActive = titleObj.getBoolean("active");
 									if (!isActive) {
@@ -795,7 +802,7 @@ public class HooplaExportMain {
 										} else {
 											try {
 												JSONArray availabilityArray = new JSONArray(availResponse.getMessage());
-												if (availabilityArray.length() > 0) {
+												if (!availabilityArray.isEmpty()) {
 													JSONObject titleInfo = availabilityArray.getJSONObject(0);
 													JSONObject availability = titleInfo.getJSONObject("availability");
 
@@ -835,7 +842,7 @@ public class HooplaExportMain {
 				}
 			}
 			if (numSettings == 0){
-				logger.error("Unable to find settings for Hoopla, please add settings to the database");
+				logger.error("Unable to find settings for Hoopla when processing single title, please add settings to the database");
 			}
 		}catch (Exception e){
 			logEntry.incErrors("Error exporting hoopla data", e);
@@ -854,7 +861,7 @@ public class HooplaExportMain {
 				long rawChecksum = checksumCalculator.getValue();
 				boolean curTitleActive = curTitle.getBoolean("active");
 
-				long hooplaId = curTitle.getLong("id"); //formerly titleId was used but this is not unique for tv series
+				long hooplaId = curTitle.getLong("id"); //formerly titleId was used, but this is not unique for TV series
 
 				HooplaTitle existingTitle = existingRecords.get(hooplaId);
 				boolean recordUpdated = false;
@@ -923,8 +930,8 @@ public class HooplaExportMain {
 						addHooplaTitleToDB.setString(8, curTitle.has("rating") ? curTitle.getString("rating") : "");
 						addHooplaTitleToDB.setBoolean(9, curTitle.getBoolean("abridged"));
 						addHooplaTitleToDB.setBoolean(10, curTitle.getBoolean("children"));
-						// Flex titles don't have a price so set it to 0.0
-						if (hooplaType.equalsIgnoreCase("Flex")) {
+						// Flex titles don't have a price, so set it to 0.0 or set to 0 if the record has no price
+						if (hooplaType.equalsIgnoreCase("Flex") || !curTitle.has("price")) {
 							addHooplaTitleToDB.setDouble(11, 0.0);
 						} else {
 							addHooplaTitleToDB.setDouble(11, curTitle.getDouble("price"));
@@ -1094,7 +1101,7 @@ public class HooplaExportMain {
 	private static void regroupAllRecords(Connection dbConn, long settingsId, GroupedWorkIndexer indexer, HooplaExtractLogEntry logEntry)  throws SQLException {
 		logEntry.addNote("Starting to regroup all records");
 		PreparedStatement getAllRecordsToRegroupStmt = dbConn.prepareStatement("SELECT hooplaId, UNCOMPRESS(rawResponse) as rawResponse from hoopla_export where active = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
-		//It turns out to be quite slow to look this up repeatedly, just grab the existing values for all and store in memory
+		//It turns out to be quite slow to look this up repeatedly, grab the existing values for all and store in memory
 		PreparedStatement getOriginalPermanentIdForRecordStmt = dbConn.prepareStatement("SELECT identifier, permanent_id from grouped_work_primary_identifiers join grouped_work on grouped_work_id = grouped_work.id WHERE type = 'hoopla'", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		HashMap<Long, String> allPermanentIdsForHoopla = new HashMap<>();
 		ResultSet getOriginalPermanentIdForRecordRS = getOriginalPermanentIdForRecordStmt.executeQuery();

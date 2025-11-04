@@ -229,6 +229,7 @@ class Author_Home extends ResultsAction {
 			$interface->assign($detailOption, true);
 		}
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		$this->setShowCovers();
 

@@ -20,18 +20,21 @@ import static java.util.Calendar.DAY_OF_YEAR;
 
 public class AspenEventsIndexer {
 	private final long settingsId;
+	@SuppressWarnings("FieldCanBeLocal")
 	private final String name;
 	private final int numberOfDaysToIndex;
 	private final boolean runFullUpdate;
+	@SuppressWarnings("FieldCanBeLocal")
 	private final long lastUpdateOfAllEvents;
 	private final long lastUpdateOfChangedEvents;
 	private final Connection aspenConn;
 	private final EventsIndexerLogEntry logEntry;
 	private final HashMap<Long, AspenEvent> eventInstances = new HashMap<>();
-	private final HashSet<String> librariesToShowFor = new HashSet<>();
+	private final HashSet<String> librariesToShowAllFor = new HashSet<>();
+	private final HashMap<Long, String> librariesToShowSeparatelyFor = new HashMap<>();
+	private final HashMap<Long, Long> libraryIdsByLocation = new HashMap<>();
 	private final static CRC32 checksumCalculator = new CRC32();
 	private final String coverPath;
-
 	private final List<String> idsToDelete = new ArrayList<>();
 
 	private final ConcurrentUpdateHttp2SolrClient solrUpdateServer;
@@ -59,6 +62,10 @@ public class AspenEventsIndexer {
 	private final SimpleDateFormat eventWeekFormatter = new SimpleDateFormat("yyyy-ww");
 	private final SimpleDateFormat eventMonthFormatter = new SimpleDateFormat("yyyy-MM");
 	private final SimpleDateFormat eventYearFormatter = new SimpleDateFormat("yyyy");
+
+	/**
+	 * Load events for the given settings ID
+	 */
 	private void loadEvents() {
 		try {
 			// Calculate date for numberOfDaysToIndex into the future to add to where statement
@@ -66,33 +73,42 @@ public class AspenEventsIndexer {
 			lastDateToIndex.setTime(new Date());
 			lastDateToIndex.add(DAY_OF_YEAR, this.numberOfDaysToIndex);
 
-			// Get total number of events for log
-			PreparedStatement eventCountStmt = aspenConn.prepareStatement("SELECT COUNT(*) FROM event_instance LEFT JOIN event ON event_instance.eventId = event.id WHERE event_instance.deleted = 0 AND event.locationID IN (SELECT locationId from location_events_setting WHERE settingId = ?);");
-			eventCountStmt.setLong(1, settingsId);
+			// Get the total number of events to update the log
+			PreparedStatement eventCountStmt = aspenConn.prepareStatement("SELECT COUNT(*) FROM event_instance LEFT JOIN event ON event_instance.eventId = event.id WHERE event_instance.deleted = 0;");
 			ResultSet eventCountRS = eventCountStmt.executeQuery();
 			if (eventCountRS.next()) {
 				logEntry.incNumEvents(eventCountRS.getInt("COUNT(*)"));
 			}
 
-			PreparedStatement getLibraryScopesStmt = aspenConn.prepareStatement("SELECT subdomain from library inner join library_events_setting on library.libraryId = library_events_setting.libraryId WHERE settingSource = 'aspenEvents' AND settingId = ?");
-			getLibraryScopesStmt.setLong(1, settingsId);
-			ResultSet getLibraryScopesRS = getLibraryScopesStmt.executeQuery();
-			while (getLibraryScopesRS.next()){
-				librariesToShowFor.add(getLibraryScopesRS.getString("subdomain").toLowerCase());
+			PreparedStatement getLibraryIdsForLocationsStmt = aspenConn.prepareStatement("SELECT locationId, libraryId FROM location");
+			ResultSet getLibraryIdsForLocationsRS = getLibraryIdsForLocationsStmt.executeQuery();
+			while (getLibraryIdsForLocationsRS.next()) {
+				libraryIdsByLocation.put(getLibraryIdsForLocationsRS.getLong("locationId"), getLibraryIdsForLocationsRS.getLong("libraryId"));
+			}
+
+			PreparedStatement getLibrariesToShowAllEventsForStmt = aspenConn.prepareStatement("SELECT library.libraryId, subdomain from library WHERE aspenEventsToInclude = 1");
+			ResultSet getLibrariesToShowAllEventsForRS = getLibrariesToShowAllEventsForStmt.executeQuery();
+			//Load a list of all libraries that want to see all events
+			while (getLibrariesToShowAllEventsForRS.next()){
+				librariesToShowAllFor.add(getLibrariesToShowAllEventsForRS.getString("subdomain").toLowerCase());
+			}
+			//Load a list of libraries that want to see events for their library only
+			PreparedStatement getLibrariesToShowLocalEventsForStmt = aspenConn.prepareStatement("SELECT library.libraryId, subdomain from library WHERE aspenEventsToInclude = 2");
+			ResultSet getLibrariesToShowLocalEventsForRS = getLibrariesToShowLocalEventsForStmt.executeQuery();
+			while (getLibrariesToShowLocalEventsForRS.next()){
+				librariesToShowSeparatelyFor.put(getLibrariesToShowLocalEventsForRS.getLong("libraryId"), getLibrariesToShowLocalEventsForRS.getString("subdomain").toLowerCase());
 			}
 
 			PreparedStatement eventsStmt;
 			PreparedStatement deleteEventsStmt;
 			if (runFullUpdate) {
 				// Get event instance and event info
-				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND ei.deleted = 0 AND e.locationId IN (SELECT locationId from location_events_setting WHERE settingId = ?);");
-				eventsStmt.setLong(2, settingsId);
+				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND ei.deleted = 0;");
 			} else {
-				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND (e.dateUpdated > ? OR ei.dateUpdated > ?) AND ei.deleted = 0 AND e.locationId IN (SELECT locationId from location_events_setting WHERE settingId = ?);");
+				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND (e.dateUpdated > ? OR ei.dateUpdated > ?) AND ei.deleted = 0;");
 				deleteEventsStmt = aspenConn.prepareStatement("SELECT id FROM event_instance WHERE deleted = 1 AND dateUpdated > ?;");
 				eventsStmt.setLong(2, lastUpdateOfChangedEvents);
 				eventsStmt.setLong(3, lastUpdateOfChangedEvents);
-				eventsStmt.setLong(4, settingsId);
 				deleteEventsStmt.setLong(1, lastUpdateOfChangedEvents);
 				ResultSet deleteEventsRS = deleteEventsStmt.executeQuery();
 				while (deleteEventsRS.next()) {
@@ -129,7 +145,7 @@ public class AspenEventsIndexer {
 
 	void indexEvents() {
 
-		// Delete everything and start fresh for full index
+		// Delete everything and start fresh for a full index
 		if (runFullUpdate) {
 			try {
 				solrUpdateServer.deleteByQuery("type:event_aspenEvent AND source:" + this.settingsId);
@@ -242,8 +258,16 @@ public class AspenEventsIndexer {
 
 				solrDocument.addField("description", eventInfo.getDescription());
 
+				ArrayList<String> librariesToShowEventFor = new ArrayList<>(librariesToShowAllFor);
+
+				//Add any libraries that want to see their events only
+				long libraryForLocation = libraryIdsByLocation.get(eventInfo.getLocationId());
+				if (librariesToShowSeparatelyFor.containsKey(libraryForLocation)) {
+					librariesToShowEventFor.add(librariesToShowSeparatelyFor.get(libraryForLocation));
+				}
+
 				// Libraries scopes
-				solrDocument.addField("library_scopes", librariesToShowFor);
+				solrDocument.addField("library_scopes", librariesToShowEventFor);
 
 				solrDocument.addField("boost", boost);
 				solrUpdateServer.add(solrDocument);

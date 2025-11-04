@@ -594,11 +594,11 @@ class GroupedWorkDriver extends IndexRecordDriver {
 
 		$interface->assign('summUrl', $url);
 
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
-			$interface->assign('summFullTitle', $this->getTitle());
+			$interface->assign('summFullTitle', $title);
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
 			$interface->assign('summSubTitle', $this->getSubtitle());
@@ -826,9 +826,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -858,6 +858,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 		$alwaysShowMainDetails = $groupedWorkDisplaySettings->alwaysShowSearchResultsMainDetails;
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		foreach ($relatedRecords as $relatedRecord) {
 			if ($isFirst) {
@@ -1270,9 +1271,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$linkUrl .= '?searchId=' . $interface->get_template_vars('searchId') . '&amp;recordIndex=' . $interface->get_template_vars('recordIndex') . '&amp;page=' . $interface->get_template_vars('page');
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -1350,9 +1351,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$linkUrl .= '?searchId=' . $interface->get_template_vars('searchId') . '&amp;recordIndex=' . $interface->get_template_vars('recordIndex') . '&amp;page=' . $interface->get_template_vars('page');
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -1429,9 +1430,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$linkUrl .= '?searchId=' . $interface->get_template_vars('searchId') . '&amp;recordIndex=' . $interface->get_template_vars('recordIndex') . '&amp;page=' . $interface->get_template_vars('page');
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -1550,6 +1551,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			'ratingData' => $this->getRatingData(),
 			'format' => $this->getFormats(),
 			'language' => $this->getLanguage(),
+			'primary_isbn' => $this->getPrimaryIsbn(),
+			'primary_upc' => $this->getPrimaryUPC(),
 		];
 	}
 
@@ -1684,6 +1687,14 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	public function getPrimaryIsbn() {
 		if (isset($this->fields['primary_isbn'])) {
 			return $this->fields['primary_isbn'];
+		} else {
+			return null;
+		}
+	}
+
+	public function getPrimaryUPC() {
+		if (isset($this->fields['primary_upc'])) {
+			return $this->fields['primary_upc'];
 		} else {
 			return null;
 		}
@@ -2041,9 +2052,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 
 		$interface->assign('summUrl', $linkUrl);
-		$shortTitle = $this->getShortTitle();
-		if (empty($shortTitle)) {
-			$interface->assign('summTitle', $this->getTitle());
+		$title = $this->getTitle();
+		if (!empty($title)) {
+			$interface->assign('summTitle', $title);
 			$interface->assign('summSubTitle', '');
 		} else {
 			$interface->assign('summTitle', $this->getShortTitle());
@@ -2149,7 +2160,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 		$timer->logTime("Finished assignment of data based on solr debug info");
 
-		$interface->assign('formatDisplayStyle', $library->getGroupedWorkDisplaySettings()->formatDisplayStyle);
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		//Get Rating
 		$interface->assign('summRating', $this->getRatingData());
@@ -2570,6 +2583,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$interface->assign('groupedWorkDetails', $this->getGroupedWorkDetails());
 
 		$interface->assign('alternateTitles', $this->getAlternateTitles());
+
+		$interface->assign('recordGroupingOverrides', $this->getRecordGroupingOverrides());
 
 		$interface->assign('primaryIdentifiers', $this->getPrimaryIdentifiers());
 
@@ -3724,5 +3739,24 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		} else {
 			return '';
 		}
+	}
+
+	public function getRecordGroupingOverrides(): ?array {
+		if (UserAccount::userHasPermission('Manually Group and Ungroup Works')) {
+			require_once ROOT_DIR . '/sys/Grouping/RecordGroupingOverride.php';
+			$override = new RecordGroupingOverride();
+			$permanentId = $this->getPermanentId();
+			$overrides = [];
+			if (!empty($permanentId)) {
+				$override->grouped_work_permanent_id = $permanentId;
+				if ($override->find()) {
+					while ($override->fetch()) {
+						$overrides[$override->id] = clone $override;
+					}
+				}
+			}
+			return $overrides;
+		}
+		return null;
 	}
 }

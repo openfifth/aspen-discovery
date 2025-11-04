@@ -131,7 +131,7 @@ public class PalaceProjectProcessor {
 				if (metadata.has("sortAs")){
 					sortableTitle = metadata.getString("sortAs");
 				}
-				groupedWork.setTitle(title, subTitle, title, sortableTitle, primaryFormat, formatCategory);
+				groupedWork.setTitle(title, subTitle, sortableTitle, formatCategory, false, palaceProjectRecord);
 				groupedWork.addFullTitle(fullTitle);
 
 				String primaryAuthor = "";
@@ -145,7 +145,7 @@ public class PalaceProjectProcessor {
 				}
 				groupedWork.setAuthor(primaryAuthor);
 				groupedWork.setAuthAuthor(primaryAuthor);
-				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory);
+				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, palaceProjectRecord);
 
 				//Note: Palace Project does not provide series information
 

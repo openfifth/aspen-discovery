@@ -903,7 +903,7 @@ pre a{ldelim}
 	color: {$primaryForegroundColor}
 {rdelim}
 
-.calendar-event-time{ldelim}
+.calendar-event-time, .calendar-event-field{ldelim}
     color: {$primaryForegroundColor};
 {rdelim}
 
@@ -951,7 +951,7 @@ pre a{ldelim}
         background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 5%);
     {rdelim}
 
-    .table-hover > tbody > tr:hover > td, 
+    .table-hover > tbody > tr:hover > td,
     .table-hover > tbody > tr:hover > th{ldelim}
         background-color: color-mix(in srgb, {$bodyBackgroundColor}, white 20%);
     {rdelim}
