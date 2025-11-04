@@ -743,6 +743,13 @@ class UserList extends DataObject {
 			$filteredListEntries = $listEntryInfo['listEntries'];
 		//}
 
+		global $library;
+		global $interface;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		foreach ($groupedWorkDisplaySettings->showInSearchResultsMainDetails as $detailOption) {
+			$interface->assign($detailOption, true);
+		}
+
 		$filteredIdsBySource = [];
 		foreach ($filteredListEntries as $listItemEntry) {
 			if (!array_key_exists($listItemEntry['source'], $filteredIdsBySource)) {
