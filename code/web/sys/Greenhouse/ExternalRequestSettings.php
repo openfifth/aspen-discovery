@@ -36,6 +36,13 @@ class ExternalRequestSettings extends DataObject {
 				'description' => 'Whether or not to always log requests when they start with the given type',
 				'default' => '0',
 			],
+			'expireDate' => [
+				'property' => 'expireDate',
+				'type' => 'date',
+				'label' => 'Log all requests until',
+				'description' => 'Log all requests for the specified type until this Date',
+
+			]
 		];
 
 		self::$_objectStructure[$context] = $structure;
