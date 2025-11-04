@@ -60,12 +60,8 @@ class SearchObject_ListsSearcher extends SearchObject_SolrSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @param string $searchSource
-	 * @return  boolean
 	 */
-	public function init($searchSource = null) : bool {
+	public function init(?string $searchSource = null) : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init('lists');
 

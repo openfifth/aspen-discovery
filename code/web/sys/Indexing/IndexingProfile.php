@@ -233,6 +233,9 @@ class IndexingProfile extends DataObject {
 	/** @noinspection PhpUnused */
 	public $index899asSeries;
 
+	public /** @noinspection PhpUnused */
+		$displayTitleStripRegex;
+
 	private $_translationMaps;
 	private $_timeToReshelve;
 	private $_sierraFieldMappings;
@@ -787,6 +790,14 @@ class IndexingProfile extends DataObject {
 						'label' => 'Include Personal And Corporate Names In Topics Facet',
 						'description' => 'Whether or not personal and corporate names are included in the topics facet',
 						'default' => true,
+						'forcesReindex' => true,
+					],
+					'displayTitleStripRegex' => [
+						'property' => 'displayTitleStripRegex',
+						'type' => 'regularExpression',
+						'label' => 'Display Title Strip Regex',
+						'description' => 'Regular expression to remove matching text from display titles. Only applies to ILS records. Example: \s*\[LARGE PRINT\]$ to remove &quot;[LARGE PRINT]&quot; suffix.',
+						'note' => 'Uses case-sensitive matching. Use (?i) at the start of the pattern for case-insensitive matching.',
 						'forcesReindex' => true,
 					],
 					'audienceOptionsSection' => [

@@ -1400,13 +1400,21 @@ class SirsiDynixROA extends HorizonAPI {
 	 * @access  public
 	 */
 	function placeSirsiHold(User $patron, string $recordId, ?string $itemId, ?string $volume = null, ?string $pickupBranch = null, string $type = 'request', ?string $cancelIfNotFilledByDate = null, bool $forceVolumeHold = false, bool $useBooksByMail = false) : array {
-		//Get the session token for the user
 		$staffSessionToken = $this->getStaffSessionToken();
 		$sessionToken = $this->getSessionToken($patron);
-		if (!$staffSessionToken) {
+
+		// If the patron's session token is unavailable, check if staff can place holds on their behalf.
+		// This handles the Materials Requests case where staff is NOT masquerading.
+		if (empty($sessionToken) && !empty($staffSessionToken)) {
+			if (!UserAccount::isUserMasquerading() && UserAccount::userHasPermission('Place Holds For Materials Requests')) {
+				$sessionToken = $staffSessionToken;
+			}
+		}
+
+		if (empty($sessionToken)) {
 			$result['success'] = false;
 			$result['message'] = translate([
-				'text' => "Sorry, it does not look like you are logged in currently.  Please login and try again",
+				'text' => "Sorry, it does not look like you are logged in currently. Please log in and try again.",
 				'isPublicFacing' => true,
 			]);
 
@@ -1415,7 +1423,7 @@ class SirsiDynixROA extends HorizonAPI {
 				'isPublicFacing' => true,
 			]);
 			$result['api']['message'] = translate([
-				'text' => 'Sorry, it does not look like you are logged in currently.  Please login and try again',
+				'text' => 'Sorry, it does not look like you are logged in currently. Please log in and try again.',
 				'isPublicFacing' => true,
 			]);
 			return $result;
@@ -2648,24 +2656,66 @@ class SirsiDynixROA extends HorizonAPI {
 		return $result;
 	}
 
-	public function showOutstandingFines() {
+	public function showOutstandingFines(): bool {
 		return true;
 	}
 
-	function getForgotPasswordType() {
+	function getForgotPasswordType(): string {
 		return 'emailResetLink';
 	}
 
-	function getEmailResetPinTemplate() {
+	function getEmailResetPinTemplate(): string {
 		return 'sirsiROAEmailResetPinLink.tpl';
 	}
 
-	function translateFineMessageType($code) {
-		switch ($code) {
+	function updateHomeLibrary(User $patron, string $homeLibraryCode): array {
+		$result = [
+			'success' => false,
+			'messages' => [],
+		];
 
-			default:
-				return $code;
+		$sessionToken = $this->getStaffSessionToken();
+		if ($sessionToken) {
+			$webServiceURL = $this->getWebServiceURL();
+			$userID = $patron->unique_ils_id;
+			if (!empty($userID)) {
+				$updatePatronInfoParametersClass = $this->getWebServiceResponse('getPatronInfo', $this->getWebServiceURL() . '/user/patron/key/' . $userID, null, $sessionToken);
+				if ($updatePatronInfoParametersClass) {
+					$updatePatronInfoParameters = json_decode(json_encode($updatePatronInfoParametersClass), true);
+					if (isset($updatePatronInfoParameters['resource']) && $updatePatronInfoParameters['resource'] == '/user/patron') {
+						$homeLibraryLocation = new Location();
+						if ($homeLibraryLocation->get('code', $homeLibraryCode)) {
+							$homeBranchCode = strtoupper($homeLibraryLocation->code);
+							$updatePatronInfoParameters['fields']['library'] = [
+								'key' => $homeBranchCode,
+								'resource' => '/policy/library',
+							];
+						}
+
+						$updateAccountInfoResponse = $this->getWebServiceResponse('updateHomeLibrary', $webServiceURL . '/user/patron/key/' . $userID, $updatePatronInfoParameters, $sessionToken, 'PUT');
+						if (isset($updateAccountInfoResponse->messageList)) {
+							$result['messages'][] = (string)$updateAccountInfoResponse->messageList[0]->message;
+						} else {
+							$result['success'] = true;
+							$result['messages'][] = '&bull; Your home library was updated successfully.';
+
+							$patron->homeLocationId = $homeLibraryLocation->locationId;
+							$patron->update();
+						}
+					} else {
+						$result['messages'][] = 'Could not find your account in the system, please contact the library.';
+					}
+				} else {
+					$result['messages'][] = 'Could not find your account in the system, please contact the library.';
+				}
+			} else {
+				$result['messages'][] = 'Could not find your account in the system, please contact the library.';
+			}
+		} else {
+			$result['messages'][] = 'Sorry, we could not connect to Symphony.';
 		}
+
+		return $result;
 	}
 
 	public function translateLocation($locationCode) {

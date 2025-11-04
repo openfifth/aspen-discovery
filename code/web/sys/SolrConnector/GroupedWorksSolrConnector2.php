@@ -37,7 +37,7 @@ class GroupedWorksSolrConnector2 extends Solr {
 		return $result['response']['docs'][0] ?? null;
 	}
 
-	function getRecordByIsbn($isbns, $fieldsToReturn = null) {
+	function getRecordByIsbn($isbns, $fieldsToReturn = null) : ?array {
 		// Query String Parameters
 		if ($fieldsToReturn == null) {
 			$fieldsToReturn = SearchObject_GroupedWorkSearcher2::$fields_to_return;
@@ -51,11 +51,7 @@ class GroupedWorksSolrConnector2 extends Solr {
 			AspenError::raiseError($result);
 		}
 
-		if (isset($result['response']['docs'][0])) {
-			return $result['response']['docs'][0];
-		} else {
-			return null;
-		}
+		return $result['response']['docs'][0] ?? null;
 	}
 
 	/**
@@ -123,7 +119,7 @@ class GroupedWorksSolrConnector2 extends Solr {
 		return $records;
 	}
 
-	function searchForRecordIds($ids) {
+	function searchForRecordIds(array $ids) : array {
 		if (count($ids) == 0) {
 			return [];
 		}

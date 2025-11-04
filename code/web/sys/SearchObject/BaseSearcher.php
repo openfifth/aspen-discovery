@@ -1928,12 +1928,8 @@ abstract class SearchObject_BaseSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @return  boolean
-	 * @var string $searchSource
 	 */
-	public function init($searchSource = null) {
+	public function init(?string $searchSource = null) : bool {
 		$this->initTime = time();
 		$this->searchSource = $searchSource;
 		return true;
@@ -2045,9 +2041,9 @@ abstract class SearchObject_BaseSearcher {
 	 * Return the field (index) searched by a basic search
 	 *
 	 * @access  public
-	 * @return  string   The searched index
+	 * @return  ?string   The searched index
 	 */
-	public function getSearchIndex() {
+	public function getSearchIndex() : ?string {
 		// Single search index does not apply to advanced search:
 		if ($this->searchType == $this->advancedSearchType) {
 			return null;
@@ -2753,7 +2749,7 @@ abstract class SearchObject_BaseSearcher {
 	/**
 	 * @return bool
 	 */
-	public function supportsSuggestions() {
+	public function supportsSuggestions() : bool {
 		return false;
 	}
 

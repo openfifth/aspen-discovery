@@ -1578,6 +1578,28 @@ class MyAccount_AJAX extends JSON_Action {
 				$list->public = isset($_REQUEST['public']) && $_REQUEST['public'] == 'true';
 				$list->searchable = isset($_REQUEST['searchable']) && $_REQUEST['searchable'] == 'true';
 				$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && $_REQUEST['displayListAuthor'] == 'true';
+
+				$list->listGroupId = -1;
+				if (isset($_REQUEST['addToListGroupOption'])) {
+					$addToListGroupOption = $_REQUEST['addToListGroupOption'];
+					$addToListGroupNested = isset($_REQUEST['addToListGroupNested']) ? $_REQUEST['addToListGroupNested'] : 'none';
+					if ($addToListGroupOption == 'new') {
+						//Create a new list group
+						require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+						$listGroup = new UserListGroup();
+						$listGroup->title = $_REQUEST['addToListGroupNewName'];
+						$listGroup->userId = $user->id;
+						if ($addToListGroupNested != 'none') {
+							$listGroup->parentGroupId = $addToListGroupNested;
+						}
+						$listGroup->insert();
+						$list->listGroupId = $listGroup->id;
+					} elseif ($addToListGroupOption == "existing" && is_numeric($addToListGroupOption)) {
+						//Add to an existing list group
+						$list->listGroupId = intval($addToListGroupOption);
+					}
+				}
+
 				if ($existingList) {
 					$list->update();
 				} else {
@@ -1750,6 +1772,17 @@ class MyAccount_AJAX extends JSON_Action {
 			$validListNames = [];
 		}
 		$interface->assign('validListNames', $validListNames);
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$listGroup = new UserListGroup();
+		$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
+		$interface->assign('userListGroups', $userListGroups);
+
+		$user = UserAccount::getActiveUserObj();
+		$userListGroupLastAdded = $user->lastListGroupAdded;
+		$userListGroupLastViewed = $user->lastListGroupViewed;
+		$interface->assign('userListGroupLastAdded', $userListGroupLastAdded);
+		$interface->assign('userListGroupLastViewed', $userListGroupLastViewed);
 
 		return [
 			'title' => translate([
@@ -2072,13 +2105,13 @@ class MyAccount_AJAX extends JSON_Action {
 								return true;
 							}
 							foreach ($validLocationCodesFromILS as $validCode) {
-								if (strpos($validCode, $location->code) === 0) {
+								if (str_starts_with($validCode, $location->code)) {
 									return true;
 								}
 							}
 							return false;
 						});
-					} else {
+					} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
 						$pickupBranches = [];
 					}
 				}
@@ -6323,6 +6356,10 @@ class MyAccount_AJAX extends JSON_Action {
 					$patron,
 				] = $result;
 			}
+		
+			// Log the WorldPay order creation request
+			require_once ROOT_DIR . '/sys/SystemLogging/ExternalRequestLogEntry.php';
+			ExternalRequestLogEntry::logRequest('fine_payment.createworldpayorder', 'GET', '/MyAccount/AJAX?method=createWorldPayOrder', [], json_encode($_REQUEST), '200', json_encode(['success' => true, 'paymentId' => $payment->id,'url' => $payment->url, 'transactionDate' => $payment->transactionDate, 'userId' => $payment->userId]), []);
 
 			return [
 				'success' => true,
@@ -10632,5 +10669,339 @@ class MyAccount_AJAX extends JSON_Action {
 					'isAdminFacing' => 'true',
 				]) . "</button>",
 		];
+	}
+
+	/** @noinspection PhpUnused */
+	function getEditListGroupParentForm(): array {
+		global $interface;
+		if (isset($_REQUEST['groupId'])) {
+			$groupId = $_REQUEST['groupId'];
+			$parentId = $_REQUEST['parentId'];
+			$listGroups = [];
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$listGroups = $group->getListGroups(UserAccount::getActiveUserObj());
+			$interface->assign('groupId', $groupId);
+			$interface->assign('parentId', $parentId);
+			$interface->assign('listGroups', $listGroups);
+			return [
+				'title' => translate([
+					'text' => 'Move List Group',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => $interface->fetch('MyAccount/editListGroupParent.tpl'),
+				'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#moveListGroupForm\").submit()'>" . translate([
+						'text' => 'Save',
+						'isPublicFacing' => true,
+					]) . "</button>",
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'You must provide the id of the group to modify',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function editListGroupParent(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Moving List Group',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Sorry your list group was unabled to be moved.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$groupId = $_REQUEST['groupId'];
+		$listGroupMoveId = $_REQUEST['listGroupMove'];
+		if ($groupId && $listGroupMoveId) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$group->id = $groupId;
+			$group->userId = UserAccount::getActiveUserId();
+			if ($group->find(true)) {
+				$group->parentGroupId = $listGroupMoveId;
+				if ($group->update()) {
+					$result = [
+						'success' => true,
+						'title' => translate([
+							'text' => 'Moving List Group',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'Your list group was successfully moved.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$result['message'] = translate([
+						'text' => 'The list group could not be updated.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The specified group could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'You must provide the id of the group to modify and the new parent group.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function getEditListGroupNameForm(): array {
+		global $interface;
+		if (isset($_REQUEST['groupId'])) {
+			$groupId = $_REQUEST['groupId'];
+			$interface->assign('groupId', $groupId);
+			return [
+				'title' => translate([
+					'text' => 'Rename List Group',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => $interface->fetch('MyAccount/editListGroupName.tpl'),
+				'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#renameListGroupForm\").submit()'>" . translate([
+						'text' => 'Save',
+						'isPublicFacing' => true,
+					]) . "</button>",
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'You must provide the id of the group to modify',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function editListGroupName(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Rename List Group',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Sorry your list group was unabled to be renamed.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$groupId = $_REQUEST['groupId'];
+		$newName = $_REQUEST['listGroupNameNew'];
+		if ($groupId && $newName) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$group->id = $groupId;
+			$group->userId = UserAccount::getActiveUserId();
+			if ($group->find(true)) {
+				$group->title = $newName;
+				if ($group->update()) {
+					$result = [
+						'success' => true,
+						'message' => translate([
+							'text' => 'Your list group was successfully renamed.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$result['message'] = translate([
+						'text' => 'The list group could not be updated.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The specified group could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'You must provide the id of the group to modify and a new title.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function getCreateListGroupForm(): array {
+		global $interface;
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$listGroup = new UserListGroup();
+		$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
+		$interface->assign('userListGroups', $userListGroups);
+		$groupId = null;
+		if ($_REQUEST['groupId']) {
+			$groupId = $_REQUEST['groupId'];
+		}
+		$interface->assign('groupId', $groupId);
+		return [
+			'title' => translate([
+				'text' => 'Create New List Group',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/createListGroupForm.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.createListGroup()'>" . translate([
+					'text' => 'Create List Group',
+					'isPublicFacing' => true,
+				]) . "</button>",
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function createListGroup(): array {
+		$result = [];
+		if (UserAccount::isLoggedIn()) {
+			$user = UserAccount::getLoggedInUser();
+			$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
+			if (strlen(trim($title)) == 0) {
+				$result['success'] = "false";
+				$result['message'] = "You must provide a title for the list";
+			} else {
+				$parentId = $_REQUEST['nestedGroupId'] ?? -1;
+				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+				$listGroup = new UserListGroup();
+				$listGroup->userId = $user->id;
+				$listGroup->title = $title;
+				$listGroup->parentGroupId = $parentId;
+				if ($listGroup->insert()) {
+					$result['success'] = "true";
+					$result['message'] = "List group $listGroup->title created successfully";
+				} else {
+					$result['success'] = "false";
+					$result['message'] = "Could not create list group";
+				}
+			}
+		} else {
+			$result['success'] = "false";
+			$result['message'] = "You must be logged in to create a list";
+		}
+
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function getDeleteListGroupForm(): array {
+		$groupId = $_REQUEST['groupId'] ?? null;
+		$modalBody = translate([
+			'text' => 'Are you sure you want to delete the list group? If any lists remain in the group, they will be unassigned. This action cannot be undone.',
+			'isPublicFacing' => true
+		]);
+
+		$modalButtons = '<button id="confirmDeleteListGroup" class="tool btn btn-danger" onclick="AspenDiscovery.Account.deleteListGroup(' . $groupId . ')">' . translate([
+				'text' => 'Yes',
+				'isPublicFacing' => true
+			]) . '</button>';
+		$modalButtons .= '<button id="cancelDeleteListGroup" class="tool btn btn-default" onclick="AspenDiscovery.closeLightbox()">' . translate([
+				'text' => 'No',
+				'isPublicFacing' => true
+			]) . '</button>';
+
+		return [
+			'title' => translate([
+				'text' => 'Delete List Group?',
+				'isPublicFacing' => true
+			]),
+			'modalBody' => $modalBody,
+			'modalButtons' => $modalButtons
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function deleteListGroup(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Delete List Group',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Sorry, the list group could not be deleted.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$groupId = $_REQUEST['groupId'] ?? null;
+		if ($groupId) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$group = new UserListGroup();
+			$group->id = $groupId;
+			$group->userId = UserAccount::getActiveUserId();
+			if ($group->find(true)) {
+				if ($group->delete()) {
+					// Unassign any lists that were in this group
+					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+					$userList = new UserList();
+					$userList->listGroupId = $groupId;
+					$userList->user_id = UserAccount::getActiveUserId();
+					$userList->find();
+					while ($userList->fetch()) {
+						$userList->listGroupId = -1;
+						$userList->update();
+					}
+
+					// Unassign any sub-groups that were in this group
+					$subGroup = new UserListGroup();
+					$subGroup->parentGroupId = $groupId;
+					$subGroup->userId = UserAccount::getActiveUserId();
+					$subGroup->find();
+					while ($subGroup->fetch()) {
+						$subGroup->parentGroupId = -1;
+						$subGroup->update();
+					}
+
+					$result = [
+						'success' => true,
+						'title' => translate([
+							'text' => 'Delete List Group',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'The list group was successfully deleted.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$result['message'] = translate([
+						'text' => 'The list group could not be deleted.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The specified group could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'You must provide the id of the group to delete.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+
 	}
 }

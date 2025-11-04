@@ -39,6 +39,7 @@ class MyAccount_MyList extends MyAccount {
 		global $library;
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		// Fetch the List object
 		$listId = $_REQUEST['id'];
@@ -131,6 +132,7 @@ class MyAccount_MyList extends MyAccount {
 						$list->searchable = isset($_REQUEST['searchable']) && ($_REQUEST['searchable'] == 'true' || $_REQUEST['searchable'] == 'on');
 						$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && ($_REQUEST['displayListAuthor'] == 'true' || $_REQUEST['displayListAuthor'] == 'on');
 					}
+					$list->listGroupId = isset($_REQUEST['listGroupSelect']) ? intval($_REQUEST['listGroupSelect']) : -1;
 					$this->reloadCover();
 					$list->update();
 					$list->fixWeights();
@@ -243,6 +245,31 @@ class MyAccount_MyList extends MyAccount {
 			$activeFilters['format'] = array_filter($formatFilters); // Remove empty values
 		}
 		$interface->assign('activeFilters', $activeFilters);
+
+		$inListGroup = false;
+		if ($list->listGroupId > 0) {
+			$inListGroup = true;
+		}
+		$interface->assign('inListGroup', $inListGroup);
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$listGroupInfo = null;
+		if ($inListGroup) {
+			$listGroup = new UserListGroup();
+			$listGroup->id = $list->listGroupId;
+			if ($listGroup->find(true)) {
+				$listGroupInfo = clone $listGroup;
+			}
+		}
+		$interface->assign('listGroupInfo', $listGroupInfo);
+
+		$userListGroups = [];
+		if ($userCanEdit) {
+			$listGroup = new UserListGroup();
+			$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
+		}
+		$interface->assign('userListGroups', $userListGroups);
+
 
 		$this->buildListForDisplay($list, $userCanEdit, $activeSort, $defaultPageSize, $activeFilters);
 

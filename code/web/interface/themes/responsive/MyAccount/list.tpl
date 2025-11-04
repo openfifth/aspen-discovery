@@ -23,6 +23,13 @@
 				<div>
 					<input type="hidden" name="myListActionHead" id="myListActionHead" class="form">
 					<h1 id="listTitle">{$userList->title|escape:"html"}</h1>
+					{if $inListGroup}
+						<div id="listGroup">
+							<p class="text-muted">
+								<small>{translate text='Part of the list group: %1%' 1=$listGroupInfo->title isPublicFacing=true}</small>
+							</p>
+						</div>
+					{/if}
 					{if !empty($notes)}
 						<div id="listNotes">
 						{foreach from=$notes item="note"}
@@ -83,6 +90,22 @@
 										</div>
 									</div>
 								</div>
+								{if !empty($userListGroups)}
+									<div class="form-group">
+										<label for="listGroupSelect" class="col-sm-3 control-label">{translate text="List Group" isPublicFacing=true}</label>
+										<div class="col-sm-9">
+											<select id="listGroupSelect" name="listGroupSelect" class="form-control">
+												<option value="-1">{translate text="No Group" isPublicFacing=true}</option>
+												{foreach from=$userListGroups item=listGroup}
+													<option value="{$listGroup->id}" {if $inListGroup && $listGroup->id == $userList->listGroupId}selected{/if}>{$listGroup->title|escape:"html"}</option>
+												{/foreach}
+											</select>
+											<div class="form-text text-muted">
+												<small>{translate text="Select a group to associate this list with. List groups can be used to organize multiple lists." isPublicFacing=true}</small>
+											</div>
+										</div>
+									</div>
+								{/if}
 								{if in_array('Include Lists In Search Results', $userPermissions)}
 									<div class="form-group" id="searchableRow" {if $userList->public == 0}style="display: none"{/if}>
 										<label for="searchable" class="col-sm-3 control-label">{translate text="Show in search results" isPublicFacing=true}</label>
@@ -330,8 +353,104 @@
 				</script>
 			{/if}
 
-			{if strlen($pageLinks.all) > 0}<div class="text-center">{$pageLinks.all}</div>{/if}
-		{else}
+            {if !empty($allowEdit)}<div id="listTopButtons" class="btn-toolbar row">
+				<div class="col-sm-12">
+                    {if !empty($allowEdit)}
+						<div class="btn-group btn-group-sm">
+							<button value="editList" id="FavEdit" class="btn btn-sm btn-info listViewButton" onclick="return AspenDiscovery.Lists.editListAction()">{translate text='Edit' isPublicFacing=true}</button>
+						</div>
+						<div class="btn-group btn-group-sm">
+							<button value="saveList" id="FavSave" class="btn btn-sm btn-primary listEditButton" style="display:none" onclick='return AspenDiscovery.Lists.updateListAction()'>{translate text='Update' isPublicFacing=true}</button>
+							<button value="cancelEditList" id="cancelEditList" class="btn btn-sm btn-default listEditButton" style="display:none" onclick='return AspenDiscovery.Lists.cancelEditListAction()'>{translate text='Cancel' isPublicFacing=true}</button>
+						</div>
+						<div class="btn-group btn-group-sm">
+							<button value="batchAdd" id="FavBatchAdd" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.batchAddToListAction({$userList->id})'>{translate text='Add Multiple Titles' isPublicFacing=true}</button>
+						</div>
+                    {/if}
+                    {if $userList->public == 1 && $loggedIn && (in_array('Administer All Collection Spotlights', $userPermissions) || in_array('Administer Library Collection Spotlights', $userPermissions) || in_array('Administer All Browse Categories', $userPermissions) || in_array('Administer Library Browse Categories', $userPermissions) || in_array('Administer Selected Browse Category Groups', $userPermissions))}
+						<div class="btn-group btn-group-sm">
+                            {if (in_array('Administer All Collection Spotlights', $userPermissions) || in_array('Administer Library Collection Spotlights', $userPermissions))}
+								&nbsp;&nbsp;<a href="#" class="button btn btn-sm btn-default listViewButton" id="FavCreateSpotlight" onclick="return AspenDiscovery.CollectionSpotlights.createSpotlightFromList('{$userList->id}')">{translate text='Create Spotlight' isAdminFacing=true}</a>
+                            {/if}
+                            {if (in_array('Administer All Browse Categories', $userPermissions) || in_array('Administer Library Browse Categories', $userPermissions) || in_array('Administer Selected Browse Category Groups', $userPermissions))}
+								<a href="#" id="FavHome" class="btn btn-sm btn-default listViewButton" onclick="return AspenDiscovery.Lists.addToHomePage('{$userList->id}')">{translate text='Add To Browse' isAdminFacing=true}</a>
+                            {/if}
+						</div>
+                    {/if}
+
+					<div class="btn-group btn-group-sm">
+                        {if !empty($showEmailThis)}
+							<button value="emailList" id="FavEmail" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.emailListAction("{$userList->id}")'>{translate text='Email List' isPublicFacing=true}</button>
+                        {/if}
+						<button value="printOptions" id="printOptions" class="btn btn-sm btn-default" onclick='return AspenDiscovery.Lists.getPrintListOptions("{$userList->id}")'>{translate text='Print Options' isPublicFacing=true}</button>
+						<a id="FavExport" class="btn btn-sm btn-default listViewButton" href="/MyAccount/AJAX?method=exportUserList&listId={$userList->id}">{translate text='Export List to CSV' isPublicFacing=true}</a>
+						<a id="FavExportRis" class="btn btn-sm btn-default listViewButton" href="/MyAccount/AJAX?method=exportUserListRIS&listId={$userList->id}">{translate text='Export List to RIS' isPublicFacing=true}</a>
+						<button value="citeList" id="FavCite" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.citeListAction("{$userList->id}")'>{translate text='Generate Citations' isPublicFacing=true}</button>
+
+                        {if !empty($availableFilters)}
+							<div class="btn-group" role="group">
+								<button type="button" class="btn btn-sm btn-default dropdown-toggle listViewButton" data-toggle="dropdown" aria-expanded="false" id="filterDropdownButton">
+                                    {translate text='Filter by Format' isPublicFacing=true}
+                                    {if !empty($activeFilters) && !empty($activeFilters.format)}
+										&nbsp;({count($activeFilters.format)} selected)
+                                    {/if}
+									&nbsp;<span class="caret"></span>
+								</button>
+								<ul class="dropdown-menu" role="menu" id="user-list-format-filter-dropdown" >
+                                    {if !empty($availableFilters.format)}
+                                        {foreach from=$availableFilters.format key=formatName item=formatCount}
+											<li>
+												<label class="user-list-format-filter-option">
+													<input type="checkbox" class="user-list-format-filter-checkbox" value="{$formatName|escape}"
+                                                           {if !empty($activeFilters) && !empty($activeFilters.format) && in_array($formatName, $activeFilters.format)}checked{/if}>
+                                                    {$formatName|escape} ({$formatCount})
+												</label>
+											</li>
+                                        {/foreach}
+                                    {/if}
+									<li class="divider"></li>
+									<li><a href="#" id="user-list-clear-all-formats">{translate text="Clear All" isPublicFacing=true}</a></li>
+									<li><a href="#" id="user-list-apply-format-filters" class="btn btn-primary btn-sm" style="margin: 5px 15px;">{translate text="Apply Filters" isPublicFacing=true}</a></li>
+								</ul>
+							</div>
+                        {/if}
+
+						<div class="btn-group" role="group">
+							<button type="button" class="btn btn-sm btn-default btn-info dropdown-toggle listViewButton" data-toggle="dropdown" aria-expanded="false">{translate text='Sort by' isPublicFacing=true}&nbsp;<span class="caret"></span></button>
+							<ul class="dropdown-menu dropdown-menu-right" role="menu">
+                                {foreach from=$sortList item=sortData}
+									<li>
+										<a{if empty($sortData.selected)} href="{$sortData.sortUrl|escape}"{/if}> {* only add link on un-selected options *}
+                                            {translate text=$sortData.desc isPublicFacing=true}
+                                            {if !empty($sortData.selected)} <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>{/if}
+										</a>
+									</li>
+                                {/foreach}
+							</ul>
+						</div>
+
+					</div>
+                    {if !empty($allowEdit)}
+						<div class="btn-group" role="group">
+							<button type="button" id="FavDelete" class="btn btn-sm btn-danger dropdown-toggle listViewButton" data-toggle="dropdown" aria-expanded="false">{translate text='Delete' isPublicFacing=true}&nbsp;<span class="caret"></span></button>
+							<ul class="dropdown-menu dropdown-menu-right" role="menu">
+								<li>
+									<a onclick="return AspenDiscovery.Account.deleteSelectedListTitles({$listSelected})">{translate text="Selected Items" isPublicFacing=true}</a>
+								</li>
+								<li>
+									<a onclick="return AspenDiscovery.Account.deleteAllListTitles({$listSelected})">{translate text="All Items" isPublicFacing=true}</a>
+								</li>
+								<li>
+									<a onclick="return AspenDiscovery.Lists.deleteListAction();">{translate text="Entire List" isPublicFacing=true}</a>
+								</li>
+							</ul>
+						</div>
+                    {/if}
+				</div>
+				</div>{/if}
+			
+            {if strlen($pageLinks.all) > 0}<div class="text-center">{$pageLinks.all}</div>{/if}
+        {else}
 			{translate text='You do not have any saved resources' isPublicFacing=true}
 		{/if}
 	{/if}

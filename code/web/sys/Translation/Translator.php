@@ -5,20 +5,20 @@ require_once ROOT_DIR . '/sys/Translation/Translation.php';
 
 class Translator {
 	/** @var string path to the translation file */
-	var $path;
+	private string $path;
 	/** @var string the ISO code for the language */
-	var $langCode;
-	var $words = [];
-	var $debug = false;
+	private string $langCode;
+	private array $words = [];
+	private bool $debug = false;
 
 	/**
 	 * Constructor
 	 *
-	 * @param $path
+	 * @param string $path the path to load translations from
 	 * @param string $langCode The ISO 639-1 Language Code
 	 * @access  public
 	 */
-	function __construct($path, $langCode) {
+	function __construct(string $path, string $langCode) {
 		global $timer;
 
 		$this->path = $path;
@@ -31,17 +31,16 @@ class Translator {
 	 * Parse a language file.
 	 *
 	 * @param string $file Filename to load
-	 * @access  private
 	 * @return  array
 	 */
-	function parseLanguageFile($file) {
+	private function parseLanguageFile(string $file) : array {
 		// Manually parse the language file:
 		$words = [];
 		$contents = file($file);
 		if (is_array($contents)) {
 			foreach ($contents as $current) {
-				if (strlen($current) > 0 && substr($current, 0, 1) != ';') {
-					$lineContents = str_getcsv($current, '=', '"');
+				if (strlen($current) > 0 && !str_starts_with($current, ';')) {
+					$lineContents = str_getcsv($current, '=');
 					if (count($lineContents) == 2) {
 						$key = trim($lineContents[0]);
 						$words[$key] = trim($lineContents[1]);
@@ -54,22 +53,22 @@ class Translator {
 	}
 
 	//Cache any translations that have already been loaded.
-	private $cachedTranslations = [];
+	private array $cachedTranslations = [];
 	private ?PDOStatement $dbPhraseStmt = null;
 
-	private $communityContentCurlWrapper = null;
+	private ?CurlWrapper $communityContentCurlWrapper = null;
 
 	/**
 	 * Translate the phrase.
 	 *
-	 * @param string $phrase The phrase to translate.
+	 * @param ?string $phrase The phrase to translate.
 	 * @param string $defaultText The default text for a phrase that is just a key for a longer phrase.
 	 * @param string[] $replacementValues Values to replace within the string.
 	 * @param bool $inAttribute Whether we are in an attribute. If we are, we can't show the span.
 	 * @param bool $isPublicFacing Whether the public will see this.
 	 * @param bool $isAdminFacing Whether this is in the admin interface.
 	 * @param bool $isMetadata Whether this is a translation of metadata in a MARC record, OverDrive, Axis360, etc.
-	 * @param bool $isAdminEnteredData Whether this is data an administrator entered (System message, etc).
+	 * @param bool $isAdminEnteredData Whether this is data an administrator entered (System message, etc.).
 	 * @param bool $translateParameters Whether parameters should be translated.
 	 * @param bool $escape Whether the translation should be escaped before rendering.
 	 * @param bool $fromLiDA Whether the translation is being requested from a verified LiDA API call.
@@ -90,8 +89,19 @@ class Translator {
 		}
 
 		global $activeLanguage;
+		//Determine whether the translation box (ID with popup should show). We don't show in attributes since the injected HTML breaks the overall page.
 		$translationMode = $this->translationModeActive() && !$inAttribute && (UserAccount::userHasPermission('Translate Aspen'));
-		$allowTermCreation = $translationMode || $fromLiDA;
+		//Determine if we should create terms in the database. We want to limit this to only translation mode or calls from LiDA for performance.
+		$allowTermCreation = ($this->translationModeActive() && (UserAccount::userHasPermission('Translate Aspen'))) || $fromLiDA;
+		//We will allow adding terms to the database even if we aren't in translation mode if the user is a translator, and we have the ability to do google translations.
+		$googleSettings = $this->getGoogleTranslationSettings();
+		if (!is_null($googleSettings) && !empty($activeLanguage) && $activeLanguage->code != 'en') {
+			//Allow automatic translation if tf the user has permission to translate Aspen
+			if (UserAccount::userHasPermission('Translate Aspen')) {
+				$allowTermCreation = true;
+			}
+		}
+
 		try {
 			if (!empty($activeLanguage)) {
 				$translationKey = $activeLanguage->id . '_' . ($translationMode ? 1 : 0) . '_' . $phrase;
@@ -99,18 +109,18 @@ class Translator {
 				if (!$existingTranslation || isset($_REQUEST['reload']) || !empty($replacementValues)) {
 					//Search for the term
 					$translationTerm = new TranslationTerm();
-					$translationTerm->term = $phrase;
+					$translationTerm->setTerm($phrase);
 					$defaultTextChanged = false;
 					// Write term records to DB in translation mode or when called from a verified LiDA instance.
 					if ($allowTermCreation) {
 						if (!$translationTerm->find(true)) {
-							$translationTerm->defaultText = $defaultText;
-							$translationTerm->samplePageUrl = mb_strimwidth($_SERVER['REQUEST_URI'], 0, 255);
-							$translationTerm->isPublicFacing = $isPublicFacing;
-							$translationTerm->isAdminFacing = $isAdminFacing;
-							$translationTerm->isMetadata = $isMetadata;
-							$translationTerm->isAdminEnteredData = $isAdminEnteredData;
-							$translationTerm->lastUpdate = time();
+							$translationTerm->setDefaultText ($defaultText);
+							$translationTerm->setSamplePageUrl(mb_strimwidth($_SERVER['REQUEST_URI'], 0, 255));
+							$translationTerm->setIsPublicFacing($isPublicFacing);
+							$translationTerm->setIsAdminFacing($isAdminFacing);
+							$translationTerm->setIsMetadata($isMetadata);
+							$translationTerm->setIsAdminEnteredData($isAdminEnteredData);
+							$translationTerm->setLastUpdate(time());
 							try {
 								if ($translationTerm->insert() !== false) {
 									$termTooLong = false;
@@ -134,7 +144,7 @@ class Translator {
 								} else {
 									$termTooLong = true;
 								}
-							} catch (Exception $e) {
+							} catch (Exception) {
 								$termTooLong = true;
 							}
 							if ($termTooLong) {
@@ -154,36 +164,35 @@ class Translator {
 							if ($defaultText == null) {
 								$defaultText = '';
 							}
-							if ($defaultText != $translationTerm->defaultText) {
-								if (empty($translationTerm->defaultText) && !empty($defaultText)) {
-									$translationTerm->defaultText = $defaultText;
+							if ($defaultText != $translationTerm->getDefaultText()) {
+								if (empty($translationTerm->getDefaultText()) && !empty($defaultText)) {
+									$translationTerm->setDefaultText($defaultText);
 									$defaultTextChanged = true;
 									$termChanged = true;
 								}
 							}
-							if ($isPublicFacing && !$translationTerm->isPublicFacing) {
-								$translationTerm->isPublicFacing = $isPublicFacing;
+							if ($isPublicFacing && !$translationTerm->getIsPublicFacing()) {
+								$translationTerm->setIsPublicFacing($isPublicFacing);
 								$termChanged = true;
 							}
-							if ($isAdminFacing && !$translationTerm->isAdminFacing) {
-								$translationTerm->isAdminFacing = $isAdminFacing;
+							if ($isAdminFacing && !$translationTerm->getIsAdminFacing()) {
+								$translationTerm->setIsAdminFacing($isAdminFacing);
 								$termChanged = true;
 							}
-							if ($isMetadata && !$translationTerm->isMetadata) {
-								$translationTerm->isMetadata = $isMetadata;
+							if ($isMetadata && !$translationTerm->getIsMetadata()) {
+								$translationTerm->setIsMetadata($isMetadata);
 								$termChanged = true;
 							}
-							if ($isAdminEnteredData && !$translationTerm->isAdminEnteredData) {
-								$translationTerm->isAdminEnteredData = $isAdminEnteredData;
+							if ($isAdminEnteredData && !$translationTerm->getIsAdminEnteredData()) {
+								$translationTerm->setIsAdminEnteredData($isAdminEnteredData);
 								$termChanged = true;
 							}
 							if ($termChanged) {
-								$translationTerm->lastUpdate = time();
+								$translationTerm->setLastUpdate(time());
 								$translationTerm->update();
 							}
 						}
-					}
-					else {
+					} else {
 						// Non-translation mode: try to load the term if it exists.
 						if (!$translationTerm->find(true)) {
 							// Term doesn't exist - check DB override first, then .ini defaults.
@@ -223,7 +232,7 @@ class Translator {
 					} else {
 						//Search for the translation
 						$translation = new Translation();
-						$translation->termId = $translationTerm->id;
+						$translation->termId = $translationTerm->getId();
 						$translation->languageId = $activeLanguage->id;
 						if (!$translation->find(true) || empty($translation->translation)) {
 							if (!empty($defaultText)) {
@@ -240,7 +249,15 @@ class Translator {
 									if ($this->debug) {
 										$defaultTranslation = "translate_index_not_found($phrase)";
 									} else {
+										//We don't have a translation yet. If we are not in english, see if we can get a translation from Google
 										$defaultTranslation = $phrase;
+										if ($allowTermCreation && !$isMetadata) {
+											$googleTranslation = $this->getGoogleTranslation($phrase, $activeLanguage->code);
+											if ($googleTranslation !== null) {
+												$defaultTranslation = $googleTranslation;
+												$translation->googleTranslated = 1;
+											}
+										}
 									}
 								}
 							}
@@ -254,7 +271,7 @@ class Translator {
 								}
 								if (!$ret) {
 									global $logger;
-									$logger->log("Could not save translation for term ID " . $translationTerm->id, Logger::LOG_ERROR);
+									$logger->log("Could not save translation for term ID " . $translationTerm->getId(), Logger::LOG_ERROR);
 								}
 							}
 						} elseif ($defaultTextChanged) {
@@ -270,11 +287,13 @@ class Translator {
 						if ($translationMode) {
 							if ($translation->translated) {
 								$translationStatus = 'translated';
+							} else if ($translation->googleTranslated) {
+								$translationStatus = 'google_translated';
 							} else {
 								$translationStatus = 'not_translated';
 							}
-							$translationIdentifier = "<span class='translation_id translation_id_{$translation->id} {$translationStatus}' onclick=\"event.stopPropagation();return AspenDiscovery.showTranslateForm('{$translationTerm->id}');\">{$translationTerm->id}</span> ";
-							$fullTranslation = "<span class='term_{$translationTerm->id}'>$translation->translation</span> $translationIdentifier";
+							$translationIdentifier = "<span class='translation_id translation_id_$translation->id $translationStatus' onclick=\"return AspenDiscovery.showTranslateForm('{$translationTerm->getId()}');\">{$translationTerm->getId()}</span> ";
+							$fullTranslation = "<span class='term_{$translationTerm->getId()}'>$translation->translation</span> $translationIdentifier";
 						} else {
 							$fullTranslation = $translation->translation;
 						}
@@ -296,7 +315,7 @@ class Translator {
 					$returnString = $phrase;
 				}
 			}
-		} catch (PDOException $e) {
+		} catch (PDOException) {
 			//tables likely don't exist, ignore
 			if (!empty($defaultText)) {
 				$returnString = $defaultText;
@@ -322,8 +341,9 @@ class Translator {
 	 * @param string $phrase
 	 * @param Language $activeLanguage
 	 * @return array
+	 * @noinspection PhpUnused
 	 */
-	public function getCommunityTranslation(string $phrase, $activeLanguage): array {
+	public function getCommunityTranslation(string $phrase, Language $activeLanguage): array {
 		require_once ROOT_DIR . '/sys/SystemVariables.php';
 		$systemVariables = SystemVariables::getSystemVariables();
 		$translatedInCommunity = false;
@@ -352,7 +372,7 @@ class Translator {
 		];
 	}
 
-	private function loadTranslationsFromIniFile() {
+	private function loadTranslationsFromIniFile() : void {
 		if (empty($this->words)) {
 			global $configArray;
 
@@ -383,9 +403,9 @@ class Translator {
 		}
 	}
 
-	private $translationModeActive = null;
+	private ?bool $translationModeActive = null;
 
-	public function translationModeActive() {
+	public function translationModeActive() : bool {
 		if ($this->translationModeActive === null) {
 			if (isset($_REQUEST['startTranslationMode'])) {
 				@session_start();
@@ -405,7 +425,7 @@ class Translator {
 		return $this->translationModeActive;
 	}
 
-	private static $vowels = [
+	private static array $vowels = [
 		'a',
 		'e',
 		'i',
@@ -419,7 +439,7 @@ class Translator {
 		'U',
 	];
 
-	private function getPigLatinTranslation(string $phrase) {
+	private function getPigLatinTranslation(string $phrase) : string {
 		$translation = '';
 		$words = explode(' ', $phrase);
 		foreach ($words as $word) {
@@ -442,7 +462,7 @@ class Translator {
 		return trim($translation);
 	}
 
-	private function getUbbiDubbiTranslation(string $phrase) {
+	private function getUbbiDubbiTranslation(string $phrase) : string {
 		$translation = '';
 		$words = explode(' ', $phrase);
 		foreach ($words as $word) {
@@ -486,5 +506,67 @@ class Translator {
 		$this->dbPhraseStmt->execute([$phrase, $activeLanguage->id]);
 		$row = $this->dbPhraseStmt->fetch(PDO::FETCH_ASSOC);
 		return $row !== false ? $row['translation'] : null;
+	}
+
+	private GoogleApiSetting|bool|null $googleSettings = false;
+	private ?CurlWrapper $googleTranslateWrapper = null;
+
+	private function getGoogleTranslationSettings() : ?GoogleApiSetting {
+		if ($this->googleSettings === false) {
+			$this->googleSettings = null;
+			require_once ROOT_DIR . '/sys/Enrichment/GoogleApiSetting.php';
+			$googleSettings = new GoogleApiSetting();
+			if ($googleSettings->find(true)) {
+				if (!empty($googleSettings->googleMapsKey)) {
+					if (!empty($googleSettings->googleTranslateKey)) {
+						$this->googleSettings = $googleSettings;
+					}
+				}
+			}
+		}
+		return $this->googleSettings;
+	}
+
+	private function getGoogleTranslation(string $phrase, string $targetLanguage) : ?string {
+		$googleSettings = $this->getGoogleTranslationSettings();
+		if (!is_null($googleSettings)) {
+			if ($this->googleTranslateWrapper === null) {
+				global $configArray;
+				$serverUrl = $configArray['Site']['url'];
+				$this->googleTranslateWrapper = new CurlWrapper();
+				$headers = [
+					"X-goog-api-key: $googleSettings->googleTranslateKey",
+					"Content-Type: application/json; charset=utf-8",
+					"Referer: $serverUrl"
+				];
+				$this->googleTranslateWrapper->addCustomHeaders($headers, false);
+			}
+			$url = "https://translation.googleapis.com/language/translate/v2";
+			$postBody = [
+				"source" => "en",
+				"target" => $targetLanguage,
+				"q" => $phrase,
+				"format" => "text"
+			];
+
+			$response = $this->googleTranslateWrapper->curlPostBodyData($url, $postBody);
+			global $logger;
+			if (!empty($response)) {
+				$jsonResponse = json_decode($response);
+				if (isset($jsonResponse->data->translations)) {
+					$translations =  $jsonResponse->data->translations;
+					if (count($translations) > 0) {
+						$translation = $translations[0];
+						return $translation->translatedText;
+					}
+				}else{
+					$logger->log("Did not get a good result from google translator", Logger::LOG_WARNING);
+					$logger->log($response, Logger::LOG_WARNING);
+				}
+			}else{
+				$logger->log("Got an empty result from google translator", Logger::LOG_WARNING);
+			}
+		}
+		return null;
 	}
 }

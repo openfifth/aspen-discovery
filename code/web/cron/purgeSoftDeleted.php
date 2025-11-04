@@ -10,16 +10,15 @@ require_once __DIR__ . '/../bootstrap_aspen.php';
  * so administrators still have the entire "Final Day" to
  * restore objects before automatic removal.
  */
+
 require_once ROOT_DIR . '/sys/CronLogEntry.php';
 $cronLogEntry = new CronLogEntry();
 $cronLogEntry->startTime = time();
 $cronLogEntry->name = 'Purge Soft Deleted';
 $cronLogEntry->insert();
 
-global $logger;
 require_once ROOT_DIR . '/services/Admin/ObjectRestorations.php';
 $softDeleteClasses = Admin_ObjectRestorations::getManagedClasses();
-
 $totalPurged = 0;
 foreach ($softDeleteClasses as $className) {
 	if (class_exists($className) && method_exists($className, 'purgeExpired')) {
