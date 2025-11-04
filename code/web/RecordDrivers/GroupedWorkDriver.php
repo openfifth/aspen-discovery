@@ -3748,4 +3748,20 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 		return null;
 	}
+
+	/**
+	 * Check if this grouped work is manually grouped.
+	 *
+	 * @return bool
+	 */
+	public function isManuallyGrouped(): bool {
+		if (empty($this->permanentId)) {
+			return false;
+		}
+
+		require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+		$manualGroupedWork = new ManualGroupedWork();
+		$manualGroupedWork->grouped_work_permanent_id = $this->permanentId;
+		return $manualGroupedWork->find(true) !== false;
+	}
 }

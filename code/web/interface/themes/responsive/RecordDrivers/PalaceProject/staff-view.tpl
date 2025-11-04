@@ -19,7 +19,7 @@
 				{if !empty($loggedIn) && in_array('Set Grouped Work Display Information', $userPermissions)}
 					<button onclick="return AspenDiscovery.GroupedWork.getDisplayInfoForm('{$recordDriver->getPermanentId()}')" class="btn btn-sm btn-default">{translate text="Set Display Info" isAdminFacing=true}</button>
 				{/if}
-				{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
+				{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions) && !$recordDriver->isInManuallyGroupedWork()}
 					<div class="btn-group">
 						<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
 							{translate text="Grouping Options" isAdminFacing=true} <span class="caret"></span>
