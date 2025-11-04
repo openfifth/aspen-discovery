@@ -1777,10 +1777,31 @@ class GroupedWork_AJAX extends JSON_Action {
 			$originalGroupedWork = new GroupedWork();
 			$originalGroupedWork->permanent_id = $id;
 			if (!empty($id) && $originalGroupedWork->find(true)) {
+				require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+				$sourceManualGroupedWork = new ManualGroupedWork();
+				$sourceManualGroupedWork->grouped_work_permanent_id = $originalGroupedWork->permanent_id;
+				if ($sourceManualGroupedWork->find(true)) {
+					$results['message'] = translate([
+						'text' => "Cannot group a manually created grouped work. Edit the manually created grouped work to add any records.",
+						'isAdminFacing' => true,
+					]);
+					return $results;
+				}
+
 				$workToGroupWithId = $_REQUEST['groupWithId'];
 				$workToGroupWith = new GroupedWork();
 				$workToGroupWith->permanent_id = $workToGroupWithId;
 				if (!empty($workToGroupWithId) && $workToGroupWith->find(true)) {
+					$manualGroupedWork = new ManualGroupedWork();
+					$manualGroupedWork->grouped_work_permanent_id = $workToGroupWith->permanent_id;
+					if ($manualGroupedWork->find(true)) {
+						$results['message'] = translate([
+							'text' => "Cannot group with a manually created grouped work. Edit the manually created grouped work to add any records.",
+							'isAdminFacing' => true,
+						]);
+						return $results;
+					}
+
 					$okToGroup = false;
 					if ($originalGroupedWork->grouping_category == $workToGroupWith->grouping_category) {
 						$okToGroup = true;
@@ -1913,6 +1934,13 @@ class GroupedWork_AJAX extends JSON_Action {
 						$primaryWork = new GroupedWork();
 						$primaryWork->permanent_id = $doc['id'];
 						if ($primaryWork->find(true)) {
+							require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+							$manualGroupedWork = new ManualGroupedWork();
+							$manualGroupedWork->grouped_work_permanent_id = $primaryWork->permanent_id;
+							if ($manualGroupedWork->find(true)) {
+								continue;
+							}
+
 							$isValidForGrouping = false;
 							if ($primaryWork->grouping_category == $groupedWork->grouping_category) {
 								$isValidForGrouping = true;
@@ -3075,14 +3103,52 @@ class GroupedWork_AJAX extends JSON_Action {
 			}
 			[$source, $identifier] = $parts;
 
+			require_once ROOT_DIR . '/sys/Grouping/ManuallyGroupedWorkRecord.php';
+			$manuallyGroupedRecord = new ManuallyGroupedWorkRecord();
+			$manuallyGroupedRecord->selectAdd();
+			$manuallyGroupedRecord->selectAdd('manually_grouped_work_id');
+			$manuallyGroupedRecord->type = $source;
+			$manuallyGroupedRecord->identifier = $identifier;
+			if ($manuallyGroupedRecord->find(true)) {
+				require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+				$manualGroupedWork = new ManualGroupedWork();
+				$manualGroupedWork->selectAdd();
+				$manualGroupedWork->selectAdd('id, title');
+				$manualGroupedWork->id = $manuallyGroupedRecord->manually_grouped_work_id;
+				if ($manualGroupedWork->find(true)) {
+					$results['message'] = translate([
+						'text' => "Cannot move a record that is part of manually grouped work '%1%' (ID: %2%). First, remove it from the manual group.",
+						'isAdminFacing' => true,
+						1 => $manualGroupedWork->title,
+						2 => $manualGroupedWork->id,
+					]);
+					return $results;
+				}
+			}
+
 			$targetPermanentId = trim($_REQUEST['targetWorkId'] ?? '');
-			
+
 			$targetWork = new GroupedWork();
 			$targetWork->permanent_id = $targetPermanentId;
 			if (!$targetWork->find(true)) {
 				$results['message'] = translate([
 					'text' => 'Could not find the target work.',
 					'isAdminFacing' => true,
+				]);
+				return $results;
+			}
+
+			require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+			$targetManualGroupedWork = new ManualGroupedWork();
+			$targetManualGroupedWork->selectAdd();
+			$targetManualGroupedWork->selectAdd('id, title');
+			$targetManualGroupedWork->grouped_work_permanent_id = $targetWork->permanent_id;
+			if ($targetManualGroupedWork->find(true)) {
+				$results['message'] = translate([
+					'text' => "Cannot move a record to manually grouped work '%1%' (ID: %2%). Instead, edit the manually grouped work to add records.",
+					'isAdminFacing' => true,
+					1 => $targetManualGroupedWork->title,
+					2 => $targetManualGroupedWork->id,
 				]);
 				return $results;
 			}
