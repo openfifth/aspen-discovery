@@ -59,6 +59,32 @@
 	</table>
 {/if}
 
+{if (!empty($recordGroupingOverrides))}
+	<h4>{translate text="Record Grouping Overrides" isPublicFacing=true}</h4>
+	<table class="table-striped table table-condensed notranslate">
+		<thead>
+		<tr>
+			<th>{translate text="Source" isPublicFacing=true}</th>
+			<th>{translate text="Record ID" isPublicFacing=true}</th>
+			<th>{translate text="Date Added" isPublicFacing=true}</th>
+			{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
+				<th>{translate text="Actions" isPublicFacing=true}</th>
+			{/if}
+		</tr>
+		</thead>
+		{foreach from=$recordGroupingOverrides item="override"}
+			<tr id="recordGroupingOverride{$override->id}">
+				<td>{$override->source}</td>
+				<td>{$override->record_id}</td>
+				<td>{$override->date_added|date_format}</td>
+				{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
+					<td><a onclick="AspenDiscovery.GroupedWork.deleteRecordGroupingOverride('{$override->id}')" class="btn btn-danger btn-sm">{translate text="Delete" isPublicFacing=true}</a></td>
+				{/if}
+			</tr>
+		{/foreach}
+	</table>
+{/if}
+
 {if !empty($isUngrouped) && !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
 	<div id="ungrouping">
 		<h4>{translate text="Record Ungrouped" isPublicFacing=true}</h4>

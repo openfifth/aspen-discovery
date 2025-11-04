@@ -90,7 +90,7 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 	 * @param bool $preventQueryModification Should we allow the search engine
 	 *                                             to modify the query or is it already
 	 *                                             a well formatted query
-	 * @return  array solr result structure (for now)
+	 * @return  AspenError|array|null
 	 */
 	public function processSearch($returnIndexErrors = false, $recommendations = false, $preventQueryModification = false) : AspenError|array|null {
 		// Our search has already been processed in init()
@@ -105,7 +105,7 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 		if ($preventQueryModification) {
 			$query = $search;
 		} else {
-			$query = $this->indexEngine->buildQuery($search, false);
+			$query = $this->indexEngine->buildQuery($search);
 		}
 		if (($query instanceof AspenError)) {
 			return $query;
@@ -132,13 +132,13 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 			$fieldPrefix = "";
 			if ($facetInfo->multiSelect) {
 				$facetKey = empty($facetInfo->id) ? $facetInfo->facetName : $facetInfo->id;
-				$fieldPrefix = "{!tag={$facetKey}}";
+				$fieldPrefix = "{!tag=$facetKey}";
 			}
 			$fieldValue = "";
 			$okToAdd = false;
 			foreach ($filter as $value) {
 				// Special case -- allow trailing wildcards:
-				if (substr($value, -1) == '*') {
+				if (str_ends_with($value, '*')) {
 					$okToAdd = true;
 				} elseif (preg_match('/\\A\\[.*?\\sTO\\s.*?]\\z/', $value)) {
 					$okToAdd = true;
@@ -181,9 +181,9 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 					$facetName = $facetInfo->facetName;
 					$facetSet['field'][$facetField] = $facetName;
 					$this->facetOptions["facet.range"] = $facetName;
-					$this->facetOptions["f.{$facetName}.facet.range.start"] = "NOW/DAY";
-					$this->facetOptions["f.{$facetName}.facet.range.end"] = "NOW/DAY+180DAYS";
-					$this->facetOptions["f.{$facetName}.facet.range.gap"] = "+1DAY";
+					$this->facetOptions["f.$facetName.facet.range.start"] = "NOW/DAY";
+					$this->facetOptions["f.$facetName.facet.range.end"] = "NOW/DAY+180DAYS";
+					$this->facetOptions["f.$facetName.facet.range.gap"] = "+1DAY";
 				} else {
 					if ($facetInfo instanceof EventsFacet) {
 						$facetName = $facetInfo->facetName;
@@ -211,8 +211,8 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 		}
 
 		if (!empty($this->facetSearchTerm) && !empty($this->facetSearchField)) {
-			$this->facetOptions["f.{$this->facetSearchField}.facet.contains"] = $this->facetSearchTerm;
-			$this->facetOptions["f.{$this->facetSearchField}.facet.contains.ignoreCase"] = 'true';
+			$this->facetOptions["f.$this->facetSearchField.facet.contains"] = $this->facetSearchTerm;
+			$this->facetOptions["f.$this->facetSearchField.facet.contains.ignoreCase"] = 'true';
 		}
 
 		if (!empty($this->facetOptions)) {
@@ -294,12 +294,8 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 	/**
 	 * Initialise the object from the global
 	 *  search parameters in $_REQUEST.
-	 *
-	 * @access  public
-	 * @param string $searchSource
-	 * @return  boolean
 	 */
-	public function init($searchSource = null) {
+	public function init(?string $searchSource = null) : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init('events');
 
@@ -359,7 +355,7 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 		return true;
 	} // End init()
 
-	public function getSearchIndexes() {
+	public function getSearchIndexes() : array {
 		return [
 			'EventsKeyword' => translate([
 				'text' => 'Keyword',
@@ -382,21 +378,21 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 		// TODO: Implement buildExcel() method.
 	}
 
-	public function getUniqueField() {
+	public function getUniqueField() : string {
 		return 'id';
 	}
 
-	public function getRecordDriverForResult($record) {
-		if (substr($record['type'], 0, 12) == 'event_libcal') {
+	public function getRecordDriverForResult($record) : IndexRecordDriver {
+		if (str_starts_with($record['type'], 'event_libcal')) {
 			require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
 			return new SpringshareLibCalEventRecordDriver($record);
-		} else if (substr($record['type'], 0, 15) == 'event_communico') {
+		} else if (str_starts_with($record['type'], 'event_communico')) {
 			require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
 			return new CommunicoEventRecordDriver($record);
-		} else if (substr($record['type'], 0, 13) == 'event_assabet') {
+		} else if (str_starts_with($record['type'], 'event_assabet')) {
 			require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
 			return new AssabetEventRecordDriver($record);
-		} else if (substr($record['type'], 0, 17) == 'event_aspenEvent') {
+		} else if (str_starts_with($record['type'],'event_aspenEvent')) {
 			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 			return new AspenEventRecordDriver($record);
 		} else {
@@ -406,11 +402,11 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 		}
 	}
 
-	public function getSearchesFile() {
+	public function getSearchesFile() : string {
 		return 'eventsSearches';
 	}
 
-	public function supportsSuggestions() {
+	public function supportsSuggestions() : bool {
 		return true;
 	}
 
@@ -419,7 +415,7 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 	 * @param string $searchIndex
 	 * @return array
 	 */
-	public function getSearchSuggestions($searchTerm, $searchIndex) {
+	public function getSearchSuggestions($searchTerm, $searchIndex) : array {
 		$suggestionHandler = 'suggest';
 		if ($searchIndex == 'EventsTitle') {
 			$suggestionHandler = 'title_suggest';
@@ -427,7 +423,7 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 		return $this->processSearchSuggestions($searchTerm, $suggestionHandler);
 	}
 
-	public function getFacetConfig() {
+	public function getFacetConfig() : array {
 		if ($this->facetConfig == null) {
 			$facetConfig = [];
 			$searchLibrary = Library::getActiveLibrary();
@@ -435,21 +431,21 @@ class SearchObject_EventsSearcher extends SearchObject_SolrSearcher {
 			if ($searchLibrary->getEventFacetSettings() != null){
 				$facets = $searchLibrary->getEventFacetSettings()->getFacets();
 
-				foreach ($facets as &$facet) {
-                    $facetConfig[$facet->facetName] = $facet;
-                }
-				$this->facetConfig = $facetConfig;
+				foreach ($facets as $facet) {
+					$facetConfig[$facet->facetName] = $facet;
+				}
 			}
+			$this->facetConfig = $facetConfig;
 		}
 
 		return $this->facetConfig;
 	}
 
-	public function getEngineName() {
+	public function getEngineName() : string {
 		return 'Events';
 	}
 
-	public function getDefaultIndex() {
+	public function getDefaultIndex() : string {
 		return 'EventsKeyword';
 	}
 }

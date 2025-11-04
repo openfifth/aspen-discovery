@@ -8547,6 +8547,14 @@ AspenDiscovery.Browse = (function(){
 				AspenDiscovery.Browse.changeBrowseCategory(categoryId);
 			});
 
+			// Handle keyboard navigation (tabbing) to scroll carousel.
+			browseCategoryCarousel.on('focus', 'li div', function(){
+				var $item = $(this).closest('li');
+				if ($('#browse-category-picker .jcarousel-control-prev').css('display') !== 'none') {
+					$("#browse-category-carousel").jcarousel('scroll', $item, true);
+				}
+			});
+
 			if ($('#browse-category-picker .jcarousel-control-prev').css('display') !== 'none') {
 				// only enable if the carousel features are being used.
 				// as of now, basalt & vail are not. plb 12-1-2014
@@ -9953,9 +9961,11 @@ AspenDiscovery.Events = (function(){
 						$("#propertyRowtitle").hide();
 						$("#propertyRowinfoSection").hide();
 						$("#propertyRowscheduleSection").hide();
+						$("#editFormInstructions").html("");
 						$("#description").text("");
 						return false;
 					} else {
+						$("#editFormInstructions").html(data.editFormInstructions);
 						eventType = data.eventType;
 						$("#title").val(eventType.title);
 						if (!eventType.titleCustomizable) {
@@ -11114,6 +11124,51 @@ AspenDiscovery.GroupedWork = (function(){
 			return false;
 		},
 
+		getMoveRecordForm(trigger, recordId, groupedWorkId) {
+			if (Globals.loggedIn) {
+				AspenDiscovery.loadingMessage();
+				const url = `${Globals.path}/GroupedWork/${groupedWorkId}/AJAX?method=getMoveRecordForm&recordId=${encodeURIComponent(recordId)}`;
+				$.getJSON(url, /** @param {{success: boolean, title: string, modalBody: string, modalButtons: string, message: string}} data */ (data) => {
+					if (data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			} else {
+				AspenDiscovery.Account.ajaxLogin($(trigger), () => {
+					AspenDiscovery.GroupedWork.getMoveRecordForm(trigger, recordId, groupedWorkId);
+				}, false);
+			}
+			return false;
+		},
+
+		getMoveRecordInfo() {
+			const targetWorkId = $('#targetWorkId').val().trim();
+			if (targetWorkId.length === 36) {
+				const url = `${Globals.path}/GroupedWork/AJAX?method=getMoveRecordInfo&targetWorkId=${encodeURIComponent(targetWorkId)}`;
+				$.getJSON(url, /** @param {{message: string}} data */ (data) => {
+					$("#moveRecordInfo").html(data.message);
+				}).fail(AspenDiscovery.ajaxFail);
+			} else {
+				$("#moveRecordInfo").html("");
+			}
+		},
+
+		processMoveRecordForm() {
+			const recordId = $('#recordId').val();
+			const targetWorkId = $('#targetWorkId').val().trim();
+			const url = `${Globals.path}/GroupedWork/AJAX?method=processMoveRecordForm&recordId=${encodeURIComponent(recordId)}&targetWorkId=${encodeURIComponent(targetWorkId)}`;
+			$.getJSON(url, /** @param {{success: boolean, title: string, message: string}} data */ (data) => {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, true, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
 		getStaffView: function (id) {
 			var url = Globals.path + "/GroupedWork/" + id + "/AJAX?method=getStaffView";
 			$.getJSON(url, function (data){
@@ -11158,6 +11213,19 @@ AspenDiscovery.GroupedWork = (function(){
 					AspenDiscovery.showMessage(data.title, data.body);
 				}
 			});
+			return false;
+		},
+
+		deleteRecordGroupingOverride(id) {
+			const url = `${Globals.path}/GroupedWork/AJAX?method=deleteRecordGroupingOverride&id=${encodeURIComponent(id)}`;
+			$.getJSON(url, /** @param {{success: boolean, title: string, message: string}} data */ (data) => {
+				if (data.success) {
+					$("#recordGroupingOverride" + id).hide();
+					AspenDiscovery.showMessage(data.title, data.message, true, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
 

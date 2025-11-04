@@ -39,6 +39,7 @@ class MyAccount_MyList extends MyAccount {
 		global $library;
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
 
 		// Fetch the List object
 		$listId = $_REQUEST['id'];

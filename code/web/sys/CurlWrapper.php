@@ -74,9 +74,9 @@ class CurlWrapper {
 	 * @param string|null $curlUrl optional url passed to curl_init
 	 * @param null|array $curl_options is an array of curl options to include or overwrite.
 	 *                    Keys is the curl option constant, Values is the value to set the option to.
-	 * @return resource
+	 * @return CurlHandle
 	 */
-	public function curl_connect($curlUrl = null, $curl_options = null) {
+	public function curl_connect(?string $curlUrl = null, ?array $curl_options = null) : CurlHandle {
 		//Make sure we only connect once
 		if (!$this->curl_connection) {
 			$cookie = $this->getCookieJar();
@@ -156,9 +156,9 @@ class CurlWrapper {
 	 * @param string $url The url to post to
 	 * @param string|string[] $postParams Additional Post Params to use
 	 *
-	 * @return string   The response from the web page if any
+	 * @return string|bool   The response from the web page if any
 	 */
-	public function curlPostPage($url, $postParams, $curlOptions = null) {
+	public function curlPostPage(string $url, string|array $postParams, $curlOptions = null) : string|bool {
 		if (is_string($postParams)) {
 			$post_string = $postParams;
 		} else {
