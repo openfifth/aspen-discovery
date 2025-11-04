@@ -2228,6 +2228,10 @@ AspenDiscovery.Account = (function () {
 				title = $('#listTitle option:selected').text();
 			}
 
+			var addToListGroupOption = $('#addToListGroup-Options').val();
+			var addToListGroupNewName = $('#addToListGroup-NewName').val();
+			var addToListGroupNested = $('#addToListGroup-Nested').val();
+
 			var desc = $("#listDesc").val();
 			var url = Globals.path + "/MyAccount/AJAX";
 			var params = {
@@ -2238,7 +2242,10 @@ AspenDiscovery.Account = (function () {
 				displayListAuthor: isDisplayListAuthor,
 				desc: desc,
 				source: source,
-				sourceId: sourceId
+				sourceId: sourceId,
+				addToListGroupOption: addToListGroupOption,
+				addToListGroupNewName: addToListGroupNewName,
+				addToListGroupNested: addToListGroupNested
 			};
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
@@ -5132,7 +5139,107 @@ AspenDiscovery.Account = (function () {
 			} else {
 				$('#selectedEditionOptionsContainer').hide();
 			}
-		}
+		},
+		loadListGroupData: function () {
+			var groupId = $('#listGroupSelect').val();
+			var url = new URL(window.location.href);
+			url.searchParams.set('groupId', groupId);
+			window.location.href = url.toString();
+		},
+		showEditListGroupParentForm: function (groupId, parentId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupParentForm&groupId=" + groupId + "&parentId=" + parentId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		editListGroupParentForm: function () {
+			var url = Globals.path + '/MyAccount/AJAX?method=editListGroupParent';
+			var newData = new FormData($("#moveListGroupForm")[0]);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: newData,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
+			return false;
+		},
+		showEditListGroupNameForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupNameForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		editListGroupNameForm: function () {
+			var url = Globals.path + '/MyAccount/AJAX?method=editListGroupName';
+			var newData = new FormData($("#renameListGroupForm")[0]);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: newData,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
+			return false;
+		},
+		showCreateListGroupForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getCreateListGroupForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		createListGroup: function () {
+			var groupName = $('#newListGroupName').val();
+			var nestedGroupId = $('#newListGroupNesting').val();
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				'method': 'createListGroup',
+				title: groupName,
+				nestedGroupId: nestedGroupId
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.showMessage("Added Successfully", data.message, true, true);
+				} else {
+					AspenDiscovery.showMessage("Error", data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+		showDeleteListGroupForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getDeleteListGroupForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		deleteListGroup: function (groupId) {
+			$('#confirmDeleteListGroup .fa-spinner').show();
+			$('#confirmDeleteListGroup').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=deleteListGroup&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists";
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {

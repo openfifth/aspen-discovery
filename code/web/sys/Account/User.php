@@ -77,6 +77,9 @@ class User extends DataObject {
 	public $holdPromptForEdition;
 
 	public $lastListUsed;
+	public $lastListGroupAdded;
+	public $lastListGroupViewed;
+
 	public $browseAddToHome;
 
 	public $lastLoginValidation;
@@ -243,6 +246,20 @@ class User extends DataObject {
 			}
 		}
 
+		return $lists;
+	}
+	
+	function getUnassignedListsForListGroups() {
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$userList = new UserList();
+		$userList->listGroupId = -1;
+		$userList->userId = $this->id;
+		$userList->orderBy('title ASC');
+		$userList->find();
+		$lists = [];
+		while ($userList->fetch()) {
+			$lists[] = clone $userList;
+		}
 		return $lists;
 	}
 
@@ -5757,6 +5774,8 @@ class User extends DataObject {
 		unset($return['myLocation2Id']);
 		unset($return['pickupLocationId']);
 		unset($return['lastListUsed']);
+		unset($return['lastListGroupAdded']);
+		unset($return['lastListGroupViewed']);
 		unset($return['twoFactorAuthSettingId']);
 		return $return;
 	}
