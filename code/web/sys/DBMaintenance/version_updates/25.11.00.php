@@ -220,6 +220,14 @@ function getUpdates25_11_00(): array {
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
 			],
 		],
+		'add_description_for_grouped_work_display_info' => [
+			'title' => 'Add Description For Grouped Work Display Info',
+			'description' => 'Store the grouped work\'s custom description in grouped_work_display_info.',
+			'sql' => [
+				"ALTER TABLE grouped_work_display_info ADD COLUMN IF NOT EXISTS description TEXT NULL",
+			],
+		], //add_description_for_grouped_work_display_info
+
 		//alexander - Open Fifth
 		'add_use_library_name_for_maps' => [
 			'title' => 'Add Use Library Name For Maps',
