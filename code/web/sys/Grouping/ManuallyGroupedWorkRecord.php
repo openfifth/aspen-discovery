@@ -62,13 +62,13 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				'property' => 'manually_grouped_work_id',
 				'type' => 'hidden',
 				'label' => 'Manually Grouped Work Id',
-				'description' => 'The id of the manually grouped work this record belongs to',
+				'description' => 'The ID of the manually grouped work to which this record belongs.',
 			],
 			'date_added' => [
 				'property' => 'date_added',
 				'type' => 'timestamp',
 				'label' => 'Date Added',
-				'description' => 'The date this record was added to the group',
+				'description' => 'The date this record was added to the group.',
 				'readOnly' => true,
 				'hideInLists' => true,
 			],
@@ -77,7 +77,7 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				'type' => 'enum',
 				'values' => $availableSources,
 				'label' => 'Source',
-				'description' => 'The source of the record',
+				'description' => 'The source of the record.',
 				'required' => true,
 			],
 			'identifier_type' => [
@@ -89,7 +89,7 @@ class ManuallyGroupedWorkRecord extends DataObject {
 					'barcode' => 'Item Barcode',
 				],
 				'label' => 'Identifier Type',
-				'description' => 'The type of identifier being used',
+				'description' => 'The type of identifier being used.',
 				'default' => 'record_id',
 				'required' => true,
 			],
@@ -114,7 +114,7 @@ class ManuallyGroupedWorkRecord extends DataObject {
 				'property' => 'indexed',
 				'type' => 'checkbox',
 				'label' => 'Indexed?',
-				'description' => 'Whether this record has been indexed into the manually created grouped work',
+				'description' => 'Whether this record has been indexed into the manually created grouped work.',
 				'readOnly' => true,
 				'readOnlyWhenNew' => true,
 				'hideInLists' => false,
@@ -126,11 +126,11 @@ class ManuallyGroupedWorkRecord extends DataObject {
 	}
 
 	/**
-	 * Find a record's primary identifier by barcode
+	 * Find a record's primary identifier by item barcode.
 	 *
-	 * @param string $barcode The item barcode to look up
-	 * @param string $source The source system (ILS profile name)
-	 * @return array|null Array with 'identifier' and 'type' if found, null if not found
+	 * @param string $barcode The item barcode to look up.
+	 * @param string $source The source system (e.g., "ils").
+	 * @return array|null Array with 'identifier' and 'type' if found, null if not found.
 	 */
 	private function getPrimaryIdentifierByBarcode(string $barcode, string $source): ?array {
 		require_once ROOT_DIR . '/sys/SearchObject/SearchObjectFactory.php';
@@ -230,7 +230,7 @@ class ManuallyGroupedWorkRecord extends DataObject {
 	 * Updates $this->identifier to the primary record identifier.
 	 *
 	 * @return array|bool True if the identifier is resolved or no resolution needed;
-	 *                    Array with 'success' => false and 'message' => error message if resolution fails
+	 *                    Array with 'success' => false and 'message' => error message if resolution fails.
 	 */
 	public function resolvePrimaryIdentifier(): bool|array {
 		if ($this->identifier_type === 'barcode' || $this->identifier_type === 'isbn') {
@@ -265,7 +265,8 @@ class ManuallyGroupedWorkRecord extends DataObject {
 	}
 
 	/**
-	 * Check if this record has been indexed into the manually created grouped work
+	 * Check if this record has been indexed into the manually created grouped work.
+	 *
 	 * @return bool
 	 */
 	private function isIndexedIntoManualGroupedWork(): bool {

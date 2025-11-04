@@ -227,88 +227,6 @@ class ManualGroupedWork extends DataObject {
 	}
 
 	/**
-	 * Add a record to this manually grouped work
-	 *
-	 * @param string $type
-	 * @param string $identifier
-	 * @param string $identifierType
-	 * @return bool
-	 */
-	public function addRecord(string $type, string $identifier, string $identifierType = 'record_id'): bool {
-		if (!isset($this->_records)) {
-			$this->getRecords();
-		}
-
-		$record = new ManuallyGroupedWorkRecord();
-		$record->manually_grouped_work_id = $this->id;
-		$record->type = $type;
-		$record->identifier_type = $identifierType;
-		$record->user_provided_identifier = $identifier;
-		$resolveResult = $record->resolvePrimaryIdentifier();
-		if (is_array($resolveResult) && !$resolveResult['success']) {
-			$this->displayMessageToUser($resolveResult['message'], true);
-			return false;
-		}
-
-		if ($record->identifier_type === 'record_id') {
-			$record->identifier = $record->user_provided_identifier;
-			// Validate the record ID exists in the system.
-			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
-			$primaryCheck = new GroupedWorkPrimaryIdentifier();
-			$primaryCheck->type = $record->type;
-			$primaryCheck->identifier = $record->identifier;
-			if (!$primaryCheck->find(true)) {
-				$this->displayMessageToUser("Record ID '{$record->identifier}' not found for source '{$record->type}'.", true);
-				return false;
-			}
-		}
-
-		foreach ($this->_records as $existingRecord) {
-			if ($existingRecord->type == $record->type && $existingRecord->identifier == $record->identifier) {
-				$this->displayMessageToUser("Record is already in this manual group.", false);
-				return false;
-			}
-		}
-
-		if ($record->insert()) {
-			$this->_records[$record->id] = $record;
-			$this->reindexRecords();
-			return true;
-		}
-		else {
-			$this->displayMessageToUser("Failed to add record '{$record->identifier}' to manual group.", true);
-			return false;
-		}
-	}
-
-	/**
-	 * Remove a record from this manually grouped work
-	 *
-	 * @param int $recordId
-	 * @return bool
-	 */
-	public function removeRecord(int $recordId): bool {
-		if (!isset($this->_records)) {
-			$this->getRecords();
-		}
-
-		if (isset($this->_records[$recordId])) {
-			$record = $this->_records[$recordId];
-			if ($record->delete()) {
-				unset($this->_records[$recordId]);
-				$this->reindexRecords();
-				return true;
-			} else {
-				$this->displayMessageToUser("Failed to remove record with ID {$recordId} from this manual group.", true);
-				return false;
-			}
-		} else {
-			$this->displayMessageToUser("Record with ID {$recordId} not found in this manual group.", true);
-			return false;
-		}
-	}
-
-	/**
 	 * Save all records associated with this manually grouped work.
 	 */
 	private function saveRecords(): void {
@@ -398,6 +316,8 @@ class ManualGroupedWork extends DataObject {
 	 * Force reindexing of all records in this manually grouped work.
 	 * Adds each record's identifier and type to the record_identifiers_to_reload
 	 * table to be picked up by the indexer.
+	 *
+	 * @return int The number of records to be reindexed.
 	 */
 	public function reindexRecords(): int {
 		if (!isset($this->_records)) {

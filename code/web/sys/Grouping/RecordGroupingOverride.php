@@ -31,7 +31,7 @@ class RecordGroupingOverride extends DataObject {
 			$availableSources[$profile->name] = $profile->name;
 		}
 		$availableSources['axis360'] = 'Boundless';
-		$availableSources['cloud_library'] = 'cloudLibrary';
+		$availableSources['cloud_library'] = 'Cloud Library';
 		$availableSources['hoopla'] = 'Hoopla';
 		$availableSources['overdrive'] = 'Overdrive';
 		$availableSources['palace_project'] = 'Palace Project';
