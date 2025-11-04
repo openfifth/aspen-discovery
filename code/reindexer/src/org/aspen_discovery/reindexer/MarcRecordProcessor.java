@@ -1575,7 +1575,8 @@ abstract class MarcRecordProcessor {
 					this.getSortableTitle(record),
 					formatCategory,
 					false,
-					recordInfo
+					recordInfo,
+					this
 				);
 			}
 			authorInTitleField = titleField.getSubfieldsAsString("c");

@@ -112,6 +112,9 @@ public class IndexingProfile extends BaseIndexingSettings {
 	private boolean index898asSeries;
 	private boolean index899asSeries;
 
+	// Display Title processing
+	private Pattern displayTitleStripPattern;
+
 	//Evergreen settings
 	private final int numRetriesForBibLookups;
 	private final int numMillisecondsToPauseAfterBibLookups;
@@ -280,6 +283,15 @@ public class IndexingProfile extends BaseIndexingSettings {
 		index897asSeries = indexingProfileRS.getBoolean("index897asSeries");
 		index898asSeries = indexingProfileRS.getBoolean("index898asSeries");
 		index899asSeries = indexingProfileRS.getBoolean("index899asSeries");
+
+		try {
+			String pattern = indexingProfileRS.getString("displayTitleStripRegex");
+			if (pattern != null && !pattern.isEmpty()) {
+				displayTitleStripPattern = Pattern.compile(pattern);
+			}
+		} catch (Exception e) {
+			logEntry.incErrors("Could not load displayTitleStripRegex pattern", e);
+		}
 
 		//Custom Facet 1
 		this.customFacet1SourceField = indexingProfileRS.getString("customFacet1SourceField");
@@ -1205,5 +1217,16 @@ public class IndexingProfile extends BaseIndexingSettings {
 
 	public boolean isIndex899asSeries() {
 		return index899asSeries;
+	}
+
+	/**
+	 * Gets the compiled regex pattern for stripping text from display titles.
+	 * This case-sensitive pattern is only applied to ILS records.
+	 *
+	 * @return The compiled Pattern to match text that should be removed from display titles,
+	 *         or null if no pattern is configured.
+	 */
+	public Pattern getDisplayTitleStripPattern() {
+		return displayTitleStripPattern;
 	}
 }
