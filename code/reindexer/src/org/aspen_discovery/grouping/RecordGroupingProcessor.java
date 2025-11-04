@@ -66,13 +66,11 @@ public class RecordGroupingProcessor {
 	private PreparedStatement getManualGroupForRecordStmt;
 	private PreparedStatement getRecordGroupingOverrideStmt;
 	private PreparedStatement setPermIdForManuallyGroupedRecordsStmt;
-	private final HashMap<String, String> manuallyGroupedRecords = new HashMap<>();
 
 	HashMap<String, HashMap<String, String>> translationMaps = new HashMap<>();
-
 	private final HashSet<String> recordsToNotGroup = new HashSet<>();
 	private final HashMap<String, String> recordGroupingOverrides = new HashMap<>();
-	private HashMap<String, String> manuallyGroupedRecords = new HashMap<>();
+	private final HashMap<String, String> manuallyGroupedRecords = new HashMap<>();
 	private final Long updateTime = new Date().getTime() / 1000;
 
 	protected static long numAuthorAuthoritiesUsed = 0;
@@ -305,44 +303,34 @@ public class RecordGroupingProcessor {
 	}
 
 	/**
-	 * Add a work to the database
+	 * Add a work to the database with proper grouping logic applied in priority order:
+	 * 1. Manual grouping (highest priority): if the record is manually grouped.
+	 * 2. Record grouping overrides: if an override exists for the record.
+	 * 3. Ungrouping (non-grouped records): if the record is marked to not be grouped.
+	 * 4. Alternate title/author grouping: if alternate grouping exists from merged works.
+	 * 5. Default grouping based on title, author, format, etc.
 	 *
-	 * @param primaryIdentifier The primary identifier we are updating the work for
-	 * @param groupedWork       Information about the work itself
+	 * @param primaryIdentifier The primary identifier for the work being updated.
+	 * @param groupedWork Information about the work itself.
+	 * @param primaryDataChanged Whether the primary data has changed (affects date_updated).
+	 * @param originalGroupedWorkId The record's current grouped work ID if already known; null to perform a database lookup; the string "false" to skip lookup when known to not exist.
 	 */
 	void addGroupedWorkToDatabase(RecordIdentifier primaryIdentifier, GroupedWork groupedWork, boolean primaryDataChanged, String originalGroupedWorkId) {
 		String groupedWorkPermanentId = groupedWork.getPermanentId();
-
-		// Check to see if there is a record grouping override.
 		String primaryIdentifierString = primaryIdentifier.toString();
-		String overridePermanentId = recordGroupingOverrides.get(primaryIdentifierString.toLowerCase());
-		if (overridePermanentId != null) {
-			groupedWorkPermanentId = overridePermanentId;
-			groupedWork.overridePermanentId(groupedWorkPermanentId);
-			logger.debug("Using override record grouping for {} -> {}.", primaryIdentifierString, groupedWorkPermanentId);
-		} else if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
-			// Check to see if we need to ungroup the record.
-			groupedWork.makeUnique(primaryIdentifierString);
-			groupedWorkPermanentId = groupedWork.getPermanentId();
-		}else{
-			String alternateGroupedWorkPermanentId = checkForAlternateTitleAuthor(groupedWork);
-			if (alternateGroupedWorkPermanentId != null) {
-				if (alternateGroupedWorkPermanentId.length() > 36) {
-					alternateGroupedWorkPermanentId = alternateGroupedWorkPermanentId.substring(0, 36);
-				}
-				alternateGroupedWorkPermanentId += "-" + groupedWork.getLanguage();
-				groupedWorkPermanentId = alternateGroupedWorkPermanentId;
-				groupedWork.overridePermanentId(groupedWorkPermanentId);
- 			}
 
-		// Check if the record is manually grouped.
 		String manualGroupId = checkForManualGrouping(primaryIdentifier, groupedWork.getLanguage());
 		if (manualGroupId != null) {
 			groupedWorkPermanentId = manualGroupId;
 			groupedWork.overridePermanentId(groupedWorkPermanentId);
+			logger.debug("Using manual grouping for {} -> {}.", primaryIdentifierString, groupedWorkPermanentId);
 		} else {
-			// Check to see if the record needs to be ungrouped;
-			if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
+			String overridePermanentId = recordGroupingOverrides.get(primaryIdentifierString.toLowerCase());
+			if (overridePermanentId != null) {
+				groupedWorkPermanentId = overridePermanentId;
+				groupedWork.overridePermanentId(groupedWorkPermanentId);
+				logger.debug("Using override record grouping for {} -> {}.", primaryIdentifierString, groupedWorkPermanentId);
+			} else if (recordsToNotGroup.contains(primaryIdentifierString.toLowerCase())) {
 				groupedWork.makeUnique(primaryIdentifierString);
 				groupedWorkPermanentId = groupedWork.getPermanentId();
 			} else {
@@ -411,7 +399,6 @@ public class RecordGroupingProcessor {
 			ResultSet existingIdRS = getGroupedWorkIdByPermanentIdStmt.executeQuery();
 
 			if (existingIdRS.next()) {
-				//grouped work already exists
 				groupedWorkId = existingIdRS.getLong("id");
 
 				//Mark that the work has been updated
