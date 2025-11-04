@@ -178,23 +178,20 @@ abstract class ObjectEditor extends Admin_Admin {
 	 * @param $structure
 	 * @return DataObject|false
 	 */
-	function insertObject($structure) {
+	function insertObject($structure): bool|DataObject {
 		$objectType = $this->getObjectType();
 		/** @var DataObject $newObject */
 		$newObject = new $objectType;
-		//Check to see if we are getting default values from the
 		$validationResults = $this->updateFromUI($newObject, $structure, null);
 		if ($validationResults['validatedOk']) {
 			$ret = $newObject->insert($this->getContext());
 			$doImageAndFileUpdateAfterInsert = DataObjectUtil::structureContainsImagesOrFiles($structure);
-			//for images and files, we need to also update the object to assign correct image names
 			if ($ret && $doImageAndFileUpdateAfterInsert) {
 				$this->updateImagesAndFilesAfterInsert($newObject, $structure);
 				$ret = $newObject->update('updateImagesAndFilesAfterInsert');
 			}
 			// Strict comparison because the update() above could return 0, as no rows changed.
 			if ($ret === false) {
-				global $logger;
 				if ($newObject->getLastError()) {
 					$errorDescription = $newObject->getLastError();
 				} else {
@@ -203,9 +200,10 @@ abstract class ObjectEditor extends Admin_Admin {
 						'isPublicFacing' => true,
 					]);
 				}
-				$logger->log('Could not insert new object ' . $ret . ' ' . $errorDescription, Logger::LOG_DEBUG);
+				global $logger;
+				$logger->log('Could not insert new object ' . $this->getObjectType() . ': ' . $errorDescription, Logger::LOG_DEBUG);
 				$user = UserAccount::getActiveUserObj();
-				$user->updateMessage = "An error occurred inserting {$this->getObjectType()} <br/>{$errorDescription}";
+				$user->updateMessage = "An error occurred inserting {$this->getObjectType()}: <br/>$errorDescription";
 				$user->updateMessageIsError = true;
 				$user->update();
 
