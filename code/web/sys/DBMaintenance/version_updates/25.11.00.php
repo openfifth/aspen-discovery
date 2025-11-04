@@ -246,7 +246,7 @@ function getUpdates25_11_00(): array {
 				`id` int(11) NOT NULL AUTO_INCREMENT,
 				`requestType` varchar(50) DEFAULT NULL,
 				`enabled` tinyint(1) DEFAULT 0,
-				`expireDate` int(11) DEFAULT NULL,
+				`expireDate` DATE DEFAULT NULL,
 				PRIMARY KEY (`id`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;'
 			]

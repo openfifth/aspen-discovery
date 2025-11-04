@@ -5,6 +5,8 @@ class ExternalRequestSettings extends DataObject {
 	public $__table = 'external_request_settings'; //TODO make this table
 	public $id;
 	public $requestType;
+	public $enabled;
+	public $expireDate;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -26,6 +28,7 @@ class ExternalRequestSettings extends DataObject {
 				'property' => 'requestType',
 				'type' => 'text',
 				'label' => 'Request Type',
+				'required' => true,
 				'description' => 'Request Type to match requests against. Could be just api or api.method'
 
 			],
@@ -39,6 +42,8 @@ class ExternalRequestSettings extends DataObject {
 			'expireDate' => [
 				'property' => 'expireDate',
 				'type' => 'date',
+				'min' => date('Y-m-d', strtotime('1 day')),
+				'default' => date('Y-m-d', strtotime('1 day')),
 				'label' => 'Log all requests until',
 				'description' => 'Log all requests for the specified type until this Date',
 
