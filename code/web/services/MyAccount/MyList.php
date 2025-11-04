@@ -264,11 +264,9 @@ class MyAccount_MyList extends MyAccount {
 		$interface->assign('listGroupInfo', $listGroupInfo);
 
 		$userListGroups = [];
-		$listGroup = new UserListGroup();
-		$listGroup->userId = $list->user_id;
-		$listGroup->find();
-		while ($listGroup->fetch()) {
-			$userListGroups[] = clone $listGroup;
+		if ($userCanEdit) {
+			$listGroup = new UserListGroup();
+			$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		}
 		$interface->assign('userListGroups', $userListGroups);
 
