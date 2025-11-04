@@ -430,15 +430,15 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	private final static Pattern commonSubtitlePattern = Pattern.compile("(?i)([(]?(?:\\s?a\\s?|\\s?the\\s?)?audio cd|book club kit|large print[)]?)$");
 	private final static Pattern punctuationPattern = Pattern.compile("[.\\\\/()\\[\\]:;]");
 
-	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory) {
-		this.setTitle(shortTitle, subTitle, displayTitle, sortableTitle, recordFormat, formatCategory, false, null, null);
+	void setTitle(String shortTitle, String subTitle, String sortableTitle, String formatCategory) {
+		this.setTitle(shortTitle, subTitle, sortableTitle, formatCategory, false, null, null);
 	}
 
-	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo) {
-		this.setTitle(shortTitle, subTitle, displayTitle, sortableTitle, recordFormat, formatCategory, isDisplayInfo, recordInfo, null);
+	void setTitle(String shortTitle, String subTitle, String sortableTitle, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo) {
+		this.setTitle(shortTitle, subTitle, sortableTitle, formatCategory, isDisplayInfo, recordInfo, null);
 	}
 
-	void setTitle(String shortTitle, String subTitle, String displayTitle, String sortableTitle, String recordFormat, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo, MarcRecordProcessor processor) {
+	void setTitle(String shortTitle, String subTitle, String sortableTitle, String formatCategory, boolean isDisplayInfo, RecordInfo recordInfo, MarcRecordProcessor processor) {
 		if (shortTitle != null) {
 			shortTitle = AspenStringUtils.trimTrailingPunctuation(shortTitle);
 			boolean isOverridden = false;
