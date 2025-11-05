@@ -2171,7 +2171,7 @@ class GroupedWork_AJAX extends JSON_Action {
 				$results = [
 					'success' => true,
 					'title' => translate([
-						'text' => "Set display information",
+						'text' => "Set Display Information",
 						'isAdminFacing' => true,
 					]),
 					'modalBody' => $interface->fetch("GroupedWork/groupedWorkDisplayInfoForm.tpl"),
@@ -2199,8 +2199,12 @@ class GroupedWork_AJAX extends JSON_Action {
 	function processDisplayInfoForm() : array {
 		$results = [
 			'success' => false,
+			'title' => translate([
+				'text' => 'Failed to Update Display Information',
+				'isAdminFacing' => true,
+			]),
 			'message' => translate([
-				'text' => 'Unknown Error',
+				'text' => 'An unknown error has occurred.',
 				'isAdminFacing' => true,
 			]),
 		];
@@ -2210,17 +2214,17 @@ class GroupedWork_AJAX extends JSON_Action {
 			$id = $_REQUEST['id'];
 			$groupedWork->permanent_id = $id;
 			if ($groupedWork->find(true)) {
-				$title = $_REQUEST['title'];
-				$author = $_REQUEST['author'];
-				$seriesName = $_REQUEST['seriesName'];
-				$seriesDisplayOrder = $_REQUEST['seriesDisplayOrder'];
-				$description = $_REQUEST['description'];
+				$title = $_REQUEST['title'] ?? '';
+				$author = $_REQUEST['author'] ?? '';
+				$seriesName = $_REQUEST['seriesName'] ?? '';
+				$seriesDisplayOrder = $_REQUEST['seriesDisplayOrder'] ?? '';
+				$description = $_REQUEST['description'] ?? '';
 				if (!is_numeric($seriesDisplayOrder)) {
 					$seriesDisplayOrder = '0';
 				}
 				if (empty($title) && empty($author) && empty($seriesName) && empty($seriesDisplayOrder) && empty($description)) {
 					$results['message'] = translate([
-						'text' => "Please specify at least one piece of information",
+						'text' => "Please specify at least one piece of information.",
 						'isAdminFacing' => true,
 					]);
 				} else {
@@ -2246,21 +2250,25 @@ class GroupedWork_AJAX extends JSON_Action {
 
 					$results = [
 						'success' => true,
+						'title' => translate([
+							'text' => 'Successfully Set Display Information',
+							'isAdminFacing' => true,
+						]),
 						'message' => translate([
-							'text' => 'The display information has been set and the index will update shortly.',
+							'text' => 'The display information has been set, and the grouped work will be reindexed shortly.',
 							'isAdminFacing' => true,
 						]),
 					];
 				}
 			} else {
 				$results['message'] = translate([
-					'text' => "Could not find a work with that id",
+					'text' => "Could not find a grouped work with the provided ID.",
 					'isAdminFacing' => true,
 				]);
 			}
 		} else {
 			$results['message'] = translate([
-				'text' => "You do not have the correct permissions for this operation",
+				'text' => "You do not have the correct permissions to update the display information.",
 				'isAdminFacing' => true,
 			]);
 		}
@@ -2272,11 +2280,11 @@ class GroupedWork_AJAX extends JSON_Action {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Deleting display information',
+				'text' => 'Failed to Delete Display Information',
 				'isAdminFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Unknown error deleting display info',
+				'text' => 'An unknown error has occurred.',
 				'isAdminFacing' => true,
 			]),
 		];
@@ -2295,20 +2303,24 @@ class GroupedWork_AJAX extends JSON_Action {
 				}
 				$result = [
 					'success' => true,
+					'title' => translate([
+						'text' => 'Successfully Deleted Display Information',
+						'isAdminFacing' => true,
+					]),
 					'message' => translate([
-						'text' => "Successfully deleted the display info, the index will update shortly.",
+						'text' => "Successfully deleted the display information. The grouped work will be reindexed shortly.",
 						'isAdminFacing' => true,
 					]),
 				];
 			} else {
 				$result['message'] = translate([
-					'text' => "Could not find the display info to delete, it's likely been deleted already",
+					'text' => "Could not find the display information to delete. It may have already been deleted.",
 					'isAdminFacing' => true,
 				]);
 			}
 		} else {
 			$result['message'] = translate([
-				'text' => "You do not have the correct permissions for this operation",
+				'text' => "You do not have the correct permissions to delete display information.",
 				'isAdminFacing' => true,
 			]);
 		}

@@ -41,9 +41,8 @@
 			<tr><th>{translate text="Manual Group ID" isPublicFacing=true}</th><td><a href="/Admin/ManualGroupedWorks?objectAction=edit&id={$manualGroupingInfo->id}" class="btn btn-sm btn-default"><i class="fas fa-external-link-alt" role="presentation"></i> {$manualGroupingInfo->id}</a></td></tr>
 			<tr><th>{translate text="Manual Group Title" isPublicFacing=true}</th><td>{$manualGroupingInfo->title}</td></tr>
 			{if !empty($manualGroupingInfo->description)}<tr><th>{translate text="Description" isPublicFacing=true}</th><td>{$manualGroupingInfo->description|nl2br}</td></tr>{/if}
-			<tr><th>{translate text="Created By" isPublicFacing=true}</th><td>{$manualGroupingInfo->created_by_display}</td></tr>
-			<tr><th>{translate text="Date Created" isPublicFacing=true}</th><td>{$manualGroupingInfo->date_created|date_format}</td></tr>
-			<tr><th>{translate text="Last Updated" isPublicFacing=true}</th><td>{$manualGroupingInfo->last_updated|date_format}</td></tr>
+			<tr><th>{translate text="Date Created" isPublicFacing=true}</th><td>{$manualGroupingInfo->date_created|date_format:"%Y-%m-%d %H:%M"}</td></tr>
+			<tr><th>{translate text="Last Updated" isPublicFacing=true}</th><td>{$manualGroupingInfo->last_updated|date_format:"%Y-%m-%d %H:%M"}</td></tr>
 		</table>
 	</div>
 {/if}
@@ -91,7 +90,7 @@
 			<tr id="recordGroupingOverride{$override->id}">
 				<td>{$override->source}</td>
 				<td>{$override->record_id}</td>
-				<td>{$override->date_added|date_format}</td>
+				<td>{$override->date_added|date_format:"%Y-%m-%d %H:%M"}</td>
 				{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
 					<td><a onclick="AspenDiscovery.GroupedWork.deleteRecordGroupingOverride('{$override->id}')" class="btn btn-danger btn-sm">{translate text="Delete" isPublicFacing=true}</a></td>
 				{/if}
