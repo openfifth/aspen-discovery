@@ -82,6 +82,7 @@ public class GroupedWorkIndexer {
 	private TreeSet<Scope> scopes ;
 
 	private PreparedStatement getGroupedWorkPrimaryIdentifiers;
+	private PreparedStatement getOverriddenRecordsForWork;
 	private PreparedStatement getGroupedWorkInfoStmt;
 	private PreparedStatement getArBookIdForIsbnStmt;
 	private PreparedStatement getArBookInfoStmt;
@@ -256,6 +257,7 @@ public class GroupedWorkIndexer {
 		//Load a few statements we will need later
 		try{
 			getGroupedWorkPrimaryIdentifiers = dbConn.prepareStatement("SELECT * FROM grouped_work_primary_identifiers where grouped_work_id = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
+			getOverriddenRecordsForWork = dbConn.prepareStatement("SELECT source, record_id FROM record_grouping_overrides where grouped_work_permanent_id = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
 			//deleteGroupedWorkStmt = dbConn.prepareStatement("DELETE from grouped_work where id = ?");
 			getGroupedWorkInfoStmt = dbConn.prepareStatement("SELECT id, grouping_category from grouped_work where permanent_id = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
 			getArBookIdForIsbnStmt = dbConn.prepareStatement("SELECT arBookId from accelerated_reading_isbn where isbn = ?", ResultSet.TYPE_FORWARD_ONLY,  ResultSet.CONCUR_READ_ONLY);
@@ -359,7 +361,7 @@ public class GroupedWorkIndexer {
 			return;
 		}
 
-		// Check if series module is enabled
+		// Check if the series module is enabled
 		try {
 			PreparedStatement seriesModuleEnabledStmt = dbConn.prepareStatement("SELECT enabled FROM modules WHERE name = 'series'");
 			ResultSet enabledRS = seriesModuleEnabledStmt.executeQuery();
@@ -1086,6 +1088,17 @@ public class GroupedWorkIndexer {
 		groupedWork.setId(permanentId);
 		groupedWork.setGroupingCategory(grouping_category);
 
+		HashSet<String> overriddenRecords = new HashSet<>();
+		getOverriddenRecordsForWork.setString(1, permanentId);
+		ResultSet overriddenRecordsRS = getOverriddenRecordsForWork.executeQuery();
+		while (overriddenRecordsRS.next()) {
+			String source = overriddenRecordsRS.getString("source");
+			String recordId = overriddenRecordsRS.getString("record_id");
+			overriddenRecords.add(source + ":" + recordId);
+		}
+		overriddenRecordsRS.close();
+		groupedWork.setOverriddenRecords(overriddenRecords);
+
 		getGroupedWorkPrimaryIdentifiers.setLong(1, id);
 		ResultSet groupedWorkPrimaryIdentifiersRS = getGroupedWorkPrimaryIdentifiers.executeQuery();
 		ArrayList<RecordIdentifier> recordIdentifiers = new ArrayList<>();
@@ -1628,7 +1641,7 @@ public class GroupedWorkIndexer {
 					if (groupedWork.isDebugEnabled()) {
 						groupedWork.addDebugMessage("Setting title to " + title + " based on display info", 2);
 					}
-					groupedWork.setTitle(title, "", title, AspenStringUtils.makeValueSortable(title), "", "", true, null);
+					groupedWork.setTitle(title, "", AspenStringUtils.makeValueSortable(title), "", true, null);
 					groupedWork.clearSubTitle();
 				}else{
 					if (groupedWork.isDebugEnabled()) {
@@ -1641,7 +1654,7 @@ public class GroupedWorkIndexer {
 						groupedWork.addDebugMessage("Setting author to " + author + " based on display info", 2);
 					}
 					//Force a format category of Books since we want to preserve this
-					groupedWork.setAuthorDisplay(author, "Books");
+					groupedWork.setAuthorDisplay(author);
 				}else{
 					if (groupedWork.isDebugEnabled()) {
 						groupedWork.addDebugMessage("No author set in display info, not changing author", 2);

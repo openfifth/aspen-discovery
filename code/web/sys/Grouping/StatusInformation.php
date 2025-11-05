@@ -264,14 +264,14 @@ class Grouping_StatusInformation {
 		$numberOfCopiesMessage = '';
 		global $library;
 		//If we don't have holds or on order copies, we don't need to show anything.
-		if (($this->getNumHolds() == 0 || $this->getHoldableCopies() == 0) && $library->showGroupedHoldCopiesCount != 3) {
+		if (($this->getNumHolds() == 0 || $this->getHoldableCopies() == 0) && ($library->showGroupedHoldCopiesCount != 3 && $library->showGroupedHoldCopiesCount != 4)) {
 			/** @noinspection PhpConditionAlreadyCheckedInspection */
 			$numberOfCopiesMessage = '';
 		} else {
 			if ($this->getAvailableCopies() > 9999) {
 				$numberOfCopiesMessage .= 'Always Available';
 			} else {
-				if ($this->getNumHolds() == 0 || $this->getHoldableCopies() == 0) {
+				if ($library->showGroupedHoldCopiesCount != 4 && ($this->getNumHolds() == 0 || $this->getHoldableCopies() == 0)) {
 					if ($this->getAvailableCopies() == 1) {
 						$numberOfCopiesMessage .= '1 copy available';
 					} elseif ($this->getAvailableCopies() > 1) {
@@ -286,19 +286,21 @@ class Grouping_StatusInformation {
 				}else{
 					$showWaitList = false;
 				}
-				if (($this->getNumHolds() > 0 && $this->getHoldableCopies() > 0) && ($showWaitList)) {
+				if ($library->showGroupedHoldCopiesCount == 4 || (($this->getNumHolds() > 0 && $this->getHoldableCopies() > 0) && ($showWaitList))) {
 					if ($this->getCopies() == 1) {
 						$numberOfCopiesMessage .= '1 copy';
 					} elseif ($this->getCopies() > 1) {
 						$numberOfCopiesMessage .= '%1% copies';
 					}
-					if (!empty($numberOfCopiesMessage)) {
-						$numberOfCopiesMessage .= ', ';
-					}
-					if ($this->getNumHolds() == 1) {
-						$numberOfCopiesMessage .= '1 person is on the wait list';
-					} else {
-						$numberOfCopiesMessage .= '%2% people are on the wait list';
+					if ($library->showGroupedHoldCopiesCount != 4) {
+						if (!empty($numberOfCopiesMessage)) {
+							$numberOfCopiesMessage .= ', ';
+						}
+						if ($this->getNumHolds() == 1) {
+							$numberOfCopiesMessage .= '1 person is on the wait list';
+						} else {
+							$numberOfCopiesMessage .= '%2% people are on the wait list';
+						}
 					}
 				}
 

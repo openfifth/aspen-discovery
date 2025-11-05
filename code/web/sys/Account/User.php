@@ -77,6 +77,9 @@ class User extends DataObject {
 	public $holdPromptForEdition;
 
 	public $lastListUsed;
+	public $lastListGroupAdded;
+	public $lastListGroupViewed;
+
 	public $browseAddToHome;
 
 	public $lastLoginValidation;
@@ -243,6 +246,20 @@ class User extends DataObject {
 			}
 		}
 
+		return $lists;
+	}
+	
+	function getUnassignedListsForListGroups() {
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$userList = new UserList();
+		$userList->listGroupId = -1;
+		$userList->userId = $this->id;
+		$userList->orderBy('title ASC');
+		$userList->find();
+		$lists = [];
+		while ($userList->fetch()) {
+			$lists[] = clone $userList;
+		}
 		return $lists;
 	}
 
@@ -4437,6 +4454,7 @@ class User extends DataObject {
 		$sections['cataloging']->addAction(new AdminAction('Manually Grouped Title/Author Variants', 'View a list of all title/author variants that have been added to Aspen to merge works.', '/Admin/AlternateTitles'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Author Authorities', 'Create and edit authorities for authors.', '/Admin/AuthorAuthorities'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Records To Not Group', 'Lists records that should not be grouped.', '/Admin/NonGroupedRecords'), 'Manually Group and Ungroup Works');
+		$sections['cataloging']->addAction(new AdminAction('Record Grouping Overrides', 'Manage record-level grouping overrides. These force specific records to stay in specific grouped works regardless of the automatic grouping algorithm.', '/Admin/RecordGroupingOverrides'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Replacement Costs', 'Define default replacement costs by format.', '/Admin/ReplacementCosts'), 'Administer Replacement Costs');
 		$sections['cataloging']->addAction(new AdminAction('Hidden Series', 'Edit series to be excluded from the Series facet and Series Display Information', '/Admin/HideSeriess'), 'Hide Metadata');
 		$sections['cataloging']->addAction(new AdminAction('Hidden Subjects', 'Edit subjects to be excluded from the Subjects facet.', '/Admin/HideSubjectFacets'), 'Hide Metadata');
@@ -4817,7 +4835,7 @@ class User extends DataObject {
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Fields', 'Define event fields for Aspen Events.', '/Events/EventFields'), 'Administer Field Sets');
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Field Sets', 'Define sets of event fields to use for Aspen Events.', '/Events/EventFieldSets'), 'Administer Field Sets');
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Types', 'Define event types to use for Aspen Events.', '/Events/EventTypes'), 'Administer Event Types');
-				$aspenEventsAction->addSubAction(new AdminAction('Aspen Events Settings', 'Aspen Events Settings including indexing and library scope.', '/Events/IndexingSettings'), 'Administer Events for All Locations');
+				$aspenEventsAction->addSubAction(new AdminAction('Indexing Settings', 'Aspen Event Indexing Settings including indexing and library scope.', '/Events/IndexingSettings'), 'Administer Events for All Locations');
 				$aspenEventsAction->addSubAction(new AdminAction('Event Reports', 'Aspen Events Reporting.', '/Events/EventGraphs'), [
 					'View Event Reports for All Libraries',
 					'View Event Reports for Home Library'
@@ -5756,6 +5774,8 @@ class User extends DataObject {
 		unset($return['myLocation2Id']);
 		unset($return['pickupLocationId']);
 		unset($return['lastListUsed']);
+		unset($return['lastListGroupAdded']);
+		unset($return['lastListGroupViewed']);
 		unset($return['twoFactorAuthSettingId']);
 		return $return;
 	}

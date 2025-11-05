@@ -6,12 +6,14 @@
 
 		{* Display Title *}
 		<h1 class="notranslate">
-			{if empty($recordDriver->getShortTitle())}
+			{if !empty($recordDriver->getTitle())}
 				{$recordDriver->getTitle()|removeTrailingPunctuation|escape}
-			{else}
+			{elseif !empty($recordDriver->getShortTitle())}
 				{$recordDriver->getShortTitle()|removeTrailingPunctuation|escape}{if $recordDriver->getSubtitle()}
 					: {$recordDriver->getSubtitle()|removeTrailingPunctuation|escape}
 				{/if}
+			{else}
+				{translate text="Title Unavailable" isPublicFacing=true}
 			{/if}
 		</h1>
 

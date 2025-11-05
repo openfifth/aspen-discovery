@@ -1,5 +1,5 @@
 {if $formatDisplayStyle == 1}
-	{* Short Mobile Entry for Formats when there aren't hidden formats *}
+	{* Short Mobile Entry adapts based on manifestation count *}
 	<div class="visible-xs">
 		{* Determine if there were hidden Formats for this entry *}
 		{assign var=hasHiddenFormats value=false}
@@ -9,9 +9,9 @@
 			{/if}
 		{/foreach}
 
-		{* If there weren't hidden formats, show this short Entry (mobile view only). The exception is single format manifestations, they
-		   won't have any hidden formats and will be displayed *}
-		{if empty($hasHiddenFormats) && count($relatedManifestations) != 1}
+
+		{assign var=hideInMobile value=$hideManifestationsInMobileView|default:1}
+		{if empty($hasHiddenFormats) && $hideInMobile && count($relatedManifestations) > 1}
 			<div class="hidethisdiv{$summId|escape} result-label col-sm-4 col-xs-12">
 				{translate text="Formats" isPublicFacing=true}
 			</div>
@@ -24,7 +24,7 @@
 	</div>
 
 	{* Formats Section *}
-	<div class="{if empty($hasHiddenFormats) && count($relatedManifestations) != 1}hidden-xs {/if}col-xs-12 formatDisplayVertical" id="relatedManifestationsValue{$summId|escape}">
+	<div class="{if empty($hasHiddenFormats) && $hideInMobile && count($relatedManifestations) > 1}hidden-xs {/if}col-xs-12 formatDisplayVertical" id="relatedManifestationsValue{$summId|escape}">
 		{* Hide Formats section on mobile view, unless there is a single format or a format has been selected by the user *}
 		{* relatedManifestationsValue ID is used by the Formats button *}
 		{include file="GroupedWork/relatedManifestations.tpl" id=$summId workId=$summId}
@@ -53,7 +53,7 @@
 								<div role="option" tabindex="0" class="slider-slide horizontal-format-button{if $smarty.foreach.manifestations.index == 0} active{/if}"
 								     data-workId="{$summId|escape}" data-format="{$manifestation->format}" data-cleanedWorkId="{$summId|regex_replace:"/-/" : ""}" aria-selected="{if $smarty.foreach.manifestations.index == 0}true{else}false{/if}">
 										<div class="horizontal-format-button-format">{$manifestation->format}</div>
-	                                    {include file='GroupedWork/statusIndicator.tpl' statusInformation=$manifestation->getStatusInformation() viewingIndividualRecord=0 applyColors=false}
+	                                    {include file='GroupedWork/statusIndicator.tpl' statusInformation=$manifestation->getStatusInformation() viewingIndividualRecord=0 applyColors=false hideCopiesLine=true}
 								</div>
 	                        {/foreach}
 						</div>

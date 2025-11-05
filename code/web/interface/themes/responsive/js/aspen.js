@@ -2228,6 +2228,10 @@ AspenDiscovery.Account = (function () {
 				title = $('#listTitle option:selected').text();
 			}
 
+			var addToListGroupOption = $('#addToListGroup-Options').val();
+			var addToListGroupNewName = $('#addToListGroup-NewName').val();
+			var addToListGroupNested = $('#addToListGroup-Nested').val();
+
 			var desc = $("#listDesc").val();
 			var url = Globals.path + "/MyAccount/AJAX";
 			var params = {
@@ -2238,7 +2242,10 @@ AspenDiscovery.Account = (function () {
 				displayListAuthor: isDisplayListAuthor,
 				desc: desc,
 				source: source,
-				sourceId: sourceId
+				sourceId: sourceId,
+				addToListGroupOption: addToListGroupOption,
+				addToListGroupNewName: addToListGroupNewName,
+				addToListGroupNested: addToListGroupNested
 			};
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
@@ -5132,7 +5139,107 @@ AspenDiscovery.Account = (function () {
 			} else {
 				$('#selectedEditionOptionsContainer').hide();
 			}
-		}
+		},
+		loadListGroupData: function () {
+			var groupId = $('#listGroupSelect').val();
+			var url = new URL(window.location.href);
+			url.searchParams.set('groupId', groupId);
+			window.location.href = url.toString();
+		},
+		showEditListGroupParentForm: function (groupId, parentId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupParentForm&groupId=" + groupId + "&parentId=" + parentId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		editListGroupParentForm: function () {
+			var url = Globals.path + '/MyAccount/AJAX?method=editListGroupParent';
+			var newData = new FormData($("#moveListGroupForm")[0]);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: newData,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
+			return false;
+		},
+		showEditListGroupNameForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListGroupNameForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		editListGroupNameForm: function () {
+			var url = Globals.path + '/MyAccount/AJAX?method=editListGroupName';
+			var newData = new FormData($("#renameListGroupForm")[0]);
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: newData,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
+			return false;
+		},
+		showCreateListGroupForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getCreateListGroupForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		createListGroup: function () {
+			var groupName = $('#newListGroupName').val();
+			var nestedGroupId = $('#newListGroupNesting').val();
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				'method': 'createListGroup',
+				title: groupName,
+				nestedGroupId: nestedGroupId
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params, function (data) {
+				if (data.success) {
+					AspenDiscovery.showMessage("Added Successfully", data.message, true, true);
+				} else {
+					AspenDiscovery.showMessage("Error", data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+		showDeleteListGroupForm: function (groupId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getDeleteListGroupForm&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+		},
+		deleteListGroup: function (groupId) {
+			$('#confirmDeleteListGroup .fa-spinner').show();
+			$('#confirmDeleteListGroup').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=deleteListGroup&groupId=" + groupId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists";
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {
@@ -8440,6 +8547,14 @@ AspenDiscovery.Browse = (function(){
 				AspenDiscovery.Browse.changeBrowseCategory(categoryId);
 			});
 
+			// Handle keyboard navigation (tabbing) to scroll carousel.
+			browseCategoryCarousel.on('focus', 'li div', function(){
+				var $item = $(this).closest('li');
+				if ($('#browse-category-picker .jcarousel-control-prev').css('display') !== 'none') {
+					$("#browse-category-carousel").jcarousel('scroll', $item, true);
+				}
+			});
+
 			if ($('#browse-category-picker .jcarousel-control-prev').css('display') !== 'none') {
 				// only enable if the carousel features are being used.
 				// as of now, basalt & vail are not. plb 12-1-2014
@@ -9846,9 +9961,11 @@ AspenDiscovery.Events = (function(){
 						$("#propertyRowtitle").hide();
 						$("#propertyRowinfoSection").hide();
 						$("#propertyRowscheduleSection").hide();
+						$("#editFormInstructions").html("");
 						$("#description").text("");
 						return false;
 					} else {
+						$("#editFormInstructions").html(data.editFormInstructions);
 						eventType = data.eventType;
 						$("#title").val(eventType.title);
 						if (!eventType.titleCustomizable) {
@@ -11007,6 +11124,51 @@ AspenDiscovery.GroupedWork = (function(){
 			return false;
 		},
 
+		getMoveRecordForm(trigger, recordId, groupedWorkId) {
+			if (Globals.loggedIn) {
+				AspenDiscovery.loadingMessage();
+				const url = `${Globals.path}/GroupedWork/${groupedWorkId}/AJAX?method=getMoveRecordForm&recordId=${encodeURIComponent(recordId)}`;
+				$.getJSON(url, /** @param {{success: boolean, title: string, modalBody: string, modalButtons: string, message: string}} data */ (data) => {
+					if (data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			} else {
+				AspenDiscovery.Account.ajaxLogin($(trigger), () => {
+					AspenDiscovery.GroupedWork.getMoveRecordForm(trigger, recordId, groupedWorkId);
+				}, false);
+			}
+			return false;
+		},
+
+		getMoveRecordInfo() {
+			const targetWorkId = $('#targetWorkId').val().trim();
+			if (targetWorkId.length === 36) {
+				const url = `${Globals.path}/GroupedWork/AJAX?method=getMoveRecordInfo&targetWorkId=${encodeURIComponent(targetWorkId)}`;
+				$.getJSON(url, /** @param {{message: string}} data */ (data) => {
+					$("#moveRecordInfo").html(data.message);
+				}).fail(AspenDiscovery.ajaxFail);
+			} else {
+				$("#moveRecordInfo").html("");
+			}
+		},
+
+		processMoveRecordForm() {
+			const recordId = $('#recordId').val();
+			const targetWorkId = $('#targetWorkId').val().trim();
+			const url = `${Globals.path}/GroupedWork/AJAX?method=processMoveRecordForm&recordId=${encodeURIComponent(recordId)}&targetWorkId=${encodeURIComponent(targetWorkId)}`;
+			$.getJSON(url, /** @param {{success: boolean, title: string, message: string}} data */ (data) => {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, true, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
 		getStaffView: function (id) {
 			var url = Globals.path + "/GroupedWork/" + id + "/AJAX?method=getStaffView";
 			$.getJSON(url, function (data){
@@ -11051,6 +11213,19 @@ AspenDiscovery.GroupedWork = (function(){
 					AspenDiscovery.showMessage(data.title, data.body);
 				}
 			});
+			return false;
+		},
+
+		deleteRecordGroupingOverride(id) {
+			const url = `${Globals.path}/GroupedWork/AJAX?method=deleteRecordGroupingOverride&id=${encodeURIComponent(id)}`;
+			$.getJSON(url, /** @param {{success: boolean, title: string, message: string}} data */ (data) => {
+				if (data.success) {
+					$("#recordGroupingOverride" + id).hide();
+					AspenDiscovery.showMessage(data.title, data.message, true, false);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
 

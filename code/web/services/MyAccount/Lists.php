@@ -1,6 +1,7 @@
 <?php
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 
 class Lists extends MyAccount {
 
@@ -50,6 +51,48 @@ class Lists extends MyAccount {
 		$pager = new Pager($options);
 
 		$interface->assign('pageLinks', $pager->getLinks());
+
+		$activeListGroup = [];
+		$listGroup = new UserListGroup();
+		$listGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
+		$groupId = null;
+		if (isset($_REQUEST['groupId'])) {
+			$groupId = $_REQUEST['groupId'];
+			if ($groupId == -1) {
+				$activeListGroup = UserAccount::getActiveUserObj()->getUnassignedListsForListGroups();
+				$activeListGroupDetails = new UserListGroup();
+				$activeListGroupDetails->title = 'Unassigned Lists';
+			} else {
+				$listGroup = new UserListGroup();
+				$listGroup->id = $groupId;
+				$listGroup->userId = UserAccount::getActiveUserId();
+				if ($listGroup->find(true)) {
+					$activeListGroupDetails = $listGroup;
+					$userList = new UserList();
+					$userList->listGroupId = $listGroup->id;
+					$userList->find();
+					while ($userList->fetch()) {
+						$activeListGroup[] = clone $userList;
+					}
+				} else {
+					$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
+					$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+				}
+			}
+		} else {
+			$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
+			if (empty($activeListGroup) && count($listGroups) > 0) {
+				$activeListGroup = $listGroup->getListsForGroup(UserAccount::getActiveUserObj());
+				$activeListGroupDetails = $listGroups[0];
+			} else {
+				$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+			}
+		}
+
+		$interface->assign('groupId', $groupId);
+		$interface->assign('activeListGroup', $activeListGroup);
+		$interface->assign('activeListGroupDetails', $activeListGroupDetails);
+		$interface->assign('listGroups', $listGroups);
 
 		$this->display('../MyAccount/lists.tpl', 'My Lists');
 
