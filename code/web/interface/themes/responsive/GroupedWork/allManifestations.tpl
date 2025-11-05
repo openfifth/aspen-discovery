@@ -53,7 +53,7 @@
 								<div role="option" tabindex="0" class="slider-slide horizontal-format-button{if $smarty.foreach.manifestations.index == 0} active{/if}"
 								     data-workId="{$summId|escape}" data-format="{$manifestation->format}" data-cleanedWorkId="{$summId|regex_replace:"/-/" : ""}" aria-selected="{if $smarty.foreach.manifestations.index == 0}true{else}false{/if}">
 										<div class="horizontal-format-button-format">{$manifestation->format}</div>
-	                                    {include file='GroupedWork/statusIndicator.tpl' statusInformation=$manifestation->getStatusInformation() viewingIndividualRecord=0 applyColors=false}
+	                                    {include file='GroupedWork/statusIndicator.tpl' statusInformation=$manifestation->getStatusInformation() viewingIndividualRecord=0 applyColors=false hideCopiesLine=true}
 								</div>
 	                        {/foreach}
 						</div>
