@@ -1344,11 +1344,13 @@ class ListAPI extends AbstractAPI {
 							'message' => translate(['text' => 'We attempted to delete your list but it looks like no changes occurred', 'isPublicFacing' => true]),
 						];
 					} else { // some kind of DB error happened and we almost certainly did not successfully delete the list.
+						global $logger;
+						$logger->log($list->getLastError(), Logger::LOG_ERROR); //log the error since we don't want to risk exposing it to end users.
 						return [
 							'success' => false,
 							'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
 							'result' => $result,
-							'message' => translate(['text' => $list->getLastError(), 'isPublicFacing' => true]),
+							'message' => translate(['text' => 'A Database error occurred attempting to delete your list.', 'isPublicFacing' => true]),
 						];
 					}
 				} else {
