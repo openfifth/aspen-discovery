@@ -2902,6 +2902,34 @@ AspenDiscovery.Admin = (function () {
 				// No images, scroll to row immediately.
 				scrollTableToRow($targetRow);
 			}
+		},
+
+		toggleCheckboxOptions(checkboxId) {
+			const $optionsDiv = $('#' + checkboxId + '_options');
+			if ($('#' + checkboxId).prop('checked')) {
+				$optionsDiv.stop(true, true).slideDown(200);
+			} else {
+				$optionsDiv.stop(true, true).slideUp(200);
+			}
+		},
+
+		toggleAllCheckboxOptions(propName, selectAllId){
+			const $selectAll = $(selectAllId);
+			const isChecked = $selectAll.prop('checked');
+			const $checkboxes = $(`.${propName}Checkbox`);
+
+			$checkboxes.each((_, el) => {
+				const $checkbox = $(el);
+				const id = $checkbox.attr('id');
+				const $options = $(`#${id}_options`);
+
+				$checkbox.prop('checked', isChecked);
+				if (isChecked) {
+					$options.stop(true, true).slideDown(200);
+				} else {
+					$options.stop(true, true).slideUp(200);
+				}
+			});
 		}
 	};
 }(AspenDiscovery.Admin || {}));

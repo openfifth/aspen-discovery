@@ -141,6 +141,14 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'web_resource_library_urls' => [
+			'title' => 'Web Resource Library-Specific URLs',
+			'description' => 'Add support for library-specific URLs in Web Resources, allowing different libraries to use different URLs for the same resource. This enables use cases like Massachusetts statewide databases where each library has their own URL for the same resource.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE library_web_builder_resource ADD COLUMN IF NOT EXISTS url VARCHAR(500) DEFAULT NULL"
+			]
+		], //web_resource_library_urls
 		'indexing_profile_displayTitleStripRegex' => [
 			'title' => 'Indexing Profile - Display Title Strip Regex',
 			'description' => 'Add regex field to the Indexing Profile to strip text from display titles of ILS records.',

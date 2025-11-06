@@ -1,4 +1,6 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
+
 require_once ROOT_DIR . '/sys/WebBuilder/LibraryWebResource.php';
 require_once ROOT_DIR . '/sys/WebBuilder/WebBuilderAudience.php';
 require_once ROOT_DIR . '/sys/WebBuilder/WebBuilderCategory.php';
@@ -82,8 +84,8 @@ class WebResource extends DB_LibraryLinkedObject {
 			'openInNewTab' => [
 				'property' => 'openInNewTab',
 				'type' => 'checkbox',
-				'label' => 'Open In New Tab',
-				'description' => 'Whether or not the link should open in a new tab',
+				'label' => 'Open in New Tab',
+				'description' => 'Whether or not the link should open in a new tab.',
 				'default' => false,
 				'hideInLists' => true,
 			],
@@ -153,8 +155,8 @@ class WebResource extends DB_LibraryLinkedObject {
 				'property' => 'allowAccessByLibrary',
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
-				'label' => 'Allow Access to patrons of these home libraries',
-				'description' => 'Define what libraries should have access to the web resource',
+				'label' => 'Allow Access to Patrons of These Home Libraries',
+				'description' => 'Define what patrons\' home libraries should have access to the web resource.',
 				'values' => $libraryList,
 				'hideInLists' => false,
 			],
@@ -186,10 +188,19 @@ class WebResource extends DB_LibraryLinkedObject {
 			'libraries' => [
 				'property' => 'libraries',
 				'type' => 'multiSelect',
-				'listStyle' => 'checkboxSimple',
+				'listStyle' => 'checkboxWithOptions',
 				'label' => 'Libraries',
-				'description' => 'Define libraries that use these settings',
+				'description' => 'Select which libraries can access this resource. Optionally, provide a library-specific URL for each library.',
 				'values' => $libraryList,
+				'optionsStructure' => [
+					'url' => [
+						'property' => 'url',
+						'type' => 'url',
+						'label' => 'Library-Specific URL (Optional)',
+						'description' => 'If provided, this URL will be used instead of the base resource URL for patrons viewing this library catalog.',
+						'maxLength' => 500,
+					],
+				],
 				'hideInLists' => true,
 			]
 		];
@@ -283,7 +294,10 @@ class WebResource extends DB_LibraryLinkedObject {
 			$libraryLink->webResourceId = $this->id;
 			$libraryLink->find();
 			while ($libraryLink->fetch()) {
-				$this->_libraries[$libraryLink->libraryId] = $libraryLink->libraryId;
+				// Store in checkboxWithOptions format: libraryId => ['url' => 'url_value']
+				$this->_libraries[$libraryLink->libraryId] = [
+					'url' => $libraryLink->url ?? '',
+				];
 			}
 		}
 		return $this->_libraries;
@@ -334,13 +348,20 @@ class WebResource extends DB_LibraryLinkedObject {
 
 	public function saveLibraries() : void {
 		if (isset($this->_libraries) && is_array($this->_libraries)) {
-			$this->clearLibraries();
-
-			foreach ($this->_libraries as $libraryId) {
+			$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Web Resources'));
+			// Clear only libraries the user has permission to modify.
+			foreach ($libraryList as $libraryId => $libraryName) {
 				$libraryLink = new LibraryWebResource();
-
 				$libraryLink->webResourceId = $this->id;
 				$libraryLink->libraryId = $libraryId;
+				$libraryLink->delete(true);
+			}
+
+			foreach ($this->_libraries as $libraryId => $options) {
+				$libraryLink = new LibraryWebResource();
+				$libraryLink->webResourceId = $this->id;
+				$libraryLink->libraryId = $libraryId;
+				$libraryLink->url = $options['url'] ?? null;
 				$libraryLink->insert();
 			}
 			unset($this->_libraries);
@@ -375,13 +396,6 @@ class WebResource extends DB_LibraryLinkedObject {
 			}
 			unset($this->_categories);
 		}
-	}
-
-	private function clearLibraries() : void {
-		//Delete links to the libraries
-		$libraryLink = new LibraryWebResource();
-		$libraryLink->webResourceId = $this->id;
-		$libraryLink->delete(true);
 	}
 
 	private function clearAudiences() : void {
@@ -514,11 +528,16 @@ class WebResource extends DB_LibraryLinkedObject {
 
 	public function saveAllowableLibraries() : void {
 		if (isset($this->_allowAccessByLibrary) && is_array($this->_allowAccessByLibrary)) {
-			$this->clearAllowableLibraries();
+			$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Web Resources'));
+			foreach ($libraryList as $libraryId => $libraryName) {
+				$link = new WebResourceAccessLibrary();
+				$link->webResourceId = $this->id;
+				$link->libraryId = $libraryId;
+				$link->delete(true);
+			}
 
 			foreach ($this->_allowAccessByLibrary as $libraryId) {
 				$link = new WebResourceAccessLibrary();
-
 				$link->webResourceId = $this->id;
 				$link->libraryId = $libraryId;
 				$link->insert();
@@ -527,7 +546,7 @@ class WebResource extends DB_LibraryLinkedObject {
 		}
 	}
 
-	public function generatePlacard() : void {
+	public function generatePlacard(): void {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/Placard.php';
 		//check if placard already exists
 		$placard = new Placard();
@@ -554,5 +573,23 @@ class WebResource extends DB_LibraryLinkedObject {
 
 	public function supportsSoftDelete(): bool {
 		return true;
+	}
+
+	/**
+	 * Get the URL for a specific library.
+	 *
+	 * @param int|null $libraryId The library ID to get the URL for. If null, returns base URL.
+	 * @return string The URL for the library.
+	 */
+	public function getUrlForLibrary(int $libraryId = null): string {
+		$url = $this->url;
+		if ($libraryId !== null) {
+			$libraries = $this->getLibraries();
+			if (isset($libraries[$libraryId]) && !empty($libraries[$libraryId]['url'])) {
+				$url = $libraries[$libraryId]['url'];
+			}
+		}
+
+		return $url;
 	}
 }

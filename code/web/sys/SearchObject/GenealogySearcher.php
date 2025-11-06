@@ -163,7 +163,7 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * @access  public
 	 * @return  array   recordSet
 	 */
-	public function getResultRecordSet() {
+	public function getResultRecordSet() : array {
 		//Marmot add shortIds without dot for use in display.
 		$recordSet = $this->indexResult['response']['docs'];
 		foreach ($recordSet as $key => $record) {
