@@ -303,6 +303,11 @@ class Grouping_StatusInformation {
 						}
 					}
 				}
+
+				// Show Holdable Copies without Hold Counts
+				if ($library->showGroupedHoldCopiesCount == 4) {
+					$numberOfCopiesMessage .= '%5% copies';
+				}
 			}
 			if (!empty($numberOfCopiesMessage)) {
 				$numberOfCopiesMessage .= '. ';
@@ -331,6 +336,7 @@ class Grouping_StatusInformation {
 			2 => $this->getNumHolds(),
 			3 => $this->getOnOrderCopies(),
 			4 => $this->getAvailableCopies(),
+			5 => $this->getHoldableCopies(),
 			'isPublicFacing' => true,
 		]);
 	}
