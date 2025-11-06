@@ -96,7 +96,6 @@ class ManualGroupedWork extends DataObject {
 				'canDelete' => true,
 				'sortable' => false,
 				'hideInLists' => true,
-				'note' => "Testing here is great!",
 			],
 		];
 
