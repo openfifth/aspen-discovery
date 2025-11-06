@@ -112,7 +112,8 @@ class UserAPI extends AbstractAPI {
 					'addActivityProgress',
 					'optUserIntoCampaignEmails',
 					'enrollUserInCampaignLeaderboard',
-					'unenrollUserFromCampaignLeaderboard'
+					'unenrollUserFromCampaignLeaderboard',
+					'trackAppLaunches'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -7525,5 +7526,11 @@ class UserAPI extends AbstractAPI {
 		$_GET = $originalGet;
 
 		return $response;
+	}
+
+	function trackAppLaunches() {
+		return [
+			'success' => true,
+		];
 	}
  }
