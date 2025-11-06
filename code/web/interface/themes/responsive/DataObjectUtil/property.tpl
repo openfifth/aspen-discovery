@@ -572,9 +572,9 @@
 			{if !empty($property.forcesReindex)}<span id="{$propName}HelpBlock" class="help-block"><small class="text-warning"><i class="fas fa-exclamation-triangle"></i> {translate text="Updating these settings causes a nightly reindex" isAdminFacing=true}</small></span>{/if}
 			{if !empty($property.affectsLiDA)}<span id="{$propName}HelpBlock" class="help-block"><small class="text-info"><i class="fas fa-info-circle"></i> {translate text="Aspen LiDA also uses these settings" isAdminFacing=true}</small></span>{/if}
 			{if !empty($property.note)}<span id="{$propName}HelpBlock" class="help-block"><small><i class="fas fa-info-circle"></i> {$property.note}</small></span>{/if}
-			{if !empty($property.infoBullets)}
+			{if !empty($property.noteBullets)}
 				<ul class="help-block" style="margin-top: 0; margin-bottom: 10px;">
-					{foreach from=$property.infoBullets item=bullet}
+					{foreach from=$property.noteBullets item=bullet}
 						<li><small>{$bullet}</small></li>
 					{/foreach}
 				</ul>

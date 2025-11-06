@@ -84,7 +84,7 @@ class ManualGroupedWork extends DataObject {
 				'type' => 'oneToMany',
 				'label' => 'Records',
 				'description' => 'The records to include in this manual group.',
-				'infoBullets' => [
+				'noteBullets' => [
 					'In the table below, select the source of the record, select the identifier\'s type, and input its identifier value.',
 					'The "Resolved Record ID" field cannot be edited and will be automatically populated with the record\'s primary identifier if a record is found.',
 				],
@@ -96,6 +96,7 @@ class ManualGroupedWork extends DataObject {
 				'canDelete' => true,
 				'sortable' => false,
 				'hideInLists' => true,
+				'note' => "Testing here is great!",
 			],
 		];
 
