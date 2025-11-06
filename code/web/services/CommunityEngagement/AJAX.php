@@ -1186,6 +1186,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				$users[] = array(
 					'id' => $user->id,
 					'displayName' => $user->displayName,
+					'ils_barcode' => $user->ils_barcode,
 				);
 			} 
 		}
