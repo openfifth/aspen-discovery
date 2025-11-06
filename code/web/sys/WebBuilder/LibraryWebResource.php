@@ -1,10 +1,12 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class LibraryWebResource extends DataObject {
 	public $__table = 'library_web_builder_resource';
 	public $id;
 	public $libraryId;
 	public $webResourceId;
+	public $url;
 
 	public function getNumericColumnNames(): array {
 		return [

@@ -72,12 +72,20 @@ class WebBuilder_ResourcesAtoZ extends Action
 			$webResourceRecordDriver = new WebResourceRecordDriver($curResource);
 
 			if ($webResourceRecordDriver->isValid()) {
-				$webResources[$webResourceRecordDriver->getId()] = [
-					'id' => $webResourceRecordDriver->getId(),
+				$webResource = new WebResource();
+				$webResource->id = $webResourceRecordDriver->getNumericId();
+				$openInNewTab = false;
+				if ($webResource->find(true)) {
+					$openInNewTab = $webResource->openInNewTab == 1;
+				}
+
+				$webResources[$webResourceRecordDriver->getNumericId()] = [
+					'id' => $webResourceRecordDriver->getNumericId(),
 					'title' => $webResourceRecordDriver->getTitle(),
 					'description' => $webResourceRecordDriver->getDescription(),
-					'link' => $webResourceRecordDriver->getLinkUrl(),
+					'url' => $webResourceRecordDriver->getLinkUrl(),
 					'bookCoverUrl' => $webResourceRecordDriver->getBookCoverUrl('medium'),
+					'openInNewTab' => $openInNewTab,
 				];
 			}
 		}
