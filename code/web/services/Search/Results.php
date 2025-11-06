@@ -220,11 +220,11 @@ class Search_Results extends ResultsAction {
 		// Display of query is not right when reusing the global search object
 		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
 		$searchObject = SearchObjectFactory::initSearchObject();
-		$allowFaceting  = $library->allowAutomaticFaceting;
+		$enableSearchInterpreter  = $library->enableSearchInterpreter;
 		if (isset($_REQUEST['disableAutomaticFiltering'])) {
-			$allowFaceting = false;
+			$enableSearchInterpreter = false;
 		}
-		$searchObject->init($searchSource, null, $allowFaceting);
+		$searchObject->init($searchSource, null, $enableSearchInterpreter);
 		$searchObject->setPrimarySearch(true);
 		$timer->logTime("Init Search Object");
 		$memoryWatcher->logMemory("Init Search Object");

@@ -228,7 +228,7 @@ class Library extends DataObject {
 	public $novelistSettingId;
 	public $syndeticsSettingId;
 	public $allowAutomaticSearchReplacements;
-	public $allowAutomaticFaceting;
+	public $enableSearchInterpreter;
 
 	public /** @noinspection PhpUnused */
 		$worldCatUrl;
@@ -3095,11 +3095,11 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => true,
 					],
-					'allowAutomaticFaceting' => [
-						'property' => 'allowAutomaticFaceting',
+					'enableSearchInterpreter' => [
+						'property' => 'enableSearchInterpreter',
 						'type' => 'checkbox',
-						'label' => 'Allow Facets to be applied to searches automatically',
-						'description' => "This allows facets to be automatically applied to Keyword Searches to better represent the context of a user's search.",
+						'label' => 'Enable Search Interpreter',
+						'description' => "This allows facets to be automatically applied to Keyword Searches to better interpret the context of a user's search.",
 						'hideInLists' => true,
 						'default' => false,
 					],
