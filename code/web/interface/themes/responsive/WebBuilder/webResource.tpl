@@ -11,7 +11,9 @@
 	<div class="row">
 		{if !empty($logo)}
 		<div class="col-sm-2">
-			<img class="img-responsive img-thumbnail" src="{$logo}" alt="{$title|escape}" onclick="return AspenDiscovery.WebBuilder.getWebResource('{$webResource->id}');">
+			<a href="{$resourceUrl}" onclick="return AspenDiscovery.WebBuilder.getWebResource('{$webResource->id}');" aria-label="{$title|escape}{if $openInNewTab} ({translate text='opens in new tab' isPublicFacing=true}){/if}">
+				<img class="img-responsive img-thumbnail" src="{$logo}" alt="{$title|escape}">
+			</a>
 		</div>
 		{/if}
 		<div class="{if empty($logo)}col-sm-12 col-md-9{else}col-sm-10 col-md-7{/if}">
@@ -28,7 +30,7 @@
 					{translate text="This resource requires you to be in the library to use it." isPublicFacing=true}
 				</em></p>
 			{/if}
-			<a class="btn btn-primary" onclick="return AspenDiscovery.WebBuilder.getWebResource('{$webResource->id}');">{translate text="Open Resource" isPublicFacing=true}</a>
+			<a href="{$resourceUrl}" class="btn btn-primary" onclick="return AspenDiscovery.WebBuilder.getWebResource('{$webResource->id}');" aria-label="{translate text='Open Resource' isPublicFacing=true}{if $openInNewTab} ({translate text='opens in new tab' isPublicFacing=true}){/if}">{if $openInNewTab}<i class="fas fa-external-link-alt" role="presentation"></i> {/if}{translate text="Open Resource" isPublicFacing=true}</a>
 		</div>
 		<div class="col-sm-12 col-md-3">
 			{if !empty($webResource->getAudiences())}

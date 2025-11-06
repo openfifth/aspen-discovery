@@ -40,6 +40,14 @@ class WebBuilder_WebResource extends Action {
 			$interface->assign('logo', $resourceDriver->getBookcoverUrl('large'));
 		}
 
+		$libraryId = null;
+		$activeLibrary = Library::getActiveLibrary();
+		if ($activeLibrary != null) {
+			$libraryId = $activeLibrary->libraryId;
+		}
+		$interface->assign('resourceUrl', $this->webResource->getUrlForLibrary($libraryId));
+		$interface->assign('openInNewTab', $this->webResource->openInNewTab);
+
 		$this->display('webResource.tpl', $this->webResource->name, '', false);
 	}
 
