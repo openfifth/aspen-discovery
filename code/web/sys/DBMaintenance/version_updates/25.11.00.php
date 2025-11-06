@@ -21,6 +21,59 @@ function getUpdates25_11_00(): array {
 				'ALTER TABLE library add COLUMN allowAutomaticFaceting TINYINT DEFAULT 0'
 			]
 		], //library_allow_automatic_faceting
+		'search_interpreter_settings' => [
+			'title' => 'Search Interpreter Settings',
+			'description' => 'Add a table to control how searches are processed',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE library CHANGE column allowAutomaticFaceting enableSearchInterpreter TINYINT DEFAULT 0',
+				"DROP TABLE IF EXISTS search_interpreter_settings",
+				"DROP TABLE IF EXISTS search_interpreter_terms_to_skip",
+				"DROP TABLE IF EXISTS search_interpreter_special_terms",
+				"CREATE TABLE IF NOT EXISTS search_interpreter_settings (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					processFormatCategories TINYINT DEFAULT 1,
+					formatCategoriesToSkip TINYTEXT,
+					processFormats TINYINT DEFAULT 1,
+					formatsToSkip TINYTEXT,
+					processPluralFormats TINYINT DEFAULT 1,
+					pluralFormatsToSkip TINYTEXT,
+					processAudiences TINYINT DEFAULT 1,
+					audiencesToSkip TINYTEXT,
+					processPluralAudiences TINYINT DEFAULT 1,
+					pluralAudiencesToSkip TINYTEXT,
+					audienceFacet VARCHAR(50) DEFAULT 'target_audience',
+					processFictionNonFiction TINYINT DEFAULT 1,
+					fictionNonFictionFacet VARCHAR(50) DEFAULT 'literary_form',
+					processNew TINYINT DEFAULT 1,
+					processAvailable TINYINT DEFAULT 1
+				) ENGINE = InnoDB",
+				'CREATE TABLE IF NOT EXISTS search_interpreter_terms_to_skip (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					settingId INT NOT NULL,
+					term VARCHAR(75) NOT NULL
+				) ENGINE = InnoDB',
+				'CREATE TABLE IF NOT EXISTS search_interpreter_special_terms (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					settingId INT NOT NULL,
+					term TINYTEXT NOT NULL,
+					combineWithNewFilter TINYINT DEFAULT 1,
+					facetsToApply TEXT,
+					sortToApply VARCHAR(50)
+				) ENGINE = InnoDB',
+				//Create a default settings
+				'INSERT INTO search_interpreter_settings (id) VALUES (1)'
+			]
+		], //search_interpreter_settings
+		'add_permission_for_search_interpreter' => [
+			'title' => 'Add permissions for Search Interpreter',
+			'description' => 'Add permissions for Search Interpreter',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Grouped Work Display', 'Administer Search Interpreter', '', 60, 'Allows users to administer the search interpreter to change how searches are processed.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Search Interpreter'))",
+			]
+		], //add_permission_for_econtent_sorting
 		'google_translate_api_key' => [
 			'title' => 'Add Google Translate API Key',
 			'description' => 'Add the ability to store a Google Translate API Key.',
