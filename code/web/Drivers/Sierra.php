@@ -3711,11 +3711,14 @@ class Sierra extends Millennium {
 					$onHoldshelfTime = strtotime($curRow['on_holdshelf_gmt']);
 					$expireHoldshelfTime = strtotime($curRow['expire_holdshelf_gmt']);
 					$cronLogEntry->notes .= "&nbsp;&nbsp;&nbsp;&nbsp;- Processing hold with onHoldshelfTime of $onHoldshelfTime and expireHoldshelfTime of $expireHoldshelfTime.<br/>";
-					if ($onHoldshelfTime > $dateTime24HoursFromNow->getTimestamp()) {
+					if ($onHoldshelfTime > $datetime24HoursAgo->getTimestamp()) {
+						//We will show that a hold is on the holdshelf if it was moved to the hold shelf in the last 24 hours.
 						if ($loadHoldReadyForPickup) {
 							$numMessagesAdded += $this->createIlsMessage($user, 'hold_ready', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}
-					}elseif ($expireHoldshelfTime >= $datetimeNow->getTimestamp() && $expireHoldshelfTime <= $dateTime24HoursFromNow) {
+					}
+					if ($expireHoldshelfTime >= $datetimeNow->getTimestamp() && $expireHoldshelfTime <= $dateTime24HoursFromNow) {
+						//We will show that a hold expires soon if it will expire in the next 24 hours.
 						if ($loadHoldExpiresSoon) {
 							$numMessagesAdded += $this->createIlsMessage($user, 'hold_expire', $ilsNotificationSetting, $existingMessage, $cronLogEntry);
 						}

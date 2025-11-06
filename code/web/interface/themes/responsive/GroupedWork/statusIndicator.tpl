@@ -1,5 +1,6 @@
 {strip}
 {if !isset($applyColors)}{assign var=applyColors value=true}{/if}
+{if !isset($hideCopiesLine)}{assign var=hideCopiesLine value=false}{/if}
 {if $statusInformation->isEContent()}
 	{if $statusInformation->isShowStatus()}
 		{* eContent, easy to handle *}
@@ -66,7 +67,9 @@
 		</div>
 	{/if}
 {/if}
-{if ((($statusInformation->getHoldableCopies() > 0 && $statusInformation->getNumHolds() > 0) || $statusInformation->getOnOrderCopies() > 0) && ($showGroupedHoldCopiesCount || $viewingIndividualRecord == 1) || $showGroupedHoldCopiesCount == 3)}
-	<div class="related-manifestation-copies-message {if $statusInformation->getNumberOfCopiesMessage()|strstr:'wait list'} has-waitlist{/if}">{$statusInformation->getNumberOfCopiesMessage()}</div>
+{if !$hideCopiesLine}
+	{if ((($statusInformation->getHoldableCopies() > 0 && $statusInformation->getNumHolds() > 0) || $statusInformation->getOnOrderCopies() > 0) && ($showGroupedHoldCopiesCount || $viewingIndividualRecord == 1) || $showGroupedHoldCopiesCount == 3 || $showGroupedHoldCopiesCount == 4)}
+		<div class="related-manifestation-copies-message {if $statusInformation->getNumberOfCopiesMessage()|strstr:'wait list'} has-waitlist{/if}">{$statusInformation->getNumberOfCopiesMessage()}</div>
+	{/if}
 {/if}
 {/strip}
