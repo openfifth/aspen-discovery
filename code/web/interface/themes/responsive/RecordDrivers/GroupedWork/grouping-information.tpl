@@ -26,10 +26,24 @@
 			<tr><th>{translate text="Author" isPublicFacing=true}</th><td>{$specifiedDisplayInfo->author}</td></tr>
 			<tr><th>{translate text="Series Name" isPublicFacing=true}</th><td>{$specifiedDisplayInfo->seriesName}</td></tr>
 			<tr><th>{translate text="Series Display Order" isPublicFacing=true}</th><td>{if $specifiedDisplayInfo->seriesDisplayOrder != 0}{$specifiedDisplayInfo->seriesDisplayOrder|format_float_with_min_decimals}{/if}</td></tr>
+			{if !empty($specifiedDisplayInfo->description)}<tr><th>{translate text="Description" isPublicFacing=true}</th><td>{$specifiedDisplayInfo->description|nl2br}</td></tr>{/if}
 		</table>
 		{if !empty($loggedIn) && in_array('Set Grouped Work Display Information', $userPermissions)}
 			<tr><th></th><td><a onclick="AspenDiscovery.GroupedWork.deleteDisplayInfo('{$recordDriver->getPermanentId()}')" class="btn btn-danger btn-sm">{translate text="Delete" isPublicFacing=true}</a></td></tr>
 		{/if}
+	</div>
+{/if}
+
+{if !empty($manualGroupingInfo)}
+	<div id="manualGroupingInfo">
+		<h4>{translate text="Manual Grouping Information" isPublicFacing=true}</h4>
+		<table class="table-striped table table-condensed notranslate">
+			<tr><th>{translate text="Manual Group ID" isPublicFacing=true}</th><td><a href="/Admin/ManualGroupedWorks?objectAction=edit&id={$manualGroupingInfo->id}" class="btn btn-sm btn-default"><i class="fas fa-external-link-alt" role="presentation"></i> {$manualGroupingInfo->id}</a></td></tr>
+			<tr><th>{translate text="Manual Group Title" isPublicFacing=true}</th><td>{$manualGroupingInfo->title}</td></tr>
+			{if !empty($manualGroupingInfo->description)}<tr><th>{translate text="Description" isPublicFacing=true}</th><td>{$manualGroupingInfo->description|nl2br}</td></tr>{/if}
+			<tr><th>{translate text="Date Created" isPublicFacing=true}</th><td>{$manualGroupingInfo->date_created|date_format:"%Y-%m-%d %H:%M"}</td></tr>
+			<tr><th>{translate text="Last Updated" isPublicFacing=true}</th><td>{$manualGroupingInfo->last_updated|date_format:"%Y-%m-%d %H:%M"}</td></tr>
+		</table>
 	</div>
 {/if}
 
@@ -76,7 +90,7 @@
 			<tr id="recordGroupingOverride{$override->id}">
 				<td>{$override->source}</td>
 				<td>{$override->record_id}</td>
-				<td>{$override->date_added|date_format}</td>
+				<td>{$override->date_added|date_format:"%Y-%m-%d %H:%M"}</td>
 				{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
 					<td><a onclick="AspenDiscovery.GroupedWork.deleteRecordGroupingOverride('{$override->id}')" class="btn btn-danger btn-sm">{translate text="Delete" isPublicFacing=true}</a></td>
 				{/if}

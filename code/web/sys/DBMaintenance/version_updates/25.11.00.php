@@ -200,6 +200,41 @@ function getUpdates25_11_00(): array {
 				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS deletedBy INT(11) DEFAULT NULL",
 			],
 		], //add_theme_soft_delete_columns
+		'manually_grouped_works' => [
+			'title' => 'Manual Grouped Works',
+			'description' => 'Add tables to support manually creating and managing grouped works',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS manually_grouped_works (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					title VARCHAR(500) NOT NULL,
+					description TEXT,
+					created_by INT NOT NULL,
+					date_created INT NOT NULL,
+					last_updated INT NOT NULL,
+					INDEX (title)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+
+				"CREATE TABLE IF NOT EXISTS manually_grouped_work_records (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					manually_grouped_work_id INT NOT NULL,
+					type VARCHAR(50) NOT NULL,
+					identifier VARCHAR(150) NOT NULL,
+					user_provided_identifier VARCHAR(255) NULL,
+					identifier_type ENUM('record_id', 'isbn', 'barcode') NOT NULL DEFAULT 'record_id',
+					date_added INT NOT NULL,
+					CONSTRAINT manually_grouped_work_records_work_id FOREIGN KEY (manually_grouped_work_id) 
+					REFERENCES manually_grouped_works(id) ON DELETE CASCADE,
+					UNIQUE KEY unique_manual_group_record (manually_grouped_work_id, type, identifier)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+			],
+		],
+		'add_description_for_grouped_work_display_info' => [
+			'title' => 'Add Description For Grouped Work Display Info',
+			'description' => 'Store the grouped work\'s custom description in grouped_work_display_info.',
+			'sql' => [
+				"ALTER TABLE grouped_work_display_info ADD COLUMN IF NOT EXISTS description TEXT NULL",
+			],
+		], //add_description_for_grouped_work_display_info
 
 		//alexander - Open Fifth
 		'add_use_library_name_for_maps' => [
