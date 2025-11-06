@@ -8205,16 +8205,16 @@ hr.menu {
   color: #c62828;
 }
 .hiddenTitle {
-  font-size: 0;
+  position: absolute!important;
   width: 1px;
   height: 1px;
-  display: inline-block;
   overflow: hidden;
-  position: absolute!important;
   border: 0!important;
   padding: 0!important;
-  margin: 0!important;
-  clip: rect(1px, 1px, 1px, 1px);
+  margin: -1px !important;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap!important;
 }
 #language-selection-header {
   margin-top: 5px;
@@ -10576,6 +10576,9 @@ a.browse-thumbnail.active {
   .calendar-event {
     margin: 3px 5px;
   }
+}
+.calendar-event-title {
+  font-weight: bold;
 }
 .calendar-event-time {
   font-size: 12px;

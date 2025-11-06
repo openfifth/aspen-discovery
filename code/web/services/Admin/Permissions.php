@@ -63,7 +63,7 @@ class Admin_Permissions extends Admin_Admin {
 		$permission = new Permission();
 		$permission->orderBy([
 			'sectionName',
-			'weight',
+			'name',
 		]);
 		$permission->find();
 		$selectedSections = [];

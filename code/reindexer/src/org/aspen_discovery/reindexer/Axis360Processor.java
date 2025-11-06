@@ -85,12 +85,12 @@ class Axis360Processor {
 				if (rawResponse.has("subTitle")) {
 					subTitle = rawResponse.getString("subTitle");
 				}
-				groupedWork.setTitle(title, subTitle, title, title, primaryFormat, formatCategory);
+				groupedWork.setTitle(title, subTitle, title, formatCategory, false, axis360Record);
 
 				String primaryAuthor = productRS.getString("primaryAuthor");
 				groupedWork.setAuthor(primaryAuthor);
 				groupedWork.setAuthAuthor(primaryAuthor);
-				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory);
+				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, axis360Record);
 
 				String series = getFieldValue(rawResponse,"series");
 				if (!series.isEmpty()){

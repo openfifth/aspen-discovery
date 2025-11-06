@@ -2,7 +2,7 @@
 	<div class="row">
 		<div class="col-tn-8">
 			<div class="row">
-				{capture assign=statusIndicator}{include file='GroupedWork/statusIndicator.tpl' statusInformation=$firstRecord->getStatusInformation() viewingIndividualRecord=0 applyColors=false}{/capture}
+				{capture assign=statusIndicator}{include file='GroupedWork/statusIndicator.tpl' statusInformation=$firstRecord->getStatusInformation() viewingIndividualRecord=0 applyColors=false hideCopiesLine=false}{/capture}
 				{capture assign=formatWithLink}<a href="{$firstRecord->getUrl()}">{translate text=$firstRecord->getFormat() isPublicFacing=true inAttribute=true}</a>{/capture}
 				<div class="result-label col-tn-12">{translate text="This %1% is currently %2%" 1=$formatWithLink 2=$statusIndicator isPublicFacing=true}</div>
 			</div>

@@ -37,12 +37,104 @@ function getUpdates25_11_00(): array {
 				'ALTER TABLE translations ADD COLUMN googleTranslated TINYINT DEFAULT 0',
 			]
 		], //translator_indicate_google_translations
+		'event_search_options' => [
+			'title' => 'Event Search Options',
+			'description' => 'Event Search Options (for Aspen Events)',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN aspenEventsToInclude INT DEFAULT 2',
+				'UPDATE library SET aspenEventsToInclude = 1 WHERE isConsortialCatalog = 1'
+			]
+		], //event_search_options
+		'remove_location_event_settings' => [
+			'title' => 'Remove Location Event Settings',
+			'description' => 'Remove Location Event Settings',
+			'continueOnError' => false,
+			'sql' => [
+				'DROP TABLE location_events_setting'
+			]
+		], //event_search_options
+		'force_full_events_index_25_11' => [
+			'title' => 'Force Full Events Index 25.11',
+			'description' => 'Method…',
+			'continueOnError' => false,
+			'sql' => [
+				'UPDATE events_indexing_settings set runFullUpdate = 1'
+			]
+		], //event_search_options
 
 		//katherine - Grove
 
 		//kirstien - Grove
+		'add_user_list_group_table' => [
+			'title' => 'Add list group table',
+			'description' => 'Add table to support grouping of lists',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS user_list_group (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					title VARCHAR(255) NOT NULL,
+					parentGroupId INT(11) DEFAULT NULL,
+					userId INT(11) NOT NULL
+				)'
+			],
+		],
+		//add_user_list_group_table
+		'add_last_used_group_list_view_to_user' => [
+			'title' => 'Add last viewed list group to user',
+			'description' => 'Add column to track last viewed list group for users',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN lastListGroupViewed INT(11) DEFAULT NULL',
+			]
+		],
+		//add_last_used_group_list_view_to_user
+		'add_last_used_group_list_added_to_user' => [
+			'title' => 'Add last added used group list to user',
+			'description' => 'Add column to track last added list group for users',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN lastListGroupAdded INT(11) DEFAULT NULL',
+			]
+		],
+		//add_last_used_group_list_added_to_user
+		'add_group_list_id_to_user_list' => [
+			'title' => 'Add group list id to user list',
+			'description' => 'Add column to track group list id for user lists',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user_list ADD COLUMN listGroupId INT(11) DEFAULT -1',
+			]
+		],
+		//add_group_list_id_to_user_list
 
 		//kodi - Grove
+		'event_field_calendar_options' => [
+			'title' => 'Event Field Calendar Options',
+			'description' => 'Create event_field_calendar_options table.',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS event_field_calendar_options (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					eventFieldId INT NOT NULL,
+					weight INT DEFAULT 0,
+					displayedOnline TINYINT(1) DEFAULT 0,
+					printedCalendar TINYINT(1) DEFAULT 0,
+					printedAgenda TINYINT(1) DEFAULT 0
+				) ENGINE = InnoDB',
+			]
+		], //event_field_calendar_options
+		'calendar_display_setting_library' => [
+			'title' => 'Calendar Settings by Library',
+			'description' => 'Create calendar_display_setting_library_table.',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS calendar_display_setting_library (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					calendarDisplaySettingId INT NOT NULL,
+					libraryId INT NOT NULL
+				) ENGINE = InnoDB',
+			]
+		], //calendar_display_setting_library
 
 		// Myranda - Grove
 
@@ -57,8 +149,76 @@ function getUpdates25_11_00(): array {
 				"ALTER TABLE library_web_builder_resource ADD COLUMN IF NOT EXISTS url VARCHAR(500) DEFAULT NULL"
 			]
 		], //web_resource_library_urls
+		'indexing_profile_displayTitleStripRegex' => [
+			'title' => 'Indexing Profile - Display Title Strip Regex',
+			'description' => 'Add regex field to the Indexing Profile to strip text from display titles of ILS records.',
+			'sql' => [
+				'ALTER TABLE indexing_profiles ADD COLUMN IF NOT EXISTS displayTitleStripRegex TEXT'
+			]
+		], //indexing_profile_displayTitleStripRegex
+		'record_grouping_overrides' => [
+			'title' => 'Create Record Grouping Overrides Table',
+			'description' => 'Create table to store record-level grouping overrides that force specific records to stay in specific grouped works.',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS record_grouping_overrides (
+					id INT AUTO_INCREMENT PRIMARY KEY,
+					source VARCHAR(50) NOT NULL,
+					record_id VARCHAR(50) NOT NULL,
+					grouped_work_permanent_id VARCHAR(40) NOT NULL,
+					added_by INT,
+					date_added INT,
+					UNIQUE KEY unique_record (source, record_id),
+					KEY grouped_work_permanent_id_idx (grouped_work_permanent_id),
+					KEY date_added_idx (date_added)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+			]
+		], //record_grouping_overrides
+		'add_hide_manifestations_in_mobile_view_setting' => [
+			'title' => 'Add Hide Manifestations in Mobile View Setting',
+			'description' => 'Allow libraries to control whether grouped work formats are condensed on mobile devices.',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS hideManifestationsInMobileView TINYINT(1) DEFAULT 1'
+			]
+		], // add_hide_manifestations_in_mobile_view_setting
+		'grouped_work_display_settings_showItemBarcodes' => [
+			'title' => 'Grouped Work Display Settings - Show Item Barcodes',
+			'description' => 'Add option to show item barcodes in copy details.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showItemBarcodes TINYINT(1) DEFAULT 0",
+			],
+		], //grouped_work_display_settings_showItemBarcodes
+		'add_theme_soft_delete_columns' => [
+			'title' => 'Add Soft Delete Columns to Themes',
+			'description' => 'Add metadata needed to support Object Restorations for Themes.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS deleted TINYINT(1) DEFAULT 0",
+				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS dateDeleted INT(11) DEFAULT 0",
+				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS deletedBy INT(11) DEFAULT NULL",
+			],
+		], //add_theme_soft_delete_columns
 
 		//alexander - Open Fifth
+		'add_use_library_name_for_maps' => [
+			'title' => 'Add Use Library Name For Maps',
+			'description' => 'Allow libraries to use library name for google maps',
+			'sql' => [
+				"ALTER TABLE location ADD COLUMN useLocationNameForMaps TINYINT(1) DEFAULT 0",
+			]
+		], //add_use_library_name_for_maps
+		'change_data_types_for_grapes_js_columns' => [
+			'title' => 'Change Data Types For Grapes JS Columns',
+			'description' => 'Update column types to allow for longer pages',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grapes_web_builder MODIFY templateContent LONGTEXT",
+				"ALTER TABLE grapes_web_builder MODIFY htmlData LONGTEXT",
+				"ALTER TABLE grapes_web_builder MODIFY cssData LONGTEXT",
+			]
+		], //change_data_types_for_grapes_js_columns
 
 		//chloe - Open Fifth
 

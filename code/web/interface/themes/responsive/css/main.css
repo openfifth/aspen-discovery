@@ -8318,16 +8318,16 @@ hr.menu {
   color: #c62828;
 }
 .hiddenTitle {
-  font-size: 0;
+  position: absolute!important;
   width: 1px;
   height: 1px;
-  display: inline-block;
   overflow: hidden;
-  position: absolute!important;
   border: 0!important;
   padding: 0!important;
-  margin: 0!important;
-  clip: rect(1px, 1px, 1px, 1px);
+  margin: -1px !important;
+  clip: rect(0, 0, 0, 0);
+  clip-path: inset(50%);
+  white-space: nowrap!important;
 }
 #language-selection-header {
   margin-top: 5px;
@@ -9402,14 +9402,21 @@ a.placard-link {
   margin-right: auto;
 }
 .browse-category div:focus {
-  outline: none;
+  outline: 2px solid #3174af;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
 }
 .browse-category div:hover {
   text-decoration: underline;
 }
 .browse-category.selected {
-  border: 2px solid #3497d1;
+  border: 3px solid #3497d1;
   font-size: 20px;
+}
+.browse-category.selected div:focus {
+  outline: 2px solid #3174af;
+  outline-offset: -2px;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
 }
 #selected-browse-label {
   background-color: #fff;
@@ -11284,7 +11291,11 @@ a.browse-thumbnail.active {
     margin: 3px 5px;
   }
 }
-.calendar-event-time {
+.calendar-event-title {
+  font-weight: bold;
+}
+.calendar-event-time,
+.calendar-event-field {
   font-size: 12px;
 }
 .calendar-event-state {
@@ -11391,19 +11402,22 @@ a.browse-thumbnail.active {
     overflow: clip;
   }
   .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-title,
-  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time,
+  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field {
     overflow: visible;
     white-space: normal;
     max-height: 3.5vh;
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-title,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time,
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-field {
     overflow: visible;
     white-space: normal;
     height: 3.5vh;
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-title,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-time,
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-field {
     overflow: clip;
     white-space: nowrap;
     font-size: 0.85rem;
@@ -11583,19 +11597,22 @@ a.browse-thumbnail.active {
     overflow: clip;
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-title,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time,
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field {
     overflow: visible;
     white-space: normal;
     max-height: 3.5vh;
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-title,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time,
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-field {
     overflow: visible;
     white-space: normal;
     height: 3.5vh;
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-title,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-time {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-time,
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-field {
     overflow: clip;
     white-space: nowrap;
     font-size: 0.85rem;

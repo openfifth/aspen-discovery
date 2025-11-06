@@ -19,8 +19,22 @@
 				<button onclick="return AspenDiscovery.GroupedWork.getDisplayInfoForm('{$recordDriver->getGroupedWorkId()}')" class="btn btn-sm btn-default">{translate text="Set Display Info" isAdminFacing=true}</button>
 			{/if}
 			{if !empty($loggedIn) && in_array('Manually Group and Ungroup Works', $userPermissions)}
-				<button onclick="return AspenDiscovery.GroupedWork.getGroupWithForm(this, '{$recordDriver->getGroupedWorkId()}')" class="btn btn-sm btn-default">{translate text="Group With Work" isAdminFacing=true}</button>
-				<button onclick="return AspenDiscovery.GroupedWork.ungroupRecord(this, '{$recordDriver->getIdWithSource()}')" class="btn btn-sm btn-default">{translate text="Ungroup" isAdminFacing=true}</button>
+				<div class="btn-group">
+					<button type="button" class="btn btn-sm btn-default dropdown-toggle" data-toggle="dropdown">
+						{translate text="Grouping Options" isAdminFacing=true} <span class="caret"></span>
+					</button>
+					<ul class="dropdown-menu">
+						<li><a onclick="return AspenDiscovery.GroupedWork.getGroupWithForm(this, '{$recordDriver->getGroupedWorkId()}')">
+							{translate text="Group with Work" isAdminFacing=true}
+						</a></li>
+						<li><a onclick="return AspenDiscovery.GroupedWork.getMoveRecordForm(this, '{$recordDriver->getIdWithSource()}', '{$recordDriver->getGroupedWorkId()}')">
+							{translate text="Move Record" isAdminFacing=true}
+						</a></li>
+						<li><a onclick="return AspenDiscovery.GroupedWork.ungroupRecord(this, '{$recordDriver->getIdWithSource()}')">
+							{translate text="Ungroup Record" isAdminFacing=true}
+						</a></li>
+					</ul>
+				</div>
 			{/if}
 		</div>
 	</div>

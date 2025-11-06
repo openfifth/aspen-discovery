@@ -20,6 +20,7 @@ class UserList extends DataObject {
 	public $nytListModified;
 	public $dateDeleted;
 	public $deletedBy;
+	public $listGroupId;
 
 	public function getUniquenessFields(): array {
 		return ['id'];
@@ -58,6 +59,7 @@ class UserList extends DataObject {
 			'searchable',
 			'displayListAuthor',
 			'deleteFromIndex',
+			'listGroupId'
 		];
 	}
 
@@ -740,6 +742,13 @@ class UserList extends DataObject {
 			$listEntryInfo = $this->getListEntries($sortName, $forLiDA, $appVersion, $start, $numItems, $activeFilters);
 			$filteredListEntries = $listEntryInfo['listEntries'];
 		//}
+
+		global $library;
+		global $interface;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		foreach ($groupedWorkDisplaySettings->showInSearchResultsMainDetails as $detailOption) {
+			$interface->assign($detailOption, true);
+		}
 
 		$filteredIdsBySource = [];
 		foreach ($filteredListEntries as $listItemEntry) {

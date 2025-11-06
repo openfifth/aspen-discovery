@@ -60,6 +60,15 @@
 									<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
 										{$event.formattedTime}
 									</div>
+									{if !empty($event.eventFields)}
+										{foreach from=$event.eventFields key=eventFieldName item=eventField}
+											<div class="calendar-event-field" id="calendar-event-{$eventFieldName}">
+												{foreach from=$eventField item=value}
+													{str_replace(',',', ',$value)}&nbsp;
+												{/foreach}
+											</div>
+										{/foreach}
+									{/if}
 									{if !empty($event.isCancelled)}
 										<div class="label label-danger calendar-event-state">
 											{translate text="Cancelled" isPublicFacing=true}
