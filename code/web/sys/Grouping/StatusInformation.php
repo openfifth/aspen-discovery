@@ -286,27 +286,29 @@ class Grouping_StatusInformation {
 				}else{
 					$showWaitList = false;
 				}
-				if ($library->showGroupedHoldCopiesCount == 4 || (($this->getNumHolds() > 0 && $this->getHoldableCopies() > 0) && ($showWaitList))) {
+				if ($library->showGroupedHoldCopiesCount != 4 && (($this->getNumHolds() > 0 && $this->getHoldableCopies() > 0) && ($showWaitList))) {
 					if ($this->getCopies() == 1) {
 						$numberOfCopiesMessage .= '1 copy';
 					} elseif ($this->getCopies() > 1) {
 						$numberOfCopiesMessage .= '%1% copies';
 					}
-					if ($library->showGroupedHoldCopiesCount != 4) {
-						if (!empty($numberOfCopiesMessage)) {
-							$numberOfCopiesMessage .= ', ';
-						}
-						if ($this->getNumHolds() == 1) {
-							$numberOfCopiesMessage .= '1 person is on the wait list';
-						} else {
-							$numberOfCopiesMessage .= '%2% people are on the wait list';
-						}
+					if (!empty($numberOfCopiesMessage)) {
+						$numberOfCopiesMessage .= ', ';
+					}
+					if ($this->getNumHolds() == 1) {
+						$numberOfCopiesMessage .= '1 person is on the wait list';
+					} else {
+						$numberOfCopiesMessage .= '%2% people are on the wait list';
 					}
 				}
 
 				// Show Holdable Copies without Hold Counts
 				if ($library->showGroupedHoldCopiesCount == 4) {
-					$numberOfCopiesMessage .= '%5% copies';
+					if ($this->getHoldableCopies() == 1) {
+						$numberOfCopiesMessage .= '1 copy';
+					} elseif ($this->getHoldableCopies() > 1) {
+						$numberOfCopiesMessage .= '%5% copies';
+					}
 				}
 			}
 			if (!empty($numberOfCopiesMessage)) {
