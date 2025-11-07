@@ -37,7 +37,7 @@ class ExternalRequestSettings extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Enabled?',
 				'description' => 'Whether or not to always log requests when they start with the given type',
-				'default' => '0',
+				'default' => '1',
 			],
 			'expireDate' => [
 				'property' => 'expireDate',
