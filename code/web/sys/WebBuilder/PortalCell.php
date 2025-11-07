@@ -469,8 +469,14 @@ class PortalCell extends DataObject {
 					if (!$this->hideDescription) {
 						$interface->assign('description', $webResource->getFormattedDescription());
 					}
+
+					$libraryId = null;
+					$activeLibrary = Library::getActiveLibrary();
+					if ($activeLibrary != null) {
+						$libraryId = $activeLibrary->libraryId;
+					}
 					$interface->assign('title', $webResource->name);
-					$interface->assign('url', $webResource->url);
+					$interface->assign('url', $webResource->getUrlForLibrary($libraryId));
 					$interface->assign('logo', $resourceDriver->getBookcoverUrl('large'));
 
 					$contents .= $interface->fetch('WebBuilder/resource.tpl');

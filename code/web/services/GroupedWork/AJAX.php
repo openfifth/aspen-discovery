@@ -1777,10 +1777,31 @@ class GroupedWork_AJAX extends JSON_Action {
 			$originalGroupedWork = new GroupedWork();
 			$originalGroupedWork->permanent_id = $id;
 			if (!empty($id) && $originalGroupedWork->find(true)) {
+				require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+				$sourceManualGroupedWork = new ManualGroupedWork();
+				$sourceManualGroupedWork->grouped_work_permanent_id = $originalGroupedWork->permanent_id;
+				if ($sourceManualGroupedWork->find(true)) {
+					$results['message'] = translate([
+						'text' => "Cannot group a manually created grouped work. Edit the manually created grouped work to add any records.",
+						'isAdminFacing' => true,
+					]);
+					return $results;
+				}
+
 				$workToGroupWithId = $_REQUEST['groupWithId'];
 				$workToGroupWith = new GroupedWork();
 				$workToGroupWith->permanent_id = $workToGroupWithId;
 				if (!empty($workToGroupWithId) && $workToGroupWith->find(true)) {
+					$manualGroupedWork = new ManualGroupedWork();
+					$manualGroupedWork->grouped_work_permanent_id = $workToGroupWith->permanent_id;
+					if ($manualGroupedWork->find(true)) {
+						$results['message'] = translate([
+							'text' => "Cannot group with a manually created grouped work. Edit the manually created grouped work to add any records.",
+							'isAdminFacing' => true,
+						]);
+						return $results;
+					}
+
 					$okToGroup = false;
 					if ($originalGroupedWork->grouping_category == $workToGroupWith->grouping_category) {
 						$okToGroup = true;
@@ -1913,6 +1934,13 @@ class GroupedWork_AJAX extends JSON_Action {
 						$primaryWork = new GroupedWork();
 						$primaryWork->permanent_id = $doc['id'];
 						if ($primaryWork->find(true)) {
+							require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+							$manualGroupedWork = new ManualGroupedWork();
+							$manualGroupedWork->grouped_work_permanent_id = $primaryWork->permanent_id;
+							if ($manualGroupedWork->find(true)) {
+								continue;
+							}
+
 							$isValidForGrouping = false;
 							if ($primaryWork->grouping_category == $groupedWork->grouping_category) {
 								$isValidForGrouping = true;
@@ -2123,6 +2151,7 @@ class GroupedWork_AJAX extends JSON_Action {
 					$interface->assign('author', $existingDisplayInfo->author);
 					$interface->assign('seriesName', $existingDisplayInfo->seriesName);
 					$interface->assign('seriesDisplayOrder', ($existingDisplayInfo->seriesDisplayOrder == 0) ? '' : $existingDisplayInfo->seriesDisplayOrder);
+					$interface->assign('description', $existingDisplayInfo->description);
 				} else {
 					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 					$recordDriver = new GroupedWorkDriver($id);
@@ -2136,12 +2165,13 @@ class GroupedWork_AJAX extends JSON_Action {
 						$interface->assign('seriesName', '');
 						$interface->assign('seriesDisplayOrder', '');
 					}
+					$interface->assign('description', '');
 				}
 
 				$results = [
 					'success' => true,
 					'title' => translate([
-						'text' => "Set display information",
+						'text' => "Set Display Information",
 						'isAdminFacing' => true,
 					]),
 					'modalBody' => $interface->fetch("GroupedWork/groupedWorkDisplayInfoForm.tpl"),
@@ -2169,8 +2199,12 @@ class GroupedWork_AJAX extends JSON_Action {
 	function processDisplayInfoForm() : array {
 		$results = [
 			'success' => false,
+			'title' => translate([
+				'text' => 'Failed to Update Display Information',
+				'isAdminFacing' => true,
+			]),
 			'message' => translate([
-				'text' => 'Unknown Error',
+				'text' => 'An unknown error has occurred.',
 				'isAdminFacing' => true,
 			]),
 		];
@@ -2180,16 +2214,17 @@ class GroupedWork_AJAX extends JSON_Action {
 			$id = $_REQUEST['id'];
 			$groupedWork->permanent_id = $id;
 			if ($groupedWork->find(true)) {
-				$title = $_REQUEST['title'];
-				$author = $_REQUEST['author'];
-				$seriesName = $_REQUEST['seriesName'];
-				$seriesDisplayOrder = $_REQUEST['seriesDisplayOrder'];
+				$title = $_REQUEST['title'] ?? '';
+				$author = $_REQUEST['author'] ?? '';
+				$seriesName = $_REQUEST['seriesName'] ?? '';
+				$seriesDisplayOrder = $_REQUEST['seriesDisplayOrder'] ?? '';
+				$description = $_REQUEST['description'] ?? '';
 				if (!is_numeric($seriesDisplayOrder)) {
 					$seriesDisplayOrder = '0';
 				}
-				if (empty($title) && empty($author) && empty($seriesName) && empty($seriesDisplayOrder)) {
+				if (empty($title) && empty($author) && empty($seriesName) && empty($seriesDisplayOrder) && empty($description)) {
 					$results['message'] = translate([
-						'text' => "Please specify at least one piece of information",
+						'text' => "Please specify at least one piece of information.",
 						'isAdminFacing' => true,
 					]);
 				} else {
@@ -2204,6 +2239,7 @@ class GroupedWork_AJAX extends JSON_Action {
 					$existingDisplayInfo->author = $author;
 					$existingDisplayInfo->seriesName = $seriesName;
 					$existingDisplayInfo->seriesDisplayOrder = $seriesDisplayOrder;
+					$existingDisplayInfo->description = $description;
 					if ($isNew) {
 						$existingDisplayInfo->addedBy = UserAccount::getActiveUserId();
 						$existingDisplayInfo->dateAdded = time();
@@ -2214,21 +2250,25 @@ class GroupedWork_AJAX extends JSON_Action {
 
 					$results = [
 						'success' => true,
+						'title' => translate([
+							'text' => 'Successfully Set Display Information',
+							'isAdminFacing' => true,
+						]),
 						'message' => translate([
-							'text' => 'The display information has been set and the index will update shortly.',
+							'text' => 'The display information has been set, and the grouped work will be reindexed shortly.',
 							'isAdminFacing' => true,
 						]),
 					];
 				}
 			} else {
 				$results['message'] = translate([
-					'text' => "Could not find a work with that id",
+					'text' => "Could not find a grouped work with the provided ID.",
 					'isAdminFacing' => true,
 				]);
 			}
 		} else {
 			$results['message'] = translate([
-				'text' => "You do not have the correct permissions for this operation",
+				'text' => "You do not have the correct permissions to update the display information.",
 				'isAdminFacing' => true,
 			]);
 		}
@@ -2240,11 +2280,11 @@ class GroupedWork_AJAX extends JSON_Action {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Deleting display information',
+				'text' => 'Failed to Delete Display Information',
 				'isAdminFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Unknown error deleting display info',
+				'text' => 'An unknown error has occurred.',
 				'isAdminFacing' => true,
 			]),
 		];
@@ -2263,20 +2303,24 @@ class GroupedWork_AJAX extends JSON_Action {
 				}
 				$result = [
 					'success' => true,
+					'title' => translate([
+						'text' => 'Successfully Deleted Display Information',
+						'isAdminFacing' => true,
+					]),
 					'message' => translate([
-						'text' => "Successfully deleted the display info, the index will update shortly.",
+						'text' => "Successfully deleted the display information. The grouped work will be reindexed shortly.",
 						'isAdminFacing' => true,
 					]),
 				];
 			} else {
 				$result['message'] = translate([
-					'text' => "Could not find the display info to delete, it's likely been deleted already",
+					'text' => "Could not find the display information to delete. It may have already been deleted.",
 					'isAdminFacing' => true,
 				]);
 			}
 		} else {
 			$result['message'] = translate([
-				'text' => "You do not have the correct permissions for this operation",
+				'text' => "You do not have the correct permissions to delete display information.",
 				'isAdminFacing' => true,
 			]);
 		}
@@ -3071,14 +3115,52 @@ class GroupedWork_AJAX extends JSON_Action {
 			}
 			[$source, $identifier] = $parts;
 
+			require_once ROOT_DIR . '/sys/Grouping/ManuallyGroupedWorkRecord.php';
+			$manuallyGroupedRecord = new ManuallyGroupedWorkRecord();
+			$manuallyGroupedRecord->selectAdd();
+			$manuallyGroupedRecord->selectAdd('manually_grouped_work_id');
+			$manuallyGroupedRecord->type = $source;
+			$manuallyGroupedRecord->identifier = $identifier;
+			if ($manuallyGroupedRecord->find(true)) {
+				require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+				$manualGroupedWork = new ManualGroupedWork();
+				$manualGroupedWork->selectAdd();
+				$manualGroupedWork->selectAdd('id, title');
+				$manualGroupedWork->id = $manuallyGroupedRecord->manually_grouped_work_id;
+				if ($manualGroupedWork->find(true)) {
+					$results['message'] = translate([
+						'text' => "Cannot move a record that is part of manually grouped work '%1%' (ID: %2%). First, remove it from the manual group.",
+						'isAdminFacing' => true,
+						1 => $manualGroupedWork->title,
+						2 => $manualGroupedWork->id,
+					]);
+					return $results;
+				}
+			}
+
 			$targetPermanentId = trim($_REQUEST['targetWorkId'] ?? '');
-			
+
 			$targetWork = new GroupedWork();
 			$targetWork->permanent_id = $targetPermanentId;
 			if (!$targetWork->find(true)) {
 				$results['message'] = translate([
 					'text' => 'Could not find the target work.',
 					'isAdminFacing' => true,
+				]);
+				return $results;
+			}
+
+			require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+			$targetManualGroupedWork = new ManualGroupedWork();
+			$targetManualGroupedWork->selectAdd();
+			$targetManualGroupedWork->selectAdd('id, title');
+			$targetManualGroupedWork->grouped_work_permanent_id = $targetWork->permanent_id;
+			if ($targetManualGroupedWork->find(true)) {
+				$results['message'] = translate([
+					'text' => "Cannot move a record to manually grouped work '%1%' (ID: %2%). Instead, edit the manually grouped work to add records.",
+					'isAdminFacing' => true,
+					1 => $targetManualGroupedWork->title,
+					2 => $targetManualGroupedWork->id,
 				]);
 				return $results;
 			}

@@ -21,6 +21,59 @@ function getUpdates25_11_00(): array {
 				'ALTER TABLE library add COLUMN allowAutomaticFaceting TINYINT DEFAULT 0'
 			]
 		], //library_allow_automatic_faceting
+		'search_interpreter_settings' => [
+			'title' => 'Search Interpreter Settings',
+			'description' => 'Add a table to control how searches are processed',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE library CHANGE column allowAutomaticFaceting enableSearchInterpreter TINYINT DEFAULT 0',
+				"DROP TABLE IF EXISTS search_interpreter_settings",
+				"DROP TABLE IF EXISTS search_interpreter_terms_to_skip",
+				"DROP TABLE IF EXISTS search_interpreter_special_terms",
+				"CREATE TABLE IF NOT EXISTS search_interpreter_settings (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					processFormatCategories TINYINT DEFAULT 1,
+					formatCategoriesToSkip TINYTEXT,
+					processFormats TINYINT DEFAULT 1,
+					formatsToSkip TINYTEXT,
+					processPluralFormats TINYINT DEFAULT 1,
+					pluralFormatsToSkip TINYTEXT,
+					processAudiences TINYINT DEFAULT 1,
+					audiencesToSkip TINYTEXT,
+					processPluralAudiences TINYINT DEFAULT 1,
+					pluralAudiencesToSkip TINYTEXT,
+					audienceFacet VARCHAR(50) DEFAULT 'target_audience',
+					processFictionNonFiction TINYINT DEFAULT 1,
+					fictionNonFictionFacet VARCHAR(50) DEFAULT 'literary_form',
+					processNew TINYINT DEFAULT 1,
+					processAvailable TINYINT DEFAULT 1
+				) ENGINE = InnoDB",
+				'CREATE TABLE IF NOT EXISTS search_interpreter_terms_to_skip (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					settingId INT NOT NULL,
+					term VARCHAR(75) NOT NULL
+				) ENGINE = InnoDB',
+				'CREATE TABLE IF NOT EXISTS search_interpreter_special_terms (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					settingId INT NOT NULL,
+					term TINYTEXT NOT NULL,
+					combineWithNewFilter TINYINT DEFAULT 1,
+					facetsToApply TEXT,
+					sortToApply VARCHAR(50)
+				) ENGINE = InnoDB',
+				//Create a default settings
+				'INSERT INTO search_interpreter_settings (id) VALUES (1)'
+			]
+		], //search_interpreter_settings
+		'add_permission_for_search_interpreter' => [
+			'title' => 'Add permissions for Search Interpreter',
+			'description' => 'Add permissions for Search Interpreter',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Grouped Work Display', 'Administer Search Interpreter', '', 60, 'Allows users to administer the search interpreter to change how searches are processed.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Search Interpreter'))",
+			]
+		], //add_permission_for_econtent_sorting
 		'google_translate_api_key' => [
 			'title' => 'Add Google Translate API Key',
 			'description' => 'Add the ability to store a Google Translate API Key.',
@@ -141,6 +194,14 @@ function getUpdates25_11_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'web_resource_library_urls' => [
+			'title' => 'Web Resource Library-Specific URLs',
+			'description' => 'Add support for library-specific URLs in Web Resources, allowing different libraries to use different URLs for the same resource. This enables use cases like Massachusetts statewide databases where each library has their own URL for the same resource.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE library_web_builder_resource ADD COLUMN IF NOT EXISTS url VARCHAR(500) DEFAULT NULL"
+			]
+		], //web_resource_library_urls
 		'indexing_profile_displayTitleStripRegex' => [
 			'title' => 'Indexing Profile - Display Title Strip Regex',
 			'description' => 'Add regex field to the Indexing Profile to strip text from display titles of ILS records.',
@@ -192,6 +253,41 @@ function getUpdates25_11_00(): array {
 				"ALTER TABLE themes ADD COLUMN IF NOT EXISTS deletedBy INT(11) DEFAULT NULL",
 			],
 		], //add_theme_soft_delete_columns
+		'manually_grouped_works' => [
+			'title' => 'Manual Grouped Works',
+			'description' => 'Add tables to support manually creating and managing grouped works',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS manually_grouped_works (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					title VARCHAR(500) NOT NULL,
+					description TEXT,
+					created_by INT NOT NULL,
+					date_created INT NOT NULL,
+					last_updated INT NOT NULL,
+					INDEX (title)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+
+				"CREATE TABLE IF NOT EXISTS manually_grouped_work_records (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					manually_grouped_work_id INT NOT NULL,
+					type VARCHAR(50) NOT NULL,
+					identifier VARCHAR(150) NOT NULL,
+					user_provided_identifier VARCHAR(255) NULL,
+					identifier_type ENUM('record_id', 'isbn', 'barcode') NOT NULL DEFAULT 'record_id',
+					date_added INT NOT NULL,
+					CONSTRAINT manually_grouped_work_records_work_id FOREIGN KEY (manually_grouped_work_id) 
+					REFERENCES manually_grouped_works(id) ON DELETE CASCADE,
+					UNIQUE KEY unique_manual_group_record (manually_grouped_work_id, type, identifier)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+			],
+		],
+		'add_description_for_grouped_work_display_info' => [
+			'title' => 'Add Description For Grouped Work Display Info',
+			'description' => 'Store the grouped work\'s custom description in grouped_work_display_info.',
+			'sql' => [
+				"ALTER TABLE grouped_work_display_info ADD COLUMN IF NOT EXISTS description TEXT NULL",
+			],
+		], //add_description_for_grouped_work_display_info
 
 		//alexander - Open Fifth
 		'add_use_library_name_for_maps' => [

@@ -9,6 +9,7 @@ class GroupedWorkDisplayInfo extends DataObject {
 	public $author;
 	public $seriesName;
 	public $seriesDisplayOrder;
+	public $description;
 	public $addedBy;
 	public $dateAdded;
 

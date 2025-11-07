@@ -2305,7 +2305,7 @@ class Location extends DataObject {
 						$daysChecked++;
 					}
 
-					$nextDayOfWeek = date('a', $nextDay);
+					$nextDayOfWeek = date('l', $nextDay);
 					if (isset($nextDayHours['closed']) && $nextDayHours['closed']) {
 						if (isset($closureReason)) {
 							if ($simpleOutput) {

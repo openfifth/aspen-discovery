@@ -103,7 +103,24 @@ class WebResourceRecordDriver extends IndexRecordDriver {
 		return $this->fields['id'];
 	}
 
+	public function getNumericId(): string {
+		return str_replace('WebResource:', '', $this->getUniqueID());
+	}
+
 	public function getLinkUrl($absolutePath = false) {
+		require_once ROOT_DIR . '/sys/WebBuilder/WebResource.php';
+		$webResource = new WebResource();
+		$webResource->id = $this->getNumericId();
+		if ($webResource->find(true)) {
+			$libraryId = null;
+			$activeLibrary = Library::getActiveLibrary();
+			if ($activeLibrary != null) {
+				$libraryId = $activeLibrary->libraryId;
+			}
+
+			return $webResource->getUrlForLibrary($libraryId);
+		}
+
 		return $this->fields['source_url'];
 	}
 }

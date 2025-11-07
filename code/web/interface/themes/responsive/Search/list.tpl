@@ -1,10 +1,10 @@
 <h1 class="hiddenTitle">{translate text='Catalog Search Results' isPublicFacing=true}</h1>
 <div id="searchInfo">
 	{if !empty($hasAutomaticFacetsApplied)}
-		<div id="replacement-search-info-block" class="alert alert-warning" role="alert">
-			<div class="pull-left replacement-search-info-text"><i class='fas fa-exclamation-triangle fa-2xl' role="presentation" style="padding-right: 10px;padding-top: 12px;"></i></div>
-			<div id="replacement-search-info"><span class="replacement-search-info-text">{translate text="We automatically narrowed your search to deliver more relevant results." isPublicFacing=true}</span></div>
-			<div id="replacement-search-info"><span class="replacement-search-info-text"><a href='{$searchUrlWithoutAutomaticFiltering}' class="btn btn-default btn-sm">{translate text="Restore original search" isPublicFacing=true}</a></span></div>
+		<div id="replacement-search-info-block" class="alert alert-info" role="alert">
+			<div class="pull-left replacement-search-info-text"><i class='fas fa-question-circle fa-2xl' role="presentation" style="padding-right: 10px;"></i></div>
+			<span class="replacement-search-info-text">{translate text="We automatically narrowed your search to deliver more relevant results." isPublicFacing=true}</span>
+			<span class="replacement-search-info-text"><a href='{$searchUrlWithoutAutomaticFiltering}' class="btn btn-default btn-sm">{translate text="Restore original search" isPublicFacing=true}</a></span>
 		</div>
 	{/if}
 

@@ -1682,6 +1682,17 @@ public class GroupedWorkIndexer {
 						groupedWork.addDebugMessage("Not applying series data for grouped work because series module is enabled", 2);
 					}
 				}
+				String description = displayInfoRS.getString("description");
+				if (description != null && !description.isEmpty()){
+					if (groupedWork.isDebugEnabled()) {
+						groupedWork.addDebugMessage("Setting description to " + description + " based on display info", 2);
+					}
+					groupedWork.setDisplayDescription(description);
+				} else {
+					if (groupedWork.isDebugEnabled()) {
+						groupedWork.addDebugMessage("No description set in display info, not changing description", 2);
+					}
+				}
 
 			}
 			displayInfoRS.close();
