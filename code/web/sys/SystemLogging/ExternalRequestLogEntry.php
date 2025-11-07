@@ -159,7 +159,7 @@ class ExternalRequestLogEntry extends DataObject {
 				{
 					if($settings->enabled && $settings->expireDate >= date("Y-m-d"))
 					{
-						$status = true;//TODO check the date and if its set to enabled and set enabled to false if after date
+						$status = true;
 						break;
 					}
 				}
@@ -173,14 +173,13 @@ class ExternalRequestLogEntry extends DataObject {
 					{
 						if($settings->enabled && $settings->expireDate >= date("Y-m-d"))
 						{
-							$status = true;//TODO check the date and if its set to enabled and set enabled to false if after date
+							$status = true;
 							break;
 						}
 					}
 				}
 
 			}
-			//TODO check for API level settings too.
 		}
 
 		return $status; 

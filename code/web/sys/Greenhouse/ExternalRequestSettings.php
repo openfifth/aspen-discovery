@@ -2,7 +2,7 @@
 
 
 class ExternalRequestSettings extends DataObject {
-	public $__table = 'external_request_settings'; //TODO make this table
+	public $__table = 'external_request_settings';
 	public $id;
 	public $requestType;
 	public $enabled;
@@ -13,10 +13,6 @@ class ExternalRequestSettings extends DataObject {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
 		}
-		//TODO idea: table of settings for external request type
-		// modify externalRequestLogEntry::getForceDebuggingLogStatus to check this table
-		// and if the setting is enabled return true.
-		// will also need to modify the template to link to the page for the setting
 		$structure = [
 			'id' => [
 				'property' => 'id',
