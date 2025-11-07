@@ -1021,18 +1021,20 @@ abstract class DataObject implements JsonSerializable {
 	 * @return void
 	 */
 	protected function clearOneToManyOptions(string $oneToManyDBObjectClassName, string $keyOther, ?array $allowableValues = null) : void {
-		if ($allowableValues == null) {
-			/** @var DataObject $oneToManyDBObject */
-			$oneToManyDBObject = new $oneToManyDBObjectClassName();
-			$oneToManyDBObject->$keyOther = $this->{$this->__primaryKey};
-			$oneToManyDBObject->delete(true);
-		}else{
-			foreach ($allowableValues as $valueId => $value) {
+		if ($this->getPrimaryKeyValue() > 0) {
+			if ($allowableValues == null) {
 				/** @var DataObject $oneToManyDBObject */
 				$oneToManyDBObject = new $oneToManyDBObjectClassName();
-				$oneToManyDBObject->{$oneToManyDBObject->__primaryKey} = $valueId;
 				$oneToManyDBObject->$keyOther = $this->{$this->__primaryKey};
 				$oneToManyDBObject->delete(true);
+			}else{
+				foreach ($allowableValues as $valueId => $value) {
+					/** @var DataObject $oneToManyDBObject */
+					$oneToManyDBObject = new $oneToManyDBObjectClassName();
+					$oneToManyDBObject->{$oneToManyDBObject->__primaryKey} = $valueId;
+					$oneToManyDBObject->$keyOther = $this->{$this->__primaryKey};
+					$oneToManyDBObject->delete(true);
+				}
 			}
 		}
 	}
