@@ -80,7 +80,7 @@ $.fn.rater = function(options) {
 				if (currentRating === undefined) {
 					currentRating = initialRating;
 				}
-				$on.width(currentRating * opts.size); // restore to the last known rating.
+				$on.width(currentRating * opts.size);
 			}).on('click', function(e) {
 				const r = Math.round($on.width() / $off.width() * (opts.ratings.length * opts.step)) / opts.step;
 				$.fn.rater.rate($this, opts, r);
