@@ -1964,12 +1964,16 @@ class BookCoverProcessor {
 				$props = [
 					'eventDate' => $startDate,
 					'isPastEvent' => true,
+					'branch' => $userEntry->location,
+					'displayBranchOnThumbnail' => $userEntry->displayEventBranchOnThumbnail,
 				];
 				$title = $userEntry->title;
 			} else{
 				$props = [
 					'eventDate' => $driver->getStartDateFromDB($id),
 					'isPastEvent' => true,
+					'branch' => $driver->getBranchFromDB($id),
+					'displayBranchOnThumbnail' => $driver->getDisplayBranchOnThumbnailFromDB($id),
 				];
 				$title = $driver->getTitleFromDB($id);
 			}
