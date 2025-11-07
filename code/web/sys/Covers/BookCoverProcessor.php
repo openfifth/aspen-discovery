@@ -1974,6 +1974,9 @@ class BookCoverProcessor {
 			$props = [
 				'eventDate' => $driver->getStartDate(),
 				'isPastEvent' => $isPast,
+				'branch' => $driver->getBranch(),
+				'displayBranchOnThumbnail' => $driver->getDisplayBranchOnThumbnail(),
+
 			];
 			$coverBuilder->getCover($driver->getTitle(), $this->cacheFile, $props);
 		}
