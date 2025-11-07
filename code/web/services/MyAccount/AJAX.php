@@ -8160,6 +8160,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$userEventsEntry->title = mb_substr($title, 0, 50);
 						$eventDate = $recordDriver->getStartDate();
 						$userEventsEntry->eventDate = $eventDate->getTimestamp();
+						$userEventsEntry->displayEventBranchOnThumbnail = $recordDriver->getDisplayBranchOnThumbnail();
 						if ($recordDriver->isRegistrationRequired()) {
 							$regRequired = 1;
 						} else {
