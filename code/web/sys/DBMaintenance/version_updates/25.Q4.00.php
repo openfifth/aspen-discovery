@@ -23,5 +23,12 @@ function getUpdates25_Q4_00(): array {
 				"ALTER TABLE grapes_web_builder MODIFY cssData LONGTEXT",
 			]
 		], //change_data_types_for_grapes_js_columns
+		'add_option_to_add_location_to_event_thumbail_image' => [
+			'title' => 'Add Option to Add Location to Event Thumnail Image',
+			'description' => 'Add ability to choose to add event location to event thumbnail image',
+			'sql' => [
+				"ALTER TABLE event ADD COLUMN displayEventBranchOnThumbnail TINYINT(1) DEFAULT 0"
+			]
+		], //add_option_to_add_location_to_event_thumbnail_image 
 	];
 }
