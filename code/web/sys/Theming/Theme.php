@@ -2825,12 +2825,18 @@ class Theme extends DataObject {
 	}
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
-		if ($hardDelete) {
-			$this->clearLibraries();
-			$this->clearLocations();
+		$deleted = parent::delete($useWhere, $hardDelete);
+		if ($deleted) {
+			//Only clear libraries and locations if we are doing a hard delete and useWhere is off
+			//  - checking useWhere is needed because useWhere can delete multiple themes at once.
+			//    we probably should get a list of all the objects that were deleted so we can clean up the links for all of them.
+			if ($hardDelete && !$useWhere) {
+				$this->clearLibraries();
+				$this->clearLocations();
+			}
+			$this->clearDefaultCovers();
 		}
-		$this->clearDefaultCovers();
-		return parent::delete($useWhere, $hardDelete);
+		return $deleted;
 	}
 
 	public function applyDefaults() : void {
