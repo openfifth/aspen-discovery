@@ -657,6 +657,7 @@ class DataObjectUtil {
 									'multiSelect',
 									'regularExpression',
 									'multilineRegularExpression',
+									'hidden',
 								])) {
 									$oldValue = $subObject->$subPropertyName;
 									$changed = $subObject->setProperty($subPropertyName, $_REQUEST[$requestKey][$id], $subProperty);
