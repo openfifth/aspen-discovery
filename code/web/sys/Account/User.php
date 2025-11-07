@@ -4262,7 +4262,9 @@ class User extends DataObject {
 		$sections['system_admin']->addAction(new AdminAction('Modules', 'Enable and disable sections of Aspen Discovery.', '/Admin/Modules'), 'Administer Modules');
 		$sections['system_admin']->addAction(new AdminAction('Administrators', 'Define users from the ILS who should have administration privileges.', '/Admin/Administrators'), 'Administer Users');
 		$sections['system_admin']->addAction(new AdminAction('Local Administrators', 'Define local Aspen users who should have administration privileges.', '/Admin/LocalAdministrators'), 'Manage Local Administrators');
-		$sections['system_admin']->addAction(new AdminAction('Permissions', 'Define who what each role in the system can do.', '/Admin/Permissions'), 'Administer Permissions');
+		$permissionsAction = new AdminAction('Permissions', 'Define who what each role in the system can do.', '/Admin/Permissions');
+		$sections['system_admin']->addAction($permissionsAction, 'Administer Permissions');
+		$permissionsAction->addSubAction(new AdminAction('Permissions by Role', 'A report of all selected permissions by role.', '/Admin/PermissionsReport'), 'Administer Permissions');
 		$sections['system_admin']->addAction(new AdminAction('DB Maintenance', 'Update the database when new versions of Aspen Discovery are released.', '/Admin/DBMaintenance'), 'Run Database Maintenance');
 		$sections['system_admin']->addAction(new AdminAction('Optional Updates', 'Recommended updates that can be optionally applied when new versions of Aspen Discovery are released.', '/Admin/OptionalUpdates'), 'Run Optional Updates');
 		$sections['system_admin']->addAction(new AdminAction('Twilio Settings', 'Settings to allow Aspen Discovery to send texts via Twilio.', '/Admin/TwilioSettings'), 'Administer Twilio');
