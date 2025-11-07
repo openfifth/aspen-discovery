@@ -5891,7 +5891,7 @@ class Library extends DataObject {
 		return $this->_materialsRequestFormats;
 	}
 
-	private $_locations = null;
+	protected $_locations = null;
 	/**
 	 * @return Location[]
 	 */
