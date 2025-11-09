@@ -139,9 +139,9 @@ abstract class Solr {
 		if (empty($index)) {
 			global $library;
 			if ($library) {
-				$index = 'grouped_works';
+				$index = 'grouped_works_v2';
 			} else {
-				$index = isset($configArray['Index']['default_core']) ? $configArray['Index']['default_core'] : "grouped_works";
+				$index = isset($configArray['Index']['default_core']) ? $configArray['Index']['default_core'] : "grouped_works_v2";
 			}
 
 			$this->index = $index;
