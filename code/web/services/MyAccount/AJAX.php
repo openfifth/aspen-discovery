@@ -7633,6 +7633,67 @@ class MyAccount_AJAX extends JSON_Action {
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
 	}
 
+	function createPay360Order(){
+		$transactionType = $_REQUEST['type'];
+		if ($transactionType == 'donation') {
+			$result = $this->createGenericDonation('Pay360');
+		} else {
+			$result = $this->createGenericOrder('Pay360');
+		}
+
+		if (array_key_exists('success', $result) && $result['success'] === false) {
+			return $result;
+		}
+
+		if ($transactionType == 'donation') {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+				$tempDonation,
+			] = $result;
+		} else {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+			] = $result;
+		}
+
+		$homeLocationPay360SettingId = $patron->getHomeLocation()->pay360SettingId;
+		$pay360SettingsId = $homeLocationPay360SettingId != -1 ? $homeLocationPay360SettingId : $paymentLibrary->pay360SettingId;
+
+		$selectedFines = [];
+
+		foreach(explode(',', $payment->finesPaid) as $selectedFine) {
+			$selectedFines[] = ['id' => explode('|', $selectedFine)[0], 'amount' => explode('|', $selectedFine)[1]];
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $payment->id, $selectedFines, $patron->getCatalogDriver(), true);
+		$client->createOrder();
+
+		if ($client->invokeResponse->invokeResult->status !== "SUCCESS") {
+			$payment->cancelled = true;
+			$payment->error = "invoke request for scpReference $response->scpReference failed with status " . $response->invokeResult->status;
+			$payment->update(); 
+			return [
+				'success' => false,
+				'message' => 'Could not connect to Pay360.'
+			];
+		}
+
+		return [
+			'success' => true,
+			'message' => 'Redirecting to payment processor',
+			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl, 
+		];
+	}
+
 	/** @noinspection PhpUnused */
 	function dismissBrowseCategory() {
 		$patronId = UserAccount::getActiveUserId();
