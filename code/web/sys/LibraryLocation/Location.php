@@ -144,6 +144,8 @@ class Location extends DataObject {
 
 	public $heyCentricSettingId;
 
+	public $pay360SettingId;
+
 	private $_sublocations;
 
 	//LiDA Settings
@@ -184,6 +186,7 @@ class Location extends DataObject {
 			'ebscohostSearchSettingId',
 			'lidaSelfCheckSettingId',
 			'heyCentricSettingId',
+			'pay360SettingId'
 		];
 	}
 
