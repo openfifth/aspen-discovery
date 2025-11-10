@@ -49,7 +49,7 @@ class SystemVariables extends DataObject {
 	public $removeTheWordSeriesFromEndOfSeries;
 	public $disable_user_agent_logging;
 	public $logFrequentCrons;
-
+	public $hooplaVersion;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -225,6 +225,19 @@ class SystemVariables extends DataObject {
 						'label' => 'Remove the word "series" from the end of series',
 						'description' => 'Whether to remove the word "series" from the end of series names',
 						'default' => true,
+					],
+					'hooplaVersion' => [
+						'property' => 'hooplaVersion',
+						'type' => 'enum',
+						'values' => [
+							1 => 'Version 1 (Old Integration)',
+							2 => 'Version 2 (New Integration)',
+						],
+						'label' => 'Hoopla Exporter Version',
+						'description' => 'The version of Hoopla Exporter to use, version 2 has the new endpoint',
+						'note' => 'If you want to switch to version 2, please do it at the non business hours and need the nightly index to be run after the switch',
+						'default' => 1,
+						'required' => true,
 					],
 				],
 			],
@@ -403,6 +416,7 @@ class SystemVariables extends DataObject {
 			$objectStructure['indexingSection']['properties']['storeRecordDetailsInDatabase']['type'] = 'hidden';
 			$objectStructure['indexingSection']['properties']['indexVersion']['type'] = 'hidden';
 			$objectStructure['indexingSection']['properties']['searchVersion']['type'] = 'hidden';
+			$objectStructure['indexingSection']['properties']['hooplaVersion']['type'] = 'hidden';
 		}
 
 		global $enabledModules;

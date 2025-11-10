@@ -21,6 +21,14 @@ function getUpdates25_12_00(): array {
 		// Myranda - Grove
 
 		//Yanjun Li - ByWater
+		'add_hoopla_version_to_system_variables' => [
+			'title' => 'Add Hoopla Version to System Variables',
+			'description' => 'Add Hoopla Version to System Variables',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN hooplaVersion INT DEFAULT 1',
+			]
+		], //add_hoopla_version_to_system_variables
 
 		// Leo Stoyanov - BWS
 
