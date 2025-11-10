@@ -1,13 +1,13 @@
 package com.turning_leaf_technologies.hoopla;
 
-class HooplaTitle {
+class HooplaTitle2 {
 	private final long id;
 	private final long hooplaId;
 	private final long checksum;
 	private final long rawResponseLength;
 	private boolean foundInExport;
 
-	HooplaTitle(long id, long hooplaId, long checksum, long rawResponseLength) {
+	HooplaTitle2(long id, long hooplaId, long checksum, long rawResponseLength) {
 		this.id = id;
 		this.hooplaId = hooplaId;
 		this.checksum = checksum;

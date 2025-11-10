@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-class HooplaExtractLogEntry implements BaseIndexingLogEntry {
+class HooplaExtractLogEntry2 implements BaseIndexingLogEntry {
 	private Long logEntryId = null;
 	private final Date startTime;
 	private Date endTime;
@@ -30,7 +30,7 @@ class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 	private int numAvailabilityChanges = 0;
 	private final Logger logger;
 
-	HooplaExtractLogEntry(Connection dbConn, Logger logger) {
+	HooplaExtractLogEntry2(Connection dbConn, Logger logger) {
 		this.logger = logger;
 		this.startTime = new Date();
 		try {

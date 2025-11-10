@@ -3,7 +3,7 @@ package com.turning_leaf_technologies.hoopla;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-class HooplaSettings {
+class HooplaSettings2 {
 	private final long settingsId;
 	private final String apiUrl;
 	private final String apiUsername;
@@ -24,7 +24,7 @@ class HooplaSettings {
 
 	private final boolean regroupAllRecords;
 
-	public HooplaSettings(ResultSet settingsRS) throws SQLException {
+	public HooplaSettings2(ResultSet settingsRS) throws SQLException {
 		settingsId = settingsRS.getLong("id");
 		apiUrl = settingsRS.getString("apiUrl");
 		apiUsername = settingsRS.getString("apiUsername");

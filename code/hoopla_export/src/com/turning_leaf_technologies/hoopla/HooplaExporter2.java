@@ -26,14 +26,14 @@ import java.util.*;
 import java.util.Date;
 import java.util.zip.CRC32;
 
-public class HooplaExportMain {
+public class HooplaExporter2 {
 	private static Logger logger;
 	private static String serverName;
 
 	private static Ini configIni;
 
 	private static Long startTimeForLogging;
-	private static HooplaExtractLogEntry logEntry;
+	private static HooplaExtractLogEntry2 logEntry;
 
 	private static Connection aspenConn;
 	private static PreparedStatement getAllExistingHooplaItemsStmt;
@@ -61,7 +61,7 @@ public class HooplaExportMain {
 	private static RecordGroupingProcessor recordGroupingProcessorSingleton = null;
 
 	//Existing records
-	private static HashMap<Long, HooplaTitle> existingRecords = new HashMap<>();
+	private static HashMap<Long, HooplaTitle2> existingRecords = new HashMap<>();
 	private static final HashSet<Long> titlesNeedingReindex = new HashSet<>();
 
 	private static final String HOOPLA_TYPE_INSTANT = "Instant";
@@ -73,210 +73,46 @@ public class HooplaExportMain {
 	//For 32 hours catch up
 	private static int numRetries32HoursAfter = 0;
 
-	public static void main(String[] args){
-		boolean extractSingleWork = false;
-		String singleWorkId = null;
-		String singleWorkType = null;
-		String hooplaType;
-		if (args.length == 0) {
-			serverName = AspenStringUtils.getInputFromCommandLine("Please enter the server name");
-			if (serverName.isEmpty()) {
-				System.out.println("You must provide the server name as the first argument.");
-				System.exit(1);
-			}
-			String extractSingleWorkResponse = AspenStringUtils.getInputFromCommandLine("Process a single work? (y/N)");
-			if (extractSingleWorkResponse.equalsIgnoreCase("y")) {
-				extractSingleWork = true;
-				String extractSingleWorkType = AspenStringUtils.getInputFromCommandLine("Enter the type of work to extract (INSTANT/Flex)");
-				if (extractSingleWorkType.equalsIgnoreCase("Instant")) {
-					singleWorkType = "Instant";
-				} else if (extractSingleWorkType.equalsIgnoreCase("Flex")) {
-					singleWorkType = "Flex";
-				} else {
-					singleWorkType = "Instant";
-				}
+	public HooplaExporter2(String serverName, Connection aspenConn, Ini configIni, HooplaExtractLogEntry2 logEntry, Logger logger) throws SQLException {
+		this.serverName = serverName;
+		this.aspenConn = aspenConn;
+		this.configIni = configIni;
+		this.logEntry = logEntry;
+		this.logger = logger;
 
-			}
+		Date startTime = new Date();
+		startTimeForLogging = startTime.getTime() / 1000;
 
-		} else {
-			serverName = args[0];
-			if (args.length > 1){
-				if (args[1].equalsIgnoreCase("singleWork") || args[1].equalsIgnoreCase("singleRecord")){
-					extractSingleWork = true;
-					if (args.length > 2) {
-						hooplaType = args[2];
-						if (hooplaType.equalsIgnoreCase("Instant")) {
-							singleWorkType = "Instant";
-						} else if (hooplaType.equalsIgnoreCase("Flex")) {
-							singleWorkType = "Flex";
-						} else {
-							System.out.println("Invalid work type. Please enter Instant or Flex.");
-							System.exit(1);
-						}
-						if (args.length > 3) {
-							singleWorkId = args[3];
-						}
-					} else {
-						String extractSingleWorkType = AspenStringUtils.getInputFromCommandLine("Enter the type of work to extract (INSTANT/Flex)");
-						if (extractSingleWorkType.equalsIgnoreCase("Instant")) {
-							singleWorkType = "Instant";
-						} else if (extractSingleWorkType.equalsIgnoreCase("Flex")) {
-							singleWorkType = "Flex";
-						} else {
-							singleWorkType = "Instant";
-						}
-					}
-				}
-			}
+		try {
+			getAllExistingHooplaItemsStmt = aspenConn.prepareStatement("SELECT id, hooplaId, rawChecksum, UNCOMPRESSED_LENGTH(rawResponse) as rawResponseLength from hoopla_export");
+			addHooplaTitleToDB = aspenConn.prepareStatement("INSERT INTO hoopla_export (hooplaId, title, format, pa, demo, profanity, rating, abridged, children, ppuPrice, rawChecksum, rawResponse, dateFirstDetected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,COMPRESS(?),?) ");
+			updateHooplaTitleInDB = aspenConn.prepareStatement("UPDATE hoopla_export set title = ?, format = ?, pa = ?, demo = ?, profanity = ?, rating = ?, abridged = ?, children = ?, ppuPrice = ?, rawChecksum = ?, rawResponse = COMPRESS(?) where id = ?");
+			deleteHooplaItemStmt = aspenConn.prepareStatement("DELETE FROM hoopla_export where id = ?");
+			getLibraryHooplaSettingsStmt = aspenConn.prepareStatement("SELECT lhs.*, l.displayName FROM library_hoopla_settings lhs INNER JOIN library l ON lhs.libraryId = l.libraryId WHERE settingId = ?");
+			updateFullUpdateForLibraryStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings SET fullUpdateForLibrary = 0 WHERE id = ?");
+			getHooplaEntitlementIdStmt = aspenConn.prepareStatement("SELECT id FROM hoopla_entitlements WHERE hooplaId = ? AND hooplaType = ?");
+			addHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, hooplaType) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS);
+			getHooplaEntitlementScopeStmt = aspenConn.prepareStatement("SELECT * FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
+			addHooplaEntitlementScopeStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlement_scopes (entitlementId, scopeLibraryId) VALUES (?, ?)");
+			deleteHooplaEntitlementScopeStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
+			entitlementHasScopesStmt = aspenConn.prepareStatement("SELECT count(*) FROM hoopla_entitlement_scopes WHERE entitlementId = ?");
+			deleteHooplaEntitlementByIdStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlements WHERE id = ?");
+			getExistingEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.id AS entitlementId, he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
+			getFlexEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
+			upsertFlexAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO hoopla_flex_availability (hooplaId, scopeLibraryId, holdsQueueSize, availableCopies, totalCopies, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE scopeLibraryId = VALUES(scopeLibraryId), holdsQueueSize = VALUES(holdsQueueSize), availableCopies = VALUES(availableCopies), totalCopies = VALUES(totalCopies), status = VALUES(status)");
+			getExistingFlexAvailabilityStmt = aspenConn.prepareStatement("SELECT holdsQueueSize, availableCopies, totalCopies, status FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
+			deleteFlexAvailabilityForLibraryStmt = aspenConn.prepareStatement("DELETE FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
+		} catch (SQLException e) {
+			logEntry.incErrors("Error preparing Hoopla exporter2 statements", e);
+			logger.error("Error preparing Hoopla exporter2 statements", e);
 		}
-		if (extractSingleWork && singleWorkId == null) {
-			singleWorkId = AspenStringUtils.getInputFromCommandLine("Enter the id of the title to extract");
-		}
+		//Get a list of all existing records in the database
+		loadExistingTitles();
 
-		String processName = "hoopla_export";
-		logger = LoggingUtil.setupLogging(serverName, processName);
-
-		//Get the checksum of the JAR when it was started, so we can stop if it has changed.
-		long myChecksumAtStart = JarUtil.getChecksumForJar(logger, processName, "./" + processName + ".jar");
-		long reindexerChecksumAtStart = JarUtil.getChecksumForJar(logger, "reindexer", "../reindexer/reindexer.jar");
-		long timeAtStart = new Date().getTime();
-
-		while (true) {
-			//Hoopla only needs to run once a day, so run it in cron
-			Date startTime = new Date();
-			startTimeForLogging = startTime.getTime() / 1000;
-			logger.info(startTime + ": Starting Hoopla Export");
-
-			// Read the base INI file to get information about the server (current directory/cron/config.ini)
-			configIni = ConfigUtil.loadConfigFile("config.ini", serverName, logger);
-
-			//Connect to the Aspen database
-			aspenConn = connectToDatabase();
-
-			//Check to see if the jar has changes before processing records, and if so, quit
-			if (myChecksumAtStart != JarUtil.getChecksumForJar(logger, processName, "./" + processName + ".jar")){
-				IndexingUtils.markNightlyIndexNeeded(aspenConn, logger);
-				disconnectDatabase(aspenConn);
-				break;
-			}
-			if (reindexerChecksumAtStart != JarUtil.getChecksumForJar(logger, "reindexer", "../reindexer/reindexer.jar")){
-				IndexingUtils.markNightlyIndexNeeded(aspenConn, logger);
-				disconnectDatabase(aspenConn);
-				break;
-			}
-
-			//Start a log entry
-			createDbLogEntry(startTime, aspenConn);
-			logEntry.addNote("Starting extract");
-			logEntry.saveResults();
-
-			//Get a list of all existing records in the database
-			loadExistingTitles();
-
-			//Do work here
-			boolean updatesRun;
-			if (singleWorkId == null) {
-				updatesRun = exportHooplaData();
-			} else {
-				exportSingleHooplaTitle(singleWorkId, singleWorkType);
-				updatesRun = true;
-			}
-			int numChanges = logEntry.getNumChanges();
-
-			processRecordsToReload(logEntry);
-
-			if (recordGroupingProcessorSingleton != null) {
-				recordGroupingProcessorSingleton.close();
-				recordGroupingProcessorSingleton = null;
-			}
-
-			if (groupedWorkIndexer != null) {
-				groupedWorkIndexer.finishIndexingFromExtract(logEntry);
-				groupedWorkIndexer.close();
-				groupedWorkIndexer = null;
-				existingRecords = null;
-			}
-
-			if (logEntry.hasErrors()) {
-				logger.error("There were errors during the export!");
-			}
-
-			logger.info("Finished exporting data " + new Date());
-			long endTime = new Date().getTime();
-			long elapsedTime = endTime - startTime.getTime();
-			logger.info("Elapsed Minutes " + (elapsedTime / 60000));
-
-			//Mark that indexing has finished
-			logEntry.setFinished();
-
-			if (!updatesRun && !logEntry.hasErrors()) {
-				//delete the log entry
-				try {
-					PreparedStatement deleteLogEntryStmt = aspenConn.prepareStatement("DELETE from hoopla_export_log WHERE id = " + logEntry.getLogEntryId());
-					deleteLogEntryStmt.executeUpdate();
-				} catch (SQLException e) {
-					logger.error("Could not delete log export ", e);
-				}
-
-			}
-
-			if (extractSingleWork) {
-				disconnectDatabase(aspenConn);
-				break;
-			}
-
-			//Check to see if the jar has changes, and if so, quit
-			if (myChecksumAtStart != JarUtil.getChecksumForJar(logger, processName, "./" + processName + ".jar")){
-				IndexingUtils.markNightlyIndexNeeded(aspenConn, logger);
-				disconnectDatabase(aspenConn);
-				break;
-			}
-			if (reindexerChecksumAtStart != JarUtil.getChecksumForJar(logger, "reindexer", "../reindexer/reindexer.jar")){
-				IndexingUtils.markNightlyIndexNeeded(aspenConn, logger);
-				disconnectDatabase(aspenConn);
-				break;
-			}
-			//Check to see if it's between midnight and 1 am, and the jar has been running more than 15 hours.  If so, restart just to clean up memory.
-			GregorianCalendar nowAsCalendar = new GregorianCalendar();
-			Date now = new Date();
-			nowAsCalendar.setTime(now);
-			if (nowAsCalendar.get(Calendar.HOUR_OF_DAY) <=1 && (now.getTime() - timeAtStart) > 15 * 60 * 60 * 1000 ){
-				logger.info("Ending because we have been running for more than 15 hours and it's between midnight and one AM");
-				disconnectDatabase(aspenConn);
-				break;
-			}
-			//Check memory to see if we should close
-			if (SystemUtils.hasLowMemory(configIni, logger)){
-				logger.info("Ending because we have low memory available");
-				disconnectDatabase(aspenConn);
-				break;
-			}
-
-			disconnectDatabase(aspenConn);
-
-			//Check to see if nightly indexing is running, and if so, wait until it is done.
-			if (IndexingUtils.isNightlyIndexRunning(configIni, serverName, logger)) {
-				//Quit and we will restart after if finishes
-				System.exit(0);
-			}else {
-				//Pause before running the next export (longer if we didn't get any actual changes)
-				try {
-					System.gc();
-					if (numChanges == 0) {
-						Thread.sleep(1000 * 60 * 5);
-					} else {
-						Thread.sleep(1000 * 60);
-					}
-				} catch (InterruptedException e) {
-					logger.info("Thread was interrupted");
-				}
-			}
-		}
-
-		System.exit(0);
+		processRecordsToReload(logEntry);
 	}
 
-	private static void processRecordsToReload(HooplaExtractLogEntry logEntry) {
+	private static void processRecordsToReload(HooplaExtractLogEntry2 logEntry) {
 		try {
 			PreparedStatement getRecordsToReloadStmt = aspenConn.prepareStatement("SELECT * from record_identifiers_to_reload WHERE processed = 0 and type='hoopla'", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement markRecordToReloadAsProcessedStmt = aspenConn.prepareStatement("UPDATE record_identifiers_to_reload SET processed = 1 where id = ?");
@@ -553,7 +389,7 @@ public class HooplaExportMain {
 			ResultSet allRecordsRS = getAllExistingHooplaItemsStmt.executeQuery();
 			while (allRecordsRS.next()) {
 				long hooplaId = allRecordsRS.getLong("hooplaId");
-				HooplaTitle newTitle = new HooplaTitle(
+				HooplaTitle2 newTitle = new HooplaTitle2(
 						allRecordsRS.getLong("id"),
 						hooplaId,
 						allRecordsRS.getLong("rawChecksum"),
@@ -573,20 +409,7 @@ public class HooplaExportMain {
 		}
 	}
 
-	private static void createDbLogEntry(Date startTime, Connection aspenConn) {
-		//Remove log entries older than 45 days
-		long earliestLogToKeep = (startTime.getTime() / 1000) - (60 * 60 * 24 * 45);
-		try {
-			int numDeletions = aspenConn.prepareStatement("DELETE from hoopla_export_log WHERE startTime < " + earliestLogToKeep).executeUpdate();
-			logger.info("Deleted " + numDeletions + " old log entries");
-		} catch (SQLException e) {
-			logger.error("Error deleting old log entries", e);
-		}
-
-		logEntry = new HooplaExtractLogEntry(aspenConn, logger);
-	}
-
-	private static boolean exportHooplaData() {
+	public boolean exportHooplaData() {
 		boolean updatesRun = false;
 		try{
 			PreparedStatement getSettingsStmt = aspenConn.prepareStatement("SELECT * from hoopla_settings");
@@ -594,7 +417,7 @@ public class HooplaExportMain {
 			int numSettings = 0;
 			boolean globalContentUpdated = false;
 			while (getSettingsRS.next()) {
-				HooplaSettings settings = new HooplaSettings(getSettingsRS);
+				HooplaSettings2 settings = new HooplaSettings2(getSettingsRS);
 				ArrayList<HooplaLibrarySettings> librarySettings = loadLibraryHooplaSettings(settings.getSettingsId());
 				numSettings++;
 				boolean hasEnabledLibrary = false;
@@ -647,7 +470,7 @@ public class HooplaExportMain {
 	}
 
 
-	private static boolean exportHooplaContent(HooplaSettings settings) {
+	private static boolean exportHooplaContent(HooplaSettings2 settings) {
 		boolean updatedContent = false;
 		boolean doFullReload = settings.isRunFullUpdate();
 		long settingsId = settings.getSettingsId();
@@ -814,7 +637,7 @@ public class HooplaExportMain {
 		return updatedContent;
 	}
 
-	private static boolean exportLibraryEntitlements(HooplaSettings settings, boolean globalContentUpdated, ArrayList<HooplaLibrarySettings> librarySettings) {
+	private static boolean exportLibraryEntitlements(HooplaSettings2 settings, boolean globalContentUpdated, ArrayList<HooplaLibrarySettings> librarySettings) {
 		logEntry.addNote("Starting library entitlements extraction");
 		logEntry.saveResults();
 
@@ -899,7 +722,7 @@ public class HooplaExportMain {
 		return hasUpdates;
 	}
 
-	private static boolean exportLibraryEntitlementsForType(HooplaSettings settings, HooplaLibrarySettings librarySetting, String hooplaType, boolean runFullUpdateForLibrary) {
+	private static boolean exportLibraryEntitlementsForType(HooplaSettings2 settings, HooplaLibrarySettings librarySetting, String hooplaType, boolean runFullUpdateForLibrary) {
 		boolean updateEntitlements = false;
 		String hooplaLibraryId = librarySetting.getHooplaLibraryId();
 		if (hooplaLibraryId == null || hooplaLibraryId.isEmpty()) {
@@ -1233,7 +1056,7 @@ public class HooplaExportMain {
 		}
 	}
 
-	private static boolean getFlexAvailability(HooplaSettings settings, ArrayList<HooplaLibrarySettings> librarySettings) {
+	private static boolean getFlexAvailability(HooplaSettings2 settings, ArrayList<HooplaLibrarySettings> librarySettings) {
 		logEntry.addNote("Starting Flex availability update");
 		logEntry.saveResults();
 
@@ -1326,7 +1149,8 @@ public class HooplaExportMain {
 		return hasUpdates;
 	}
 
-	private static void exportSingleHooplaTitle(String singleWorkId, String singleWorkType) {
+	public boolean exportSingleHooplaTitle(String singleWorkId, String singleWorkType) {
+		boolean updatesRun = false;
 		try{
 			logEntry.addNote("Doing extract of single work " + singleWorkId);
 			logEntry.saveResults();
@@ -1335,14 +1159,14 @@ public class HooplaExportMain {
 			int numSettings = 0;
 			while (getSettingsRS.next()) {
 				numSettings++;
-				HooplaSettings settings = new HooplaSettings(getSettingsRS);
+				HooplaSettings2 settings = new HooplaSettings2(getSettingsRS);
 				String hooplaAPIBaseURL = settings.getApiUrl();
 				int hooplaLibraryId = 123;
 
 				String accessToken = getAccessToken(settings);
 				if (accessToken == null) {
 					logEntry.incErrors("Could not load access token");
-					return;
+					return false;
 				}
 				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content";
 				long numericSingleWorkId = Long.parseLong(singleWorkId);
@@ -1413,6 +1237,7 @@ public class HooplaExportMain {
 											}
 										}
 									}
+									updatesRun = true;
 								}
 							}
 						}
@@ -1425,6 +1250,7 @@ public class HooplaExportMain {
 		}catch (Exception e){
 			logEntry.incErrors("Error exporting hoopla data", e);
 		}
+		return updatesRun;
 	}
 
 	private static void updateTitlesInDB(JSONArray responseTitles, boolean forceRegrouping, boolean doFullReload) {
@@ -1439,7 +1265,7 @@ public class HooplaExportMain {
 
 				long hooplaId = curTitle.getLong("id"); //formerly titleId was used, but this is not unique for TV series
 
-				HooplaTitle existingTitle = existingRecords.get(hooplaId);
+				HooplaTitle2 existingTitle = existingRecords.get(hooplaId);
 				boolean recordUpdated = false;
 				if (existingTitle != null) {
 					//Record exists
@@ -1541,7 +1367,7 @@ public class HooplaExportMain {
 		getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
 	}
 
-	private static String getAccessToken(HooplaSettings settings) {
+	private static String getAccessToken(HooplaSettings2 settings) {
 		String username = settings.getApiUsername();
 		String password = settings.getApiPassword();
 		if (username == null || password == null){
@@ -1592,43 +1418,7 @@ public class HooplaExportMain {
 		return null;
 	}
 
-	private static Connection connectToDatabase(){
-		Connection aspenConn = null;
-		try{
-			String databaseConnectionInfo = ConfigUtil.cleanIniValue(configIni.get("Database", "database_aspen_jdbc"));
-			if (databaseConnectionInfo != null) {
-				aspenConn = DriverManager.getConnection(databaseConnectionInfo);
-				getAllExistingHooplaItemsStmt = aspenConn.prepareStatement("SELECT id, hooplaId, rawChecksum, UNCOMPRESSED_LENGTH(rawResponse) as rawResponseLength from hoopla_export");
-				addHooplaTitleToDB = aspenConn.prepareStatement("INSERT INTO hoopla_export (hooplaId, title, format, pa, demo, profanity, rating, abridged, children, ppuPrice, rawChecksum, rawResponse, dateFirstDetected) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,COMPRESS(?),?) ");
-				updateHooplaTitleInDB = aspenConn.prepareStatement("UPDATE hoopla_export set title = ?, format = ?, pa = ?, demo = ?, profanity = ?, " +
-						"rating = ?, abridged = ?, children = ?, ppuPrice = ?, rawChecksum = ?, rawResponse = COMPRESS(?) where id = ?");
-				deleteHooplaItemStmt = aspenConn.prepareStatement("DELETE FROM hoopla_export where id = ?");
-				getLibraryHooplaSettingsStmt = aspenConn.prepareStatement("SELECT lhs.*, l.displayName FROM library_hoopla_settings lhs INNER JOIN library l ON lhs.libraryId = l.libraryId WHERE settingId = ?");
-				updateFullUpdateForLibraryStmt = aspenConn.prepareStatement("UPDATE library_hoopla_settings SET fullUpdateForLibrary = 0 WHERE id = ?");
-				getHooplaEntitlementIdStmt = aspenConn.prepareStatement("SELECT id FROM hoopla_entitlements WHERE hooplaId = ? AND hooplaType = ?");
-				addHooplaEntitlementStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlements (hooplaId, hooplaType) VALUES (?, ?)", Statement.RETURN_GENERATED_KEYS);
-				getHooplaEntitlementScopeStmt = aspenConn.prepareStatement("SELECT * FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
-				addHooplaEntitlementScopeStmt = aspenConn.prepareStatement("INSERT INTO hoopla_entitlement_scopes (entitlementId, scopeLibraryId) VALUES (?, ?)");
-				deleteHooplaEntitlementScopeStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlement_scopes WHERE entitlementId = ? AND scopeLibraryId = ?");
-				entitlementHasScopesStmt = aspenConn.prepareStatement("SELECT count(*) FROM hoopla_entitlement_scopes WHERE entitlementId = ?");
-				deleteHooplaEntitlementByIdStmt = aspenConn.prepareStatement("DELETE FROM hoopla_entitlements WHERE id = ?");
-				getExistingEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.id AS entitlementId, he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
-				getFlexEntitlementsForLibraryStmt = aspenConn.prepareStatement("SELECT he.hooplaId FROM hoopla_entitlements he INNER JOIN hoopla_entitlement_scopes hes ON hes.entitlementId = he.id WHERE hes.scopeLibraryId = ? AND he.hooplaType = ?");
-				upsertFlexAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO hoopla_flex_availability (hooplaId, scopeLibraryId, holdsQueueSize, availableCopies, totalCopies, status) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE scopeLibraryId = VALUES(scopeLibraryId), holdsQueueSize = VALUES(holdsQueueSize), availableCopies = VALUES(availableCopies), totalCopies = VALUES(totalCopies), status = VALUES(status)");
-				getExistingFlexAvailabilityStmt = aspenConn.prepareStatement("SELECT holdsQueueSize, availableCopies, totalCopies, status FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
-				deleteFlexAvailabilityForLibraryStmt = aspenConn.prepareStatement("DELETE FROM hoopla_flex_availability WHERE hooplaId = ? AND scopeLibraryId = ?");
-			}else{
-				logger.error("Aspen database connection information was not provided");
-				System.exit(1);
-			}
-		}catch (Exception e){
-			logger.error("Error connecting to Aspen database " + e);
-			System.exit(1);
-		}
-		return aspenConn;
-	}
-
-	private static void disconnectDatabase(Connection aspenConn) {
+	public void exporter2CleanUp() {
 		try{
 			addHooplaTitleToDB.close();
 			addHooplaTitleToDB = null;
@@ -1664,13 +1454,17 @@ public class HooplaExportMain {
 			getExistingFlexAvailabilityStmt = null;
 			deleteFlexAvailabilityForLibraryStmt.close();
 			deleteFlexAvailabilityForLibraryStmt = null;
-
-			aspenConn.close();
-			//noinspection UnusedAssignment
-			aspenConn = null;
 		}catch (Exception e){
-			logger.error("Error closing database ", e);
-			System.exit(1);
+			logger.error("Error closing Hoopla exporter2 statements", e);
+		}
+		if (groupedWorkIndexer != null) {
+			groupedWorkIndexer.finishIndexingFromExtract(logEntry);
+			groupedWorkIndexer.close();
+			groupedWorkIndexer = null;
+		}
+		if (recordGroupingProcessorSingleton != null) {
+			recordGroupingProcessorSingleton.close();
+			recordGroupingProcessorSingleton = null;
 		}
 	}
 
@@ -1688,7 +1482,7 @@ public class HooplaExportMain {
 		return recordGroupingProcessorSingleton;
 	}
 
-	private static void regroupAllRecords(Connection dbConn, long settingsId, GroupedWorkIndexer indexer, HooplaExtractLogEntry logEntry)  throws SQLException {
+	private static void regroupAllRecords(Connection dbConn, long settingsId, GroupedWorkIndexer indexer, HooplaExtractLogEntry2 logEntry)  throws SQLException {
 		logEntry.addNote("Starting to regroup all records");
 		PreparedStatement getAllRecordsToRegroupStmt = dbConn.prepareStatement("SELECT hooplaId, UNCOMPRESS(rawResponse) as rawResponse from hoopla_export where active = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		//It turns out to be quite slow to look this up repeatedly, grab the existing values for all and store in memory
