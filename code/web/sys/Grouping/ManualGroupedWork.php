@@ -119,7 +119,7 @@ class ManualGroupedWork extends DataObject {
 		}
 		$this->last_updated = time();
 		$ret = parent::insert();
-		if ($ret) {
+		if ($ret !== false) {
 			// If records were populated via the form, move them into the internal records array.
 			if (empty($this->_records) && isset($this->_data['records'])) {
 				$this->_records = $this->_data['records'];
@@ -141,7 +141,7 @@ class ManualGroupedWork extends DataObject {
 		}
 		$this->last_updated = time();
 		$ret = parent::update();
-		if ($ret) {
+		if ($ret !== false) {
 			if (isset($this->_records) && is_array($this->_records)) {
 				$this->saveRecords();
 			}
