@@ -40,7 +40,7 @@ class CarlXRecordProcessor extends IlsRecordProcessor {
 
 	protected String getDetailedLocationForItem(ItemInfo itemInfo, DataField itemField, String identifier) {
 		String locationCode = MarcUtil.getItemSubfieldData(settings.getLocationSubfield(), itemField, indexer.getLogEntry(), logger);
-		String location = translateValue("location", locationCode, identifier, true);
+		String location = getLocationLabel(locationCode);
 		String shelvingLocation = MarcUtil.getItemSubfieldData(settings.getShelvingLocationSubfield(), itemField, indexer.getLogEntry(), logger);
 		if (shelvingLocation != null && !shelvingLocation.equals(locationCode)){
 			if (location == null){
