@@ -24,6 +24,8 @@ class UserPayment extends DataObject {
 	public $deluxeRemittanceId;
 	public $deluxeSecurityId;
 	public $heyCentricPaymentReferenceNumber;
+	public $pay360PaymentReferenceNumber;
+	public $pay360Timestamp;
 	public $requestingUrl;
 
 	static $_objectStructure = [];
