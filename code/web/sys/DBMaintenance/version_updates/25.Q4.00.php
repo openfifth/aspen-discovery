@@ -31,5 +31,13 @@ function getUpdates25_Q4_00(): array {
 				"ALTER TABLE user_events_entry ADD COLUMN displayEventBranchOnThumbnail TINYINT(1) DEFAULT 0"
 			]
 		], //add_option_to_add_location_to_event_thumbnail_image 
+		'add_default_event_calendar_display_dropdown' => [
+			'title' => 'Add Default Event Calendar Display Dropdown',
+			'description' => 'Add the option of selecting the default display for the native events calendar',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN eventsDefaultCalendarView TINYINT(1) NOT NULL DEFAULT 0",
+			],
+		], //add_default_event_calendar_display_dropdown
 	];
 }
