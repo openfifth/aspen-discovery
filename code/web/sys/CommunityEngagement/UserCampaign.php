@@ -209,6 +209,10 @@ class UserCampaign extends DataObject {
 				if ($userCampaign->completed == 1) {
 
 					$library = $user->getHomeLibrary();
+					if ($library == null) {
+						global $library;
+					}
+					
 					if ($library->sendStaffEmailOnCampaignCompletion == 1) {
 						$emailTemplate = EmailTemplate::getActiveTemplate('staffCampaignComplete');
 						
