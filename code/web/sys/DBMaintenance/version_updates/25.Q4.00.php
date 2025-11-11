@@ -38,5 +38,13 @@ function getUpdates25_Q4_00(): array {
 				) ENGINE = InnoDB'
 			]
 		],// add_user_removed_campaigns_table
+		'add_staff_complete_email_sent_tracking_for_user_campaigns' => [
+			'title' => 'Add Staff Complete Email Sent Tracking For User Campaigns',
+			'description' => 'Add tracking to check whether the email has been sent to staff to track completion of the user campaign',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE ce_user_campaign ADD COLUMN staffCampaignCompleteEmailSent TINYINT(1) DEFAULT 0",
+			]
+		], //add_staff_complete_email_sent_tracking_for_user_campaigns
 	];
 }
