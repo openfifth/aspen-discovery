@@ -10147,6 +10147,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ob_end_flush();
 
 			$interval = 10;
+			global $interface;
 
 			while (true) {
 
@@ -10206,7 +10207,13 @@ class MyAccount_AJAX extends JSON_Action {
 											'isPublicFacing' => true
 										]
 									),
-								'body' => $campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
+								'body' => translate([
+									'text' => '%1% of %2% progressed!',
+									1=> $milestone->name,
+									2=> $campaign->name,
+									'isPublicFacing' => true,
+								]),
+								$campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
 								'icon' => "fa-chart-line",
 								'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 										[
@@ -10229,7 +10236,12 @@ class MyAccount_AJAX extends JSON_Action {
 											'isPublicFacing' => true
 										]
 									),
-									'body' => $milestone->name,
+									'body' => translate([
+										'text' => '%1% of %2% complete.',
+										1 =>$milestone->name,
+										2=>$campaign->name,
+										'isPublicFacing' => true,
+									]),
 									'icon' => "fa-clipboard-check",
 									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 										[
@@ -10253,7 +10265,11 @@ class MyAccount_AJAX extends JSON_Action {
 											'isPublicFacing' => true
 										]
 									),
-									'body' => $campaign->name,
+									'body' => translate([
+										'text' => '%1% campaign complete!',
+										1 => $campaign->name,
+										'isPublicFacing' => true
+									]),
 									'icon' => "fa-medal",
 									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 										[
