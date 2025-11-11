@@ -1,23 +1,22 @@
 <?php
 	require_once ROOT_DIR . '/sys/ECommerce/Pay360Setting.php';
-	require_once ROOT_DIR . '/sys/Account/UserPayment';
+	require_once ROOT_DIR . '/sys/Account/UserPayment.php';
 
 // Interacts with the Pay360 API
 class Pay360_Client  {
 	// class parameters
 	public $catalogDriver;
 	public $selectedFines;
+	public $payment;
 	
 	// query generation
 	private $_pay360Settings;
 	private $_soapClient;
-	private $_payment;
 	private $_digest;
-	private $_transactionStates = ['IN_PROGRESS', 'COMPLETE', 'INVALID_REFERENCE'];
-	private $_statuses = ['SUCCESS', 'CARD_DETAILS_REJECTED', 'CANCELLED', 'LOGGED_OUT', 'NOT_ATTEMPTED', 'ERROR'];
 
 	// query responses
 	public $invokeResponse;
+	public $queryResponse;
 
 	public function __construct($settingsId, $paymentId, $selectedFines = [], $catalogDriver = [], $setTimestamp = false) {
 		$this->setSettings($settingsId);
@@ -41,9 +40,25 @@ class Pay360_Client  {
 	}
 
 	public function setPayment($paymentId): void {
-		$this->_payment = new UserPayment();
-		$this->_payment->id = $paymentId;
-		$this->_payment->find(true);
+		$this->payment = new UserPayment();
+		$this->payment->id = $paymentId;
+		$this->payment->find(true);
+	}
+
+	public function getOrderStatus($refresh = false) {
+		if (!$refresh) {
+			$result = ['state' => $this->queryResponse->transactionState];
+			if (isset($this->queryResponse->paymentResult)) {
+				$result['status'] = $this->queryResponse->paymentResult->status;
+			}
+			return $result;
+		}
+		$this->_getQueryResponse();
+		$result = ['state' => $this->queryResponse->transactionState];
+		if (isset($this->queryResponse->paymentResult)) {
+			$result['status'] = $this->queryResponse->paymentResult->status;
+		}
+		return $result;
 	}
 
 	public function setSoapClient() {
@@ -61,21 +76,32 @@ class Pay360_Client  {
 
 		$this->_getInvokeResponse();
 
-		if (empty($this->invokeResponse) || $this->invokeResponse->invokeResult->status !== "SUCCESS") {
-			$this->_payment->cancelled = true;
-			$this->_payment->error = "invoke request for scpReference " .  $this->invokeResponse->scpReference . "failed with status " . $this->invokeResponse->invokeResult->status;
-			$this->_payment->update(); 
+		if (empty($this->invokeResponse)) {
+			$this->payment->cancelled = true;
+			$this->payment->error = true;
+			$this->payment->message = "failed to connect to Pay360";
+			$this->payment->update(); 
 			return false;
 		}
 
-		$this->_payment->pay360PaymentReferenceNumber = $this->invokeResponse->scpReference;
-		$this->_payment->update();
+		if ($this->invokeResponse->transactionState  !== "IN_PROGRESS") {
+			$this->payment->cancelled = true;
+			$this->payment->error = true;
+			$this->payment->orderId = $this->invokeResponse->scpReference;
+			$this->payment->message = "failed invoke request for scpReference " .  $this->invokeResponse->scpReference . "failed with status " . $this->invokeResponse->invokeResult->status;
+			$this->payment->update(); 
+			return false;
+		}
+
+		$this->payment->pay360TransactionStateMessage = "This payment is still in progress. Check back later for an update.";
+		$this->payment->orderId = $this->invokeResponse->scpReference;
+		$this->payment->update();
 		return true;
 	}
 
 	// API queries
 	private function _getInvokeResponse(): void {
-		if (empty($this->_soapClient) || empty($this->_pay360Settings) || empty($this->_payment)) {
+		if (empty($this->_soapClient) || empty($this->_pay360Settings) || empty($this->payment)) {
 		   return;  
 		}
 
@@ -93,7 +119,27 @@ class Pay360_Client  {
 		$this->invokeResponse = $response;
 	}
 
+	private function _getQueryResponse(): void {
+		if (empty($this->_soapClient) || empty($this->_pay360Settings) || empty($this->payment)) {
+		   return;  
+		}
+		
+		$params = [
+			'credentials' => $this->_getCredentialParams(),
+			'siteId' => $this->_pay360Settings->siteId,
+			'scpReference' => $this->payment->orderId,
+		];
+		
+		try {
+			$response = $this->_soapClient->scpSimpleQuery($params);
+		} catch (Exception $e) {
+			return;
+		}
+		$this->queryResponse = $response;
+	}
+
 	// services
+	private function handleTimeout() {}
 	private function _getMultiLineItemParameters(): array|null {
 		$items = [];
 		foreach( $this->selectedFines as $fine) {	
@@ -125,27 +171,29 @@ class Pay360_Client  {
 	}
 
 	private function _getInvokeParameters(): array| null {
-		if (!$this->_digest || empty($this->_pay360Settings) || !$this->_payment->pay360Timestamp) {
+		if (!$this->_digest || empty($this->_pay360Settings) || !$this->payment->pay360Timestamp) {
 		   return null;  
 		}
 
 		global $configArray;
-		$amountInMinorUnits = str_replace('.', '', $this->_payment->totalPaid);
+		$amountInMinorUnits = str_replace('.', '', $this->payment->totalPaid);
+
+		$returnUrl = $configArray['Site']['url'] . "/MyAccount/AJAX?method=completePay360Order&paymentId=" . $this->payment->id ."&settingsId=" . $this->_pay360Settings->id;
 
 		return [
 			'credentials' => $this->_getCredentialParams(),
 			'requestType' => 'payOnly',
 			'requestId' => 'TEST',
 			'routing' => [
-				'returnUrl' => $this->_pay360Settings->returnUrl,
-				'backUrl' => $configArray['Site']['url'] . "/AJAX?method=completePay360Order&paymentId=" . $this->_payment->id ,
+				'returnUrl' => new SoapVar($returnUrl, XSD_STRING),
+				'backUrl' => new SoapVar($returnUrl, XSD_STRING),
 				'siteId' => $this->_pay360Settings->siteId,
 				'scpId' => $this->_pay360Settings->scpId,
 			],
 			'panEntryMethod' => 'ECOM',
 			'sale' => [
 				'saleSummary' => [
-					'description' => "Aspen Discovery - Pay360 integration " .  $this->_payment->id,
+					'description' => "Aspen Discovery - Pay360 integration " .  $this->payment->id,
 					'amountInMinorUnits' => $amountInMinorUnits,
 				],
 			],  
@@ -153,7 +201,7 @@ class Pay360_Client  {
 	}
 
 	private function _getCredentialParams(): array|null {
-		if (!$this->_digest || empty($this->_pay360Settings) || !$this->_payment->pay360Timestamp) {
+		if (!$this->_digest || empty($this->_pay360Settings) || !$this->payment->pay360Timestamp) {
 		   return null;  
 		}
 		return 	[
@@ -163,8 +211,8 @@ class Pay360_Client  {
 				'systemCode' => $this->_pay360Settings->systemCode,
 			],
 			'requestIdentification' => [
-				'uniqueReference' => $this->_payment->id,
-				'timeStamp' => $this->_payment->pay360Timestamp,
+				'uniqueReference' => $this->payment->id,
+				'timeStamp' => $this->payment->pay360Timestamp,
 			],
 			'signature' => [
 				'algorithm' => $this->_pay360Settings->algorithm,
@@ -175,10 +223,10 @@ class Pay360_Client  {
 	}
 
 	private function _setDigest(): void {
-		if ($this->_digest || empty($this->_pay360Settings) || !$this->_payment->pay360Timestamp || empty($this->_payment)) {
+		if ($this->_digest || empty($this->_pay360Settings) || !$this->payment->pay360Timestamp || empty($this->payment)) {
 		   return;  
 		}
-		$credentialsStr = $this->_pay360Settings->subjectType . "!" . $this->_pay360Settings->scpId . "!" . $this->_payment->id . "!" . $this->_payment->pay360Timestamp . "!" . $this->_pay360Settings->algorithm . "!" . $this->_pay360Settings->hmacKeyId;
+		$credentialsStr = $this->_pay360Settings->subjectType . "!" . $this->_pay360Settings->scpId . "!" . $this->payment->id . "!" . $this->payment->pay360Timestamp . "!" . $this->_pay360Settings->algorithm . "!" . $this->_pay360Settings->hmacKeyId;
 		$hash = hash_hmac('sha256', $credentialsStr, base64_decode($this->_pay360Settings->privateKey), true);
 		$this->_digest = base64_encode($hash);
 	}
