@@ -113,6 +113,58 @@ class Events_Calendar extends Action {
 		$searchObject->setLimit(1000);
 		//We have a default hidden filter to only show events after today, needs to be cleared for calendars.
 		$searchObject->clearHiddenFilters();
+
+		global $library;
+		$locations = Location::getLocationList(false, true);
+		asort($locations);
+
+		$selectedLocation = 'all';
+		$eventsDefaultCalendarView = $library->eventsDefaultCalendarView ?? 0;
+
+		if ($eventsDefaultCalendarView == 1 ) {
+			if (UserAccount::isLoggedIn()) {
+				$user = userAccount::getActiveUserObj();
+				if ($user) {
+					if ($user->getHomeLibrary() != null) {
+						$selectedLocation = $user->getHomeLibrary();
+					} else {
+						$selectedLocation = $library;
+					}
+				}
+			}
+			$selectedLocation = array_search($selectedLocation, $locations);
+		} elseif ($eventsDefaultCalendarView == 2 ) {
+			reset($locations);
+			$selectedLocation = key($locations);
+		} else {
+			$selectedLocation = 'all';
+		}
+
+		if (isset($_REQUEST['location'])) {
+			$selectedLocation = $_REQUEST['location'];
+		}
+
+		if ($selectedLocation != 'all' && !empty($selectedLocation)) {
+			$branchName = $locations[$selectedLocation] ?? $selectedLocation;
+			$searchObject->addHiddenFilter('branch', '"' . $branchName . '"');
+		}
+
+		$locationParam = '&location=' . urlencode($selectedLocation);
+		if (isset($prevLink)) $prevLink .= $locationParam;
+		if (isset($nextLink)) $nextLink .= $locationParam;
+		if (isset($weekLink)) $weekLink .= $locationParam;
+		if (isset($monthLink)) $monthLink .= $locationParam;
+
+		$interface->assign('locations', $locations);
+		$interface->assign('selectedLocation', $selectedLocation);
+
+		
+		if (isset($prevLink)) $interface->assign('prevLink', $prevLink);
+		if (isset($nextLink)) $interface->assign('nextLink', $nextLink);
+		if (isset($weekLink)) $interface->assign('weekLink', $weekLink);
+		if (isset($monthLink)) $interface->assign('monthLink', $monthLink);
+		
+
 		//Instead we limit to just this month.
 		if ($useWeek) {
 			$searchObject->addHiddenFilter("event_week", '"' . $weekFilter . '"');
