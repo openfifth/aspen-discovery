@@ -159,6 +159,7 @@ class Library extends DataObject {
 	public $heyCentricSettingId;
 	public $ncrSettingId;
 	public $usernameField;
+	public $eventsDefaultCalendarView;
 
 	public /** @noinspection PhpUnused */
 		$repeatSearchOption;
@@ -4487,6 +4488,29 @@ class Library extends DataObject {
 					],
 				],
 			],
+			'eventsSection' => [
+				'property' => 'eventsSection',
+				'type' => 'section',
+				'label' => 'Events',
+				'renderAsHeading' => true,
+				'hideInLists' => true,
+				'permissions' => ['Administer Events for All Locations'],
+				'properties' => [
+					'eventsDefaultCalendarView' => [
+						'property' => 'eventsDefaultCalendarView',
+						'type' =>'enum',
+						'values' => [
+							'0' => 'All',
+							'1' => 'Home library of the user',
+							'2' => 'First alphabetical library'
+						],
+						'default' => '0',
+						'label' => 'Default Calendar View',
+						'description' => 'The default page your events calendar will load to',
+						'hideInLists' => true,
+					],
+				],
+			],
 		];
 
 		//Update settings based on what we have access to
@@ -4581,6 +4605,9 @@ class Library extends DataObject {
 		}
 		if (!$catalog || !$catalog->hasIlsConsentSupport()) {
 			unset($structure['dataProtectionRegulations']['properties']['ilsConsentEnabled']);
+		}
+		if (!array_key_exists('Events', $enabledModules)) {
+			unset($structure['eventsSection']);
 		}
 
 		self::$_objectStructure[$context] = $structure;
