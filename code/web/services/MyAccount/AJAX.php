@@ -7677,6 +7677,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$client = new Pay360_Client($pay360SettingsId, $payment->id, $selectedFines, $patron->getCatalogDriver(), true);
 		$client->createOrder();
 
+
 		if ($client->invokeResponse->invokeResult->status !== "SUCCESS") {
 			$payment->cancelled = true;
 			$payment->error = "invoke request for scpReference $response->scpReference failed with status " . $response->invokeResult->status;
@@ -7692,6 +7693,29 @@ class MyAccount_AJAX extends JSON_Action {
 			'message' => 'Redirecting to payment processor',
 			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl, 
 		];
+	}
+
+	function completePay360Order(): void {
+		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+		
+		$paymentId = $_REQUEST['paymentId'];
+		$pay360SettingsId = $_REQUEST['settingsId'];
+
+		if (!$paymentId || !$pay360SettingsId) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $payment);
+		$client->getOrderStatus();
+
+		// TODO: handle status change checks outcome
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?");
 	}
 
 	/** @noinspection PhpUnused */
