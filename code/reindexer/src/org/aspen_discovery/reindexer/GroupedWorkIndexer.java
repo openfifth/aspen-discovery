@@ -50,6 +50,7 @@ public class GroupedWorkIndexer {
 	private CloudLibraryProcessor cloudLibraryProcessor;
 	private Axis360Processor axis360Processor;
 	private HooplaProcessor hooplaProcessor;
+	private HooplaProcessor2 hooplaProcessor2;
 	private PalaceProjectProcessor palaceProjectProcessor;
 	private final HashMap<String, HashMap<String, String>> translationMaps = new HashMap<>();
 	private final HashMap<String, LexileTitle> lexileInformation = new HashMap<>();
@@ -187,6 +188,7 @@ public class GroupedWorkIndexer {
 	private int indexVersion;
 	private int searchVersion;
 	private boolean enableNovelistSeriesIntegration;
+	private int hooplaVersion;
 
 	public GroupedWorkIndexer(String serverName, Connection dbConn, Ini configIni, boolean fullReindex, boolean clearIndex, BaseIndexingLogEntry logEntry, Logger logger) {
 		this(serverName, dbConn, configIni, fullReindex, clearIndex, false, logEntry, logger);
@@ -233,7 +235,7 @@ public class GroupedWorkIndexer {
 
 		//Check to see if we should store record details in Solr
 		try{
-			PreparedStatement systemVariablesStmt = dbConn.prepareStatement("SELECT storeRecordDetailsInSolr, storeRecordDetailsInDatabase, indexVersion, searchVersion, processEmptyGroupedWorks, enableNovelistSeriesIntegration, deletionCommitInterval, waitAfterDeleteCommit, removeTheWordSeriesFromEndOfSeries from system_variables");
+			PreparedStatement systemVariablesStmt = dbConn.prepareStatement("SELECT storeRecordDetailsInSolr, storeRecordDetailsInDatabase, indexVersion, searchVersion, processEmptyGroupedWorks, enableNovelistSeriesIntegration, deletionCommitInterval, waitAfterDeleteCommit, removeTheWordSeriesFromEndOfSeries, hooplaVersion from system_variables");
 			ResultSet systemVariablesRS = systemVariablesStmt.executeQuery();
 			if (systemVariablesRS.next()){
 				this.storeRecordDetailsInSolr = systemVariablesRS.getBoolean("storeRecordDetailsInSolr");
@@ -247,6 +249,7 @@ public class GroupedWorkIndexer {
 					this.processEmptyGroupedWorks = systemVariablesRS.getBoolean("processEmptyGroupedWorks");
 				}
 				this.removeTheWordSeriesFromEndOfSeries = systemVariablesRS.getBoolean("removeTheWordSeriesFromEndOfSeries");
+				this.hooplaVersion = systemVariablesRS.getInt("hooplaVersion");
 			}
 			systemVariablesRS.close();
 			systemVariablesStmt.close();
@@ -517,7 +520,11 @@ public class GroupedWorkIndexer {
 
 		cloudLibraryProcessor = new CloudLibraryProcessor(this, dbConn, logger);
 
-		hooplaProcessor = new HooplaProcessor(this, dbConn, logger);
+		if (hooplaVersion == 1) {
+			hooplaProcessor = new HooplaProcessor(this, dbConn, logger);
+		} else if (hooplaVersion == 2) {
+			hooplaProcessor2 = new HooplaProcessor2(this, dbConn, logger);
+		}
 
 		axis360Processor = new Axis360Processor(this, dbConn, logger);
 
@@ -574,6 +581,7 @@ public class GroupedWorkIndexer {
 		cloudLibraryProcessor = null;
 		axis360Processor = null;
 		hooplaProcessor = null;
+		hooplaProcessor2 = null;
 		palaceProjectProcessor = null;
 		translationMaps.clear();
 		lexileInformation.clear();
@@ -1709,7 +1717,11 @@ public class GroupedWorkIndexer {
 				overDriveProcessor.processRecord(groupedWork, identifier, logEntry);
 				break;
 			case "hoopla":
-				hooplaProcessor.processRecord(groupedWork, identifier, logEntry);
+				if (hooplaVersion == 1) {
+					hooplaProcessor.processRecord(groupedWork, identifier, logEntry);
+				} else if (hooplaVersion == 2) {
+					hooplaProcessor2.processRecord(groupedWork, identifier, logEntry);
+				}
 				break;
 			case "cloud_library":
 				cloudLibraryProcessor.processRecord(groupedWork, identifier, logEntry);

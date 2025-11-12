@@ -19,7 +19,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 
-class HooplaProcessor {
+class HooplaProcessor2 {
 	private final GroupedWorkIndexer indexer;
 	private final Logger logger;
 
@@ -29,7 +29,7 @@ class HooplaProcessor {
 	private PreparedStatement getFlexAvailabilityStmt;
 	private PreparedStatement getEntitlementsByHooplaIdStmt;
 
-	HooplaProcessor(GroupedWorkIndexer indexer, Connection dbConn, Logger logger) {
+	HooplaProcessor2(GroupedWorkIndexer indexer, Connection dbConn, Logger logger) {
 		this.indexer = indexer;
 		this.logger = logger;
 
@@ -481,7 +481,7 @@ class HooplaProcessor {
 						}
 						HooplaScope hooplaScope = scope.getHooplaScope();
 						if (hooplaScope != null){
-							okToAdd = hooplaScope.isOkToAdd(identifier, format, price, abridged, pa, profanity, isAdult, isTeen, isKids, rating, genresToAdd, logger);
+							okToAdd = hooplaScope.isOkToAdd2(identifier, format, price, abridged, pa, profanity, isAdult, isTeen, isKids, rating, genresToAdd, logger);
 						} else {
 							okToAdd = false;
 						}

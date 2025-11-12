@@ -34,6 +34,10 @@ public class HooplaScope {
 	private boolean excludeProfanity;
 	private final ArrayList<Pattern> genreFilters = new ArrayList<>();
 
+	// Only used for Hoopla Version 1
+	private boolean includeInstant = true;
+	private boolean includeFlex = true;
+
 	public long getId() {
 		return id;
 	}
@@ -48,6 +52,24 @@ public class HooplaScope {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	// includeInstant only used for Hoopla Version 1
+	public boolean isIncludeInstant() {
+		return includeInstant;
+	}
+
+	public void setIncludeInstant(boolean includeInstant) {
+		this.includeInstant = includeInstant;
+	}
+
+	// includeFlex only used for Hoopla Version 1
+	public boolean isIncludeFlex() {
+		return includeFlex;
+	}
+
+	void setIncludeFlex(boolean includeFlex) {
+		this.includeFlex = includeFlex;
 	}
 
 	public boolean isIncludeEBooks() {
@@ -248,7 +270,8 @@ public class HooplaScope {
 
 	private String lastIdentifier = null;
 	private boolean lastIdentifierResult = false;
-	public boolean isOkToAdd(String identifier, String format, float price, boolean abridged, boolean pa, boolean profanity, boolean isAdult, boolean isTeen, boolean isKids, String rating, HashSet<String> genres, Logger logger) {
+	// Only used for Hoopla Version 2
+	public boolean isOkToAdd2(String identifier, String format, float price, boolean abridged, boolean pa, boolean profanity, boolean isAdult, boolean isTeen, boolean isKids, String rating, HashSet<String> genres, Logger logger) {
 		if (lastIdentifier != null && lastIdentifier.equals(identifier)){
 			return lastIdentifierResult;
 		}
@@ -285,6 +308,99 @@ public class HooplaScope {
 				break;
 			default:
 				logger.error("Unknown format " + format);
+		}
+		if (okToAdd && excludeAbridged && abridged) {
+			okToAdd = false;
+		}
+		if (okToAdd && excludeParentalAdvisory && pa) {
+			okToAdd = false;
+		}
+		if (okToAdd && excludeProfanity && profanity) {
+			okToAdd = false;
+		}
+		//Check audiences
+		if (okToAdd) {
+			//Check based on the audience as well
+			okToAdd = false;
+			//noinspection RedundantIfStatement
+			if (isAdult && includeAdult) {
+				okToAdd = true;
+			}
+			if (isTeen && includeTeen) {
+				okToAdd = true;
+			}
+			if (isKids && includeKids) {
+				okToAdd = true;
+			}
+		}
+		if (okToAdd && isRatingExcluded(rating)) {
+			okToAdd = false;
+		}
+		if (okToAdd && !genreFilters.isEmpty()) {
+			boolean genreMatched = false;
+			for (String curGenre : genres) {
+				for (Pattern curSubjectFilter : genreFilters) {
+					if (curSubjectFilter.matcher(curGenre).find()) {
+						genreMatched = true;
+						break;
+					}
+				}
+				if (genreMatched) {
+					okToAdd = false;
+					break;
+				}
+			}
+		}
+		lastIdentifier = identifier;
+		lastIdentifierResult = okToAdd;
+		return okToAdd;
+	}
+
+	// Only used for Hoopla Version 1
+	public boolean isOkToAdd(String identifier, String kind, float price, boolean abridged, boolean pa, boolean profanity, boolean isAdult, boolean isTeen, boolean isKids, String rating, HashSet<String> genres, String hooplaType, Logger logger) {
+		if (lastIdentifier != null && lastIdentifier.equals(identifier)){
+			return lastIdentifierResult;
+		}
+		boolean okToAdd = true;
+		if (hooplaType != null) {
+			if (hooplaType.equalsIgnoreCase("Instant")) {
+				okToAdd = includeInstant;
+			} else if (hooplaType.equalsIgnoreCase("Flex")) {
+				okToAdd = includeFlex;
+			}
+		}
+
+		if (!okToAdd) {
+			lastIdentifier = identifier;
+			lastIdentifierResult = false;
+			return false;
+		}
+
+		//Filter by kind and price
+		switch (kind) {
+			case "EBOOK":
+				okToAdd = (includeEBooks && price <= maxCostPerCheckoutEBooks);
+				break;
+			case "AUDIOBOOK":
+				okToAdd = (includeEAudiobook && price <= maxCostPerCheckoutEAudiobook);
+				break;
+			case "COMIC":
+				okToAdd = (includeEComics && price <= maxCostPerCheckoutEComics);
+				break;
+			case "MOVIE":
+				okToAdd = (includeMovies && price <= maxCostPerCheckoutMovies);
+				break;
+			case "TELEVISION":
+				okToAdd = (includeTelevision && price <= maxCostPerCheckoutTelevision);
+				break;
+			case "MUSIC":
+				okToAdd = (includeMusic && price <= maxCostPerCheckoutMusic);
+				break;
+			case "BINGEPASS":
+				okToAdd = (includeBingePass && price <= maxCostPerCheckoutBingePass);
+				break;
+			default:
+				logger.error("Unknown kind " + kind);
 		}
 		if (okToAdd && excludeAbridged && abridged) {
 			okToAdd = false;

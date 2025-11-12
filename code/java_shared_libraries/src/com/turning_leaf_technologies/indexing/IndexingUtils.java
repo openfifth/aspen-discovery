@@ -96,6 +96,15 @@ public class IndexingUtils {
 				hooplaScope.setExcludeProfanity(hooplaScopesRS.getBoolean("excludeProfanity"));
 				hooplaScope.setGenreFilters(hooplaScopesRS.getString("genresToExclude"));
 
+				// includeInstant and includeFlex are only used for Hoopla Version 1
+				try {
+					hooplaScope.setIncludeInstant(hooplaScopesRS.getBoolean("includeInstant"));
+					hooplaScope.setIncludeFlex(hooplaScopesRS.getBoolean("includeFlex"));
+				} catch (SQLException e) {
+					hooplaScope.setIncludeInstant(true);
+					hooplaScope.setIncludeFlex(true);
+				}
+
 				hooplaScopes.put(hooplaScope.getId(), hooplaScope);
 			}
 
