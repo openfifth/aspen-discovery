@@ -2016,11 +2016,11 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function getPreHoldSubmissionFeeMessage(): string|null {
+	public function getPreHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
 		if (!UserAccount::isLoggedIn()) {
 			return "You must be logged in to place holds.";
 		}
-		$rawFee = $this->getRawReserveFee();
+		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
 		if (!$rawFee || $rawFee == "0.000000"){
 			return null;
 		}
@@ -2028,11 +2028,11 @@ class Koha extends AbstractIlsDriver {
 		return  $this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected' ? "You will be charged a hold fee of $fee when you collect this item." : "You will be charged a hold fee of $fee for placing this hold." ;
 	}
 		
-	public function getPostHoldSubmissionFeeMessage(): string|null {
+	public function getPostHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
 		if (!UserAccount::isLoggedIn()) {
 			return "You must be logged in to place holds.";
 		}
-		$rawFee = $this->getRawReserveFee();
+		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
 		if (!$rawFee || $rawFee == "0.000000"){
 			return null;
 		}
@@ -2051,25 +2051,75 @@ class Koha extends AbstractIlsDriver {
 		return $currencyFormatter->formatCurrency($rawFee, $currencyCode);
 	}
 
-	private function getRawReserveFee(): string|null {
-
-		$patron = UserAccount::getActiveUserObj();
-		$this->initDatabaseConnection();
-
-		/** @noinspection SqlResolve */
-		$sql = "SELECT reservefee FROM borrowers LEFT JOIN categories ON borrowers.categorycode = categories.categorycode WHERE borrowernumber =" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . ";";
-		$results = mysqli_query($this->dbConnection, $sql);
-
-		if ($results === false) {
-			global $logger;
-			$logger->log("Error getting reserve fee " . mysqli_error($this->dbConnection), Logger::LOG_ERROR);
-			return false;
+	// Replicates the logic in Koha's _calculate_title_hold_fee() for bib-level holds
+	public function calculateHoldFeeForRecord(MarcRecordDriver $marcRecordDriver) {
+		/** @var Grouping_Item			- includes relevant location information */
+		$groupingItems 					= $marcRecordDriver->getRelatedRecord()->getItems();
+		/** @var User					- includes relevant user unique identifier and location information */
+		$patron 						= UserAccount::getActiveUserObj();
+		/** @var File_MARC_Record 		- links to relavent item type information */
+		$marcRecordFile 				= $marcRecordDriver->getMarcRecord();
+		/** @var File_MARC_Data_Field 	- contains the item type id*/
+		$itemTypeField 					= $marcRecordFile->getField('942');
+		
+		if ($itemTypeSubfield = $itemTypeField->getSubfield('c')) {
+			$itemTypeId = trim($itemTypeSubfield->getData());
 		}
-		while ($curRow = $results->fetch_assoc()) {
-			$reserveFee = $curRow['reservefee'];
+
+		$fees = [];
+
+		foreach ($groupingItems as $groupingItem) {
+			$fee = $this->getRawReserveFeeByContext([
+				'patronCategoryId' => $patron->patronType,
+				'itemTypeId' => $itemTypeId,
+				'locationId' => $groupingItem->locationCode
+			]);
+
+			array_push($fees, $fee);
 		}
-		$results->close();
-		return $reserveFee;
+
+		$sortingStrategy = $this->getKohaSystemPreference('TitleHoldFeeStrategy');
+
+    	if ( $sortingStrategy == 'highest' ) {
+    	    return max($fees);
+    	}
+		if ( $sortingStrategy == 'lowest' ) {
+    	    return min($fees);
+    	}
+		if ( $sortingStrategy == 'most_common' ) {
+			$feeCounts = array_count_values($fees);		
+			return arsort($feeCounts)[0];
+		}	
+    	
+    	return max($fees);
+	}
+
+	private function getRawReserveFeeByContext(array $context): string|null {
+		$oauthToken = $this->getOAuthToken();
+		if (!$oauthToken) {
+			return null;
+		}
+
+		['itemTypeId' => $itemTypeId, 'locationId' => $locationId, 'patronCategoryId' => $patronCategoryId] = $context;
+
+		$url = $this->getWebServiceURL() . "/api/v1/circulation_rules?effective=true&item_type_id=$itemTypeId&library_id=$locationId&patron_category_id=$patronCategoryId&rules=hold_fee";
+
+		$curlWrapper = new CurlWrapper(); 
+		$customHeaders = [
+			'Authorization: Bearer ' . $oauthToken,
+			'User-Agent: Aspen Discovery',
+			'Host: ' . preg_replace('~http[s]?://~', '', $this->getWebServiceURL()),
+		];
+		$curlWrapper->addCustomHeaders($customHeaders, false);
+		$curlWrapper->curl_connect($url);
+		$response = $curlWrapper->curlGetPage($url);
+
+		if ($curlWrapper->getResponseCode() == 200) {
+			return json_decode($response, true)[0]['hold_fee'];
+		} else {
+			return null;
+		}
+		return null;
 	}
 
 	/**
