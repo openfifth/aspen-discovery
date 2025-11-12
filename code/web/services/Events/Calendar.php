@@ -289,6 +289,7 @@ class Events_Calendar extends Action {
 							'link' => $url,
 							'formattedTime' => $formattedTime,
 							'isCancelled' => $isCancelled,
+							'location' => $result['branch'][0],
 						];
 					}
 				}
