@@ -497,6 +497,7 @@ class Library extends DataObject {
 	public $talpaSettingsId;
 
 	// Aspen Events
+	/** @noinspection PhpUnused */
 	public $aspenEventsToInclude;
 
 	/** @noinspection PhpUnused */
@@ -3462,7 +3463,7 @@ class Library extends DataObject {
 							1 => 'Only for unavailable titles',
 							2 => 'For available and unavailable titles with holds',
 							3 => 'For available and unavailable titles with and without holds',
-							4 => 'Show Holdable Copies without Hold Counts'
+							4 => 'Show available copies without hold counts'
 						],
 						'label' => 'Show Hold and Copy Counts',
 						'description' => 'Whether or not the hold count and copies counts should be visible for grouped works when summarizing formats.',
@@ -6183,6 +6184,17 @@ class Library extends DataObject {
 	}
 
 	public function updateStructureForEditingObject($structure): array {
+		if (!empty($this->accountProfileId)) {
+			$allAccountProfiles = UserAccount::getAccountProfiles();
+			foreach ($allAccountProfiles as $accountProfileInfo) {
+				if ($accountProfileInfo['accountProfile']->id == $this->accountProfileId) {
+					$activeIls = $accountProfileInfo['accountProfile']->ils;
+					$structure = $this->filterPropertiesByILS($activeIls, $structure);
+					break;
+				}
+			}
+		}
+
 		//Get locations for the active library and apply those to third party registration locations
 		$location = new Location();
 		$location->libraryId = $this->libraryId;
