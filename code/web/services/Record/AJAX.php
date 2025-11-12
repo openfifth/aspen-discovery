@@ -1292,7 +1292,8 @@ class Record_AJAX extends Action {
 						/** @var Koha $catalogDriver */
 						$catalogDriver = $user->getCatalogDriver();
 						if ($catalogDriver->hasHoldFeeMessage()) {
-							$reserveFeeMessage = $catalogDriver->getPostHoldSubmissionFeeMessage();
+							$marcRecord = RecordDriverFactory::initRecordDriverById($recordId);
+							$reserveFeeMessage = $catalogDriver->getPostHoldSubmissionFeeMessage($marcRecord);
 							if ($reserveFeeMessage) {
 								$interface->assign('reserveFeeMessage', $reserveFeeMessage);
 							}
@@ -2184,7 +2185,7 @@ class Record_AJAX extends Action {
 		/** @var Koha $catalogDriver */
 		$catalogDriver = $marcRecord->getCatalogDriver();
 		if ($catalogDriver->hasHoldFeeMessage()) {
-			$reserveFeeMessage = $catalogDriver->getPreHoldSubmissionFeeMessage();
+			$reserveFeeMessage = $catalogDriver->getPreHoldSubmissionFeeMessage($marcRecord);
 			if ($reserveFeeMessage) {
 				$interface->assign('reserveFeeMessage', $reserveFeeMessage);
 			}
