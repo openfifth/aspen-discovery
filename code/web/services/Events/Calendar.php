@@ -12,6 +12,14 @@ class Events_Calendar extends Action {
 
 		$today = new DateTime();
 		$useWeek = 0;
+
+		$month = $_REQUEST['month'] ?? $today->format('m');
+		$year = $_REQUEST['year'] ?? $today->format('Y');
+		$week = $_REQUEST['week'] ?? null;
+		if ($week !== null) {
+			$useWeek = 1;
+		}
+
 		if (isset($_REQUEST['week'])) {
 			$week = $_REQUEST['week'];
 			$useWeek = 1;
@@ -320,6 +328,15 @@ class Events_Calendar extends Action {
 		$headerImage = $this->getHeaderImage();
 		$interface->assign('headerImage', $headerImage['image'] ?? '');
 		$interface->assign('headerAlt', $headerImage['altText'] ?? '');
+
+		$week = isset($_REQUEST['week']) ? (int)$_REQUEST['week'] : null;
+		$month = isset($_REQUEST['month']) ? (int)$_REQUEST['month'] : (int)$today->format('m');
+		$year = isset($_REQUEST['year']) ? (int)$_REQUEST['year'] : (int)$today->format('Y');
+
+		$interface->assign('month', $month);
+		$interface->assign('year', $year);
+		$interface->assign('week', $week);
+		$interface->assign('useWeek', $useWeek);
 
 		if ($useWeek) {
 			$this->display('calendar.tpl', 'Events Calendar ' . $formattedWeekYear, '');

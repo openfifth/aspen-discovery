@@ -16,6 +16,7 @@
 		</select>
 		{if isset($month)}<input type="hidden" name="month" value="{$month}">{/if}
 		{if isset($year)}<input type="hidden" name="year" value="{$year}">{/if}
+		{if isset($week) && $useWeek}<input type="hidden" name="week" value="{$week}">{/if}
 	</form>
 	<div class="calendar {if $useWeek}week-view{/if}">
 		<div class="row calendar-nav">
