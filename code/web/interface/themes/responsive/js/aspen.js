@@ -8146,6 +8146,34 @@ AspenDiscovery.Admin = (function () {
 				// No images, scroll to row immediately.
 				scrollTableToRow($targetRow);
 			}
+		},
+
+		toggleCheckboxOptions(checkboxId) {
+			const $optionsDiv = $('#' + checkboxId + '_options');
+			if ($('#' + checkboxId).prop('checked')) {
+				$optionsDiv.stop(true, true).slideDown(200);
+			} else {
+				$optionsDiv.stop(true, true).slideUp(200);
+			}
+		},
+
+		toggleAllCheckboxOptions(propName, selectAllId){
+			const $selectAll = $(selectAllId);
+			const isChecked = $selectAll.prop('checked');
+			const $checkboxes = $(`.${propName}Checkbox`);
+
+			$checkboxes.each((_, el) => {
+				const $checkbox = $(el);
+				const id = $checkbox.attr('id');
+				const $options = $(`#${id}_options`);
+
+				$checkbox.prop('checked', isChecked);
+				if (isChecked) {
+					$options.stop(true, true).slideDown(200);
+				} else {
+					$options.stop(true, true).slideUp(200);
+				}
+			});
 		}
 	};
 }(AspenDiscovery.Admin || {}));
@@ -11260,7 +11288,8 @@ AspenDiscovery.GroupedWork = (function(){
 				"title" : $("#title").val(),
 				"author" : $("#author").val(),
 				"seriesName" : $("#seriesName").val(),
-				"seriesDisplayOrder" : $("#seriesDisplayOrder").val()
+				"seriesDisplayOrder" : $("#seriesDisplayOrder").val(),
+				"description" : $("#description").val()
 			}
 			$.getJSON(url, params, function (data){
 				if (!data.success){
@@ -15505,61 +15534,48 @@ AspenDiscovery.WebBuilder = function () {
 			});
 		},
 
-		getWebResource:function (id) {
-			var url = Globals.path + "/WebBuilder/AJAX";
-			var params = {
+		getWebResource(id) {
+			const url = `${Globals.path}/WebBuilder/AJAX`;
+			const params = {
 				method: "getWebResource",
 				resourceId: id
 			};
 
-			$.getJSON(url, params, function(data){
-				if(data.requireLogin) {
-					if(Globals.loggedIn && data.canView) {
-						var params = {
-							method: "trackWebResourceUsage",
-							id: id,
-							authType: Globals.loggedIn ? "user" : "library"
-						};
-						$.getJSON(url, params, function(usage){
-							if(data.openInNewTab) {
-								// noinspection JSUnresolvedFunction
-								var newTab = window.open("", '_blank');
-								if (newTab==null) {
-									//Couldn't open a new tab, just use this one
-									location.assign(data.url);
-									//return ;
-								}
-								newTab.location.href = data.url
-							} else {
-								location.assign(data.url);
-							}
-						});
-					} else if (Globals.loggedIn && !data.canView) {
-						return AspenDiscovery.showMessage(data.userNoAccessTitle, data.userNoAccessMessage);
+			$.getJSON(url, params, (data) => {
+				const { requireLogin, canView, openInNewTab, url: resourceUrl, userNoAccessTitle, userNoAccessMessage } = data;
+
+				const openResource = () => {
+					if (openInNewTab) {
+						const newTab = window.open("", '_blank');
+						if (newTab == null) {
+							location.assign(resourceUrl);
+						} else {
+							newTab.location.href = resourceUrl;
+						}
 					} else {
-						AspenDiscovery.Account.ajaxLogin(null, function(){
-							return AspenDiscovery.WebBuilder.getWebResource(id);
-						}, true);
+						location.assign(resourceUrl);
+					}
+				};
+
+				const trackUsage = (authType) => {
+					const trackParams = {
+						method: "trackWebResourceUsage",
+						id,
+						authType
+					};
+					$.getJSON(url, trackParams, () => openResource());
+				};
+
+				if (requireLogin) {
+					if (Globals.loggedIn && canView) {
+						trackUsage(Globals.loggedIn ? "user" : "library");
+					} else if (Globals.loggedIn && !canView) {
+						AspenDiscovery.showMessage(userNoAccessTitle, userNoAccessMessage);
+					} else {
+						AspenDiscovery.Account.ajaxLogin(null, () => AspenDiscovery.WebBuilder.getWebResource(id), true);
 					}
 				} else {
-					var params = {
-						method: "trackWebResourceUsage",
-						id: id,
-						authType: "none"
-					};
-					$.getJSON(url, params, function(usage){
-						if(data.openInNewTab) {
-							// noinspection JSUnresolvedFunction
-							var newTab = window.open("", '_blank');
-							if (newTab==null) {
-								location.assign(data.url);
-								//return ;
-							}
-							newTab.location.href = data.url
-						} else {
-							location.assign(data.url);
-						}
-					});
+					trackUsage("none");
 				}
 			}).fail(AspenDiscovery.ajaxFail);
 

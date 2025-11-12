@@ -235,6 +235,12 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 
 	abstract SolrInputDocument getSolrDocument(BaseIndexingLogEntry logEntry);
 
+	void setDisplayDescription(String description) {
+		if (description != null && !description.isEmpty()) {
+			this.displayDescription = description;
+		}
+	}
+
 	public void addScopingInfo(String scopeName, ScopingInfo scopingInfo){
 		ArrayList<ScopingInfo> scopingInfoForScope = relatedScopes.computeIfAbsent(scopeName, k -> new ArrayList<>());
 		scopingInfoForScope.add(scopingInfo);

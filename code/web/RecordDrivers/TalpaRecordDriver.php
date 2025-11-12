@@ -183,7 +183,6 @@ class TalpaRecordDriver extends RecordInterface {
 					$interface->assign('summDescription', $groupedWorkDriver->getDescription());
 					$interface->assign('bookCoverUrl', $groupedWorkDriver->getBookcoverUrl('small'));
 					$interface->assign('bookCoverUrlMedium', $groupedWorkDriver->getBookcoverUrl('medium'));
-	//						$interface->assign('summDescription', $this->getDescriptionFast(true));
 					if ($groupedWorkDriver->hasCachedSeries()) {
 						$interface->assign('ajaxSeries', false);
 						$interface->assign('summSeries', $groupedWorkDriver->getSeries(false));

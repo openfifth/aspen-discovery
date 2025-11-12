@@ -69,10 +69,10 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	 *
 	 * @param String|null $searchSource
 	 * @param String|null $searchTerm
-	 * @param ?bool $allowAutomaticFaceting
+	 * @param ?bool $enableSearchInterpreter
 	 * @return  boolean
 	 */
-	public function init(?string $searchSource = null, ?string $searchTerm = null, ?bool $allowAutomaticFaceting = false) : bool {
+	public function init(?string $searchSource = null, ?string $searchTerm = null, ?bool $enableSearchInterpreter = false) : bool {
 		// Call the standard initialization routine in the parent:
 		parent::init($searchSource);
 
@@ -105,7 +105,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 
 		//********************
 		// Basic Search logic
-		if ($this->initBasicSearch($searchTerm, $allowAutomaticFaceting)) {
+		if ($this->initBasicSearch($searchTerm, $enableSearchInterpreter)) {
 			// If we found a basic search, we don't need to do anything further.
 		} else {
 			$this->initAdvancedSearch();
@@ -188,10 +188,10 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	 *
 	 * @access  public
 	 * @param null|String|String[] $searchTerm
-	 * @param bool $allowAutomaticFaceting
+	 * @param bool $enableSearchInterpreter
 	 * @return  boolean  True if search settings were found, false if not.
 	 */
-	public function initBasicSearch(mixed $searchTerm = null, bool $allowAutomaticFaceting = false) : bool{
+	public function initBasicSearch(mixed $searchTerm = null, bool $enableSearchInterpreter = false) : bool{
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		if ($searchTerm == null) {
 			// If no lookfor parameter was found, we have no search terms to
@@ -262,7 +262,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 			}
 		}
 
-		$searchTerm = $this->applyAutomaticFacetsToSearch($type, $allowAutomaticFaceting, $searchTerm);
+		$searchTerm = $this->runSearchInterpreter($type, $enableSearchInterpreter, $searchTerm);
 
 		$this->searchTerms[] = [
 			'index' => $type,
@@ -564,33 +564,61 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 
 	/**
 	 * @param string $type
-	 * @param mixed $allowAutomaticFaceting
+	 * @param mixed $enableSearchInterpreter
 	 * @param string $searchTerm
 	 * @return string
 	 */
-	public function applyAutomaticFacetsToSearch(string $type, bool $allowAutomaticFaceting, string $searchTerm): string {
-		if ($type == 'Keyword' && $allowAutomaticFaceting && !empty($searchTerm)) {
+	public function runSearchInterpreter(string $type, bool $enableSearchInterpreter, string $searchTerm): string {
+		$splitPattern = "/[|,]\s*/";
+		if ($type == 'Keyword' && $enableSearchInterpreter && !empty($searchTerm)) {
 			$changeMade = false;
 			$searchTermLower = strtolower($searchTerm);
 
-			require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
-			$indexedFormatObj = new IndexedFormat();
-			$indexedFormatObj->orderBy('LENGTH(format) DESC');
-			$indexedFormats = $indexedFormatObj->fetchAll('format');
-			$hasFormatApplied = false;
-			foreach ($indexedFormats as $indexedFormat) {
-				$quoteValue = true;
-				if ($indexedFormat == 'Large Print' || $indexedFormat == 'Large Type') {
-					$indexedFormatRegex = '(Large Print|Large type)( books)?';
-					$quoteValue = false;
-				}else{
-					$indexedFormatRegex = $indexedFormat;
-				}
-				$filterApplied = $this->checkAndApplyFacetValueToSearch($searchTerm, $indexedFormatRegex, $quoteValue, 'format', $indexedFormat);
-				$hasFormatApplied = $hasFormatApplied && $filterApplied;
+			require_once ROOT_DIR . '/sys/SearchObject/SearchInterpreterSetting.php';
+			$searchInterpreterSettings = new SearchInterpreterSetting();
+			if (!$searchInterpreterSettings->find(true)) {
+				return $searchTerm;
 			}
 
-			if (!$hasFormatApplied) {
+			//Ignore boolean searches
+			if (preg_match('/(\b)AND|OR|NOT(\b)/i', $searchTerm)) {
+				return $searchTerm;
+			}
+
+			$searchTermsToSkip = $searchInterpreterSettings->getTermsToSkipAsStrings();
+			foreach ($searchTermsToSkip as $term) {
+				$valueToCheck = preg_quote($term, '/');
+				if (preg_match('/(\b|^)' . $valueToCheck . '(\b|$)/i', $searchTerm)) {
+					return $searchTerm;
+				}
+			}
+
+			$hasFormatApplied = false;
+			if ($searchInterpreterSettings->processFormats || $searchInterpreterSettings->processPluralFormats) {
+				$formatsToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->formatsToSkip), -1, PREG_SPLIT_NO_EMPTY);;
+				$pluralFormatsToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->pluralFormatsToSkip), -1, PREG_SPLIT_NO_EMPTY);;
+				require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
+				$indexedFormatObj = new IndexedFormat();
+				$indexedFormatObj->orderBy('LENGTH(format) DESC');
+				$indexedFormats = $indexedFormatObj->fetchAll('format');
+				foreach ($indexedFormats as $indexedFormat) {
+					$quoteValue = true;
+					$indexedFormatLower = strtolower($indexedFormat);
+					$checkSingular = $searchInterpreterSettings->processFormats && (!in_array($indexedFormatLower, $formatsToSkip));
+					$checkPlural = $searchInterpreterSettings->processPluralFormats && (!in_array($indexedFormatLower, $pluralFormatsToSkip)) && (!in_array($indexedFormatLower . 's', $pluralFormatsToSkip));
+					if ($indexedFormat == 'Large Print' || $indexedFormat == 'Large Type') {
+						$indexedFormatRegex = '(Large Print|Large type)( books)?';
+						$quoteValue = false;
+					} else {
+						$indexedFormatRegex = $indexedFormat;
+					}
+					$filterApplied = $this->checkAndApplyFacetValueToSearch($searchTerm, $indexedFormatRegex, $checkSingular, $checkPlural, $searchInterpreterSettings->processNew, $quoteValue, 'format', $indexedFormat);
+					$hasFormatApplied = $hasFormatApplied && $filterApplied;
+				}
+			}
+
+			if (!$hasFormatApplied && $searchInterpreterSettings->processFormatCategories) {
+				$formatCategoriesToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->formatCategoriesToSkip), -1, PREG_SPLIT_NO_EMPTY);;
 				$indexedFormatCategories = [
 					'Books',
 					'eBooks',
@@ -599,17 +627,22 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 					'Movies'
 				];
 				$hasFormatCategoryApplied = false;
-				//TODO: If a facet is not multi-select we probably only want to pick one.
-				//i.e. Books and Audio Books would return less than either on it's own
+				//Since Format Category is not multi-select we only want to pick one.
+				//i.e. Books and Audio Books would return less than either on their own
 				foreach ($indexedFormatCategories as $indexedFormatCategory) {
+					if (in_array(strtolower($indexedFormatCategory), $formatCategoriesToSkip)) {
+						continue;
+					}
 					$quoteValue = true;
 					if ($indexedFormatCategory == 'Movies') {
-						$indexedFormatCategoryRegex = '(Movies|Video)';
+						$indexedFormatCategoryRegex = '(Movie|Video)';
+						$checkPlural = true;
 						$quoteValue = false;
 					}else{
 						$indexedFormatCategoryRegex = $indexedFormatCategory;
+						$checkPlural = false;
 					}
-					$filterApplied = $this->checkAndApplyFacetValueToSearch($searchTerm, $indexedFormatCategoryRegex, $quoteValue, 'format_category', $indexedFormatCategory);
+					$filterApplied = $this->checkAndApplyFacetValueToSearch($searchTerm, $indexedFormatCategoryRegex, $quoteValue, $checkPlural, $searchInterpreterSettings->processNew, false, 'format_category', $indexedFormatCategory);
 					/** @noinspection PhpConditionAlreadyCheckedInspection */
 					$hasFormatCategoryApplied = $hasFormatCategoryApplied && $filterApplied;
 					//We can only apply one format category
@@ -619,12 +652,35 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 				}
 			}
 
-			$this->checkAndApplyFacetValueToSearch($searchTerm, '(kid|children|juvenile)', false, 'target_audience', 'Juvenile');
-			$this->checkAndApplyFacetValueToSearch($searchTerm, '(teen|young adult)', false, 'target_audience', 'Young Adult');
-			$this->checkAndApplyFacetValueToSearch($searchTerm, '(adult|senior)', false, 'target_audience', 'Adult');
-			$this->checkAndApplyFacetValueToSearch($searchTerm, 'non[-\s]?fiction', false, 'literary_form', 'Non Fiction');
-			$this->checkAndApplyFacetValueToSearch($searchTerm, '(?<!science\s)fiction', false, 'literary_form', 'Fiction');
-			$this->checkAndApplyFacetValueToSearch($searchTerm, 'available', false, 'availability_toggle', 'available');
+			if ($searchInterpreterSettings->processAudiences || $searchInterpreterSettings->processPluralAudiences) {
+				$audiencesToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->audiencesToSkip), -1, PREG_SPLIT_NO_EMPTY);;
+				$pluralAudiencesToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->pluralAudiencesToSkip), -1, PREG_SPLIT_NO_EMPTY);;
+				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('kid', $audiencesToSkip);
+				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('kids', $pluralAudiencesToSkip);
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(kid|children|juvenile)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Juvenile');
+				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('teen', $audiencesToSkip);
+				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('teens', $pluralAudiencesToSkip);
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(teen|young adult)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Young Adult');
+				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('adult', $audiencesToSkip);
+				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('adults', $pluralAudiencesToSkip);
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(adult|senior)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Adult');
+			}
+			if ($searchInterpreterSettings->processFictionNonFiction) {
+				$this->checkAndApplyFacetValueToSearch($searchTerm, 'non[-\s]?fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->fictionNonFictionFacet, 'Non Fiction');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(?<!science\s)fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->fictionNonFictionFacet, 'Fiction');
+			}
+			if ($this->automaticFacetsApplied && $searchInterpreterSettings->processAvailable) {
+				$this->checkAndApplyFacetValueToSearch($searchTerm, 'available', true, false, false, false, 'availability_toggle', 'available');
+			}
+
+			$specialSearchTerms = $searchInterpreterSettings->getSpecialTerms();
+			foreach ($specialSearchTerms as $term) {
+				$applied = $this->checkAndApplyFacetValueToSearch($searchTerm, $term->term, true, false, $searchInterpreterSettings->processNew, false, null, null, $term->facetsToApply);
+				if ($applied && !empty($term->sortToApply)) {
+					$this->setSort($term->sortToApply);
+				}
+			}
+
 			if ($this->automaticFacetsApplied) {
 				$searchTerm = preg_replace('/for/i', '', $searchTerm);
 				$searchTerm = preg_replace('/about/i', '', $searchTerm);
@@ -640,7 +696,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 		return $this->automaticFacetsApplied;
 	}
 
-	protected function checkAndApplyFacetValueToSearch(&$searchTerm, $valueToCheck, $quoteValue, $facetToApply, $facetValueToApply) : bool {
+	protected function checkAndApplyFacetValueToSearch(string &$searchTerm, string $valueToCheck, bool $checkSingular, bool $checkPlural, bool $processNew, bool $quoteValue, ?string $facetToApply = null, ?string $facetValueToApply = null, ?string $facetBlockToApply = null) : bool {
 		if (empty($searchTerm)) {
 			return false;
 		}
@@ -650,22 +706,49 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 			$valueToCheck = preg_quote($valueToCheck, '/');
 			$valueToCheck = str_replace(' ', '\s?', $valueToCheck);
 		}
+		if ($checkPlural && $checkSingular) {
+			//This is a really simple check
+			$valueToCheck .= 's?';
+		}elseif ($checkSingular) {
+			//No need to adjust the value
+		}elseif ($checkPlural) {
+			$valueToCheck .= 's';
+		}else{
+			//Checking neither, bail
+			return false;
+		}
 		//First check to see if the value is prefixed by new (i.e. new non-fiction)
-		$searchTerm = preg_replace('/(\b|^)new ' . $valueToCheck . 's?(\b|$)/i', '', $searchTerm, -1, $numChanges);
+		if ($processNew) {
+			$searchTerm = preg_replace('/(\b|^)new ' . $valueToCheck . '(\b|$)/i', '', $searchTerm, -1, $numChanges);
+		}
+
 		if ($numChanges == 0) {
 			//If we got no changes then check without the new prefix
-			$searchTerm = preg_replace('/(\b|^)' . $valueToCheck . 's?(\b|$)/i', '', $searchTerm, -1, $numChanges);
+			$searchTerm = preg_replace('/(\b|^)' . $valueToCheck . '(\b|$)/i', '', $searchTerm, -1, $numChanges);
 		}else{
 			$prefixedWithNew = true;
 		}
 
 		if ($numChanges > 0) {
-			$this->addFilter("$facetToApply:$facetValueToApply");
+			if ($facetToApply != null && $facetValueToApply != null) {
+				$this->addFilter("$facetToApply:$facetValueToApply");
+			}
+			if ($facetBlockToApply != null) {
+				$facetsToApply = explode("\n", $facetBlockToApply);
+				foreach ($facetsToApply as $facet) {
+					$facet = trim($facet);
+					if (!empty($facet)) {
+						$this->addFilter($facet);
+					}
+				}
+			}
 			if ($prefixedWithNew) {
 				$lastYear = date('Y', strtotime('-1 year'));
 				$this->addFilter("publishDateSort:[$lastYear TO *]");
+				$this->setSort('days_since_added asc');
 			}
 			$this->automaticFacetsApplied = true;
+			$searchTerm = trim($searchTerm);
 			return true;
 		}else{
 			return false;

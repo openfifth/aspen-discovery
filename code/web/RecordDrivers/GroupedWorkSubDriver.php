@@ -333,6 +333,20 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 	}
 
 	/**
+	 * Check if this record is part of a manually grouped work.
+	 *
+	 * @return bool
+	 * @noinspection PhpUnused
+	 */
+	public function isInManuallyGroupedWork(): bool {
+		$groupedWorkDriver = $this->getGroupedWorkDriver();
+		if ($groupedWorkDriver && $groupedWorkDriver->isValid()) {
+			return $groupedWorkDriver->isManuallyGrouped();
+		}
+		return false;
+	}
+
+	/**
 	 * Get an array of all ISBNs associated with the record (may be empty).
 	 *
 	 * @access  protected

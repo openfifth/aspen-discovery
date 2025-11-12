@@ -10570,8 +10570,6 @@ class MyAccount_AJAX extends JSON_Action {
 				'success' => true,
 			];
 		}
-		global $logger;
-		$logger->log("REFRESH CIRC CACHE!", Logger::LOG_ERROR);
 
 		$user->checkoutInfoLastLoaded = 0;
 		$user->holdInfoLastLoaded = 0;

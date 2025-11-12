@@ -956,23 +956,47 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		}
 	}
 
-	function getDescription() {
-		$description = null;
-		$cleanIsbn = $this->getCleanISBN();
-		/** @var Library $library */ global $library;
-		if ($description == null) {
-			$description = $this->getDescriptionFast();
+	private ?string $cachedDescription = null;
+	private ?GroupedWorkDisplayInfo $cachedDisplayInfo = null;
+
+	/**
+	 * Get the description for this grouped work with full enrichment logic.
+	 *
+	 * Priority order:
+	 * 1. Manually set display info description (from grouped_work_display_info table).
+	 * 2. Syndetics summary (if preferSyndeticsSummary setting is enabled).
+	 * 3. Description from Solr index.
+	 *    - Respects "Prefer ILS Description" setting to choose between ils_description and display_description.
+	 * 4. Fallback to "Description Not Provided" message if no description is found.
+	 *
+	 * @return string
+	 */
+	function getDescription(): string {
+		if ($this->cachedDescription !== null) {
+			return $this->cachedDescription;
 		}
-		if ($library->getGroupedWorkDisplaySettings()->preferSyndeticsSummary == 1 || $description == null || strlen($description) == 0) {
+
+		global $library;
+
+		$displayInfo = $this->getDisplayInfo();
+		if ($displayInfo != null && !empty($displayInfo->description)) {
+			$this->cachedDescription = $displayInfo->description;
+			return $this->cachedDescription;
+		}
+
+		if ($library->getGroupedWorkDisplaySettings()->preferSyndeticsSummary == 1) {
+			$cleanIsbn = $this->getCleanISBN();
 			if ($cleanIsbn != null && strlen($cleanIsbn) > 0) {
 				require_once ROOT_DIR . '/Drivers/marmot_inc/GoDeeperData.php';
 				$summaryInfo = GoDeeperData::getSummary($this->getPermanentId(), $cleanIsbn, $this->getCleanUPC());
 				if (isset($summaryInfo['summary'])) {
-					$description = $summaryInfo['summary'];
+					$this->cachedDescription = $summaryInfo['summary'];
+					return $this->cachedDescription;
 				}
 			}
 		}
 
+		$description = $this->getDescriptionFromSolr();
 
 		if ($description == null || strlen($description) == 0) {
 			$description = translate([
@@ -980,14 +1004,36 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				'isPublicFacing' => true,
 			]);
 		}
-		return $description;
+
+		$this->cachedDescription = $description;
+		return $this->cachedDescription;
 	}
 
-	private $fastDescription = null;
+	function getDescriptionFast(bool $useHighlighting = false): string {
+		$displayInfo = $this->getDisplayInfo();
+		if ($displayInfo != null && !empty($displayInfo->description)) {
+			return $displayInfo->description;
+		}
 
-	function getDescriptionFast($useHighlighting = false) {
+		return $this->getDescriptionFromSolr($useHighlighting);
+	}
+
+	private function getDisplayInfo(): ?GroupedWorkDisplayInfo {
+		if ($this->cachedDisplayInfo == null) {
+			$this->cachedDisplayInfo = $this->getSpecifiedDisplayInfo();
+		}
+		return $this->cachedDisplayInfo;
+	}
+
+	/**
+	 * Get description from Solr fields (handles highlighting and ILS preference).
+	 *
+	 * @param bool $useHighlighting
+	 * @return string
+	 */
+	private function getDescriptionFromSolr(bool $useHighlighting = false): string {
 		global $library;
-		// Don't check for highlighted values if highlighting is disabled:
+
 		if ($this->highlight && $useHighlighting) {
 			if ($library->getGroupedWorkDisplaySettings()->preferIlsDescription == 1 && isset($this->fields['_highlighting']['ils_description'][0])) {
 				return $this->fields['_highlighting']['ils_description'][0];
@@ -997,20 +1043,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 		}
 
-
-		if ($this->fastDescription != null) {
-			return $this->fastDescription;
-		}
-
 		if ($library->getGroupedWorkDisplaySettings()->preferIlsDescription == 1 && !empty($this->fields['ils_description'])) {
-			$this->fastDescription = $this->fields['ils_description'];
+			return $this->fields['ils_description'];
 		} else if (!empty($this->fields['display_description'])) {
-			$this->fastDescription = $this->fields['display_description'];
-		} else {
-			$this->fastDescription = "";
+			return $this->fields['display_description'];
 		}
 
-		return $this->fastDescription;
+		return "";
 	}
 
 	private $detailedContributors = null;
@@ -2415,6 +2454,47 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				} else {
 					$seriesFromIndex = $this->getIndexedSeries();
 					if ($seriesFromIndex != null && count($seriesFromIndex) > 0) {
+						// Sort series entries by series name first, then by volume.
+						usort($seriesFromIndex, function($a, $b) {
+							$seriesA = $a['seriesTitle'] ?? '';
+							$seriesB = $b['seriesTitle'] ?? '';
+
+							$seriesCompare = strcmp($seriesA, $seriesB);
+							if ($seriesCompare !== 0) {
+								return $seriesCompare;
+							}
+							// Within the same series, sort by volume.
+							$volA = $a['volume'] ?? '';
+							$volB = $b['volume'] ?? '';
+
+							$hasVolA = !empty($volA);
+							$hasVolB = !empty($volB);
+							// If one has volume and one doesn't, the one with volume comes first.
+							if ($hasVolA && !$hasVolB) {
+								return -1;
+							}
+							if (!$hasVolA && $hasVolB) {
+								return 1;
+							}
+							// If neither has volume, they're equal.
+							if (!$hasVolA && !$hasVolB) {
+								return 0;
+							}
+
+							// Both have volumes: extract numeric portion for comparison.
+							preg_match('/(\d+)/', $volA, $matchesA);
+							preg_match('/(\d+)/', $volB, $matchesB);
+							$numA = isset($matchesA[1]) ? intval($matchesA[1]) : 0;
+							$numB = isset($matchesB[1]) ? intval($matchesB[1]) : 0;
+
+							// If numeric portions differ, sort by number.
+							if ($numA !== $numB) {
+								return $numA - $numB;
+							}
+							// If numeric portions are the same, do string comparison of full volume.
+							return strcmp($volA, $volB);
+						});
+
 						$firstSeries = $seriesFromIndex[0];
 						$this->seriesData = [
 							'seriesTitle' => $firstSeries['seriesTitle'],
@@ -2422,6 +2502,17 @@ class GroupedWorkDriver extends IndexRecordDriver {
 							'fromNovelist' => false,
 							'fromSeriesIndex' => false
 						];
+						if (count($seriesFromIndex) > 1) {
+							$this->seriesData['additionalSeries'] = [];
+							for ($i = 1; $i < count($seriesFromIndex); $i++) {
+								$this->seriesData['additionalSeries'][] = [
+									'seriesTitle' => $seriesFromIndex[$i]['seriesTitle'],
+									'volume' => $seriesFromIndex[$i]['volume'] ?? '',
+									'fromNovelist' => false,
+									'fromSeriesIndex' => false
+								];
+							}
+						}
 					} else {
 						return null;
 					}
@@ -2564,17 +2655,19 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$interface->assign('primaryIdentifiers', $this->getPrimaryIdentifiers());
 
 		$interface->assign('specifiedDisplayInfo', $this->getSpecifiedDisplayInfo());
+
+		$interface->assign('manualGroupingInfo', $this->getManualGroupingInfo());
 	}
 
-	public function getSpecifiedDisplayInfo() {
+	public function getSpecifiedDisplayInfo(): ?GroupedWorkDisplayInfo {
 		require_once ROOT_DIR . '/sys/Grouping/GroupedWorkDisplayInfo.php';
 		$existingDisplayInfo = new GroupedWorkDisplayInfo();
 		$existingDisplayInfo->permanent_id = $this->getPermanentId();
 		if ($existingDisplayInfo->find(true)) {
 			return $existingDisplayInfo;
-		} else {
-			return null;
 		}
+
+		return null;
 	}
 
 	public function getAlternateTitles() {
@@ -2604,6 +2697,18 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				}
 			}
 			return $alternateTitles;
+		}
+		return null;
+	}
+
+	public function getManualGroupingInfo(): ?ManualGroupedWork {
+		if (UserAccount::userHasPermission('Manually Group and Ungroup Works')) {
+			require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+			$manualGroupedWork = new ManualGroupedWork();
+			$manualGroupedWork->grouped_work_permanent_id = $this->getPermanentId();
+			if ($manualGroupedWork->find(true)) {
+				return $manualGroupedWork;
+			}
 		}
 		return null;
 	}
@@ -3733,5 +3838,21 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			return $overrides;
 		}
 		return null;
+	}
+
+	/**
+	 * Check if this grouped work is manually grouped.
+	 *
+	 * @return bool
+	 */
+	public function isManuallyGrouped(): bool {
+		if (empty($this->permanentId)) {
+			return false;
+		}
+
+		require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+		$manualGroupedWork = new ManualGroupedWork();
+		$manualGroupedWork->grouped_work_permanent_id = $this->permanentId;
+		return $manualGroupedWork->find(true) !== false;
 	}
 }

@@ -72,4 +72,37 @@ class NonGroupedRecord extends DataObject {
 		return self::$_objectStructure[$context];
 	}
 
+	public function insert(string $context = ''): int|bool {
+		if ($this->isRecordInManuallyGroupedWork()) {
+			$this->setLastError("Cannot mark record '$this->recordId' from source '$this->source' as non-grouped because it is part of a manually grouped work. Edit the manually grouped work directly to remove records.");
+			return false;
+		}
+		return parent::insert();
+	}
+
+	public function update(string $context = ''): int|bool {
+		if ($this->isRecordInManuallyGroupedWork()) {
+			$this->setLastError("Cannot mark record '$this->recordId' from source '$this->source' as non-grouped because it is part of a manually grouped work. Edit the manually grouped work directly to remove records.");
+			return false;
+		}
+		return parent::update();
+	}
+
+	/**
+	 * Check if this record is part of a manually grouped work.
+	 *
+	 * @return bool
+	 */
+	private function isRecordInManuallyGroupedWork(): bool {
+		if (empty($this->source) || empty($this->recordId)) {
+			return false;
+		}
+
+		require_once ROOT_DIR . '/sys/Grouping/ManuallyGroupedWorkRecord.php';
+		$manualRecord = new ManuallyGroupedWorkRecord();
+		$manualRecord->type = $this->source;
+		$manualRecord->identifier = $this->recordId;
+		return $manualRecord->find(true) !== false;
+	}
+
 }

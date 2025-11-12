@@ -31,7 +31,7 @@ class RecordGroupingOverride extends DataObject {
 			$availableSources[$profile->name] = $profile->name;
 		}
 		$availableSources['axis360'] = 'Boundless';
-		$availableSources['cloud_library'] = 'cloudLibrary';
+		$availableSources['cloud_library'] = 'Cloud Library';
 		$availableSources['hoopla'] = 'Hoopla';
 		$availableSources['overdrive'] = 'Overdrive';
 		$availableSources['palace_project'] = 'Palace Project';
@@ -139,7 +139,27 @@ class RecordGroupingOverride extends DataObject {
 	}
 
 	public function insert(string $context = ''): bool|int {
+		require_once ROOT_DIR . '/sys/Grouping/ManuallyGroupedWorkRecord.php';
+		$manuallyGroupedRecord = new ManuallyGroupedWorkRecord();
+		$manuallyGroupedRecord->selectAdd();
+		$manuallyGroupedRecord->selectAdd('manually_grouped_work_id');
+		$manuallyGroupedRecord->type = $this->source;
+		$manuallyGroupedRecord->identifier = $this->record_id;
+		if ($manuallyGroupedRecord->find(true)) {
+			require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+			$manualGroupedWork = new ManualGroupedWork();
+			$manualGroupedWork->selectAdd();
+			$manualGroupedWork->selectAdd('id, title');
+			$manualGroupedWork->id = $manuallyGroupedRecord->manually_grouped_work_id;
+			if ($manualGroupedWork->find(true)) {
+				$this->setLastError("Cannot create a record grouping override for source '$this->source' and record_id '$this->record_id' because it is already part of manually grouped work '$manualGroupedWork->title' (ID: $manualGroupedWork->id). Remove it from the manual group first.");
+				return false;
+			}
+		}
+
 		$existingOverride = new RecordGroupingOverride();
+		$existingOverride->selectAdd();
+		$existingOverride->selectAdd('id');
 		$existingOverride->source = $this->source;
 		$existingOverride->record_id = $this->record_id;
 		if ($existingOverride->find(true)) {
@@ -161,6 +181,24 @@ class RecordGroupingOverride extends DataObject {
 	}
 
 	public function update(string $context = ''): bool|int {
+		require_once ROOT_DIR . '/sys/Grouping/ManuallyGroupedWorkRecord.php';
+		$manuallyGroupedRecord = new ManuallyGroupedWorkRecord();
+		$manuallyGroupedRecord->selectAdd();
+		$manuallyGroupedRecord->selectAdd('manually_grouped_work_id');
+		$manuallyGroupedRecord->type = $this->source;
+		$manuallyGroupedRecord->identifier = $this->record_id;
+		if ($manuallyGroupedRecord->find(true)) {
+			require_once ROOT_DIR . '/sys/Grouping/ManualGroupedWork.php';
+			$manualGroupedWork = new ManualGroupedWork();
+			$manualGroupedWork->selectAdd();
+			$manualGroupedWork->selectAdd('id, title');
+			$manualGroupedWork->id = $manuallyGroupedRecord->manually_grouped_work_id;
+			if ($manualGroupedWork->find(true)) {
+				$this->setLastError("Cannot update record grouping override for source '$this->source' and record_id '$this->record_id' because it is already part of manually grouped work '$manualGroupedWork->title' (ID: $manualGroupedWork->id). Remove it from the manual group first.");
+				return false;
+			}
+		}
+
 		$ret = parent::update();
 		if ($ret) {
 			$this->triggerReindex();

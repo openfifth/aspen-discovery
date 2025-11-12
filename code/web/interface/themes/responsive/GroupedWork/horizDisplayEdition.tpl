@@ -28,8 +28,15 @@
 	{if !$isEContent}
 		<div class="row horizDisplayShelfLocations" id="horizDisplayShelfLocations_{$workId}">
 			{assign var=numDisplayed value=0}
+			{assign var=totalSummariesToDisplay value=0}
 			{foreach from=$itemSummary item=$curItemSummary name=itemSummary}
-				{if $numDisplayed < 2 && $curItemSummary.displayByDefault}
+				{if $curItemSummary.displayByDefault}
+					{assign var=totalSummariesToDisplay value=$totalSummariesToDisplay+1}
+				{/if}
+			{/foreach}
+			{foreach from=$itemSummary item=$curItemSummary name=itemSummary}
+				{*If we only have 3 or fewe summaries to show, show all 3. If we have more than 3, display 2 and a button to see the rest *}
+				{if ($numDisplayed < 2 || ($totalSummariesToDisplay == 3 && count($itemSummary) == 3)) && $curItemSummary.displayByDefault}
 					{assign var=numDisplayed value=$numDisplayed+1}
 					<div class="col-tn-4">
 						<div><strong>{$curItemSummary.shelfLocation}</strong></div>
@@ -38,7 +45,7 @@
 					</div>
 				{/if}
 			{/foreach}
-			{if count($itemSummary) > 2}
+			{if count($itemSummary) > 2 && $totalSummariesToDisplay != count($itemSummary)}
 				<div class="col-tn-4">
 					<button class="btn btn-default btn-sm btn-wrap viewAllLocationsBtn" onclick="return AspenDiscovery.GroupedWork.showCopyDetails('{$workId}', '{if !empty($relatedManifestation)}{$relatedManifestation->format|urlencode}{else}{$format}{/if}', '{$workId}');">{translate text="View All Locations" isPublicFacing=true}</button>
 				</div>

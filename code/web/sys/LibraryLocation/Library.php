@@ -228,7 +228,7 @@ class Library extends DataObject {
 	public $novelistSettingId;
 	public $syndeticsSettingId;
 	public $allowAutomaticSearchReplacements;
-	public $allowAutomaticFaceting;
+	public $enableSearchInterpreter;
 
 	public /** @noinspection PhpUnused */
 		$worldCatUrl;
@@ -3095,11 +3095,11 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => true,
 					],
-					'allowAutomaticFaceting' => [
-						'property' => 'allowAutomaticFaceting',
+					'enableSearchInterpreter' => [
+						'property' => 'enableSearchInterpreter',
 						'type' => 'checkbox',
-						'label' => 'Allow Facets to be applied to searches automatically',
-						'description' => "This allows facets to be automatically applied to Keyword Searches to better represent the context of a user's search.",
+						'label' => 'Enable Search Interpreter',
+						'description' => "This allows facets to be automatically applied to Keyword Searches to better interpret the context of a user's search.",
 						'hideInLists' => true,
 						'default' => false,
 					],
@@ -3462,7 +3462,7 @@ class Library extends DataObject {
 							1 => 'Only for unavailable titles',
 							2 => 'For available and unavailable titles with holds',
 							3 => 'For available and unavailable titles with and without holds',
-							4 => 'Show holdable copies without hold counts'
+							4 => 'Show Holdable Copies without Hold Counts'
 						],
 						'label' => 'Show Hold and Copy Counts',
 						'description' => 'Whether or not the hold count and copies counts should be visible for grouped works when summarizing formats.',
@@ -5891,7 +5891,7 @@ class Library extends DataObject {
 		return $this->_materialsRequestFormats;
 	}
 
-	private $_locations = null;
+	protected $_locations = null;
 	/**
 	 * @return Location[]
 	 */
