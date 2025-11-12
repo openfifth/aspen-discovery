@@ -1051,6 +1051,13 @@ class UserAPI extends AbstractAPI {
 			$aspenToLiDACheckoutSortMapping = array_flip(User::$lidaToAspenCheckoutSortMapping);
 			$userData->checkoutSort = array_key_exists($user->checkoutSort, $aspenToLiDACheckoutSortMapping) ? $aspenToLiDACheckoutSortMapping[$user->checkoutSort] : $user->checkoutSort;
 
+			$patronHomeLibrary = $user->getHomeLibrary();
+			if ($patronHomeLibrary) {
+				$userData->hideSoftDeleteListUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
+			} else {
+				$userData->hideSoftDeleteListUI = false;
+			}
+
 			return [
 				'success' => true,
 				'profile' => $userData,
