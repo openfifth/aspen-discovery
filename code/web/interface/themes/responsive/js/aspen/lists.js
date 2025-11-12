@@ -289,6 +289,42 @@ AspenDiscovery.Lists = (function(){
 					win.print();
 				};
 			}
+		},
+
+		exportToCSV(listId) {
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			$.getJSON(url, {
+				method: 'exportUserListCSV',
+				listId: listId
+			}).done((data) => {
+				if (data.success === false) {
+					AspenDiscovery.showMessage(data.title, data.message);
+				} else {
+					window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListCSV&listId=${listId}`;
+				}
+			}).fail(() => {
+				// If the AJAX call itself failed, still try the download.
+				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListCSV&listId=${listId}`;
+			});
+			return false;
+		},
+
+		exportToRIS(listId) {
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			$.getJSON(url, {
+				method: 'exportUserListRIS',
+				listId: listId
+			}).done((data) => {
+				if (data.success === false) {
+					AspenDiscovery.showMessage(data.title, data.message);
+				} else {
+					window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}`;
+				}
+			}).fail(() => {
+				// If the AJAX call itself failed, still try the download.
+				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}`;
+			});
+			return false;
 		}
 	};
 }(AspenDiscovery.Lists || {}));

@@ -1067,7 +1067,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 					// Build RIS data for each document
 					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 					$groupedWorkDriver = new GroupedWorkDriver($curDoc);
-					$risData .= $groupedWorkDriver->formatGroupedWorkCitation();
+					$risData .= $groupedWorkDriver->getRISData();
 					$risData .= PHP_EOL . PHP_EOL; // Add a blank line between records
 
 				}

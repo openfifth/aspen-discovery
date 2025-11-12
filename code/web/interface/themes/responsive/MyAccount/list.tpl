@@ -180,8 +180,8 @@
 									<button value="emailList" id="FavEmail" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.emailListAction("{$userList->id}")'>{translate text='Email List' isPublicFacing=true}</button>
 									{/if}
 									<button value="printOptions" id="printOptions" class="btn btn-sm btn-default" onclick='return AspenDiscovery.Lists.getPrintListOptions("{$userList->id}")'>{translate text='Print Options' isPublicFacing=true}</button>
-									<a id="FavExport" class="btn btn-sm btn-default listViewButton" href="/MyAccount/AJAX?method=exportUserList&listId={$userList->id}">{translate text='Export List to CSV' isPublicFacing=true}</a>
-									<a id="FavExportRis" class="btn btn-sm btn-default listViewButton" href="/MyAccount/AJAX?method=exportUserListRIS&listId={$userList->id}">{translate text='Export List to RIS' isPublicFacing=true}</a>
+									<button id="FavExport" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.exportToCSV("{$userList->id}")'>{translate text='Export List to CSV' isPublicFacing=true}</button>
+									<button id="FavExportRis" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.exportToRIS("{$userList->id}")'>{translate text='Export List to RIS' isPublicFacing=true}</button>
 									<button value="citeList" id="FavCite" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.citeListAction("{$userList->id}")'>{translate text='Generate Citations' isPublicFacing=true}</button>
 
 									{if !empty($availableFilters)}
@@ -383,8 +383,8 @@
 							<button value="emailList" id="FavEmail" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.emailListAction("{$userList->id}")'>{translate text='Email List' isPublicFacing=true}</button>
                         {/if}
 						<button value="printOptions" id="printOptions" class="btn btn-sm btn-default" onclick='return AspenDiscovery.Lists.getPrintListOptions("{$userList->id}")'>{translate text='Print Options' isPublicFacing=true}</button>
-						<a id="FavExport" class="btn btn-sm btn-default listViewButton" href="/MyAccount/AJAX?method=exportUserList&listId={$userList->id}">{translate text='Export List to CSV' isPublicFacing=true}</a>
-						<a id="FavExportRis" class="btn btn-sm btn-default listViewButton" href="/MyAccount/AJAX?method=exportUserListRIS&listId={$userList->id}">{translate text='Export List to RIS' isPublicFacing=true}</a>
+						<button id="FavExport" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.exportToCSV("{$userList->id}")'>{translate text='Export List to CSV' isPublicFacing=true}</button>
+						<button id="FavExportRis" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.exportToRIS("{$userList->id}")'>{translate text='Export List to RIS' isPublicFacing=true}</button>
 						<button value="citeList" id="FavCite" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Lists.citeListAction("{$userList->id}")'>{translate text='Generate Citations' isPublicFacing=true}</button>
 
                         {if !empty($availableFilters)}
@@ -460,11 +460,15 @@
 	{literal}
 	$(() => {
 		const updateButtonText = () => {
-			const checkedCount = $('.user-list-format-filter-checkbox:checked').length;
+			const checkedValues = [];
+			$('.user-list-format-filter-checkbox:checked').each(function() {
+				checkedValues.push($(this).val());
+			});
+			const uniqueCount = new Set(checkedValues).size;
 			const buttonText = '{/literal}{translate text="Filter by Format" isPublicFacing=true}{literal}';
-			
-			const finalText = checkedCount > 0 ? `${buttonText} (${checkedCount} selected)` : buttonText;
-			
+
+			const finalText = uniqueCount > 0 ? `${buttonText} (${uniqueCount} selected)` : buttonText;
+
 			$('#filterDropdownButton').html(`${finalText}&nbsp;<span class="caret"></span>`);
 		};
 
@@ -480,27 +484,29 @@
 
 		$('#user-list-apply-format-filters').on('click', (event) => {
 			event.preventDefault();
-			
+
 			const selectedFormats = [];
 			$('.user-list-format-filter-checkbox:checked').each(function() {
 				selectedFormats.push($(this).val());
 			});
 
+			const uniqueFormats = [...new Set(selectedFormats)];
+
 			const currentUrl = window.location.href.split('?')[0];
 			const urlParams = new URLSearchParams(window.location.search);
 
-			urlParams.delete('filters');
 			urlParams.delete('page');
-			if (selectedFormats.length > 0) {
-				urlParams.set('filters', selectedFormats.join(','));
-			}
+			urlParams.set('filters', uniqueFormats.join(','));
 
-			window.location.href = urlParams.toString()
-				? `${currentUrl}?${urlParams.toString()}`
-				: currentUrl;
+			window.location.href = `${currentUrl}?${urlParams.toString()}`;
 		});
 
-		$('.user-list-format-filter-checkbox').on('change', updateButtonText);
+		$('.user-list-format-filter-checkbox').on('change', function() {
+			const value = $(this).val();
+			const isChecked = $(this).prop('checked');
+			$('.user-list-format-filter-checkbox[value="' + value + '"]').not(this).prop('checked', isChecked);
+			updateButtonText();
+		});
 	});
 	{/literal}
 	</script>
