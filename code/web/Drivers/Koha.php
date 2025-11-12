@@ -2081,28 +2081,17 @@ class Koha extends AbstractIlsDriver {
 
 		$url = $this->getWebServiceURL() . "/api/v1/circulation_rules?effective=true&item_type_id=$itemTypeId&library_id=$locationId&patron_category_id=$patronCategoryId&rules=hold_fee";
 
-		$customHeaders = [];
+		$curlWrapper = new CurlWrapper(); 
+		$customHeaders = [
+			'Authorization: Bearer ' . $oauthToken,
+			'User-Agent: Aspen Discovery',
+			'Host: ' . preg_replace('~http[s]?://~', '', $this->getWebServiceURL()),
+		];
+		$curlWrapper->addCustomHeaders($customHeaders, false);
+		$curlWrapper->curl_connect($url);
+		$response = $curlWrapper->curlGetPage($url);
 
-		$headers = implode($this->apiCurlWrapper->getHeaders());
-		if(strpos($headers, 'Authorization: Bearer ') === false) {
-			$customHeaders[] = 'Authorization: Bearer ' . $oauthToken;
-		};
-		if(strpos($headers, 'User-Agent: Aspen Discovery') === false) {
-			$customHeaders[] = 'User-Agent: Aspen Discovery';
-		};
-		if(strpos($headers, 'Host: ') === false) {
-			$customHeaders[] = 'Host: ' . preg_replace('~http[s]?://~', '', $this->getWebServiceURL());
-		};
-		
-		if ($customHeaders) {
-			$this->apiCurlWrapper->addCustomHeaders($customHeaders, false);
-		}
-		
-		$this->apiCurlWrapper->curl_connect($url);
-		$response = $this->apiCurlWrapper->curlGetPage($url);	
-		$this->apiCurlWrapper->resetCurlConnectionOptions();
-
-		if ($this->apiCurlWrapper->getResponseCode() == 200) {
+		if ($curlWrapper->getResponseCode() == 200) {
 			return json_decode($response, true)[0]['hold_fee'];
 		} else {
 			return null;
