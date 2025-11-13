@@ -1199,12 +1199,6 @@ class Campaign extends DataObject {
 					(!$campaign->enrollmentEndDate || $currentDate <= $campaign->enrollmentEndDate) &&
 					($currentDate <= $campaign->endDate)
 				);
-				$campaign->enrollmentStatus = 'open';
-				if ($campaign->enrollmentStartDate && $currentDate < $campaign->enrollmentStartDate){
-					$campaign->enrollmentStatus = 'not_yet_open';
-				} elseif ($campaign->enrollmentEndDate && $currentDate > $campaign->enrollmentEndDate) {
-					$campaign->enrollmentStatus = 'closed';
-				}
 				$campaign->canEnroll = $canEnroll;
 				$userCampaign = new UserCampaign();
 				$userCampaign->userId = $userId;
@@ -1300,12 +1294,6 @@ class Campaign extends DataObject {
 						(!$campaign->enrollmentStartDate || $currentDate >= $campaign->enrollmentStartDate) &&
 						(!$campaign->enrollmentEndDate || $currentDate <= $campaign->enrollmentEndDate)
 					);
-					$campaign->enrollmentStatus = 'open';
-					if ($campaign->enrollmentStartDate && $currentDate < $campaign->enrollmentStartDate){
-						$campaign->enrollmentStatus = 'not_yet_open';
-					} elseif ($campaign->enrollmentEndDate && $currentDate > $campaign->enrollmentEndDate) {
-						$campaign->enrollmentStatus = 'closed';
-					}
 					$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
 					$numCampaignMilestones = count($milestones);
 					$numCompletedMilestones = 0;
@@ -1392,8 +1380,7 @@ class Campaign extends DataObject {
 						'isComplete' => $numCompletedMilestones >= $numCampaignMilestones,
 						'rewardGiven' => $rewardGiven,
 						'extraCreditActivities' => $extraCreditActivities,
-						'numExtraCreditActivities' => count($extraCreditActivities),
-						'enrollmentStatus' => $campaign->enrollmentStatus
+						'numExtraCreditActivities' => count($extraCreditActivities)
 					];
 				}
 			}

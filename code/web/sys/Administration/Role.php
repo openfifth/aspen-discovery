@@ -186,7 +186,6 @@ class Role extends DataObject {
 				'View Offline Holds Report',
 				'View OverDrive Test Interface',
 				'View System Reports',
-				'View Community Engagement Admin View',
 			],
 			'userAdmin' => [
 				'Administer Permissions',

@@ -37,8 +37,6 @@ class CommunityEngagement_Leaderboard extends Action {
 		}
 	}
 	public function getLeaderboardTemplate() {
-		require_once ROOT_DIR . '/sys/WebBuilder/GrapesTemplate.php';
-
 		$template = new GrapesTemplate();
 		$template->templateName = 'leaderboard_template';
 
