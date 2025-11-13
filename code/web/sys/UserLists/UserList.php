@@ -1552,13 +1552,6 @@ class UserList extends DataObject {
 	 * @return array Array of available filters with counts.
 	 */
 	public function getAvailableFormatFilters(): array {
-		global $memCache;
-		$cacheKey = 'list_available_filters_' . $this->id;
-		$cachedFilters = $memCache->get($cacheKey);
-		if ($cachedFilters !== false) {
-			return $cachedFilters;
-		}
-
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
@@ -1623,14 +1616,9 @@ class UserList extends DataObject {
 			}
 		}
 
-		$filters = [
+		return [
 			'format' => $formatFilters
 		];
-
-		// Cache for 5 minutes.
-		$memCache->set($cacheKey, $filters, 300);
-		
-		return $filters;
 	}
 
 	/**
