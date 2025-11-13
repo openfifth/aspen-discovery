@@ -9191,7 +9191,7 @@ a.placard-link {
   *border-right-width: 2px;
   *border-bottom-width: 2px;
 }
-.ui-autocomplete .ui-menu-item > a.ui-corner-all {
+.ui-autocomplete .ui-menu-item > a.ui-menu-item-wrapper {
   display: block;
   padding: 3px 15px;
   clear: both;
@@ -9200,8 +9200,8 @@ a.placard-link {
   color: #555555;
   white-space: nowrap;
 }
-.ui-autocomplete .ui-menu-item > a.ui-corner-all.ui-state-hover,
-.ui-autocomplete .ui-menu-item > a.ui-corner-all.ui-state-active {
+.ui-autocomplete .ui-menu-item > a.ui-menu-item-wrapper.ui-state-hover,
+.ui-autocomplete .ui-menu-item > a.ui-menu-item-wrapper.ui-state-active {
   color: #ffffff;
   text-decoration: none;
   background-color: #0088cc;
