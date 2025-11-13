@@ -658,6 +658,7 @@ class CatalogConnection {
 			$readingHistoryDB->whereAdd("title LIKE $escapedFilter OR author LIKE $escapedFilter OR format LIKE $escapedFilter");
 		}
 		$readingHistoryDB->selectAdd();
+		$readingHistoryDB->selectAdd('MAX(id) as id');
 		$readingHistoryDB->selectAdd('groupedWorkPermanentId');
 		$readingHistoryDB->selectAdd('MAX(title) as title');
 		$readingHistoryDB->selectAdd('MAX(author) as author');
@@ -696,7 +697,7 @@ class CatalogConnection {
 		$readingHistoryTitles = [];
 
 		while ($readingHistoryDB->fetch()) {
-			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB, $forExport);
+			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB);
 			$historyEntry['index'] = ++$firstIndex;
 			$readingHistoryTitles[] = $historyEntry;
 		}
@@ -724,42 +725,69 @@ class CatalogConnection {
 	function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): array {
 		$result = [
 			'success' => false,
+			'title' => translate([
+				'text' => 'Failed to Perform Reading History Action',
+				'isPublicFacing' => true
+			]),
 			'message' => translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
 			]),
 		];
 		if ($action == 'deleteMarked') {
-			//Remove titles from database (do not remove from ILS)
 			$numDeleted = 0;
+			$numFailed = 0;
 			foreach ($selectedTitles as $id => $titleId) {
 				$readingHistoryDB = new ReadingHistoryEntry();
 				$readingHistoryDB->userId = $patron->id;
-				$readingHistoryDB->groupedWorkPermanentId = strtolower($id);
-				$readingHistoryDB->find();
-				if ($id && $readingHistoryDB->getNumResults() > 0) {
-					while ($readingHistoryDB->fetch()) {
-						$readingHistoryDB->deleted = 1;
-						$readingHistoryDB->update();
-						$numDeleted++;
-					}
-				} else {
-					$readingHistoryDB = new ReadingHistoryEntry();
-					$readingHistoryDB->userId = $patron->id;
-					$readingHistoryDB->id = str_replace('rsh', '', $titleId);
+				if (is_numeric($id) || is_numeric($titleId)) {
+					$readingHistoryDB->id = is_numeric($id) ? $id : $titleId;
 					if ($readingHistoryDB->find(true)) {
 						$readingHistoryDB->deleted = 1;
 						$readingHistoryDB->update();
 						$numDeleted++;
+					} else {
+						$numFailed++;
 					}
+				} else {
+					$numFailed++;
 				}
 			}
-			$result['success'] = true;
-			$result['message'] = translate([
-				'text' => 'Deleted %1% entries from Reading History.',
-				1 => $numDeleted,
-				'isPublicFacing' => true,
-			]);
+
+			if ($numDeleted > 0) {
+				$result['success'] = true;
+				$result['title'] = translate([
+					'text' => $numDeleted === 1 ? 'Successfully Deleted Reading History Entry' : 'Successfully Deleted Reading History Entries',
+					'isPublicFacing' => true
+				]);
+				if ($numFailed > 0) {
+					$deletedText = $numDeleted === 1 ? 'entry' : 'entries';
+					$failedText = $numFailed === 1 ? 'entry' : 'entries';
+					$result['message'] = translate([
+						'text' => "Deleted %1% $deletedText from your reading history. %2% $failedText could not be deleted.",
+						1 => $numDeleted,
+						2 => $numFailed,
+						'isPublicFacing' => true,
+					]);
+				} else {
+					$entryText = $numDeleted === 1 ? 'entry' : 'entries';
+					$result['message'] = translate([
+						'text' => "Deleted %1% $entryText from your reading history.",
+						1 => $numDeleted,
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['success'] = false;
+				$result['title'] = translate([
+					'text' => 'Failed to Delete Reading History Entries',
+					'isPublicFacing' => true
+				]);
+				$result['message'] = translate([
+					'text' => 'No entries could be deleted from your reading history.',
+					'isPublicFacing' => true,
+				]);
+			}
 		} elseif ($action == 'deleteAll') {
 			//Remove all titles from the database (do not remove from ILS)
 			$readingHistoryDB = new ReadingHistoryEntry();
@@ -829,40 +857,6 @@ class CatalogConnection {
 		}
 		return $result;
 	}
-
-	/**
-	 * @param User $patron
-	 * @param string $title
-	 * @param string $author
-	 *
-	 * @return array
-	 */
-	function deleteReadingHistoryEntryByTitleAuthor($patron, $title, $author) {
-		$numDeleted = 0;
-
-		$readingHistoryDB = new ReadingHistoryEntry();
-		$readingHistoryDB->userId = $patron->id;
-		$readingHistoryDB->title = $title;
-		$readingHistoryDB->author = $author;
-		$readingHistoryDB->find();
-		if ($readingHistoryDB->getNumResults() > 0) {
-			while ($readingHistoryDB->fetch()) {
-				$readingHistoryDB->deleted = 1;
-				$readingHistoryDB->update();
-				$numDeleted++;
-			}
-		}
-
-		$result['success'] = true;
-		$result['message'] = translate([
-			'text' => 'Deleted %1% entries from Reading History.',
-			1 => $numDeleted,
-			'isPublicFacing' => true,
-		]);
-
-		return $result;
-	}
-
 
 	/**
 	 * Get Patron Holds
@@ -1098,12 +1092,12 @@ class CatalogConnection {
 
 	/**
 	 * @param ReadingHistoryEntry $readingHistoryDB
-	 * @param bool $forExport True if this is being used while exporting to Excel
-	 * @return mixed
+	 * @return array
 	 */
-	public function getHistoryEntryForDatabaseEntry($readingHistoryDB, $forExport = false) {
+	public function getHistoryEntryForDatabaseEntry(ReadingHistoryEntry $readingHistoryDB): array {
 		$historyEntry = [];
 
+		$historyEntry['id'] = $readingHistoryDB->id;
 		$historyEntry['title'] = $readingHistoryDB->title;
 		$historyEntry['author'] = $readingHistoryDB->author;
 		$historyEntry['format'] = $readingHistoryDB->format;
@@ -1112,25 +1106,23 @@ class CatalogConnection {
 		/** @noinspection PhpUndefinedFieldInspection */
 		$historyEntry['timesUsed'] = $readingHistoryDB->timesUsed;
 		/** @noinspection PhpUndefinedFieldInspection */
-		$historyEntry['checkedOut'] = $readingHistoryDB->checkedOut == null ? false : true;
+		$historyEntry['checkedOut'] = !($readingHistoryDB->checkedOut == null);
 		$historyEntry['permanentId'] = $readingHistoryDB->groupedWorkPermanentId;
 		$historyEntry['isIll'] = $readingHistoryDB->isIll;
-		if (!$forExport) {
-			require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
-			$recordDriver = new GroupedWorkDriver($readingHistoryDB->groupedWorkPermanentId);
+		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+		$recordDriver = new GroupedWorkDriver($readingHistoryDB->groupedWorkPermanentId);
 
-			if ($recordDriver->isValid()) {
-				$historyEntry['recordDriver'] = $recordDriver;
-				$historyEntry['ratingData'] = $recordDriver->getRatingData();
-				$historyEntry['linkUrl'] = $recordDriver->getLinkUrl();
-				$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('small');
-				$historyEntry['existsInCatalog'] = true;
-			} else {
-				$historyEntry['existsInCatalog'] = false;
-				$historyEntry['ratingData'] = '';
-				$historyEntry['linkUrl'] = '';
-				$historyEntry['coverUrl'] = '';
-			}
+		if ($recordDriver->isValid()) {
+			$historyEntry['recordDriver'] = $recordDriver;
+			$historyEntry['ratingData'] = $recordDriver->getRatingData();
+			$historyEntry['linkUrl'] = $recordDriver->getLinkUrl();
+			$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('small');
+			$historyEntry['existsInCatalog'] = true;
+		} else {
+			$historyEntry['existsInCatalog'] = false;
+			$historyEntry['ratingData'] = '';
+			$historyEntry['linkUrl'] = '';
+			$historyEntry['coverUrl'] = '';
 		}
 
 		return $historyEntry;

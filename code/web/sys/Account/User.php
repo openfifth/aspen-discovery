@@ -3230,21 +3230,6 @@ class User extends DataObject {
 		}
 	}
 
-	public function deleteReadingHistoryEntryByTitleAuthor($title, $author) {
-		if ($this->isReadingHistoryEnabled()) {
-			$catalogDriver = $this->getCatalogDriver();
-			return $catalogDriver->deleteReadingHistoryEntryByTitleAuthor($this, $title, $author);
-		} else {
-			return [
-				'success' => false,
-				'message' => translate([
-					'text' => 'Reading History Functionality is not available',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
-	}
-
 	public function updateReadingHistoryBasedOnCurrentCheckouts($isNightlyUpdate) {
 		if ($this->isReadingHistoryEnabled()) {
 			$catalogDriver = $this->getCatalogDriver();

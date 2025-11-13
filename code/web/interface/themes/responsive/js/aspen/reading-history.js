@@ -1,40 +1,124 @@
 AspenDiscovery.Account.ReadingHistory = (function(){
 	return {
-		deleteEntry: function (patronId, id){
-			if (confirm('The item will be irreversibly deleted from your reading history.  Proceed?')){
-				var url = Globals.path + "/MyAccount/AJAX?method=deleteReadingHistoryEntry&patronId=" + patronId + "&permanentId=" + id;
-				$.getJSON(url, function(data){
-					if (data.success){
-						$("#readingHistoryEntry" + id).hide();
-					}else{
-						AspenDiscovery.showMessage(data.title, data.message);
-					}
-				}).fail(AspenDiscovery.ajaxFail);
+		toggleSelectionMode() {
+			const $selectTitle = $('.selectTitle');
+			const isSelectionMode = $selectTitle.is(':visible');
+
+			if (isSelectionMode) {
+				$selectTitle.hide().removeClass('col-xs-1');
+				$selectTitle.prop('checked', false);
+
+				$('.coverColumn').removeClass('col-xs-2 col-sm-3').addClass('col-xs-3 col-sm-4');
+				$('.titleColumn').removeClass('col-xs-9 col-sm-8 col-md-9').addClass('col-xs-9 col-sm-8 col-md-10');
+				$('.titleColumn.col-xs-11').removeClass('col-xs-11').addClass('col-xs-12');
+
+				$('#selectItemsBtn').show();
+				$('#deleteAllBtn').show();
+				$('#cancelSelectionBtn').hide();
+				$('#deleteDropdown').hide();
+			} else {
+				$selectTitle.show().addClass('col-xs-1');
+				$('.coverColumn').removeClass('col-xs-3 col-sm-4').addClass('col-xs-2 col-sm-3');
+				$('.titleColumn').removeClass('col-xs-9 col-sm-8 col-md-10').addClass('col-xs-9 col-sm-8 col-md-9');
+				$('.titleColumn.col-xs-12').removeClass('col-xs-12').addClass('col-xs-11');
+
+				$('#selectItemsBtn').hide();
+				$('#deleteAllBtn').hide();
+				$('#cancelSelectionBtn').show();
+				$('#deleteDropdown').show();
 			}
+
 			return false;
 		},
 
-		deleteEntryByTitleAuthor: function (patronId, title, author){
-			if (confirm('The item will be irreversibly deleted from your reading history.  Proceed?')){
-				var url = Globals.path + "/MyAccount/AJAX";
-				var params = {
-					'method' : 'deleteReadingHistoryEntryByTitleAuthor',
-					'patronId' : patronId,
-					'title' : title,
-					'author' : author
+		deleteEntry(patronId, id) {
+			AspenDiscovery.confirm(
+				'Delete Reading History Entry',
+				'The item will be irreversibly deleted from your reading history. Proceed?',
+				'Delete',
+				'Cancel',
+				true,
+				`AspenDiscovery.Account.ReadingHistory.doDeleteEntry(${patronId}, ${id})`,
+				'btn-danger'
+			);
+
+			return false;
+		},
+
+		doDeleteEntry(patronId, id) {
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			const params = {
+				method: 'deleteReadingHistoryEntry',
+				patronId,
+				entryId: id
+			};
+
+			$.getJSON(url, params)
+				.done((data) => {
+					if (data.success) {
+						$(`#readingHistoryEntry${id}`).hide();
+						AspenDiscovery.showMessage(data.title, data.message, true);
+					} else {
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
+					}
+				})
+			.fail(AspenDiscovery.ajaxFail);
+
+			return false;
+		},
+
+		deleteSelectedAction() {
+			const selectedItems = $('.titleSelect:checked');
+			if (selectedItems.length === 0) {
+				AspenDiscovery.showMessageWithButtons('Failed to Delete Reading History Entries', 'Please select one or more items to delete.', '', false, '', false, false, false);
+				return false;
+			}
+
+			AspenDiscovery.confirm(
+				'Delete Selected Items',
+				`You have selected ${selectedItems.length} item(s) to delete from your reading history. This action is irreversible. Proceed?`,
+				'Delete',
+				'Cancel',
+				true,
+				'AspenDiscovery.Account.ReadingHistory.doDeleteSelected()',
+				'btn-danger'
+			);
+			return false;
+		},
+
+		doDeleteSelected() {
+			const selectedIds = [];
+			// noinspection JSCheckFunctionSignatures
+			$('.titleSelect:checked').each(function() {
+				const name = $(this).attr('name');
+				const match = name.match(/selected\[(\d+)\]/);
+				if (match && match[1]) {
+					selectedIds.push(match[1]);
 				}
-				$.getJSON(url, params, function(data){
-					if (data.success){
-						$("#readingHistoryEntry" + id).hide();
-					}else{
-						AspenDiscovery.showMessage(data.title, data.message);
+			});
+
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			const params = {
+				method: 'deleteSelectedReadingHistoryEntries',
+				patronId: $('#patronId').val(),
+				ids: selectedIds
+			};
+
+			$.getJSON(url, params)
+				.done((data) => {
+					if (data.success) {
+						selectedIds.forEach((id) => {
+							$(`#readingHistoryEntry${id}`).fadeOut();
+						});
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
+					} else {
+						AspenDiscovery.showMessageWithButtons(data.title || 'Error', data.message || 'Failed to delete selected items.', '', false, '', false, false, false);
 					}
-				}).fail(AspenDiscovery.ajaxFail);
-			}
-			return false;
+				})
+				.fail(AspenDiscovery.ajaxFail);
 		},
 
-		deleteAllAction: function (){
+		deleteAllAction(){
 			if (confirm('Your entire reading history will be irreversibly deleted.  Proceed?')){
 				$('#readingHistoryAction').val('deleteAll');
 				$('#readingListForm').trigger('submit');

@@ -4562,15 +4562,15 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 
-	function deleteReadingHistoryEntry() {
+	function deleteReadingHistoryEntry(): array {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Error',
+				'text' => 'Failed to Delete Reading History Entry',
 				'isPublicFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Unknown Error',
+				'text' => 'An unknown error has occurred deleting this reading history entry.',
 				'isPublicFacing' => true,
 			]),
 		];
@@ -4580,29 +4580,33 @@ class MyAccount_AJAX extends JSON_Action {
 			$patronId = $_REQUEST['patronId'];
 			$patron = $user->getUserReferredTo($patronId);
 			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user';
+				$result['message'] = 'You do not have permissions to delete reading history for this user.';
 			} else {
-				$permanentId = $_REQUEST['permanentId'];
-				$selectedTitles = [$permanentId => $permanentId];
-				$readingHistoryAction = 'deleteMarked';
-				$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
+				$entryId = $_REQUEST['entryId'] ?? null;
+				if (!empty($entryId)) {
+					$selectedTitles = [$entryId => $entryId];
+					$readingHistoryAction = 'deleteMarked';
+					$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
+				} else {
+					$result['message'] = 'No reading history entry ID was provided.';
+				}
 			}
 		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history';
+			$result['message'] = 'You must be logged in to delete from the reading history.';
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function deleteReadingHistoryEntryByTitleAuthor() {
+	function deleteSelectedReadingHistoryEntries(): array {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Error',
+				'text' => 'Failed to Delete Reading History Entries',
 				'isPublicFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Unknown Error',
+				'text' => 'An unknown error has occurred deleting these reading history entries.',
 				'isPublicFacing' => true,
 			]),
 		];
@@ -4612,14 +4616,22 @@ class MyAccount_AJAX extends JSON_Action {
 			$patronId = $_REQUEST['patronId'];
 			$patron = $user->getUserReferredTo($patronId);
 			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user';
+				$result['message'] = 'You do not have permissions to delete reading history for this user.';
 			} else {
-				$title = $_REQUEST['title'];
-				$author = $_REQUEST['author'];
-				$result = $patron->deleteReadingHistoryEntryByTitleAuthor($title, $author);
+				$ids = $_REQUEST['ids'] ?? [];
+				if (is_array($ids) && count($ids) > 0) {
+					$selectedTitles = [];
+					foreach ($ids as $id) {
+						$selectedTitles[$id] = $id;
+					}
+					$readingHistoryAction = 'deleteMarked';
+					$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
+				} else {
+					$result['message'] = 'No reading history entries were selected.';
+				}
 			}
 		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history';
+			$result['message'] = 'You must be logged in to delete from the reading history.';
 		}
 		return $result;
 	}

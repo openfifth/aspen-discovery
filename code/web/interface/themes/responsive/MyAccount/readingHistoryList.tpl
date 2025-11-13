@@ -22,7 +22,29 @@
 							<div style="margin-bottom: 5px;">
 								<div class="btn-group btn-group-sm">
 									{if !empty($transList)}
-										<button class="btn btn-sm btn-danger" onclick="return AspenDiscovery.Account.ReadingHistory.deleteAllAction()">{translate text="Delete All" isPublicFacing=true}</button>
+										{* Show when NOT in selection mode *}
+										<button type="button" class="btn btn-sm btn-default" id="selectItemsBtn" onclick="return AspenDiscovery.Account.ReadingHistory.toggleSelectionMode()" style="display: inline-block;">
+											{translate text='Select Items' isPublicFacing=true}
+										</button>
+										<button class="btn btn-sm btn-danger" id="deleteAllBtn" onclick="return AspenDiscovery.Account.ReadingHistory.deleteAllAction()" style="display: inline-block;">
+											{translate text="Delete All" isPublicFacing=true}
+										</button>
+
+										{* Show when IN selection mode *}
+										<button type="button" class="btn btn-sm btn-default" id="cancelSelectionBtn" onclick="return AspenDiscovery.Account.ReadingHistory.toggleSelectionMode()" style="display: none;">
+											{translate text='Cancel' isPublicFacing=true}
+										</button>
+										<button type="button" class="btn btn-sm btn-danger dropdown-toggle" id="deleteDropdown" data-toggle="dropdown" aria-expanded="false" style="display: none;">
+											{translate text='Delete' isPublicFacing=true}&nbsp;<span class="caret"></span>
+										</button>
+										<ul class="dropdown-menu" role="menu">
+											<li>
+												<a onclick="return AspenDiscovery.Account.ReadingHistory.deleteSelectedAction()">{translate text="Selected Items" isPublicFacing=true}</a>
+											</li>
+											<li>
+												<a onclick="return AspenDiscovery.Account.ReadingHistory.deleteAllAction()">{translate text="All Items" isPublicFacing=true}</a>
+											</li>
+										</ul>
 									{/if}
 									<button class="btn btn-sm btn-danger" onclick="return AspenDiscovery.Account.ReadingHistory.optOutAction()">{translate text="Stop Recording My Reading History" isPublicFacing=true}</button>
 								</div>

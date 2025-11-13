@@ -2,7 +2,7 @@
 
 
 class ReadingHistoryEntry extends DataObject {
-	public $__table = 'user_reading_history_work';   // table name
+	public $__table = 'user_reading_history_work';
 	public $id;
 	public $userId;
 	public $groupedWorkPermanentId;
@@ -81,5 +81,20 @@ class ReadingHistoryEntry extends DataObject {
 				$this->userId = $user->id;
 			}
 		}
+	}
+
+	public function insert($context = false): bool|int {
+		$existingEntry = new ReadingHistoryEntry();
+		$existingEntry->userId = $this->userId;
+		$existingEntry->source = $this->source;
+		$existingEntry->sourceId = $this->sourceId;
+		$existingEntry->deleted = 0;
+		if ($existingEntry->find(true)) {
+			global $logger;
+			$logger->log("Skipping duplicate reading history entry for userId=$this->userId, source=$this->source, sourceId=$this->sourceId", Logger::LOG_DEBUG);
+			return false;
+		}
+
+		return parent::insert($context);
 	}
 }

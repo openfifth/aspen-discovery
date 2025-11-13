@@ -1,7 +1,12 @@
-{strip}<div class="row result" id="readingHistoryEntry{$record.permanentId}">
+{strip}<div class="row result" id="readingHistoryEntry{$record.id}">
+	{* Checkbox Column *}
+	<div class="selectTitle" style="display: none;">
+		<input type="checkbox" name="selected[{$record.id}]" class="titleSelect" id="selected{$record.id}">
+	</div>
+
 	{* Cover Column *}
 	{if !empty($showCovers)}
-		<div class="col-xs-3 col-sm-4 col-md-2 text-center">
+		<div class="coverColumn col-xs-3 col-sm-4 col-md-2 text-center">
 			{if !empty($record.coverUrl)}
 				{if !empty($record.recordId) && $record.linkUrl}
 					<a href="{$record.linkUrl}" id="descriptionTrigger{$record.recordId|escape:"url"}" aria-hidden="true">
@@ -15,7 +20,7 @@
 	{/if}
 
 	{* Title Details Column *}
-	<div class="{if !empty($showCovers)}col-xs-9 col-sm-8 col-md-10{else}col-tn-12{/if}">
+	<div class="titleColumn {if !empty($showCovers)}col-xs-9 col-sm-8 col-md-10{else}col-xs-12{/if}">
 		<div class="row">
 			<div class="col-xs-12 result-title notranslate">
 				{$record.index})&nbsp;
@@ -94,11 +99,7 @@
 
 			<div class="col-xs-12 col-md-3">
 				<div class="btn-group btn-group-vertical btn-block">
-					{if empty($record.permanentId)}
-						<a href="#" onclick="return AspenDiscovery.Account.ReadingHistory.deleteEntryByTitleAuthor('{$selectedUser}', '{$record.title}', '{$record.author}');" class="btn btn-sm btn-primary">{translate text='Delete' isPublicFacing=true}</a>
-					{else}
-						<a href="#" onclick="return AspenDiscovery.Account.ReadingHistory.deleteEntry('{$selectedUser}', '{$record.permanentId}');" class="btn btn-sm btn-primary">{translate text='Delete' isPublicFacing=true}</a>
-					{/if}
+					<a href="#" onclick="return AspenDiscovery.Account.ReadingHistory.deleteEntry('{$selectedUser}', '{$record.id}');" class="btn btn-sm btn-primary">{translate text='Delete' isPublicFacing=true}</a>
 				</div>
 				{if !empty($showYouMightAlsoLike)}
 					{if !$record.isIll}
