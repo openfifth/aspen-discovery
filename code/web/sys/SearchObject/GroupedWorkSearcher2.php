@@ -987,11 +987,11 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	/**
 	 * Retrieves a document specified by the ID.
 	 *
-	 * @param string $id The document to retrieve from Solr
-	 * @return  array              The requested resource
+	 * @param string $id The document to retrieve from Solr.
+	 * @return  array|null The requested resource, or null if not found.
 	 * @throws  AspenError
 	 */
-	function getRecord($id): array {
+	function getRecord($id): ?array {
 		$recordData = $this->indexEngine->getRecord($id, $this->getFieldsToReturn());
 		if ($recordData != null) {
 			$recordData = $this->cleanScopedFieldsForRecord($recordData);
