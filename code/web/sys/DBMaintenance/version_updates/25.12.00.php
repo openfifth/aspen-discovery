@@ -28,11 +28,21 @@ function getUpdates25_12_00(): array {
 			'description' => 'Copy legacy "location" Translation Map values into the Location table facet labels based on matching codes.',
 			'continueOnError' => false,
 			'sql' => [
+				// First, handle exact matches (non-regex entries).
 				"UPDATE location
-					INNER JOIN translation_maps tm ON tm.name = 'location'
+					INNER JOIN translation_maps tm ON tm.name = 'location' AND tm.usesRegularExpressions = 0
 					INNER JOIN translation_map_values tmv ON tmv.translationMapId = tm.id
 					SET location.facetLabel = tmv.translation
-					WHERE LOWER(location.code) = LOWER(tmv.value)"
+					WHERE LOWER(location.code) = LOWER(tmv.value)
+					AND (location.facetLabel IS NULL OR location.facetLabel = '')",
+
+				// Then, handle regex matches (regex entries).
+				"UPDATE location
+					INNER JOIN translation_maps tm ON tm.name = 'location' AND tm.usesRegularExpressions = 1
+					INNER JOIN translation_map_values tmv ON tmv.translationMapId = tm.id
+					SET location.facetLabel = tmv.translation
+					WHERE LOWER(location.code) REGEXP LOWER(tmv.value)
+					AND (location.facetLabel IS NULL OR location.facetLabel = '')"
 			]
 		], //populate_location_facet_labels
 

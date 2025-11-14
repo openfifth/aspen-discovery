@@ -2529,7 +2529,7 @@ class GroupedWork_AJAX extends JSON_Action {
 					$previousReferenceLabel = $prevSourceLabel !== '' && $prevId !== '' ? $prevSourceLabel . ' (ID: ' . $prevId . ')' : $prevId;
 				} else {
 					$previousReferenceLabel = translate([
-						'text' => 'No related cover was previously selected.',
+						'text' => 'No related cover was previously selected',
 						'isAdminFacing' => true,
 					]);
 				}
