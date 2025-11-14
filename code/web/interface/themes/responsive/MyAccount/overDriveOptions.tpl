@@ -53,6 +53,46 @@
 						</div>
 					{/if}
 				</form>
+				{if $qrAuthEnabled}
+					<h2>{translate text="%1% Single Sign-on" 1=$readerName isPublicFacing=true}</h2>
+					<p>{translate text="Link your Aspen account to %1% once and future checkouts can skip the sign-in screen. The button opens a new window provided by OverDrive." 1=$readerName isPublicFacing=true}</p>
+					{foreach from=$qrAuthStatuses key=settingId item=status}
+						{assign var=setting value=$availableSettings.$settingId}
+						{if $setting}
+							<div class="panel panel-default">
+								<div class="panel-heading">
+									<strong>{$setting->name}</strong>
+								</div>
+								<div class="panel-body">
+									{if $status.connected}
+										<p class="{if $status.expired}text-warning{else}text-success{/if}">
+											{if $status.expired}
+												{translate text="A saved session exists but needs to be refreshed. Aspen will refresh it automatically next time you access %1%." 1=$readerName isPublicFacing=true}
+											{else}
+												{translate text="Linked to your %1% account." 1=$readerName isPublicFacing=true}
+											{/if}
+										</p>
+										{if !empty($status.updated)}
+											<p class="help-block">
+												{translate text="Last updated %1%" 1=$status.updated|date_format:"%b %e, %l:%M %p" isPublicFacing=true}
+											</p>
+										{/if}
+										<a href="/OverDrive/QRCodeAuth?op=disconnect&settingId={$settingId}" class="btn btn-warning">
+											{translate text="Disconnect" isPublicFacing=true}
+										</a>
+									{else}
+										<p class="text-muted">
+											{translate text="Not yet connected." isPublicFacing=true}
+										</p>
+										<a href="/OverDrive/QRCodeAuth?op=start&settingId={$settingId}" target="_blank" rel="noopener" class="btn btn-primary">
+											{translate text="Connect with QR Code" isPublicFacing=true}
+										</a>
+									{/if}
+								</div>
+							</div>
+						{/if}
+					{/foreach}
+				{/if}
 
 				<script type="text/javascript">
 					{* Initiate any checkbox with a data attribute set to data-switch=""  as a bootstrap switch *}

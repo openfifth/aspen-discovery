@@ -11,6 +11,29 @@ class MyAccount_OverDriveOptions extends MyAccount {
 			$patronHomeLibrary = $user->getHomeLibrary();
 			$availableSettings = $patronHomeLibrary->getOverdriveSettings();
 			$interface->assign('availableSettings', $availableSettings);
+			$qrStatuses = [];
+			if (!empty($availableSettings)) {
+				foreach ($availableSettings as $settingId => $setting) {
+					if (empty($setting->enableQRCodeAuth)) {
+						continue;
+					}
+					$token = $user->getOverDriveQrToken($setting->id);
+					if ($token) {
+						$qrStatuses[$setting->id] = [
+							'connected' => true,
+							'expired' => $token->isExpired(),
+							'expiresAt' => $token->expiresAt,
+							'updated' => $token->updated,
+						];
+					} else {
+						$qrStatuses[$setting->id] = [
+							'connected' => false,
+						];
+					}
+				}
+			}
+			$interface->assign('qrAuthStatuses', $qrStatuses);
+			$interface->assign('qrAuthEnabled', count($qrStatuses) > 0);
 
 			// Save/Update Actions
 			global $offlineMode;
