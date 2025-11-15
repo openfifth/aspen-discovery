@@ -34,7 +34,7 @@ public class HooplaExportMain {
             if (extractSingleWorkResponse.equalsIgnoreCase("y")) {
                 extractSingleWork = true;
                 String extractSingleWorkType = AspenStringUtils
-                        .getInputFromCommandLine("For version 1, enter the type of work to extract (INSTANT/Flex); for version 2, enter Instant to continue.");
+                        .getInputFromCommandLine("For version 1, enter the type of work to extract (INSTANT/Flex); for version 2, enter Instant to continue");
                 if (extractSingleWorkType.equalsIgnoreCase("Instant")) {
                     singleWorkType = "Instant";
                 } else if (extractSingleWorkType.equalsIgnoreCase("Flex")) {
@@ -65,7 +65,7 @@ public class HooplaExportMain {
                         }
                     } else {
                         String extractSingleWorkType = AspenStringUtils
-                                .getInputFromCommandLine("For version 1, enter the type of work to extract (INSTANT/Flex); for version 2, enter Instant to continue.");
+                                .getInputFromCommandLine("For version 1, enter the type of work to extract (INSTANT/Flex); for version 2, enter Instant to continue");
                         if (extractSingleWorkType.equalsIgnoreCase("Instant")) {
                             singleWorkType = "Instant";
                         } else if (extractSingleWorkType.equalsIgnoreCase("Flex")) {
@@ -183,7 +183,7 @@ public class HooplaExportMain {
                     if (singleWorkId == null) {
                         updatesRun = exporter2.exportHooplaData();
                     } else {
-                        updatesRun = exporter2.exportSingleHooplaTitle(singleWorkId, singleWorkType);
+                        updatesRun = exporter2.exportSingleHooplaTitle(singleWorkId);
                     }
                     exporter2.exporter2CleanUp();
                     numChanges = logEntry2.getNumChanges();

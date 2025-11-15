@@ -1149,7 +1149,7 @@ public class HooplaExporter2 {
 		return hasUpdates;
 	}
 
-	public boolean exportSingleHooplaTitle(String singleWorkId, String singleWorkType) {
+	public boolean exportSingleHooplaTitle(String singleWorkId) {
 		boolean updatesRun = false;
 		try{
 			logEntry.addNote("Doing extract of single work " + singleWorkId);
@@ -1161,88 +1161,129 @@ public class HooplaExporter2 {
 				numSettings++;
 				HooplaSettings2 settings = new HooplaSettings2(getSettingsRS);
 				String hooplaAPIBaseURL = settings.getApiUrl();
-				int hooplaLibraryId = 123;
-
+				ArrayList<HooplaLibrarySettings> librarySettings = loadLibraryHooplaSettings(settings.getSettingsId());
 				String accessToken = getAccessToken(settings);
 				if (accessToken == null) {
 					logEntry.incErrors("Could not load access token");
 					return false;
 				}
-				String url = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content";
+				String countryCode = settings.getCountryCode();
+
+				// Get the global content for the given hoopla id
+				String globalContentUrl = hooplaAPIBaseURL + "/api/v1/global-contents?countryCodes=" + countryCode + "&limit=1";
 				long numericSingleWorkId = Long.parseLong(singleWorkId);
-				if (singleWorkType.equalsIgnoreCase("Flex")) {
-					url += "?limit=1&startToken=" + (numericSingleWorkId - 1) + "&purchaseModel=EST";
-				} else {
-					url += "?limit=1&startToken=" + (numericSingleWorkId - 1) + "&purchaseModel=PPU";
-				}
+				globalContentUrl += "&startToken=" + (numericSingleWorkId - 1);
 				HashMap<String, String> headers = new HashMap<>();
 				headers.put("Authorization", "Bearer " + accessToken);
 				headers.put("Content-Type", "application/json");
 				headers.put("Accept", "application/json");
-				WebServiceResponse response = NetworkUtils.getURL(url, logger, headers);
-				if (!response.isSuccess()){
-					logEntry.incErrors("Could not get titles from " + url + " " + response.getMessage());
+				WebServiceResponse globalContentResponse = NetworkUtils.getURL(globalContentUrl, logger, headers);
+				if (!globalContentResponse.isSuccess()){
+					logEntry.incErrors("Could not get global content from " + globalContentUrl + " " + globalContentResponse.getMessage());
+					logEntry.saveResults();
+					logger.error("Could not get global content from " + globalContentUrl + " " + globalContentResponse.getMessage());
 				}else {
-					JSONObject responseJSON = new JSONObject(response.getMessage());
-					if (responseJSON.has("titles")) {
-						JSONArray responseTitles = responseJSON.getJSONArray("titles");
+					JSONObject responseJSON = new JSONObject(globalContentResponse.getMessage());
+					if (responseJSON.has("contents")) {
+						JSONArray responseTitles = responseJSON.getJSONArray("contents");
 						if (responseTitles != null && !responseTitles.isEmpty()) {
 							updateTitlesInDB(responseTitles, true, false);
-							logEntry.saveResults();
+							updatesRun = true;
+							logger.warn("Updated global content for " + numericSingleWorkId);
+						}
+					}
+				}
 
-							if (singleWorkType.equalsIgnoreCase("Flex")) {
-								if (!responseTitles.isEmpty()) {
-									JSONObject titleObj = responseTitles.getJSONObject(0);
-									boolean isActive = titleObj.getBoolean("active");
-									if (!isActive) {
-										logEntry.addNote("Skipping availability check for inactive Flex title: " + numericSingleWorkId);
-									} else {
-										String availUrl = hooplaAPIBaseURL + "/api/v1/libraries/" + hooplaLibraryId + "/content/info?contentIds=" + numericSingleWorkId;
-										WebServiceResponse availResponse = NetworkUtils.getURL(availUrl, logger, headers);
-										if (!availResponse.isSuccess()) {
-											logEntry.incErrors("Could not get availability for Flex title " + numericSingleWorkId + " from " + availUrl + " " + availResponse.getMessage());
+				// Loop through each librayr and get the entitlemen for the given hoopla id
+				for (HooplaLibrarySettings librarySetting : librarySettings) {
+					// Skip if the library doesn't have instant or flex enabled
+					if (!librarySetting.isInstantEnabled() || !librarySetting.isFlexEnabled()) {
+						continue;
+					}
+					// We don't know if this title is instant or flex for current library, se we try instant first
+					if (librarySetting.isInstantEnabled()) {
+						String entitlementUrl = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/entitlements?purchaseModel=Instant&limit=1&status=active&startToken=" + (numericSingleWorkId - 1);
+						WebServiceResponse entitlementResponse = NetworkUtils.getURL(entitlementUrl, logger, headers);
+						if (!entitlementResponse.isSuccess()) {
+							logEntry.incErrors("Could not get entitlements from " + entitlementUrl + " " + entitlementResponse.getMessage());
+						} else {
+							JSONObject responseJSON = new JSONObject(entitlementResponse.getMessage());
+							if (responseJSON.has("entitlements")) {
+								JSONArray responseEntitlements = responseJSON.getJSONArray("entitlements");
+								if (responseEntitlements != null && responseEntitlements.length() > 0) {
+									JSONObject entitlement = responseEntitlements.getJSONObject(0);
+
+									// Verify contentId is the same as the given hoopla Id
+									if (entitlement.has("contentId") && entitlement.getLong("contentId") == numericSingleWorkId) {
+										if (entitlement.has("active") && entitlement.getBoolean("active")) {
+											// Only update the entitlement if it is active
+											updateEntitlementsInDB(responseEntitlements, null, false, HOOPLA_TYPE_INSTANT, librarySetting.getLibraryId());
+											logger.warn("Updated entitlement for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Instant.");
+											updatesRun = true;
+											continue;
 										} else {
-											try {
-												JSONArray availabilityArray = new JSONArray(availResponse.getMessage());
-												if (!availabilityArray.isEmpty()) {
-													JSONObject titleInfo = availabilityArray.getJSONObject(0);
-													JSONObject availability = titleInfo.getJSONObject("availability");
-
-													// Direct update without comparing old values
-													PreparedStatement updateFlexAvailabilityStmt = aspenConn.prepareStatement(
-														"INSERT INTO hoopla_flex_availability (hooplaId, holdsQueueSize, " +
-														"availableCopies, totalCopies, status) " +
-														"VALUES (?, ?, ?, ?, ?) " +
-														"ON DUPLICATE KEY UPDATE " +
-														"holdsQueueSize = VALUES(holdsQueueSize), " +
-														"availableCopies = VALUES(availableCopies), " +
-														"totalCopies = VALUES(totalCopies), " +
-														"status = VALUES(status)"
-													);
-													int holdsQueueSize = availability.has("holdsQueueSize") ? availability.getInt("holdsQueueSize") : 0;
-
-													updateFlexAvailabilityStmt.setLong(1, numericSingleWorkId);
-													updateFlexAvailabilityStmt.setInt(2, holdsQueueSize);
-													updateFlexAvailabilityStmt.setInt(3, availability.getInt("availableCopies"));
-													updateFlexAvailabilityStmt.setInt(4, availability.getInt("totalCopies"));
-													updateFlexAvailabilityStmt.setString(5, availability.getString("status"));
-													updateFlexAvailabilityStmt.executeUpdate();
-
-													logEntry.addNote("Updated availability for Flex title " + numericSingleWorkId);
-													logEntry.incAvailabilityChanges();
-												}
-											} catch (Exception e) {
-												logEntry.incErrors("Error updating Flex availability for title " +
-													numericSingleWorkId, e);
-											}
+											logger.warn("Entitlement is not active for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Instant.");
 										}
+									} else {
+										logger.warn("Content ID for entitlement does not match the given hoopla ID, this record might not be active for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Instant.");
 									}
-									updatesRun = true;
+								}
+							}
+						}
+					}
+
+					if (librarySetting.isFlexEnabled()) {
+						String entitlementUrl = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/entitlements?purchaseModel=Flex&limit=1&status=active&startToken=" + (numericSingleWorkId - 1);
+						WebServiceResponse entitlementResponse = NetworkUtils.getURL(entitlementUrl, logger, headers);
+						if (!entitlementResponse.isSuccess()) {
+							logEntry.incErrors("Could not get entitlements from " + entitlementUrl + " " + entitlementResponse.getMessage());
+						} else {
+							JSONObject responseJSON = new JSONObject(entitlementResponse.getMessage());
+							if (responseJSON.has("entitlements")) {
+								JSONArray responseEntitlements = responseJSON.getJSONArray("entitlements");
+								if (responseEntitlements != null && responseEntitlements.length() > 0) {
+									JSONObject entitlement = responseEntitlements.getJSONObject(0);
+
+									// Verify contentId is the same as the given hoopla Id
+									if (entitlement.has("contentId") && entitlement.getLong("contentId") == numericSingleWorkId) {
+										if (entitlement.has("active") && entitlement.getBoolean("active")) {
+											// Only update the entitlement if it is active
+											updateEntitlementsInDB(responseEntitlements, null, false, HOOPLA_TYPE_FLEX, librarySetting.getLibraryId());
+											logger.warn("Updated entitlement for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Flex.");
+
+											// This is an active fle entitlement, so we need to update the availability
+											String availabilityUrl = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/content/info?contentIds=" + numericSingleWorkId;
+											WebServiceResponse availabilityResponse = NetworkUtils.getURL(availabilityUrl, logger, headers);
+											if (!availabilityResponse.isSuccess()) {
+												logEntry.incErrors("Could not get availability from " + availabilityUrl + " " + availabilityResponse.getMessage());
+											} else {
+												JSONArray availabilityArray = new JSONArray(availabilityResponse.getMessage());
+												updateFlexAvailabilityInDB(availabilityArray, librarySetting.getLibraryId());
+												logger.warn("Updated availability for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Flex.");
+												updatesRun = true;
+												continue;
+											}
+										} else {
+											logger.warn("Entitlement is not active for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Flex.");
+										}
+									} else {
+										logger.warn("Content ID for entitlement " + entitlement.getLong("id") + " does not match the given hoopla ID, this record might not be active for Hoopla Library ID " + librarySetting.getHooplaLibraryId() + " for Flex.");
+									}
 								}
 							}
 						}
 					}
 				}
+				// Flush the records to reindex
+				if (updatesRun) {
+					// Add the title to the list regardlss
+					titlesNeedingReindex.add(numericSingleWorkId);
+					flushRecordsToReindex();
+				}
+				logEntry.addNote("Completed extract of single work " + singleWorkId);
+				logEntry.saveResults();
+				logger.warn("Completed extract of single work " + singleWorkId);
+				return updatesRun;
 			}
 			if (numSettings == 0){
 				logger.error("Unable to find settings for Hoopla when processing single title, please add settings to the database");
