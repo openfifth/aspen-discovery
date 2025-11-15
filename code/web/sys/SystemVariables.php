@@ -235,7 +235,7 @@ class SystemVariables extends DataObject {
 						],
 						'label' => 'Hoopla Exporter Version',
 						'description' => 'The version of Hoopla Exporter to use, version 2 has the new endpoint',
-						'note' => 'If you want to switch to version 2, please do it at the non business hours and need the nightly index to be run after the switch',
+						'note' => 'If you switch to Version 2, run the Database Maintenance immediately after saving and allow the nightly index to complete. Perform the switch outside business hours. Once the database maintenance is complete, you can NOT switch back to Version 1.',
 						'default' => 1,
 						'required' => true,
 					],
