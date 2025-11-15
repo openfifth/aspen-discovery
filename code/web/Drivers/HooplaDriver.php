@@ -9,6 +9,10 @@ class HooplaDriver extends AbstractEContentDriver {
 	public $hooplaAPIBaseURL = 'hoopla-api-dev.hoopladigital.com';
 	private $accessToken;
 	private $hooplaEnabled = false;
+	private ?bool $isHooplaVersion2 = null;
+	// Legacy Hoopla v1 settings
+	private $hooplaInstantEnabled = false;
+	private $hooplaFlexEnabled = false;
 
 	public function __construct() {
 		require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
@@ -17,8 +21,11 @@ class HooplaDriver extends AbstractEContentDriver {
 			if ($hooplaSettings->find(true)) {
 				$this->hooplaEnabled = true;
 				$this->hooplaAPIBaseURL = $hooplaSettings->apiUrl;
+				if (!$this->isHooplaVersion2()) {
+					$this->hooplaInstantEnabled = $hooplaSettings->hooplaInstantEnabled;
+					$this->hooplaFlexEnabled = $hooplaSettings->hooplaFlexEnabled;
+				}
 				$this->hooplaSettings = $hooplaSettings;
-//				$this->hooplaLibrarySettings = $this->loadHooplaLibrarySettings();
 				$this->getAccessToken();
 			}
 		} catch (Exception $e) {
@@ -398,15 +405,26 @@ class HooplaDriver extends AbstractEContentDriver {
 	 * @return string 'Instant' or 'Flex'
 	 */
 	private function getHooplaType($titleId, $libraryId): string {
-		require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
-		require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
+		if ($this->isHooplaVersion2()) {
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
 
-		$hooplaEntitlement = new HooplaEntitlement();
-		$hooplaEntitlement->hooplaId = $titleId;
-		$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
-		$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$libraryId);
-		if ($hooplaEntitlement->find(true)) {
-			return $hooplaEntitlement->hooplaType;
+			$hooplaEntitlement = new HooplaEntitlement();
+			$hooplaEntitlement->hooplaId = $titleId;
+			$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
+			$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$libraryId);
+			if ($hooplaEntitlement->find(true)) {
+				return $hooplaEntitlement->hooplaType;
+			}
+		} else {
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaExtract.php';
+			$hooplaItem = new HooplaExtract();
+			$hooplaItem->hooplaId = $titleId;
+			if ($hooplaItem->find(true)) {
+				if (!empty($hooplaItem->hooplaType)) {
+					return $hooplaItem->hooplaType;
+				}
+			}
 		}
 		return 'Instant';
 	}
@@ -415,7 +433,9 @@ class HooplaDriver extends AbstractEContentDriver {
 		require_once ROOT_DIR . '/sys/Hoopla/HooplaFlexAvailability.php';
 		$flexAvailability = new HooplaFlexAvailability();
 		$flexAvailability->hooplaId = $titleId;
-		$flexAvailability->scopeLibraryId = $libraryId;
+		if ($this->isHooplaVersion2()) {
+			$flexAvailability->scopeLibraryId = $libraryId;
+		}
 		if ($flexAvailability->find(true)) {
 			return $flexAvailability->holdsQueueSize;
 		}
@@ -817,7 +837,13 @@ class HooplaDriver extends AbstractEContentDriver {
 			'unavailable' => [],
 		];
 		$patronHomeLibrary = $patron->getHomeLibrary();
-		if ($patronHomeLibrary->getPrimaryHooplaSetting()->hooplaFlexEnabled) {
+		$primaryHooplaSetting = $patronHomeLibrary->getPrimaryHooplaSetting();
+		if ($this->isHooplaVersion2() && !$primaryHooplaSetting != null) {
+			$flexEnabled = $primaryHooplaSetting->hooplaFlexEnabled;
+		} else {
+			$flexEnabled = $this ->hooplaFlexEnabled;
+		}
+		if ($flexEnabled) {
 			$holdUrl = $this->getHooplaBasePatronURL($patron);
 			if (!empty($holdUrl)) {
 				$holdUrl .= '/holds/current';
@@ -1184,17 +1210,12 @@ class HooplaDriver extends AbstractEContentDriver {
 			}
 		}
 	}
-/*
-	private function loadHooplaLibrarySettings(): array {
-		require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSetting.php';
-		$settingsByLibrary = [];
-		$librarySetting = new LibraryHooplaSetting();
-		$librarySetting->orderBy('libraryId');
-		if ($librarySetting->find()) {
-			while ($librarySetting->fetch()) {
-				$settingsByLibrary[$librarySetting->libraryId] = clone $librarySetting;
-			}
+	private function isHooplaVersion2(): bool {
+		if ($this->isHooplaVersion2 == null) {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			$this->isHooplaVersion2 = ($systemVariables !== false && !empty($systemVariables->hooplaVersion) && (int)$systemVariables->hooplaVersion == 2);
 		}
-		return $settingsByLibrary;
-	}*/
+		return $this->isHooplaVersion2;
+	}
 }

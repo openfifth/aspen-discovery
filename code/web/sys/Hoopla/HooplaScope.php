@@ -54,11 +54,15 @@ class HooplaScope extends DataObject {
 		$excludeProfanity;
 	public /** @noinspection PhpUnused */
 		$genresToExclude;
+	// Legacy Hoopla v1 column
+	public $includeInstant;
+	public $includeFlex;
 
 	private $_libraries;
 	private $_locations;
 
 	static $_objectStructure = [];
+	private static ?bool $isHooplaVersion2 = null;
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
@@ -107,6 +111,29 @@ class HooplaScope extends DataObject {
 				'default' => 0,
 				'forcesReindex' => true,
 			],
+		];
+
+		// Legacy Hoopla v1 columns
+		if (self::isHooplaVersion2()) {
+			$structure['includeInstant'] = [
+				'property' => 'includeInstant',
+				'type' => 'checkbox',
+				'label' => 'Include Instant Titles',
+				'description' => 'Legacy Hoopla (v1) option that determines whether the Instant collection is indexed.',
+				'default' => 1,
+				'forcesReindex' => true,
+			];
+			$structure['includeFlex'] = [
+				'property' => 'includeFlex',
+				'type' => 'checkbox',
+				'label' => 'Include Flex Titles',
+				'description' => 'Legacy Hoopla (v1) option that determines whether the Flex collection is indexed.',
+				'default' => 0,
+				'forcesReindex' => true,
+			];
+		}
+
+		$structure += [
 			'includeFormats' => [
 				'property' => 'includeFormats',
 				'type' => 'section',
@@ -455,5 +482,14 @@ class HooplaScope extends DataObject {
 			}
 			unset($this->_locations);
 		}
+	}
+
+	private static function isHooplaVersion2(): bool {
+		if (self::$isHooplaVersion2 == null) {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			self::$isHooplaVersion2 = ($systemVariables !== false && !empty($systemVariables->hooplaVersion) && (int)$systemVariables->hooplaVersion == 2);
+		}
+		return self::$isHooplaVersion2;
 	}
 }

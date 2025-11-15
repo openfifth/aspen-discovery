@@ -20,6 +20,12 @@ class HooplaExtract extends DataObject {
 	public $rawResponse;
 	public $dateFirstDetected;
 
+	// Legacy Hoopla v1 columns
+	public $active;
+	public $kind;
+	public $price;
+	public $hooplaType;
+
 	public $__table = 'hoopla_export';
 
 	public function getCompressedColumnNames(): array {
@@ -53,16 +59,16 @@ class HooplaExtract extends DataObject {
 	 * @return ?HooplaExtract
 	 */
 	static function getHooplaTitleForId(string $identifier) : ?HooplaExtract {
-	/*	if (isset(self::$_preloadedTitles[$identifier])) {
+		if (isset(self::$_preloadedTitles[$identifier])) {
 			return self::$_preloadedTitles[$identifier];
-		}else{*/
-			$hooplaProduct = new HooplaExtract();
-			$hooplaProduct->hooplaId = $identifier;
-			if ($hooplaProduct->find(true)) {
-				return $hooplaProduct;
-			}else{
-				return null;
-			}
-	//	}
+		}
+
+		$hooplaProduct = new HooplaExtract();
+		$hooplaProduct->hooplaId = $identifier;
+		if ($hooplaProduct->find(true)) {
+			return $hooplaProduct;
+		}else{
+			return null;
+		}
 	}
 }

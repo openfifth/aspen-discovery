@@ -338,15 +338,16 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getFormats() {
-		if ($this->hooplaExtract->format == "MOVIE" || $this->hooplaExtract->format == "TELEVISION") {
+		$format = $this->hooplaExtract->format ?? $this->hooplaExtract->kind;
+		if ($format == "MOVIE" || $format == "TELEVISION") {
 			return ['eVideo'];
-		} elseif ($this->hooplaExtract->format == "AUDIOBOOK") {
+		} elseif ($format == "AUDIOBOOK") {
 			return ['eAudiobook'];
-		} elseif ($this->hooplaExtract->format == "EBOOK") {
+		} elseif ($format == "EBOOK") {
 			return ['eBook'];
-		} elseif ($this->hooplaExtract->format == "ECOMIC") {
+		} elseif ($format == "ECOMIC" || $format == "COMIC") {
 			return ['eComic'];
-		} elseif ($this->hooplaExtract->format == "MUSIC") {
+		} elseif ($format == "MUSIC") {
 			return ['eMusic'];
 		} else {
 			return ['eBook'];
@@ -359,14 +360,15 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return  array
 	 */
 	function getFormatCategory() : string|array|null {
-		if ($this->hooplaExtract->format == "AUDIOBOOK") {
+		$format = $this->hooplaExtract->format ?? $this->hooplaExtract->kind;
+		if ($format == "AUDIOBOOK") {
 			return [
 				'eBook',
 				'Audio Books',
 			];
-		} elseif ($this->hooplaExtract->format == "MOVIE" || $this->hooplaExtract->format == "TELEVISION") {
+		} elseif ($format == "MOVIE" || $format == "TELEVISION") {
 			return ['Movies'];
-		} elseif ($this->hooplaExtract->format == "MUSIC") {
+		} elseif ($format == "MUSIC") {
 			return ['Music'];
 		} else {
 			return ['eBook'];
@@ -382,19 +384,26 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getHooplaType() : string {
-		require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
-		$searchLibrary = Library::getSearchLibrary();
-		if ($searchLibrary && $searchLibrary->libraryId) {
-			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
-			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
+		require_once ROOT_DIR . '/sys/SystemVariables.php';
+		$systemVariables = SystemVariables::getSystemVariables();
+		$hooplaVersion = ($systemVariables !== false && !empty($systemVariables->hooplaVersion)) ? (int)$systemVariables->hooplaVersion : 1;
+		if ($hooplaVersion == 2) {
+			require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
+			$searchLibrary = Library::getSearchLibrary();
+			if ($searchLibrary && $searchLibrary->libraryId) {
+				require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
+				require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
 
-			$hooplaEntitlement = new HooplaEntitlement();
-			$hooplaEntitlement->hooplaId = $this->getUniqueID();
-			$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
-			$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$searchLibrary->libraryId);
-			if ($hooplaEntitlement->find(true)) {
-				return $hooplaEntitlement->hooplaType;
+				$hooplaEntitlement = new HooplaEntitlement();
+				$hooplaEntitlement->hooplaId = $this->getUniqueID();
+				$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
+				$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$searchLibrary->libraryId);
+				if ($hooplaEntitlement->find(true)) {
+					return $hooplaEntitlement->hooplaType;
+				}
 			}
+		} elseif (!empty($this->hooplaExtract->hooplaType)) {
+			return $this->hooplaExtract->hooplaType;
 		}
 		return 'Instant';
 

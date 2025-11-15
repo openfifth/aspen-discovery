@@ -1,5 +1,12 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
+/**
+ * LibraryHooplaSetting - Library-specific Hoopla configuration
+ *
+ * HOOPLA VERSION 2 ONLY
+ *
+*/
+
 class LibraryHooplaSetting extends DataObject
 {
     public $__table = 'library_hoopla_settings';
