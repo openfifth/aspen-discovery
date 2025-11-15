@@ -2068,21 +2068,11 @@ class Evergreen extends AbstractIlsDriver {
 	 * @return ?array Null for no result, or array with 'success' boolean and 'message' string.
 	 */
 	public function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): ?array {
-		$result = ['success' => false, 'message' => ''];
-
-		switch ($action) {
-			case 'optIn':
-				$result = $this->optInToReadingHistoryILS($patron);
-				break;
-			case 'optOut':
-				$result = $this->optOutOfReadingHistoryILS($patron);
-				break;
-			default:
-				$result['message'] = 'Unknown reading history action: ' . $action;
-				break;
-		}
-
-		return $result;
+		return match ($action) {
+			'optIn' => $this->optInToReadingHistoryILS($patron),
+			'optOut' => $this->optOutOfReadingHistoryILS($patron),
+			default => null,
+		};
 	}
 
 	private function validatePatronAndGetAuthToken(string $username, string $password) {
