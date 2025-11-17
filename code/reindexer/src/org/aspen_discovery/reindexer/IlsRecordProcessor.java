@@ -1404,6 +1404,12 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 		}
 		String translatedLocation = indexer.getLocationNameForCode(locationCode);
 		if (translatedLocation == null || translatedLocation.isEmpty()) {
+			// If not found in location table, fall back to the location translation map.
+			// This primarily to handle regex patterns.
+			translatedLocation = translateValue("location", locationCode, "", false, false);
+			if (translatedLocation != null && !translatedLocation.isEmpty() && !translatedLocation.equals(locationCode)) {
+				return translatedLocation;
+			}
 			return locationCode;
 		}
 		return translatedLocation;
