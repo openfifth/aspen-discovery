@@ -172,6 +172,8 @@ class Library extends DataObject {
 	public $cloudSourceBaseUrl;
 	public /** @noinspection PhpUnused */
 		$hooplaScopeId;
+	// legacy Hoopla v1 column
+	public $hooplaLibraryID;
 	public /** @noinspection PhpUnused */
 		$axis360ScopeId;
 	public $palaceProjectLibraryId;
