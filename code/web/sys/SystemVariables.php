@@ -497,6 +497,14 @@ class SystemVariables extends DataObject {
 			$userAgent = new UserAgent();
 			$userAgent->delete(true);
 		}
+		if ($this->hooplaVersion == 2) {
+			$existingSystemVariables = new SystemVariables();
+			if ($existingSystemVariables->find(true)) {
+				if ($existingSystemVariables->hooplaVersion != 2) {
+					$this->__set('runNightlyFullIndex', 1);
+				}
+			}
+		}
 		return parent::update($context);
 	}
 }
