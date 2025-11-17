@@ -230,22 +230,6 @@ function getHooplaVersion2Updates(): array {
 					'ALTER TABLE hoopla_export_log DROP COLUMN numSkipped',
 				]
 			], //update_hoopla_export_log
-			'test_test' => [
-				'title' => 'Test test',
-				'description' => 'Test test',
-				'continueOnError' => false,
-				'sql' => [
-					'ALTER TABLE test ADD COLUMN test INT DEFAULT 0',
-				]
-			], //test_test
-			'test_test2' => [
-				'title' => 'Test test2',
-				'description' => 'Test test2',
-				'continueOnError' => false,
-				'sql' => [
-					'ALTER TABLE test ADD COLUMN test2 INT DEFAULT 0',
-				]
-			], //test_test2
 		];
 	}
 	return [];
