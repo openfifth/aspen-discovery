@@ -543,7 +543,7 @@ class HooplaDriver extends AbstractEContentDriver {
 								])
 							]
 						];
-					} else if ($checkoutResponse['httpCode'] == 412) {
+					} else if ($checkoutResponse['httpCode'] == 422) {
 						if ($hooplaType == 'Flex') {
 							// prompt user to place a hold for Flex titles
 							return [
@@ -569,9 +569,19 @@ class HooplaDriver extends AbstractEContentDriver {
 									]),
 								]
 							];
-					 	} else {
-							return [
-								'success' => false,
+						}
+					} else if ($checkoutResponse['httpCode'] == 412) {
+						return [
+							'success' => false,
+							'title' => translate([
+								'text' => 'Checkout Unavailable',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => $checkoutResponse['body']->message,
+								'isPublicFacing' => true,
+							]),
+							'api' => [
 								'title' => translate([
 									'text' => 'Checkout Unavailable',
 									'isPublicFacing' => true,
@@ -580,20 +590,9 @@ class HooplaDriver extends AbstractEContentDriver {
 									'text' => $checkoutResponse['body']->message,
 									'isPublicFacing' => true,
 								]),
-								'api' => [
-									'title' => translate([
-										'text' => 'Checkout Unavailable',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => $checkoutResponse['body']->message,
-										'isPublicFacing' => true,
-									]),
-								]
-							];
-						}
+							]
+						];
 					}
-
 				} else {
 					// Result for API or app use
 					$apiResult = [];
