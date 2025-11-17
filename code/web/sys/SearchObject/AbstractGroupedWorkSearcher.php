@@ -581,7 +581,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 			}
 
 			//Ignore boolean searches
-			if (preg_match('/(\b)AND|OR|NOT(\b)/i', $searchTerm)) {
+			if (preg_match('/(\b|^)(AND|OR|NOT)(\b)/', $searchTerm)) {
 				return $searchTerm;
 			}
 
@@ -682,8 +682,8 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 			}
 
 			if ($this->automaticFacetsApplied) {
-				$searchTerm = preg_replace('/for/i', '', $searchTerm);
-				$searchTerm = preg_replace('/about/i', '', $searchTerm);
+				$searchTerm = preg_replace('/(\b)for(\b)/i', '', $searchTerm);
+				$searchTerm = preg_replace('/(\b)about(\b)/i', '', $searchTerm);
 				$searchTerm = preg_replace('/\s\s/i', ' ', $searchTerm);
 				$searchTerm = preg_replace('/\.$/', ' ', $searchTerm);
 				$searchTerm = trim($searchTerm);
