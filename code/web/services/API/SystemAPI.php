@@ -399,6 +399,8 @@ class SystemAPI extends AbstractAPI {
 		$pay360Updates = getPay360Updates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/gale_updates.php';
 		$galeUpdates = getGaleUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_registration_updates.php';
+		$aspenEventRegistrationUpdates = getAspenEventRegistrationUpdates();
 
 		//having these on separate lines should make merges easier to manage
 		$baseUpdates = array_merge(
@@ -411,7 +413,8 @@ class SystemAPI extends AbstractAPI {
 			$heycentricUpdates,
 			$hooplaVersion2Updates,
 			$pay360Updates,
-			$galeUpdates
+			$galeUpdates,
+			$aspenEventRegistrationUpdates
 		);
 
 		//Get version updates
