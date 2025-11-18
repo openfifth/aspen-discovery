@@ -42,6 +42,5 @@ function getAspenEventRegistrationUpdates() {
 				'ALTER TABLE event_instance ADD COLUMN numberOfSeats INT DEFAULT NULL',
 			],
 		], // add_numberOfSeats_to_events
-
 	];
 }
