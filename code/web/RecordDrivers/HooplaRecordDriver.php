@@ -376,7 +376,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getLanguage() {
-		return ucfirst(strtolower($this->hooplaRawMetadata->language));
+		return ucfirst(strtolower($this->hooplaRawMetadata->language ?? ''));
 	}
 
 	public function getNumHolds(): int {
@@ -437,7 +437,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getPublishers() {
-		return [$this->hooplaRawMetadata->publisher];
+		return [$this->hooplaRawMetadata->publisher] ?? [];
 	}
 
 	/**
@@ -510,7 +510,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 	function loadSubjects() {
 		$subjects = [];
-		if ($this->hooplaRawMetadata->genres) {
+		if (!empty($this->hooplaRawMetadata->genres)) {
 			$subjects = $this->hooplaRawMetadata->genres;
 		}
 		global $interface;
@@ -571,7 +571,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	function getHooplaCoverUrl() {
-		return $this->hooplaRawMetadata->coverImageUrl;
+		return $this->hooplaRawMetadata->coverImageUrl ?? '';
 	}
 
 	function getStatusSummary() : array {
