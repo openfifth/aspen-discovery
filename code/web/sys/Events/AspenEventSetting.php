@@ -10,6 +10,9 @@ class AspenEventSetting extends DataObject {
 	public $id;
 	public $name;
 	public $registrationModalBody;
+	public $runFullUpdate;
+	/** @noinspection PhpUnused */
+	public $numberOfDaysToIndex;
 
 	private $_libraries;
 	private $_locationMap;
@@ -21,8 +24,6 @@ class AspenEventSetting extends DataObject {
 			return self::$_objectStructure[$context];
 		}
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer Events for All Locations'));
-
-		$branchMapStructure = EventsBranchMapping::getObjectStructure($context);
 
 		/** @noinspection HtmlRequiredAltAttribute */
 		$structure = [
@@ -38,13 +39,57 @@ class AspenEventSetting extends DataObject {
 				'label' => 'Name',
 				'description' => 'A name for the settings',
 			],
-			'registrationModalBody' => [
-				'property' => 'registrationModalBody',
-				'type' => 'html',
-				'label' => 'Registration Modal Body',
-				'description' => 'The body of the modal for event registration information',
-				'allowableTags' => '<p><em><i><strong><b><a><ul><ol><li><h1><h2><h3><h4><h5><h6><h7><pre><code><hr><table><tbody><tr><th><td><caption><img><br><div><span><sub><sup>',
+			'indexingSection' => [
+				'property' => 'indexingSection',
+				'type' => 'section',
+				'label' => 'Indexing Settings',
 				'hideInLists' => true,
+				'expandByDefault' => true,
+				'properties' => [
+					'runFullUpdate' => [
+						'property' => 'runFullUpdate',
+						'type' => 'checkbox',
+						'label' => 'Run Full Update',
+						'description' => 'Whether or not a full update of all records should be done on the next pass of indexing',
+						'default' => 0,
+					],
+					'numberOfDaysToIndex' => [
+						'property' => 'numberOfDaysToIndex',
+						'type' => 'integer',
+						'label' => 'Number of Days to Index',
+						'description' => 'How many days in the future to index events',
+						'default' => 365,
+					],
+					'lastUpdateOfAllEvents' => [
+						'property' => 'lastUpdateOfAllEvents',
+						'type' => 'timestamp',
+						'label' => 'Last Update Of All Events',
+						'readOnly' => 1,
+					],
+					'lastUpdateOfChangedEvents' => [
+						'property' => 'lastUpdateOfChangedEvents',
+						'type' => 'timestamp',
+						'label' => 'Last Update Of Changed Events',
+						'readOnly' => 1,
+					],
+				]
+			],
+			'registrationSection' => [
+				'property' => 'registrationSection',
+				'type' => 'section',
+				'label' => 'Registration Settings',
+				'hideInLists' => true,
+				'expandByDefault' => true,
+				'properties' => [
+					'registrationModalBody' => [
+						'property' => 'registrationModalBody',
+						'type' => 'html',
+						'label' => 'Registration Modal Body',
+						'description' => 'The body of the modal for event registration information',
+						'allowableTags' => '<p><em><i><strong><b><a><ul><ol><li><h1><h2><h3><h4><h5><h6><h7><pre><code><hr><table><tbody><tr><th><td><caption><img><br><div><span><sub><sup>',
+						'hideInLists' => true,
+					],
+				]
 			],
 			'libraries' => [
 				'property' => 'libraries',

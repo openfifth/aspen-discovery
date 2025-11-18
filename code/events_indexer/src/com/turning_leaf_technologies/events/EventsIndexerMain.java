@@ -133,7 +133,7 @@ public class EventsIndexerMain {
 				}
 
 				// Aspen events
-				getEventsSitesToIndexStmt = aspenConn.prepareStatement("SELECT * from events_indexing_settings");
+				getEventsSitesToIndexStmt = aspenConn.prepareStatement("SELECT * from aspen_event_settings");
 				eventsSitesRS = getEventsSitesToIndexStmt.executeQuery();
 				while (eventsSitesRS.next()) {
 					AspenEventsIndexer indexer = new AspenEventsIndexer(
