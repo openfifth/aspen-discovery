@@ -32,6 +32,7 @@ class AspenEvent {
 	private final Boolean status;
 	private final Boolean nonPublic;
 	private final Boolean hideTimestamps;
+	private final Boolean registrationRequired;
 	private final ArrayList<EventField> fields = new ArrayList<EventField>();
 
 	AspenEvent(ResultSet existingEventsRS) throws SQLException{
@@ -52,6 +53,7 @@ class AspenEvent {
 		this.status = existingEventsRS.getBoolean("status");
 		this.nonPublic = existingEventsRS.getBoolean("private");
 		this.hideTimestamps = existingEventsRS.getBoolean("hideTimestamps");
+		this.registrationRequired = existingEventsRS.getBoolean("registrationRequired");
 	}
 
 	void addField(String name, String value, String[] allowableValues, int type, int facet) {
@@ -155,6 +157,10 @@ class AspenEvent {
 			logEntry.incErrors("Error parsing date with hidden timestamp from " + startDate, e);
 			return null;
 		}
+	}
+
+	public boolean isRegistrationRequired() {
+		return registrationRequired;
 	}
 
 	private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
