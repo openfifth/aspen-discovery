@@ -23,6 +23,7 @@ class Event extends DataObject {
 	public $startTime;
 	public $eventLength;
 	public $recurrenceOption;
+	public $registrationRequired;
 	/** @noinspection PhpUnused */
 	public $recurrenceInterval;
 	public $recurrenceFrequency;
@@ -160,6 +161,13 @@ class Event extends DataObject {
 						'label' => 'Display Event Branch on Thumbnail',
 						'default' => false,
 						'description' => 'Whether or not to display the event branch on the thubmnail image',
+					],
+					'registrationRequired' => [
+						'property' => 'registrationRequired',
+						'type' => 'checkbox',
+						'label' => 'Enable Registration ?',
+						'default' => false,
+						'describe' => 'Enable registration for this event and mark is as required'
 					],
 				],
 			],
