@@ -31,6 +31,7 @@ class AspenEvent {
 	private final long sublocationId;
 	private final Boolean status;
 	private final Boolean nonPublic;
+	private final Boolean registrationRequired;
 	private final ArrayList<EventField> fields = new ArrayList<EventField>();
 
 	AspenEvent(ResultSet existingEventsRS) throws SQLException{
@@ -50,6 +51,7 @@ class AspenEvent {
 		this.sublocationId = existingEventsRS.getLong("sublocationId");
 		this.status = existingEventsRS.getBoolean("status");
 		this.nonPublic = existingEventsRS.getBoolean("private");
+		this.registrationRequired = existingEventsRS.getBoolean("registrationRequired");
 	}
 
 	void addField(String name, String value, String[] allowableValues, int type, int facet) {
@@ -138,6 +140,10 @@ class AspenEvent {
 		} else {
 			return "public";
 		}
+	}
+	
+	public boolean isRegistrationRequired() {
+		return registrationRequired;
 	}
 
 	private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");

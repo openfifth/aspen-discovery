@@ -21,6 +21,7 @@ class Event extends DataObject {
 	public $startTime;
 	public $eventLength;
 	public $recurrenceOption;
+	public $registrationRequired;
 	/** @noinspection PhpUnused */
 	public $recurrenceInterval;
 	public $recurrenceFrequency;
@@ -151,6 +152,13 @@ class Event extends DataObject {
 							'View Private Events for Home Location'
 						],
 						'description' => 'Private events are limited to those with permission to view private events',
+					],
+					'registrationRequired' => [
+						'property' => 'registrationRequired',
+						'type' => 'checkbox',
+						'label' => 'Enable Registration ?',
+						'default' => false,
+						'describe' => 'Enable registration for this event and mark is as required'
 					],
 				],
 			],

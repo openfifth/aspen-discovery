@@ -22,8 +22,6 @@ class AspenEventSetting extends DataObject {
 		}
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer Events for All Locations'));
 
-		$branchMapStructure = EventsBranchMapping::getObjectStructure($context);
-
 		/** @noinspection HtmlRequiredAltAttribute */
 		$structure = [
 			'id' => [

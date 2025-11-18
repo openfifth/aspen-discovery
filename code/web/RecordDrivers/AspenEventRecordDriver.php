@@ -400,11 +400,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	}
 
 	public function isRegistrationRequired(): bool {
-		if (array_key_exists("registration_required", $this->fields) && $this->fields['registration_required'] == "Yes") {
-			return true;
-		} else {
-			return false;
-		}
+		return array_key_exists("registration_required", $this->fields) && $this->fields['registration_required'] == "Yes";
 	}
 
 	public function inEvents() {
@@ -443,8 +439,17 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return true;
 	}
 
-	public function getRegistrationModalBody() {
-		return null;
+	public function getRegistrationModalBody(): string|null {
+		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+		$eventSettings = new AspenEventSetting;
+		$eventSettings->id = $this->getSource();
+		if (!$eventSettings->find(true)){
+			return null;
+		}
+		if (empty($eventSettings->registrationModalBody)){
+			return null;
+		} 
+		return $eventSettings->registrationModalBody;
 	}
 
 	public function getSummaryInformation() {
