@@ -1,5 +1,28 @@
 AspenDiscovery.Account.ReadingHistory = (function(){
 	return {
+		initAccordions() {
+			// Initialize accordion toggle functionality for grouped checkouts
+			$(document).on('click', '.reading-history-toggle-details', function(e) {
+				e.preventDefault();
+				const $link = $(this);
+				const targetId = $link.data('target');
+				const $target = $('#' + targetId);
+
+				if ($target.length) {
+					// Toggle the collapse
+					$target.collapse('toggle');
+
+					// Update aria-expanded and text
+					const isExpanded = $link.attr('aria-expanded') === 'true';
+					$link.attr('aria-expanded', !isExpanded);
+
+					// Update text (CSS handles chevron rotation via aria-expanded)
+					const newText = isExpanded ? 'Show Details' : 'Hide Details';
+					$link.contents().first().replaceWith(newText + ' ');
+				}
+			});
+		},
+
 		toggleSelectionMode() {
 			const $selectTitle = $('.selectTitle');
 			const isSelectionMode = $selectTitle.is(':visible');

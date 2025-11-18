@@ -115,4 +115,5 @@
 {/strip}
 <script type="text/javascript">
 	AspenDiscovery.Ratings.initializeRaters();
+	AspenDiscovery.Account.ReadingHistory.initAccordions();
 </script>

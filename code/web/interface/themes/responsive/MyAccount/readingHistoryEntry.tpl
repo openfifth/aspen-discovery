@@ -1,4 +1,4 @@
-{strip}<div class="row result" id="readingHistoryEntry{$record.id}">
+{strip}<div class="row result reading-history-entry" id="readingHistoryEntry{$record.id}">
 	{* Checkbox Column *}
 	<div class="selectTitle" style="display: none;">
 		<input type="checkbox" name="selected[{$record.id}]" class="titleSelect" id="selected{$record.id}">
@@ -58,12 +58,17 @@
 				{if !empty($record.format)}
 					<div class="row">
 						<div class="result-label col-tn-3">{translate text='Format' isPublicFacing=true}</div>
-						<div class="result-value col-tn-9">
+						<div class="result-value col-tn-9 reading-history-formats">
 							{if is_array($record.format)}
-								{implode subject=$record.format glue=", " translate=true isPublicFacing=true}
+								{foreach from=$record.format item=formatItem name=formatLoop}
+									<span class="format-chip">{translate text=$formatItem isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
+								{/foreach}
 							{else}
 								{if !empty($record.format)}
-									{translate text=$record.format isPublicFacing=true}
+									{assign var="formatArray" value=","|explode:$record.format}
+									{foreach from=$formatArray item=formatItem name=formatLoop}
+										<span class="format-chip">{translate text=$formatItem|trim isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
+									{/foreach}
 								{/if}
 							{/if}
 						</div>
@@ -95,6 +100,18 @@
 						</div>
 					{/if}
 				{/if}
+
+				{* Show checkout count badge and details toggle if multiple checkouts *}
+				{if !empty($record.timesUsed) && $record.timesUsed > 1}
+					<div class="row reading-history-meta">
+						<div class="col-xs-12">
+							<span class="reading-history-count-text">{translate text="Checked out %1% times" 1=$record.timesUsed isPublicFacing=true}</span>
+							<a href="#" class="reading-history-toggle-details" data-target="readingHistoryDetails{$record.id}" aria-expanded="false">
+								{translate text="Show Details" isPublicFacing=true} <i class="fa fa-chevron-down"></i>
+							</a>
+						</div>
+					</div>
+				{/if}
 			</div>
 
 			<div class="col-xs-12 col-md-3">
@@ -112,6 +129,62 @@
 				{/if}
 			</div>
 		</div>
+
+		{* Accordion section for multiple checkouts *}
+		{if !empty($record.detailRecords) && $record.timesUsed > 1}
+			<div class="row reading-history-details collapse" id="readingHistoryDetails{$record.id}">
+				<div class="col-xs-12">
+					<div class="panel panel-default">
+						<div class="panel-body">
+							<h4>{translate text="Checkout History" isPublicFacing=true}</h4>
+							<div class="table-responsive">
+								<table class="table table-striped table-condensed reading-history-detail-table">
+									<thead>
+										<tr>
+											<th>{translate text="Checkout Date" isPublicFacing=true}</th>
+											<th>{translate text="Return Date" isPublicFacing=true}</th>
+											<th>{translate text="Format" isPublicFacing=true}</th>
+											<th>{translate text="Source ID" isPublicFacing=true}</th>
+										</tr>
+									</thead>
+									<tbody>
+										{foreach from=$record.detailRecords item=detail}
+											<tr>
+												<td>
+													{if is_numeric($detail.checkOutDate)}
+														{$detail.checkOutDate|date_format:"%b %d, %Y"}
+													{else}
+														{$detail.checkOutDate|escape}
+													{/if}
+												</td>
+												<td>
+													{if empty($detail.checkInDate)}
+														<span class="label label-success">{translate text="Currently Checked Out" isPublicFacing=true}</span>
+													{else}
+														{if is_numeric($detail.checkInDate)}
+															{$detail.checkInDate|date_format:"%b %d, %Y"}
+														{else}
+															{$detail.checkInDate|escape}
+														{/if}
+													{/if}
+												</td>
+												<td>{translate text=$detail.format isPublicFacing=true}</td>
+												<td>
+													{if $detail.source != 'ils'}
+														<span class="text-muted">{$detail.source}:</span>
+													{/if}
+													{$detail.sourceId}
+												</td>
+											</tr>
+										{/foreach}
+									</tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		{/if}
 
 		{if !empty($record.existsInCatalog)}
 			<div class="row">

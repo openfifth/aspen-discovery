@@ -679,10 +679,13 @@ class CatalogConnection {
 		} elseif ($sortOption == "format") {
 			$readingHistoryDB->orderBy('format ASC, title ASC, MAX(checkOutDate) DESC');
 		}
+		// Group by groupedWorkPermanentId to consolidate entries with the same work
+		// but different title/author punctuation variations. For NULL permanent IDs,
+		// we need to also group by title and author to prevent unrelated items from merging.
 		$readingHistoryDB->groupBy([
 			'groupedWorkPermanentId',
-			'title',
-			'author'
+			'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
+			'CASE WHEN groupedWorkPermanentId IS NULL THEN author ELSE NULL END'
 		]);
 
 		$numTitles = $readingHistoryDB->count();
@@ -699,6 +702,39 @@ class CatalogConnection {
 		while ($readingHistoryDB->fetch()) {
 			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB);
 			$historyEntry['index'] = ++$firstIndex;
+
+			// Load individual checkout details for this grouped work
+			if ($historyEntry['timesUsed'] > 1 || $forExport) {
+				$detailRecords = [];
+				$detailQuery = new ReadingHistoryEntry();
+				$detailQuery->userId = $patron->id;
+				$detailQuery->deleted = 0;
+
+				// Match by groupedWorkPermanentId to get all records in this group.
+				// We don't filter by title/author here because those may have punctuation variations.
+				if (!empty($readingHistoryDB->groupedWorkPermanentId)) {
+					$detailQuery->groupedWorkPermanentId = $readingHistoryDB->groupedWorkPermanentId;
+				} else {
+					// For entries without a permanent ID, fall back to title and author matching
+					$detailQuery->title = $readingHistoryDB->title;
+					$detailQuery->author = $readingHistoryDB->author;
+				}
+				$detailQuery->orderBy('checkOutDate DESC');
+				$detailQuery->find();
+
+				while ($detailQuery->fetch()) {
+					$detailRecords[] = [
+						'id' => $detailQuery->id,
+						'checkOutDate' => $detailQuery->checkOutDate,
+						'checkInDate' => $detailQuery->checkInDate,
+						'format' => $detailQuery->format,
+						'source' => $detailQuery->source,
+						'sourceId' => $detailQuery->sourceId,
+					];
+				}
+				$historyEntry['detailRecords'] = $detailRecords;
+			}
+
 			$readingHistoryTitles[] = $historyEntry;
 		}
 		$timer->logTime("Loaded " . count($readingHistoryTitles) . " titles from the reading history");

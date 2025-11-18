@@ -3545,7 +3545,14 @@ class User extends DataObject {
 				$yearEnd = strtotime(($year + 1) . '-01-01');
 				$readingHistoryDB->whereAdd("checkOutDate >= $yearStart");
 				$readingHistoryDB->whereAdd("checkOutDate < $yearEnd");
-				$readingHistoryDB->groupBy('groupedWorkPermanentId, title, author');
+				// Group by groupedWorkPermanentId to consolidate entries with the same work
+				// but different title/author punctuation variations. For NULL permanent IDs,
+				// we need to also group by title and author to prevent unrelated items from merging.
+				$readingHistoryDB->groupBy([
+					'groupedWorkPermanentId',
+					'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
+					'CASE WHEN groupedWorkPermanentId IS NULL THEN author ELSE NULL END'
+				]);
 				return $readingHistoryDB->count();
 			}
 		}
@@ -3726,7 +3733,14 @@ class User extends DataObject {
 					$readingHistoryDB = new ReadingHistoryEntry();
 					$readingHistoryDB->userId = $this->id;
 					$readingHistoryDB->whereAdd('deleted = 0');
-					$readingHistoryDB->groupBy('groupedWorkPermanentId, title, author');
+					// Group by groupedWorkPermanentId to consolidate entries with the same work
+					// but different title/author punctuation variations. For NULL permanent IDs,
+					// we need to also group by title and author to prevent unrelated items from merging.
+					$readingHistoryDB->groupBy([
+						'groupedWorkPermanentId',
+						'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
+						'CASE WHEN groupedWorkPermanentId IS NULL THEN author ELSE NULL END'
+					]);
 					$this->_readingHistorySize = $readingHistoryDB->count();
 					$timer->logTime("Updated reading history size");
 				} else {
