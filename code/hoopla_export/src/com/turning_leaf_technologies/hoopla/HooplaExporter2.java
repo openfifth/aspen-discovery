@@ -162,6 +162,8 @@ public class HooplaExporter2 {
 
 	private static boolean cleanOrphanRecords() {
 		int numDeleted = 0;
+		logEntry.addNote("Starting to clean orphan records");
+		logEntry.saveResults();
 		PreparedStatement getOrphanEntitlementsStmt = null;
 		ResultSet orphanEntitlementsRS = null;
 		try {
@@ -203,6 +205,8 @@ public class HooplaExporter2 {
 			logEntry.addNote("Deleted " + numDeleted + " orphan entitlements");
 			logEntry.saveResults();
 		}
+		logEntry.addNote("Finished cleaning orphan records");
+		logEntry.saveResults();
 		return numDeleted > 0;
 	}
 
@@ -275,6 +279,8 @@ public class HooplaExporter2 {
 	}
 
 	private static boolean flushRecordsToReindex() {
+		logEntry.addNote("Starting to flush records to reindex");
+		logEntry.saveResults();
 		if (titlesNeedingReindex.isEmpty()) {
 			return false;
 		}
@@ -518,6 +524,8 @@ public class HooplaExporter2 {
 				if (curHour == indexingTime){
 					if (lastUpdateOfChangedRecords >= startOfTodaySeconds) {
 						logger.warn("Already completed today's global content extraction at " + indexingTime + ". Skipping until tomorrow.");
+						logEntry.addNote("Already completed today's global content extraction at " + indexingTime + ". Skipping until tomorrow.");
+						logEntry.saveResults();
 						return false;
 					}
 					//Set the last update time to 32 hours ago (go bigger to get more updates)
@@ -718,7 +726,10 @@ public class HooplaExporter2 {
 		} catch (SQLException e) {
 			logEntry.incErrors("Error updating settings timestamp", e);
 		}
-
+		if (!hasUpdates) {
+			logEntry.addNote("No updates found in library entitlements extraction");
+			logEntry.saveResults();
+		}
 		return hasUpdates;
 	}
 
