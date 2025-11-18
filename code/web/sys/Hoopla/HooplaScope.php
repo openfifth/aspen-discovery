@@ -114,7 +114,7 @@ class HooplaScope extends DataObject {
 		];
 
 		// Legacy Hoopla v1 columns
-		if (self::isHooplaVersion2()) {
+		if (!self::isHooplaVersion2()) {
 			$structure['includeInstant'] = [
 				'property' => 'includeInstant',
 				'type' => 'checkbox',
