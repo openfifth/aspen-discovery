@@ -8104,87 +8104,86 @@ class MyAccount_AJAX extends JSON_Action {
 	/** @noinspection PhpUnused */
 	function eventRegistrationModal() : array {
 		$eventUrl = $_REQUEST['regLink'];
-		if (isset($_REQUEST['vendor'])) {
-			$vendor = $_REQUEST['vendor'];
-			$body = "";
-			global $library;
-			require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
-			$libraryEventSettings = new LibraryEventsSetting();
-			$libraryEventSettings->settingSource = $vendor;
-			$libraryEventSettings->libraryId = $library->libraryId;
-			if ($libraryEventSettings->find(true)) {
-				if ($vendor == 'communico') {
-					require_once ROOT_DIR . '/sys/Events/CommunicoSetting.php';
-					$communicoSettings = new CommunicoSetting();
-					$communicoSettings->id = $libraryEventSettings->settingId;
-					if ($communicoSettings->find(true)) {
-						$body = $communicoSettings->registrationModalBody;
-					}
-				} else if ($vendor == 'springshare') {
-					require_once ROOT_DIR . '/sys/Events/SpringshareLibCalSetting.php';
-					$springshareSettings = new SpringshareLibCalSetting();
-					$springshareSettings->id = $libraryEventSettings->settingId;
-					if ($springshareSettings->find(true)) {
-						$body = $springshareSettings->registrationModalBody;
-					}
-				} else if ($vendor == 'library_market') {
-					require_once ROOT_DIR . '/sys/Events/LMLibraryCalendarSetting.php';
-					$libraryMarketSettings = new LMLibraryCalendarSetting();
-					$libraryMarketSettings->id = $libraryEventSettings->settingId;
-					if ($libraryMarketSettings->find(true)) {
-						$body = $libraryMarketSettings->registrationModalBody;
-					}
-				} else if ($vendor == 'assabet') {
-					require_once ROOT_DIR . '/sys/Events/AssabetSetting.php';
-					$assabetSettings = new AssabetSetting();
-					$assabetSettings->id = $libraryEventSettings->settingId;
-					if ($assabetSettings->find(true)) {
-						$body = $assabetSettings->registrationModalBody;
-					}
-				}
-			}
+		$result =  [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Registration Information',
+				'isPublicFacing' => true,
+			]),
+			'buttons' => '<a href="' . $eventUrl . '" class="btn btn-primary" target="_blank" aria-label="' . translate([
+					'text' => 'Go to Registration',
+					'isPublicFacing' => true,
+					'inAttribute' => true
+				]) . ' (' . translate([
+					'text' => 'opens in a new window',
+					'isPublicFacing' => true,
+					'inAttribute' => true
+				]) . ')"><i class="fas fa-external-link-alt" role="presentation"></i> ' . translate([
+					'text' => 'Go to Registration',
+					'isPublicFacing' => true,
+				]) . '</a>',
+		];
 
-			return [
-				'success' => true,
-				'title' => translate([
-					'text' => 'Registration Information',
-					'isPublicFacing' => true,
-				]),
-				'body' => $body,
-				'buttons' => '<a href="' . $eventUrl . '" class="btn btn-primary" target="_blank" aria-label="' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ' (' . translate([
-						'text' => 'opens in a new window',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ')"><i class="fas fa-external-link-alt" role="presentation"></i> ' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-					]) . '</a>',
-			];
-		} else {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Registration Information',
-					'isPublicFacing' => true,
-				]),
-				'buttons' => '<a href="' . $eventUrl . '" class="btn btn-primary" target="_blank" aria-label="' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ' (' . translate([
-						'text' => 'opens in a new window',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ')"><i class="fas fa-external-link-alt" role="presentation"></i> ' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-					]) . '</a>',
-			];
+		if (!isset($_REQUEST['vendor'])) {
+			return $result;
 		}
+
+		$vendor = $_REQUEST['vendor'];
+		$body = "";
+
+		global $library;
+		require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
+		$libraryEventSettings = new LibraryEventsSetting();
+		$libraryEventSettings->settingSource = $vendor;
+		$libraryEventSettings->libraryId = $library->libraryId;
+		if (!$libraryEventSettings->find(true)) {
+			return $result;
+		}
+		if ($vendor == 'communico') {
+			require_once ROOT_DIR . '/sys/Events/CommunicoSetting.php';
+			$communicoSettings = new CommunicoSetting();
+			$communicoSettings->id = $libraryEventSettings->settingId;
+			if ($communicoSettings->find(true)) {
+				$body = $communicoSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'springshare') {
+			require_once ROOT_DIR . '/sys/Events/SpringshareLibCalSetting.php';
+			$springshareSettings = new SpringshareLibCalSetting();
+			$springshareSettings->id = $libraryEventSettings->settingId;
+			if ($springshareSettings->find(true)) {
+				$body = $springshareSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'library_market') {
+			require_once ROOT_DIR . '/sys/Events/LMLibraryCalendarSetting.php';
+			$libraryMarketSettings = new LMLibraryCalendarSetting();
+			$libraryMarketSettings->id = $libraryEventSettings->settingId;
+			if ($libraryMarketSettings->find(true)) {
+				$body = $libraryMarketSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'assabet') {
+			require_once ROOT_DIR . '/sys/Events/AssabetSetting.php';
+			$assabetSettings = new AssabetSetting();
+			$assabetSettings->id = $libraryEventSettings->settingId;
+			if ($assabetSettings->find(true)) {
+				$body = $assabetSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'aspenEvents') {
+			require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+			$aspenEventSettings = new AspenEventSetting();
+			$aspenEventSettings->id = $libraryEventSettings->settingId;
+			if (!$aspenEventSettings->find(true)) {
+				return $result;
+			}
+			$body = $aspenEventSettings->registrationModalBody;
+			
+			global $interface;
+			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
+		}
+
+		$result['success'] = true;
+		$result['body'] = $body;
+
+		return $result;
 	}
 
 	/** @noinspection PhpUnused */
