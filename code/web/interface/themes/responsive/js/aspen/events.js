@@ -734,6 +734,16 @@ AspenDiscovery.Events = (function(){
 			}else{
 				AspenDiscovery.Events.saveEventsObjCallback();
 			}
+		},
+
+		lessEventDates: function() {
+			document.getElementById("moreEventDates").style.display = "block";
+			document.getElementById("narrowGroupHidden_eventDates").style.display = "none";
+		},
+
+		moreEventDates: function() {
+			document.getElementById("moreEventDates").style.display = "none";
+			document.getElementById("narrowGroupHidden_eventDates").style.display = "block";
 		}
 	};
 }(AspenDiscovery.Events || {}));
