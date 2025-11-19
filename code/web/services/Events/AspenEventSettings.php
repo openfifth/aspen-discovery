@@ -18,7 +18,7 @@ class Events_AspenEventSettings extends ObjectEditor {
 	}
 
 	function getPageTitle(): string {
-		return 'Aspen Event Settings';
+		return 'Primary Aspen Events Configuration';
 	}
 
 	function getAllObjects($page, $recordsPerPage): array {
