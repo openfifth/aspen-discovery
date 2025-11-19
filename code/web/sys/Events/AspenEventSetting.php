@@ -59,6 +59,14 @@ class AspenEventSetting extends DataObject {
 		return self::$_objectStructure[$context];
 	}
 
+	public function getRegistrationModalBody(): string {
+		if (!$this->registrationModalBody || $this->registrationModalBody == ""){
+			global $interface;
+			return $interface->fetch('AspenEvents/registrationModalBody.tpl');
+		} 
+		return $this->registrationModalBody;
+	}
+
 	/**
 	 * Override the update functionality to save related objects
 	 *
