@@ -459,12 +459,9 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		$eventSettings = new AspenEventSetting;
 		$eventSettings->id = $this->getSource();
 		if (!$eventSettings->find(true)){
-			return null;
+			return "Aspen Events are not configured";
 		}
-		if (empty($eventSettings->registrationModalBody)){
-			return null;
-		} 
-		return $eventSettings->registrationModalBody;
+		return $eventSettings->getRegistrationModalBody();
 	}
 
 	public function getSummaryInformation() {
