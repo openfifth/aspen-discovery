@@ -88,10 +88,11 @@ class ReadingHistoryEntry extends DataObject {
 		$existingEntry->userId = $this->userId;
 		$existingEntry->source = $this->source;
 		$existingEntry->sourceId = $this->sourceId;
+		$existingEntry->checkOutDate = $this->checkOutDate;
 		$existingEntry->deleted = 0;
 		if ($existingEntry->find(true)) {
 			global $logger;
-			$logger->log("Skipping duplicate reading history entry for userId=$this->userId, source=$this->source, sourceId=$this->sourceId", Logger::LOG_DEBUG);
+			$logger->log("Skipping duplicate reading history entry for userId=$this->userId, source=$this->source, sourceId=$this->sourceId, checkOutDate=$this->checkOutDate", Logger::LOG_DEBUG);
 			return false;
 		}
 

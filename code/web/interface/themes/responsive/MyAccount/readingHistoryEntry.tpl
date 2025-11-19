@@ -60,14 +60,27 @@
 						<div class="result-label col-tn-3">{translate text='Format' isPublicFacing=true}</div>
 						<div class="result-value col-tn-9 reading-history-formats">
 							{if is_array($record.format)}
-								{foreach from=$record.format item=formatItem name=formatLoop}
+								{assign var="uniqueFormats" value=array()}
+								{foreach from=$record.format item=formatItem}
+									{if !in_array($formatItem, $uniqueFormats)}
+										{append var="uniqueFormats" value=$formatItem}
+									{/if}
+								{/foreach}
+								{foreach from=$uniqueFormats item=formatItem name=formatLoop}
 									<span class="format-chip">{translate text=$formatItem isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
 								{/foreach}
 							{else}
 								{if !empty($record.format)}
 									{assign var="formatArray" value=","|explode:$record.format}
-									{foreach from=$formatArray item=formatItem name=formatLoop}
-										<span class="format-chip">{translate text=$formatItem|trim isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
+									{assign var="uniqueFormats" value=array()}
+									{foreach from=$formatArray item=formatItem}
+										{assign var="trimmedFormat" value=$formatItem|trim}
+										{if !in_array($trimmedFormat, $uniqueFormats)}
+											{append var="uniqueFormats" value=$trimmedFormat}
+										{/if}
+									{/foreach}
+									{foreach from=$uniqueFormats item=formatItem name=formatLoop}
+										<span class="format-chip">{translate text=$formatItem isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
 									{/foreach}
 								{/if}
 							{/if}
@@ -116,7 +129,7 @@
 
 			<div class="col-xs-12 col-md-3">
 				<div class="btn-group btn-group-vertical btn-block">
-					<a href="#" onclick="return AspenDiscovery.Account.ReadingHistory.deleteEntry('{$selectedUser}', '{$record.id}');" class="btn btn-sm btn-primary">{translate text='Delete' isPublicFacing=true}</a>
+					<a href="#" onclick='return AspenDiscovery.Account.ReadingHistory.deleteGroupedEntry("{$selectedUser}", "{$record.permanentId}", "{$record.title|escape:"javascript"}", "{$record.author|escape:"javascript"}", "{$record.id}");' class="btn btn-sm btn-primary">{translate text='Delete' isPublicFacing=true}</a>
 				</div>
 				{if !empty($showYouMightAlsoLike)}
 					{if !$record.isIll}
@@ -145,11 +158,12 @@
 											<th>{translate text="Return Date" isPublicFacing=true}</th>
 											<th>{translate text="Format" isPublicFacing=true}</th>
 											<th>{translate text="Source ID" isPublicFacing=true}</th>
+											<th class="text-center">{translate text="Actions" isPublicFacing=true}</th>
 										</tr>
 									</thead>
 									<tbody>
 										{foreach from=$record.detailRecords item=detail}
-											<tr>
+											<tr id="readingHistoryDetailEntry{$detail.id}">
 												<td>
 													{if is_numeric($detail.checkOutDate)}
 														{$detail.checkOutDate|date_format:"%b %d, %Y"}
@@ -168,12 +182,17 @@
 														{/if}
 													{/if}
 												</td>
-												<td>{translate text=$detail.format isPublicFacing=true}</td>
+												<td>{$detail.format|replace:',':', '}</td>
 												<td>
 													{if $detail.source != 'ils'}
 														<span class="text-muted">{$detail.source}:</span>
 													{/if}
 													{$detail.sourceId}
+												</td>
+												<td class="text-center">
+													<a href="#" onclick='return AspenDiscovery.Account.ReadingHistory.deleteIndividualEntry("{$selectedUser}", "{$detail.id}", "{$record.id}");' class="btn btn-xs btn-danger" title="{translate text='Delete this checkout' isPublicFacing=true inAttribute=true}">
+														<i class="fa fa-trash"></i>
+													</a>
 												</td>
 											</tr>
 										{/foreach}

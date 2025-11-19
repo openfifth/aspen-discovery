@@ -90,6 +90,101 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			return false;
 		},
 
+		deleteGroupedEntry(patronId, groupedWorkPermanentId, title, author, displayId) {
+			AspenDiscovery.confirm(
+				'Delete Reading History Entry',
+				'All checkout records for this title will be irreversibly deleted from your reading history. Proceed?',
+				'Delete',
+				'Cancel',
+				true,
+				`AspenDiscovery.Account.ReadingHistory.doDeleteGroupedEntry(&quot;${patronId}&quot;, &quot;${groupedWorkPermanentId}&quot;, &quot;${title}&quot;, &quot;${author}&quot;, &quot;${displayId}&quot;)`,
+				'btn-danger'
+			);
+
+			return false;
+		},
+
+		doDeleteGroupedEntry(patronId, groupedWorkPermanentId, title, author, displayId) {
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			const params = {
+				method: 'deleteGroupedReadingHistoryEntry',
+				patronId,
+				groupedWorkPermanentId,
+				title,
+				author
+			};
+
+			$.getJSON(url, params)
+				.done((data) => {
+					if (data.success) {
+						$(`#readingHistoryEntry${displayId}`).fadeOut();
+						AspenDiscovery.showMessage(data.title, data.message, true);
+					} else {
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
+					}
+				})
+			.fail(AspenDiscovery.ajaxFail);
+
+			return false;
+		},
+
+		deleteIndividualEntry(patronId, entryId, groupId) {
+			AspenDiscovery.confirm(
+				'Delete Checkout Record',
+				'This checkout record will be irreversibly deleted from your reading history. Proceed?',
+				'Delete',
+				'Cancel',
+				true,
+				`AspenDiscovery.Account.ReadingHistory.doDeleteIndividualEntry(&quot;${patronId}&quot;, &quot;${entryId}&quot;, &quot;${groupId}&quot;)`,
+				'btn-danger'
+			);
+
+			return false;
+		},
+
+		doDeleteIndividualEntry(patronId, entryId, groupId) {
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			const params = {
+				method: 'deleteReadingHistoryEntry',
+				patronId,
+				entryId
+			};
+
+			$.getJSON(url, params)
+				.done((data) => {
+					if (data.success) {
+						// Remove the individual row from the details table
+						$(`#readingHistoryDetailEntry${entryId}`).fadeOut(function() {
+							$(this).remove();
+
+							// Check if there are any remaining detail rows for this group
+							const remainingRows = $(`#readingHistoryDetails${groupId} tbody tr:visible`).length;
+
+							if (remainingRows === 0) {
+								// If no rows left, hide the entire grouped entry
+								$(`#readingHistoryEntry${groupId}`).fadeOut();
+							} else {
+								// Update the "checked out X times" count
+								const countText = remainingRows === 1 ? 'Checked out 1 time' : `Checked out ${remainingRows} times`;
+								$(`#readingHistoryEntry${groupId} .reading-history-count-text`).text(countText);
+
+								// If only one remains, hide the details section and count badge
+								if (remainingRows === 1) {
+									$(`#readingHistoryDetails${groupId}`).collapse('hide');
+									$(`#readingHistoryEntry${groupId} .reading-history-meta`).hide();
+								}
+							}
+						});
+						AspenDiscovery.showMessage(data.title, data.message, true);
+					} else {
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
+					}
+				})
+			.fail(AspenDiscovery.ajaxFail);
+
+			return false;
+		},
+
 		deleteSelectedAction() {
 			const selectedItems = $('.titleSelect:checked');
 			if (selectedItems.length === 0) {
