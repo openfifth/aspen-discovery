@@ -444,17 +444,14 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return true;
 	}
 
-	public function getRegistrationModalBody(): string|null {
+	public function getRegistrationModalBody(): string {
 		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
 		$eventSettings = new AspenEventSetting;
 		$eventSettings->id = $this->getSource();
 		if (!$eventSettings->find(true)){
-			return null;
+			return "Aspen Events are not configured";
 		}
-		if (empty($eventSettings->registrationModalBody)){
-			return null;
-		} 
-		return $eventSettings->registrationModalBody;
+		return $eventSettings->getRegistrationModalBody();
 	}
 
 	public function getSummaryInformation() {
