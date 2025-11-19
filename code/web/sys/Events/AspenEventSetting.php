@@ -59,6 +59,10 @@ class AspenEventSetting extends DataObject {
 		return self::$_objectStructure[$context];
 	}
 
+	public function getRegistrationModalBody(): string|null {
+		return empty($this->registrationModalBody) ? null : $this->registrationModalBody;
+	}
+
 	/**
 	 * Override the update functionality to save related objects
 	 *
