@@ -8174,8 +8174,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if (!$aspenEventSettings->find(true)) {
 				return $result;
 			}
-			$body = $aspenEventSettings->registrationModalBody;
-			
+			$body = $aspenEventSettings->getRegistrationModalBody() ?? '';
 			global $interface;
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
 		}
