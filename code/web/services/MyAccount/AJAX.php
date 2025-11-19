@@ -8183,6 +8183,8 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$body = $aspenEventSettings->getRegistrationModalBody() ?? '';
 			global $interface;
+			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
+			$interface->assign('userId', UserAccount::getActiveUserId());
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
 		}
 
@@ -8341,6 +8343,71 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		}
 
+		return $result;
+	}
+
+	function registerUserToEvent(): array {
+		$eventInstanceId = $_REQUEST['eventInstanceId'];
+		$userId = $_REQUEST['userId'];
+
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Event or User information is missing.',
+				'isPublicFacing' => true
+			]),
+		];
+
+		if (!$eventInstanceId || !$userId) {
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		$user = new User();
+		$user->id = $userId;
+		if(!$user->find(true)) {
+			$result['message']['text'] = 'User not found';
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate([
+				'text' => 'Event not found.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+		if($registration->isUserRegisteredForEvent()) {
+			$result['message'] = translate([
+				'text' => 'You are already registered for this event.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		$registration->insert();
+
+		$result['success'] = true;
+		$result['title'] = translate([
+			'text' => 'Registration Information',
+			'isPublicFacing' => true,
+		]);
+		$result['message'] = translate([
+			'text' => 'Registration successful.',
+			'isPublicFacing' => true
+		]);
 		return $result;
 	}
 
