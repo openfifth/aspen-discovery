@@ -92,6 +92,9 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
 
+	//Series display
+	public $numSeriesToShowBeforeMore;
+
 	private $_moreDetailsOptions;
 
 	// Use this to set which details will be shown in the Main Details section of the record in the search results.
@@ -708,6 +711,16 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'Selected details will be shown in the main details section of a record on a search results page.',
 						'listStyle' => 'checkboxSimple',
 						'values' => self::$searchResultsMainDetailsOptions,
+					],
+					'numSeriesToShowBeforeMore' => [
+						'property' => 'numSeriesToShowBeforeMore',
+						'type' => 'integer',
+						'label' => 'Number of Series to Show Before "More Series" Link',
+						'description' => 'The number of series entries to display before showing the &quot;More Series...&quot; link. Default is 3.',
+						'default' => 3,
+						'min' => 1,
+						'max' => 6,
+						'hideInLists' => true,
 					],
 					'alwaysShowSearchResultsMainDetails' => [
 						'property' => 'alwaysShowSearchResultsMainDetails',

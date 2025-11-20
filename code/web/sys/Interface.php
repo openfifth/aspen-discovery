@@ -692,6 +692,7 @@ class UInterface extends Smarty {
 			$this->assign('showStandardReviews', $groupedWorkDisplaySettings->showStandardReviews);
 			$this->assign('showRelatedRecordLabels', $groupedWorkDisplaySettings->showRelatedRecordLabels);
 			$this->assign('showEditionCovers', $groupedWorkDisplaySettings->showEditionCovers);
+			$this->assign('numSeriesToShowBeforeMore', $groupedWorkDisplaySettings->numSeriesToShowBeforeMore);
 		} else { // library only
 			$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 			$this->assign('showFavorites', $library->showFavorites);
@@ -707,6 +708,7 @@ class UInterface extends Smarty {
 			$this->assign('showStandardReviews', $groupedWorkDisplaySettings->showStandardReviews);
 			$this->assign('showRelatedRecordLabels', $groupedWorkDisplaySettings->showRelatedRecordLabels);
 			$this->assign('showEditionCovers', $groupedWorkDisplaySettings->showEditionCovers);
+			$this->assign('numSeriesToShowBeforeMore', $groupedWorkDisplaySettings->numSeriesToShowBeforeMore);
 		}
 		if ($showStaffView == 2) {
 			$showStaffView = UserAccount::isStaff();

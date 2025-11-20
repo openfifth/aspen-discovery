@@ -1507,12 +1507,27 @@ AspenDiscovery.Admin = (function () {
 
 			return false;
 		},
-		updateGroupedWorkDisplayFields: function () {
-			var showSearchTools = $('#showSearchTools');
+		updateGroupedWorkDisplayFields() {
+			const showSearchTools = $('#showSearchTools');
 			if (showSearchTools.is(":checked")) {
 				$("#propertyRowshowSearchToolsAtTop").show();
 			} else {
 				$("#propertyRowshowSearchToolsAtTop").hide();
+			}
+
+			const showSeriesSelection = $('#showInSearchResultsMainDetails_showSeries');
+			const showSeriesSelected = showSeriesSelection.is(":checked");
+			if (showSeriesSelected) {
+				$("#propertyRownumSeriesToShowBeforeMore").show();
+			} else {
+				$("#propertyRownumSeriesToShowBeforeMore").hide();
+			}
+
+			if (!showSeriesSelection.data('listener-attached')) {
+				showSeriesSelection.on('change', function() {
+					AspenDiscovery.Admin.updateGroupedWorkDisplayFields();
+				});
+				showSeriesSelection.data('listener-attached', true);
 			}
 		},
 		initializeFormatSort: function () {
