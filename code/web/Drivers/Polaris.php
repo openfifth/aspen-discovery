@@ -2952,14 +2952,13 @@ class Polaris extends AbstractIlsDriver {
 
 		$encodedBody = json_encode($body);
 		$response = $this->getWebServiceResponse($polarisUrl, 'POST', '', $encodedBody);
-		// Sanitize User Defined Fields in the log
 		$dataToSanitize = [];
-//		for ($i = 1; $i <= 5; $i++) {
-//			$bodyProperty = 'User' . $i;
-//			if (isset($body->$bodyProperty)) {
-//				$dataToSanitize[$bodyProperty] = $body->$bodyProperty;
-//			}
-//		}
+		for ($i = 1; $i <= 5; $i++) {
+			$bodyProperty = 'User' . $i;
+			if (isset($body->$bodyProperty)) {
+				$dataToSanitize[$bodyProperty] = $body->$bodyProperty;
+			}
+		}
 		ExternalRequestLogEntry::logRequest('polaris.selfRegister', 'POST', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), $encodedBody, $this->lastResponseCode, $response, $dataToSanitize);
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResult = json_decode($response);
