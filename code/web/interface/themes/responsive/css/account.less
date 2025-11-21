@@ -256,6 +256,7 @@
 .reading-history-details {
   margin-top: 1em;
   animation: slideDown 0.3s ease-out;
+  overflow: hidden;
 
   .panel {
     margin-bottom: 0;
@@ -274,6 +275,11 @@
     border-bottom: 2px solid;
     padding-bottom: 0.5em;
   }
+}
+
+.reading-history-details.collapse {
+  display: block;
+  height: 0;
 }
 
 @keyframes slideDown {

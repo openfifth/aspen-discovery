@@ -1,26 +1,48 @@
 AspenDiscovery.Account.ReadingHistory = (function(){
 	return {
 		initAccordions() {
-			// Initialize accordion toggle functionality for grouped checkouts
-			$(document).on('click', '.reading-history-toggle-details', function(e) {
-				e.preventDefault();
-				const $link = $(this);
-				const targetId = $link.data('target');
-				const $target = $('#' + targetId);
+			const updateToggleLabel = ($link, isExpanded) => {
+				$link.attr('aria-expanded', isExpanded);
+				const textNode = $link.contents().filter(function() {
+					return this.nodeType === 3;
+				}).first();
 
-				if ($target.length) {
-					// Toggle the collapse
-					$target.collapse('toggle');
-
-					// Update aria-expanded and text
-					const isExpanded = $link.attr('aria-expanded') === 'true';
-					$link.attr('aria-expanded', !isExpanded);
-
-					// Update text (CSS handles chevron rotation via aria-expanded)
-					const newText = isExpanded ? 'Show Details' : 'Hide Details';
-					$link.contents().first().replaceWith(newText + ' ');
+				const newText = isExpanded ? 'Hide Details' : 'Show Details';
+				if (textNode.length) {
+					textNode[0].nodeValue = `${newText} `;
+				} else {
+					$link.prepend(`${newText} `);
 				}
-			});
+			};
+
+			$(document)
+				.off('click.readingHistory', '.reading-history-toggle-details')
+				.on('click.readingHistory', '.reading-history-toggle-details', function(e) {
+					e.preventDefault();
+					const $link = $(this);
+					const targetId = $link.data('target');
+					const $target = $('#' + targetId);
+
+					if ($target.length) {
+						const shouldExpand = !$target.hasClass('in');
+						$target.collapse(shouldExpand ? 'show' : 'hide');
+						updateToggleLabel($link, shouldExpand);
+					}
+				});
+
+			$(document)
+				.off('shown.bs.collapse.readingHistory hidden.bs.collapse.readingHistory', '.reading-history-details')
+				.on('shown.bs.collapse.readingHistory hidden.bs.collapse.readingHistory', '.reading-history-details', function(e) {
+					const targetId = $(this).attr('id');
+					if (!targetId) {
+						return;
+					}
+					const isExpanded = e.type === 'shown';
+					const $link = $(`.reading-history-toggle-details[data-target="${targetId}"]`);
+					if ($link.length) {
+						updateToggleLabel($link, isExpanded);
+					}
+				});
 		},
 
 		toggleSelectionMode() {

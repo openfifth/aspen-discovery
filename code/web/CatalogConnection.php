@@ -652,7 +652,7 @@ class CatalogConnection {
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
-		$readingHistoryDB->whereAdd('deleted =  0'); //Only show titles that have not been deleted
+		$readingHistoryDB->whereAdd('deleted =  0');
 		if (!empty($filter)) {
 			$escapedFilter = $readingHistoryDB->escape('%' . $filter . '%');
 			$readingHistoryDB->whereAdd("title LIKE $escapedFilter OR author LIKE $escapedFilter OR format LIKE $escapedFilter");
@@ -681,7 +681,7 @@ class CatalogConnection {
 		}
 		// Group by groupedWorkPermanentId to consolidate entries with the same work
 		// but different title/author punctuation variations. For NULL permanent IDs,
-		// we need to also group by title and author to prevent unrelated items from merging.
+		// group by title and author to prevent unrelated items from merging.
 		$readingHistoryDB->groupBy([
 			'groupedWorkPermanentId',
 			'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
@@ -703,37 +703,33 @@ class CatalogConnection {
 			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB);
 			$historyEntry['index'] = ++$firstIndex;
 
-			// Load individual checkout details for this grouped work
-			if ($historyEntry['timesUsed'] > 1 || $forExport) {
-				$detailRecords = [];
-				$detailQuery = new ReadingHistoryEntry();
-				$detailQuery->userId = $patron->id;
-				$detailQuery->deleted = 0;
+			$detailRecords = [];
+			$detailQuery = new ReadingHistoryEntry();
+			$detailQuery->userId = $patron->id;
+			$detailQuery->deleted = 0;
 
-				// Match by groupedWorkPermanentId to get all records in this group.
-				// We don't filter by title/author here because those may have punctuation variations.
-				if (!empty($readingHistoryDB->groupedWorkPermanentId)) {
-					$detailQuery->groupedWorkPermanentId = $readingHistoryDB->groupedWorkPermanentId;
-				} else {
-					// For entries without a permanent ID, fall back to title and author matching
-					$detailQuery->title = $readingHistoryDB->title;
-					$detailQuery->author = $readingHistoryDB->author;
-				}
-				$detailQuery->orderBy('checkOutDate DESC');
-				$detailQuery->find();
-
-				while ($detailQuery->fetch()) {
-					$detailRecords[] = [
-						'id' => $detailQuery->id,
-						'checkOutDate' => $detailQuery->checkOutDate,
-						'checkInDate' => $detailQuery->checkInDate,
-						'format' => $detailQuery->format,
-						'source' => $detailQuery->source,
-						'sourceId' => $detailQuery->sourceId,
-					];
-				}
-				$historyEntry['detailRecords'] = $detailRecords;
+			// Match by groupedWorkPermanentId to get all records in this group.
+			if (!empty($readingHistoryDB->groupedWorkPermanentId)) {
+				$detailQuery->groupedWorkPermanentId = $readingHistoryDB->groupedWorkPermanentId;
+			} else {
+				// For entries without a permanent ID, fall back to title and author matching.
+				$detailQuery->title = $readingHistoryDB->title;
+				$detailQuery->author = $readingHistoryDB->author;
 			}
+			$detailQuery->orderBy('checkOutDate DESC');
+			$detailQuery->find();
+
+			while ($detailQuery->fetch()) {
+				$detailRecords[] = [
+					'id' => $detailQuery->id,
+					'checkOutDate' => $detailQuery->checkOutDate,
+					'checkInDate' => $detailQuery->checkInDate,
+					'format' => $detailQuery->format,
+					'source' => $detailQuery->source,
+					'sourceId' => $detailQuery->sourceId,
+				];
+			}
+			$historyEntry['detailRecords'] = $detailRecords;
 
 			$readingHistoryTitles[] = $historyEntry;
 		}

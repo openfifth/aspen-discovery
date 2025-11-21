@@ -114,11 +114,13 @@
 					{/if}
 				{/if}
 
-				{* Show checkout count badge and details toggle if multiple checkouts *}
-				{if !empty($record.timesUsed) && $record.timesUsed > 1}
+				{* Show checkout count badge and details toggle *}
+				{if !empty($record.detailRecords)}
 					<div class="row reading-history-meta">
 						<div class="col-xs-12">
-							<span class="reading-history-count-text">{translate text="Checked out %1% times" 1=$record.timesUsed isPublicFacing=true}</span>
+							{if !empty($record.timesUsed) && $record.timesUsed > 1}
+								<span class="reading-history-count-text">{translate text="Checked out %1% times" 1=$record.timesUsed isPublicFacing=true}</span>
+							{/if}
 							<a href="#" class="reading-history-toggle-details" data-target="readingHistoryDetails{$record.id}" aria-expanded="false">
 								{translate text="Show Details" isPublicFacing=true} <i class="fa fa-chevron-down"></i>
 							</a>
@@ -143,8 +145,8 @@
 			</div>
 		</div>
 
-		{* Accordion section for multiple checkouts *}
-		{if !empty($record.detailRecords) && $record.timesUsed > 1}
+		{* Accordion section for checkout history *}
+		{if !empty($record.detailRecords)}
 			<div class="row reading-history-details collapse" id="readingHistoryDetails{$record.id}">
 				<div class="col-xs-12">
 					<div class="panel panel-default">
