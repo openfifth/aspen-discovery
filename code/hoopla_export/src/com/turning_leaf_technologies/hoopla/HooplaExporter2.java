@@ -351,44 +351,6 @@ public class HooplaExporter2 {
 		return true;
 	}
 
-/*
-	// TO DO, This will need to be upated with new global content? do we still need to delete items?
-	private static void deleteItems(String hooplaType) {
-		int numDeleted = 0;
-		try {
-			for (HooplaTitle hooplaTitle : existingRecords.values()) {
-				if (hooplaTitle.getHooplaType().equalsIgnoreCase(hooplaType) && !hooplaTitle.isFoundInExport() && hooplaTitle.isActive()) {
-					deleteHooplaItemStmt.setLong(1, hooplaTitle.getId());
-					deleteHooplaItemStmt.executeUpdate();
-					RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("hoopla", Long.toString(hooplaTitle.getHooplaId()));
-
-					if (hooplaType.equalsIgnoreCase("Flex")){
-						PreparedStatement deleteFlexAvailabilityStmt = aspenConn.prepareStatement("DELETE from hoopla_flex_availability where hooplaId = ?");
-						deleteFlexAvailabilityStmt.setLong(1, hooplaTitle.getHooplaId());
-						deleteFlexAvailabilityStmt.executeUpdate();
-					}
-
-					if (result.reindexWork){
-						getGroupedWorkIndexer().processGroupedWork(result.permanentId);
-					}else if (result.deleteWork){
-						//Delete the work from solr and the database
-						getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
-					}
-					existingRecords.remove(hooplaTitle.getHooplaId());
-					numDeleted++;
-					logEntry.incDeleted();
-				}
-			}
-			if (numDeleted > 0) {
-				logEntry.saveResults();
-				logger.warn("Deleted " + numDeleted + " old " + hooplaType + " titles");
-			}
-		}catch (SQLException e) {
-			logger.error("Error deleting " + hooplaType + " items", e);
-			logEntry.addNote("Error deleting " + hooplaType + " items " + e);
-		}
-	}*/
-
 	private static void loadExistingTitles() {
 		try {
 			if (existingRecords == null) existingRecords = new HashMap<>();
@@ -579,7 +541,6 @@ public class HooplaExporter2 {
 
 			while (startToken != null) {
 				String paginationUrl = url + "&startToken=" + startToken;
-//				logger.error("url:" + paginationUrl);
 				response = NetworkUtils.getURL(paginationUrl, logger, headers);
 				if (response.isSuccess()) {
 					JSONObject responseJSON = new JSONObject(response.getMessage());
@@ -779,7 +740,6 @@ public class HooplaExporter2 {
 
 		while (startToken != null) {
 			String paginationUrl = url + "&startToken=" + startToken;
-			logger.error("entitlement url: " + paginationUrl);
 			WebServiceResponse response = NetworkUtils.getURL(paginationUrl, logger, headers);
 
 			if (response.isSuccess()) {

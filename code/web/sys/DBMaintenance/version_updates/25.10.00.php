@@ -1,8 +1,7 @@
 <?php
 
 /** @noinspection PhpUnused */
-function getUpdates25_10_00(): array
-{
+function getUpdates25_10_00(): array {
 	return [
 		/*'name' => [
 			 'title' => '',

@@ -495,25 +495,6 @@ class HooplaProcessor2 {
 					hooplaRecord.addItem(itemInfo);
 
 				}
-/*
-					if (okToAdd) {
-						ScopingInfo scopingInfo = itemInfo.addScope(scope);
-						groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
-						if (scope.isLibraryScope()) {
-							scopingInfo.setLibraryOwned(true);
-							scopingInfo.setLocallyOwned(true);
-						} else {
-							scopingInfo.setLocallyOwned(true);
-							Scope libraryScope = scope.getLibraryScope();
-							if (libraryScope != null) {
-								ScopingInfo libraryScopingInfo = itemInfo.addScope(libraryScope);
-								groupedWork.addScopingInfo(libraryScope.getScopeName(), libraryScopingInfo);
-								libraryScopingInfo.setLibraryOwned(true);
-							}
-						}
-						hooplaRecord.addItem(itemInfo);
-					}
-				}*/
 			}
 			productRS.close();
 		}catch (NullPointerException e) {
