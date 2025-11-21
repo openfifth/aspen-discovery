@@ -1518,8 +1518,10 @@ AspenDiscovery.Admin = (function () {
 			const showSeriesSelection = $('#showInSearchResultsMainDetails_showSeries');
 			const showSeriesSelected = showSeriesSelection.is(":checked");
 			if (showSeriesSelected) {
+				$("#propertyRowshowIndexedSeriesWithNoveList").show();
 				$("#propertyRownumSeriesToShowBeforeMore").show();
 			} else {
+				$("#propertyRowshowIndexedSeriesWithNoveList").hide();
 				$("#propertyRownumSeriesToShowBeforeMore").hide();
 			}
 

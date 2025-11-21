@@ -23,6 +23,14 @@ function getUpdates25_12_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'grouped_work_display_settings_showIndexedSeriesWithNoveList' => [
+			'title' => 'Grouped Work Display Settings - Add Show Indexed Series with NoveList',
+			'description' => 'Add showIndexedSeriesWithNoveList field to grouped_work_display_settings table to control whether indexed series are displayed alongside NoveList or manual override series.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showIndexedSeriesWithNoveList TINYINT(1) DEFAULT 0",
+			]
+		],
 		'grouped_work_display_settings_numSeriesToShowBeforeMore' => [
 			'title' => 'Grouped Work Display Settings - Add Number of Series to Show Before "More Series" Link',
 			'description' => 'Add numSeriesToShowBeforeMore field to grouped_work_display_settings table to configure the number of series entries displayed before showing "More Series..." link.',

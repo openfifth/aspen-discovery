@@ -93,6 +93,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showCopiesForPeriodicalsWithNoItems;
 
 	//Series display
+	public $showIndexedSeriesWithNoveList;
 	public $numSeriesToShowBeforeMore;
 
 	private $_moreDetailsOptions;
@@ -711,6 +712,14 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'Selected details will be shown in the main details section of a record on a search results page.',
 						'listStyle' => 'checkboxSimple',
 						'values' => self::$searchResultsMainDetailsOptions,
+					],
+					'showIndexedSeriesWithNoveList' => [
+						'property' => 'showIndexedSeriesWithNoveList',
+						'type' => 'checkbox',
+						'label' => 'Show Indexed Series with NoveList/Manual Override Series',
+						'description' => 'When checked, indexed series from MARC records will be displayed alongside NoveList or manually overridden series. When unchecked, only the NoveList or manual override series will be shown.',
+						'default' => 0,
+						'hideInLists' => true,
 					],
 					'numSeriesToShowBeforeMore' => [
 						'property' => 'numSeriesToShowBeforeMore',
