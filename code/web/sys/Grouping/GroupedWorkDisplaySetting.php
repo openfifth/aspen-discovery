@@ -9,7 +9,7 @@ require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
 /**
  * Class GroupedWorkDisplaySetting
  * Stores information about display settings for Grouped Work searches and full records,
- * so they can be configured once and applied to different libraries and locations
+ * so they can be configured once and applied to different libraries and locations.
  */
 class GroupedWorkDisplaySetting extends DataObject {
 	public $__table = 'grouped_work_display_settings';
@@ -20,10 +20,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	public $sortOwnedEditionsFirst;
 
-	//Processing search
+	// Processing search
 	public $applyNumberOfHoldingsBoost;
 
-	//Search Results Display
+	// Search Results Display
 	public $showSearchTools;
 	public $showSearchToolsAtTop;
 	public $showQuickCopy;
@@ -33,10 +33,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showRelatedRecordLabels;
 	public $showEditionCovers;
 
-	//Contents of search
+	// Contents of search
 	public $includeOutOfSystemExternalLinks;
 
-	//Availability Toggles
+	// Availability Toggles
 	public $availabilityToggleLabelSuperScope;
 	public $availabilityToggleLabelLocal;
 	public $availabilityToggleLabelAvailable;
@@ -45,7 +45,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $baseAvailabilityToggleOnLocalHoldingsOnly;
 	public $includeOnlineMaterialsInAvailableToggle;
 
-	//Faceting
+	// Faceting
 	public $includeAllRecordsInShelvingFacets;
 	public $includeAllRecordsInDateAddedFacets;
 	public $facetCountsToShow;
@@ -56,7 +56,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $formatSortingGroupId;
 	public $eContentSortingGroupId;
 
-	//Enrichment
+	// Enrichment
 	public $showStandardReviews;
 	public $showGoodReadsReviews;
 	public $preferSyndeticsSummary;
@@ -64,11 +64,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showSimilarAuthors;
 	public $showRatings; // User Ratings
 	public $showComments; // User Reviews switch
-	public $hideCommentsWithBadWords; //tinyint(4)
+	public $hideCommentsWithBadWords;
 
-	//Full record display
+	// Full record display
 	public $show856LinksAsTab;
-//	public $show856LinksAsAccessOnlineButtons;
 	public $showCheckInGrid;
 	public $showStaffView;
 	public $showLCSubjects; // Library of Congress Subjects
@@ -78,7 +77,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showInMainDetails;
 	public $preferIlsDescription;
 
-	//search options
+	// Search options
 	public $searchSpecVersion;
 	public $limitBoosts;
 	public $maxTotalBoost;
@@ -86,13 +85,13 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $maxFormatBoost;
 	public $maxHoldingsBoost;
 
-	//Item details
+	// Item details
 	public $showItemDueDates;
 	public $showItemNotes;
 	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
 
-	//Series display
+	// Series display
 	public $showIndexedSeriesWithNoveList;
 	public $numSeriesToShowBeforeMore;
 
