@@ -87,7 +87,7 @@
 						<li>{translate text="End Date: " isPublicFacing=true}{$recordDriver->getEndDate()|format_date_locale:'long':'short'}</li>
 					{else}
 						<li>{translate text="Date: " isPublicFacing=true}{$recordDriver->getStartDate()|format_date_locale:'full'}</li>
-						<li>{translate text="Time: " isPublicFacing=true}{$recordDriver->getStartDate()|date_format:"%l:%M %p"} to {$recordDriver->getEndDate()|date_format:"%l:%M %p"}</li>
+						<li>{translate text="Time: " isPublicFacing=true}{$recordDriver->getStartDate()|format_time_range_locale:$recordDriver->getEndDate()}</li>
 					{/if}
 					<li>{translate text="Branch: " isPublicFacing=true}{$recordDriver->getBranch()}</li>
 					{if !empty($recordDriver->getRoom())}
