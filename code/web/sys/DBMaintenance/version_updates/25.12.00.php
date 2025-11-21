@@ -22,6 +22,13 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE library ADD COLUMN allowChangingPickupLocationForUnavailableHolds TINYINT(1) DEFAULT 1',
 			]
 		], //library_options_to_disable_pickup_locations
+		'increase_hoopla_status_field' => [
+			'title' => 'Increase Hoopla Status Field Length',
+			'description' => 'Increase Hooopla Status Field Length',
+			'sql' => [
+				'ALTER TABLE hoopla_flex_availability CHANGE COLUMN status status VARCHAR(20) NOT NULL'
+			]
+		], //increase_hoopla_status_field
 		
 		//kirstien - Grove
 
