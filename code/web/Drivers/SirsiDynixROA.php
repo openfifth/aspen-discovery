@@ -1337,7 +1337,7 @@ class SirsiDynixROA extends HorizonAPI {
 				$curHold->cancelable = !in_array(strtoupper($curHold->status), ['SUSPENDED', 'EXPIRED', 'INSHIPPING', 'INTRANSIT', 'ILL_WYLD', 'ILLSHIPPED']);
 
 				$curHold->frozen = strcasecmp($curHold->status, 'Suspended') == 0;
-				$curHold->canFreeze = true;
+				$curHold->canFreeze = $patron->getHomeLibrary()->allowFreezeHolds;
 				$curHold->locationUpdateable = true;
 				if (in_array(strtoupper($curHold->status), ['TRANSIT', 'EXPIRED', 'INSHIPPING', 'ILL WYLD', 'ILLPENDING', 'ILLSHIPPED'])) {
 					$curHold->locationUpdateable = false;

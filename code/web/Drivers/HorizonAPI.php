@@ -331,7 +331,7 @@ abstract class HorizonAPI extends AbstractIlsDriver {
 				$curHold['reactivateTime'] = strtotime($reactivateDate);
 				$curHold['cancelable'] = strcasecmp($curHold['status'], 'Suspended') != 0;
 				$curHold['frozen'] = strcasecmp($curHold['status'], 'Suspended') == 0;
-				$curHold['canFreeze'] = true;
+				$curHold['canFreeze'] = $patron->getHomeLibrary()->allowFreezeHolds;
 				if (strcasecmp($curHold['status'], 'Transit') == 0) {
 					$curHold['canFreeze'] = false;
 				}

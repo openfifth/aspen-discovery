@@ -566,9 +566,10 @@ class MillenniumHolds {
 					$matches = [];
 					$curHold->frozen = false;
 					if (preg_match('/<input.*name="freeze(.*?)"\\s*(\\w*)\\s*\/>/', $sCols[$i], $matches)) {
-						$curHold->canFreeze = true;
+						$curHold->canFreeze = $patron->getHomeLibrary()->allowFreezeHolds;
 						if (strlen($matches[2]) > 0) {
 							$curHold->frozen = true;
+							$curHold->canFreeze = true; //Let the patron thaw it if frozen
 							if ($curHold->status == 'Pending') {
 								$curHold->status = 'Frozen';
 							} else {
