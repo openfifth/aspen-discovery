@@ -366,9 +366,17 @@ class Events_Calendar extends Action {
 						}
 						$endDate = new DateTime($result['end_date']);
 						$endDate->setTimezone($defaultTimezone);
-						$formattedTime .= '<span class="end-time"> - ' . date_format($endDate, "h:iA") . "</span>";
+
 						if (($endDate->getTimestamp() - $startDate->getTimestamp()) > 24 * 60 * 60) {
 							$formattedTime = 'All day';
+						} else {
+							$timeRange = DateUtils::formatTimeRange($startDate, $endDate, '12');
+							$parts = explode(' - ', $timeRange, 2);
+							if (count($parts) === 2) {
+								$formattedTime = $parts[0] . '<span class="end-time"> - ' . $parts[1] . '</span>';
+							} else {
+								$formattedTime = $timeRange;
+							}
 						}
 						$isCancelled = false;
 						if (array_key_exists('reservation_state', $result) && in_array('Cancelled', $result['reservation_state'])) {
