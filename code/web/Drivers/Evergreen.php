@@ -61,7 +61,7 @@ class Evergreen extends AbstractIlsDriver {
 						$checkout = new Checkout();
 						$checkout->type = 'ils';
 						$checkout->source = $this->getIndexingProfile()->name;
-						$checkout->sourceId = $mappedCheckout['target_copy'];
+						$checkout->sourceId = $mappedRecord['doc_id'];
 						$checkout->userId = $patron->id;
 						$checkout->itemId = $mappedCopy['id'];
 						$checkout->barcode = $mappedCopy['barcode'];
@@ -111,15 +111,14 @@ class Evergreen extends AbstractIlsDriver {
 				$curCheckout->type = 'ils';
 				$curCheckout->source = $this->getIndexingProfile()->name;
 
-				$curCheckout->sourceId = $mappedCheckout['target_copy'];
-				$curCheckout->userId = $patron->id;
-
 				$modsForCopy = null;
 				if (!empty($mappedCheckout['target_copy'])) {
 					$modsForCopy = $this->getModsForCopy($mappedCheckout['target_copy']);
 
 					$curCheckout->recordId = $modsForCopy['doc_id'];
+					$curCheckout->sourceId = $modsForCopy['doc_id'];
 				}
+				$curCheckout->userId = $patron->id;
 				$curCheckout->itemId = $mappedCheckout['target_copy'];
 
 				$curCheckout->dueDate = strtotime($mappedCheckout['due_date']);
