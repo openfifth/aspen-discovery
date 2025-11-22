@@ -159,7 +159,9 @@
 											<th>{translate text="Checkout Date" isPublicFacing=true}</th>
 											<th>{translate text="Return Date" isPublicFacing=true}</th>
 											<th>{translate text="Format" isPublicFacing=true}</th>
-											<th>{translate text="Source ID" isPublicFacing=true}</th>
+											{if $showDebuggingInformation}
+												<th>{translate text="Source ID" isPublicFacing=true}</th>
+											{/if}
 											<th class="text-center">{translate text="Actions" isPublicFacing=true}</th>
 										</tr>
 									</thead>
@@ -185,12 +187,12 @@
 													{/if}
 												</td>
 												<td>{$detail.format|replace:',':', '}</td>
-												<td>
-													{if $detail.source != 'ils'}
+												{if $showDebuggingInformation}
+													<td>
 														<span class="text-muted">{$detail.source}:</span>
-													{/if}
-													{$detail.sourceId}
-												</td>
+														{$detail.sourceId}
+													</td>
+												{/if}
 												<td class="text-center">
 													<a href="#" onclick='return AspenDiscovery.Account.ReadingHistory.deleteIndividualEntry("{$selectedUser}", "{$detail.id}", "{$record.id}");' class="btn btn-xs btn-danger" title="{translate text='Delete this checkout' isPublicFacing=true inAttribute=true}">
 														<i class="fa fa-trash"></i>

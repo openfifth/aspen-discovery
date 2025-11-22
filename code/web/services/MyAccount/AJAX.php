@@ -4337,6 +4337,9 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 		$showCovers = $this->setShowCovers();
 
+		require_once ROOT_DIR . '/sys/IP/IPAddress.php';
+		$interface->assign('showDebuggingInformation', IPAddress::showDebuggingInformation());
+
 		$result = [
 			'success' => false,
 			'message' => translate([

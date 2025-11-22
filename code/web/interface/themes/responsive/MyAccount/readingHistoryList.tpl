@@ -72,7 +72,7 @@
 								<div class="input-group">
 									<input aria-label="{translate text="Filter Reading History" inAttribute=true isPublicFacing=true}" type="text" class="form-control" name="readingHistoryFilter" id="readingHistoryFilter" value="{$readingHistoryFilter}"/>
 									<span class="input-group-btn">
-										<button type="submit" class="btn btn-default" onclick="return AspenDiscovery.Account.loadReadingHistory($('#patronId').val(),$('#sortMethod option:selected').val(), 1,undefined, $('#readingHistoryFilter').val())">{translate text="Filter" isPublicFacing=true}</button>
+										<button type="submit" class="btn btn-default" onclick="return AspenDiscovery.Account.loadReadingHistory($('#patronId').val(),$('#sortMethod option:selected').val(), 1,undefined, $('#readingHistoryFilter').val())"><span class="glyphicon glyphicon-search" aria-hidden="true"></span><span class="sr-only">{translate text="Filter" isPublicFacing=true}</span></button>
 										{if !empty($readingHistoryFilter)}
 											<button type="submit" class="btn btn-default" onclick="return AspenDiscovery.Account.loadReadingHistory($('#patronId').val(),$('#sortMethod option:selected').val(), 1,undefined, '')">{translate text="Clear" isPublicFacing=true}</button>
 										{/if}

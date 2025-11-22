@@ -258,19 +258,41 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 				.fail(AspenDiscovery.ajaxFail);
 		},
 
-		deleteAllAction(){
-			if (confirm('Your entire reading history will be irreversibly deleted.  Proceed?')){
-				$('#readingHistoryAction').val('deleteAll');
-				$('#readingListForm').trigger('submit');
-			}
+		deleteAllAction() {
+			AspenDiscovery.confirm(
+				'Delete All Reading History',
+				'Your entire reading history will be irreversibly deleted. Proceed?',
+				'Delete All',
+				'Cancel',
+				true,
+				'AspenDiscovery.Account.ReadingHistory.doDeleteAllAction()',
+				'btn-danger'
+			);
 			return false;
 		},
 
-		optOutAction: function (){
-			if (confirm('Opting out of Reading History will also delete your entire reading history irreversibly.  Proceed?')){
-				$('#readingHistoryAction').val('optOut');
-				$('#readingListForm').trigger('submit');
-			}
+		doDeleteAllAction() {
+			$('#readingHistoryAction').val('deleteAll');
+			$('#readingListForm').trigger('submit');
+			return false;
+		},
+
+		optOutAction() {
+			AspenDiscovery.confirm(
+				'Opt Out of Reading History',
+				'Opting out of Reading History will also delete your entire reading history irreversibly. Proceed?',
+				'Opt Out',
+				'Cancel',
+				true,
+				'AspenDiscovery.Account.ReadingHistory.doOptOutAction()',
+				'btn-danger'
+			);
+			return false;
+		},
+
+		doOptOutAction() {
+			$('#readingHistoryAction').val('optOut');
+			$('#readingListForm').trigger('submit');
 			return false;
 		},
 
