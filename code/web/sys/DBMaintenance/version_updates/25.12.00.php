@@ -80,6 +80,14 @@ function getUpdates25_12_00(): array {
 				WHERE l.selfRegistrationSuccessMessage IS NOT NULL AND l.selfRegistrationSuccessMessage <> '' AND existing.id IS NULL AND lang.code NOT IN ('ubb','pig')"
 			]
 		], //library_self_reg_success_message_translations
+		'reading_history_add_barcode' => [
+			'title' => 'Reading History - Add Barcode Field',
+			'description' => 'Add barcode column to user_reading_history_work table to store item barcode for historical checkouts.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS barcode VARCHAR(50) DEFAULT NULL AFTER sourceId",
+			]
+		],
 
 		//alexander - Open Fifth
 

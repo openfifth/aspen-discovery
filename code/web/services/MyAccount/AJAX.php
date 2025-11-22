@@ -4386,16 +4386,16 @@ class MyAccount_AJAX extends JSON_Action {
 
 			$interface->assign('sortOptions', $sortOptions);
 			$interface->assign('defaultSortOption', $selectedSortOption);
-			$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+			$page = $_REQUEST['page'] ?? 1;
 			$interface->assign('page', $page);
 
 			$recordsPerPage = 20;
 			$interface->assign('curPage', $page);
 
-			$filter = isset($_REQUEST['readingHistoryFilter']) ? $_REQUEST['readingHistoryFilter'] : '';
+			$filter = $_REQUEST['readingHistoryFilter'] ?? '';
 			$interface->assign('readingHistoryFilter', $filter);
 
-			$result = $patron->getReadingHistory($page, $recordsPerPage, $selectedSortOption, $filter, false);
+			$result = $patron->getReadingHistory($page, $recordsPerPage, $selectedSortOption, $filter);
 
 			$link = $_SERVER['REQUEST_URI'];
 			if (preg_match('/[&?]page=/', $link)) {

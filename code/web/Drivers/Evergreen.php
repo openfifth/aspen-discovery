@@ -117,6 +117,19 @@ class Evergreen extends AbstractIlsDriver {
 
 					$curCheckout->recordId = $modsForCopy['doc_id'];
 					$curCheckout->sourceId = $modsForCopy['doc_id'];
+
+					$copyRequest = 'service=open-ils.pcrud&method=open-ils.pcrud.retrieve.acp';
+					$copyRequest .= '&param=' . json_encode($authToken);
+					$copyRequest .= '&param=' . $mappedCheckout['target_copy'];
+					$copyResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $copyRequest);
+					ExternalRequestLogEntry::logRequest('evergreen.loadCheckoutData.getCopy', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $copyRequest, $this->apiCurlWrapper->getResponseCode(), $copyResponse, []);
+					if ($this->apiCurlWrapper->getResponseCode() == 200) {
+						$copyDecoded = json_decode($copyResponse);
+						if (isset($copyDecoded->payload[0])) {
+							$mappedCopy = $this->mapEvergreenFields($copyDecoded->payload[0]->__p, $this->fetchIdl('acp'));
+							$curCheckout->barcode = $mappedCopy['barcode'] ?? null;
+						}
+					}
 				}
 				$curCheckout->userId = $patron->id;
 				$curCheckout->itemId = $mappedCheckout['target_copy'];
@@ -918,6 +931,9 @@ class Evergreen extends AbstractIlsDriver {
 						foreach ($circHistoryDecoded->payload as $circEntry) {
 							$circEntryMapped = $this->mapEvergreenFields($circEntry->__p, $this->fetchIdl('auch'));
 							$curTitle = [];
+							// The code block at the bottom that finds the Grouped Work of these records is unnecessary
+							// if loadCheckoutData is invoked, which is the common case, so skip them for optimization.
+							$curTitle['needToFindGroupedWork'] = false;
 							require_once ROOT_DIR . '/sys/User/Checkout.php';
 							if (empty($circEntryMapped['source_circ'])) {
 								$modsForCopy = $this->getModsForCopy($circEntryMapped['target_copy']);
@@ -926,10 +942,25 @@ class Evergreen extends AbstractIlsDriver {
 										$modsForCopy['doc_id'] = strval($modsForCopy['doc_id']);
 									}
 									$curTitle['id'] = $modsForCopy['doc_id'];
-									$curTitle['shortId'] = $modsForCopy['doc_id'];
-									$curTitle['recordId'] = $modsForCopy['doc_id'];
+									$curTitle['sourceId'] = $modsForCopy['doc_id'];
 									$curTitle['title'] = $modsForCopy['title'];
 									$curTitle['author'] = $modsForCopy['author'];
+									$copyRequest = 'service=open-ils.pcrud&method=open-ils.pcrud.retrieve.acp';
+									$copyRequest .= '&param=' . json_encode($authToken);
+									$copyRequest .= '&param=' . $circEntryMapped['target_copy'];
+									$copyResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $copyRequest);
+									ExternalRequestLogEntry::logRequest('evergreen.getReadingHistory.getCopy', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $copyRequest, $this->apiCurlWrapper->getResponseCode(), $copyResponse, []);
+									if ($this->apiCurlWrapper->getResponseCode() == 200) {
+										$copyDecoded = json_decode($copyResponse);
+										if (isset($copyDecoded->payload[0])) {
+											$mappedCopy = $this->mapEvergreenFields($copyDecoded->payload[0]->__p, $this->fetchIdl('acp'));
+											$curTitle['barcode'] = $mappedCopy['barcode'] ?? null;
+										} else {
+											$curTitle['barcode'] = null;
+										}
+									} else {
+										$curTitle['barcode'] = null;
+									}
 									require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 									$marcRecordDriver = new MarcRecordDriver($modsForCopy['doc_id']);
 									if ($marcRecordDriver->isValid()) {
@@ -945,6 +976,7 @@ class Evergreen extends AbstractIlsDriver {
 									} else {
 										$curTitle['checkin'] = null;
 									}
+									$curTitle['needToFindGroupedWork'] = true;
 								} else {
 									continue;
 								}
@@ -952,8 +984,8 @@ class Evergreen extends AbstractIlsDriver {
 								$checkout = $this->loadCheckoutData($patron, $circEntryMapped['source_circ'], $authToken);
 								if ($checkout != null) {
 									$curTitle['id'] = $checkout->recordId;
-									$curTitle['shortId'] = $checkout->recordId;
-									$curTitle['recordId'] = $checkout->recordId;
+									$curTitle['sourceId'] = $checkout->recordId;
+									$curTitle['barcode'] = $checkout->barcode ?: null;
 									$curTitle['title'] = $checkout->title;
 									$curTitle['author'] = $checkout->author;
 									$curTitle['format'] = $checkout->format;
@@ -983,29 +1015,29 @@ class Evergreen extends AbstractIlsDriver {
 		global $aspen_db;
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		foreach ($readingHistoryTitles as $key => $historyEntry) {
-			//Get additional information from resources table
+//			if (!$historyEntry['needToFindGroupedWork']) {
+//				unset($historyEntry['needToFindGroupedWork']);
+//				continue;
+//			}
 			$historyEntry['ratingData'] = null;
 			$historyEntry['permanentId'] = null;
 			$historyEntry['linkUrl'] = null;
 			$historyEntry['coverUrl'] = null;
-			if (!empty($historyEntry['recordId'])) {
+			if (!empty($historyEntry['sourceId'])) {
 				if ($systemVariables->storeRecordDetailsInDatabase) {
 					/** @noinspection SqlResolve */
 					$getRecordDetailsQuery = 'SELECT permanent_id, indexed_format.format FROM grouped_work_records
 								  LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
 								  LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
 								  LEFT JOIN indexed_format on formatId = indexed_format.id
-								  where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['recordId']);
+								  where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['sourceId']);
 					$results = $aspen_db->query($getRecordDetailsQuery, PDO::FETCH_ASSOC);
 					if ($results) {
 						$result = $results->fetch();
 						if ($result) {
 							$groupedWorkDriver = new GroupedWorkDriver($result['permanent_id']);
 							if ($groupedWorkDriver->isValid()) {
-								$historyEntry['ratingData'] = $groupedWorkDriver->getRatingData();
 								$historyEntry['permanentId'] = $groupedWorkDriver->getPermanentId();
-								$historyEntry['linkUrl'] = $groupedWorkDriver->getLinkUrl();
-								$historyEntry['coverUrl'] = $groupedWorkDriver->getBookcoverUrl('medium', true);
 								$historyEntry['format'] = $result['format'];
 								$historyEntry['title'] = $groupedWorkDriver->getTitle();
 								$historyEntry['author'] = $groupedWorkDriver->getPrimaryAuthor();
@@ -1014,12 +1046,9 @@ class Evergreen extends AbstractIlsDriver {
 					}
 				} else {
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 					if ($recordDriver->isValid()) {
-						$historyEntry['ratingData'] = $recordDriver->getRatingData();
 						$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-						$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-						$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 						$historyEntry['format'] = $recordDriver->getFormats();
 						$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
 					}

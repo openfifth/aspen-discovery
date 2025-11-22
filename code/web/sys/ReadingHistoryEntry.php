@@ -8,6 +8,7 @@ class ReadingHistoryEntry extends DataObject {
 	public $groupedWorkPermanentId;
 	public $source;
 	public $sourceId;
+	public $barcode;
 	public $title;
 	public $author;
 	public $format;
@@ -88,6 +89,7 @@ class ReadingHistoryEntry extends DataObject {
 		$existingEntry->userId = $this->userId;
 		$existingEntry->source = $this->source;
 		$existingEntry->sourceId = $this->sourceId;
+		$existingEntry->barcode = $this->barcode;
 		$existingEntry->checkOutDate = $this->checkOutDate;
 		$existingEntry->deleted = 0;
 		if ($existingEntry->find(true)) {

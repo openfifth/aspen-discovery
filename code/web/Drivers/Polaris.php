@@ -182,24 +182,17 @@ class Polaris extends AbstractIlsDriver {
 					$checkOutDate = $this->parsePolarisDate($readingHistoryItem->CheckOutDate);
 					$curTitle = [];
 					$curTitle['id'] = $readingHistoryItem->BibID;
-					$curTitle['shortId'] = $readingHistoryItem->BibID;
-					$curTitle['recordId'] = $readingHistoryItem->BibID;
+					$curTitle['sourceId'] = $readingHistoryItem->BibID;
+					$curTitle['barcode'] = $readingHistoryItem->Barcode;
 					$curTitle['title'] = $readingHistoryItem->Title;
 					$curTitle['author'] = $readingHistoryItem->Author;
 					$curTitle['format'] = $readingHistoryItem->FormatDescription;
 					$curTitle['checkout'] = $checkOutDate;
-					$curTitle['checkin'] = null; //Polaris doesn't indicate when things are checked in
-					$curTitle['ratingData'] = null;
-					$curTitle['permanentId'] = null;
-					$curTitle['linkUrl'] = null;
-					$curTitle['coverUrl'] = null;
+					$curTitle['checkin'] = null; // Polaris doesn't indicate when items are checked in.
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['recordId']);
+					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['sourceId']);
 					if ($recordDriver->isValid()) {
-						$curTitle['ratingData'] = $recordDriver->getRatingData();
 						$curTitle['permanentId'] = $recordDriver->getPermanentId();
-						$curTitle['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-						$curTitle['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 						$curTitle['format'] = $recordDriver->getFormats();
 						$curTitle['author'] = $recordDriver->getPrimaryAuthor();
 					}
@@ -232,7 +225,7 @@ class Polaris extends AbstractIlsDriver {
 					$curCheckout = new Checkout();
 					$curCheckout->type = 'ils';
 					$curCheckout->source = $this->getIndexingProfile()->name;
-					$curCheckout->sourceId = $itemOut->ItemID;
+					$curCheckout->sourceId = $itemOut->BibID;
 					$curCheckout->userId = $patron->id;
 
 					$curCheckout->recordId = $itemOut->BibID;

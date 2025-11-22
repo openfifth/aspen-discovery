@@ -621,7 +621,6 @@ class CatalogConnection {
 		global $offlineMode;
 		$timer->logTime("Starting to load reading history");
 
-		//Get reading history from the database unless we specifically want to load from the driver.
 		$result = [
 			'historyActive' => $patron->trackReadingHistory,
 			'titles' => [],
@@ -642,7 +641,7 @@ class CatalogConnection {
 					$patron->update();
 				}
 			}
-			//Update the reading history based on titles that the patron currently has checked out if we are on the first page.
+
 			if ($page == 1 && empty($filter)) {
 				$this->updateReadingHistoryBasedOnCurrentCheckouts($patron, false);
 				$timer->logTime("Finished updating reading history based on current checkouts");
@@ -719,6 +718,7 @@ class CatalogConnection {
 			$detailQuery->orderBy('checkOutDate DESC');
 			$detailQuery->find();
 
+			$hasBarcode = false;
 			while ($detailQuery->fetch()) {
 				$detailRecords[] = [
 					'id' => $detailQuery->id,
@@ -727,9 +727,14 @@ class CatalogConnection {
 					'format' => $detailQuery->format,
 					'source' => $detailQuery->source,
 					'sourceId' => $detailQuery->sourceId,
+					'barcode' => $detailQuery->barcode,
 				];
+				if (!empty($detailQuery->barcode)) {
+					$hasBarcode = true;
+				}
 			}
 			$historyEntry['detailRecords'] = $detailRecords;
+			$historyEntry['hasBarcode'] = $hasBarcode;
 
 			$readingHistoryTitles[] = $historyEntry;
 		}
@@ -1128,7 +1133,6 @@ class CatalogConnection {
 	 */
 	public function getHistoryEntryForDatabaseEntry(ReadingHistoryEntry $readingHistoryDB): array {
 		$historyEntry = [];
-
 		$historyEntry['id'] = $readingHistoryDB->id;
 		$historyEntry['title'] = $readingHistoryDB->title;
 		$historyEntry['author'] = $readingHistoryDB->author;
@@ -1138,17 +1142,16 @@ class CatalogConnection {
 		/** @noinspection PhpUndefinedFieldInspection */
 		$historyEntry['timesUsed'] = $readingHistoryDB->timesUsed;
 		/** @noinspection PhpUndefinedFieldInspection */
-		$historyEntry['checkedOut'] = !($readingHistoryDB->checkedOut == null);
+		$historyEntry['checkedOut'] = $readingHistoryDB->checkedOut !== null;
 		$historyEntry['permanentId'] = $readingHistoryDB->groupedWorkPermanentId;
 		$historyEntry['isIll'] = $readingHistoryDB->isIll;
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		$recordDriver = new GroupedWorkDriver($readingHistoryDB->groupedWorkPermanentId);
-
 		if ($recordDriver->isValid()) {
 			$historyEntry['recordDriver'] = $recordDriver;
 			$historyEntry['ratingData'] = $recordDriver->getRatingData();
 			$historyEntry['linkUrl'] = $recordDriver->getLinkUrl();
-			$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('small');
+			$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium');
 			$historyEntry['existsInCatalog'] = true;
 		} else {
 			$historyEntry['existsInCatalog'] = false;
@@ -1185,6 +1188,7 @@ class CatalogConnection {
 		//Note, include deleted titles here so they are not added multiple times.
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
+		$readingHistoryDB->deleted = 0; // TODO: Keep?
 		$readingHistoryDB->whereAdd('checkInDate IS NULL');
 		$readingHistoryDB->find();
 
@@ -1194,9 +1198,14 @@ class CatalogConnection {
 			$historyEntry = [];
 			$historyEntry['source'] = $readingHistoryDB->source;
 			$historyEntry['sourceId'] = $readingHistoryDB->sourceId;
+			$historyEntry['barcode'] = $readingHistoryDB->barcode ?: null;
 			$historyEntry['ids'] = [];
 			$historyEntry['ids'][] = $readingHistoryDB->id;
-			$key = strtolower($historyEntry['source'] . ':' . $historyEntry['sourceId']);
+			if (!empty($historyEntry['barcode'])) {
+				$key = strtolower($historyEntry['source'] . ':' . $historyEntry['sourceId'] . '_' . $historyEntry['barcode']);
+			} else {
+				$key = strtolower($historyEntry['source'] . ':' . $historyEntry['sourceId']);
+			}
 			if (array_key_exists($key, $activeHistoryTitles)) {
 				if (IPAddress::showDebuggingInformation()) {
 					$logger->log("Adding {$readingHistoryDB->id} to active history entry $key.", Logger::LOG_ERROR);
@@ -1210,12 +1219,16 @@ class CatalogConnection {
 			}
 		}
 
-		//Update reading history based on current checkouts.  That way it never looks out of date
-		$checkouts = $patron->getCheckouts(false, 'all');
+		$checkouts = $patron->getCheckouts(false);
 		foreach ($checkouts as $checkout) {
 			$source = $checkout->source;
 			$sourceId = $checkout->sourceId;
-			$key = strtolower($source . ':' . $sourceId);
+			$barcode = $checkout->barcode;
+			if (!empty($barcode)) {
+				$key = strtolower($source . ':' . $sourceId . '_' . $barcode);
+			} else {
+				$key = strtolower($source . ':' . $sourceId);
+			}
 			if (array_key_exists($key, $activeHistoryTitles)) {
 				unset($activeHistoryTitles[$key]);
 			} else {
@@ -1230,10 +1243,10 @@ class CatalogConnection {
 
 				$historyEntryDB->source = $source;
 				$historyEntryDB->sourceId = $sourceId;
-				$historyEntryDB->title = StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true);
-				$historyEntryDB->author = isset($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
-				$historyEntryDB->format = substr($checkout->format, 0, 50);
-				$historyEntryDB->checkOutDate = time();
+				$historyEntryDB->title = !empty($checkout->title) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true) : "";
+				$historyEntryDB->author = !empty($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
+				$historyEntryDB->format = substr($checkout->format ?? "", 0, 50);
+				$historyEntryDB->checkOutDate = $checkout->checkoutDate ?? time();
 				$historyEntryDB->costSavings = $checkout->getReplacementCost();
 				if (!$historyEntryDB->insert()) {
 					global $logger;

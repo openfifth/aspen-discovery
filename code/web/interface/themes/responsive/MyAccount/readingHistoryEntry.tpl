@@ -159,6 +159,9 @@
 											<th>{translate text="Checkout Date" isPublicFacing=true}</th>
 											<th>{translate text="Return Date" isPublicFacing=true}</th>
 											<th>{translate text="Format" isPublicFacing=true}</th>
+											{if !empty($record.hasBarcode)}
+												<th>{translate text="Barcode" isPublicFacing=true}</th>
+											{/if}
 											{if $showDebuggingInformation}
 												<th>{translate text="Source ID" isPublicFacing=true}</th>
 											{/if}
@@ -187,6 +190,15 @@
 													{/if}
 												</td>
 												<td>{$detail.format|replace:',':', '}</td>
+												{if !empty($record.hasBarcode)}
+													<td>
+														{if !empty($detail.barcode)}
+															{$detail.barcode}
+														{else}
+															<span class="text-muted">-</span>
+														{/if}
+													</td>
+												{/if}
 												{if $showDebuggingInformation}
 													<td>
 														<span class="text-muted">{$detail.source}:</span>

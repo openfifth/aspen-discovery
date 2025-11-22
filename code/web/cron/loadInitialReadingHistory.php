@@ -112,9 +112,10 @@ foreach ($usersToProcess as $userId) {
 					foreach ($result['titles'] as $title) {
 						$userReadingHistoryEntry = new ReadingHistoryEntry();
 						$userReadingHistoryEntry->userId = $user->id;
-						$userReadingHistoryEntry->groupedWorkPermanentId = $title['permanentId'];
+						$userReadingHistoryEntry->groupedWorkPermanentId = $title['permanentId'] ?? null;
 						$userReadingHistoryEntry->source = $catalog->accountProfile->recordSource;
-						$userReadingHistoryEntry->sourceId = $title['recordId'];
+						$userReadingHistoryEntry->sourceId = $title['sourceId'];
+						$userReadingHistoryEntry->barcode = $title['barcode'] ?? null;
 						$userReadingHistoryEntry->title = substr($title['title'], 0, 150);
 						$userReadingHistoryEntry->author = substr($title['author'], 0, 75);
 						$userReadingHistoryEntry->format = $title['format'];
@@ -133,7 +134,11 @@ foreach ($usersToProcess as $userId) {
 						}
 
 						$userReadingHistoryEntry->deleted = 0;
-						$userReadingHistoryEntry->insert();
+						if (!$userReadingHistoryEntry->insert()) {
+							//$cronLogEntry->numErrors++;
+							//$cronLogEntry->notes .= "<br/>Error inserting reading history entry for user $user->id: " . $userReadingHistoryEntry->getLastError();
+							//$errorCount++;
+						}
 					}
 
 				}

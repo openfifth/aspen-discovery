@@ -1462,6 +1462,9 @@ class CarlX extends AbstractIlsDriver {
 		}
 	}
 
+	/**
+	 * @throws Exception
+	 */
 	public function getReadingHistory(User $patron, $page = 1, $recordsPerPage = -1, $sortOption = 'checkedOut') {
 		$homeLibrary = $patron->getHomeLibrary();
 		$readHistoryEnabledInCarlX = false;
@@ -1497,15 +1500,13 @@ class CarlX extends AbstractIlsDriver {
 						// Process Reading History Entries
 						$checkOutDate = new DateTime($readingHistoryEntry->ChargeDateTime);
 						$curTitle = [];
-						$curTitle['itemId'] = $readingHistoryEntry->ItemNumber;
 						$curTitle['id'] = $readingHistoryEntry->BID;
-						$curTitle['shortId'] = $readingHistoryEntry->BID;
-						$curTitle['recordId'] = $this->fullCarlIDfromBID($readingHistoryEntry->BID);
+						$curTitle['sourceId'] = $this->fullCarlIDfromBID($readingHistoryEntry->BID);
+						$curTitle['barcode'] = $readingHistoryEntry->ItemNumber;
 						$curTitle['title'] = rtrim($readingHistoryEntry->Title, ' /');
-						$curTitle['checkout'] = $checkOutDate->getTimestamp(); // this format is expected by Aspen Discovery's java cron program.
+						$curTitle['checkout'] = $checkOutDate->getTimestamp();
 						$curTitle['borrower_num'] = $patron->id;
-						$curTitle['dueDate'] = null; // Not available in ChargeHistoryItems
-						$curTitle['author'] = null; // Not available in ChargeHistoryItems
+						$curTitle['author'] = $readingHistoryEntry->Author;
 
 						$readingHistoryTitles[] = $curTitle;
 					}
@@ -1523,19 +1524,12 @@ class CarlX extends AbstractIlsDriver {
 					// Fetch Additional Information for each Item
 					foreach ($readingHistoryTitles as $key => $historyEntry) {
 						//Get additional information from resources table
-						$historyEntry['ratingData'] = null;
-						$historyEntry['permanentId'] = null;
-						$historyEntry['linkUrl'] = null;
-						$historyEntry['coverUrl'] = null;
 						$historyEntry['format'] = 'Unknown';
-						if (!empty($historyEntry['recordId'])) {
+						if (!empty($historyEntry['sourceId'])) {
 							require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-							$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+							$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 							if ($recordDriver->isValid()) {
-								$historyEntry['ratingData'] = $recordDriver->getRatingData();
 								$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-								$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-								$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 								$historyEntry['format'] = $recordDriver->getFormats();
 								$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
 								if (empty($curTitle['title'])) {

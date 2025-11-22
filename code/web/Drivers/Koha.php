@@ -1670,7 +1670,7 @@ class Koha extends AbstractIlsDriver {
 			//Borrowed from C4:Members.pm
 			if($this->getKohaVersion() >= 22.11) {
 				/** @noinspection SqlResolve */
-				$readingHistoryTitleSql = "SELECT issues.*,issues.renewals_count AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp,biblio.biblionumber,biblio.title, author, iType
+				$readingHistoryTitleSql = "SELECT issues.*,issues.renewals_count AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp, items.barcode, biblio.biblionumber,biblio.title, author, iType
 				FROM issues
 				LEFT JOIN items on items.itemnumber=issues.itemnumber
 				LEFT JOIN biblio ON items.biblionumber=biblio.biblionumber
@@ -1718,8 +1718,8 @@ class Koha extends AbstractIlsDriver {
 					}
 					$curTitle = [];
 					$curTitle['id'] = $readingHistoryTitleRow['biblionumber'];
-					$curTitle['shortId'] = $readingHistoryTitleRow['biblionumber'];
-					$curTitle['recordId'] = $readingHistoryTitleRow['biblionumber'];
+					$curTitle['sourceId'] = $readingHistoryTitleRow['biblionumber'];
+					$curTitle['barcode'] = $readingHistoryTitleRow['barcode'] ?: null;
 					$curTitle['title'] = $readingHistoryTitleRow['title'];
 					$curTitle['author'] = $readingHistoryTitleRow['author'];
 					$curTitle['format'] = $readingHistoryTitleRow['iType'];
@@ -1765,24 +1765,21 @@ class Koha extends AbstractIlsDriver {
 			$historyEntry['permanentId'] = null;
 			$historyEntry['linkUrl'] = null;
 			$historyEntry['coverUrl'] = null;
-			if (!empty($historyEntry['recordId'])) {
+			if (!empty($historyEntry['sourceId'])) {
 				if ($systemVariables->storeRecordDetailsInDatabase) {
 					/** @noinspection SqlResolve */
 					$getRecordDetailsQuery = 'SELECT permanent_id, indexed_format.format FROM grouped_work_records 
 								  LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
 								  LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
 								  LEFT JOIN indexed_format on formatId = indexed_format.id
-								  where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['recordId']);
+								  where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['sourceId']);
 					$results = $aspen_db->query($getRecordDetailsQuery, PDO::FETCH_ASSOC);
 					if ($results) {
 						$result = $results->fetch();
 						if ($result) {
 							$groupedWorkDriver = new GroupedWorkDriver($result['permanent_id']);
 							if ($groupedWorkDriver->isValid()) {
-								$historyEntry['ratingData'] = $groupedWorkDriver->getRatingData();
 								$historyEntry['permanentId'] = $groupedWorkDriver->getPermanentId();
-								$historyEntry['linkUrl'] = $groupedWorkDriver->getLinkUrl();
-								$historyEntry['coverUrl'] = $groupedWorkDriver->getBookcoverUrl('medium', true);
 								$historyEntry['format'] = $result['format'];
 								$historyEntry['title'] = $groupedWorkDriver->getTitle();
 								$historyEntry['author'] = $groupedWorkDriver->getPrimaryAuthor();
@@ -1791,12 +1788,9 @@ class Koha extends AbstractIlsDriver {
 					}
 				} else {
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 					if ($recordDriver->isValid()) {
-						$historyEntry['ratingData'] = $recordDriver->getRatingData();
 						$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-						$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-						$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 						$historyEntry['format'] = $recordDriver->getFormats();
 						$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
 					}

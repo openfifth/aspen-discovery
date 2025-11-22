@@ -3250,7 +3250,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		$staffSessionToken = $this->getStaffSessionToken();
 		if (!empty($staffSessionToken)) {
 			$webServiceURL = $this->getWebServiceURL();
-			$includeFields = urlEncode("keepCircHistory,circHistoryRecordList{checkInDate,checkOutDate,itemType,bib,title,author}");
+			$includeFields = urlEncode("keepCircHistory,circHistoryRecordList{checkInDate,checkOutDate,itemType,bib,title,author,barcode}");
 			$getCircHistoryUrl = $webServiceURL . '/user/patron/barcode/' . $patron->getBarcode() . '?includeFields=' . $includeFields;
 			$getCircHistoryResponse = $this->getWebServiceResponse('getReadingHistory', $getCircHistoryUrl, null, $staffSessionToken);
 			if ($getCircHistoryResponse && !isset($getCircHistoryResponse->messageList)) {
@@ -3276,18 +3276,15 @@ class SirsiDynixROA extends AbstractIlsDriver {
 						$shortId = $circEntry->fields->bib->key;
 						$bibId = 'a' . $circEntry->fields->bib->key;
 						$historyEntry['id'] = $bibId;
-						$historyEntry['shortId'] = $bibId;
-						$historyEntry['recordId'] = $bibId;
-						$historyEntry['ratingData'] = null;
-						$historyEntry['permanentId'] = null;
-						$historyEntry['linkUrl'] = null;
-						$historyEntry['coverUrl'] = null;
+						$historyEntry['sourceId'] = $bibId;
+						// TODO: Test if actually works.
+						$historyEntry['barcode'] = $circEntry->fields->barcode;
 						$historyEntry['title'] = $circEntry->fields->title;
 						$historyEntry['author'] = $circEntry->fields->author;
 						$historyEntry['format'] = $circEntry->fields->itemType->key;
 						$historyEntry['checkout'] = strtotime($circEntry->fields->checkOutDate);
 						$historyEntry['checkin'] = strtotime($circEntry->fields->checkInDate);
-						if (!empty($historyEntry['recordId'])) {
+						if (!empty($historyEntry['sourceId'])) {
 							if ($systemVariables->storeRecordDetailsInDatabase) {
 								/** @noinspection SqlResolve */
 								$getRecordDetailsQuery = 'SELECT permanent_id, indexed_format.format, recordIdentifier FROM grouped_work_records
@@ -3300,14 +3297,10 @@ class SirsiDynixROA extends AbstractIlsDriver {
 									$result = $results->fetch();
 									if ($result) {
 										$historyEntry['id'] = $result['recordIdentifier'];
-										$historyEntry['shortId'] = $result['recordIdentifier'];
-										$historyEntry['recordId'] = $result['recordIdentifier'];
+										$historyEntry['sourceId'] = $result['recordIdentifier'];
 										$groupedWorkDriver = new GroupedWorkDriver($result['permanent_id']);
 										if ($groupedWorkDriver->isValid()) {
-											$historyEntry['ratingData'] = $groupedWorkDriver->getRatingData();
 											$historyEntry['permanentId'] = $groupedWorkDriver->getPermanentId();
-											$historyEntry['linkUrl'] = $groupedWorkDriver->getLinkUrl();
-											$historyEntry['coverUrl'] = $groupedWorkDriver->getBookcoverUrl('medium', true);
 											$historyEntry['format'] = $result['format'];
 											$historyEntry['title'] = $groupedWorkDriver->getTitle();
 											$historyEntry['author'] = $groupedWorkDriver->getPrimaryAuthor();
@@ -3316,12 +3309,9 @@ class SirsiDynixROA extends AbstractIlsDriver {
 								}
 							} else {
 								require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-								$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+								$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 								if ($recordDriver->isValid()) {
-									$historyEntry['ratingData'] = $recordDriver->getRatingData();
 									$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-									$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-									$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 									$historyEntry['format'] = $recordDriver->getFormats();
 									$historyEntry['title'] = $recordDriver->getTitle();
 									$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
