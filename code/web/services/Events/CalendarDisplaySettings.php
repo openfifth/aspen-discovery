@@ -88,4 +88,17 @@ class Events_CalendarDisplaySettings extends ObjectEditor {
 	function getActiveAdminSection(): string {
 		return 'events';
 	}
+
+	function getAdditionalObjectActions(?DataObject $existingObject): array {
+		$actions = parent::getAdditionalObjectActions($existingObject);
+		/** @var CalendarDisplaySetting $existingObject */
+		if ($existingObject != null && $existingObject->id) {
+			$actions[] = [
+				'text' => 'View Calendar',
+				'url' => '/Events/Calendar',
+				'target' => '_blank',
+			];
+		}
+		return $actions;
+	}
 }
