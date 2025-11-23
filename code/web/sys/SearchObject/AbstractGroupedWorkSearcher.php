@@ -657,17 +657,17 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 				$pluralAudiencesToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->pluralAudiencesToSkip), -1, PREG_SPLIT_NO_EMPTY);;
 				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('kid', $audiencesToSkip);
 				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('kids', $pluralAudiencesToSkip);
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(kid|children|juvenile)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Juvenile');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(kid|children|juvenile)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, 'target_audience', 'Juvenile');
 				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('teen', $audiencesToSkip);
 				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('teens', $pluralAudiencesToSkip);
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(teen|young adult)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Young Adult');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(teen|young adult)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, 'target_audience', 'Young Adult');
 				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('adult', $audiencesToSkip);
 				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('adults', $pluralAudiencesToSkip);
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(adult|senior)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Adult');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(adult|senior)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, 'target_audience', 'Adult');
 			}
 			if ($searchInterpreterSettings->processFictionNonFiction) {
-				$this->checkAndApplyFacetValueToSearch($searchTerm, 'non[-\s]?fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->fictionNonFictionFacet, 'Non Fiction');
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(?<!science\s)fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->fictionNonFictionFacet, 'Fiction');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, 'non[-\s]?fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, 'literary_form', 'Non Fiction');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(?<!science\s)fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, 'literary_form', 'Fiction');
 			}
 			if ($this->automaticFacetsApplied && $searchInterpreterSettings->processAvailable) {
 				$this->checkAndApplyFacetValueToSearch($searchTerm, 'available', true, false, false, false, 'availability_toggle', 'available');

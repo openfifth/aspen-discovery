@@ -29,6 +29,14 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE hoopla_flex_availability CHANGE COLUMN status status VARCHAR(20) NOT NULL'
 			]
 		], //increase_hoopla_status_field
+		'search_interpreter_remove_custom_facets' => [
+			'title' => 'Remove Custom Facets from Search Interpreter',
+			'description' => 'Remove Custom Facets from Search Interpreter in favor of special terms',
+			'sql' => [
+				'ALTER TABLE search_interpreter_settings DROP COLUMN audienceFacet',
+				'ALTER TABLE search_interpreter_settings DROP COLUMN fictionNonFictionFacet'
+			]
+		], //search_interpreter_remove_custom_facets
 		
 		//kirstien - Grove
 
