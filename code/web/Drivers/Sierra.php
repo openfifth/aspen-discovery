@@ -561,22 +561,68 @@ class Sierra extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") : array {
+	public function optInToReadingHistoryILS(User $user): array {
+		$result = ['success' => false];
+
+		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $user->unique_ils_id . "/checkouts/history/activationStatus";
+		$requestBody = json_encode(['readingHistoryActivation' => true]);
+		$this->_postPage('sierra.optInToReadingHistory', $sierraUrl, $requestBody);
+
+		if ($this->lastResponseCode == 200 || $this->lastResponseCode == 204) {
+			$result['success'] = true;
+			$result['message'] = 'Reading history has been enabled in the ILS.';
+		} else {
+			$result['message'] = 'Failed to enable reading history in the ILS.';
+		}
+
+		return $result;
+	}
+
+	public function optOutOfReadingHistoryILS(User $user): array {
+		$result = ['success' => false];
+
+		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $user->unique_ils_id . "/checkouts/history/activationStatus";
+		$requestBody = json_encode(['readingHistoryActivation' => false]);
+		$this->_postPage('sierra.optOutOfReadingHistory', $sierraUrl, $requestBody);
+
+		if ($this->lastResponseCode == 200 || $this->lastResponseCode == 204) {
+			$result['success'] = true;
+			$result['message'] = 'Reading history has been disabled in the ILS.';
+		} else {
+			$result['message'] = 'Failed to disable reading history in the ILS.';
+		}
+
+		return $result;
+	}
+
+	public function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): ?array {
+		return match ($action) {
+			'optIn' => $this->optInToReadingHistoryILS($patron),
+			'optOut' => $this->optOutOfReadingHistoryILS($patron),
+			default => parent::doReadingHistoryAction($patron, $action, $selectedTitles),
+		};
+	}
+
+	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
 		$readingHistoryEnabled = false;
 		$patronId = $patron->unique_ils_id;
-
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patronId . "/checkouts/history/activationStatus";
-
 		$readingHistoryEnabledResponse = $this->_callUrl('sierra.getReadingHistoryStatus', $sierraUrl);
-
 		if (!empty($readingHistoryEnabledResponse)) {
 			$readingHistoryEnabled = $readingHistoryEnabledResponse->readingHistoryActivation;
 		}
-		$readingHistoryTitles = [];
+		// To preserve reading history for existing accounts in Aspen,
+		// and if the user's reading history is already enabled in Aspen,
+		// then enable it in the Sierra ILS.
+		if ($patron->trackReadingHistory && !$readingHistoryEnabled) {
+			$optInResult = $this->optInToReadingHistoryILS($patron);
+			if ($optInResult['success']) {
+				$readingHistoryEnabled = true;
+			}
+		}
 
-		//Sierra does not report reading history enabled properly so we should always get it.
-		/** @noinspection PhpBooleanCanBeSimplifiedInspection */
-		if (true || $readingHistoryEnabled) {
+		$readingHistoryTitles = [];
+		if ($readingHistoryEnabled) {
 			ini_set('memory_limit', '2G');
 			set_time_limit(0);
 
@@ -595,11 +641,20 @@ class Sierra extends AbstractIlsDriver {
 						$curTitle['id'] = $bibId;
 						$curTitle['shortId'] = "$matches[1]";
 						$curTitle['sourceId'] = $bibId;
+						$itemRecordId = $this->getIdFromSierraLink($historyEntry->item ?? null);
 						$itemInfo = $this->_callUrl('sierra.getItemInfo', $historyEntry->item);
 						$curTitle['barcode'] = $itemInfo->barcode ?: null;
-						$curTitle['checkout'] = strtotime($historyEntry->outDate);
-						// The API is almost never returning returnDate, despite the explicit field declaration.
-						$curTitle['checkin'] = strtotime($historyEntry->returnDate) ?: null;
+						$checkoutTimestamp = strtotime($historyEntry->outDate);
+						if ($checkoutTimestamp === false) {
+							$checkoutTimestamp = null;
+						}
+						$curTitle['checkout'] = $checkoutTimestamp;
+						$checkinDate = strtotime($historyEntry->returnDate) ?: null;
+						if ($checkinDate === null) {
+							// Sierra history entries often omit returnDate; try to recover from DNA using the patron/item identifiers.
+							$checkinDate = $this->getCheckinDateFromSierraDNA((int)$patronId, $itemRecordId, $checkoutTimestamp);
+						}
+						$curTitle['checkin'] = $checkinDate;
 						require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 						$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['sourceId']);
 						if ($recordDriver->isValid()) {
@@ -655,21 +710,65 @@ class Sierra extends AbstractIlsDriver {
 	}
 
 	/**
-	 * Do an update or edit of reading history information.  Current actions are:
-	 * deleteMarked
-	 * deleteAll
-	 * exportList
-	 * optOut
+	 * Look up a check-in date from Sierra DNA using circ_trans joined via record numbers.
+	 * Joins circ_trans to record_metadata to match patron and item by record_num (not internal ids),
+	 * filters to check-in transactions (op_code = 'i'), and optionally narrows to a +/-1 day window
+	 * around the checkout timestamp before returning the most recent match.
 	 *
-	 * @param User $patron
-	 * @param string $action The action to perform
-	 * @param array $selectedTitles The titles to do the action on if applicable
-	 * @return array|null
+	 * @param int $patronId Patron record number (not internal id).
+	 * @param int|null $itemId Item record number (not internal id).
+	 * @param int|null $checkoutTimestamp Checkout timestamp for narrowing the search window.
+	 * @return int|null Unix timestamp of check-in or null if not found.
 	 */
-	function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): ?array {
-		require_once ROOT_DIR . '/Drivers/marmot_inc/MillenniumReadingHistory.php';
-		$millenniumReadingHistory = new MillenniumReadingHistory($this);
-		$millenniumReadingHistory->doReadingHistoryAction($patron, $action, $selectedTitles);
+	private function getCheckinDateFromSierraDNA(int $patronId, ?int $itemId, ?int $checkoutTimestamp): ?int {
+		$sierraDnaConnection = $this->connectToSierraDNA();
+		if (!$sierraDnaConnection) {
+			global $logger;
+			$logger->log("Reading history DNA lookup failed: unable to connect to Sierra DNA.", Logger::LOG_ERROR);
+			return null;
+		}
+
+		// Only use circ_trans record_num match to avoid cross-patron results.
+		// language=PostgreSQL
+		$getReturnDateByItemNumStmt = "SELECT EXTRACT(EPOCH FROM ct.transaction_gmt) AS checkin_epoch
+			FROM sierra_view.circ_trans ct
+			JOIN sierra_view.record_metadata irm ON ct.item_record_id = irm.id AND irm.record_type_code = 'i'
+			JOIN sierra_view.record_metadata prm ON ct.patron_record_id = prm.id AND prm.record_type_code = 'p'
+			WHERE irm.record_num = $1 AND prm.record_num = $2 AND ct.op_code = 'i'";
+		$paramsByNum = [$itemId, $patronId];
+		if ($checkoutTimestamp !== null) {
+			$checkoutIsoDate = gmdate('c', $checkoutTimestamp);
+			/** @noinspection SpellCheckingInspection */
+			$getReturnDateByItemNumStmt .= " AND ct.transaction_gmt BETWEEN $3::timestamptz - interval '1 day' AND $3::timestamptz + interval '1 day'";
+			$paramsByNum[] = $checkoutIsoDate;
+		}
+		$getReturnDateByItemNumStmt .= " ORDER BY ct.transaction_gmt DESC LIMIT 1";
+		$getReturnDateByItemNumRS = pg_query_params($sierraDnaConnection, $getReturnDateByItemNumStmt, $paramsByNum);
+		if ($getReturnDateByItemNumRS !== false && pg_num_rows($getReturnDateByItemNumRS) > 0) {
+			$itemData = pg_fetch_assoc($getReturnDateByItemNumRS);
+			$timestamp = (int)$itemData['checkin_epoch'];
+			global $logger;
+			$logger->log("Reading history DNA checkin date for itemId $itemId: " . date(DATE_ATOM, $timestamp), Logger::LOG_ERROR);
+			return $timestamp;
+		}
+
+		global $logger;
+		$logger->log("Reading history DNA lookup could not find checkin date (itemId=$itemId)", Logger::LOG_ERROR);
+
+		return null;
+	}
+
+	private function getIdFromSierraLink(?string $link): ?int {
+		if ($link === null || $link === '') {
+			return null;
+		}
+		if (is_numeric($link)) {
+			return (int)$link;
+		}
+		$matches = [];
+		if (preg_match($this->urlIdRegExp, $link, $matches)) {
+			return (int)$matches[1];
+		}
 		return null;
 	}
 

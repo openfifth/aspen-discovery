@@ -5944,6 +5944,9 @@ class User extends DataObject {
 
 		if ($result['success']) {
 			$format = '';
+			$itemData = $result['itemData'] ?? [];
+			$itemIdFromResult = $itemData['itemId'] ?? null;
+			$itemBarcodeFromResult = $itemData['barcode'] ?? null;
 			//Get the item for the barcode
 			/** @var SearchObject_AbstractGroupedWorkSearcher $searcher */
 			$searcher = SearchObjectFactory::initSearchObject();
@@ -5954,7 +5957,7 @@ class User extends DataObject {
 				// Get all the related records, use for covers since we don't need actions
 				foreach ($groupedWorkDriver->getRelatedRecords(true) as $record) {
 					foreach ($record->getItems() as $item) {
-						if ($item->itemId == $result['itemData']['itemId'] || $item->itemId == $result['itemData']['barcode']) {
+						if (($itemIdFromResult && $item->itemId == $itemIdFromResult) || ($itemBarcodeFromResult && $item->itemId == $itemBarcodeFromResult)) {
 							$format = $record->getFormat();
 							break;
 						}
@@ -5966,8 +5969,8 @@ class User extends DataObject {
 			require_once ROOT_DIR . '/sys/AspenLiDA/SelfCheckCompletionMessage.php';
 			$selfCheckCompletionMessage = new SelfCheckCompletionMessage();
 			$escapedFormat = $selfCheckCompletionMessage->escape($format);
-			$escapedOwningLocationCode = $selfCheckCompletionMessage->escape($result['itemData']['owningLocationCode']);
-			$escapedCheckoutLocationCode = $selfCheckCompletionMessage->escape($result['itemData']['checkoutLocationCode']);
+			$escapedOwningLocationCode = $selfCheckCompletionMessage->escape($itemData['owningLocationCode'] ?? '');
+			$escapedCheckoutLocationCode = $selfCheckCompletionMessage->escape($itemData['checkoutLocationCode'] ?? '');
 			$selfCheckCompletionMessage->whereAdd("$escapedFormat REGEXP formats");
 			$selfCheckCompletionMessage->whereAdd("$escapedOwningLocationCode REGEXP owningLocations");
 			$selfCheckCompletionMessage->whereAdd("$escapedCheckoutLocationCode REGEXP checkoutLocations");
