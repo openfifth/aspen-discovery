@@ -55,10 +55,10 @@
 					</div>
 				{/if}
 
-				{if !empty($record.format)}
-					<div class="row">
-						<div class="result-label col-tn-3">{translate text='Format' isPublicFacing=true}</div>
-						<div class="result-value col-tn-9 reading-history-formats">
+				<div class="row">
+					<div class="result-label col-tn-3">{translate text='Format' isPublicFacing=true}</div>
+					<div class="result-value col-tn-9 reading-history-formats">
+						{if !empty($record.format)}
 							{if is_array($record.format)}
 								{assign var="uniqueFormats" value=array()}
 								{foreach from=$record.format item=formatItem}
@@ -70,23 +70,23 @@
 									<span class="format-chip">{translate text=$formatItem isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
 								{/foreach}
 							{else}
-								{if !empty($record.format)}
-									{assign var="formatArray" value=","|explode:$record.format}
-									{assign var="uniqueFormats" value=array()}
-									{foreach from=$formatArray item=formatItem}
-										{assign var="trimmedFormat" value=$formatItem|trim}
-										{if !in_array($trimmedFormat, $uniqueFormats)}
-											{append var="uniqueFormats" value=$trimmedFormat}
-										{/if}
-									{/foreach}
-									{foreach from=$uniqueFormats item=formatItem name=formatLoop}
-										<span class="format-chip">{translate text=$formatItem isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
-									{/foreach}
-								{/if}
+								{assign var="formatArray" value=","|explode:$record.format}
+								{assign var="uniqueFormats" value=array()}
+								{foreach from=$formatArray item=formatItem}
+									{assign var="trimmedFormat" value=$formatItem|trim}
+									{if !in_array($trimmedFormat, $uniqueFormats)}
+										{append var="uniqueFormats" value=$trimmedFormat}
+									{/if}
+								{/foreach}
+								{foreach from=$uniqueFormats item=formatItem name=formatLoop}
+									<span class="format-chip">{translate text=$formatItem isPublicFacing=true}</span>{if !$smarty.foreach.formatLoop.last} {/if}
+								{/foreach}
 							{/if}
-						</div>
+						{else}
+							<span class="text-muted">{translate text="Unknown" isPublicFacing=true}</span>
+						{/if}
 					</div>
-				{/if}
+				</div>
 
 				<div class="row">
 					<div class="result-label col-tn-3">{translate text='Last Used' isPublicFacing=true}</div>
@@ -189,7 +189,13 @@
 														{/if}
 													{/if}
 												</td>
-												<td>{$detail.format|replace:',':', '}</td>
+												<td>
+													{if !empty($detail.format)}
+														{$detail.format|replace:',':', '}
+													{else}
+														<span class="text-muted">{translate text="Unknown" isPublicFacing=true}</span>
+													{/if}
+												</td>
 												{if !empty($record.hasBarcode)}
 													<td>
 														{if !empty($detail.barcode)}

@@ -583,7 +583,7 @@ class Sierra extends AbstractIlsDriver {
 			$numProcessed = 0;
 			$totalToProcess = 1000;
 			while ($numProcessed < $totalToProcess) {
-				$getReadingHistoryUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patronId . "/checkouts/history?limit=100&offset=$numProcessed&sortField=outDate&sortOrder=desc";
+				$getReadingHistoryUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patronId . "/checkouts/history?limit=100&offset=$numProcessed&sortField=outDate&sortOrder=desc&fields=id,patron,item,bib,outDate,returnDate";
 
 				$readingHistoryResponse = $this->_callUrl('sierra.getReadingHistory', $getReadingHistoryUrl);
 				if ($readingHistoryResponse && $readingHistoryResponse->total > 0) {
@@ -593,12 +593,13 @@ class Sierra extends AbstractIlsDriver {
 						preg_match($this->urlIdRegExp, $historyEntry->bib, $matches);
 						$bibId = ".b$matches[1]" . $this->getCheckDigit($matches[1]);
 						$curTitle['id'] = $bibId;
+						$curTitle['shortId'] = "$matches[1]";
 						$curTitle['sourceId'] = $bibId;
-						// TODO: Test if actually works.
 						$itemInfo = $this->_callUrl('sierra.getItemInfo', $historyEntry->item);
-						$curTitle['barcode'] = $itemInfo->barcode ?? null;
+						$curTitle['barcode'] = $itemInfo->barcode ?: null;
 						$curTitle['checkout'] = strtotime($historyEntry->outDate);
-						$curTitle['checkin'] = strtotime($historyEntry->returnDate) ?: null; // Optional, so fall back to null.
+						// The API is almost never returning returnDate, despite the explicit field declaration.
+						$curTitle['checkin'] = strtotime($historyEntry->returnDate) ?: null;
 						require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 						$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['sourceId']);
 						if ($recordDriver->isValid()) {

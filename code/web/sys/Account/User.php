@@ -200,6 +200,7 @@ class User extends DataObject {
 			'hooplaCheckOutConfirmation',
 			'initialReadingHistoryLoaded',
 			'forceReadingHistoryLoad',
+			'readingHistoryImportStartedAt',
 			'updateMessageIsError',
 			'rememberHoldPickupLocation',
 			'materialsRequestSendEmailOnAssign',

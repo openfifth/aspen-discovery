@@ -180,7 +180,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 							$(this).remove();
 
 							// Check if there are any remaining detail rows for this group
-							const remainingRows = $(`#readingHistoryDetails${groupId} tbody tr:visible`).length;
+							const remainingRows = $(`#readingHistoryDetails${groupId} tbody tr`).length;
 
 							if (remainingRows === 0) {
 								// If no rows left, hide the entire grouped entry
@@ -193,7 +193,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 								// If only one remains, hide the details section and count badge
 								if (remainingRows === 1) {
 									$(`#readingHistoryDetails${groupId}`).collapse('hide');
-									$(`#readingHistoryEntry${groupId} .reading-history-meta`).hide();
+									$(`#readingHistoryEntry${groupId} .reading-history-count-text`).hide();
 								}
 							}
 						});

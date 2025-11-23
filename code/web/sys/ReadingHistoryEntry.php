@@ -90,6 +90,7 @@ class ReadingHistoryEntry extends DataObject {
 		$existingEntry->source = $this->source;
 		$existingEntry->sourceId = $this->sourceId;
 		$existingEntry->barcode = $this->barcode;
+		$existingEntry->format = $this->format;
 		$existingEntry->checkOutDate = $this->checkOutDate;
 		$existingEntry->deleted = 0;
 		if ($existingEntry->find(true)) {

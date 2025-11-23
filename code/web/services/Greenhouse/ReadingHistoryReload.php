@@ -3,7 +3,7 @@
 require_once ROOT_DIR . '/services/Admin/Admin.php';
 
 class Greenhouse_ReadingHistoryReload extends Admin_Admin {
-	function launch() {
+	function launch(): void {
 		global $interface;
 		if (isset($_REQUEST['submit'])) {
 			$barcodesRaw = trim($_REQUEST['barcodes']);

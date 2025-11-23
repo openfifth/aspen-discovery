@@ -118,12 +118,29 @@ foreach ($usersToProcess as $userId) {
 						$userReadingHistoryEntry->barcode = $title['barcode'] ?? null;
 						$userReadingHistoryEntry->title = substr($title['title'], 0, 150);
 						$userReadingHistoryEntry->author = substr($title['author'], 0, 75);
-						$userReadingHistoryEntry->format = $title['format'];
+						$userReadingHistoryEntry->format = is_array($title['format']) ? implode(', ', $title['format']) : $title['format'];
 						$userReadingHistoryEntry->checkOutDate = $title['checkout'];
 
 						if (!empty($title['checkin'])) {
 							$userReadingHistoryEntry->checkInDate = $title['checkin'];
 						} else {
+							// If the new entry's barcode exists and check-in data is missing,
+							// while the existing entry's check-in has no barcode but has a check-in date,
+							// assume that this is a duplicate entry, so don't insert it.
+							if (!empty($title['barcode'])) {
+								$checkDuplicateEntry = new ReadingHistoryEntry();
+								$checkDuplicateEntry->userId = $user->id;
+								$checkDuplicateEntry->source = $catalog->accountProfile->recordSource;
+								$checkDuplicateEntry->sourceId = $title['sourceId'];
+								$checkDuplicateEntry->format = is_array($title['format']) ? implode(', ', $title['format']) : $title['format'];
+								$checkDuplicateEntry->checkOutDate = $title['checkout'];
+								$checkDuplicateEntry->deleted = 0;
+								$checkDuplicateEntry->whereAdd('barcode IS NULL OR barcode = ""');
+								$checkDuplicateEntry->whereAdd('checkInDate IS NOT NULL');
+								if ($checkDuplicateEntry->find(true)) {
+									continue;
+								}
+							}
 							$userReadingHistoryEntry->checkInDate = null;
 						}
 
@@ -135,9 +152,9 @@ foreach ($usersToProcess as $userId) {
 
 						$userReadingHistoryEntry->deleted = 0;
 						if (!$userReadingHistoryEntry->insert()) {
-							//$cronLogEntry->numErrors++;
-							//$cronLogEntry->notes .= "<br/>Error inserting reading history entry for user $user->id: " . $userReadingHistoryEntry->getLastError();
-							//$errorCount++;
+							$cronLogEntry->numErrors++;
+							$cronLogEntry->notes .= "<br/>Error inserting reading history entry for user $user->id: " . $userReadingHistoryEntry->getLastError();
+							$errorCount++;
 						}
 					}
 
