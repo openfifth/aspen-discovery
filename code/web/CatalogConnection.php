@@ -1243,6 +1243,7 @@ class CatalogConnection {
 
 				$historyEntryDB->source = $source;
 				$historyEntryDB->sourceId = $sourceId;
+				$historyEntryDB->barcode = $barcode;
 				$historyEntryDB->title = !empty($checkout->title) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true) : "";
 				$historyEntryDB->author = !empty($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
 				$historyEntryDB->format = substr($checkout->format ?? "", 0, 50);
