@@ -8403,7 +8403,7 @@ ul.account-submenu {
   padding: 10px;
   margin: 5px;
 }
-a.placard-link {
+a.placard-image-link {
   text-decoration: none;
 }
 .placard-image {
@@ -8413,7 +8413,7 @@ a.placard-link {
   height: auto;
 }
 .placard-body {
-  font-weight: bold;
+  font-weight: normal;
 }
 .table-sticky {
   overflow-y: auto;
