@@ -8403,6 +8403,9 @@ ul.account-submenu {
   padding: 10px;
   margin: 5px;
 }
+a.placard-link {
+  text-decoration: none;
+}
 a.placard-image-link {
   text-decoration: none;
 }
