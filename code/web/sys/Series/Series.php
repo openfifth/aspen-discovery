@@ -341,7 +341,7 @@ class Series extends DataObject {
 			$seriesMember->seriesId = $this->id;
 			$seriesMember->deleted = 0;
 
-			$this->_seriesMembers = $seriesMember->fetchAll();
+			$this->_seriesMembers = $seriesMember->fetchAll(null, null, false, true);
 
 			$seriesMember->__destruct();
 			$seriesMember = null;
@@ -351,7 +351,7 @@ class Series extends DataObject {
 		if ($showExcluded && $includePlaceholders) {
 			$filteredSeriesMembers = $this->_seriesMembers;
 		}else{
-			foreach ($this->_seriesMembers as $seriesMember) {
+			foreach ($this->_seriesMembers as $seriesId => $seriesMember) {
 				$okToInclude = true;
 				if (!$showExcluded && $seriesMember->excluded) {
 					$okToInclude = false;
@@ -360,7 +360,7 @@ class Series extends DataObject {
 					$okToInclude = false;
 				}
 				if ($okToInclude) {
-					$filteredSeriesMembers[] = $seriesMember;
+					$filteredSeriesMembers[$seriesId] = $seriesMember;
 				}
 			}
 		}
