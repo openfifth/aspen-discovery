@@ -6490,6 +6490,7 @@ class Koha extends AbstractIlsDriver {
 		$systemPreferencesSql = "SELECT * FROM systempreferences where variable = 'SMSSendDriver' OR variable ='TalkingTechItivaPhoneNotification' OR variable ='PhoneNotification'";
 		$systemPreferencesRS = mysqli_query($this->dbConnection, $systemPreferencesSql);
 		$enablePhoneMessaging = false;
+		$phoneMessagingType = 'phone';
 		while ($systemPreference = $systemPreferencesRS->fetch_assoc()) {
 			if ($systemPreference['variable'] == 'SMSSendDriver') {
 				$interface->assign('enableSmsMessaging', !empty($systemPreference['value']));
@@ -6505,9 +6506,13 @@ class Koha extends AbstractIlsDriver {
 				$interface->assign('smsProviders', $smsProviders);
 			} elseif ($systemPreference['variable'] == 'TalkingTechItivaPhoneNotification' || $systemPreference['variable'] == 'PhoneNotification') {
 				$enablePhoneMessaging |= !empty($systemPreference['value']);
+				if (!empty($systemPreference['value'])) {
+					$phoneMessagingType = ($systemPreference['variable'] == 'TalkingTechItivaPhoneNotification') ? 'itiva' : 'phone';
+				}
 			}
 		}
 		$systemPreferencesRS->close();
+		$interface->assign('phoneMessagingType', $phoneMessagingType);
 		$interface->assign('enablePhoneMessaging', $enablePhoneMessaging);
 
 		/** @noinspection SqlResolve */
@@ -6580,6 +6585,7 @@ class Koha extends AbstractIlsDriver {
 		$systemPreferencesRS->close();
 
 		$messageAttributes = [];
+		$phoneCapableMessageAttributes = [];
 		$messageAttributesSql = "SELECT * FROM message_attributes";
 		$messageAttributesRS = mysqli_query($this->dbConnection, $messageAttributesSql);
 		while ($messageType = $messageAttributesRS->fetch_assoc()) {
@@ -6597,6 +6603,10 @@ class Koha extends AbstractIlsDriver {
 				"Patron_Expiry" => 'Patron Expiry',
 				default => $messageType['message_name'],
 			};
+			// Koha TalkingTech only allow phone for specific notices.
+			if (in_array($messageType['message_name'], ['Advance_Notice', 'Hold_Filled', 'Hold_Reminder'])) {
+				$phoneCapableMessageAttributes[$messageType['message_attribute_id']] = true;
+			}
 			$messageAttributes[] = $messageType;
 		}
 		$messageAttributesRS->close();
@@ -6647,10 +6657,21 @@ class Koha extends AbstractIlsDriver {
 				$messagingSettings[$messageType]['daysInAdvance'] = $userMessagingSetting['days_in_advance'];
 			}
 			if ($userMessagingSetting['message_transport_type'] != null) {
-				$messagingSettings[$messageType]['selectedTransports'][$userMessagingSetting['message_transport_type']] = $userMessagingSetting['message_transport_type'];
+				$transportType = $userMessagingSetting['message_transport_type'];
+				$messagingSettings[$messageType]['selectedTransports'][$transportType] = $transportType;
 			}
 		}
 		$userMessagingSettingsRS->close();
+
+		// Only show phone/Itiva options for message types Koha allows.
+		if ($phoneMessagingType == 'itiva') {
+			foreach ($messagingSettings as $messageAttributeId => &$messagingSetting) {
+				if (!array_key_exists($messageAttributeId, $phoneCapableMessageAttributes)) {
+					unset($messagingSetting['allowableTransports'][$phoneMessagingType], $messagingSetting['selectedTransports'][$phoneMessagingType]);
+				}
+			}
+			unset($messagingSetting);
+		}
 		$interface->assign('messagingSettings', $messagingSettings);
 
 		$validNoticeDays = [];
