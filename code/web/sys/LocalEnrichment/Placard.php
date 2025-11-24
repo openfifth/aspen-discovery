@@ -432,7 +432,7 @@ class Placard extends DB_LibraryLocationLinkedObject {
 		}
 	}
 
-    /** @noinspection PhpUnused */
+	/** @noinspection PhpUnused */
 	public function bodyHasAnchor() : bool {
 		return !empty($this->body) && (stripos($this->body, '<a') !== false);
 	}
