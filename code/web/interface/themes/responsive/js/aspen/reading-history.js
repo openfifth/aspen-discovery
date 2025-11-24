@@ -175,25 +175,21 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
-						// Remove the individual row from the details table
 						$(`#readingHistoryDetailEntry${entryId}`).fadeOut(function() {
 							$(this).remove();
-
-							// Check if there are any remaining detail rows for this group
 							const remainingRows = $(`#readingHistoryDetails${groupId} tbody tr`).length;
-
 							if (remainingRows === 0) {
-								// If no rows left, hide the entire grouped entry
+								// If no rows left, hide the entire grouped entry.
 								$(`#readingHistoryEntry${groupId}`).fadeOut();
 							} else {
 								// Update the "checked out X times" count
 								const countText = remainingRows === 1 ? 'Checked out 1 time' : `Checked out ${remainingRows} times`;
-								$(`#readingHistoryEntry${groupId} .reading-history-count-text`).text(countText);
+								const $readingHistoryCount = $(`#readingHistoryEntry${groupId} .reading-history-count-text`);
+								$readingHistoryCount.text(countText);
 
-								// If only one remains, hide the details section and count badge
+								// If only one remains, hide the count badge.
 								if (remainingRows === 1) {
-									$(`#readingHistoryDetails${groupId}`).collapse('hide');
-									$(`#readingHistoryEntry${groupId} .reading-history-count-text`).hide();
+									$readingHistoryCount.hide();
 								}
 							}
 						});

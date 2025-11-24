@@ -3231,7 +3231,7 @@ class User extends DataObject {
 		}
 	}
 
-	public function updateReadingHistoryBasedOnCurrentCheckouts($isNightlyUpdate) {
+	public function updateReadingHistoryBasedOnCurrentCheckouts(bool $isNightlyUpdate): array {
 		if ($this->isReadingHistoryEnabled()) {
 			$catalogDriver = $this->getCatalogDriver();
 			return $catalogDriver->updateReadingHistoryBasedOnCurrentCheckouts($this, $isNightlyUpdate);

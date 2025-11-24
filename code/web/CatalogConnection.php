@@ -1163,37 +1163,35 @@ class CatalogConnection {
 		return $historyEntry;
 	}
 
-	public function bypassReadingHistoryUpdate($patron, $isNightlyUpdate): bool {
-		//Check to see if we need to update the reading history.  Only update every 5 minutes in normal situations.
+	public function bypassReadingHistoryUpdate(User $patron, bool $isNightlyUpdate): bool {
+		// Only update every 5 minutes in normal situations.
 		$curTime = time();
 		if ((($curTime - $patron->lastReadingHistoryUpdate) < 60 * 5) && !isset($_REQUEST['reload'])) {
 			return true;
 		}
-		// Check the ILS to see if it is ok to update
 		return $this->driver->bypassReadingHistoryUpdate($patron, $isNightlyUpdate);
 	}
 
 	/**
 	 * @param User $patron
+	 * @param bool $isNightlyUpdate
+	 * @return array
 	 */
-	public function updateReadingHistoryBasedOnCurrentCheckouts($patron, $isNightlyUpdate) {
+	public function updateReadingHistoryBasedOnCurrentCheckouts(User $patron, bool $isNightlyUpdate): array {
 		if ($this->bypassReadingHistoryUpdate($patron, $isNightlyUpdate)) {
 			return [
 				'message' => 'Bypassed reading history update',
 				'skipped' => true
 			];
 		}
+		$activeHistoryTitles = [];
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
-		//Note, include deleted titles here so they are not added multiple times.
+		// Include deleted titles so to prevent duplicates.
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
-		$readingHistoryDB->deleted = 0; // TODO: Keep?
 		$readingHistoryDB->whereAdd('checkInDate IS NULL');
 		$readingHistoryDB->find();
-
-		$activeHistoryTitles = [];
-		global $logger;
 		while ($readingHistoryDB->fetch()) {
 			$historyEntry = [];
 			$historyEntry['source'] = $readingHistoryDB->source;
@@ -1208,11 +1206,13 @@ class CatalogConnection {
 			}
 			if (array_key_exists($key, $activeHistoryTitles)) {
 				if (IPAddress::showDebuggingInformation()) {
+					global $logger;
 					$logger->log("Adding {$readingHistoryDB->id} to active history entry $key.", Logger::LOG_ERROR);
 				}
 				$activeHistoryTitles[$key]['ids'][] = $readingHistoryDB->id;
 			} else {
 				if (IPAddress::showDebuggingInformation()) {
+					global $logger;
 					$logger->log("Adding new record $key, {$readingHistoryDB->id} to active history entries.", Logger::LOG_ERROR);
 				}
 				$activeHistoryTitles[$key] = $historyEntry;
@@ -1232,7 +1232,16 @@ class CatalogConnection {
 			if (array_key_exists($key, $activeHistoryTitles)) {
 				unset($activeHistoryTitles[$key]);
 			} else {
-				//TODO: This should check to see if the grouped work has been checked out rather than the record
+				// If a checkout is currently active and there is already an active history entry for the same title without a barcode,
+				// skip creating a duplicate (with a barcode) and keep the no-barcode entry active without assigning a check-in date.
+				if (!empty($barcode)) {
+					$noBarcodeKey = strtolower($source . ':' . $sourceId);
+					if (array_key_exists($noBarcodeKey, $activeHistoryTitles)) {
+						unset($activeHistoryTitles[$noBarcodeKey]);
+						continue;
+					}
+				}
+
 				$historyEntryDB = new ReadingHistoryEntry();
 				$historyEntryDB->userId = $patron->id;
 				if (!empty($checkout->groupedWorkId)) {
@@ -1240,7 +1249,6 @@ class CatalogConnection {
 				} else {
 					$historyEntryDB->groupedWorkPermanentId = "";
 				}
-
 				$historyEntryDB->source = $source;
 				$historyEntryDB->sourceId = $sourceId;
 				$historyEntryDB->barcode = $barcode;
@@ -1251,7 +1259,7 @@ class CatalogConnection {
 				$historyEntryDB->costSavings = $checkout->getReplacementCost();
 				if (!$historyEntryDB->insert()) {
 					global $logger;
-					$logger->log("Could not insert new reading history entry", Logger::LOG_ERROR);
+					$logger->log("Could not insert new reading history entry.", Logger::LOG_ERROR);
 				} else {
 					if ($patron->enableCostSavings) {
 						$patron->__set('totalCostSavings', $patron->totalCostSavings + $historyEntryDB->costSavings);
@@ -1260,16 +1268,16 @@ class CatalogConnection {
 			}
 		}
 
-		//Anything that was still active is now checked in
-		global $logger;
 		if (IPAddress::showDebuggingInformation()) {
+			global $logger;
 			$logger->log("There are " . count($activeHistoryTitles) . " titles that have been checked in.", Logger::LOG_ERROR);
 		}
 		foreach ($activeHistoryTitles as $historyEntry) {
 			if (IPAddress::showDebuggingInformation()) {
+				global $logger;
 				$logger->log("There are " . count($historyEntry['ids']) . " ids for this history entry.", Logger::LOG_ERROR);
 			}
-			//Update even if deleted to make sure code is cleaned up correctly
+			// Set checkInDate for all reading history entries that are no longer checked out.
 			foreach ($historyEntry['ids'] as $id) {
 				$historyEntryDB = new ReadingHistoryEntry();
 				$historyEntryDB->id = $id;
@@ -1277,8 +1285,9 @@ class CatalogConnection {
 					$historyEntryDB->checkInDate = time();
 					$numUpdates = $historyEntryDB->update();
 					if (IPAddress::showDebuggingInformation()) {
+						global $logger;
 						if ($numUpdates != 1) {
-							$logger->log("Could not update reading history entry $id", Logger::LOG_ERROR);
+							$logger->log("Could not update reading history entry $id.", Logger::LOG_ERROR);
 						} else {
 							$logger->log("Marked $id as checked in.", Logger::LOG_ERROR);
 						}
@@ -1287,7 +1296,6 @@ class CatalogConnection {
 			}
 		}
 
-		//Set the last update time
 		$patron->__set('lastReadingHistoryUpdate', time());
 		$patron->update();
 
