@@ -2372,6 +2372,11 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		toggleManageEvent: function (eventSourceId) {
+		    let savedEventDetailsModalWrapper = document.getElementById(`aspen-events-registration-button-${eventSourceId}-wrapper`)
+		    savedEventDetailsModalWrapper.hidden = !savedEventDetailsModalWrapper.hidden;
+		},
+
 		registerUserToEvent: function (eventSourceId) {
 			if (!Globals.loggedIn) {
 				return;
