@@ -1484,6 +1484,7 @@ class Koha extends AbstractIlsDriver {
 			$user->_state = $userFromDb['state'];
 			$user->_zip = $userFromDb['zipcode'];
 			$user->phone = $userFromDb['phone'];
+			$user->email = $userFromDb['email'];
 			$user->_dateOfBirth = $userFromDb['dateofbirth'];
 		}
 	}
