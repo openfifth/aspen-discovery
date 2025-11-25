@@ -41,5 +41,21 @@
 				</div>
 			</div>
 		{/if}
+		{if $showDebuggingInformation && !empty($placard->debugCandidates)}
+			<div class="row">
+				<div class="col-xs-12">
+					<small class="text-muted">
+						<strong>Debug: Placard Candidates</strong><br>
+						{foreach from=$placard->debugCandidates item=candidate}
+							{if $candidate.isSelected}<strong>{/if}
+							{$candidate.title} (trigger: "{$candidate.triggerWord}", score: {$candidate.score})
+							{if $candidate.isSelected} <- Selected{/if}
+							{if $candidate.isSelected}</strong>{/if}
+							<br>
+						{/foreach}
+					</small>
+				</div>
+			</div>
+		{/if}
 	</section>
 {/strip}
