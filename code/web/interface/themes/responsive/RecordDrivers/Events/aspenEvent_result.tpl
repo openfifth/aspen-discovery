@@ -56,6 +56,17 @@
 							{$recordDriver->getRoom()}
 						</div>
 					{/if}
+					{if $numberOfSeats !== null}
+						<br />
+						<div class="result-label col-tn-2">{translate text="Available Seats" isPublicFacing=true} </div>
+						<div class="result-value col-tn-6 notranslate">
+							{if $isEventFull}
+								<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
+							{else}
+								{$availableSeats} / {$numberOfSeats}
+							{/if}
+						</div>
+					{/if}
 					{if $private}
 						<div class="result-value col-tn-8">
 							<span class="label label-default">{translate text="Private" isPublicFacing=true}</span>
@@ -91,7 +102,9 @@
 							{if $recordDriver->isRegistrationRequired()}
 								<div class="btn-toolbar">
 									<div class="btn-group btn-group-vertical btn-block">
-										{if !empty($recordDriver->getRegistrationModalBody())}
+										{if $isEventFull}
+											<span class="btn btn-sm btn-default btn-wrap disabled" style="width:100%">{translate text="Event Full" isPublicFacing=true}</span>
+										{elseif !empty($recordDriver->getRegistrationModalBody())}
 											<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');">{translate text="Registration Information" isPublicFacing=true}
 											</a>
 										{else}
