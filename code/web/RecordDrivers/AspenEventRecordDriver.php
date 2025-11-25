@@ -453,10 +453,13 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 
 	public function isRegisteredForEvent() {
 		if (UserAccount::isLoggedIn()) {
-			return UserAccount::getActiveUserObj()->isRegistered($this->getId());
-		}else{
-			return false;
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+			$registration = new UserAspenEventInstanceRegistration();
+			$registration->userdId = UserAccount::getActiveUserId();
+			$registration->eventInstanceId = $this->getIdentifier();
+			return $registration->isUserRegisteredForEvent();
 		}
+		return false;
 	}
 
 	public function getSpotlightResult(CollectionSpotlight $collectionSpotlight, string $index) {
