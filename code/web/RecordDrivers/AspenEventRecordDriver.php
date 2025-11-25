@@ -106,6 +106,9 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('upcomingInstanceCount', $this->getEventObject()->getUpcomingInstanceCount() ?? 0);
 	$interface->assign('private', $this->isPrivate() ? 'private' : '');
 	$interface->assign('hiddenTimestamps', $this->hiddenTimestamps());
+	$interface->assign('numberOfSeats', $this->getNumberOfSeats());
+	$interface->assign('availableSeats', $this->getAvailableSeats());
+	$interface->assign('isEventFull', $this->isEventFull());
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -418,6 +421,38 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return array_key_exists("registration_required", $this->fields) && $this->fields['registration_required'] == "Yes";
 	}
 
+	public function getNumberOfSeats(): ?int {
+		$eventObject = $this->getEventObject();
+		if ($eventObject) {
+			return $eventObject->getEffectiveNumberOfSeats();
+		}
+		return null;
+	}
+
+	public function getAvailableSeats(): ?int {
+		$eventObject = $this->getEventObject();
+		if ($eventObject) {
+			return $eventObject->getAvailableSeats();
+		}
+		return null;
+	}
+
+	public function getRegistrationCount(): int {
+		$eventObject = $this->getEventObject();
+		if ($eventObject) {
+			return $eventObject->getRegistrationCount();
+		}
+		return 0;
+	}
+
+	public function isEventFull(): bool {
+		$eventObject = $this->getEventObject();
+		if ($eventObject) {
+			return !$eventObject->hasAvailableSeats();
+		}
+		return false;
+	}
+
 	public function inEvents() {
 		if (UserAccount::isLoggedIn()) {
 			return UserAccount::getActiveUserObj()->inUserEvents($this->getId());
@@ -476,6 +511,8 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			'start_date' => $this->getStartDate(),
 			'end_date' => $this->getEndDate(),
 			'registration_required' => $this->isRegistrationRequired(),
+			'number_of_seats' => $this->getNumberOfSeats(),
+			'available_seats' => $this->getAvailableSeats(),
 			'bypass' => $this->getBypassSetting(),
 			'url' => null,
 			'source' => 'aspenEvents',
