@@ -617,7 +617,7 @@ class Polaris extends AbstractIlsDriver {
 					$curHold->holdQueueLength = $holdInfo->QueueTotal;
 					$curHold->position = $holdInfo->QueuePosition;
 				}
-				$curHold->canFreeze = $holdInfo->CanSuspend;
+				$curHold->canFreeze = $holdInfo->CanSuspend && $patron->getHomeLibrary()->allowFreezeHolds;
 				$curHold->title = $holdInfo->Title;
 				$curHold->author = $holdInfo->Author;
 				$curHold->callNumber = $holdInfo->CallNumber;

@@ -15,9 +15,7 @@ class SearchInterpreterSetting extends DataObject {
 	public $audiencesToSkip;
 	public $processPluralAudiences;
 	public $pluralAudiencesToSkip;
-	public $audienceFacet;
 	public $processFictionNonFiction;
-	public $fictionNonFictionFacet;
 	public $processNew;
 	public $processAvailable;
 
@@ -47,10 +45,30 @@ class SearchInterpreterSetting extends DataObject {
 				'description' => 'The unique id within the database',
 				'uniqueProperty' => true,
 			],
+			'termsToSkip' => [
+				'property' => 'termsToSkip',
+				'type' => 'oneToMany',
+				'label' => 'Terms To Skip Interpreting',
+				'description' => 'A list of terms that will cause the search to not be interpreted.',
+				'noteBullets' => [
+					'These are applied at the beginning of processing and if found, will cause the search interpreter to stop processing.',
+					'Terms are case insensitive.',
+				],
+				'keyThis' => 'id',
+				'keyOther' => 'settingId',
+				'subObjectType' => 'SearchInterpreterTermsToSkip',
+				'structure' => $termsToSkipStructure,
+				'sortable' => false,
+				'storeDb' => true,
+				'allowEdit' => false,
+				'canEdit' => false,
+				'canAddNew' => true,
+				'canDelete' => true,
+			],
 			'formatSection' => [
 				'property' => 'formatSection',
 				'type' => 'section',
-				'label' => 'Formats',
+				'label' => 'Formats (applies format facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -95,7 +113,7 @@ class SearchInterpreterSetting extends DataObject {
 			'formatCategoriesSection' => [
 				'property' => 'formatCategoriesSection',
 				'type' => 'section',
-				'label' => 'Format Categories',
+				'label' => 'Format Categories (applies format_category facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -121,7 +139,7 @@ class SearchInterpreterSetting extends DataObject {
 			'audienceSection' => [
 				'property' => 'audienceSection',
 				'type' => 'section',
-				'label' => 'Audiences',
+				'label' => 'Audiences (applies target_audience facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -158,20 +176,12 @@ class SearchInterpreterSetting extends DataObject {
 						'description' => 'A pipe delimited list of values to skip',
 						'default' => '',
 					],
-					'audienceFacet' => [
-						'property' => 'audienceFacet',
-						'type' => 'text',
-						'label' => 'Audience Facet',
-						'description' => 'The name of the facet to apply matches to',
-						'default' => '',
-						'maxLength' => 50
-					],
 				],
 			],
 			'fictionSection' => [
 				'property' => 'fictionSection',
 				'type' => 'section',
-				'label' => 'Fiction/Non-Fiction',
+				'label' => 'Fiction/Non-Fiction (applies literary_form facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -182,14 +192,6 @@ class SearchInterpreterSetting extends DataObject {
 						'description' => 'Whether fiction/non-fiction should be processed in the interpreter.',
 						'hideInLists' => true,
 						'default' => 1,
-					],
-					'fictionNonFictionFacet' => [
-						'property' => 'fictionNonFictionFacet',
-						'type' => 'text',
-						'label' => 'Fiction/Non Fiction Facet',
-						'description' => 'The name of the facet to apply matches to',
-						'default' => '',
-						'maxLength' => 50
 					],
 				],
 			],
@@ -203,7 +205,7 @@ class SearchInterpreterSetting extends DataObject {
 					'processNew' => [
 						'property' => 'processNew',
 						'type' => 'checkbox',
-						'label' => 'Process New Modifier',
+						'label' => 'Process New Modifier (applies publishDateSort facet)',
 						'description' => 'Whether the search should be checked for new searches.',
 						'hideInLists' => true,
 						'default' => 1,
@@ -211,34 +213,26 @@ class SearchInterpreterSetting extends DataObject {
 					'processAvailable' => [
 						'property' => 'processAvailable',
 						'type' => 'checkbox',
-						'label' => 'Process Available Modifier',
+						'label' => 'Process Available Modifier (applies availability_toggle facet)',
 						'description' => 'Whether the search should be checked for available searches.',
 						'hideInLists' => true,
 						'default' => 1,
 					],
 				],
 			],
-			'termsToSkip' => [
-				'property' => 'termsToSkip',
-				'type' => 'oneToMany',
-				'label' => 'Terms To Skip Interpreting',
-				'description' => 'A list of terms that will cause the search to not be interpreted.',
-				'keyThis' => 'id',
-				'keyOther' => 'settingId',
-				'subObjectType' => 'SearchInterpreterTermsToSkip',
-				'structure' => $termsToSkipStructure,
-				'sortable' => false,
-				'storeDb' => true,
-				'allowEdit' => false,
-				'canEdit' => false,
-				'canAddNew' => true,
-				'canDelete' => true,
-			],
 			'specialTerms' => [
 				'property' => 'specialTerms',
 				'type' => 'oneToMany',
 				'label' => 'Special Terms',
 				'description' => 'A list of terms that will be processed according to library defined rules.',
+				'noteBullets' => [
+					'Special Terms are applied after the standard fields above.',
+					'Terms are case insensitive.',
+					'Terms can be regular expressions.',
+					'If you are applying special terms that contain a format, audience, etc you should skip that value above. I.e. if you create a special term for PlayStation, skip the PlayStation format above.',
+					"Each Facet should be on it's own line.",
+					"Format each facet to apply as <em>facet_name</em>:<em>facet_value</em>."
+				],
 				'keyThis' => 'id',
 				'keyOther' => 'settingId',
 				'subObjectType' => 'SearchInterpreterSpecialTerms',

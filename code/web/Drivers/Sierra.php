@@ -403,7 +403,7 @@ class Sierra extends Millennium {
 //					$freezeable = false;
 //				}
 //			}
-			$curHold->canFreeze = $freezeable || $curHold->frozen;
+			$curHold->canFreeze = ($freezeable && $patron->getHomeLibrary()->allowFreezeHolds) || $curHold->frozen;
 			$curHold->cancelable = $cancelable;
 			$curHold->locationUpdateable = $updatePickup;
 			$curHold->available = $available;
