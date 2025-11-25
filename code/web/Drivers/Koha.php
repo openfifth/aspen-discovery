@@ -35,6 +35,25 @@ class Koha extends AbstractIlsDriver {
 		'W' => 'Writeoff',
 	];
 
+	static $accoundlineCodeToDescriptionMap = [
+		'ACCOUNT' => 'Account creation fee',
+		'ACCOUNT_RENEW' => 'Account renewal fee',
+		'ARTICLE_REQUEST' => 'Article request fee',
+		'LOST' => 'Lost item',
+		'MANUAL' => 'Manual fee',
+		'NEW_CARD' => 'New card',
+		'OVERDUE' => 'Fine',
+		'PROCESSING' => 'Lost item processing fee',
+		'RENT' => 'Rental fee',
+		'RENT_DAILY' => 'Daily rental fee',
+		'RENT_RENEW' => 'Renewal of rental item',
+		'RENT_DAILY_RENEW' => 'Renewal of daily rental item',
+		'RESERVE' => 'Hold fee',
+		'RESERVE_EXPIRED' => 'Hold waiting too long',
+		'PAYOUT' => 'Payment from library to patron',
+		'VOID' => 'Credit has been voided',
+	];
+
 	function updateHomeLibrary(User $patron, string $homeLibraryCode) {
 		$result = [
 			'success' => false,
@@ -3205,7 +3224,7 @@ class Koha extends AbstractIlsDriver {
 					'date' => $allFeesRow['date'],
 					'type' => $type,
 					'reason' => $type,
-					'message' => $allFeesRow['description'],
+					'message' => $this->getAccountLineDescription($allFeesRow),
 					'amountVal' => $allFeesRow['amount'],
 					'amountOutstandingVal' => $allFeesRow['amountoutstanding'],
 					'amount' => $currencyFormatter->formatCurrency($allFeesRow['amount'], $currencyCode),
@@ -3262,7 +3281,7 @@ class Koha extends AbstractIlsDriver {
 			'date' => $fine['date'],
 			'type' => $type,
 			'reason' => $type,
-			'message' => $fine['description'],
+			'message' => $this->getAccountLineDescription($fine),
 			'amountVal' => $fine['amount'],
 			'amountOutstandingVal' => $fine['amountoutstanding'],
 			'amount' => $currencyFormatter->formatCurrency($fine['amount'], $currencyCode),
@@ -9349,5 +9368,18 @@ class Koha extends AbstractIlsDriver {
 
 	public function hasAdditionalFineFields(): bool {
 		return true;
+	}
+
+	private function getAccountLineDescription($accountline): string {
+		if ($accountline['description']) {
+			return $accountline['description'];
+		} 
+		if (isset($accountline['debit_type_code'])) {
+			return array_key_exists($accountline['debit_type_code'], Koha::$accoundlineCodeToDescriptionMap) ? Koha::$accoundlineCodeToDescriptionMap[$accountline['debit_type_code']] : $accountline['debit_type_code'];
+		} 
+		if (isset($accountline['credit_type_code'])) {
+			return array_key_exists($accountline['credit_type_code'], Koha::$accoundlineCodeToDescriptionMap) ? Koha::$accoundlineCodeToDescriptionMap[$accountline['credit_type_code']] : $accountline['credit_type_code'];
+		}
+		return'No description available';
 	}
 }
