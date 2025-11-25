@@ -2275,21 +2275,35 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		registerUserToEvent: function (eventSourceId, userId) {
+		registerUserToEvent: function (eventSourceId) {
 			if (!Globals.loggedIn) {
 				return;
 			}
+
+			const userSelector = document.getElementById('eventUserSelector');
+			const userIdField = document.getElementById('eventRegistrationUserId');
+			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
 
 			const url = Globals.path + "/MyAccount/AJAX";
 			const params = {
 				method: 'registerUserToEvent',
 				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
-				userId,
+				userId: userId
 			};
 
 			$.getJSON(url, params, function (data) {
 				AspenDiscovery.showMessage(data.title, data.message);
 			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		updateEventRegistrationUser: function (selector) {
+			const selectedOption = selector.options[selector.selectedIndex];
+			const email = selectedOption.dataset.email || '';
+			const location = selectedOption.dataset.location || '';
+
+			document.getElementById('eventRegistrationUserId').value = selector.value;
+			document.getElementById('eventUserEmail').textContent = email;
+			document.getElementById('eventUserLocation').textContent = location;
 		},
 
 		deleteSavedEvent: function (id, page, filter) {
