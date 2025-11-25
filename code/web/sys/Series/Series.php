@@ -254,7 +254,7 @@ class Series extends DataObject {
 		require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
 		if ($this->_seriesTitles === null) {
 			$originalSeriesMembers = $this->getSeriesMembers($sortName, false, $includePlaceholders);
-			$seriesMembers = [];
+			$seriesTitles = [];
 			$idsBySource = [
 				'GroupedWork' => []
 			];
@@ -276,7 +276,7 @@ class Series extends DataObject {
 					'seriesMember' => clone($seriesMember),
 				];
 
-				$this->_seriesTitles[] = $tmpListEntry;
+				$seriesTitles[] = $tmpListEntry;
 			}
 
 			//Filter to remove anything that is not part of this scope.
@@ -294,15 +294,16 @@ class Series extends DataObject {
 			$changeMade = true;
 			while ($changeMade) {
 				$changeMade = false;
-				foreach ($seriesMembers as $key => $seriesMember) {
+				foreach ($seriesTitles as $key => $seriesMember) {
 					if ($seriesMember['source'] == $source && in_array($seriesMember['sourceId'], $missingWorks)) {
-						unset($seriesMembers[$key]);
+						unset($seriesTitles[$key]);
 						unset($idsBySource[$source][$key]);
 						$changeMade = true;
 						break;
 					}
 				}
 			}
+			$this->_seriesTitles = $seriesTitles;
 		}
 
 		//Sort the series members
@@ -329,26 +330,39 @@ class Series extends DataObject {
 	 * @return SeriesMember[]      array of series members
 	 */
 	function getSeriesMembers($sortName = null, $showExcluded = true, $includePlaceholders = true) : array {
+		if (empty($this->id)) {
+			return [];
+		}
+
 		if ($this->_seriesMembers === null) {
 			$this->_seriesMembers = [];
 
-			if (empty($this->id)) {
-				return [];
-			}
 			$seriesMember = new SeriesMember();
 			$seriesMember->seriesId = $this->id;
-			if (!$showExcluded) {
-				$seriesMember->excluded = 0;
-			}
-			if (!$includePlaceholders) {
-				$seriesMember->isPlaceholder = 0;
-			}
 			$seriesMember->deleted = 0;
 
-			$this->_seriesMembers = $seriesMember->fetchAll();
+			$this->_seriesMembers = $seriesMember->fetchAll(null, null, false, true);
 
 			$seriesMember->__destruct();
 			$seriesMember = null;
+		}
+
+		$filteredSeriesMembers = [];
+		if ($showExcluded && $includePlaceholders) {
+			$filteredSeriesMembers = $this->_seriesMembers;
+		}else{
+			foreach ($this->_seriesMembers as $seriesId => $seriesMember) {
+				$okToInclude = true;
+				if (!$showExcluded && $seriesMember->excluded) {
+					$okToInclude = false;
+				}
+				if (!$includePlaceholders && $seriesMember->isPlaceholder) {
+					$okToInclude = false;
+				}
+				if ($okToInclude) {
+					$filteredSeriesMembers[$seriesId] = $seriesMember;
+				}
+			}
 		}
 
 		//Sort the series members
@@ -356,12 +370,12 @@ class Series extends DataObject {
 		$sortMethod = $this->getSortMethodIdByName($sortName);
 
 		//Sort the titles based on the active sort method
-		uasort($this->_seriesMembers, function (SeriesMember $a, SeriesMember $b) use ($sortMethod) {
+		uasort($filteredSeriesMembers, function (SeriesMember $a, SeriesMember $b) use ($sortMethod) {
 			return $this->compareSeriesMembers($sortMethod, $a, $b);
 
 		});
 
-		return $this->_seriesMembers;
+		return $filteredSeriesMembers;
 	}
 
 	/**
