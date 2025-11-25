@@ -93,6 +93,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	// Series display
 	public $showIndexedSeriesWithNoveList;
+	public $hideIndexedEContentSeries;
 	public $numSeriesToShowBeforeMore;
 
 	private $_moreDetailsOptions;
@@ -728,6 +729,14 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'default' => 3,
 						'min' => 1,
 						'max' => 6,
+						'hideInLists' => true,
+					],
+					'hideIndexedEContentSeries' => [
+						'property' => 'hideIndexedEContentSeries',
+						'type' => 'checkbox',
+						'label' => 'Hide Indexed E-Content Series',
+						'description' => 'When checked, indexed series from e-content sources (OverDrive and Hoopla) will be hidden from display. Reduces duplicate series entries by preventing e-content series from appearing alongside series from other sources.',
+						'default' => 0,
 						'hideInLists' => true,
 					],
 					'alwaysShowSearchResultsMainDetails' => [

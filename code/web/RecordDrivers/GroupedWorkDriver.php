@@ -1169,8 +1169,12 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	}
 
 	protected array|null|false $_indexedSeries = false;
+	protected ?array $_eContentSeriesTitles = null;
 
 	public function getIndexedSeries(): ?array {
+		global $logger;
+		global $library;
+
 		if ($this->_indexedSeries === false) {
 			global $timer;
 			$this->_indexedSeries = null;
@@ -1197,6 +1201,33 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$timer->logTime("Loaded indexed series information");
 		}
+
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$shouldFilterEContent = !empty($groupedWorkDisplaySettings->hideIndexedEContentSeries);
+		if ($shouldFilterEContent && !empty($this->_indexedSeries)) {
+			if ($this->_eContentSeriesTitles === null) {
+				$this->_eContentSeriesTitles = $this->getEContentSeriesTitles();
+			}
+
+			if (!empty($this->_eContentSeriesTitles)) {
+				// Filter out any indexed series that match eContent series titles (case-insensitive).
+				$filteredSeries = [];
+				foreach ($this->_indexedSeries as $indexedSeries) {
+					$isEContentSeries = false;
+					foreach ($this->_eContentSeriesTitles as $eContentTitle) {
+						if (strcasecmp($indexedSeries['seriesTitle'], $eContentTitle) === 0) {
+							$isEContentSeries = true;
+							break;
+						}
+					}
+					if (!$isEContentSeries) {
+						$filteredSeries[] = $indexedSeries;
+					}
+				}
+				return $filteredSeries;
+			}
+		}
+
 		return $this->_indexedSeries;
 	}
 
@@ -3021,6 +3052,50 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		//Get a list of isbns from the record
 		$novelist = NovelistFactory::getNovelist();
 		return $novelist->doesGroupedWorkHaveCachedSeries($this->getPermanentId());
+	}
+
+	/**
+	 * Get series titles from eContent sources (OverDrive and Hoopla) for this grouped work.
+	 *
+	 * @return array Array of series titles from eContent sources.
+	 */
+	public function getEContentSeriesTitles(): array {
+		global $logger;
+		$eContentSeries = [];
+		$relatedRecords = $this->getRelatedRecords();
+		$sources = [];
+		foreach ($relatedRecords as $record) {
+			$sources[] = $record->source;
+		}
+
+		foreach ($relatedRecords as $record) {
+			$source = $record->source;
+			$identifier = $record->id;
+			$cleanId = $identifier;
+			if (str_contains($cleanId, ':')) {
+				$parts = explode(':', $cleanId);
+				$cleanId = end($parts);
+			}
+
+			if ($source === 'overdrive') {
+				require_once ROOT_DIR . '/sys/OverDrive/OverDriveAPIProduct.php';
+				$overDriveProduct = OverDriveAPIProduct::getOverDriveProductForId($cleanId);
+				if ($overDriveProduct && !empty($overDriveProduct->series)) {
+					$eContentSeries[] = trim($overDriveProduct->series);
+				}
+			} elseif ($source === 'hoopla') {
+				require_once ROOT_DIR . '/sys/Hoopla/HooplaExtract.php';
+				$hooplaExtract = HooplaExtract::getHooplaTitleForId($cleanId);
+				if ($hooplaExtract && !empty($hooplaExtract->rawResponse)) {
+					$rawData = json_decode($hooplaExtract->rawResponse);
+					if ($rawData && !empty($rawData->series)) {
+						$eContentSeries[] = trim($rawData->series);
+					}
+				}
+			}
+		}
+
+		return array_unique($eContentSeries);
 	}
 
 	public function isValid() {

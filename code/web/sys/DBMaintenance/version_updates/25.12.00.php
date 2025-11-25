@@ -48,6 +48,14 @@ function getUpdates25_12_00(): array {
 				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS numSeriesToShowBeforeMore INT(11) DEFAULT 3",
 			]
 		],
+		'grouped_work_display_settings_hideIndexedEContentSeries' => [
+			'title' => 'Grouped Work Display Settings - Add Hide Indexed E-Content Series',
+			'description' => 'Add hideIndexedEContentSeries field to grouped_work_display_settings table to control whether indexed series from eContent sources (OverDrive, Hoopla) are hidden from display.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS hideIndexedEContentSeries TINYINT(1) DEFAULT 0",
+			]
+		],
 
 		//alexander - Open Fifth
 
