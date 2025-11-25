@@ -2,15 +2,15 @@
 
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/Enrichment/CoceServerSetting.php';
+require_once ROOT_DIR . '/sys/Enrichment/ChiliFreshSetting.php';
 
-class Enrichment_CoceServerSettings extends ObjectEditor {
+class Enrichment_ChiliFreshSettings extends ObjectEditor {
 	function getObjectType(): string {
-		return 'CoceServerSetting';
+		return 'ChiliFreshSetting';
 	}
 
 	function getToolName(): string {
-		return 'CoceServerSettings';
+		return 'ChiliFreshSettings';
 	}
 
 	function getModule(): string {
@@ -18,11 +18,11 @@ class Enrichment_CoceServerSettings extends ObjectEditor {
 	}
 
 	function getPageTitle(): string {
-		return 'CoceServer Settings';
+		return 'ChiliFresh Settings';
 	}
 
-	function getAllObjects(int $page, int $recordsPerPage): array {
-		$object = new CoceServerSetting();
+	function getAllObjects($page, $recordsPerPage): array {
+		$object = new ChiliFreshSetting();
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -39,7 +39,7 @@ class Enrichment_CoceServerSettings extends ObjectEditor {
 	}
 
 	function getObjectStructure($context = ''): array {
-		return CoceServerSetting::getObjectStructure($context);
+		return ChiliFreshSetting::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -50,19 +50,19 @@ class Enrichment_CoceServerSettings extends ObjectEditor {
 		return 'id';
 	}
 
-	function getAdditionalObjectActions(?DataObject $existingObject): array {
+	function getAdditionalObjectActions($existingObject): array {
 		return [];
 	}
 
 	function getInstructions(): string {
-		return '';
+		return 'https://help.aspendiscovery.org/help/integration/enrichment';
 	}
 
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#third_party_enrichment', 'Third Party Enrichment');
-		$breadcrumbs[] = new Breadcrumb('/Enrichment/CoceServerSettings', 'Coce Server Settings');
+		$breadcrumbs[] = new Breadcrumb('/Enrichment/ChiliFreshSettings', 'ChiliFresh Settings');
 		return $breadcrumbs;
 	}
 
@@ -74,7 +74,7 @@ class Enrichment_CoceServerSettings extends ObjectEditor {
 		return UserAccount::userHasPermission('Administer Third Party Enrichment API Keys');
 	}
 
-	function canAddNew() : bool {
+	function canAddNew() {
 		return $this->getNumObjects() == 0;
 	}
 }
