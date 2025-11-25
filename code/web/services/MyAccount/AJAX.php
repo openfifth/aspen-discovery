@@ -8060,9 +8060,24 @@ class MyAccount_AJAX extends JSON_Action {
 				return $result;
 			}
 			$body = $aspenEventSettings->getRegistrationModalBody();
-			
+
 			global $interface;
 			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
+
+			$sourceId = $_REQUEST['sourceId'];
+			$sourceIdParts = explode('_', $sourceId);
+			$eventInstanceId = end($sourceIdParts);
+
+			require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+			$eventInstance = new EventInstance();
+			$eventInstance->id = $eventInstanceId;
+			if ($eventInstance->find(true)) {
+				$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
+				$available = $eventInstance->getAvailableSeats();
+				$interface->assign('numberOfSeats', $numberOfSeats);
+				$interface->assign('availableSeats', $available);
+				$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+			}
 
 			$user = UserAccount::getLoggedInUser();
 			if ($user) {
@@ -8329,6 +8344,15 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+
+		if (!$eventInstance->hasAvailableSeats(1)) {
+			$result['message'] = translate([
+				'text' => 'This event is full. No seats available.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
