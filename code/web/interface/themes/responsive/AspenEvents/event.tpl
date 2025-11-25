@@ -86,6 +86,16 @@
 					{if !empty($recordDriver->getEventTypeFields())}
 						{$recordDriver->getEventTypeFields()}
 					{/if}
+					{if $recordDriver->getNumberOfSeats() !== null}
+						<li>
+							{translate text="Available Seats: " isPublicFacing=true}
+							{if $recordDriver->isEventFull()}
+								<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
+							{else}
+								{$recordDriver->getAvailableSeats()} / {$recordDriver->getNumberOfSeats()}
+							{/if}
+						</li>
+					{/if}
 					{if $private}
 						<li>
 							<span class="label label-default">{translate text="Private" isPublicFacing=true}</span>
@@ -99,6 +109,8 @@
 						<div class="btn-group btn-group-vertical btn-block">
 							{if $recordDriver->isRegisteredForEvent()}
 								<a href="{$recordDriver->getExternalUrl()}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
+							{elseif $recordDriver->isEventFull()}
+								<span class="btn btn-sm btn-default btn-wrap disabled" style="width:70%">{translate text="Event Full" isPublicFacing=true}</span>
 							{else}
 								{if !empty($recordDriver->getRegistrationModalBody())}
 									<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:70%">{translate text="Registration Information" isPublicFacing=true}
@@ -116,7 +128,9 @@
 				{else}
 					{if $recordDriver->isRegistrationRequired()}
 						<div class="btn-group btn-group-vertical btn-block">
-							{if !empty($recordDriver->getRegistrationModalBody())}
+							{if $recordDriver->isEventFull()}
+								<span class="btn btn-sm btn-default btn-wrap disabled" style="width:70%">{translate text="Event Full" isPublicFacing=true}</span>
+							{elseif !empty($recordDriver->getRegistrationModalBody())}
 								<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:70%">{translate text="Registration Information" isPublicFacing=true}
 								</a>
 							{else}
