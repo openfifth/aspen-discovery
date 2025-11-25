@@ -8049,26 +8049,46 @@ class MyAccount_AJAX extends JSON_Action {
 		$vendor = $_REQUEST['vendor'];
 		$body = "";
 
+		global $library;
+
 		// for Aspen Native Events, the library is irrelevant, the settings are system level
 		if ($vendor == 'aspenEvents') {
 			require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
 			$aspenEventSettings = new AspenEventSetting();
 			$aspenEventSettings->id = 1;
-			if (!$aspenEventSettings->find(true)) {			
+			if (!$aspenEventSettings->find(true)) {
 				return $result;
 			}
 			$body = $aspenEventSettings->getRegistrationModalBody();
 			
 			global $interface;
 			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
-			$interface->assign('userId', UserAccount::getActiveUserId());
-			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
+
+			$user = UserAccount::getLoggedInUser();
+			if ($user) {
+				$interface->assign('loggedIn', true);
+				$interface->assign('userId', $user->id);
+				$interface->assign('userDisplayName', $user->getDisplayName());
+				$interface->assign('userEmail', $user->email);
+				$interface->assign('userHomeLocation', $user->getHomeLocationName());
+
+				$linkedUsers = [];
+				if ($library->allowLinkedAccounts) {
+					$linkedUsers = $user->getLinkedUsers();
+					foreach ($linkedUsers as $linkedUser) {
+						$linkedUser->loadContactInformation();
+					}
+				}
+				$interface->assign('linkedUsers', $linkedUsers);
+			}
+
+			$body .= $interface->fetch('AspenEvents/registrationUserSelector.tpl');
+			$result['buttons'] = $interface->fetch('AspenEvents/registrationButton.tpl');
 			$result['success'] = true;
-			$result['body'] = $body;
+			$result['body'] = $body;	
 			return $result;
 		}
-		
-		global $library;
+
 		require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
 		$libraryEventSettings = new LibraryEventsSetting();
 		$libraryEventSettings->settingSource = $vendor;
@@ -8105,6 +8125,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$body = $assabetSettings->registrationModalBody;
 			}
 		} 
+
 		$result['success'] = true;
 		$result['body'] = $body;
 
