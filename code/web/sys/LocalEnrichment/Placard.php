@@ -450,6 +450,11 @@ class Placard extends DB_LibraryLocationLinkedObject {
 		}
 	}
 
+	/** @noinspection PhpUnused */
+	public function bodyHasAnchor() : bool {
+		return !empty($this->body) && (stripos($this->body, '<a') !== false);
+	}
+
 	public function isDismissed() : bool {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/PlacardDismissal.php';
 		//Make sure the user has not dismissed the placard

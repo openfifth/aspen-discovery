@@ -9,14 +9,22 @@
 			</div>
 		</div>
 		{/if}
-		{if $placard->link}
-			<a href="{$placard->link}" target="_blank" class="placard-link" aria-label="{translate text=$placard->title inAttribute=true isAdminEnteredData=true isPublicFacing=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})">
-		{/if}
 		<div class="row">
 			<div class="col-xs-12">
+				{* If body has no anchor tags, wrap entire placard content with link. *}
+				{if $placard->link && !$placard->bodyHasAnchor()}
+					<a href="{$placard->link}" target="_blank" class="placard-link" aria-label="{translate text=$placard->title inAttribute=true isAdminEnteredData=true isPublicFacing=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})">
+				{/if}
 
 				{if !empty($placard->image)}
+					{* If body has anchor tags, only make the image clickable. *}
+					{if $placard->link && $placard->bodyHasAnchor()}
+						<a href="{$placard->link}" target="_blank" class="placard-image-link" aria-label="{translate text=$placard->title inAttribute=true isAdminEnteredData=true isPublicFacing=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})">
+					{/if}
 					<img src="/files/original/{$placard->image}" class="placard-image" alt="{if (empty($placard->altText))}{translate text=$placard->title inAttribute=true isPublicFacing=true isAdminEnteredData=true}{else}{translate text=$placard->altText inAttribute=true isPublicFacing=true isAdminEnteredData=true}{/if}">
+					{if $placard->link && $placard->bodyHasAnchor()}
+						</a>
+					{/if}
 				{/if}
 				{if !empty($placard->body)}
 					<span class="placard-body">
@@ -27,11 +35,12 @@
 				{if !empty($placard->css)}
 					<style>{$placard->css}</style>
 				{/if}
+
+				{if $placard->link && !$placard->bodyHasAnchor()}
+					</a>
+				{/if}
 			</div>
 		</div>
-		{if $placard->link}
-			</a>
-		{/if}
 		{if $dismissPlacardLocation == 0}
 			<div class="row">
 				<div class="col-xs-12 text-right">

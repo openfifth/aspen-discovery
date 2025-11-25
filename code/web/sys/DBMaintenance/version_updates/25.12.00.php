@@ -56,6 +56,19 @@ function getUpdates25_12_00(): array {
 
 		//Lucas Montoya - Theke Solutions
 
+		// Galen Charlton - Equinox
+		'chilifresh_cover_art_settings' => [
+			'title' => 'ChiliFresh covert art settings',
+			'description' => 'ChiliFresh covert art settings',
+			'continueOnError' => false,
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS chilifresh_settings (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				enabled TINYINT(1) NOT NULL DEFAULT 1,
+				genericArtCode TINYTEXT
+				) ENGINE = InnoDB",
+			]
+		]
 		//other
 
 	];
