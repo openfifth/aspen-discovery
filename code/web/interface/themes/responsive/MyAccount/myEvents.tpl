@@ -33,3 +33,4 @@
 	</div>
 	{/if}
 {/strip}
+{include file="AspenEvents/responsive.tpl" }
