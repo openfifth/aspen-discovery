@@ -1520,9 +1520,11 @@ AspenDiscovery.Admin = (function () {
 			if (showSeriesSelected) {
 				$("#propertyRowshowIndexedSeriesWithNoveList").show();
 				$("#propertyRownumSeriesToShowBeforeMore").show();
+				$("#propertyRowhideIndexedEContentSeries").show();
 			} else {
 				$("#propertyRowshowIndexedSeriesWithNoveList").hide();
 				$("#propertyRownumSeriesToShowBeforeMore").hide();
+				$("#propertyRowhideIndexedEContentSeries").hide();
 			}
 
 			if (!showSeriesSelection.data('listener-attached')) {
