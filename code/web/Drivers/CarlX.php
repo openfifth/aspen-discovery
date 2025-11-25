@@ -553,7 +553,7 @@ class CarlX extends AbstractIlsDriver {
 						$curHold->canFreeze = false;
 						$curHold->locationUpdateable = false;
 					} elseif (strpos($curHold->cancelId, 'BID: ') === 0) {
-						$curHold->canFreeze = true;
+						$curHold->canFreeze = $patron->getHomeLibrary()->allowFreezeHolds;
 						$curHold->locationUpdateable = true;
 					} else { // TO DO: Evaluate whether issue level holds are suspendable
 						$curHold->canFreeze = false;
