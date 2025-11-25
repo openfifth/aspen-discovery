@@ -237,7 +237,20 @@ class SearchSources {
 				require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
 				$libraryEventsSetting = new LibraryEventsSetting();
 				$libraryEventsSetting->libraryId = $library->libraryId;
+				$eventsActiveForLibrary = false;
+				
 				if ($libraryEventsSetting->find(true)) {
+					$eventsActiveForLibrary = true;
+				} else {
+					require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+					$aspenEventSettings = new AspenEventSetting();
+					$aspenEventSettings->id = 1;
+					if ($aspenEventSettings->find(true)) {			
+						$eventsActiveForLibrary = true;
+					}
+				}
+
+				if ($eventsActiveForLibrary) {
 					$searchOptions['events'] = [
 						'name' => 'Events',
 						'description' => 'Search events at the library',

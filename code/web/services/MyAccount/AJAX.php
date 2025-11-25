@@ -8049,6 +8049,25 @@ class MyAccount_AJAX extends JSON_Action {
 		$vendor = $_REQUEST['vendor'];
 		$body = "";
 
+		// for Aspen Native Events, the library is irrelevant, the settings are system level
+		if ($vendor == 'aspenEvents') {
+			require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+			$aspenEventSettings = new AspenEventSetting();
+			$aspenEventSettings->id = 1;
+			if (!$aspenEventSettings->find(true)) {			
+				return $result;
+			}
+			$body = $aspenEventSettings->getRegistrationModalBody();
+			
+			global $interface;
+			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
+			$interface->assign('userId', UserAccount::getActiveUserId());
+			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
+			$result['success'] = true;
+			$result['body'] = $body;
+			return $result;
+		}
+		
 		global $library;
 		require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
 		$libraryEventSettings = new LibraryEventsSetting();
@@ -8085,21 +8104,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($assabetSettings->find(true)) {
 				$body = $assabetSettings->registrationModalBody;
 			}
-		} else if ($vendor == 'aspenEvents') {
-			require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
-			$aspenEventSettings = new AspenEventSetting();
-			$aspenEventSettings->id = $libraryEventSettings->settingId;
-			if (!$aspenEventSettings->find(true)) {
-				return $result;
-			}
-			$body = $aspenEventSettings->getRegistrationModalBody();
-			
-			global $interface;
-			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
-			$interface->assign('userId', UserAccount::getActiveUserId());
-			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
-		}
-
+		} 
 		$result['success'] = true;
 		$result['body'] = $body;
 
