@@ -28,6 +28,7 @@ class PlacardTrigger extends DataObject {
 				'description' => 'The trigger used to cause the placard to display',
 				'maxLength' => 100,
 				'required' => true,
+				'noteBullets' => 'When multiple placards match, priority is as follows: exact match > whole word match > partial match. Longer triggers are favored for specificity.',
 			],
 			'placardId' => [
 				'property' => 'placardId',
