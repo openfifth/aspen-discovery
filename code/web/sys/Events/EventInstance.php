@@ -11,6 +11,7 @@ class EventInstance extends DataObject {
 	public $sublocationId;
 	public $status;
 	public $note;
+	public $numberOfSeats;
 
 	public $dateUpdated;
 	public $deleted;
@@ -68,6 +69,13 @@ class EventInstance extends DataObject {
 				'label' => 'Note',
 				'description' => 'A note for this specific instance',
 			],
+			'numberOfSeats' => [
+				'property' => 'numberOfSeats',
+				'type' => 'integer',
+				'label' => 'Number of Seats Override',
+				'description' => 'Override capacity for this specific instance. Leave blank to use event default.',
+				'min' => 0,
+			],
 			'status' => [
 				'property' => 'status',
 				'type' => 'checkbox',
@@ -91,6 +99,7 @@ class EventInstance extends DataObject {
 		return [
 			'length',
 			'dateUpdated',
+			'numberOfSeats',
 		];
 	}
 
@@ -177,6 +186,42 @@ class EventInstance extends DataObject {
 	function getUpcomingInstanceCount() {
 		$event = $this->getParentEvent();
 		return $event->getInstanceCount();
+	}
+
+	public function getEffectiveNumberOfSeats(): ?int {
+		if ($this->numberOfSeats !== null && $this->numberOfSeats > 0) {
+			return $this->numberOfSeats;
+		}
+		$event = $this->getParentEvent();
+		if ($event->numberOfSeats === null || $event->numberOfSeats == 0) {
+			return null;
+		}
+		return $event->numberOfSeats;
+	}
+
+	public function getRegistrationCount(): int {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $this->id;
+		$registration->whereAdd('cancelled IS NULL OR cancelled = 0');
+		return $registration->count();
+	}
+
+	public function getAvailableSeats(): ?int {
+		$capacity = $this->getEffectiveNumberOfSeats();
+		if ($capacity === null) {
+			return null;
+		}
+		return max(0, $capacity - $this->getRegistrationCount());
+	}
+
+	public function hasAvailableSeats(int $requestedSeats = 1): bool {
+		$capacity = $this->getEffectiveNumberOfSeats();
+		if ($capacity === null) {
+			return true;
+		}
+		$available = $this->getAvailableSeats();
+		return $available >= $requestedSeats;
 	}
 
 }
