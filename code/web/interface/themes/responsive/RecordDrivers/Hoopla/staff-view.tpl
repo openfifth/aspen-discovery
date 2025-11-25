@@ -49,6 +49,9 @@
 			{if !empty($hooplaType)}
 					<tr><td>{translate text="Hoopla Type" isPublicFacing=true}</td><td>{$hooplaType}</td></tr>
 			{/if}
+			{if !empty($price)}
+				<tr><td>{translate text="Price" isPublicFacing=true}</td><td>{$price}</td></tr>
+			{/if}
 		</table>
 		<pre>
 			{$hooplaExtract|print_r}
