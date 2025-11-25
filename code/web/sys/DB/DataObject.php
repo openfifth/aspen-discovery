@@ -1122,7 +1122,13 @@ abstract class DataObject implements JsonSerializable {
 			}
 
 			//Check to see if the property changed more than just a little bit (not "1" vs 1 or 03 vs 3)
-			$propertyChangedMoreThanSlightly = $this->$propertyName != $newValue || (is_null($this->$propertyName) && !is_null($newValue));
+			if (is_null($this->$propertyName)) {
+				$propertyChangedMoreThanSlightly = !empty($newValue);
+			}elseif (is_null($newValue)){
+				$propertyChangedMoreThanSlightly = !empty($this->$propertyName);
+			}else{
+				$propertyChangedMoreThanSlightly = ($this->$propertyName != $newValue);
+			}
 			$this->$propertyName = $newValue;
 			if ($propertyChangedMoreThanSlightly) {
 				$this->handlePropertyChangeEffects($propertyName, $oldValue, $newValue, $propertyStructure, 'changed');
@@ -1663,5 +1669,23 @@ abstract class DataObject implements JsonSerializable {
 		// contain no titles anyway.
 		$obj->whereAdd("dateDeleted > 0 AND dateDeleted < $cutOff");
 		return $obj->delete(true, true);
+	}
+
+	public function filterPropertiesByILS($activeILS, $structure) : array {
+		foreach ($structure as $propertyName => $property) {
+			if ($property['type'] == 'section') {
+				$structure[$propertyName]['properties'] = $this->filterPropertiesByILS($activeILS, $structure[$propertyName]['properties']);
+				if (empty($structure[$propertyName]['properties'])) {
+					unset($structure[$propertyName]);
+				}
+			}else{
+				if (array_key_exists('relatedIls', $property)) {
+					if (!in_array($activeILS, $property['relatedIls'])) {
+						unset($structure[$propertyName]);
+					}
+				}
+			}
+		}
+		return $structure;
 	}
 }

@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/JSON_Action.php';
 class Events_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
-	public function getEventTypesAndSubLocationsForLocation() {
+	public function getEventTypesAndSubLocationsForLocation() : array {
 		require_once ROOT_DIR . '/sys/Events/EventType.php';
 		$result = [
 			'success' => false,
@@ -50,7 +50,7 @@ class Events_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	public function getEventTypeFields() {
+	public function getEventTypeFields() : array {
 		require_once ROOT_DIR . '/sys/Events/EventType.php';
 		$result = [
 			'success' => false,
@@ -95,118 +95,118 @@ class Events_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	public function exportUsageData() {
+	public function exportUsageData() : void {
 		require_once ROOT_DIR . '/services/Events/EventGraphs.php';
 		$aspenUsageGraph = new Events_EventGraphs();
 		$aspenUsageGraph->buildCSV();
 	}
 
-	public function iCalendarExport() {
-			$result = [
-				'success' => false,
-				'title' => translate([
-					'text' => "Error",
-					'isAdminFacing' => false,
-				]),
-				'message' => translate([
-					'text' => 'Could not export event.',
-					'isAdminFacing' => false,
-				])
-			];
-			$eventId = $_REQUEST['eventId'] ?? '';
-			$wholeSeries = $_REQUEST['wholeSeries'] ?? '';
-			if (!empty($eventId)) {
-				global $interface;
-				global $configArray;
-				$interface->assign('timezone', $configArray['Site']['timezone']);
-				$eventIdParts = explode("_", $eventId, 3);
-				if (isset($eventIdParts[2])) {
-					switch ($_REQUEST['source']) {
-						case 'event_assabet':
-							require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
-							$driver = new AssabetEventRecordDriver($eventId);
-							break;
-						case 'event_communico':
-							require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
-							$driver = new CommunicoEventRecordDriver($eventId);
-							break;
-						case 'event_libcal':
-							require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
-							$driver = new SpringshareLibCalEventRecordDriver($eventId);
-							break;
-						case 'library_calendar_event':
-							require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
-							$driver = new LibraryCalendarEventRecordDriver($eventId);
-							break;
-						case 'event_aspenEvent':
-							require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-							$driver = new AspenEventRecordDriver($eventId);
-							break;
-						default:
-							$result = [
-								'success' => false,
-								'title' => translate([
-									'text' => "Error",
-									'isAdminFacing' => false,
-								]),
-								'message' => translate([
-									'text' => 'Could not find record driver for ' . $_REQUEST['source'],
-									'isAdminFacing' => false,
-								])
-							];
-							return $result;
-					}
-					$interface->assign('title', $driver->getTitle());
-					$description = $driver->getDescription() ?? '';
-					$description = str_replace("<p>", " <p>", $description);
-					$interface->assign('htmlDescription', $description);
-					$description = preg_replace("/(\r\n)/", "\\n\\n", $description);
-					$description = str_replace("&nbsp;", "", $description);
-					$description = preg_replace("/(<br\s?\/?>)|(<\/p>)/", "\\n\\n", $description);
-					$description = strip_tags($description);
-					$description = preg_replace("(;|,)", '\\\\$0', $description);
-					$interface->assign('description', $description);
-					$interface->assign('location', $driver->getBranch());
-					$interface->assign('sublocation', $driver->getRoom());
-					$event = new stdClass();
-					$startDate = $driver->getStartDate();
-					$endDate = $driver->getEndDate();
-					$event->date = $startDate->format("Ymd\THis");
-					$interval = $startDate->diff($endDate);
-					$interface->assign('hours', $interval->h);
-					$interface->assign('minutes', $interval->i);
-					$event->uid = $eventId;
-					$event->sublocation = $driver->getRoom() ?? '';
-					$event->status = $driver->getStatus() == 'Cancelled' ? 'Cancelled' : '';
-					$instances[] = $event;
-					if ($_REQUEST['source'] == 'event_aspenEvent' && $wholeSeries) {
-						$eventInstance = new EventInstance();
-						$eventInstance->id = $eventIdParts[2];
-						$eventInstance->find(true);
-						$series = $eventInstance->getSeries(true);
-						foreach ($series as $instance) {
-							$event = new stdClass();
-							$date = $instance->date . "T" . $instance->time;
-							$event->date = preg_replace('/([-:])/', '', $date);
-							$event->uid = join("_", [
-								$eventIdParts[0],
-								$eventIdParts[0],
-								$instance->id
-							]);
-							$event->sublocation = $instance->getSublocation() ?? '';
-							$event->status = $instance->status ? '' : 'Cancelled';
-							$instances[] = $event;
-						}
-					}
-					$interface->assign('instances', $instances);
-					$icsFile = $interface->fetch('Events/ics-export.tpl');
-					$result = [
-						'success' => true,
-						'icsFile' => $icsFile,
-					];
+	public function iCalendarExport() : array  {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => "Error",
+				'isAdminFacing' => false,
+			]),
+			'message' => translate([
+				'text' => 'Could not export event.',
+				'isAdminFacing' => false,
+			])
+		];
+		$eventId = $_REQUEST['eventId'] ?? '';
+		$wholeSeries = $_REQUEST['wholeSeries'] ?? '';
+		if (!empty($eventId)) {
+			global $interface;
+			global $configArray;
+			$interface->assign('timezone', $configArray['Site']['timezone']);
+			$eventIdParts = explode("_", $eventId, 3);
+			if (isset($eventIdParts[2])) {
+				switch ($_REQUEST['source']) {
+					case 'event_assabet':
+						require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
+						$driver = new AssabetEventRecordDriver($eventId);
+						break;
+					case 'event_communico':
+						require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
+						$driver = new CommunicoEventRecordDriver($eventId);
+						break;
+					case 'event_libcal':
+						require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
+						$driver = new SpringshareLibCalEventRecordDriver($eventId);
+						break;
+					case 'library_calendar_event':
+						require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
+						$driver = new LibraryCalendarEventRecordDriver($eventId);
+						break;
+					case 'event_aspenEvent':
+						require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+						$driver = new AspenEventRecordDriver($eventId);
+						break;
+					default:
+						$result = [
+							'success' => false,
+							'title' => translate([
+								'text' => "Error",
+								'isAdminFacing' => false,
+							]),
+							'message' => translate([
+								'text' => 'Could not find record driver for ' . $_REQUEST['source'],
+								'isAdminFacing' => false,
+							])
+						];
+						return $result;
 				}
+				$interface->assign('title', $driver->getTitle());
+				$description = $driver->getDescription() ?? '';
+				$description = str_replace("<p>", " <p>", $description);
+				$interface->assign('htmlDescription', $description);
+				$description = preg_replace("/(\r\n)/", "\\n\\n", $description);
+				$description = str_replace("&nbsp;", "", $description);
+				$description = preg_replace("/(<br\s?\/?>)|(<\/p>)/", "\\n\\n", $description);
+				$description = strip_tags($description);
+				$description = preg_replace("(;|,)", '\\\\$0', $description);
+				$interface->assign('description', $description);
+				$interface->assign('location', $driver->getBranch());
+				$interface->assign('sublocation', $driver->getRoom());
+				$event = new stdClass();
+				$startDate = $driver->getStartDate();
+				$endDate = $driver->getEndDate();
+				$event->date = $startDate->format("Ymd\THis");
+				$interval = $startDate->diff($endDate);
+				$interface->assign('hours', $interval->h);
+				$interface->assign('minutes', $interval->i);
+				$event->uid = $eventId;
+				$event->sublocation = $driver->getRoom() ?? '';
+				$event->status = $driver->getStatus() == 'Cancelled' ? 'Cancelled' : '';
+				$instances[] = $event;
+				if ($_REQUEST['source'] == 'event_aspenEvent' && $wholeSeries) {
+					$eventInstance = new EventInstance();
+					$eventInstance->id = $eventIdParts[2];
+					$eventInstance->find(true);
+					$series = $eventInstance->getSeries(true);
+					foreach ($series as $instance) {
+						$event = new stdClass();
+						$date = $instance->date . "T" . $instance->time;
+						$event->date = preg_replace('/([-:])/', '', $date);
+						$event->uid = join("_", [
+							$eventIdParts[0],
+							$eventIdParts[0],
+							$instance->id
+						]);
+						$event->sublocation = $instance->getSublocation() ?? '';
+						$event->status = $instance->status ? '' : 'Cancelled';
+						$instances[] = $event;
+					}
+				}
+				$interface->assign('instances', $instances);
+				$icsFile = $interface->fetch('Events/ics-export.tpl');
+				$result = [
+					'success' => true,
+					'icsFile' => $icsFile,
+				];
 			}
-			return $result;
+		}
+		return $result;
 	}
 
 	function getCopyEventsForm() : array {
@@ -353,7 +353,7 @@ class Events_AJAX extends JSON_Action {
 		];
 	}
 
-	function getListPrintOptions() {
+	function getListPrintOptions() : array {
 		global $interface;
 		global $library;
 		$interface->assign('week', strip_tags($_REQUEST['week']));
@@ -363,68 +363,54 @@ class Events_AJAX extends JSON_Action {
 		$calendarDisplaySettingId = 0;
 		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySettingLibrary.php';
 		$setting = new CalendarDisplaySettingLibrary();
-		$setting->libraryId = $library->id;
+		$setting->libraryId = $library->libraryId;
 		if ($setting->find(true)) {
 			$calendarDisplaySettingId = $setting->calendarDisplaySettingId;
 		}
 
 		$eventFieldIds = [];
-		$eventFieldNamesCalendar = [];
-		$eventFieldNamesAgenda = [];
 		if (!empty ($calendarDisplaySettingId)) {
 			require_once ROOT_DIR . '/sys/Events/EventFieldCalendarOptions.php';
 			require_once ROOT_DIR . '/sys/Events/EventField.php';
-			$printedCalendarOptions = new EventFieldCalendarOptions();
-			$printedCalendarOptions->calendarDislpaySettingId = $calendarDisplaySettingId;
-			$printedCalendarOptions->printedCalendar = 1;
-			$printedCalendarOptions->orderBy('weight');
-			$printedCalendarOptions->find();
-			while ($printedCalendarOptions->fetch()) {
-				$eventFieldIds[$printedCalendarOptions->eventFieldId] = 'calendar';
-			}
-
-			$printedAgendaOptions = new EventFieldCalendarOptions();
-			$printedAgendaOptions->calendarDislpaySettingId = $calendarDisplaySettingId;
-			$printedAgendaOptions->printedAgenda = 1;
-			$printedAgendaOptions->orderBy('weight');
-			$printedAgendaOptions->find();
-			while ($printedAgendaOptions->fetch()) {
-				if (!array_key_exists ($printedAgendaOptions->eventFieldId, $eventFieldIds)) {
-					$eventFieldIds[$printedAgendaOptions->eventFieldId] = 'agenda';
-				} else {
-					$eventFieldIds[$printedAgendaOptions->eventFieldId] = 'both';
-				}
+			$printedOptions = new EventFieldCalendarOptions();
+			$printedOptions->calendarDisplaySettingId = $calendarDisplaySettingId;
+			$printedOptions->orderBy('weight');
+			$printedOptions->find();
+			while ($printedOptions->fetch()) {
+				$eventFieldIds[$printedOptions->eventFieldId] = array(
+					'name' => null,
+					'printedCalendar' => $printedOptions->printedCalendar,
+					'printedAgenda' => $printedOptions->printedAgenda,
+				);
 			}
 
 			foreach ($eventFieldIds as $eventFieldId => $printOption) {
-				if ($eventFieldId == 0) {
-					$eventFieldNames[] = "description";
+				if ($eventFieldId < 0) {
+					if ($eventFieldId == -2) {
+						$eventFieldIds[$eventFieldId]['name'] = 'Description';
+					}else if ($eventFieldId == -3) {
+						$eventFieldIds[$eventFieldId]['name'] = 'Branch';
+					}else if ($eventFieldId == -4) {
+						$eventFieldIds[$eventFieldId]['name'] = 'Room';
+					}
 				} else {
 					$eventField = new EventField();
 					$eventField->id = $eventFieldId;
 					if ($eventField->find(true)) {
-						if ($printOption == 'calendar') {
-							$eventFieldNamesCalendar[] = $eventField->name;
-						} else if ($printOption == 'agenda') {
-							$eventFieldNamesAgenda[] = $eventField->name;
-						} else {
-							$eventFieldNamesCalendar[] = $eventField->name;
-							$eventFieldNamesAgenda[] = $eventField->name;
-						}
+						$eventFieldIds[$eventFieldId]['name'] = $eventField->name;
 					}
 				}
 			}
 		}
 
-		$interface->assign('eventFieldNamesCalendar', $eventFieldNamesCalendar);
-		$interface->assign('eventFieldNamesAgenda', $eventFieldNamesAgenda);
+		$interface->assign('eventFields', $eventFieldIds);
 
 		return [
 			'title' => translate([
 				'text' => 'Print Options',
 				'isAdminFacing' => 'true',
 			]),
-			'modalBody' => $interface->fetch('Events/list-print-options.tpl'),
+			'modalBody' => $interface->fetch('Events/calendar-print-options.tpl'),
 			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Events.buildAndOpenPrintUrl()'>" . translate([
 					'text' => 'Print',
 					'isAdminFacing' => 'true',
