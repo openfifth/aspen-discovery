@@ -8390,6 +8390,21 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+		$sourceId = 'aspenEvent_1_' . $eventInstanceId;
+		$recordDriver = new AspenEventRecordDriver($sourceId);
+		if (!$recordDriver->isValid()) {
+			$result['message'] = translate([
+				'text' => 'Event instance not found.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+		
+		// add the event to saved events if it has not yet been saved
+		$recordDriver->saveUserEventEntry($sourceId, $userId);
+
+		// register the user
 		$registration->insert();
 
 		$result['success'] = true;
