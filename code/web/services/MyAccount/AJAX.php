@@ -4291,7 +4291,7 @@ class MyAccount_AJAX extends JSON_Action {
 				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 				$aspenEventRegistration = new UserAspenEventInstanceRegistration();
 				$aspenEventRegistration->userdId = UserAccount::getActiveUserId();
-				$aspenEventRegistration->eventInstanceId = $eventry->sourceId;
+				$aspenEventRegistration->eventInstanceId = $entry->sourceId;
 				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
 			}
 
