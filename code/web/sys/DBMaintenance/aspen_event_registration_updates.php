@@ -34,6 +34,14 @@ function getAspenEventRegistrationUpdates() {
 				'ALTER TABLE event ADD COLUMN registrationRequired TINYINT(1) DEFAULT 0',
 			],
 		], // add_registrationRequired_to_events
-		
+		'add_numberOfSeats_to_events' => [
+			'title' => 'Add numberOfSeats to Events and Event Instances',
+			'description' => 'Add number of seats columns for capacity management. NULL or 0 means unlimited.',
+			'sql' => [
+				'ALTER TABLE event ADD COLUMN numberOfSeats INT DEFAULT NULL',
+				'ALTER TABLE event_instance ADD COLUMN numberOfSeats INT DEFAULT NULL',
+			],
+		], // add_numberOfSeats_to_events
+
 	];
 }
