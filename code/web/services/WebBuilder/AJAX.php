@@ -3,7 +3,7 @@ require_once ROOT_DIR . '/JSON_Action.php';
 
 class WebBuilder_AJAX extends JSON_Action {
 	/** @noinspection PhpUnused */
-	function getPortalCellValuesForSource() {
+	function getPortalCellValuesForSource(): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -17,11 +17,38 @@ class WebBuilder_AJAX extends JSON_Action {
 			case 'basic_page':
 			case 'basic_page_teaser':
 				require_once ROOT_DIR . '/sys/WebBuilder/BasicPage.php';
+				require_once ROOT_DIR . '/sys/WebBuilder/LibraryBasicPage.php';
 				$list = [];
 				$list['-1'] = 'Select a page';
 
 				$basicPage = new BasicPage();
-				$basicPage->orderBy('title');
+				$basicPage->orderBy('title ASC, id ASC');
+
+				if (!UserAccount::userHasPermission('Administer All Basic Pages')) {
+					$libraryList = Library::getLibraryList(true);
+					if (count($libraryList) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$validBasicPageIds = [];
+					$libraryBasicPage = new LibraryBasicPage();
+					$libraryBasicPage->whereAddIn('libraryId', array_keys($libraryList), false);
+					$libraryBasicPage->find();
+					while ($libraryBasicPage->fetch()) {
+						$validBasicPageIds[$libraryBasicPage->basicPageId] = $libraryBasicPage->basicPageId;
+					}
+					if (count($validBasicPageIds) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$basicPage->whereAddIn('id', array_keys($validBasicPageIds), true);
+				}
 				$basicPage->find();
 
 				while ($basicPage->fetch()) {
@@ -39,11 +66,16 @@ class WebBuilder_AJAX extends JSON_Action {
 				$list['-1'] = 'Select a spotlight';
 
 				$collectionSpotlight = new CollectionSpotlight();
-				if (!UserAccount::userHasPermission('Administer All Custom Pages')) {
-					$homeLibrary = Library::getPatronHomeLibrary();
-					$collectionSpotlight->whereAdd('libraryId = ' . $homeLibrary->libraryId . ' OR libraryId = -1');
+				$collectionSpotlight->orderBy('name ASC, id ASC');
+				if (!UserAccount::userHasPermission('Administer All Collection Spotlights')) {
+					$accessibleLibraries = Library::getLibraryList(true);
+					if (count($accessibleLibraries) > 0) {
+						$collectionSpotlight->whereAddIn('libraryId', array_keys($accessibleLibraries), false);
+						$collectionSpotlight->whereAdd('libraryId = -1', 'OR');
+					} else {
+						$collectionSpotlight->whereAdd('libraryId = -1');
+					}
 				}
-				$collectionSpotlight->orderBy('name');
 				$collectionSpotlight->find();
 				while ($collectionSpotlight->fetch()) {
 					$list[$collectionSpotlight->id] = $collectionSpotlight->name;
@@ -60,7 +92,7 @@ class WebBuilder_AJAX extends JSON_Action {
 				$list['-1'] = 'Select a form';
 
 				$customForm = new CustomForm();
-				$customForm->orderBy('title');
+				$customForm->orderBy('title ASC, id ASC');
 				if (!UserAccount::userHasPermission('Administer All Custom Forms')) {
 					$libraryCustomForm = new LibraryCustomForm();
 					$userLibrary = Library::getPatronHomeLibrary();
@@ -190,10 +222,36 @@ class WebBuilder_AJAX extends JSON_Action {
 				break;
 			case 'web_resource':
 				require_once ROOT_DIR . '/sys/WebBuilder/WebResource.php';
+				require_once ROOT_DIR . '/sys/WebBuilder/LibraryWebResource.php';
 				$list = [];
 				$list['-1'] = 'Select a web resource';
 				$object = new WebResource();
-				$object->orderBy('name');
+				$object->orderBy('name ASC, id ASC');
+				if (!UserAccount::userHasPermission('Administer All Web Resources')) {
+					$libraryList = Library::getLibraryList(true);
+					if (count($libraryList) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$validResourceIds = [];
+					$libraryWebResource = new LibraryWebResource();
+					$libraryWebResource->whereAddIn('libraryId', array_keys($libraryList), false);
+					$libraryWebResource->find();
+					while ($libraryWebResource->fetch()) {
+						$validResourceIds[$libraryWebResource->webResourceId] = $libraryWebResource->webResourceId;
+					}
+					if (count($validResourceIds) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$object->whereAddIn('id', array_keys($validResourceIds), true);
+				}
 				$object->find();
 				while ($object->fetch()) {
 					$list[$object->id] = $object->name;
@@ -205,10 +263,36 @@ class WebBuilder_AJAX extends JSON_Action {
 				break;
 			case 'quick_poll':
 				require_once ROOT_DIR . '/sys/WebBuilder/QuickPoll.php';
+				require_once ROOT_DIR . '/sys/WebBuilder/LibraryQuickPoll.php';
 				$list = [];
 				$list['-1'] = 'Select a quick poll';
 				$object = new QuickPoll();
-				$object->orderBy('title');
+				$object->orderBy('title ASC, id ASC');
+				if (!UserAccount::userHasPermission('Administer All Quick Polls')) {
+					$libraryList = Library::getLibraryList(true);
+					if (count($libraryList) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$validPollIds = [];
+					$libraryQuickPoll = new LibraryQuickPoll();
+					$libraryQuickPoll->whereAddIn('libraryId', array_keys($libraryList), false);
+					$libraryQuickPoll->find();
+					while ($libraryQuickPoll->fetch()) {
+						$validPollIds[$libraryQuickPoll->pollId] = $libraryQuickPoll->pollId;
+					}
+					if (count($validPollIds) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$object->whereAddIn('id', array_keys($validPollIds), true);
+				}
 				$object->find();
 				while ($object->fetch()) {
 					$list[$object->id] = $object->title;
@@ -220,10 +304,36 @@ class WebBuilder_AJAX extends JSON_Action {
 				break;
 			case 'custom_web_resource_page':
 				require_once ROOT_DIR . '/sys/WebBuilder/CustomWebResourcePage.php';
+				require_once ROOT_DIR . '/sys/WebBuilder/LibraryCustomWebResourcePage.php';
 				$list = [];
 				$list['-1'] = 'Select a custom web resource page';
 				$object = new CustomWebResourcePage();
-				$object->orderBy('title');
+				$object->orderBy('title ASC, id ASC');
+				if (!UserAccount::userHasPermission('Administer All Custom Web Resource Pages')) {
+					$libraryList = Library::getLibraryList(true);
+					if (count($libraryList) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$validPageIds = [];
+					$libraryCustomWebResourcePage = new LibraryCustomWebResourcePage();
+					$libraryCustomWebResourcePage->whereAddIn('libraryId', array_keys($libraryList), false);
+					$libraryCustomWebResourcePage->find();
+					while ($libraryCustomWebResourcePage->fetch()) {
+						$validPageIds[$libraryCustomWebResourcePage->customResourcePageId] = $libraryCustomWebResourcePage->customResourcePageId;
+					}
+					if (count($validPageIds) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$object->whereAddIn('id', array_keys($validPageIds), true);
+				}
 				$object->find();
 				while ($object->fetch()) {
 					$list[$object->id] = $object->title;
@@ -254,7 +364,7 @@ class WebBuilder_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getSourceValuesForPlacard() {
+	function getSourceValuesForPlacard(): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -272,10 +382,36 @@ class WebBuilder_AJAX extends JSON_Action {
 				break;
 			case 'web_resource':
 				require_once ROOT_DIR . '/sys/WebBuilder/WebResource.php';
+				require_once ROOT_DIR . '/sys/WebBuilder/LibraryWebResource.php';
 				$list = [];
 				$list['-1'] = 'Select a web resource';
 				$object = new WebResource();
-				$object->orderBy('name');
+				$object->orderBy('name ASC, id ASC');
+				if (!UserAccount::userHasPermission('Administer All Web Resources')) {
+					$libraryList = Library::getLibraryList(true);
+					if (count($libraryList) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$validResourceIds = [];
+					$libraryWebResource = new LibraryWebResource();
+					$libraryWebResource->whereAddIn('libraryId', array_keys($libraryList), false);
+					$libraryWebResource->find();
+					while ($libraryWebResource->fetch()) {
+						$validResourceIds[$libraryWebResource->webResourceId] = $libraryWebResource->webResourceId;
+					}
+					if (count($validResourceIds) == 0) {
+						$result = [
+							'success' => true,
+							'values' => $list,
+						];
+						break;
+					}
+					$object->whereAddIn('id', array_keys($validResourceIds), true);
+				}
 				$object->find();
 				while ($object->fetch()) {
 					$list[$object->id] = $object->name;
