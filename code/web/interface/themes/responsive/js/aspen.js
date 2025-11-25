@@ -8470,7 +8470,7 @@ AspenDiscovery.Account = (function () {
 			};
 
 			$.getJSON(url, params, function (data) {
-				AspenDiscovery.showMessage(data.title, data.message);
+				AspenDiscovery.showMessage(data.title, data.message, false, data.success);
 			}).fail(AspenDiscovery.ajaxFail);
 		},
 
