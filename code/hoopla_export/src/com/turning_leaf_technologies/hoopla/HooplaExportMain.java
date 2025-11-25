@@ -700,8 +700,8 @@ public class HooplaExportMain {
 							String newStatus = availability.getString("status");
 							int newHoldsQueueSize = newStatus.equals("BORROW") ? 0 :
 							availability.has("holdsQueueSize") ? availability.getInt("holdsQueueSize") : 0;
-							int newAvailableCopies = availability.getInt("availableCopies");
-							int newTotalCopies = availability.getInt("totalCopies");
+							int newAvailableCopies = availability.has("availableCopies") ? availability.getInt("availableCopies") : 0;
+							int newTotalCopies = availability.has("totalCopies") ? availability.getInt("totalCopies") : 0;
 
 
 							boolean needsUpdate =  !existingInDB || existingHoldsQueueSize != newHoldsQueueSize || existingAvailableCopies != newAvailableCopies || existingTotalCopies != newTotalCopies || !Objects.equals(existingStatus, newStatus);
