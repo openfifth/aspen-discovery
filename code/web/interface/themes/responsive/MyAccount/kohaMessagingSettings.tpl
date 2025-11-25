@@ -82,11 +82,11 @@
 					{/if}
 					{if !empty($enablePhoneMessaging)}
 						<td>
-						{if !empty($messagingSettings.$messageTypeId) && !empty($messagingSettings.$messageTypeId.allowableTransports.phone)}
+						{if !empty($messagingSettings.$messageTypeId) && !empty($messagingSettings.$messageTypeId.allowableTransports.$phoneMessagingType)}
 							{if !empty($canSave)}
-								<input type="checkbox" id="phone{$messageTypeId}" name="{$messageTypeId}[]" value="phone" aria-label="Receive Phone Call for {$messageType.label}" onclick="$('#none{$messageTypeId}').attr('checked', false); return AspenDiscovery.Account.toggleKohaDigestCheckbox()" {if !empty($messagingSettings.$messageTypeId) && !empty($messagingSettings.$messageTypeId.selectedTransports.phone)}checked="checked"{/if}>
+								<input type="checkbox" id="phone{$messageTypeId}" name="{$messageTypeId}[]" value="{$phoneMessagingType}" aria-label="Receive Phone Call for {$messageType.label}" onclick="$('#none{$messageTypeId}').attr('checked', false); return AspenDiscovery.Account.toggleKohaDigestCheckbox()" {if !empty($messagingSettings.$messageTypeId) && !empty($messagingSettings.$messageTypeId.selectedTransports.$phoneMessagingType)}checked="checked"{/if}>
 							{else}
-								{if $messagingSettings.$messageTypeId.selectedTransports.phone} {translate text='Yes' isPublicFacing=true}{else} {translate text='No' isPublicFacing=true}{/if}
+								{if $messagingSettings.$messageTypeId.selectedTransports.$phoneMessagingType} {translate text='Yes' isPublicFacing=true}{else} {translate text='No' isPublicFacing=true}{/if}
 							{/if}
 						{else}
 							-

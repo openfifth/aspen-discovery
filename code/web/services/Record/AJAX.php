@@ -513,6 +513,27 @@ class Record_AJAX extends Action {
 
 			$interface->assign('items', $items);
 			$interface->assign('holdType', $holdType);
+			if ($library->hidePickupLocationPrompt) {
+				$numLocationsToSelectFrom = 0;
+				$firstLocationCode = '';
+				foreach ($locations as $location) {
+					if (is_object($location)) {
+						$numLocationsToSelectFrom++;
+						if (empty($firstLocationCode)) {
+							$firstLocationCode = $location->code;
+						}
+					}
+				}
+				if ($numLocationsToSelectFrom == 1) {
+					$interface->assign('defaultPickupLocation', $firstLocationCode);
+					$interface->assign('hidePickupLocationPrompt', true);
+				}else{
+					$interface->assign('hidePickupLocationPrompt', false);
+				}
+
+			}else{
+				$interface->assign('hidePickupLocationPrompt', false);
+			}
 
 			// If the pickup location is valid, bypass the prompt to select a pickup location.
 			$bypassHolds = false;
@@ -821,6 +842,26 @@ class Record_AJAX extends Action {
 			$interface->assign('localSystemName', $library->displayName);
 			$interface->assign('hasItemsWithoutVolumes', $numItemsWithoutVolumes > 0);
 			$interface->assign('majorityOfItemsHaveVolumes', $numItemsWithVolumes > $numItemsWithoutVolumes);
+			if ($library->hidePickupLocationPrompt) {
+				$numLocationsToSelectFrom = 0;
+				$firstLocationCode = '';
+				foreach ($locations as $location) {
+					if (is_object($location)) {
+						$numLocationsToSelectFrom++;
+						if (empty($firstLocationCode)) {
+							$firstLocationCode = $location->code;
+						}
+					}
+				}
+				if ($numLocationsToSelectFrom == 1) {
+					$interface->assign('defaultPickupLocation', $firstLocationCode);
+					$interface->assign('hidePickupLocationPrompt', true);
+				}else{
+					$interface->assign('hidePickupLocationPrompt', false);
+				}
+			}else{
+				$interface->assign('hidePickupLocationPrompt', false);
+			}
 
 			//Check to see if we need to place a volume hold
 			$alwaysPlaceVolumeHoldWhenVolumesArePresent = $marcRecord->getCatalogDriver()->alwaysPlaceVolumeHoldWhenVolumesArePresent();
@@ -1055,7 +1096,7 @@ class Record_AJAX extends Action {
 					$placeHoldOnEdition = 0;
 					if (isset($_REQUEST['promptForEdition'])) {
 						$promptForEdition = (int)$_REQUEST['promptForEdition'];
-						$placeHoldOnEdition = (int)$_REQUEST['placeHoldOnEdition'];
+						$placeHoldOnEdition = isset($_REQUEST['placeHoldOnEdition']) ? (int)$_REQUEST['placeHoldOnEdition'] : 0;
 						if ($promptForEdition > 0 && $placeHoldOnEdition > 1) {
 							//Placing a hold on a specific edition
 							$recordId = $_REQUEST['selectedEdition'];
@@ -1069,7 +1110,7 @@ class Record_AJAX extends Action {
 							}
 						}else{
 							//Placing a hold on the suggested edition
-							$rememberUserEditionPreference = (bool)$_REQUEST['rememberUserEditionPreference'];
+							$rememberUserEditionPreference = isset($_REQUEST['rememberUserEditionPreference']) ? filter_var($_REQUEST['rememberUserEditionPreference'], FILTER_VALIDATE_BOOLEAN) : false;
 							if ($rememberUserEditionPreference !== $user->rememberHoldPromptForEdition) {
 								$user->setRememberHoldPromptForEdition($rememberUserEditionPreference);
 							}

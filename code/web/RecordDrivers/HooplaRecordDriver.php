@@ -103,7 +103,13 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 		$interface->assign('dateFirstDetected', $this->dateFirstDetected);
 
-		$interface->assign('hooplaExtract', $this->hooplaRawMetadata);
+		$rawData = $this->hooplaRawMetadata;
+		if (IPAddress::showDebuggingInformation()) {
+			$interface->assign('price', $rawData->price ?? 0);
+		}
+		unset($rawData->price);
+
+		$interface->assign('hooplaExtract', $rawData);
 		return 'RecordDrivers/Hoopla/staff-view.tpl';
 	}
 
