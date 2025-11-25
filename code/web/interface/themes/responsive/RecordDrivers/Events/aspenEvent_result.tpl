@@ -60,6 +60,17 @@
 							{$recordDriver->getRoom()}
 						</div>
 					{/if}
+					{if $numberOfSeats !== null}
+						<br />
+						<div class="result-label col-tn-2">{translate text="Available Seats" isPublicFacing=true} </div>
+						<div class="result-value col-tn-6 notranslate">
+							{if $isEventFull}
+								<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
+							{else}
+								{$availableSeats} / {$numberOfSeats}
+							{/if}
+						</div>
+					{/if}
 					{if $private}
 						<div class="result-value col-tn-8">
 							<span class="label label-default">{translate text="Private" isPublicFacing=true}</span>
