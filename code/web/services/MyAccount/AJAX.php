@@ -8891,6 +8891,29 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$body = $aspenEventSettings->getRegistrationModalBody();
 
+			$sourceId = $_REQUEST['sourceId'];
+			$sourceIdParts = explode('_', $sourceId);
+			$eventInstanceId = end($sourceIdParts);
+
+			require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+			$eventInstance = new EventInstance();
+			$eventInstance->id = $eventInstanceId;
+			if (!$eventInstance->find(true)) {
+				unset($result['buttons']);
+				$result['message'] = translate([
+					'text' => 'Event not found.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+
+			global $interface;
+			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
+			$available = $eventInstance->getAvailableSeats();
+			$interface->assign('numberOfSeats', $numberOfSeats);
+			$interface->assign('availableSeats', $available);
+			$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+
 			$user = UserAccount::getLoggedInUser();
 			if (empty($user)) {
 				unset($result['buttons']);
@@ -8901,8 +8924,7 @@ class MyAccount_AJAX extends JSON_Action {
 				return $result;
 			}
 			
-			global $interface;
-			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
+			$interface->assign('eventSourceId', $sourceId);
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
 
 			$interface->assign('loggedIn', true);
@@ -9160,6 +9182,15 @@ class MyAccount_AJAX extends JSON_Action {
 			$userEventsEntry->dateAdded = time();
 			$userEventsEntry->insert();
 		}
+
+		if (!$eventInstance->hasAvailableSeats(1)) {
+			$result['message'] = translate([
+				'text' => 'This event is full. No seats available.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
 
 		// register the user
 		$registration->insert();
