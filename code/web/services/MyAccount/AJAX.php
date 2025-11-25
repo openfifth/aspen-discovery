@@ -8187,11 +8187,35 @@ class MyAccount_AJAX extends JSON_Action {
 				return $result;
 			}
 			$body = $aspenEventSettings->getRegistrationModalBody();
+
+			$user = UserAccount::getLoggedInUser();
+			if (empty($user)) {
+				unset($result['buttons']);
+				$result['message'] = translate([
+					'text' => 'You must log in to register to events.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
 			
 			global $interface;
 			$interface->assign('eventSourceId', $_REQUEST['sourceId']);
-			$interface->assign('userId', UserAccount::getActiveUserId());
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
+
+			$interface->assign('loggedIn', true);
+			$interface->assign('userId', $user->id);
+			$interface->assign('userDisplayName', $user->getDisplayName());
+			$interface->assign('userEmail', $user->email);
+			$interface->assign('userHomeLocation', $user->getHomeLocationName());
+
+			$linkedUsers = [];
+			if ($library->allowLinkedAccounts) {
+				$linkedUsers = $user->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					$linkedUser->loadContactInformation();
+				}
+			}
+			$interface->assign('linkedUsers', $linkedUsers);		
 		}
 
 		$result['success'] = true;
