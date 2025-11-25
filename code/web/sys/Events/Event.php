@@ -22,6 +22,7 @@ class Event extends DataObject {
 	public $eventLength;
 	public $recurrenceOption;
 	public $registrationRequired;
+	public $numberOfSeats;
 	/** @noinspection PhpUnused */
 	public $recurrenceInterval;
 	public $recurrenceFrequency;
@@ -159,6 +160,13 @@ class Event extends DataObject {
 						'label' => 'Enable Registration ?',
 						'default' => false,
 						'describe' => 'Enable registration for this event and mark is as required'
+					],
+					'numberOfSeats' => [
+						'property' => 'numberOfSeats',
+						'type' => 'integer',
+						'label' => 'Number of Seats',
+						'description' => 'Maximum number of available seats for this event. Leave blank or 0 for unlimited.',
+						'min' => 0,
 					],
 				],
 			],
@@ -592,7 +600,8 @@ class Event extends DataObject {
 			'dateUpdated',
 			'sublocationId',
 			'weekNumber',
-			'deleted'
+			'deleted',
+			'numberOfSeats'
 		];
 	}
 
