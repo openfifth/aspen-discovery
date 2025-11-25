@@ -505,6 +505,7 @@ class Koha extends AbstractIlsDriver {
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
 		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			$curCheckout = new Checkout();
 			$curCheckout->type = 'ils';
@@ -567,7 +568,16 @@ class Koha extends AbstractIlsDriver {
 			if ($circControl == 'PatronLibrary') {
 				$circBranch = $patron->getHomeLocationCode();
 			} else if ($circControl == 'PickupLibrary') {
-				$circBranch = Library::getActiveLibrary()->subdomain;
+				$circBranch = $curRow['branchcode'];
+				if ($activeLibrary) {
+					$locations = $activeLibrary->getLocations();
+					if (!empty($locations)) {
+						$firstLocation = reset($locations);
+						if ($firstLocation != null && !empty($firstLocation->code)) {
+							$circBranch = $firstLocation->code;
+						}
+					}
+				}
 			} else {
 				$circBranch = $curRow['branchcode'];
 			}
@@ -2345,7 +2355,7 @@ class Koha extends AbstractIlsDriver {
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
 		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
-
+		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			//Each row in the table represents a hold
 			$curHold = new Hold();
@@ -2429,7 +2439,16 @@ class Koha extends AbstractIlsDriver {
 					if ($circControl == 'PatronLibrary') {
 						$circBranch = $patron->getHomeLocationCode();
 					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = Library::getActiveLibrary()->subdomain;
+						$circBranch = $curRow['branchcode'];
+						if ($activeLibrary) {
+							$locations = $activeLibrary->getLocations();
+							if (!empty($locations)) {
+								$firstLocation = reset($locations);
+								if ($firstLocation != null && !empty($firstLocation->code)) {
+									$circBranch = $firstLocation->code;
+								}
+							}
+						}
 					} else {
 						$circBranch = $curRow['branchcode'];
 					}
@@ -2986,6 +3005,7 @@ class Koha extends AbstractIlsDriver {
 			ExternalRequestLogEntry::logRequest('koha.renewCheckout', 'GET', $renewURL, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $renewResponse, []);
 
 			$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+			$activeLibrary = Library::getActiveLibrary();
 
 			//Parse the result
 			if (isset($renewResponse->success) && ($renewResponse->success == 1)) {
@@ -2997,7 +3017,16 @@ class Koha extends AbstractIlsDriver {
 					if ($circControl == 'PatronLibrary') {
 						$circBranch = $patron->getHomeLocationCode();
 					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = Library::getActiveLibrary()->subdomain;
+						$circBranch = $curRow['branchcode'];
+						if ($activeLibrary) {
+							$locations = $activeLibrary->getLocations();
+							if (!empty($locations)) {
+								$firstLocation = reset($locations);
+								if ($firstLocation != null && !empty($firstLocation->code)) {
+									$circBranch = $firstLocation->code;
+								}
+							}
+						}
 					} else {
 						$circBranch = $curRow['branchcode'];
 					}
