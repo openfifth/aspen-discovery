@@ -4690,6 +4690,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$pager = new Pager($options);
 		$interface->assign('pageLinks', $pager->getLinks());
 		$interface->assign('events', $events);
+		$interface->assign('userId', $user->id);
 
 		$result['success'] = true;
 		$result['message'] = "";
