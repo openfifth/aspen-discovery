@@ -8406,6 +8406,9 @@ ul.account-submenu {
 a.placard-link {
   text-decoration: none;
 }
+a.placard-image-link {
+  text-decoration: none;
+}
 .placard-image {
   float: left;
   padding-right: 10px;
@@ -8413,7 +8416,7 @@ a.placard-link {
   height: auto;
 }
 .placard-body {
-  font-weight: bold;
+  font-weight: normal;
 }
 .table-sticky {
   overflow-y: auto;
@@ -11298,6 +11301,15 @@ a.browse-thumbnail.active {
 .calendar-event-field {
   font-size: 12px;
 }
+.calendar-event-description {
+  font-style: italic;
+}
+.calendar-event-field.display-online {
+  display: inherit;
+}
+.calendar-event-field.hide-online {
+  display: none;
+}
 .calendar-event-state {
   display: inherit;
 }
@@ -11354,12 +11366,18 @@ a.browse-thumbnail.active {
     page-break-inside: avoid;
   }
   .calendar-events .calendar-event {
-    display: flex;
+    display: block;
     flex-direction: row;
     gap: 0.5rem;
     justify-content: space-between;
     margin: 1px 5px 1px 10px;
     font-weight: bold;
+  }
+  .calendar-event-field.hide-print-agenda {
+    display: none;
+  }
+  .calendar-event-field.display-print-agenda {
+    display: inherit;
   }
 }
 @media print and (min-width: 768px) {
@@ -11370,8 +11388,11 @@ a.browse-thumbnail.active {
   #page-container > .container {
     width: 95%;
   }
-  .calendar-event-description {
+  .calendar-event-field.hide-print-calendar {
     display: none;
+  }
+  .calendar-event-field.display-print-calendar {
+    display: initial;
   }
   .calendar {
     page-break-inside: avoid;
@@ -11391,7 +11412,6 @@ a.browse-thumbnail.active {
   }
   .calendar-row .calendar-day-cell {
     min-height: 12vh;
-    max-height: 20vh;
     flex-direction: row-reverse;
     justify-content: space-between;
     max-width: 100%;
@@ -11425,8 +11445,7 @@ a.browse-thumbnail.active {
   .calendar-row .calendar-day-cell .calendar-events .calendar-event {
     margin: 0;
     padding: 1px 0 0 3px;
-    display: flex;
-    flex-direction: row;
+    display: block;
     column-gap: 0.5rem;
     justify-content: left;
     max-width: 100%;
@@ -11549,12 +11568,18 @@ a.browse-thumbnail.active {
     page-break-inside: avoid;
   }
   [data-context="print-layout"] .calendar-events .calendar-event {
-    display: flex;
+    display: block;
     flex-direction: row;
     gap: 0.5rem;
     justify-content: space-between;
     margin: 1px 5px 1px 10px;
     font-weight: bold;
+  }
+  [data-context="print-layout"] .calendar-event-field.hide-print-agenda {
+    display: none;
+  }
+  [data-context="print-layout"] .calendar-event-field.display-print-agenda {
+    display: inherit;
   }
 }
 @media (min-width: 768px) {
@@ -11565,8 +11590,11 @@ a.browse-thumbnail.active {
   [data-context="print-layout"] #page-container > .container {
     width: 95%;
   }
-  [data-context="print-layout"] .calendar-event-description {
+  [data-context="print-layout"] .calendar-event-field.hide-print-calendar {
     display: none;
+  }
+  [data-context="print-layout"] .calendar-event-field.display-print-calendar {
+    display: initial;
   }
   [data-context="print-layout"] .calendar {
     page-break-inside: avoid;
@@ -11586,7 +11614,6 @@ a.browse-thumbnail.active {
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell {
     min-height: 12vh;
-    max-height: 20vh;
     flex-direction: row-reverse;
     justify-content: space-between;
     max-width: 100%;
@@ -11620,8 +11647,7 @@ a.browse-thumbnail.active {
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event {
     margin: 0;
     padding: 1px 0 0 3px;
-    display: flex;
-    flex-direction: row;
+    display: block;
     column-gap: 0.5rem;
     justify-content: left;
     max-width: 100%;

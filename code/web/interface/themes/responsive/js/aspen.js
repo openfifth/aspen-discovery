@@ -3686,7 +3686,7 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		showCreateListForm: function (source, sourceId) {
+		showCreateListForm: function (source, sourceId,defaultGroupId) {
 			if (Globals.loggedIn) {
 				var url = Globals.path + "/MyAccount/AJAX";
 				var params = {method: "getCreateListForm"};
@@ -3696,13 +3696,16 @@ AspenDiscovery.Account = (function () {
 				if (sourceId !== undefined) {
 					params.sourceId = sourceId;
 				}
+				if (defaultGroupId !== undefined) {
+					params.defaultGroupId = defaultGroupId;
+				}
 				// noinspection JSUnresolvedFunction
 				$.getJSON(url, params, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}).fail(AspenDiscovery.ajaxFail);
 			} else {
 				AspenDiscovery.Account.ajaxLogin($trigger, function () {
-					return AspenDiscovery.Account.showCreateListForm(source, sourceId);
+					return AspenDiscovery.Account.showCreateListForm(source, sourceId,defaultGroupId);
 				}, false);
 			}
 			return false;
@@ -9993,7 +9996,11 @@ AspenDiscovery.Events = (function(){
 						$("#description").text("");
 						return false;
 					} else {
-						$("#editFormInstructions").html(data.editFormInstructions);
+						if (data.editFormInstructions.length > 0) {
+							$("#editFormInstructions").html(data.editFormInstructions).show();
+						}else{
+							$("#editFormInstructions").hide();
+						}
 						eventType = data.eventType;
 						$("#title").val(eventType.title);
 						if (!eventType.titleCustomizable) {
@@ -10532,8 +10539,7 @@ AspenDiscovery.Events = (function(){
 
 			// Checkbox names (in order as in the form)
 			const checkboxIds = [
-				'endTime',
-				'descriptionAgenda'
+				'endTime'
 			];
 
 			// Build URL params object
@@ -10549,6 +10555,13 @@ AspenDiscovery.Events = (function(){
 				if (el) {
 					// Only include if checked, send value "true" (or customize as needed)
 					params[id] = el.checked ? 'true' : 'false';
+				}
+			});
+
+			const checkboxes = document.querySelectorAll('input[type="checkbox"].agenda-print-option, input[type="checkbox"].calendar-print-option');
+			checkboxes.forEach(el => {
+				if (el.id) {
+					params[el.id] = el.checked ? 'true' : 'false';
 				}
 			});
 
@@ -12765,6 +12778,7 @@ AspenDiscovery.OverDrive = (function(){
 					AspenDiscovery.showMessage('Error', data.message);
 				}
 			});
+			return false;
 		},
 
 		getLargeCover: function (id){

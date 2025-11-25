@@ -12,7 +12,16 @@ class eCARD extends Action {
 			$interface->assign('eCardSettings', null);
 		}
 		global $library;
-		$interface->assign('selfRegistrationFormMessage', $library->selfRegistrationFormMessage);
+		global $activeLanguage;
+		$languageCode = 'en';
+		if (isset($activeLanguage) && !empty($activeLanguage->code)) {
+			$languageCode = $activeLanguage->code;
+		}
+		$selfRegistrationFormMessage = $library->getTextBlockTranslation('selfRegistrationFormMessage', $languageCode);
+		if (empty($selfRegistrationFormMessage)) {
+			$selfRegistrationFormMessage = $library->selfRegistrationFormMessage;
+		}
+		$interface->assign('selfRegistrationFormMessage', $selfRegistrationFormMessage);
 
 		$this->display('quipuECard.tpl', 'Register for a Library Card', '');
 	}

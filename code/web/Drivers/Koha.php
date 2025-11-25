@@ -35,6 +35,25 @@ class Koha extends AbstractIlsDriver {
 		'W' => 'Writeoff',
 	];
 
+	static $accoundlineCodeToDescriptionMap = [
+		'ACCOUNT' => 'Account creation fee',
+		'ACCOUNT_RENEW' => 'Account renewal fee',
+		'ARTICLE_REQUEST' => 'Article request fee',
+		'LOST' => 'Lost item',
+		'MANUAL' => 'Manual fee',
+		'NEW_CARD' => 'New card',
+		'OVERDUE' => 'Fine',
+		'PROCESSING' => 'Lost item processing fee',
+		'RENT' => 'Rental fee',
+		'RENT_DAILY' => 'Daily rental fee',
+		'RENT_RENEW' => 'Renewal of rental item',
+		'RENT_DAILY_RENEW' => 'Renewal of daily rental item',
+		'RESERVE' => 'Hold fee',
+		'RESERVE_EXPIRED' => 'Hold waiting too long',
+		'PAYOUT' => 'Payment from library to patron',
+		'VOID' => 'Credit has been voided',
+	];
+
 	function updateHomeLibrary(User $patron, string $homeLibraryCode) {
 		$result = [
 			'success' => false,
@@ -505,6 +524,7 @@ class Koha extends AbstractIlsDriver {
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
 		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			$curCheckout = new Checkout();
 			$curCheckout->type = 'ils';
@@ -567,7 +587,16 @@ class Koha extends AbstractIlsDriver {
 			if ($circControl == 'PatronLibrary') {
 				$circBranch = $patron->getHomeLocationCode();
 			} else if ($circControl == 'PickupLibrary') {
-				$circBranch = Library::getActiveLibrary()->subdomain;
+				$circBranch = $curRow['branchcode'];
+				if ($activeLibrary) {
+					$locations = $activeLibrary->getLocations();
+					if (!empty($locations)) {
+						$firstLocation = reset($locations);
+						if ($firstLocation != null && !empty($firstLocation->code)) {
+							$circBranch = $firstLocation->code;
+						}
+					}
+				}
 			} else {
 				$circBranch = $curRow['branchcode'];
 			}
@@ -2345,7 +2374,7 @@ class Koha extends AbstractIlsDriver {
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
 		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
-
+		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			//Each row in the table represents a hold
 			$curHold = new Hold();
@@ -2429,7 +2458,16 @@ class Koha extends AbstractIlsDriver {
 					if ($circControl == 'PatronLibrary') {
 						$circBranch = $patron->getHomeLocationCode();
 					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = Library::getActiveLibrary()->subdomain;
+						$circBranch = $curRow['branchcode'];
+						if ($activeLibrary) {
+							$locations = $activeLibrary->getLocations();
+							if (!empty($locations)) {
+								$firstLocation = reset($locations);
+								if ($firstLocation != null && !empty($firstLocation->code)) {
+									$circBranch = $firstLocation->code;
+								}
+							}
+						}
 					} else {
 						$circBranch = $curRow['branchcode'];
 					}
@@ -2986,6 +3024,7 @@ class Koha extends AbstractIlsDriver {
 			ExternalRequestLogEntry::logRequest('koha.renewCheckout', 'GET', $renewURL, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $renewResponse, []);
 
 			$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+			$activeLibrary = Library::getActiveLibrary();
 
 			//Parse the result
 			if (isset($renewResponse->success) && ($renewResponse->success == 1)) {
@@ -2997,7 +3036,16 @@ class Koha extends AbstractIlsDriver {
 					if ($circControl == 'PatronLibrary') {
 						$circBranch = $patron->getHomeLocationCode();
 					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = Library::getActiveLibrary()->subdomain;
+						$circBranch = $curRow['branchcode'];
+						if ($activeLibrary) {
+							$locations = $activeLibrary->getLocations();
+							if (!empty($locations)) {
+								$firstLocation = reset($locations);
+								if ($firstLocation != null && !empty($firstLocation->code)) {
+									$circBranch = $firstLocation->code;
+								}
+							}
+						}
 					} else {
 						$circBranch = $curRow['branchcode'];
 					}
@@ -3176,7 +3224,7 @@ class Koha extends AbstractIlsDriver {
 					'date' => $allFeesRow['date'],
 					'type' => $type,
 					'reason' => $type,
-					'message' => $allFeesRow['description'],
+					'message' => $this->getAccountLineDescription($allFeesRow),
 					'amountVal' => $allFeesRow['amount'],
 					'amountOutstandingVal' => $allFeesRow['amountoutstanding'],
 					'amount' => $currencyFormatter->formatCurrency($allFeesRow['amount'], $currencyCode),
@@ -3233,7 +3281,7 @@ class Koha extends AbstractIlsDriver {
 			'date' => $fine['date'],
 			'type' => $type,
 			'reason' => $type,
-			'message' => $fine['description'],
+			'message' => $this->getAccountLineDescription($fine),
 			'amountVal' => $fine['amount'],
 			'amountOutstandingVal' => $fine['amountoutstanding'],
 			'amount' => $currencyFormatter->formatCurrency($fine['amount'], $currencyCode),
@@ -6490,6 +6538,7 @@ class Koha extends AbstractIlsDriver {
 		$systemPreferencesSql = "SELECT * FROM systempreferences where variable = 'SMSSendDriver' OR variable ='TalkingTechItivaPhoneNotification' OR variable ='PhoneNotification'";
 		$systemPreferencesRS = mysqli_query($this->dbConnection, $systemPreferencesSql);
 		$enablePhoneMessaging = false;
+		$phoneMessagingType = 'phone';
 		while ($systemPreference = $systemPreferencesRS->fetch_assoc()) {
 			if ($systemPreference['variable'] == 'SMSSendDriver') {
 				$interface->assign('enableSmsMessaging', !empty($systemPreference['value']));
@@ -6505,9 +6554,13 @@ class Koha extends AbstractIlsDriver {
 				$interface->assign('smsProviders', $smsProviders);
 			} elseif ($systemPreference['variable'] == 'TalkingTechItivaPhoneNotification' || $systemPreference['variable'] == 'PhoneNotification') {
 				$enablePhoneMessaging |= !empty($systemPreference['value']);
+				if (!empty($systemPreference['value'])) {
+					$phoneMessagingType = ($systemPreference['variable'] == 'TalkingTechItivaPhoneNotification') ? 'itiva' : 'phone';
+				}
 			}
 		}
 		$systemPreferencesRS->close();
+		$interface->assign('phoneMessagingType', $phoneMessagingType);
 		$interface->assign('enablePhoneMessaging', $enablePhoneMessaging);
 
 		/** @noinspection SqlResolve */
@@ -6580,6 +6633,7 @@ class Koha extends AbstractIlsDriver {
 		$systemPreferencesRS->close();
 
 		$messageAttributes = [];
+		$phoneCapableMessageAttributes = [];
 		$messageAttributesSql = "SELECT * FROM message_attributes";
 		$messageAttributesRS = mysqli_query($this->dbConnection, $messageAttributesSql);
 		while ($messageType = $messageAttributesRS->fetch_assoc()) {
@@ -6597,6 +6651,10 @@ class Koha extends AbstractIlsDriver {
 				"Patron_Expiry" => 'Patron Expiry',
 				default => $messageType['message_name'],
 			};
+			// Koha TalkingTech only allow phone for specific notices.
+			if (in_array($messageType['message_name'], ['Advance_Notice', 'Hold_Filled', 'Hold_Reminder'])) {
+				$phoneCapableMessageAttributes[$messageType['message_attribute_id']] = true;
+			}
 			$messageAttributes[] = $messageType;
 		}
 		$messageAttributesRS->close();
@@ -6647,10 +6705,21 @@ class Koha extends AbstractIlsDriver {
 				$messagingSettings[$messageType]['daysInAdvance'] = $userMessagingSetting['days_in_advance'];
 			}
 			if ($userMessagingSetting['message_transport_type'] != null) {
-				$messagingSettings[$messageType]['selectedTransports'][$userMessagingSetting['message_transport_type']] = $userMessagingSetting['message_transport_type'];
+				$transportType = $userMessagingSetting['message_transport_type'];
+				$messagingSettings[$messageType]['selectedTransports'][$transportType] = $transportType;
 			}
 		}
 		$userMessagingSettingsRS->close();
+
+		// Only show phone/Itiva options for message types Koha allows.
+		if ($phoneMessagingType == 'itiva') {
+			foreach ($messagingSettings as $messageAttributeId => &$messagingSetting) {
+				if (!array_key_exists($messageAttributeId, $phoneCapableMessageAttributes)) {
+					unset($messagingSetting['allowableTransports'][$phoneMessagingType], $messagingSetting['selectedTransports'][$phoneMessagingType]);
+				}
+			}
+			unset($messagingSetting);
+		}
 		$interface->assign('messagingSettings', $messagingSettings);
 
 		$validNoticeDays = [];
@@ -7559,11 +7628,11 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function hasEditableUsername() {
+	public function hasEditableUsername() : bool {
 		return true;
 	}
 
-	public function getEditableUsername(User $user) {
+	public function getEditableUsername(User $user) : ?string {
 		$this->initDatabaseConnection();
 		/** @noinspection SqlResolve */
 		$sql = "SELECT userId from borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $user->unique_ils_id) . "'";
@@ -9299,5 +9368,18 @@ class Koha extends AbstractIlsDriver {
 
 	public function hasAdditionalFineFields(): bool {
 		return true;
+	}
+
+	private function getAccountLineDescription($accountline): string {
+		if ($accountline['description']) {
+			return $accountline['description'];
+		} 
+		if (isset($accountline['debit_type_code'])) {
+			return array_key_exists($accountline['debit_type_code'], Koha::$accoundlineCodeToDescriptionMap) ? Koha::$accoundlineCodeToDescriptionMap[$accountline['debit_type_code']] : $accountline['debit_type_code'];
+		} 
+		if (isset($accountline['credit_type_code'])) {
+			return array_key_exists($accountline['credit_type_code'], Koha::$accoundlineCodeToDescriptionMap) ? Koha::$accoundlineCodeToDescriptionMap[$accountline['credit_type_code']] : $accountline['credit_type_code'];
+		}
+		return'No description available';
 	}
 }
