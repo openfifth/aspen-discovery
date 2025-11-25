@@ -504,7 +504,7 @@ class Sierra extends AbstractIlsDriver {
 	 * @param User $patron
 	 * @return array An array containing valid pickup locations
 	 */
-	public function getValidPickupLocationsForRecordFromILS(string $recordId, User $patron): array {
+	public function getValidPickupLocationsForRecordFromILS($recordId, $patron): array {
 		if ($recordId == null) {
 			return [
 				'success' => false,
@@ -1257,7 +1257,7 @@ class Sierra extends AbstractIlsDriver {
 		return $hold_result;
 	}
 
-	public function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
+	public function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) : array {
 		return $this->placeHold($patron, $itemId, $pickupBranch, $cancelDate);
 	}
 
@@ -1479,7 +1479,7 @@ class Sierra extends AbstractIlsDriver {
 	}
 
 
-	public function findNewUser(string $patronBarcode, ?string $patronUsername) : bool|User {
+	public function findNewUser($patronBarcode, $patronUsername) : bool|User {
 		global $library;
 		if (!empty($patronBarcode)) {
 			$patronInfo = $this->getPatronInfoByBarcode($patronBarcode);

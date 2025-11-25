@@ -144,7 +144,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function findNewUser(string $patronBarcode, ?string $patronUsername): User|bool {
+	function findNewUser($patronBarcode, $patronUsername): User|bool {
 		// Creates a new user like patronLogin and looks up user by barcode or username.
 		// Note: The user pin is not supplied in the Account Info Lookup call.
 		$sessionToken = $this->getStaffSessionToken();
@@ -1416,7 +1416,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 *                              If an error occurs, return an AspenError
 	 * @access  public
 	 */
-	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
+	function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) : array {
 		return $this->placeSirsiHold($patron, $recordId, $itemId, false, $pickupBranch, $cancelDate);
 	}
 
@@ -3725,7 +3725,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function allowUpdatesOfPreferredName() : bool {
+	public function allowUpdatesOfPreferredName(User $patron) : bool {
 		return true;
 	}
 
