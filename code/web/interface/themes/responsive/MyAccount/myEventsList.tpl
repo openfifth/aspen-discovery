@@ -13,6 +13,7 @@
 						<th>{translate text='Location' isPublicFacing=true}</th>
 						<th>{translate text='Registration Status' isPublicFacing=true}</th>
 						<th>&nbsp;</th>
+						<th>&nbsp;</th>
 					</tr>
 					</thead>
 					<tbody>
@@ -55,9 +56,17 @@
 									{/if}
 								</td>
 								<td class="myAccountCell">
-									<span class="btn btn-xs btn-warning" onclick="return AspenDiscovery.Account.deleteSavedEvent('{$event.sourceId}', {$page}, '{$eventsFilter|escape}');">{translate text="Remove" isPublicFacing=true}</span>
+									<span class="btn btn-xs btn-warning" onclick="return AspenDiscovery.Account.deleteSavedEvent('{$event.sourceId}', {$page}, '{$eventsFilter|escape}');">{translate text="Remove" isPublicFacing=true}</span>					
+								</td>
+								<td class="myAccountCell">	
+									{include file='AspenEvents/manageButton.tpl'}
 								</td>
 							</tr>
+							<tr id='aspen-events-registration-button-{$event.sourceId}-wrapper' hidden='true'>
+								<td colspan="5">
+									{include file='AspenEvents/savedEventDetailModal.tpl'}
+								</td>
+   							</tr>					
 						{/foreach}
 					</tbody>
 				</table>
