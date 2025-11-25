@@ -2602,16 +2602,18 @@ class Library extends DataObject {
 							],
 							'selfRegistrationFormMessage' => [
 								'property' => 'selfRegistrationFormMessage',
-								'type' => 'html',
+								'type' => 'translatableTextBlock',
 								'label' => 'Self Registration Form Message',
-								'description' => 'Message shown to users with the form to submit the self registration.  Leave blank to give users the default message.',
+								'description' => 'Message shown to users with the form to submit the self registration. Leave blank to provide users the default message.',
+								'defaultTextFile' => 'Library_selfRegistrationFormMessage.MD',
 								'hideInLists' => true,
 							],
 							'selfRegistrationSuccessMessage' => [
 								'property' => 'selfRegistrationSuccessMessage',
-								'type' => 'html',
+								'type' => 'translatableTextBlock',
 								'label' => 'Self Registration Success Message',
-								'description' => 'Message shown to users when the self registration has been completed successfully.  Leave blank to give users the default message.',
+								'description' => 'Message shown to users when the self registration has been completed successfully. Leave blank to provide users the default message.',
+								'defaultTextFile' => 'Library_selfRegistrationSuccessMessage.MD',
 								'hideInLists' => true,
 							],
 							'selfRegistrationTemplate' => [
@@ -4981,6 +4983,8 @@ class Library extends DataObject {
 			$this->saveTextBlockTranslations('paymentHistoryExplanation');
 			$this->saveTextBlockTranslations('costSavingsExplanationEnabled');
 			$this->saveTextBlockTranslations('costSavingsExplanationDisabled');
+			$this->saveTextBlockTranslations('selfRegistrationFormMessage');
+			$this->saveTextBlockTranslations('selfRegistrationSuccessMessage');
 			$this->saveTextBlockTranslations('localIllEmailSuccessMessage');
 			if (!empty($this->_changedFields) && in_array('cookieStorageConsent', $this->_changedFields)) {
 				$this->updateLocalAnalyticsPreferences();
@@ -5055,6 +5059,8 @@ class Library extends DataObject {
 			$this->saveTextBlockTranslations('paymentHistoryExplanation');
 			$this->saveTextBlockTranslations('costSavingsExplanationEnabled');
 			$this->saveTextBlockTranslations('costSavingsExplanationDisabled');
+			$this->saveTextBlockTranslations('selfRegistrationFormMessage');
+			$this->saveTextBlockTranslations('selfRegistrationSuccessMessage');
 			$this->saveTextBlockTranslations('localIllEmailSuccessMessage');
 		}
 		return $ret;
@@ -5965,6 +5971,19 @@ class Library extends DataObject {
 	public function getApiInfo(): array {
 		global $configArray;
 		global $interface;
+		global $activeLanguage;
+		$languageCode = 'en';
+		if (isset($activeLanguage) && !empty($activeLanguage->code)) {
+			$languageCode = $activeLanguage->code;
+		}
+		$selfRegFormMessage = $this->getTextBlockTranslation('selfRegistrationFormMessage', $languageCode, true);
+		if (empty($selfRegFormMessage)) {
+			$selfRegFormMessage = $this->selfRegistrationFormMessage;
+		}
+		$selfRegSuccessMessage = $this->getTextBlockTranslation('selfRegistrationSuccessMessage', $languageCode, true);
+		if (empty($selfRegSuccessMessage)) {
+			$selfRegSuccessMessage = $this->selfRegistrationSuccessMessage;
+		}
 		$apiInfo = [
 			'libraryId' => $this->libraryId,
 			'isDefault' => $this->isDefault,
@@ -6005,8 +6024,8 @@ class Library extends DataObject {
 			'showAlternateLibraryCard' => $this->showAlternateLibraryCard,
 			'enableAspenMaterialsRequest' => false,
 			'enableSelfRegistration' => (int)$this->enableSelfRegistration,
-			'selfRegistrationFormMessage' => $this->selfRegistrationFormMessage,
-			'selfRegistrationSuccessMessage' => $this->selfRegistrationSuccessMessage,
+			'selfRegistrationFormMessage' => $selfRegFormMessage,
+			'selfRegistrationSuccessMessage' => $selfRegSuccessMessage,
 			'promptForBirthDateInSelfReg' => $this->promptForBirthDateInSelfReg,
 			'allowRememberPickupLocation' => $this->allowRememberPickupLocation,
 			'allowPickupLocationUpdates' => $this->allowPickupLocationUpdates,
