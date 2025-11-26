@@ -183,6 +183,7 @@ class Library extends DataObject {
 	public $additionalLocationsToShowAvailabilityFor;
 	public $homeLink;
 	public $showAdvancedSearchbox;
+	public $showWebsiteSearch;
 	public $enableInnReachIntegration;
 	public /** @noinspection PhpUnused */
 		$showInnReachResultsAtEndOfSearch;
@@ -3163,6 +3164,15 @@ class Library extends DataObject {
 								'type' => 'checkbox',
 								'label' => 'Show Advanced Search Option',
 								'description' => 'Enabling this will show the Advanced Search option in the &quot;search by&quot; dropdown menu next to the search box.',
+								'hideInLists' => true,
+								'default' => 1,
+							],
+							'showWebsiteSearch' => [
+								'property' => 'showWebsiteSearch',
+								'type' => 'checkbox',
+								'label' => 'Show Website Search',
+								'description' => 'Turn on to enable the "Library Websites" search when data exists.',
+								'note' => '"Library Websites" search will appear when on, if Web Builder or Indexed Websites Exist',
 								'hideInLists' => true,
 								'default' => 1,
 							],
