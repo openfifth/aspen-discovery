@@ -79,7 +79,7 @@
 								<div class="btn-toolbar">
 									<div class="btn-group btn-group-vertical btn-block">
 										{if $recordDriver->isRegisteredForEvent()}
-											<a href="{$recordDriver->getExternalUrl()}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:100%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
+											<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:100%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
 										{else}
 											{if !empty($recordDriver->getRegistrationModalBody())}
 												<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:100%">{translate text="Registration Information" isPublicFacing=true}

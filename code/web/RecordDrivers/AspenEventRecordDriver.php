@@ -238,7 +238,12 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	}
 
 	public function getExternalUrl($absolutePath = false) {
-		return null;
+		global $configArray;
+		$relativePath = 'MyEvents?page=1&eventsFilter=upcoming';
+		if ($absolutePath){
+			return $configArray['Site']['url'] . "/MyAccount/$relativePath";
+		}
+		return $relativePath;
 	}
 
 	public function getAudiences() {
@@ -446,6 +451,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 	}
 
+	// TODO: handle linked users
 	public function isRegisteredForEvent() {
 		if (UserAccount::isLoggedIn()) {
 			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
