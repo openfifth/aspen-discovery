@@ -34,7 +34,7 @@ class Events_CalendarDisplaySettings extends ObjectEditor {
 	/**
 	 * Load all objects into an array keyed by the primary key
 	 */
-	function getAllObjects($page, $recordsPerPage): array {
+	function getAllObjects(int $page, int $recordsPerPage): array {
 		$object = new CalendarDisplaySetting();
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
@@ -87,5 +87,18 @@ class Events_CalendarDisplaySettings extends ObjectEditor {
 
 	function getActiveAdminSection(): string {
 		return 'events';
+	}
+
+	function getAdditionalObjectActions(?DataObject $existingObject): array {
+		$actions = parent::getAdditionalObjectActions($existingObject);
+		/** @var CalendarDisplaySetting $existingObject */
+		if ($existingObject != null && $existingObject->id) {
+			$actions[] = [
+				'text' => 'View Calendar',
+				'url' => '/Events/Calendar',
+				'target' => '_blank',
+			];
+		}
+		return $actions;
 	}
 }
