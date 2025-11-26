@@ -451,6 +451,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 	}
 
+	// TODO: handle linked users
 	public function isRegisteredForEvent() {
 		if (UserAccount::isLoggedIn()) {
 			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
