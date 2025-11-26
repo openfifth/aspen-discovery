@@ -37,6 +37,13 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE search_interpreter_settings DROP COLUMN fictionNonFictionFacet'
 			]
 		], //search_interpreter_remove_custom_facets
+		'library_enable_website_search' => [
+			'title' => 'Library - Enable Website Search',
+			'description' => 'Add Enable Website Search to Library Settings',
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN showWebsiteSearch TINYINT default 1'
+			]
+		], //library_enable_website_search
 		
 		//kirstien - Grove
 

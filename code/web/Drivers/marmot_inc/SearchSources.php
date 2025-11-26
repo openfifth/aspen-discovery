@@ -10,42 +10,20 @@ class SearchSources {
 	 *
 	 * @return SearchObject_BaseSearcher
 	 */
-	static function getSearcherForSource($source) {
-		switch ($source) {
-			case 'ebsco_eds':
-				$searchObject = SearchObjectFactory::initSearchObject('EbscoEds');
-				break;
-			case 'summon':
-				$searchObject = SearchObjectFactory::initSearchObject('Summon');
-				break;
-			case 'events':
-				$searchObject = SearchObjectFactory::initSearchObject('Events');
-				break;
-			case 'genealogy':
-				$searchObject = SearchObjectFactory::initSearchObject('Genealogy');
-				break;
-			case 'lists':
-				$searchObject = SearchObjectFactory::initSearchObject('Lists');
-				break;
-			case 'course_reserves':
-				$searchObject = SearchObjectFactory::initSearchObject('CourseReserves');
-				break;
-			case 'open_archives':
-				$searchObject = SearchObjectFactory::initSearchObject('OpenArchives');
-				break;
-			case 'websites':
-				$searchObject = SearchObjectFactory::initSearchObject('Websites');
-				break;
-			case 'series':
-				$searchObject = SearchObjectFactory::initSearchObject('Series');
-				break;
-			case 'talpa':
-				$searchObject = SearchObjectFactory::initSearchObject("Talpa");
-				break;
-			case 'catalog':
-			default:
-				/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */ $searchObject = SearchObjectFactory::initSearchObject();
-		}
+	static function getSearcherForSource(string $source) : SearchObject_BaseSearcher {
+		$searchObject = match ($source) {
+			'ebsco_eds' => SearchObjectFactory::initSearchObject('EbscoEds'),
+			'summon' => SearchObjectFactory::initSearchObject('Summon'),
+			'events' => SearchObjectFactory::initSearchObject('Events'),
+			'genealogy' => SearchObjectFactory::initSearchObject('Genealogy'),
+			'lists' => SearchObjectFactory::initSearchObject('Lists'),
+			'course_reserves' => SearchObjectFactory::initSearchObject('CourseReserves'),
+			'open_archives' => SearchObjectFactory::initSearchObject('OpenArchives'),
+			'websites' => SearchObjectFactory::initSearchObject('Websites'),
+			'series' => SearchObjectFactory::initSearchObject('Series'),
+			'talpa' => SearchObjectFactory::initSearchObject("Talpa"),
+			default => SearchObjectFactory::initSearchObject(),
+		};
 		$searchObject->init();
 
 		return $searchObject;
@@ -53,18 +31,18 @@ class SearchSources {
 
 
 	/**
-	 * @param SearchObject_BaseSearcher $searchObject
+	 * @param ?SearchObject_BaseSearcher $searchObject
 	 * @param string $source
 	 * @return array
 	 */
-	static function getSearchIndexesForSource($searchObject, $source) {
+	static function getSearchIndexesForSource(?SearchObject_BaseSearcher $searchObject, string $source) : array {
 		if ($searchObject == null) {
 			$searchObject = SearchSources::getSearcherForSource($source);
 		}
 		return is_object($searchObject) ? $searchObject->getSearchIndexes() : [];
 	}
 
-	static $searchOptions = null;
+	static ?array $searchOptions = null;
 	private static function getSearchSourcesDefault() : array {
 		if (self::$searchOptions == null) {
 			$searchOptions = [];
@@ -124,14 +102,14 @@ class SearchSources {
 			if (!empty($location) && $location->useScope && $location->restrictSearchByLocation) {
 				$searchOptions['local'] = [
 					'name' => $location->displayName,
-					'description' => "The {$location->displayName} catalog.",
+					'description' => "The $location->displayName catalog.",
 					'catalogType' => 'catalog',
 					'hasAdvancedSearch' => true,
 				];
 			} else {
 				$searchOptions['local'] = [
 					'name' => 'Library Catalog',
-					'description' => "The {$library->displayName} catalog.",
+					'description' => "The $library->displayName catalog.",
 					'catalogType' => 'catalog',
 					'hasAdvancedSearch' => true,
 				];
@@ -140,7 +118,7 @@ class SearchSources {
 			if (($location != null) && ($repeatSearchSetting == 'marmot' || $repeatSearchSetting == 'librarySystem') && ($location->useScope && $location->restrictSearchByLocation)) {
 				$searchOptions[$library->subdomain] = [
 					'name' => $library->displayName,
-					'description' => "The entire {$library->displayName} catalog not limited to a particular branch.",
+					'description' => "The entire $library->displayName catalog not limited to a particular branch.",
 					'catalogType' => 'catalog',
 					'hasAdvancedSearch' => true,
 				];
@@ -274,29 +252,31 @@ class SearchSources {
 
 			if (array_key_exists('Web Indexer', $enabledModules)) {
 				require_once ROOT_DIR . '/sys/WebsiteIndexing/WebsiteIndexSetting.php';
-				//Local search, activate if we have at least one page
-				if ($library->enableWebBuilder) {
-					$searchOptions['websites'] = [
-						'name' => 'Library Website',
-						'description' => 'Library Website',
-						'catalogType' => 'websites',
-						'hasAdvancedSearch' => false,
-					];
-				} else {
-					//We may still show website searching if there are indexed websites
-					$websiteSetting = new WebsiteIndexSetting();
-					$websiteSetting->find();
-					//TODO: Need to deal with searching different collections
-					while ($websiteSetting->fetch()) {
-						if ($websiteSetting->isValidForSearching()) {
-							$searchOptions['websites'] = [
-								'name' => 'Library Website',
-								'description' => 'Library Website',
-								'catalogType' => 'websites',
-								'hasAdvancedSearch' => false,
-							];
-							//We only need the first one
-							break;
+				if ($library->showWebsiteSearch) {
+					//Local search, activate if we have at least one page
+					if ($library->enableWebBuilder) {
+						$searchOptions['websites'] = [
+							'name' => 'Library Website',
+							'description' => 'Library Website',
+							'catalogType' => 'websites',
+							'hasAdvancedSearch' => false,
+						];
+					} else {
+						//We may still show website searching if there are indexed websites
+						$websiteSetting = new WebsiteIndexSetting();
+						$websiteSetting->find();
+						//TODO: Need to deal with searching different collections
+						while ($websiteSetting->fetch()) {
+							if ($websiteSetting->isValidForSearching()) {
+								$searchOptions['websites'] = [
+									'name' => 'Library Website',
+									'description' => 'Library Website',
+									'catalogType' => 'websites',
+									'hasAdvancedSearch' => false,
+								];
+								//We only need the first one
+								break;
+							}
 						}
 					}
 				}
@@ -408,32 +388,19 @@ class SearchSources {
 	}
 
 	/**
-	 * @param Location $location
+	 * @param ?Location $location
 	 * @param Library $library
 	 * @return array
 	 */
-	static function getCombinedSearchSetupParameters($location, $library) {
-		$enableCombinedResults = false;
-		$showCombinedResultsFirst = false;
-		$combinedResultsName = 'Combined Results';
+	static function getCombinedSearchSetupParameters(?Location $location, Library $library) : array {
 		if ($location && !$location->useLibraryCombinedResultsSettings) {
 			$enableCombinedResults = $location->enableCombinedResults;
 			$showCombinedResultsFirst = $location->defaultToCombinedResults;
 			$combinedResultsName = $location->combinedResultsLabel;
-			return [
-				$enableCombinedResults,
-				$showCombinedResultsFirst,
-				$combinedResultsName,
-			];
-		} elseif ($library) {
+		} else {
 			$enableCombinedResults = $library->enableCombinedResults;
 			$showCombinedResultsFirst = $library->defaultToCombinedResults;
 			$combinedResultsName = $library->combinedResultsLabel;
-			return [
-				$enableCombinedResults,
-				$showCombinedResultsFirst,
-				$combinedResultsName,
-			];
 		}
 		return [
 			$enableCombinedResults,
@@ -442,21 +409,14 @@ class SearchSources {
 		];
 	}
 
-	public function getWorldCatSearchType($type) {
-		/** @noinspection PhpSwitchCanBeReplacedWithMatchExpressionInspection */
-		switch ($type) {
-			case 'Subject':
-				return 'su';
-			case 'Author':
-				return 'au';
-			case 'Title':
-				return 'ti';
-			case 'ISN':
-				return 'bn';
-			case 'Keyword':
-			default:
-				return 'kw';
-		}
+	public function getWorldCatSearchType($type) : string {
+		return match ($type) {
+			'Subject' => 'su',
+			'Author' => 'au',
+			'Title' => 'ti',
+			'ISN' => 'bn',
+			default => 'kw',
+		};
 	}
 
 	public function getExternalLink($searchSource, $type, $lookFor) : string {
@@ -465,15 +425,15 @@ class SearchSources {
 		global $configArray;
 		if ($searchSource == 'worldcat') {
 			$worldCatSearchType = $this->getWorldCatSearchType($type);
-			$worldCatLink = "https://www.worldcat.org/search?q={$worldCatSearchType}%3A" . urlencode($lookFor);
+			$worldCatLink = "https://www.worldcat.org/search?q=$worldCatSearchType%3A" . urlencode($lookFor);
 			if (strlen($library->worldCatUrl) > 0) {
 				$worldCatLink = $library->worldCatUrl;
-				if (strpos($worldCatLink, '?') == false) {
+				if (!strpos($worldCatLink, '?')) {
 					$worldCatLink .= "?";
 				}
-				$worldCatLink .= "q={$worldCatSearchType}:" . urlencode($lookFor);
+				$worldCatLink .= "q=$worldCatSearchType:" . urlencode($lookFor);
 				//Repeat the search term with a parameter of queryString since some interfaces use that parameter instead of q
-				$worldCatLink .= "&queryString={$worldCatSearchType}:" . urlencode($lookFor);
+				$worldCatLink .= "&queryString=$worldCatSearchType:" . urlencode($lookFor);
 				if (strlen($library->worldCatQt) > 0) {
 					$worldCatLink .= "&qt=" . $library->worldCatQt;
 				}
@@ -501,7 +461,7 @@ class SearchSources {
 				$lookFor = "$innReachSearchType:(" . $lookFor . ")";
 			}
 			$baseUrl = $library->interLibraryLoanUrl;
-			if (substr($baseUrl, -1, 1) == '/') {
+			if (str_ends_with($baseUrl, '/')) {
 				$baseUrl = substr($baseUrl, 0, strlen($baseUrl) -1);
 			}
 			return "$baseUrl/iii/encore/search/C|S" . $lookFor . "|Orightresult|U1?lang=eng&amp;suite=def";
@@ -514,45 +474,38 @@ class SearchSources {
 					'lookfor' => $lookFor,
 				],
 			];
-			$link = $shareIt->getSearchLink($searchTerms);
-			return $link;
+			return $shareIt->getSearchLink($searchTerms);
 		} elseif ($searchSource == 'cloudSource') {
 			return $library->cloudSourceBaseUrl . '/search/results?qu=' . urlencode($lookFor) . '&te=1803299674&dt=list';
 		} elseif ($searchSource == 'amazon') {
-			return "http://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=" . urlencode($lookFor);
+			return "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=" . urlencode($lookFor);
 		} elseif ($searchSource == 'course-reserves-course-name') {
 			$accountProfile = $library->getAccountProfile();
-			if ($accountProfile != false) {
+			if ($accountProfile) {
 				$linkingUrl = $accountProfile->vendorOpacUrl;
 			}else{
 				$linkingUrl = $configArray['Catalog']['linking_url'];
 			}
-			return "$linkingUrl/search~S{$library->scope}/r?SEARCH=" . urlencode($lookFor);
+			return "$linkingUrl/search~S$library->scope/r?SEARCH=" . urlencode($lookFor);
 		} elseif ($searchSource == 'course-reserves-instructor') {
 			$accountProfile = $library->getAccountProfile();
-			if ($accountProfile != false) {
+			if ($accountProfile) {
 				$linkingUrl = $accountProfile->vendorOpacUrl;
 			}else{
 				$linkingUrl = $configArray['Catalog']['linking_url'];
 			}
-			return "$linkingUrl/search~S{$library->scope}/p?SEARCH=" . urlencode($lookFor);
+			return "$linkingUrl/search~S$library->scope/p?SEARCH=" . urlencode($lookFor);
 		}
 		return "";
 	}
 
-	public function getInnReachSearchType($type) {
-		switch ($type) {
-			case 'Subject':
-				return 'd';
-			case 'Author':
-				return 'a';
-			case 'Title':
-				return 't';
-			case 'ISN':
-				return 'i';
-			case 'Keyword':
-			default:
-				return ' ';
-		}
+	public function getInnReachSearchType($type) : string {
+		return match ($type) {
+			'Subject' => 'd',
+			'Author' => 'a',
+			'Title' => 't',
+			'ISN' => 'i',
+			default => ' ',
+		};
 	}
 }
