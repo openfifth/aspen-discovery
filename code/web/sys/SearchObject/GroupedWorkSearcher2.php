@@ -291,7 +291,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 					$escapedFormatCategory = str_replace([' ', '(', ')'], ['_', '\\(', '\\)'], $selectedFormatCategoryValue);
 					foreach ($selectedFormatValues as $selectedFormatValue) {
 						$escapedFormat = str_replace([' ', '(', ')'], ['_', '\\(', '\\)'], $selectedFormatValue);
-						$allEditionFilters[] = "edition_info:$solrScope#{$escapedFormatCategory}#{$escapedFormat}#{$this->selectedAvailabilityToggleValue}#{$escapedAvailableAt}#";
+						$allEditionFilters[] = "edition_info:$solrScope#$escapedFormatCategory#$escapedFormat#$this->selectedAvailabilityToggleValue#$escapedAvailableAt#";
 					}
 				}
 			}
