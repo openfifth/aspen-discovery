@@ -108,7 +108,7 @@
 					{if $recordDriver->isRegistrationRequired()}
 						<div class="btn-group btn-group-vertical btn-block">
 							{if $recordDriver->isRegisteredForEvent()}
-								<a href="{$recordDriver->getExternalUrl()}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
+								<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
 							{elseif $recordDriver->isEventFull()}
 								<span class="btn btn-sm btn-default btn-wrap disabled" style="width:70%">{translate text="Event Full" isPublicFacing=true}</span>
 							{else}
