@@ -461,16 +461,40 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 	}
 
-	// TODO: handle linked users
+	/**
+	 * Determines whether a user should or should not see the "Registration Information" link on Aspen Events.
+	 **/
 	public function isRegisteredForEvent() {
-		if (UserAccount::isLoggedIn()) {
-			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-			$registration = new UserAspenEventInstanceRegistration();
-			$registration->userdId = UserAccount::getActiveUserId();
-			$registration->eventInstanceId = $this->getIdentifier();
-			return $registration->isUserRegisteredForEvent();
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return false;
 		}
-		return false;
+
+		// if linked users are enabled and if any is not registered, display the modal link
+		global $library;
+		if ($library->allowLinkedAccounts) {
+			$linkedUsers = $user->getLinkedUsers();
+			foreach ($linkedUsers as $linkedUser) {
+				if (!$this->isUserRegisteredForEvent($linkedUser->id)) {
+					return false;
+				}
+			}
+		}
+
+		// check the active user's registration 
+		return $this->isUserRegisteredForEvent();
+	}
+
+	/**
+	 * Checks a user's registration by their id.
+	 * If no userId is specified, checks registration status for the active user.
+	 **/
+	private function isUserRegisteredForEvent($userId = null) {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userdId = $userId ? $userId : UserAccount::getActiveUserId();
+		$registration->eventInstanceId = $this->getIdentifier();
+		return $registration->isUserRegisteredForEvent();
 	}
 
 	public function getSpotlightResult(CollectionSpotlight $collectionSpotlight, string $index) {
