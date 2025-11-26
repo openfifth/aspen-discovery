@@ -10,42 +10,19 @@ require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
 require_once ROOT_DIR . '/sys/Account/User.php';
 
 class OverDrive_QRCodeAuth extends Action {
-	private const string STATE_CACHE_PREFIX = 'overdrive_qr_state_';
-
 	/**
 	 * @throws RandomException
 	 */
 	function launch() : void {
-		$operation = $_REQUEST['op'] ?? 'start';
-		switch ($operation) {
-			case 'start':
-				$this->startQRCodeFlow();
-				return;
-			case 'complete':
-				$this->handleAuthComplete();
-				return;
-			case 'abandon':
-				$this->displayResult(false, translate([
-					'text' => 'The authentication request was canceled before completion.',
-					'isPublicFacing' => true,
-				]));
-				return;
-			case 'error':
-				$errorDetail = $_REQUEST['error'] ?? '';
-				$this->displayResult(false, translate([
-					'text' => 'OverDrive returned an error while authorizing the account.%1%',
-					'1' => empty($errorDetail) ? '' : ' (' . $errorDetail . ')',
-					'isPublicFacing' => true,
-				]));
-				return;
-			case 'disconnect':
-				$this->disconnectSession();
-				return;
-			default:
-				$this->displayResult(false, translate([
-					'text' => 'Unknown request.',
-					'isPublicFacing' => true,
-				]));
+		// Check if this is a completion callback from OverDrive (has 'code' parameter)
+		// or a disconnect request (has 'disconnect' parameter)
+		// Otherwise, start the QR code flow
+		if (isset($_REQUEST['code'])) {
+			$this->handleAuthComplete();
+		} elseif (isset($_REQUEST['disconnect'])) {
+			$this->disconnectSession();
+		} else {
+			$this->startQRCodeFlow();
 		}
 	}
 
@@ -113,21 +90,20 @@ class OverDrive_QRCodeAuth extends Action {
 			return;
 		}
 
-		$state = bin2hex(random_bytes(16));
-		global $memCache;
-		$memCache->set(self::STATE_CACHE_PREFIX . $state, [
+		// Store state in session instead of URL parameters since OverDrive rejects URLs with query params
+		$_SESSION['overdrive_qr_auth_state'] = [
 			'userId' => $user->id,
 			'settingId' => $activeSetting->id,
 			'libraryId' => $homeLibrary->libraryId,
-		], 900);
+			'timestamp' => time(),
+		];
 
 		global $configArray;
 		$baseUrl = rtrim($configArray['Site']['url'], '/');
-		$redirectBase = $baseUrl . '/OverDrive/QRCodeAuth';
 		$params = [
-			'redirect_url' => $redirectBase . '?op=complete&state=' . $state,
-			'abandon_url' => $redirectBase . '?op=abandon&state=' . $state,
-			'error_url' => $redirectBase . '?op=error&state=' . $state,
+			'redirect_url' => $baseUrl . '/OverDrive/QRCodeAuth',
+			'abandon_url' => $baseUrl . '/OverDrive/QRCodeAuthCanceled',
+			'error_url' => $baseUrl . '/OverDrive/QRCodeAuthFailed',
 			'website_id' => $activeSetting->websiteId,
 			'client_id' => $credentials['clientKey'],
 		];
@@ -138,20 +114,19 @@ class OverDrive_QRCodeAuth extends Action {
 	}
 
 	private function handleAuthComplete(): void {
-		$state = $_REQUEST['state'] ?? '';
 		$code = $_REQUEST['code'] ?? '';
-		if (empty($state) || empty($code)) {
+		if (empty($code)) {
 			$this->displayResult(false, translate([
-				'text' => 'Missing information from OverDrive.',
+				'text' => 'Missing authorization code from OverDrive.',
 				'isPublicFacing' => true,
 			]));
 			return;
 		}
 
-		$stateData = $this->getStateData($state);
+		$stateData = $this->getStateData();
 		if ($stateData === null) {
 			$this->displayResult(false, translate([
-				'text' => 'Authentication session expired. Please try again.',
+				'text' => 'Authentication session expired or invalid. Please try again.',
 				'isPublicFacing' => true,
 			]));
 			return;
@@ -252,14 +227,17 @@ class OverDrive_QRCodeAuth extends Action {
 		]));
 	}
 
-	private function getStateData(string $state): ?array {
-		global $memCache;
-		$data = $memCache->get(self::STATE_CACHE_PREFIX . $state);
-		if ($data !== false) {
-			$memCache->delete(self::STATE_CACHE_PREFIX . $state);
-			return $data;
+	private function getStateData(): ?array {
+		if (!isset($_SESSION['overdrive_qr_auth_state'])) {
+			return null;
 		}
-		return null;
+		$stateData = $_SESSION['overdrive_qr_auth_state'];
+		unset($_SESSION['overdrive_qr_auth_state']);
+		if (isset($stateData['timestamp']) && (time() - $stateData['timestamp']) > 900) {
+			return null;
+		}
+
+		return $stateData;
 	}
 
 	private function displayResult(bool $success, string $message): void {
@@ -273,7 +251,7 @@ class OverDrive_QRCodeAuth extends Action {
 			'isPublicFacing' => true,
 		]);
 		$interface->assign('qrResultTitle', $pageTitle);
-		$this->display('OverDrive/qrCodeAuthResult.tpl', $pageTitle);
+		$this->display('qrCodeAuthResult.tpl', $pageTitle);
 	}
 
 	function getBreadcrumbs(): array {

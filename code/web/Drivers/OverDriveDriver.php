@@ -181,7 +181,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		return $this->_connectToAPI($activeLibrary, $settings, true, "getTokenData");
 	}
 
-	public function getPatronTokenData(OverDriveSetting $settings, User $user, bool $forceNewConnection = false) : bool|stdClass {
+	public function getPatronTokenData(OverDriveSetting $settings, User $user, bool $forceNewConnection = false) : bool|stdClass|null {
 		$userBarcode = $user->getBarcode();
 		if ($this->getRequirePin($settings, $user)) {
 			$userPin = $user->getPasswordOrPin();
