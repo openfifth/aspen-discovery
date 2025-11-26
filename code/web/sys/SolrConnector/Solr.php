@@ -32,6 +32,12 @@ abstract class Solr {
 	public $client;
 
 	/**
+	 * The base URL without the solr core
+	 * @var string
+	 */
+	public $baseUrl;
+
+	/**
 	 * The host to connect to
 	 * @var string
 	 */

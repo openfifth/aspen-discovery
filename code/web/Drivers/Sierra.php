@@ -5,7 +5,7 @@ use PgSql\Connection;
 
 class Sierra extends AbstractIlsDriver {
 	protected string $urlIdRegExp = "~.*/([0-9]*)$~";
-	private ?string $sierraToken = null;
+	private ?stdClass $sierraToken = null;
 	private ?int $lastResponseCode;
 	/** @noinspection PhpPropertyOnlyWrittenInspection */
 	private ?int $lastError = null;
