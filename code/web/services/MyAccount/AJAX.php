@@ -8193,6 +8193,45 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
+	function isUserRegisteredForEvent(): array {
+		$result = [];
+		if (!UserAccount::isLoggedIn()) {
+			$result['success'] = false;
+			$result['message'] = translate([
+				'text' => 'Please login before saving an event.',
+				'isPublicFacing' => true,
+			]);
+		}
+		$eventSourceId = $_REQUEST['eventSourceId'];
+		$eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $eventSourceId);
+		$userId = $_REQUEST['userId'];
+
+		if (!$userId || !$eventInstanceId) {
+			$result['message'] = translate([
+				'text' => 'Event or User information is missing.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+
+		$result['success'] = true;
+		$result['message'] = translate([
+			'text' => 'Registration information found',
+			'isPublicFacing' => true,
+		]);
+		$result['body'] = [
+			'isRegistered' => $registration->isUserRegisteredForEvent($userId),
+		];
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
 	function saveEvent() {
 		$result = [];
 		$regRequired = 0; // set a default
