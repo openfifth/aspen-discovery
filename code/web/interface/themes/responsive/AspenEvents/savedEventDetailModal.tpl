@@ -8,10 +8,10 @@
 				<tbody>
 					<tr>
 						<td>
-							{include file='AspenEvents/registrationUserSelector.tpl' eventSourceId="{$event.sourceId}" userId="{$userId}"}
+							{include file='AspenEvents/registrationUserSelector.tpl'}
 						</td>
 						<td>
-							{include file='AspenEvents/registrationToggleButton.tpl' eventSourceId="{$event.sourceId}" userId="{$userId}"}
+							{include file='AspenEvents/registrationToggleButton.tpl'}
 						</td>
 					</tr>
 					<tr>
