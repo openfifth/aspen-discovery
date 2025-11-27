@@ -9184,6 +9184,28 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 		
+		// unregister the user
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+
+		if ($registration->isUserRegisteredForEvent()) {
+			$registration->cancelled = 1;
+			$registration->update();
+
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Registration Information',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Your registration to this event was cancelled successfully.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
 		// add the event to saved events if it has not yet been saved
 		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
 		$userEventsEntry = new UserEventsEntry();
