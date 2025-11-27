@@ -2397,6 +2397,12 @@ AspenDiscovery.Account = (function () {
 			document.getElementById('eventRegistrationUserId').value = selector.value;
 			document.getElementById('eventUserEmail').textContent = email;
 			document.getElementById('eventUserLocation').textContent = location;
+
+			const changeLink = document.getElementById('eventUserEmailChangeLink');
+			if (changeLink) {
+				const primaryUserId = selector.options[0].value;
+				changeLink.style.display = (selector.value === primaryUserId) ? '' : 'none';
+			}
 		},
 
 		deleteSavedEvent: function (id, page, filter) {
