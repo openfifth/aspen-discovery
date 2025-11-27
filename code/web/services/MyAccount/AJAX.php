@@ -8108,8 +8108,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('linkedUsers', $linkedUsers);
 			}
 
+			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
+			$recordDriver = new AspenEventRecordDriver($sourceId);	
+			$interface->assign('isRegistered', $recordDriver->isRegisteredForEvent());
+
 			$body .= $interface->fetch('AspenEvents/registrationUserSelector.tpl');
-			$result['buttons'] = $interface->fetch('AspenEvents/registrationButton.tpl');
+			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 			$result['success'] = true;
 			$result['body'] = $body;	
 			return $result;
@@ -8315,7 +8320,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	function registerUserToEvent(): array {
+	function toggleUserRegistrationToEvent(): array {
 		$eventInstanceId = $_REQUEST['eventInstanceId'];
 		$userId = $_REQUEST['userId'];
 
