@@ -4544,8 +4544,8 @@ AspenDiscovery.Account = (function () {
 				return;
 			}
 
-			const userSelector = document.getElementById('eventUserSelector');
-			const userIdField = document.getElementById('eventRegistrationUserId');
+			const userSelector = document.getElementById(`eventUserSelector-${eventSourceId}`);
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
 			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
 
 			const url = Globals.path + "/MyAccount/AJAX";
@@ -4560,16 +4560,16 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 		},
 
-		updateEventRegistrationUser: function (selector) {
+		updateEventRegistrationUser: function (selector, eventSourceId) {
 			const selectedOption = selector.options[selector.selectedIndex];
 			const email = selectedOption.dataset.email || '';
 			const location = selectedOption.dataset.location || '';
 
-			document.getElementById('eventRegistrationUserId').value = selector.value;
-			document.getElementById('eventUserEmail').textContent = email;
-			document.getElementById('eventUserLocation').textContent = location;
+			document.getElementById(`eventRegistrationUserId-${eventSourceId}`).value = selector.value;
+			document.getElementById(`eventUserEmail-${eventSourceId}`).textContent = email;
+			document.getElementById(`eventUserLocation-${eventSourceId}`).textContent = location;
 
-			const changeLink = document.getElementById('eventUserEmailChangeLink');
+			const changeLink = document.getElementById(`eventUserEmailChangeLink-${eventSourceId}`);
 			if (changeLink) {
 				const primaryUserId = selector.options[0].value;
 				changeLink.style.display = (selector.value === primaryUserId) ? '' : 'none';
