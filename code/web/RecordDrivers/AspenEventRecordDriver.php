@@ -489,7 +489,10 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	 * Checks a user's registration by their id.
 	 * If no userId is specified, checks registration status for the active user.
 	 **/
-	private function isUserRegisteredForEvent($userId = null) {
+	public function isUserRegisteredForEvent($userId = null) {
+		if (!UserAccount::isLoggedIn()) {
+			return false;
+		}
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId ? $userId : UserAccount::getActiveUserId();
