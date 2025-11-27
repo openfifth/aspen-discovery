@@ -8113,7 +8113,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$recordDriver = new AspenEventRecordDriver($sourceId);	
 			$interface->assign('isRegistered', $recordDriver->isRegisteredForEvent());
 
-			$body .= $interface->fetch('AspenEvents/registrationUserSelector.tpl');
+			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 			$result['success'] = true;
 			$result['body'] = $body;	
