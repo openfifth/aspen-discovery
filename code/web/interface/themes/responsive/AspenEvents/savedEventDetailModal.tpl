@@ -4,18 +4,23 @@
 				<thead>
 					<th>&nbsp;</th>
 					<th>&nbsp;</th>
+					<th>&nbsp;</th>
 				</thead>
 				<tbody>
 					<tr>
-						<td>
+						<td class="myAccountCell">
 							{include file='AspenEvents/registrationUserSelector.tpl'}
 						</td>
-						<td>
+						<td class="myAccountCell">
+							<label for="eventUserSelector" class="control-label"></label>
+							{include file='AspenEvents/registrationUserDetails.tpl'}
+						</td>
+						<td class="myAccountCell">
 							{include file='AspenEvents/registrationToggleButton.tpl'}
 						</td>
 					</tr>
 					<tr>
-						<td colspan="2">
+						<td class="myAccountCell" colspan="3">
 							{include file='AspenEvents/seats.tpl'}
 						</td>
 					</tr>
@@ -23,3 +28,4 @@
 		</table>
 	</section>
 {/strip}
+{* TODO: figure out *}
