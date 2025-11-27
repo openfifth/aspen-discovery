@@ -8233,7 +8233,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			
 			$interface->assign('eventSourceId', $sourceId);
-			$result['buttons'] =  $interface->fetch('AspenEvents/registrationButton.tpl');
+			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 
 			$interface->assign('loggedIn', true);
 			$interface->assign('userId', $user->id);
@@ -8248,7 +8248,12 @@ class MyAccount_AJAX extends JSON_Action {
 					$linkedUser->loadContactInformation();
 				}
 			}
-			$interface->assign('linkedUsers', $linkedUsers);		
+			$interface->assign('linkedUsers', $linkedUsers);
+			
+			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
+			$recordDriver = new AspenEventRecordDriver($sourceId);	
+			$interface->assign('isRegistered', $recordDriver->isRegisteredForEvent());
 		}
 
 		$result['success'] = true;
@@ -8409,7 +8414,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	function registerUserToEvent(): array {
+	function toggleUserRegistrationToEvent(): array {
 		$eventInstanceId = $_REQUEST['eventInstanceId'];
 		$userId = $_REQUEST['userId'];
 
