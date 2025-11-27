@@ -1,5 +1,4 @@
 {strip}
-	<input type="hidden" id="eventRegistrationUserId" value="{$userId}">
 	{if $numberOfSeats !== null}
 		<div class="alert {if $availableSeats > 0}alert-info{else}alert-danger{/if}" style="margin-bottom: 10px;">
 			{if $availableSeats > 0}
