@@ -1,15 +1,5 @@
 {strip}
 {if !empty($loggedIn)}
-	<input type="hidden" id="eventRegistrationUserId" value="{$userId}">
-	{if $numberOfSeats !== null}
-		<div class="alert {if $availableSeats > 0}alert-info{else}alert-danger{/if}" style="margin-bottom: 10px;">
-			{if $availableSeats > 0}
-				{translate text="Available Seats" isPublicFacing=true}: {$availableSeats} / {$numberOfSeats}
-			{else}
-				{translate text="This event is full. No seats available." isPublicFacing=true}
-			{/if}
-		</div>
-	{/if}
 	{if !empty($linkedUsers)}
 		<div class="form-group">
 			<label for="eventUserSelector" class="control-label">{translate text="Register user" isPublicFacing=true}</label>
@@ -21,9 +11,5 @@
 			</select>
 		</div>
 	{/if}
-	<div id="eventRegistrationUserDetails" class="well well-sm" style="margin-top: 10px;">
-		<div><strong>{translate text="Email" isPublicFacing=true}:</strong> <span id="eventUserEmail">{$userEmail|escape}</span> <a id="eventUserEmailChangeLink" href="/MyAccount/ContactInformation" class="btn btn-xs btn-warning">{translate text="change" isPublicFacing=true}</a></div>
-		<div><strong>{translate text="Home Branch" isPublicFacing=true}:</strong> <span id="eventUserLocation">{$userHomeLocation|escape}</span></div>
-	</div>
 {/if}
 {/strip}
