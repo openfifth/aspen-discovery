@@ -2390,6 +2390,17 @@ AspenDiscovery.Account = (function () {
 			}
 		},
 
+		isUserRegisteredForEvent: function (eventSourceId, userId) {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'isUserRegisteredForEvent',
+				eventSourceId,
+				userId
+			};
+
+			return $.getJSON(url, params).fail(AspenDiscovery.ajaxFail);
+		},
+
 		deleteSavedEvent: function (id, page, filter) {
 			if (confirm("Are you sure you want to remove this event?")) {
 				var url = Globals.path + '/MyAccount/AJAX?method=deleteSavedEvent&id=' + id;
