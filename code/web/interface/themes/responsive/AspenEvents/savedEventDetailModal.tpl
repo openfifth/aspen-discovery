@@ -7,7 +7,7 @@
 				<tbody>
 					<tr>
 						<td>
-							{include file='AspenEvents/registrationButton.tpl' eventSourceId="{$event.sourceId}" userId="{$userId}"}
+							{include file='AspenEvents/registrationToggleButton.tpl' eventSourceId="{$event.sourceId}" userId="{$userId}"}
 						</td>
 					</tr>
 				</tbody>
