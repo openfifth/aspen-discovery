@@ -3,6 +3,7 @@ require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 
 class UserAspenEventInstanceRegistration extends DataObject {
 	public $__table = 'user_aspen_event_instance_registrations';
+	public $id;
 	public $userId;
 	public $eventInstanceId;
 	public $success;
@@ -10,6 +11,6 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public $cancelled;
 
 	public function isUserRegisteredForEvent(): bool {
-		return $this->find() && !$this->cancelled;
+		return $this->find(true) && !$this->cancelled;
 	}
 }

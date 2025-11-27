@@ -8585,9 +8585,9 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-
-		// register the user
-		$registration->insert();
+		// register the user (or undo a registration cancellation)
+		$registration->cancelled = 0;
+		$registration->update();
 
 		$result['success'] = true;
 		$result['title'] = translate([
