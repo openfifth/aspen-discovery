@@ -4137,6 +4137,14 @@ class MyAccount_AJAX extends JSON_Action {
 				$aspenEventRegistration->userId = UserAccount::getActiveUserId();
 				$aspenEventRegistration->eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
 				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
+
+				require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+				$eventInstance = new EventInstance();
+				$eventInstance->id = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+				if ($eventInstance->find(true)) {
+					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
+					$availableSeats = $eventInstance->getAvailableSeats();
+				}
 			}
 
 			if (array_key_exists($curEventId, $eventRecords)) {
@@ -4170,6 +4178,11 @@ class MyAccount_AJAX extends JSON_Action {
 					'vendor' => self::getVendor($entry->sourceId)
 				];
 			}
+			if(strpos($entry->sourceId, 'aspenEvent') !== false) {
+				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
+				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
+				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
+			}
 		}
 
 		$filter = $_REQUEST['eventsFilter'] ?? '';
@@ -4188,6 +4201,24 @@ class MyAccount_AJAX extends JSON_Action {
 		$interface->assign('pageLinks', $pager->getLinks());
 		$interface->assign('events', $events);
 		$interface->assign('userId', $user->id);
+
+		$user = UserAccount::getLoggedInUser();
+		if ($user) {
+			$interface->assign('loggedIn', true);
+			$interface->assign('userId', $user->id);
+			$interface->assign('userDisplayName', $user->getDisplayName());
+			$interface->assign('userEmail', $user->email);
+			$interface->assign('userHomeLocation', $user->getHomeLocationName());
+			$linkedUsers = [];
+			if ($library->allowLinkedAccounts) {
+				$linkedUsers = $user->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					$linkedUser->loadContactInformation();
+				}
+			}
+			$interface->assign('linkedUsers', $linkedUsers);
+		}
+
 
 		$result['success'] = true;
 		$result['message'] = "";
