@@ -2353,7 +2353,7 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		registerUserToEvent: function (eventSourceId) {
+		toggleUserEventRegistration: function (eventSourceId) {
 			if (!Globals.loggedIn) {
 				return;
 			}
@@ -2364,9 +2364,9 @@ AspenDiscovery.Account = (function () {
 
 			const url = Globals.path + "/MyAccount/AJAX";
 			const params = {
-				method: 'registerUserToEvent',
+				method: 'toggleUserRegistrationToEvent',
 				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
-				userId: userId
+				userId
 			};
 
 			$.getJSON(url, params, function (data) {
