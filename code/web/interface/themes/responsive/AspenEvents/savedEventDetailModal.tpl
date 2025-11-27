@@ -14,6 +14,11 @@
 							{include file='AspenEvents/registrationToggleButton.tpl' eventSourceId="{$event.sourceId}" userId="{$userId}"}
 						</td>
 					</tr>
+					<tr>
+						<td colspan="2">
+							{include file='AspenEvents/seats.tpl'}
+						</td>
+					</tr>
 				</tbody>
 		</table>
 	</section>

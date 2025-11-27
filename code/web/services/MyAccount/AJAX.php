@@ -4137,6 +4137,17 @@ class MyAccount_AJAX extends JSON_Action {
 				$aspenEventRegistration->userdId = UserAccount::getActiveUserId();
 				$aspenEventRegistration->eventInstanceId = $entry->sourceId;
 				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
+
+				require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+				$eventInstance = new EventInstance();
+				$eventInstance->id = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+				if ($eventInstance->find(true)) {
+					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
+					$available = $eventInstance->getAvailableSeats();
+					$interface->assign('numberOfSeats', $numberOfSeats);
+					$interface->assign('availableSeats', $available);
+					$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+				}
 			}
 
 			if (array_key_exists($curEventId, $eventRecords)) {
@@ -4188,6 +4199,24 @@ class MyAccount_AJAX extends JSON_Action {
 		$interface->assign('pageLinks', $pager->getLinks());
 		$interface->assign('events', $events);
 		$interface->assign('userId', $user->id);
+
+		$user = UserAccount::getLoggedInUser();
+		if ($user) {
+			$interface->assign('loggedIn', true);
+			$interface->assign('userId', $user->id);
+			$interface->assign('userDisplayName', $user->getDisplayName());
+			$interface->assign('userEmail', $user->email);
+			$interface->assign('userHomeLocation', $user->getHomeLocationName());
+			$linkedUsers = [];
+			if ($library->allowLinkedAccounts) {
+				$linkedUsers = $user->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					$linkedUser->loadContactInformation();
+				}
+			}
+			$interface->assign('linkedUsers', $linkedUsers);
+		}
+
 
 		$result['success'] = true;
 		$result['message'] = "";
