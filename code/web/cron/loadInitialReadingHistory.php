@@ -28,6 +28,7 @@ set_time_limit(0);
 $staleIntervalMinutes = 30; // Configurable: Interval after which an import is considered stale.
 
 // Look for users who need their initial reading history loaded and are not currently being processed.
+/**@noinspection SqlResolve*/
 $selectIdSql = "
 	SELECT id FROM user
 	WHERE initialReadingHistoryLoaded = 0
@@ -55,10 +56,12 @@ $loadedCount = 0;
 $errorCount = 0;
 
 $cronLogEntry->notes .= "<br/>Starting initial reading history load. Found ". count($usersToProcess) ." potential users to process.";
+$cronLogEntry->update();
 
 foreach ($usersToProcess as $userId) {
 
 	// Attempt to atomically claim the user.
+	/**@noinspection SqlResolve*/
 	$claimSql = "
 		UPDATE user
 		SET readingHistoryImportStartedAt = UTC_TIMESTAMP()
@@ -78,21 +81,23 @@ foreach ($usersToProcess as $userId) {
 		if ($claimStmt->rowCount() === 0) {
 			$cronLogEntry->numErrors++;
 			$cronLogEntry->notes .= "<br/>User $userId already claimed by another process or state changed. Skipping.";
+			$cronLogEntry->update();
 			continue;
 		}
 	} catch (Exception $e) {
 		$cronLogEntry->numErrors++;
 		$cronLogEntry->notes .= "<br/>Error claiming user $userId: " . $e->getMessage() . ".";
+		$cronLogEntry->update();
 		$errorCount++;
 		continue;
 	}
 
-	// Successfully claimed, now load the full User object for processing.
 	$user = new User();
 	$user->id = $userId;
 	if (!$user->find(true)) {
 		$cronLogEntry->numErrors++;
 		$cronLogEntry->notes .= "<br/>Failed to load claimed user object for $userId. Skipping.";
+		$cronLogEntry->update();
 		// Note: The timestamp remains set, will be retried later if needed.
 		$errorCount++;
 		continue;
@@ -105,10 +110,9 @@ foreach ($usersToProcess as $userId) {
 
 		if ($catalog) {
 			if ($catalog->driver->hasNativeReadingHistory()) {
-				$result = $catalog->driver->getReadingHistory($user, -1, -1, "checkedOut");
+				$result = $catalog->driver->getReadingHistory($user, -1, -1);
 				if ($result['numTitles'] > 0) {
 					$cronLogEntry->notes .= "<br/>Found {$result['numTitles']} titles to load for $user->displayName ($user->id).";
-
 					foreach ($result['titles'] as $title) {
 						$userReadingHistoryEntry = new ReadingHistoryEntry();
 						$userReadingHistoryEntry->userId = $user->id;
@@ -120,10 +124,10 @@ foreach ($usersToProcess as $userId) {
 						$userReadingHistoryEntry->author = substr($title['author'], 0, 75);
 						$userReadingHistoryEntry->format = is_array($title['format']) ? implode(', ', $title['format']) : $title['format'];
 						$userReadingHistoryEntry->checkOutDate = $title['checkout'];
+						// -1 for imported entries to distinguish them from currently checked-out items.
+						$userReadingHistoryEntry->checkInDate = $title['checkin'] ?? -1;
 
-						if (!empty($title['checkin'])) {
-							$userReadingHistoryEntry->checkInDate = $title['checkin'];
-						} else {
+						if ($userReadingHistoryEntry->checkInDate === -1) {
 							// If the new entry's barcode exists and check-in data is missing,
 							// while the existing entry's check-in has no barcode but has a check-in date,
 							// assume that this is a duplicate entry, so don't insert it.
@@ -141,7 +145,6 @@ foreach ($usersToProcess as $userId) {
 									continue;
 								}
 							}
-							$userReadingHistoryEntry->checkInDate = null;
 						}
 
 						if (empty($title['isIll'])) {
@@ -161,6 +164,7 @@ foreach ($usersToProcess as $userId) {
 				}
 
 				// Mark that the initial reading history has been loaded and clear the timestamp.
+				/**@noinspection SqlResolve*/
 				$updateSql = "
 					UPDATE user
 					SET initialReadingHistoryLoaded = 1,
@@ -176,6 +180,7 @@ foreach ($usersToProcess as $userId) {
 				$cronLogEntry->notes .= "<br/>Successfully loaded initial reading history for $user->displayName ($user->id).";
 			} else {
 				// Mark the attempted load even if the ILS doesn't support it and clear timestamp.
+				/**@noinspection SqlResolve*/
 				$updateSql = "
 					UPDATE user
 					SET initialReadingHistoryLoaded = 1,
@@ -193,11 +198,13 @@ foreach ($usersToProcess as $userId) {
 		} else {
 			$cronLogEntry->numErrors++;
 			$cronLogEntry->notes .= "<br/>Could not get catalog driver for $user->displayName ($user->id).";
+			$cronLogEntry->update();
 			$errorCount++;
 		}
 	} catch (Exception $e) {
 		$cronLogEntry->numErrors++;
 		$cronLogEntry->notes .= "<br/>Error loading reading history for $user->displayName ($user->id): " . $e->getMessage() . ".";
+		$cronLogEntry->update();
 		$errorCount++;
 	}
 

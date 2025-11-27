@@ -181,6 +181,8 @@
 												<td>
 													{if empty($detail.checkInDate)}
 														<span class="label label-success">{translate text="Currently Checked Out" isPublicFacing=true}</span>
+													{elseif $detail.checkInDate == -1}
+														<span class="text-muted">{translate text="Unknown" isPublicFacing=true}</span>
 													{else}
 														{if is_numeric($detail.checkInDate)}
 															{$detail.checkInDate|date_format:"%b %d, %Y"}

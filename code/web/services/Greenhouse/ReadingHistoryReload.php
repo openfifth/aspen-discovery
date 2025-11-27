@@ -10,6 +10,7 @@ class Greenhouse_ReadingHistoryReload extends Admin_Admin {
 			if (!empty($barcodesRaw)) {
 				$barcodes = preg_split("/\\r\\n|\\r|\\n/", $barcodesRaw);
 				$reloadResults = [];
+				global $aspen_db;
 				foreach ($barcodes as $barcode) {
 					$foundUserForBarcode = false;
 					foreach (UserAccount::getAccountProfiles() as $name => $accountProfileInfo) {
@@ -18,11 +19,18 @@ class Greenhouse_ReadingHistoryReload extends Admin_Admin {
 						$userToReset->ils_barcode = $barcode;
 						if ($userToReset->find(true)) {
 							$foundUserForBarcode = true;
-							$userToReset->initialReadingHistoryLoaded = false;
-							// Force the reload when the cron job runs.
-							$userToReset->forceReadingHistoryLoad = true;
-							$userToReset->readingHistoryImportStartedAt = null;
-							$userToReset->update();
+							// Use raw SQL to properly set null values.
+							/**@noinspection SqlResolve*/
+							$updateSql = "
+								UPDATE user
+								SET initialReadingHistoryLoaded = 0,
+									forceReadingHistoryLoad = 1,
+									readingHistoryImportStartedAt = NULL
+								WHERE id = :user_id
+							";
+							$updateStmt = $aspen_db->prepare($updateSql);
+							$updateStmt->bindParam(':user_id', $userToReset->id, PDO::PARAM_INT);
+							$updateStmt->execute();
 						}
 					}
 					$reloadResults[] = [
@@ -52,13 +60,8 @@ class Greenhouse_ReadingHistoryReload extends Admin_Admin {
 		return $breadcrumbs;
 	}
 
-	function canView() {
-		if (UserAccount::isLoggedIn()) {
-			if (UserAccount::getActiveUserObj()->isAspenAdminUser()) {
-				return true;
-			}
-		}
-		return false;
+	function canView(): bool {
+		return UserAccount::isLoggedIn() && UserAccount::getActiveUserObj()->isAspenAdminUser();
 	}
 
 	function getActiveAdminSection(): string {
