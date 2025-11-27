@@ -4129,9 +4129,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 		foreach ($eventIds as $curEventId => $entry) {
 			$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
-			
-			// check apen native events registration
-			if(!strpos('aspenEvent',$entry->sourceId)) {
+			// check aspen native events registration
+			if(strpos($entry->sourceId, 'aspenEvent') !== false) {
 				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 				$aspenEventRegistration = new UserAspenEventInstanceRegistration();
 				$aspenEventRegistration->userId = UserAccount::getActiveUserId();
