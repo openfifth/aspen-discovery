@@ -8936,7 +8936,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			
 			$interface->assign('eventSourceId', $sourceId);
-			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 
 			$interface->assign('loggedIn', true);
 			$interface->assign('userId', $user->id);
@@ -8957,6 +8956,9 @@ class MyAccount_AJAX extends JSON_Action {
 			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
 			$recordDriver = new AspenEventRecordDriver($sourceId);	
 			$interface->assign('isRegistered', $recordDriver->isRegisteredForEvent());
+
+			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
+			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 		}
 
 		$result['success'] = true;
