@@ -4487,6 +4487,10 @@ AspenDiscovery.Account = (function () {
 			const email = selectedOption.dataset.email || '';
 			const location = selectedOption.dataset.location || '';
 
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = selector ? selector.value : (userIdField ? userIdField.value : null);
+
+			AspenDiscovery.Account.isUserRegisteredForEvent(eventSourceId, userId).then((data) => AspenDiscovery.Account.updateEventButtonTextContent(data, eventSourceId));
 			document.getElementById(`eventRegistrationUserId-${eventSourceId}`).value = selector.value;
 			document.getElementById(`eventUserEmail-${eventSourceId}`).textContent = email;
 			document.getElementById(`eventUserLocation-${eventSourceId}`).textContent = location;
@@ -4496,6 +4500,16 @@ AspenDiscovery.Account = (function () {
 				const primaryUserId = selector.options[0].value;
 				changeLink.style.display = (selector.value === primaryUserId) ? '' : 'none';
 			}
+		},
+
+		updateEventButtonTextContent: function (userRegistrationData, eventSourceId) {
+			if (!userRegistrationData.success) {
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = 'Unavailable';
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).setAttribute('disabled', true);
+				return;
+			}
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = userRegistrationData.body.isRegistered ? 'Unregister' : 'Register';
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).removeAttribute('disabled');
 		},
 
 		isUserRegisteredForEvent: function (eventSourceId, userId) {
