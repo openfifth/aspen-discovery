@@ -63,7 +63,7 @@
 								</td>
 							</tr>
 							<tr id='aspen-events-registration-button-{$event.sourceId}-wrapper' hidden='true'>
-								<td colspan="5">
+								<td colspan="7">
 									{include file='AspenEvents/savedEventDetailModal.tpl'}
 								</td>
    							</tr>					
