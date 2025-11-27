@@ -1,6 +1,6 @@
 {strip}
 	{if !empty($loggedIn)}
-		<button id="aspen-events-toggle-registration-button-{$eventSourceId}-{$userId}" type="button" class="btn btn-primary" onclick="return AspenDiscovery.Account.toggleUserEventRegistration('{$eventSourceId}');">
+		<button id="aspen-events-toggle-registration-button-{$eventSourceId}" type="button" class="btn btn-primary" onclick="return AspenDiscovery.Account.toggleUserEventRegistration('{$eventSourceId}');">
 			{if $isRegistered}
 				{translate text="Unregister" isPublicFacing=true}
 			{else}
