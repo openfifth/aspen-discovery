@@ -88,6 +88,14 @@ function getUpdates25_12_00(): array {
 				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS barcode VARCHAR(50) DEFAULT NULL AFTER sourceId",
 			]
 		],
+		'reading_history_add_edited_checkin_date' => [
+			'title' => 'Reading History - Add Edited Check-In Date Field',
+			'description' => 'Add editedCheckInDate column to user_reading_history_work table to store user-edited check-in dates while preserving original checkInDate.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS editedCheckInDate BIGINT(20) DEFAULT NULL AFTER checkInDate",
+			]
+		],
 
 		//alexander - Open Fifth
 

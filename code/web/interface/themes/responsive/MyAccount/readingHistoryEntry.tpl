@@ -178,17 +178,24 @@
 														{$detail.checkOutDate|escape}
 													{/if}
 												</td>
-												<td>
+												<td class="editable-return-date" data-entry-id="{$detail.id}" data-original-date="{$detail.checkInDate}" data-edited-date="{$detail.editedCheckInDate}">
 													{if empty($detail.checkInDate)}
 														<span class="label label-success">{translate text="Currently Checked Out" isPublicFacing=true}</span>
 													{elseif $detail.checkInDate == -1}
 														<span class="text-muted">{translate text="Unknown" isPublicFacing=true}</span>
 													{else}
-														{if is_numeric($detail.checkInDate)}
-															{$detail.checkInDate|date_format:"%b %d, %Y"}
-														{else}
-															{$detail.checkInDate|escape}
+														{assign var="displayDate" value=$detail.checkInDate}
+														{if !empty($detail.editedCheckInDate)}
+															{assign var="displayDate" value=$detail.editedCheckInDate}
 														{/if}
+														<span class="date-display">
+															{if is_numeric($displayDate)}
+																{$displayDate|date_format:"%b %d, %Y"}
+															{else}
+																{$displayDate|escape}
+															{/if}
+														</span>
+														<input type="text" class="date-edit form-control" style="display:none;" value="{if is_numeric($displayDate)}{$displayDate|date_format:"%Y-%m-%d"}{else}{$displayDate|escape}{/if}">
 													{/if}
 												</td>
 												<td>

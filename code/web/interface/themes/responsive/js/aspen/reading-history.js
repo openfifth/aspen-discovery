@@ -292,15 +292,102 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			return false;
 		},
 
-		optInAction: function (){
+		optInAction(){
 			$('#readingHistoryAction').val('optIn');
 			$('#readingListForm').trigger('submit');
 			return false;
 		},
 
-		exportListAction: function (){
+		exportListAction(){
 			document.location.href = Globals.path + "/MyAccount/AJAX?method=exportReadingHistory";
 			return false;
+		},
+
+		initEditableReturnDates() {
+			$(document)
+				.off('dblclick.returnDate', '.editable-return-date .date-display')
+				.on('dblclick.returnDate', '.editable-return-date .date-display', function(e) {
+					e.preventDefault();
+					const $cell = $(this).closest('.editable-return-date');
+					const $display = $cell.find('.date-display');
+					const $input = $cell.find('.date-edit');
+
+					$display.hide();
+					$input.show().focus().select();
+				});
+
+			$(document)
+				.off('blur.returnDate', '.editable-return-date .date-edit')
+				.on('blur.returnDate', '.editable-return-date .date-edit', function() {
+					AspenDiscovery.Account.ReadingHistory.saveReturnDate($(this));
+				});
+
+			$(document)
+				.off('keydown.returnDate', '.editable-return-date .date-edit')
+				.on('keydown.returnDate', '.editable-return-date .date-edit', function(e) {
+					if (e.key === 'Enter') {
+						e.preventDefault();
+						AspenDiscovery.Account.ReadingHistory.saveReturnDate($(this));
+					} else if (e.key === 'Escape') {
+						e.preventDefault();
+						const $cell = $(this).closest('.editable-return-date');
+						const $display = $cell.find('.date-display');
+						const $input = $cell.find('.date-edit');
+
+						// Restore original value and hide input.
+						const originalDate = $cell.data('edited-date') || $cell.data('original-date');
+						if (originalDate) {
+							const dateObj = new Date(originalDate * 1000);
+							$input.val(dateObj.toISOString().split('T')[0]);
+						}
+						$input.hide();
+						$display.show();
+					}
+				});
+		},
+
+		saveReturnDate($input) {
+			const $cell = $input.closest('.editable-return-date');
+			const entryId = $cell.data('entry-id');
+			const newDateStr = $input.val();
+
+			if (!newDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(newDateStr)) {
+				AspenDiscovery.showMessageWithButtons('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format.', '', false, '', false, false, false);
+				$input.focus();
+				return;
+			}
+
+			// Convert to Unix timestamp.
+			const newDate = new Date(newDateStr + 'T00:00:00');
+			const newTimestamp = Math.floor(newDate.getTime() / 1000);
+
+			const url = `${Globals.path}/MyAccount/AJAX`;
+			const params = {
+				method: 'updateReadingHistoryReturnDate',
+				entryId: entryId,
+				newReturnDate: newTimestamp
+			};
+
+			$.getJSON(url, params)
+				.done((data) => {
+					if (data.success) {
+						const $display = $cell.find('.date-display');
+						const { formattedDate }  = data;
+						$display.text(formattedDate);
+						$cell.data('edited-date', newTimestamp);
+						$input.hide();
+						$display.show();
+
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', true, '', false, false, false);
+					} else {
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
+						$input.focus();
+					}
+				})
+				.fail(() => {
+					AspenDiscovery.showMessageWithButtons('Error', 'Failed to update return date. Please try again.', '', false, '', false, false, false);
+					$input.focus();
+				});
 		}
 	};
 }(AspenDiscovery.Account.ReadingHistory || {}));

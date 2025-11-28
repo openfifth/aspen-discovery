@@ -116,4 +116,5 @@
 <script type="text/javascript">
 	AspenDiscovery.Ratings.initializeRaters();
 	AspenDiscovery.Account.ReadingHistory.initAccordions();
+	AspenDiscovery.Account.ReadingHistory.initEditableReturnDates();
 </script>

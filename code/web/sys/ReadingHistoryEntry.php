@@ -14,13 +14,14 @@ class ReadingHistoryEntry extends DataObject {
 	public $format;
 	public $checkOutDate;
 	public $checkInDate;
+	public $editedCheckInDate;
 	public $deleted;
 	public $isIll;
 	public $isManuallyAdded;
 	public $costSavings;
 
 	function getNumericColumnNames() : array {
-		return ['userId', 'checkOutDate', 'checkInDate', 'deleted', 'isIll', 'costSavings', 'isManuallyAdded'];
+		return ['userId', 'checkOutDate', 'checkInDate', 'editedCheckInDate', 'deleted', 'isIll', 'costSavings', 'isManuallyAdded'];
 	}
 
 	function objectHistoryEnabled() : bool {

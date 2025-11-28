@@ -4601,17 +4601,109 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
+	function updateReadingHistoryReturnDate(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Check-In Update Failed',
+				'isPublicFacing' => true,
+			])
+		];
+
+		$user = UserAccount::getActiveUserObj();
+		if (!$user) {
+			$result['message'] = translate([
+				'text' => 'You must be logged in to update reading history.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$entryId = $_REQUEST['entryId'] ?? null;
+		$newReturnDate = $_REQUEST['newReturnDate'] ?? null;
+
+		if (empty($entryId) || !is_numeric($entryId)) {
+			$result['title'] = translate([
+				'text' => 'Invalid Entry',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Invalid entry ID provided.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if (empty($newReturnDate) || !is_numeric($newReturnDate)) {
+			$result['title'] = translate([
+				'text' => 'Invalid Date Input',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Invalid return date provided.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+		$readingHistoryEntry = new ReadingHistoryEntry();
+		$readingHistoryEntry->id = $entryId;
+
+		if (!$readingHistoryEntry->find(true)) {
+			$result['title'] = translate([
+				'text' => 'Entry Not Found',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Reading history entry not found.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if ($readingHistoryEntry->userId != $user->id) {
+			$result['title'] = translate([
+				'text' => 'Permission Denied',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You do not have permission to update this entry.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$readingHistoryEntry->editedCheckInDate = $newReturnDate;
+		if ($readingHistoryEntry->update()) {
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Check-In Date Updated',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Return date updated successfully.',
+				'isPublicFacing' => true,
+			]);
+			$result['formattedDate'] = date('M d, Y', $newReturnDate);
+		} else {
+			$result['message'] = translate([
+				'text' => 'Failed to update return date in database.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
 	function deleteGroupedReadingHistoryEntry(): array {
 		$result = [
 			'success' => false,
 			'title' => translate([
 				'text' => 'Failed to Delete Reading History Entry',
 				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'An unknown error has occurred deleting this reading history entry.',
-				'isPublicFacing' => true,
-			]),
+			])
 		];
 
 		$user = UserAccount::getActiveUserObj();

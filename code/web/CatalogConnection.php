@@ -724,6 +724,7 @@ class CatalogConnection {
 					'id' => $detailQuery->id,
 					'checkOutDate' => $detailQuery->checkOutDate,
 					'checkInDate' => $detailQuery->checkInDate,
+					'editedCheckInDate' => $detailQuery->editedCheckInDate,
 					'format' => $detailQuery->format,
 					'source' => $detailQuery->source,
 					'sourceId' => $detailQuery->sourceId,
