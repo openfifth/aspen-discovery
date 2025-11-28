@@ -348,11 +348,12 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 
 		saveReturnDate($input) {
 			const $cell = $input.closest('.editable-return-date');
+			const $display = $cell.find('.date-display');
 			const entryId = $cell.data('entry-id');
 			const newDateStr = $input.val();
 
 			if (!newDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(newDateStr)) {
-				AspenDiscovery.showMessageWithButtons('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format.', '', false, '', false, false, false);
+				AspenDiscovery.showMessageWithButtons('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format.');
 				$input.focus();
 				return;
 			}
@@ -360,6 +361,14 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			// Convert to Unix timestamp.
 			const newDate = new Date(newDateStr + 'T00:00:00');
 			const newTimestamp = Math.floor(newDate.getTime() / 1000);
+
+			const currentTimestamp = $cell.data('edited-date') || $cell.data('original-date');
+			if (newTimestamp === parseInt(currentTimestamp)) {
+				// No change, just hide input and show display.
+				$input.hide();
+				$display.show();
+				return;
+			}
 
 			const url = `${Globals.path}/MyAccount/AJAX`;
 			const params = {
@@ -371,21 +380,20 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
-						const $display = $cell.find('.date-display');
 						const { formattedDate }  = data;
 						$display.text(formattedDate);
 						$cell.data('edited-date', newTimestamp);
 						$input.hide();
 						$display.show();
 
-						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', true, '', false, false, false);
+						AspenDiscovery.showMessageWithButtons(data.title, data.message);
 					} else {
-						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
+						AspenDiscovery.showMessageWithButtons(data.title, data.message);
 						$input.focus();
 					}
 				})
 				.fail(() => {
-					AspenDiscovery.showMessageWithButtons('Error', 'Failed to update return date. Please try again.', '', false, '', false, false, false);
+					AspenDiscovery.showMessageWithButtons('Error', 'Failed to update return date. Please try again.');
 					$input.focus();
 				});
 		}
