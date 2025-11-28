@@ -8572,6 +8572,12 @@ class MyAccount_AJAX extends JSON_Action {
 		// add the event to saved events if it has not yet been saved
 		$recordDriver->saveUserEventEntry($sourceId, $userId);
 
+		// so they may manage it, also add the event to the active user's saved events if the user this was added for is a linked user
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$recordDriver->saveUserEventEntry($sourceId, $activeUserId);	
+		}
+
 		if (!$eventInstance->hasAvailableSeats(1)) {
 			$result['message'] = translate([
 				'text' => "This event is full — no seats are currently available. We've saved it to your events list so you can keep track of it.",
