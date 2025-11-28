@@ -8141,7 +8141,7 @@ class MyAccount_AJAX extends JSON_Action {
 			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
 			$recordDriver = new AspenEventRecordDriver($sourceId);	
-			$interface->assign('isRegistered', $recordDriver->isRegisteredForEvent());
+			$interface->assign('isRegistered', $recordDriver->isUserRegisteredForEvent());
 
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
