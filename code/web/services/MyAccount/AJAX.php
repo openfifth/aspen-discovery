@@ -9278,18 +9278,12 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// add the event to saved events if it has not yet been saved
-		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
-		$userEventsEntry = new UserEventsEntry();
-		$userEventsEntry->sourceId = $sourceId;
-		$userEventsEntry->userId = $userId;
-		
-		if (!$userEventsEntry->find(true)) {
-			$userEventsEntry->title = mb_substr($recordDriver->getTitle(), 0, 50);
-			$userEventsEntry->eventDate = $recordDriver->getStartDate()->getTimestamp();
-			$userEventsEntry->regRequired = $recordDriver->isRegistrationRequired() ? 1 : 0;
-			$userEventsEntry->location = $recordDriver->getBranch();
-			$userEventsEntry->dateAdded = time();
-			$userEventsEntry->insert();
+		$this->saveUserEventEntry($sourceId, $userId, $recordDriver);
+
+		// so they may manage it, also add the event to the active user's saved events if the user this was added for is a linked user
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$this->saveUserEventEntry($sourceId, $activeUserId, $recordDriver);	
 		}
 
 		if (!$eventInstance->hasAvailableSeats(1)) {
@@ -9314,6 +9308,21 @@ class MyAccount_AJAX extends JSON_Action {
 			'isPublicFacing' => true
 		]);
 		return $result;
+	}
+
+	private function saveUserEventEntry($sourceId, $userId, $recordDriver):void {
+		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
+		$userEventsEntry = new UserEventsEntry();
+		$userEventsEntry->sourceId = $sourceId;
+		$userEventsEntry->userId = $userId;
+		if (!$userEventsEntry->find(true)) {
+			$userEventsEntry->title = mb_substr($recordDriver->getTitle(), 0, 50);
+			$userEventsEntry->eventDate = $recordDriver->getStartDate()->getTimestamp();
+			$userEventsEntry->regRequired = $recordDriver->isRegistrationRequired() ? 1 : 0;
+			$userEventsEntry->location = $recordDriver->getBranch();
+			$userEventsEntry->dateAdded = time();
+			$userEventsEntry->insert();
+		}
 	}
 
 	/** @noinspection PhpUnused */
