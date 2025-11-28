@@ -40,19 +40,14 @@
 									{$event.location}
 								</td>
 								<td class="myAccountCell">
-									{if ($event.regRequired == 1)}
-										{if $event.externalLink != null && !($event.isRegistered)}
-											{if !empty($event.regModalBody)}
-												<a class="btn btn-xs btn-action" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$event.id}', '{$event.vendor}', '{$event.externalLink}');">{translate text="Check Registration" isPublicFacing=true}
-												</a>
-											{else}
-												<a href="{$event.externalLink}" class="btn btn-xs btn-action" target="_blank" aria-label="{translate text='Check Registration' isPublicFacing=true} ({translate text='opens in new window' isPublicFacing=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="Check Registration" isPublicFacing=true}</a>
-											{/if}
-										{elseif $event.isRegistered}
-											<a href="{$event.externalLink}" class="btn btn-xs btn-action" target="_blank" aria-label="{translate text='You Are Registered' isPublicFacing=true} ({translate text='opens in new window' isPublicFacing=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text=" You Are Registered" isPublicFacing=true}</a>
-										{else}
-											<span>{translate text="Event Has Passed" isPublicFacing=true}</span>
-										{/if}
+									{if $event.isRegistered && empty($linkedUsers)}
+										<span>{translate text="You are registered" isPublicFacing=true}</span>
+									{else if $event.isRegistered}
+										<span>{translate text="There are registrations to view" isPublicFacing=true}</span>
+									{else if $event.regRequired}
+										<span>{translate text="Registration available" isPublicFacing=true}</span>
+									{else}
+										<span>{translate text="Registration unavailable" isPublicFacing=true}</span>
 									{/if}
 								</td>
 								<td class="myAccountCell">
