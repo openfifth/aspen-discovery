@@ -473,9 +473,9 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		// if linked users are enabled and if any is not registered, display the modal link
 		global $library;
 		if ($library->allowLinkedAccounts) {
-			$linkedUsers = $user->getLinkedUsers();
-			foreach ($linkedUsers as $linkedUser) {
-				if (!$this->isUserRegisteredForEvent($linkedUser->id)) {
+			$linkedUserIds = $user->getLinkedUsers();
+			foreach ($linkedUserIds as $linkedUserId) {
+				if (!$this->isUserRegisteredForEvent($linkedUserId)) {
 					return false;
 				}
 			}
@@ -495,7 +495,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
-		$registration->userdId = $userId ? $userId : UserAccount::getActiveUserId();
+		$registration->userId = $userId ? $userId : UserAccount::getActiveUserId();
 		$registration->eventInstanceId = $this->getIdentifier();
 		return $registration->isUserRegisteredForEvent();
 	}
