@@ -4655,10 +4655,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$eventInstance->id = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
 				if ($eventInstance->find(true)) {
 					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
-					$available = $eventInstance->getAvailableSeats();
-					$interface->assign('numberOfSeats', $numberOfSeats);
-					$interface->assign('availableSeats', $available);
-					$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+					$availableSeats = $eventInstance->getAvailableSeats();
 				}
 			}
 
@@ -4692,6 +4689,11 @@ class MyAccount_AJAX extends JSON_Action {
 					'pastEvent' => true,
 					'vendor' => self::getVendor($entry->sourceId)
 				];
+			}
+			if(strpos($entry->sourceId, 'aspenEvent') !== false) {
+				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
+				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
+				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
 			}
 		}
 
