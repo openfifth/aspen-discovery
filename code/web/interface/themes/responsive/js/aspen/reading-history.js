@@ -321,6 +321,8 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 					const $display = $td.find('.date-display');
 					const $input = $td.find('.date-edit');
 
+					$td.data('value-on-edit-start', $input.val());
+
 					$display.hide();
 					$input.show().focus().select();
 				});
@@ -381,6 +383,14 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			const newDateStr = $input.val();
 			const editedTimestamp = $td.data('edited-date');
 			const originalTimestamp = $td.data('original-date');
+			const valueOnEditStart = $td.data('value-on-edit-start');
+
+			// If the value hasn't changed from when editing started, don't save.
+			if (newDateStr === valueOnEditStart) {
+				$input.hide();
+				$display.show();
+				return;
+			}
 
 			// If empty and no original/edited date exists, just cancel (no change for "Currently Checked Out").
 			if (!newDateStr && !originalTimestamp && !editedTimestamp) {
