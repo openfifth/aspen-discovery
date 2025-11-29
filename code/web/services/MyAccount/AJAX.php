@@ -4646,6 +4646,19 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		$todayTimestamp = strtotime('today');
+		if ($newReturnDate > $todayTimestamp) {
+			$result['title'] = translate([
+				'text' => 'Invalid Date Input',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Return date cannot be in the future.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
 		$readingHistoryEntry = new ReadingHistoryEntry();
 		$readingHistoryEntry->id = $entryId;

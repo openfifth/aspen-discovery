@@ -3,6 +3,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 		initAccordions() {
 			const updateToggleLabel = ($link, isExpanded) => {
 				$link.attr('aria-expanded', isExpanded);
+				// noinspection JSUnresolvedFunction
 				const textNode = $link.contents().filter(function() {
 					return this.nodeType === 3;
 				}).first();
@@ -98,6 +99,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 				entryId: id
 			};
 
+			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
@@ -136,9 +138,11 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 				author
 			};
 
+			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
+						// noinspection JSUnresolvedFunction
 						$(`#readingHistoryEntry${displayId}`).fadeOut();
 						AspenDiscovery.showMessage(data.title, data.message, true);
 					} else {
@@ -172,14 +176,17 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 				entryId
 			};
 
+			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
+						// noinspection JSUnresolvedFunction
 						$(`#readingHistoryDetailEntry${entryId}`).fadeOut(function() {
 							$(this).remove();
 							const remainingRows = $(`#readingHistoryDetails${groupId} tbody tr`).length;
 							if (remainingRows === 0) {
 								// If no rows left, hide the entire grouped entry.
+								// noinspection JSUnresolvedFunction
 								$(`#readingHistoryEntry${groupId}`).fadeOut();
 							} else {
 								// Update the "checked out X times" count
@@ -227,7 +234,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 			// noinspection JSCheckFunctionSignatures
 			$('.titleSelect:checked').each(function() {
 				const name = $(this).attr('name');
-				const match = name.match(/selected\[(\d+)\]/);
+				const match = name.match(/selected\[(\d+)]/);
 				if (match && match[1]) {
 					selectedIds.push(match[1]);
 				}
@@ -240,10 +247,12 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 				ids: selectedIds
 			};
 
+			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
 						selectedIds.forEach((id) => {
+							// noinspection JSUnresolvedFunction
 							$(`#readingHistoryEntry${id}`).fadeOut();
 						});
 						AspenDiscovery.showMessageWithButtons(data.title, data.message, '', false, '', false, false, false);
@@ -305,37 +314,56 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 
 		initEditableReturnDates() {
 			$(document)
-				.off('dblclick.returnDate', '.editable-return-date .date-display')
-				.on('dblclick.returnDate', '.editable-return-date .date-display', function(e) {
+				.off('dblclick.returnDate', 'td[data-entry-id]')
+				.on('dblclick.returnDate', 'td[data-entry-id]', function(e) {
 					e.preventDefault();
-					const $cell = $(this).closest('.editable-return-date');
-					const $display = $cell.find('.date-display');
-					const $input = $cell.find('.date-edit');
+					const $td = $(this);
+					const $display = $td.find('.date-display');
+					const $input = $td.find('.date-edit');
 
 					$display.hide();
 					$input.show().focus().select();
 				});
 
+			// Format date input as user types.
 			$(document)
-				.off('blur.returnDate', '.editable-return-date .date-edit')
-				.on('blur.returnDate', '.editable-return-date .date-edit', function() {
+				.off('input.returnDate', 'td[data-entry-id] .date-edit')
+				.on('input.returnDate', 'td[data-entry-id] .date-edit', function() {
+					let value = $(this).val();
+					const digitsOnly = value.replace(/\D/g, '');
+					let formatted = digitsOnly;
+
+					if (digitsOnly.length > 4) {
+						formatted = digitsOnly.substring(0, 4) + '-' + digitsOnly.substring(4);
+					}
+					if (digitsOnly.length > 6) {
+						formatted = formatted.substring(0, 7) + '-' + formatted.substring(7);
+					}
+					formatted = formatted.substring(0, 10);
+
+					$(this).val(formatted);
+				});
+
+			$(document)
+				.off('blur.returnDate', 'td[data-entry-id] .date-edit')
+				.on('blur.returnDate', 'td[data-entry-id] .date-edit', function() {
 					AspenDiscovery.Account.ReadingHistory.saveReturnDate($(this));
 				});
 
 			$(document)
-				.off('keydown.returnDate', '.editable-return-date .date-edit')
-				.on('keydown.returnDate', '.editable-return-date .date-edit', function(e) {
+				.off('keydown.returnDate', 'td[data-entry-id] .date-edit')
+				.on('keydown.returnDate', 'td[data-entry-id] .date-edit', function(e) {
 					if (e.key === 'Enter') {
 						e.preventDefault();
 						AspenDiscovery.Account.ReadingHistory.saveReturnDate($(this));
 					} else if (e.key === 'Escape') {
 						e.preventDefault();
-						const $cell = $(this).closest('.editable-return-date');
-						const $display = $cell.find('.date-display');
-						const $input = $cell.find('.date-edit');
+						const $td = $(this).closest('td[data-entry-id]');
+						const $display = $td.find('.date-display');
+						const $input = $td.find('.date-edit');
 
 						// Restore original value and hide input.
-						const originalDate = $cell.data('edited-date') || $cell.data('original-date');
+						const originalDate = $td.data('edited-date') || $td.data('original-date');
 						if (originalDate) {
 							const dateObj = new Date(originalDate * 1000);
 							$input.val(dateObj.toISOString().split('T')[0]);
@@ -347,22 +375,42 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 		},
 
 		saveReturnDate($input) {
-			const $cell = $input.closest('.editable-return-date');
-			const $display = $cell.find('.date-display');
-			const entryId = $cell.data('entry-id');
+			const $td = $input.closest('td[data-entry-id]');
+			const $display = $td.find('.date-display');
+			const entryId = $td.data('entry-id');
 			const newDateStr = $input.val();
+			const editedTimestamp = $td.data('edited-date');
+			const originalTimestamp = $td.data('original-date');
 
-			if (!newDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(newDateStr)) {
-				AspenDiscovery.showMessageWithButtons('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format.');
-				$input.focus();
+			// If empty and no original/edited date exists, just cancel (no change for "Currently Checked Out").
+			if (!newDateStr && !originalTimestamp && !editedTimestamp) {
+				$input.hide();
+				$display.show();
 				return;
 			}
 
-			// Convert to Unix timestamp.
+			if (!newDateStr || !/^\d{4}-\d{2}-\d{2}$/.test(newDateStr)) {
+				$input.hide();
+				$display.show();
+				AspenDiscovery.showMessageWithButtons('Invalid Date', 'Please enter a valid date in YYYY-MM-DD format.');
+				return;
+			}
+
 			const newDate = new Date(newDateStr + 'T00:00:00');
 			const newTimestamp = Math.floor(newDate.getTime() / 1000);
 
-			const currentTimestamp = $cell.data('edited-date') || $cell.data('original-date');
+			// Validate that the date is not in the future.
+			const now = new Date();
+			now.setHours(0, 0, 0, 0);
+			const todayTimestamp = Math.floor(now.getTime() / 1000);
+			if (newTimestamp > todayTimestamp) {
+				$input.hide();
+				$display.show();
+				AspenDiscovery.showMessageWithButtons('Invalid Date', 'Return date cannot be in the future.');
+				return;
+			}
+
+			const currentTimestamp = (editedTimestamp && editedTimestamp !== '') ? editedTimestamp : originalTimestamp;
 			if (newTimestamp === parseInt(currentTimestamp)) {
 				// No change, just hide input and show display.
 				$input.hide();
@@ -377,24 +425,28 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 				newReturnDate: newTimestamp
 			};
 
+			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params)
 				.done((data) => {
 					if (data.success) {
 						const { formattedDate }  = data;
+						$display.removeClass('label label-success');
 						$display.text(formattedDate);
-						$cell.data('edited-date', newTimestamp);
+						$td.data('edited-date', newTimestamp);
 						$input.hide();
 						$display.show();
 
 						AspenDiscovery.showMessageWithButtons(data.title, data.message);
 					} else {
+						$input.hide();
+						$display.show();
 						AspenDiscovery.showMessageWithButtons(data.title, data.message);
-						$input.focus();
 					}
 				})
 				.fail(() => {
+					$input.hide();
+					$display.show();
 					AspenDiscovery.showMessageWithButtons('Error', 'Failed to update return date. Please try again.');
-					$input.focus();
 				});
 		}
 	};
