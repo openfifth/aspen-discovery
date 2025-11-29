@@ -1471,7 +1471,7 @@ class CarlX extends AbstractIlsDriver {
 	/**
 	 * @throws Exception
 	 */
-	public function getReadingHistory(User $patron, $page = 1, $recordsPerPage = -1, $sortOption = 'checkedOut') {
+	public function getReadingHistory(User $patron): array {
 		$readHistoryEnabledInCarlX = false;
 		$request = $this->getSearchbyPatronIdRequest($patron);
 		$result = $this->doSoapRequest('getPatronInformation', $request, $this->patronWsdl);
@@ -1517,11 +1517,6 @@ class CarlX extends AbstractIlsDriver {
 					}
 
 					$numTitles = count($readingHistoryTitles);
-					if ($recordsPerPage != -1) {
-						$startRecord = ($page - 1) * $recordsPerPage;
-						$readingHistoryTitles = array_slice($readingHistoryTitles, $startRecord, $recordsPerPage);
-					}
-
 					foreach ($readingHistoryTitles as $key => $historyEntry) {
 						$historyEntry['format'] = 'Unknown';
 						if (!empty($historyEntry['sourceId'])) {

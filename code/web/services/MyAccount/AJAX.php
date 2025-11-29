@@ -3627,7 +3627,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	public function exportReadingHistory() {
+	public function exportReadingHistory(): void {
 		$user = UserAccount::getActiveUserObj();
 		if ($user) {
 			$selectedSortOption = $this->setSort('sort', 'readingHistory');
@@ -3640,9 +3640,7 @@ class MyAccount_AJAX extends JSON_Action {
 			header('Content-Disposition: attachment;filename="ReadingHistory.csv"');
 			header('Cache-Control: max-age=0');
 			$fp = fopen('php://output', 'w');
-
 			try {
-				// Set properties
 				$fields = array(
 					'Title',
 					'Author',
@@ -3651,9 +3649,7 @@ class MyAccount_AJAX extends JSON_Action {
 				);
 				fputcsv($fp, $fields);
 
-				//Loop Through The Report Data
 				foreach ($readingHistory['titles'] as $row) {
-
 					$title = $row['title'];
 					$author = $row['author'];
 					$format = is_array($row['format']) ? implode(',', $row['format']) : $row['format'];
@@ -3679,7 +3675,7 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			} catch (Exception $e) {
 				global $logger;
-				$logger->log("Error exporting to csv " . $e, Logger::LOG_ERROR);
+				$logger->log("Error exporting to csv " . $e->getMessage(), Logger::LOG_ERROR);
 			}
 		}
 		exit;
@@ -4789,11 +4785,7 @@ class MyAccount_AJAX extends JSON_Action {
 			'title' => translate([
 				'text' => 'Failed to Delete Reading History Entries',
 				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'An unknown error has occurred deleting these reading history entries.',
-				'isPublicFacing' => true,
-			]),
+			])
 		];
 
 		$user = UserAccount::getActiveUserObj();

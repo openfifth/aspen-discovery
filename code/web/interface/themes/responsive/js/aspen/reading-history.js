@@ -25,6 +25,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 					const $target = $('#' + targetId);
 
 					if ($target.length) {
+						// noinspection JSUnresolvedFunction
 						const shouldExpand = !$target.hasClass('in');
 						$target.collapse(shouldExpand ? 'show' : 'hide');
 						updateToggleLabel($link, shouldExpand);
@@ -52,6 +53,7 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 
 			if (isSelectionMode) {
 				$selectTitle.hide().removeClass('col-xs-1');
+				// noinspection JSUnresolvedFunction
 				$selectTitle.prop('checked', false);
 
 				$('.coverColumn').removeClass('col-xs-2 col-sm-3').addClass('col-xs-3 col-sm-4');
@@ -189,7 +191,6 @@ AspenDiscovery.Account.ReadingHistory = (function(){
 								// noinspection JSUnresolvedFunction
 								$(`#readingHistoryEntry${groupId}`).fadeOut();
 							} else {
-								// Update the "checked out X times" count
 								const countText = remainingRows === 1 ? 'Checked out 1 time' : `Checked out ${remainingRows} times`;
 								const $readingHistoryCount = $(`#readingHistoryEntry${groupId} .reading-history-count-text`);
 								$readingHistoryCount.text(countText);

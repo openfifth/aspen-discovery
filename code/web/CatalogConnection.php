@@ -602,24 +602,21 @@ class CatalogConnection {
 	}
 
 	/**
-	 * Get Reading History
+	 * Get Reading History for the user account.
 	 *
-	 * This is responsible for retrieving a history of checked out items for the patron.
-	 *
-	 * @param User $patron The patron array
+	 * @param User $patron
 	 * @param int $page
 	 * @param int $recordsPerPage
 	 * @param string $sortOption
 	 * @param string $filter
 	 * @param bool $forExport
-	 * @return  array               Array of the patron's reading list
-	 *                              If an error occurs, return a AspenError
+	 * @return array Array of the patron's reading list.
 	 * @access  public
 	 */
-	function getReadingHistory($patron, $page = 1, $recordsPerPage = 20, $sortOption = "checkedOut", $filter = "", $forExport = false) {
+	function getReadingHistory(User $patron, int $page = 1, int $recordsPerPage = 20, string $sortOption = "checkedOut", string $filter = "", bool $forExport = false): array {
 		global $timer;
 		global $offlineMode;
-		$timer->logTime("Starting to load reading history");
+		$timer->logTime("Starting to load reading history.");
 
 		$result = [
 			'historyActive' => $patron->trackReadingHistory,
@@ -644,7 +641,9 @@ class CatalogConnection {
 
 			if ($page == 1 && empty($filter)) {
 				$this->updateReadingHistoryBasedOnCurrentCheckouts($patron, false);
-				$timer->logTime("Finished updating reading history based on current checkouts");
+				$timer->logTime("Finished updating reading history based on current checkouts.");
+				$this->updateReadingHistoryGroupedWorks($patron);
+				$timer->logTime("Finished updating reading history grouped works.");
 			}
 		}
 
@@ -697,9 +696,8 @@ class CatalogConnection {
 		}
 		$readingHistoryDB->find();
 		$readingHistoryTitles = [];
-
 		while ($readingHistoryDB->fetch()) {
-			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB);
+			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB, $forExport);
 			$historyEntry['index'] = ++$firstIndex;
 
 			$detailRecords = [];
@@ -719,19 +717,21 @@ class CatalogConnection {
 			$detailQuery->find();
 
 			$hasBarcode = false;
-			while ($detailQuery->fetch()) {
-				$detailRecords[] = [
-					'id' => $detailQuery->id,
-					'checkOutDate' => $detailQuery->checkOutDate,
-					'checkInDate' => $detailQuery->checkInDate,
-					'editedCheckInDate' => $detailQuery->editedCheckInDate,
-					'format' => $detailQuery->format,
-					'source' => $detailQuery->source,
-					'sourceId' => $detailQuery->sourceId,
-					'barcode' => $detailQuery->barcode,
-				];
-				if (!empty($detailQuery->barcode)) {
-					$hasBarcode = true;
+			if (!$forExport) {
+				while ($detailQuery->fetch()) {
+					$detailRecords[] = [
+						'id' => $detailQuery->id,
+						'checkOutDate' => $detailQuery->checkOutDate,
+						'checkInDate' => $detailQuery->checkInDate,
+						'editedCheckInDate' => $detailQuery->editedCheckInDate,
+						'format' => $detailQuery->format,
+						'source' => $detailQuery->source,
+						'sourceId' => $detailQuery->sourceId,
+						'barcode' => $detailQuery->barcode,
+					];
+					if (!empty($detailQuery->barcode)) {
+						$hasBarcode = true;
+					}
 				}
 			}
 			$historyEntry['detailRecords'] = $detailRecords;
@@ -1132,7 +1132,7 @@ class CatalogConnection {
 	 * @param ReadingHistoryEntry $readingHistoryDB
 	 * @return array
 	 */
-	public function getHistoryEntryForDatabaseEntry(ReadingHistoryEntry $readingHistoryDB): array {
+	public function getHistoryEntryForDatabaseEntry(ReadingHistoryEntry $readingHistoryDB, bool $forExport): array {
 		$historyEntry = [];
 		$historyEntry['id'] = $readingHistoryDB->id;
 		$historyEntry['title'] = $readingHistoryDB->title;
@@ -1146,19 +1146,21 @@ class CatalogConnection {
 		$historyEntry['checkedOut'] = $readingHistoryDB->checkedOut !== null;
 		$historyEntry['permanentId'] = $readingHistoryDB->groupedWorkPermanentId;
 		$historyEntry['isIll'] = $readingHistoryDB->isIll;
-		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
-		$recordDriver = new GroupedWorkDriver($readingHistoryDB->groupedWorkPermanentId);
-		if ($recordDriver->isValid()) {
-			$historyEntry['recordDriver'] = $recordDriver;
-			$historyEntry['ratingData'] = $recordDriver->getRatingData();
-			$historyEntry['linkUrl'] = $recordDriver->getLinkUrl();
-			$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium');
-			$historyEntry['existsInCatalog'] = true;
-		} else {
-			$historyEntry['existsInCatalog'] = false;
-			$historyEntry['ratingData'] = '';
-			$historyEntry['linkUrl'] = '';
-			$historyEntry['coverUrl'] = '';
+		if (!$forExport) {
+			require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+			$recordDriver = new GroupedWorkDriver($readingHistoryDB->groupedWorkPermanentId);
+			if ($recordDriver->isValid()) {
+				$historyEntry['recordDriver'] = $recordDriver;
+				$historyEntry['ratingData'] = $recordDriver->getRatingData();
+				$historyEntry['linkUrl'] = $recordDriver->getLinkUrl();
+				$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium');
+				$historyEntry['existsInCatalog'] = TRUE;
+			} else {
+				$historyEntry['existsInCatalog'] = FALSE;
+				$historyEntry['ratingData'] = '';
+				$historyEntry['linkUrl'] = '';
+				$historyEntry['coverUrl'] = '';
+			}
 		}
 
 		return $historyEntry;
@@ -1188,7 +1190,7 @@ class CatalogConnection {
 		$activeHistoryTitles = [];
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
-		// Include deleted titles so to prevent duplicates.
+		// Include deleted titles to prevent duplicates.
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
 		$readingHistoryDB->whereAdd('checkInDate IS NULL');
@@ -1304,6 +1306,58 @@ class CatalogConnection {
 			'message' => 'Reading history updated',
 			'skipped' => false
 		];
+	}
+
+	/**
+	 * Update NULL groupedWorkPermanentId values in reading history by
+	 * looking up the current grouped work for the sourceId.
+	 * This is for checked out items that were suppressed and had no valid
+	 * grouped work, but now they do after no longer being suppressed.
+	 *
+	 * @param User $patron
+	 * @return void
+	 * @noinspection SqlResolve
+	 * @noinspection SqlDialectInspection
+	 */
+	public function updateReadingHistoryGroupedWorks(User $patron): void {
+		if ($this->bypassReadingHistoryUpdate($patron, false)) {
+			return;
+		}
+
+		// First check if there are any NULL groupedWorkPermanentId entries to update.
+		$checkSql = "
+			SELECT COUNT(*) as count
+			FROM user_reading_history_work
+			WHERE userId = :userId
+			AND (groupedWorkPermanentId IS NULL OR groupedWorkPermanentId = '')
+		";
+
+		try {
+			global $aspen_db;
+			$stmt = $aspen_db->prepare($checkSql);
+			$stmt->bindValue(':userId', $patron->id, PDO::PARAM_INT);
+			$stmt->execute();
+			$result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+			if ($result['count'] > 0) {
+				// Use a direct SQL query to efficiently update entries with joined grouped work data.
+				$updateSql = "
+					UPDATE user_reading_history_work urh
+					JOIN grouped_work_primary_identifiers gwpi ON gwpi.type = urh.source AND gwpi.identifier = urh.sourceId
+					JOIN grouped_work gw ON gw.id = gwpi.grouped_work_id
+					SET urh.groupedWorkPermanentId = gw.permanent_id
+					WHERE urh.userId = :userId
+					AND (urh.groupedWorkPermanentId IS NULL OR urh.groupedWorkPermanentId = '')
+				";
+
+				$updateStmt = $aspen_db->prepare($updateSql);
+				$updateStmt->bindValue(':userId', $patron->id, PDO::PARAM_INT);
+				$updateStmt->execute();
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error updating reading history grouped works for user $patron->id: " . $e->getMessage(), Logger::LOG_ERROR);
+		}
 	}
 
 	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {

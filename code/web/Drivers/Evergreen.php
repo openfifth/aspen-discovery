@@ -885,13 +885,10 @@ class Evergreen extends AbstractIlsDriver {
 
 	/**
 	 * @param User $patron
-	 * @param int $page
-	 * @param int $recordsPerPage
-	 * @param string $sortOption
 	 * @return array
 	 * @throws Exception
 	 */
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
+	public function getReadingHistory(User $patron): array {
 		$historyActive = false;
 		$readingHistoryTitles = [];
 		$numTitles = 0;

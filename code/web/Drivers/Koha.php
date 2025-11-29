@@ -1622,16 +1622,10 @@ class Koha extends AbstractIlsDriver {
 
 	/**
 	 * @param User $patron
-	 * @param int $page
-	 * @param int $recordsPerPage
-	 * @param string $sortOption
 	 * @return array
 	 * @throws Exception
 	 */
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
-		// TODO implement sorting, currently only done in catalogConnection for koha reading history
-		//TODO prepend indexProfileType
-
+	public function getReadingHistory(User $patron): array {
 		$illItemTypes = [];
 		if (file_exists(ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php')) {
 			global $library;
@@ -1677,7 +1671,7 @@ class Koha extends AbstractIlsDriver {
 				LEFT JOIN biblioitems ON items.biblioitemnumber=biblioitems.biblioitemnumber
 				WHERE borrowernumber='" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'
 				UNION ALL
-				SELECT old_issues.*,old_issues.renewals_count AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp,biblio.biblionumber,biblio.title, author, iType
+				SELECT old_issues.*,old_issues.renewals_count AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp, items.barcode, biblio.biblionumber,biblio.title, author, iType
 				FROM old_issues
 				LEFT JOIN items on items.itemnumber=old_issues.itemnumber
 				LEFT JOIN biblio ON items.biblionumber=biblio.biblionumber
@@ -1748,13 +1742,6 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		$numTitles = count($readingHistoryTitles);
-
-		//process pagination
-		if ($recordsPerPage != -1) {
-			$startRecord = ($page - 1) * $recordsPerPage;
-			$readingHistoryTitles = array_slice($readingHistoryTitles, $startRecord, $recordsPerPage);
-		}
-
 		set_time_limit(20 * count($readingHistoryTitles));
 		$systemVariables = SystemVariables::getSystemVariables();
 		global $aspen_db;

@@ -10056,8 +10056,7 @@ td[data-entry-id]::before {
   content: "Double-click to edit";
   position: absolute;
   bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   background-color: #333;
   color: #fff;
   padding: 0.4em 0.6em;
@@ -10073,8 +10072,8 @@ td[data-entry-id]::after {
   content: "";
   position: absolute;
   bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%) translateY(9px);
+  left: 3.25em;
+  transform: translateY(9px);
   border: 5px solid transparent;
   border-top-color: #333;
   opacity: 0;
@@ -10085,6 +10084,10 @@ td[data-entry-id]::after {
 td[data-entry-id]:hover::before,
 td[data-entry-id]:hover::after {
   opacity: 1;
+}
+td[data-entry-id]:has(.date-edit:focus)::before,
+td[data-entry-id]:has(.date-edit:focus)::after {
+  display: none;
 }
 .format-chip {
   display: inline-block;

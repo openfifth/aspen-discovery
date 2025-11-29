@@ -1,4 +1,7 @@
 <?php
+/** @noinspection SqlResolve */
+/** @noinspection SqlDialectInspection */
+
 /**
  * Load Initial Reading History for users who haven't had their reading history loaded yet.
  *
@@ -28,7 +31,6 @@ set_time_limit(0);
 $staleIntervalMinutes = 30; // Configurable: Interval after which an import is considered stale.
 
 // Look for users who need their initial reading history loaded and are not currently being processed.
-/**@noinspection SqlResolve*/
 $selectIdSql = "
 	SELECT id FROM user
 	WHERE initialReadingHistoryLoaded = 0
@@ -61,7 +63,6 @@ $cronLogEntry->update();
 foreach ($usersToProcess as $userId) {
 
 	// Attempt to atomically claim the user.
-	/**@noinspection SqlResolve*/
 	$claimSql = "
 		UPDATE user
 		SET readingHistoryImportStartedAt = UTC_TIMESTAMP()
@@ -107,10 +108,9 @@ foreach ($usersToProcess as $userId) {
 
 	try {
 		$catalog = $user->getCatalogDriver();
-
 		if ($catalog) {
 			if ($catalog->driver->hasNativeReadingHistory()) {
-				$result = $catalog->driver->getReadingHistory($user, -1, -1);
+				$result = $catalog->driver->getReadingHistory($user);
 				if ($result['numTitles'] > 0) {
 					$cronLogEntry->notes .= "<br/>Found {$result['numTitles']} titles to load for $user->displayName ($user->id).";
 					foreach ($result['titles'] as $title) {
@@ -164,7 +164,6 @@ foreach ($usersToProcess as $userId) {
 				}
 
 				// Mark that the initial reading history has been loaded and clear the timestamp.
-				/**@noinspection SqlResolve*/
 				$updateSql = "
 					UPDATE user
 					SET initialReadingHistoryLoaded = 1,
@@ -180,7 +179,6 @@ foreach ($usersToProcess as $userId) {
 				$cronLogEntry->notes .= "<br/>Successfully loaded initial reading history for $user->displayName ($user->id).";
 			} else {
 				// Mark the attempted load even if the ILS doesn't support it and clear timestamp.
-				/**@noinspection SqlResolve*/
 				$updateSql = "
 					UPDATE user
 					SET initialReadingHistoryLoaded = 1,

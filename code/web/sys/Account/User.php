@@ -267,13 +267,12 @@ class User extends DataObject {
 	protected ?CatalogConnection $_catalogDriver = null;
 
 	/**
-	 * Get a connection to the catalog for the user
+	 * Get a connection to the catalog for the user.
 	 *
 	 * @return null|CatalogConnection
 	 */
 	function getCatalogDriver(): ?CatalogConnection {
 		if ($this->_catalogDriver == null) {
-			//Based off the source of the user, get the AccountProfile
 			$accountProfile = $this->getAccountProfile();
 			if ($accountProfile) {
 				$catalogDriver = trim($accountProfile->driver);
@@ -3177,14 +3176,14 @@ class User extends DataObject {
 		return $paymentHistory;
 	}
 
-	public function getReadingHistory($page = 1, $recordsPerPage = 20, $sortOption = "checkedOut", $filter = "", $forExport = false) {
+	public function getReadingHistory(int $page = 1, int $recordsPerPage = 20, string $sortOption = "checkedOut", string $filter = "", bool $forExport = false): array {
 		if ($this->isReadingHistoryEnabled()) {
 			return $this->getCatalogDriver()->getReadingHistory($this, $page, $recordsPerPage, $sortOption, $filter, $forExport);
 		} else {
 			return [
 				'success' => false,
 				'message' => translate([
-					'text' => 'Reading History Functionality is not available',
+					'text' => 'Reading History functionality is not available for this catalog.',
 					'isPublicFacing' => true,
 				]),
 			];

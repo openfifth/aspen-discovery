@@ -12,7 +12,8 @@ abstract class AbstractDriver {
 		return false;
 	}
 
-	public function getReadingHistory(User $patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
+	public function getReadingHistory(User $patron): array
+	{
 		return [
 			'historyActive' => false,
 			'titles' => [],

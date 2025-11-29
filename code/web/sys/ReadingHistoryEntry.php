@@ -1,5 +1,5 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
-
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class ReadingHistoryEntry extends DataObject {
 	public $__table = 'user_reading_history_work';

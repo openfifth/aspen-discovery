@@ -289,8 +289,7 @@ td[data-entry-id] {
     content: "Double-click to edit";
     position: absolute;
     bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%);
+    left: 0;
     background-color: #333;
     color: #fff;
     padding: 0.4em 0.6em;
@@ -307,8 +306,8 @@ td[data-entry-id] {
     content: "";
     position: absolute;
     bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(9px);
+    left: 3.25em;
+    transform: translateY(9px);
     border: 5px solid transparent;
     border-top-color: #333;
     opacity: 0;
@@ -320,6 +319,11 @@ td[data-entry-id] {
   &:hover::before,
   &:hover::after {
     opacity: 1;
+  }
+
+  &:has(.date-edit:focus)::before,
+  &:has(.date-edit:focus)::after {
+    display: none;
   }
 }
 

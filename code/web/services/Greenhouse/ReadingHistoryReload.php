@@ -20,7 +20,8 @@ class Greenhouse_ReadingHistoryReload extends Admin_Admin {
 						if ($userToReset->find(true)) {
 							$foundUserForBarcode = true;
 							// Use raw SQL to properly set null values.
-							/**@noinspection SqlResolve*/
+							/** @noinspection SqlDialectInspection */
+							/** @noinspection SqlResolve */
 							$updateSql = "
 								UPDATE user
 								SET initialReadingHistoryLoaded = 0,

@@ -155,7 +155,7 @@ class Polaris extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
+	public function getReadingHistory(User $patron): array {
 		//Get preferences for the barcode
 		$readingHistoryEnabled = false;
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/preferences";
@@ -170,7 +170,6 @@ class Polaris extends AbstractIlsDriver {
 		if ($readingHistoryEnabled) {
 			ini_set('memory_limit', '2G');
 
-			$readingHistoryTitles = [];
 			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/readinghistory?rowsperpage=5&page=0";
 			$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.getReadingHistory', 'GET', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);

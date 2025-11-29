@@ -603,7 +603,7 @@ class Sierra extends AbstractIlsDriver {
 		};
 	}
 
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
+	public function getReadingHistory(User $patron): array {
 		$readingHistoryEnabled = false;
 		$patronId = $patron->unique_ils_id;
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patronId . "/checkouts/history/activationStatus";
