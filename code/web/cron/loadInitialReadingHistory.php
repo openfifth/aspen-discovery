@@ -111,6 +111,9 @@ foreach ($usersToProcess as $userId) {
 		if ($catalog) {
 			if ($catalog->driver->hasNativeReadingHistory()) {
 				$result = $catalog->driver->getReadingHistory($user);
+				if (isset($result['historyActive']) && $result['historyActive'] === false) {
+					$cronLogEntry->notes .= "<br/>Reading history is disabled for $user->displayName ($user->id).";
+				}
 				if ($result['numTitles'] > 0) {
 					$cronLogEntry->notes .= "<br/>Found {$result['numTitles']} titles to load for $user->displayName ($user->id).";
 					foreach ($result['titles'] as $title) {
