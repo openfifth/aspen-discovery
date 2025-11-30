@@ -15,7 +15,7 @@ class BotChecker {
 			global $memCache;
 			global $configArray;
 			global $userAgent;
-			if (!empty($userAgent)) {
+			if ($userAgent?->isBot !== null) {
 				return $userAgent->isBot;
 			}
 			if (isset($_SERVER['HTTP_USER_AGENT'])) {
