@@ -5986,11 +5986,11 @@ class Library extends DataObject {
 		if (isset($activeLanguage) && !empty($activeLanguage->code)) {
 			$languageCode = $activeLanguage->code;
 		}
-		$selfRegFormMessage = $this->getTextBlockTranslation('selfRegistrationFormMessage', $languageCode, true);
+		$selfRegFormMessage = $this->getTextBlockTranslation('selfRegistrationFormMessage', $languageCode);
 		if (empty($selfRegFormMessage)) {
 			$selfRegFormMessage = $this->selfRegistrationFormMessage;
 		}
-		$selfRegSuccessMessage = $this->getTextBlockTranslation('selfRegistrationSuccessMessage', $languageCode, true);
+		$selfRegSuccessMessage = $this->getTextBlockTranslation('selfRegistrationSuccessMessage', $languageCode);
 		if (empty($selfRegSuccessMessage)) {
 			$selfRegSuccessMessage = $this->selfRegistrationSuccessMessage;
 		}
