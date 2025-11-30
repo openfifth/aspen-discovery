@@ -38,6 +38,88 @@ class CarlX extends AbstractIlsDriver {
 		}
 	}
 
+	/**
+	 * Execute a SOAP request to the CarlX API.
+	 *
+	 * @param string $requestName The name of the SOAP method to call.
+	 * @param stdClass $request The request object containing parameters for the SOAP call.
+	 * @param string $WSDL The WSDL URL (defaults to patronWsdl if empty).
+	 * @param array $soapRequestOptions Options for the SOAP client.
+	 * @param array $dataToSanitize Data to sanitize in logs (e.g., ['password' => $password]).
+	 * @return stdClass|false Returns the SOAP response object or false on failure.
+	 * @noinspection HttpUrlsUsage
+	 */
+	protected function doSoapRequest(string $requestName, stdClass $request, string $WSDL = '', array $soapRequestOptions = [], array $dataToSanitize = []): stdClass|false {
+		if (empty($WSDL)) { // Let the patron WSDL be the assumed default WSDL when not specified.
+			if (!empty($this->patronWsdl)) {
+				$WSDL = $this->patronWsdl;
+			} else {
+				global $logger;
+				$logger->log('No Default Patron WSDL defined for SOAP calls in CarlX Driver.', Logger::LOG_ERROR);
+				return false;
+			}
+		}
+
+		$connectionPassed = false;
+		$numTries = 0;
+		$result = false;
+		if (IPAddress::showDebuggingInformation() || php_sapi_name() === 'cli') {
+			$soapRequestOptions['trace'] = true;
+		}
+		while (!$connectionPassed && $numTries < 2) {
+			try {
+				try {
+					$soapClient = new SoapClient($WSDL, $soapRequestOptions);
+					$result = $soapClient->$requestName($request);
+				} catch (SoapFault $e) {
+					global $logger;
+					$logger->log("SOAP Fault calling $requestName: " . $e->getMessage(), Logger::LOG_ERROR);
+					throw $e;
+				}
+				$connectionPassed = true;
+				ExternalRequestLogEntry::logRequest('carlx.' . $requestName, 'POST', $WSDL, $soapClient->__getLastRequestHeaders() ?? '', $soapClient->__getLastRequest() ?? '', '0', $soapClient->__getLastResponse() ?? '', $dataToSanitize);
+				if (is_null($result)) {
+					$lastResponse = $soapClient->__getLastResponse();
+					$lastResponse = simplexml_load_string($lastResponse, NULL, NULL, 'http://schemas.xmlsoap.org/soap/envelope/');
+					$lastResponse->registerXPathNamespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
+					if ($requestName == 'settleFinesAndFees') {
+						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/systemAPI');
+						$lastResponse->registerXPathNamespace('ns4', 'http://tlcdelivers.com/cx/schemas/transaction');
+					} else {
+						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/patronAPI');
+					}
+					$lastResponse->registerXPathNamespace('ns2', 'http://tlcdelivers.com/cx/schemas/response');
+					$result = new stdClass();
+					$result->ResponseStatuses = new stdClass();
+					$result->ResponseStatuses->ResponseStatus = new stdClass();
+					$shortMessages = $lastResponse->xpath('//ns2:ShortMessage');
+					$result->ResponseStatuses->ResponseStatus->ShortMessage = implode('; ', $shortMessages);
+					$longMessages = $lastResponse->xpath('//ns2:LongMessage');
+					$result->ResponseStatuses->ResponseStatus->LongMessage = implode('; ', array_filter($longMessages));
+
+					if ($requestName == 'settleFinesAndFees') {
+						// If ReceiptNumber is present, settlement with CarlX was successful.
+						$result->ReceiptNumber = $lastResponse->xpath('//ns3:ReceiptNumber') ?? false;
+					}
+				}
+			} catch (SoapFault $e) {
+				global $logger;
+				$logger->log("Error connecting to SOAP " . $e->getMessage(), Logger::LOG_ERROR);
+				// Create a result object with error information.
+				if ($result === false) {
+					$result = new stdClass();
+				}
+				$result->error = "EXCEPTION: " . $e->getMessage();
+			}
+			$numTries++;
+		}
+		if (!$connectionPassed) {
+			return false;
+		}
+
+		return $result;
+	}
+
 	public function patronLogin($username, $password, $validatedViaSSO) {
 		global $timer;
 
@@ -310,91 +392,6 @@ class CarlX extends AbstractIlsDriver {
 		'features' => SOAP_SINGLE_ELEMENT_ARRAYS | SOAP_WAIT_ONE_WAY_CALLS,
 		'trace' => 1,
 	];
-
-	/**
-	 * Execute a SOAP request to the CarlX API.
-	 *
-	 * @param string $requestName The name of the SOAP method to call.
-	 * @param stdClass $request The request object containing parameters for the SOAP call.
-	 * @param string $WSDL The WSDL URL (defaults to patronWsdl if empty).
-	 * @param array $soapRequestOptions Options for the SOAP client.
-	 * @param array $dataToSanitize Data to sanitize in logs (e.g., ['password' => $password]).
-	 * @return stdClass|false Returns the SOAP response object or false on failure.
-	 */
-	protected function doSoapRequest(string $requestName, stdClass $request, string $WSDL = '', array $soapRequestOptions = [], array $dataToSanitize = []): stdClass|false {
-		if (empty($WSDL)) { // Let the patron WSDL be the assumed default WSDL when not specified.
-			if (!empty($this->patronWsdl)) {
-				$WSDL = $this->patronWsdl;
-			} else {
-				global $logger;
-				$logger->log('No Default Patron WSDL defined for SOAP calls in CarlX Driver.', Logger::LOG_ERROR);
-				return false;
-			}
-		}
-
-		$connectionPassed = false;
-		$numTries = 0;
-		$result = false;
-		if (IPAddress::showDebuggingInformation() || php_sapi_name() === 'cli') {
-			$soapRequestOptions['trace'] = true;
-		}
-		while (!$connectionPassed && $numTries < 2) {
-			try {
-				try {
-					$soapClient = new SoapClient($WSDL, $soapRequestOptions);
-					$result = $soapClient->$requestName($request);
-				} catch (SoapFault $e) {
-					global $logger;
-					$logger->log("SOAP Fault calling $requestName: " . $e->getMessage(), Logger::LOG_ERROR);
-					throw $e;
-				}
-				$connectionPassed = true;
-				ExternalRequestLogEntry::logRequest('carlx.' . $requestName, 'POST', $WSDL, $soapClient->__getLastRequestHeaders() ?? '', $soapClient->__getLastRequest() ?? '', '0', $soapClient->__getLastResponse() ?? '', $dataToSanitize);
-				if (is_null($result)) {
-					$lastResponse = $soapClient->__getLastResponse();
-					$lastResponse = simplexml_load_string($lastResponse, NULL, NULL, 'http://schemas.xmlsoap.org/soap/envelope/');
-					$lastResponse->registerXPathNamespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-					if ($requestName == 'settleFinesAndFees') {
-						/** @noinspection HttpUrlsUsage */
-						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/systemAPI');
-						/** @noinspection HttpUrlsUsage */
-						$lastResponse->registerXPathNamespace('ns4', 'http://tlcdelivers.com/cx/schemas/transaction');
-					} else {
-						/** @noinspection HttpUrlsUsage */
-						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/patronAPI');
-					}
-					/** @noinspection HttpUrlsUsage */
-					$lastResponse->registerXPathNamespace('ns2', 'http://tlcdelivers.com/cx/schemas/response');
-					$result = new stdClass();
-					$result->ResponseStatuses = new stdClass();
-					$result->ResponseStatuses->ResponseStatus = new stdClass();
-					$shortMessages = $lastResponse->xpath('//ns2:ShortMessage');
-					$result->ResponseStatuses->ResponseStatus->ShortMessage = implode('; ', $shortMessages);
-					$longMessages = $lastResponse->xpath('//ns2:LongMessage');
-					$result->ResponseStatuses->ResponseStatus->LongMessage = implode('; ', array_filter($longMessages));
-
-					if ($requestName == 'settleFinesAndFees') {
-						// If ReceiptNumber is present, settlement with Carl.X was successful.
-						$result->ReceiptNumber = $lastResponse->xpath('//ns3:ReceiptNumber') ?? false;
-					}
-				}
-			} catch (SoapFault $e) {
-				global $logger;
-				$logger->log("Error connecting to SOAP " . $e->getMessage(), Logger::LOG_ERROR);
-				// Create a result object with error information.
-				if ($result === false) {
-					$result = new stdClass();
-				}
-				$result->error = "EXCEPTION: " . $e->getMessage();
-			}
-			$numTries++;
-		}
-		if (!$connectionPassed) {
-			return false;
-		}
-
-		return $result;
-	}
 
 	protected function initSIPConnection() {
 		$mySip = new sip2();

@@ -156,7 +156,6 @@ class Polaris extends AbstractIlsDriver {
 	}
 
 	public function getReadingHistory(User $patron): array {
-		//Get preferences for the barcode
 		$readingHistoryEnabled = false;
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/preferences";
 		$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());

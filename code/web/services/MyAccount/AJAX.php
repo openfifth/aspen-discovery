@@ -4801,8 +4801,7 @@ class MyAccount_AJAX extends JSON_Action {
 					require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
 					$totalDeleted = 0;
 					$numFailed = 0;
-
-					// For each selected grouped entry, delete all associated checkout records
+					// For each selected grouped entry, delete all associated checkout records.
 					foreach ($ids as $id) {
 						$groupedEntry = new ReadingHistoryEntry();
 						$groupedEntry->id = $id;
@@ -4813,7 +4812,6 @@ class MyAccount_AJAX extends JSON_Action {
 							$deleteQuery = new ReadingHistoryEntry();
 							$deleteQuery->userId = $patron->id;
 							$deleteQuery->deleted = 0;
-
 							if (!empty($groupedEntry->groupedWorkPermanentId)) {
 								$deleteQuery->groupedWorkPermanentId = $groupedEntry->groupedWorkPermanentId;
 							} else {
@@ -4822,7 +4820,6 @@ class MyAccount_AJAX extends JSON_Action {
 									$deleteQuery->author = $groupedEntry->author;
 								}
 							}
-
 							$deleteQuery->find();
 							while ($deleteQuery->fetch()) {
 								$deleteQuery->deleted = 1;

@@ -2773,7 +2773,7 @@ class Library extends DataObject {
 								'description' => 'Whether patrons can see call numbers in their checkout history.',
 								'hideInLists' => true,
 								'permissions' => ['Library ILS Connection'],
-								'relatedIls' => ['koha', 'evergreen'],
+								'relatedIls' => ['koha'],
 							],
 							'displayVolumeInCheckoutHistory' => [
 								'property' => 'displayVolumeInCheckoutHistory',
@@ -2782,7 +2782,7 @@ class Library extends DataObject {
 								'description' => 'Whether patrons can see volume information in their checkout history.',
 								'hideInLists' => true,
 								'permissions' => ['Library ILS Connection'],
-								'relatedIls' => ['koha', 'evergreen'],
+								'relatedIls' => ['koha'],
 							],
 						],
 					],

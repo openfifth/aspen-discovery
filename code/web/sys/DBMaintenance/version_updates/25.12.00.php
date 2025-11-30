@@ -98,7 +98,7 @@ function getUpdates25_12_00(): array {
 		],
 		'library_display_call_number_and_volume_in_checkout_history' => [
 			'title' => 'Library - Display Call Number and Volume in Checkout History',
-			'description' => 'Add options to display call number and volume in checkout history for Koha and Evergreen ILS systems.',
+			'description' => 'Add options to display call number and volume in checkout history.',
 			'continueOnError' => false,
 			'sql' => [
 				'ALTER TABLE library ADD COLUMN IF NOT EXISTS displayCallNumberInCheckoutHistory TINYINT(1) DEFAULT 0',
