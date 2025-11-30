@@ -1967,6 +1967,7 @@ class Record_AJAX extends Action {
 		$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
 		$interface->assign('relatedRecord', $relatedRecord);
 		$pickupAt = $relatedRecord->getHoldPickupSetting();
+		$hasItemBasedPickupRestrictions = false;
 		$pickupSublocations = [];
 		//1 = restrict to owning location
 		//2 = restrict to the owning library
@@ -1975,6 +1976,7 @@ class Record_AJAX extends Action {
 			//Loop through all pickup locations for the user and remove anything that is not valid for the record
 			foreach ($locations as $locationKey => $location) {
 				if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
+					$hasItemBasedPickupRestrictions = true;
 					unset($locations[$locationKey]);
 				}
 			}
@@ -2000,7 +2002,7 @@ class Record_AJAX extends Action {
 			$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
 			if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
 				$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
-				$locations = array_filter($locations, function($location) use ($validLocationCodesFromILS) {
+				$locations = array_filter($locations, function($location) use ($validLocationCodesFromILS, &$hasItemBasedPickupRestrictions) {
 					if (!is_object($location)) {
 						return true;
 					}
@@ -2009,6 +2011,7 @@ class Record_AJAX extends Action {
 							return true;
 						}
 					}
+					$hasItemBasedPickupRestrictions = true;
 					return false;
 				});
 			} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
@@ -2147,15 +2150,19 @@ class Record_AJAX extends Action {
 		$interface->assign('preferredPickupLocationIsValid', $preferredPickupLocationIsValid);
 		if (!$preferredPickupLocationIsValid && count($locations) == 2 && !empty($locations[$locationKeys[1]])) {
 			$onlyValidPickupLocation = $locations[$locationKeys[1]]->code;
-			$interface->assign('pickupLocationInvalidMessage', translate([
-				'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. The item must be picked up at the following location.',
-				'isPublicFacing' => true,
-			]));
+			if ($hasItemBasedPickupRestrictions) {
+				$interface->assign('pickupLocationInvalidMessage', translate([
+					'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. The item must be picked up at the following location.',
+					'isPublicFacing' => true,
+				]));
+			}
 		} elseif (!$preferredPickupLocationIsValid) {
-			$interface->assign('pickupLocationInvalidMessage', translate([
-				'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. Please select a pickup location.',
-				'isPublicFacing' => true,
-			]));
+			if ($hasItemBasedPickupRestrictions) {
+				$interface->assign('pickupLocationInvalidMessage', translate([
+					'text' => 'Your preferred pickup location is not available for this item, as it is restricted by item location rules. Please select a pickup location.',
+					'isPublicFacing' => true,
+				]));
+			}
 		}
 
 		$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
