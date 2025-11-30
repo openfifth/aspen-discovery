@@ -4424,6 +4424,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('historyActive', $result['historyActive']);
 				$interface->assign('transList', $result['titles']);
 				$patronHomeLibrary = $patron->getHomeLibrary();
+				$interface->assign('library', $patronHomeLibrary);
 				$result['showCostSavings'] = $patronHomeLibrary->enableCostSavings && $patron->enableCostSavings;
 				$result['costSavingsMessage'] = $user->getTotalCostSavingsMessage(true);
 			}

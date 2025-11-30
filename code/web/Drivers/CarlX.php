@@ -1510,7 +1510,7 @@ class CarlX extends AbstractIlsDriver {
 						$curTitle['title'] = rtrim($readingHistoryEntry->Title, ' /');
 						$curTitle['author'] = $readingHistoryEntry->Author;
 						$curTitle['checkout'] = new DateTime($readingHistoryEntry->ChargeDateTime)->getTimestamp();
-						$curTitle['checkin'] = !empty($checkInDate) ? new DateTime($checkInDate)->getTimestamp() : null;
+						$curTitle['checkin'] = !empty($checkInDate) ? new DateTime($checkInDate)->getTimestamp() : -1;
 						$curTitle['borrower_num'] = $patron->id;
 
 						$readingHistoryTitles[] = $curTitle;

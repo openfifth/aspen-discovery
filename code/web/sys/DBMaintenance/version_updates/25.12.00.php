@@ -96,6 +96,24 @@ function getUpdates25_12_00(): array {
 				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS editedCheckInDate BIGINT(20) DEFAULT NULL AFTER checkInDate",
 			]
 		],
+		'library_display_call_number_and_volume_in_checkout_history' => [
+			'title' => 'Library - Display Call Number and Volume in Checkout History',
+			'description' => 'Add options to display call number and volume in checkout history for Koha and Evergreen ILS systems.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN IF NOT EXISTS displayCallNumberInCheckoutHistory TINYINT(1) DEFAULT 0',
+				'ALTER TABLE library ADD COLUMN IF NOT EXISTS displayVolumeInCheckoutHistory TINYINT(1) DEFAULT 0',
+			]
+		], //library_display_call_number_and_volume_in_checkout_history
+		'reading_history_add_call_number_and_volume' => [
+			'title' => 'Reading History - Add Call Number and Volume Fields',
+			'description' => 'Add callNumber and volume columns to user_reading_history_work table to store item call number and volume information.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS callNumber VARCHAR(255) DEFAULT NULL AFTER barcode",
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS volume VARCHAR(255) DEFAULT NULL AFTER callNumber",
+			]
+		], //reading_history_add_call_number_and_volume
 
 		//alexander - Open Fifth
 

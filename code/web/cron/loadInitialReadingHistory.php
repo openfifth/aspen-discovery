@@ -123,13 +123,15 @@ foreach ($usersToProcess as $userId) {
 						$userReadingHistoryEntry->source = $catalog->accountProfile->recordSource;
 						$userReadingHistoryEntry->sourceId = $title['sourceId'];
 						$userReadingHistoryEntry->barcode = $title['barcode'] ?? null;
+						$userReadingHistoryEntry->callNumber = $title['callNumber'] ?? null;
+						$userReadingHistoryEntry->volume = $title['volume'] ?? null;
 						$userReadingHistoryEntry->title = substr($title['title'], 0, 150);
 						$userReadingHistoryEntry->author = substr($title['author'], 0, 75);
 						$userReadingHistoryEntry->format = is_array($title['format']) ? implode(', ', $title['format']) : $title['format'];
 						$userReadingHistoryEntry->checkOutDate = $title['checkout'];
-						// -1 for imported entries to distinguish them from currently checked-out items.
-						$userReadingHistoryEntry->checkInDate = $title['checkin'] ?? -1;
+						$userReadingHistoryEntry->checkInDate = $title['checkin'] ?? null;
 
+						// -1 for imported entries to distinguish them from currently checked-out items.
 						if ($userReadingHistoryEntry->checkInDate === -1) {
 							// If the new entry's barcode exists and check-in data is missing,
 							// while the existing entry's check-in has no barcode but has a check-in date,

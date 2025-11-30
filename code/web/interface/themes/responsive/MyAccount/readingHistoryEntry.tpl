@@ -162,6 +162,12 @@
 											{if !empty($record.hasBarcode)}
 												<th>{translate text="Barcode" isPublicFacing=true}</th>
 											{/if}
+											{if !empty($library->displayCallNumberInCheckoutHistory) && !empty($record.hasCallNumber)}
+												<th>{translate text="Call Number" isPublicFacing=true}</th>
+											{/if}
+											{if !empty($library->displayVolumeInCheckoutHistory) && !empty($record.hasVolume)}
+												<th>{translate text="Volume" isPublicFacing=true}</th>
+											{/if}
 											{if $showDebuggingInformation}
 												<th>{translate text="Source ID" isPublicFacing=true}</th>
 											{/if}
@@ -221,6 +227,24 @@
 													<td>
 														{if !empty($detail.barcode)}
 															{$detail.barcode}
+														{else}
+															<span class="text-muted">-</span>
+														{/if}
+													</td>
+												{/if}
+												{if !empty($library->displayCallNumberInCheckoutHistory) && !empty($record.hasCallNumber)}
+													<td>
+														{if !empty($detail.callNumber)}
+															{$detail.callNumber}
+														{else}
+															<span class="text-muted">-</span>
+														{/if}
+													</td>
+												{/if}
+												{if !empty($library->displayVolumeInCheckoutHistory) && !empty($record.hasVolume)}
+													<td>
+														{if !empty($detail.volume)}
+															{$detail.volume}
 														{else}
 															<span class="text-muted">-</span>
 														{/if}

@@ -3264,6 +3264,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 						$historyEntry = [];
 						$shortId = $circEntry->fields->bib->key;
 						$bibId = 'a' . $circEntry->fields->bib->key;
+						$checkInDate = $circEntry->fields->checkInDate;
 						$historyEntry['id'] = $bibId;
 						$historyEntry['sourceId'] = $bibId;
 						$historyEntry['barcode'] = $circEntry->fields->item->fields->barcode ?: null;
@@ -3271,7 +3272,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 						$historyEntry['author'] = $circEntry->fields->author;
 						$historyEntry['format'] = $circEntry->fields->itemType->key;
 						$historyEntry['checkout'] = strtotime($circEntry->fields->checkOutDate);
-						$historyEntry['checkin'] = strtotime($circEntry->fields->checkInDate);
+						$historyEntry['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : -1;
 						if (!empty($historyEntry['sourceId'])) {
 							$systemVariables = SystemVariables::getSystemVariables();
 							if ($systemVariables->storeRecordDetailsInDatabase) {

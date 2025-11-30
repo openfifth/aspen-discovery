@@ -717,6 +717,8 @@ class CatalogConnection {
 			$detailQuery->find();
 
 			$hasBarcode = false;
+			$hasCallNumber = false;
+			$hasVolume = false;
 			if (!$forExport) {
 				while ($detailQuery->fetch()) {
 					$detailRecords[] = [
@@ -728,14 +730,24 @@ class CatalogConnection {
 						'source' => $detailQuery->source,
 						'sourceId' => $detailQuery->sourceId,
 						'barcode' => $detailQuery->barcode,
+						'callNumber' => $detailQuery->callNumber,
+						'volume' => $detailQuery->volume,
 					];
 					if (!empty($detailQuery->barcode)) {
 						$hasBarcode = true;
+					}
+					if (!empty($detailQuery->callNumber)) {
+						$hasCallNumber = true;
+					}
+					if (!empty($detailQuery->volume)) {
+						$hasVolume = true;
 					}
 				}
 			}
 			$historyEntry['detailRecords'] = $detailRecords;
 			$historyEntry['hasBarcode'] = $hasBarcode;
+			$historyEntry['hasCallNumber'] = $hasCallNumber;
+			$historyEntry['hasVolume'] = $hasVolume;
 
 			$readingHistoryTitles[] = $historyEntry;
 		}
@@ -1255,6 +1267,8 @@ class CatalogConnection {
 				$historyEntryDB->source = $source;
 				$historyEntryDB->sourceId = $sourceId;
 				$historyEntryDB->barcode = $barcode;
+				$historyEntryDB->callNumber = $checkout->callNumber ?? null;
+				$historyEntryDB->volume = $checkout->volume ?? null;
 				$historyEntryDB->title = !empty($checkout->title) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true) : "";
 				$historyEntryDB->author = !empty($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
 				$historyEntryDB->format = substr($checkout->format ?? "", 0, 50);

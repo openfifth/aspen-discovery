@@ -1700,9 +1700,13 @@ class Koha extends AbstractIlsDriver {
 
 						$barcode = null;
 						$iType = null;
+						$callNumber = null;
+						$volume = null;
 						if (!empty($checkout['item'])) {
 							$barcode = $checkout['item']['external_id'] ?? null;
 							$iType = $checkout['item']['item_type_id'] ?? null;
+							$callNumber = $checkout['item']['callnumber'] ?? null;
+							$volume = $checkout['item']['serial_issue_number'] ?? null;
 						}
 
 						$curTitle = [];
@@ -1712,11 +1716,13 @@ class Koha extends AbstractIlsDriver {
 						$curTitle['title'] = $title;
 						$curTitle['author'] = $author;
 						$curTitle['format'] = $iType;
+						$curTitle['callNumber'] = $callNumber;
+						$curTitle['volume'] = $volume;
 						$curTitle['checkout'] = $checkOutDate ? $checkOutDate->getTimestamp() : null;
 						if (!empty($returnDate)) {
 							$curTitle['checkin'] = $returnDate->getTimestamp();
 						} else {
-							$curTitle['checkin'] = null;
+							$curTitle['checkin'] = $checkoutType === 'historical' ? -1 : null;
 						}
 
 						if ($illItemTypes) {

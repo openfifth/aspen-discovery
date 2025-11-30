@@ -654,7 +654,7 @@ class Sierra extends AbstractIlsDriver {
 							// Sierra history entries often omit returnDate; try to recover from DNA using the patron/item identifiers.
 							$checkinDate = $this->getCheckinDateFromSierraDNA((int)$patronId, $itemRecordId, $checkoutTimestamp);
 						}
-						$curTitle['checkin'] = $checkinDate;
+						$curTitle['checkin'] = $checkinDate ?? -1;
 						require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 						$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['sourceId']);
 						if ($recordDriver->isValid()) {

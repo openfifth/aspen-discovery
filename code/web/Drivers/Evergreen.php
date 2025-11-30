@@ -968,11 +968,8 @@ class Evergreen extends AbstractIlsDriver {
 									if (!empty($circEntryMapped['xact_start'])) {
 										$curTitle['checkout'] = strtotime($circEntryMapped['xact_start']);;
 									}
-									if (!empty($circEntryMapped['checkin_time'])) {
-										$curTitle['checkin'] = strtotime($circEntryMapped['checkin_time']);
-									} else {
-										$curTitle['checkin'] = null;
-									}
+									$checkInDate = $circEntryMapped['checkin_time'];
+									$curTitle['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : null;
 									$curTitle['needToFindGroupedWork'] = true;
 								} else {
 									continue;
@@ -980,6 +977,7 @@ class Evergreen extends AbstractIlsDriver {
 							} else {
 								$checkout = $this->loadCheckoutData($patron, $circEntryMapped['source_circ'], $authToken);
 								if ($checkout != null) {
+									$checkInDate = $circEntryMapped['checkin_time'];
 									$curTitle['id'] = $checkout->recordId;
 									$curTitle['sourceId'] = $checkout->recordId;
 									$curTitle['barcode'] = $checkout->barcode ?: null;
@@ -987,11 +985,7 @@ class Evergreen extends AbstractIlsDriver {
 									$curTitle['author'] = $checkout->author;
 									$curTitle['format'] = $checkout->format;
 									$curTitle['checkout'] = $checkout->checkoutDate;
-									if (!empty($circEntryMapped['checkin_time'])) {
-										$curTitle['checkin'] = strtotime($circEntryMapped['checkin_time']);
-									} else {
-										$curTitle['checkin'] = null;
-									}
+									$curTitle['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : null;
 								}
 							}
 							$readingHistoryTitles[] = $curTitle;

@@ -194,6 +194,10 @@ class Library extends DataObject {
 	public $showLogMeOutAfterPlacingHolds;
 	public $displayItemBarcode;
 	public $displayHoldsOnCheckout;
+	public /** @noinspection PhpUnused */
+		$displayCallNumberInCheckoutHistory;
+	public /** @noinspection PhpUnused */
+		$displayVolumeInCheckoutHistory;
 
 	public $alwaysDisplayRenewalCount;
 	public $allowRenewingOutOfHoldGroupCheckouts;
@@ -1498,42 +1502,6 @@ class Library extends DataObject {
 						'default' => true,
 						'permissions' => ['Library ILS Options'],
 					],
-					'enableReadingHistory' => [
-						'property' => 'enableReadingHistory',
-						'type' => 'checkbox',
-						'label' => 'Enable Reading History',
-						'description' => 'Whether or not users reading history is shown within Aspen.',
-						'hideInLists' => true,
-						'default' => 1,
-						'permissions' => ['Library ILS Options'],
-					],
-					'enableAddToReadingHistory' => [
-						'property' => 'enableAddToReadingHistory',
-						'type' => 'checkbox',
-						'label' => 'Enable Add To Reading History',
-						'description' => 'Whether or not users can add titles to their reading history within Aspen.',
-						'hideInLists' => true,
-						'default' => 1,
-						'permissions' => ['Library ILS Options'],
-					],
-					'optInToReadingHistoryUpdatesILS' => [
-						'property' => 'optInToReadingHistoryUpdatesILS',
-						'type' => 'checkbox',
-						'label' => 'Opting In to Reading History Updates ILS Settings',
-						'description' => 'Whether or not the user should be opted in to reading history within the ILS when they opt in within Aspen.',
-						'hideInLists' => true,
-						'default' => 0,
-						'permissions' => ['Library ILS Options'],
-					],
-					'optOutOfReadingHistoryUpdatesILS' => [
-						'property' => 'optOutOfReadingHistoryUpdatesILS',
-						'type' => 'checkbox',
-						'label' => 'Opting Out of Reading History Updates ILS Settings',
-						'description' => 'Whether or not the user should be opted out of reading history within the ILS when they opt out within Aspen.',
-						'hideInLists' => true,
-						'default' => 1,
-						'permissions' => ['Library ILS Options'],
-					],
 					'enableCostSavings' => [
 						'property' => 'enableCostSavings',
 						'type' => 'checkbox',
@@ -2754,6 +2722,68 @@ class Library extends DataObject {
 								'hideInLists' => true,
 								'default' => true,
 							]
+						],
+					],
+					'readingHistorySubsection' => [
+						'property' => 'readingHistorySubsection',
+						'type' => 'section',
+						'label' => 'Reading History',
+						'hideInLists' => true,
+						'properties' => [
+							'enableReadingHistory' => [
+								'property' => 'enableReadingHistory',
+								'type' => 'checkbox',
+								'label' => 'Enable Reading History',
+								'description' => 'Whether users reading history is shown within Aspen.',
+								'hideInLists' => true,
+								'default' => 1,
+								'permissions' => ['Library ILS Options'],
+							],
+							'enableAddToReadingHistory' => [
+								'property' => 'enableAddToReadingHistory',
+								'type' => 'checkbox',
+								'label' => 'Enable Add To Reading History',
+								'description' => 'Whether users can add titles to their reading history within Aspen.',
+								'hideInLists' => true,
+								'default' => 1,
+								'permissions' => ['Library ILS Options'],
+							],
+							'optInToReadingHistoryUpdatesILS' => [
+								'property' => 'optInToReadingHistoryUpdatesILS',
+								'type' => 'checkbox',
+								'label' => 'Opting In to Reading History Updates ILS Settings',
+								'description' => 'Whether the user should be opted in to reading history within the ILS when they opt in within Aspen.',
+								'hideInLists' => true,
+								'default' => 0,
+								'permissions' => ['Library ILS Options'],
+							],
+							'optOutOfReadingHistoryUpdatesILS' => [
+								'property' => 'optOutOfReadingHistoryUpdatesILS',
+								'type' => 'checkbox',
+								'label' => 'Opting Out of Reading History Updates ILS Settings',
+								'description' => 'Whether the user should be opted out of reading history within the ILS when they opt out within Aspen.',
+								'hideInLists' => true,
+								'default' => 1,
+								'permissions' => ['Library ILS Options'],
+							],
+							'displayCallNumberInCheckoutHistory' => [
+								'property' => 'displayCallNumberInCheckoutHistory',
+								'type' => 'checkbox',
+								'label' => 'Display Call Number in Checkout History',
+								'description' => 'Whether patrons can see call numbers in their checkout history.',
+								'hideInLists' => true,
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['koha', 'evergreen'],
+							],
+							'displayVolumeInCheckoutHistory' => [
+								'property' => 'displayVolumeInCheckoutHistory',
+								'type' => 'checkbox',
+								'label' => 'Display Volume in Checkout History',
+								'description' => 'Whether patrons can see volume information in their checkout history.',
+								'hideInLists' => true,
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['koha', 'evergreen'],
+							],
 						],
 					],
 				],

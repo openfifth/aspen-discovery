@@ -339,11 +339,10 @@ td[data-entry-id] {
 }
 
 .reading-history-details {
-  margin-top: 1em;
-  animation: slideDown 0.3s ease-out;
   overflow: hidden;
 
   .panel {
+    margin-top: 1em;
     margin-bottom: 0;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
   }
@@ -365,6 +364,16 @@ td[data-entry-id] {
 .reading-history-details.collapse {
   display: block;
   height: 0;
+  overflow: hidden;
+
+  .panel {
+    margin-top: 0;
+  }
+}
+
+.reading-history-details.collapse.in {
+  display: block;
+  height: auto;
 }
 
 @keyframes slideDown {

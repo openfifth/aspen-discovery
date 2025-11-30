@@ -187,7 +187,7 @@ class Polaris extends AbstractIlsDriver {
 					$curTitle['author'] = $readingHistoryItem->Author;
 					$curTitle['format'] = $readingHistoryItem->FormatDescription;
 					$curTitle['checkout'] = $checkOutDate;
-					$curTitle['checkin'] = null; // Polaris doesn't indicate when items are checked in.
+					$curTitle['checkin'] = -1; // Polaris doesn't indicate when items are checked in.
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['sourceId']);
 					if ($recordDriver->isValid()) {

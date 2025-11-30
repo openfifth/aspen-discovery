@@ -9,6 +9,8 @@ class ReadingHistoryEntry extends DataObject {
 	public $source;
 	public $sourceId;
 	public $barcode;
+	public $callNumber;
+	public $volume;
 	public $title;
 	public $author;
 	public $format;
