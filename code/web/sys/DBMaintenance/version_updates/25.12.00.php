@@ -53,10 +53,11 @@ function getUpdates25_12_00(): array {
 					groupedWorkSettingsId INT NOT NULL,
 					shelfLocation varchar(250) DEFAULT '',
 					weight INT(11) DEFAULT 0,
-					INDEX (groupedWorkDisplaySettingId, weight)
+					INDEX (groupedWorkSettingsId, weight)
 				) ENGINE = InnoDB"
 			]
 		], //prioritized_shelf_locations
+
 		//kirstien - Grove
 
 		//kodi - Grove
