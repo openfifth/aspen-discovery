@@ -102,7 +102,7 @@ class ExternalRequestLogEntry extends DataObject {
 	 */
 	static function logRequest(string $requestType, string $method, string $url, mixed $headers, string $body, string $responseCode, ?string $response, array $dataToSanitize) : void {
 		try {
-			//if (IPAddress::showDebuggingInformation() || self::getForceDebuggingLogStatus($requestType)) {
+			if (IPAddress::showDebuggingInformation() || self::getForceDebuggingLogStatus($requestType)) {
 				require_once ROOT_DIR . '/sys/SystemLogging/ExternalRequestLogEntry.php';
 				$externalRequest = new ExternalRequestLogEntry();
 				$externalRequest->requestType = $requestType;
@@ -124,7 +124,7 @@ class ExternalRequestLogEntry extends DataObject {
 				$externalRequest->response = ExternalRequestLogEntry::sanitize($response, $dataToSanitize);
 				$externalRequest->requestTime = time();
 				$externalRequest->insert();
-			//}
+			}
 		} catch (Exception $e) {
 			global $logger;
 			$logger->log("Error logging request " . $e->getMessage(), Logger::LOG_ERROR);

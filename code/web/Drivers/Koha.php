@@ -1762,11 +1762,12 @@ class Koha extends AbstractIlsDriver {
 			if (!empty($historyEntry['sourceId'])) {
 				if ($systemVariables->storeRecordDetailsInDatabase) {
 					/** @noinspection SqlResolve */
-					$getRecordDetailsQuery = 'SELECT permanent_id, indexed_format.format FROM grouped_work_records 
-								  LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
-								  LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
-								  LEFT JOIN indexed_format on formatId = indexed_format.id
-								  where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['sourceId']);
+					$getRecordDetailsQuery =
+						'SELECT permanent_id, indexed_format.format FROM grouped_work_records 
+						LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
+						LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
+						LEFT JOIN indexed_format on formatId = indexed_format.id
+						where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['sourceId']);
 					$results = $aspen_db->query($getRecordDetailsQuery, PDO::FETCH_ASSOC);
 					if ($results) {
 						$result = $results->fetch();
