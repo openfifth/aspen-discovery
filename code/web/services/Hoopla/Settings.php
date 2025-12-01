@@ -50,7 +50,7 @@ class Hoopla_Settings extends ObjectEditor {
 		return 'id';
 	}
 
-    function canAddNew() : bool {
+	function canAddNew() : bool {
 		$setting  = new HooplaSetting();
 		if ($setting->count() >= 1){
 			return false;

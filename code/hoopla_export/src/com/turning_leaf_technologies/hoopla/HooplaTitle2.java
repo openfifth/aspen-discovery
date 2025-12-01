@@ -27,8 +27,8 @@ class HooplaTitle2 {
 	}
 
 	long getRawResponseLength() {
-	    return rawResponseLength;
-    }
+		return rawResponseLength;
+	}
 
 	public boolean isFoundInExport() {
 		return foundInExport;
