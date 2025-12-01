@@ -333,6 +333,7 @@ class Library extends DataObject {
 	public $showWhileYouWait;
 	public $showYouMightAlsoLike;
 
+	public $messageBeeSettingId;
 	public $useAllCapsWhenSubmittingSelfRegistration;
 	public $validSelfRegistrationStates;
 	public $validSelfRegistrationZipCodes;
@@ -968,11 +969,6 @@ class Library extends DataObject {
 			1 => 'ILS Based Self Registration',
 			2 => 'Redirect to Self Registration URL',
 		];
-		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
-		$quipuECardSettings = new QuipuECardSetting();
-		if ($quipuECardSettings->find(true) && $quipuECardSettings->hasECard) {
-			$validSelfRegistrationOptions[3] = 'Quipu eCARD';
-		}
 
 		$validCardRenewalOptions = [
 			0 => 'No Card Renewal',
@@ -981,8 +977,28 @@ class Library extends DataObject {
 		];
 		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
 		$quipuECardSettings = new QuipuECardSetting();
-		if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
-			$validCardRenewalOptions[3] = 'Quipu eRenewal';
+		if (!$quipuECardSettings->find(true)) {
+			$quipuECardSettings = null;
+		}
+
+		if ($quipuECardSettings != null) {
+			if ($quipuECardSettings->hasECard) {
+				$validSelfRegistrationOptions[3] = 'Quipu eCARD';
+			}
+			if ($quipuECardSettings->hasERenew) {
+				$validCardRenewalOptions[3] = 'Quipu eRenewal';
+			}
+		}
+		require_once ROOT_DIR . '/sys/Enrichment/MessageBeeSetting.php';
+		$messageBeeSetting = new MessageBeeSetting();
+		if ($messageBeeSetting->count() > 0) {
+			$messageBeeSetting = new MessageBeeSetting();
+			$messageBeeSettings = $messageBeeSetting->fetchAll('id', 'name');
+			$messageBeeSettings = [-1 => 'None'] + $messageBeeSettings;
+			$validSelfRegistrationOptions[4] = 'MessageBee Verified Borrower Registration';
+		}else{
+			$messageBeeSettings = [];
+			$messageBeeSettings[-1] = 'No MessageBee Settings defined';
 		}
 
 		/** @noinspection HtmlRequiredAltAttribute */
@@ -2536,6 +2552,14 @@ class Library extends DataObject {
 								'label' => 'Enable Self Registration',
 								'description' => 'Whether or not patrons can self register on the site',
 								'hideInLists' => true,
+							],
+							'messageBeeSettingId' => [
+								'property' => 'messageBeeSettingId',
+								'type' => 'enum',
+								'values' => $messageBeeSettings,
+								'label' => 'Message Bee Setting',
+								'descrption' => 'The Message Bee Settings to apply to this library',
+								'hideInLists' => true
 							],
 							'selfRegistrationLocationRestrictions' => [
 								'property' => 'selfRegistrationLocationRestrictions',

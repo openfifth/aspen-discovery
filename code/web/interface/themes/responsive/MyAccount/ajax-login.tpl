@@ -61,6 +61,10 @@
 					<p class="help-block">
 						{translate text="Don't have a library card?" isPublicFacing=true} <a href="/MyAccount/eCARD">{translate text="Register for a new Library Card" isPublicFacing=true}</a>.
 					</p>
+				{elseif $enableSelfRegistration == 4}
+					<p class="help-block">
+						{translate text="Don't have a library card?" isPublicFacing=true} <a href="/MyAccount/MessageBeeSelfReg">{translate text="Register for a new Library Card" isPublicFacing=true}</a>.
+					</p>
 				{/if}
 			</div>
 		</div>

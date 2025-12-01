@@ -1,15 +1,18 @@
 <?php
 
-class eCARD extends Action {
-	public function launch() : void {
+class MessageBeeSelfReg extends Action {
+	public function launch(): void {
 		global $interface;
+		global $library;
 
-		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
-		$quipuECardSettings = new QuipuECardSetting();
-		if ($quipuECardSettings->find(true) && $quipuECardSettings->hasECard) {
-			$interface->assign('eCardSettings', $quipuECardSettings);
-		} else {
-			$interface->assign('eCardSettings', null);
+		$interface->assign('messageBeeSettings', null);
+		require_once ROOT_DIR . '/sys/Enrichment/MessageBeeSetting.php';
+		$messageBeeSettings = new MessageBeeSetting();
+		if ($library->messageBeeSettingId > 0) {
+			$messageBeeSettings->id = $library->messageBeeSettingId;
+			if ($messageBeeSettings->find(true)) {
+				$interface->assign('messageBeeSettings', $messageBeeSettings);
+			}
 		}
 		global $library;
 		global $activeLanguage;
@@ -23,7 +26,7 @@ class eCARD extends Action {
 		}
 		$interface->assign('selfRegistrationFormMessage', $selfRegistrationFormMessage);
 
-		$this->display('quipuECard.tpl', 'Register for a Library Card', '');
+		$this->display('messageBeeSelfReg.tpl', 'Register for a Library Card', '');
 	}
 
 	function getBreadcrumbs(): array {
