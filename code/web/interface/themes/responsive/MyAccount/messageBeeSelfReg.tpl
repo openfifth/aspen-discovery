@@ -1,5 +1,4 @@
 {strip}
-<h1>{translate text='Register for a Library Card' isPublicFacing=true}</h1>
 <div class="page">
 	{if !empty($messageBeeSettings)}
 		{if !empty($selfRegistrationFormMessage)}
@@ -13,9 +12,11 @@
 			<script src="https://messagebee.uniquelibrary.com/external/widgets/patron-registration.umd.cjs"></script>
 
 			<script>
-				PatronRegistration.register({ldelim}
-					customerToken: '{$messageBeeSettings->customerToken}',
-					querySelector: '#messageBeeSelfReg'
+				$(document).ready(function () {ldelim}
+					PatronRegistration.register({ldelim}
+						customerToken: '{$messageBeeSettings->customerToken}',
+						querySelector: '#messageBeeSelfReg'
+					{rdelim});
 				{rdelim});
 			</script>
 
