@@ -1397,8 +1397,8 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 *                                If an error occurs, return an AspenError
 	 * @access  public
 	 */
-	public function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) {
-		return $this->placeItemHold($patron, $recordId, null, $pickupBranch, 'request', $cancelDate);
+	public function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+		return $this->placeItemHold($patron, $recordId, null, $pickupBranch, $cancelDate);
 	}
 
 	/**

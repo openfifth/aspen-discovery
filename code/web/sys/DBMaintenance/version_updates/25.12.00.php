@@ -44,7 +44,20 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE library ADD COLUMN showWebsiteSearch TINYINT default 1'
 			]
 		], //library_enable_website_search
-		
+		'prioritized_shelf_locations' => [
+			'title' => 'Prioritized Shelf Locations',
+			'description' => 'Add Prioritized Shelf Locations Table',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS prioritized_shelf_locations (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					groupedWorkSettingsId INT NOT NULL,
+					shelfLocation varchar(250) DEFAULT '',
+					weight INT(11) DEFAULT 0,
+					INDEX (groupedWorkSettingsId, weight)
+				) ENGINE = InnoDB"
+			]
+		], //prioritized_shelf_locations
+
 		//kirstien - Grove
 
 		//kodi - Grove
@@ -130,9 +143,9 @@ function getUpdates25_12_00(): array {
 			'continueOnError' => false,
 			'sql' => [
 				"CREATE TABLE IF NOT EXISTS chilifresh_settings (
-				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-				enabled TINYINT(1) NOT NULL DEFAULT 1,
-				genericArtCode TINYTEXT
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					enabled TINYINT(1) NOT NULL DEFAULT 1,
+					genericArtCode TINYTEXT
 				) ENGINE = InnoDB",
 			]
 		]
