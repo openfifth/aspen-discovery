@@ -1,0 +1,1 @@
+Please complete this form to request a new library card. Online applications receive provisional privileges; visit the library with valid identification to activate full access.

@@ -9,6 +9,7 @@ class SelfReg extends Action {
 		header("Expires: 0");
 		global $interface;
 		global $library;
+		global $activeLanguage;
 
 		if (isset($_SESSION['selfRegResult'])) {
 			$interface->assign('selfRegResult', $_SESSION['selfRegResult']);
@@ -237,8 +238,20 @@ class SelfReg extends Action {
 			$fieldsForm = $interface->fetch('DataObjectUtil/objectEditForm.tpl');
 			$interface->assign('selfRegForm', $fieldsForm);
 
-			$interface->assign('selfRegistrationFormMessage', $library->selfRegistrationFormMessage);
-			$interface->assign('selfRegistrationSuccessMessage', $library->selfRegistrationSuccessMessage);
+			$languageCode = 'en';
+			if (isset($activeLanguage) && !empty($activeLanguage->code)) {
+				$languageCode = $activeLanguage->code;
+			}
+			$selfRegistrationFormMessage = $library->getTextBlockTranslation('selfRegistrationFormMessage', $languageCode);
+			if (empty($selfRegistrationFormMessage)) {
+				$selfRegistrationFormMessage = $library->selfRegistrationFormMessage;
+			}
+			$interface->assign('selfRegistrationFormMessage', $selfRegistrationFormMessage);
+			$selfRegistrationSuccessMessage = $library->getTextBlockTranslation('selfRegistrationSuccessMessage', $languageCode);
+			if (empty($selfRegistrationSuccessMessage)) {
+				$selfRegistrationSuccessMessage = $library->selfRegistrationSuccessMessage;
+			}
+			$interface->assign('selfRegistrationSuccessMessage', $selfRegistrationSuccessMessage);
 			$interface->assign('promptForBirthDateInSelfReg', $library->promptForBirthDateInSelfReg);
 
 			$this->display('selfReg.tpl', 'Register for a Library Card', '');
