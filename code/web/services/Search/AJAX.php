@@ -468,7 +468,7 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function lockFacet() {
+	function lockFacet(): array {
 		$response = [
 			'success' => false,
 			'message' => translate([
@@ -478,26 +478,26 @@ class AJAX extends Action {
 		];
 		$facetToLock = $_REQUEST['facet'];
 
-		//Get the filters from the active search
 		$searchObject = SearchObjectFactory::initSearchObject();
 		/** @var SearchObject_BaseSearcher $activeSearch */
 		$activeSearch = $searchObject->loadLastSearch();
 		if (!is_null($activeSearch)) {
-			//Save filters to the session or user object
 			if (UserAccount::isLoggedIn()) {
 				$user = UserAccount::getActiveUserObj();
 				$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
 			} else {
-				$lockedFacets = isset($_SESSION['lockedFilters']) ? $_SESSION['lockedFilters'] : [];
+				$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 			}
-			$lockedFacets[$facetToLock] = [];
 
 			$lockSection = $activeSearch->getSearchName();
+			$lockedFacets[$lockSection][$facetToLock] = [];
 			$filters = $activeSearch->getFilterList();
 			foreach ($filters as $appliedFacets) {
 				foreach ($appliedFacets as $appliedFacet) {
 					if ($appliedFacet['field'] == $facetToLock) {
-						$lockedFacets[$lockSection][$facetToLock][] = $appliedFacet['value'];
+						if (!in_array($appliedFacet['value'], $lockedFacets[$lockSection][$facetToLock])) {
+							$lockedFacets[$lockSection][$facetToLock][] = $appliedFacet['value'];
+						}
 					}
 				}
 			}
@@ -511,35 +511,34 @@ class AJAX extends Action {
 
 			$response['success'] = true;
 		} else {
-			$response['message'] = 'Could not load search to lock filters for';
+			$response['message'] = 'Could not load search for which to lock filters.';
 		}
 
 		return $response;
 	}
 
 	/** @noinspection PhpUnused */
-	function unlockFacet() {
+	function unlockFacet(): array {
 		$response = [
-			'success' => false,
 			'message' => translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
 			]),
 		];
 
-		//Get the filters from the active search
 		$searchObject = SearchObjectFactory::initSearchObject();
 		/** @var SearchObject_BaseSearcher $activeSearch */
 		$activeSearch = $searchObject->loadLastSearch();
 		$lockSection = $activeSearch->getSearchName();
-
 		$facetToUnlock = $_REQUEST['facet'];
+
 		if (UserAccount::isLoggedIn()) {
 			$user = UserAccount::getActiveUserObj();
 			$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
 		} else {
-			$lockedFacets = isset($_SESSION['lockedFilters']) ? $_SESSION['lockedFilters'] : [];
+			$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 		}
+
 		if (isset($lockedFacets[$lockSection][$facetToUnlock])) {
 			unset($lockedFacets[$lockSection][$facetToUnlock]);
 			if (UserAccount::isLoggedIn()) {
@@ -552,7 +551,7 @@ class AJAX extends Action {
 			$response['success'] = true;
 		} else {
 			$response['success'] = true;
-			$response['message'] = 'That facet is already unlocked';
+			$response['message'] = 'That facet is already unlocked.';
 		}
 		return $response;
 	}

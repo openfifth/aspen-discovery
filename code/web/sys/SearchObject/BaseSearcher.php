@@ -1137,10 +1137,8 @@ abstract class SearchObject_BaseSearcher {
 
 	/**
 	 * Add filters to the object based on values found in the $_REQUEST super global.
-	 *
-	 * @access  protected
 	 */
-	protected function initFilters() {
+	protected function initFilters(): void {
 		if (isset($_REQUEST['filter'])) {
 			if (is_array($_REQUEST['filter'])) {
 				foreach ($_REQUEST['filter'] as $filter) {
@@ -1152,18 +1150,37 @@ abstract class SearchObject_BaseSearcher {
 				$this->addFilter(strip_tags($_REQUEST['filter']));
 			}
 		} else {
-			//Check for locked filters
 			if (UserAccount::isLoggedIn()) {
 				$user = UserAccount::getActiveUserObj();
 				$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
 			} else {
-				$lockedFacets = isset($_SESSION['lockedFilters']) ? $_SESSION['lockedFilters'] : [];
+				$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 			}
 			if (!empty($lockedFacets) && !empty($lockedFacets[$this->getSearchName()])) {
 				$lockedFilters = $lockedFacets[$this->getSearchName()];
+				global $logger;
+				if ($logger) {
+					$logger->log("DEBUG: Processing locked filters for search: " . $this->getSearchName(), Logger::LOG_ERROR);
+					$logger->log("DEBUG: Locked filters: " . print_r($lockedFilters, true), Logger::LOG_ERROR);
+				}
 				foreach ($lockedFilters as $fieldName => $values) {
-					foreach ($values as $value) {
-						$this->addFilter($fieldName . ':' . $value);
+					// Only apply locked facets that match the current scope.
+					$unscopedFieldName = $this->getUnscopedFieldName($fieldName);
+					$currentScopedFieldName = $this->getScopedFieldName($unscopedFieldName);
+					if ($logger) {
+						$logger->log("DEBUG: fieldName=$fieldName, unscopedFieldName=$unscopedFieldName, currentScopedFieldName=$currentScopedFieldName", Logger::LOG_ERROR);
+					}
+					if ($fieldName === $currentScopedFieldName) {
+						if ($logger) {
+							$logger->log("DEBUG: Match! Applying filter $fieldName with values: " . print_r($values, true), Logger::LOG_ERROR);
+						}
+						foreach ($values as $value) {
+							$this->addFilter($fieldName . ':' . $value);
+						}
+					} else {
+						if ($logger) {
+							$logger->log("DEBUG: No match. Skipping filter $fieldName (current scope expects $currentScopedFieldName)", Logger::LOG_ERROR);
+						}
 					}
 				}
 			}
@@ -2787,7 +2804,7 @@ abstract class SearchObject_BaseSearcher {
 	 * @param string $scopedFieldName
 	 * @return string
 	 */
-	protected function getUnscopedFieldName(string $scopedFieldName): string {
+	public function getUnscopedFieldName(string $scopedFieldName): string {
 		return $scopedFieldName;
 	}
 
