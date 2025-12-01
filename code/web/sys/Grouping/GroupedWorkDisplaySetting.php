@@ -5,6 +5,7 @@ require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFacetGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkMoreDetails.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFormatSortingGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
+require_once ROOT_DIR . '/sys/Grouping/PrioritizedShelfLocation.php';
 
 /**
  * Class GroupedWorkDisplaySetting
@@ -93,6 +94,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showCopiesForPeriodicalsWithNoItems;
 
 	private $_moreDetailsOptions;
+	private $_prioritizedShelfLocations;
 
 	// Use this to set which details will be shown in the Main Details section of the record in the search results.
 	// You should be able to add options here without needing to change the database.
@@ -166,6 +168,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 		$moreDetailsStructure = GroupedWorkMoreDetails::getObjectStructure($context);
 		unset($moreDetailsStructure['weight']);
 		unset($moreDetailsStructure['groupedWorkSettingsId']);
+
+		$prioritizedShelfLocationStructure = PrioritizedShelfLocation::getObjectStructure($context);
+		unset($prioritizedShelfLocationStructure['weight']);
+		unset($prioritizedShelfLocationStructure['groupedWorkSettingsId']);
 
 		$structure = [
 			'id' => [
@@ -396,6 +402,23 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'Whether or not the Description loaded from ILS should be preferred over eContent Description',
 						'hideInLists' => true,
 						'default' => false,
+					],
+					'prioritizedShelfLocations' => [
+						'property' => 'prioritizedShelfLocations',
+						'type' => 'oneToMany',
+						'label' => 'Prioritized Shelf Locations',
+						'description' => 'A list of Shelf Locations to show higher in the list of items',
+						'hideInLists' => true,
+						'keyThis' => 'id',
+						'keyOther' => 'groupedWorkDisplaySettingId',
+						'subObjectType' => 'PrioritizedShelfLocation',
+						'structure' => $prioritizedShelfLocationStructure,
+						'sortable' => true,
+						'storeDb' => true,
+						'allowEdit' => true,
+						'canEdit' => false,
+						'canAddNew' => true,
+						'canDelete' => true,
 					],
 					'showItemDueDates' => [
 						'property' => 'showItemDueDates',
@@ -855,6 +878,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 			$this->saveLibraries();
 			$this->saveLocations();
 			$this->saveMoreDetailsOptions();
+			$this->savePrioritizedShelfLocations();
 		}
 		return $ret;
 	}
@@ -879,6 +903,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 			$this->saveLibraries();
 			$this->saveLocations();
 			$this->saveMoreDetailsOptions();
+			$this->savePrioritizedShelfLocations();
 		}
 		return $ret;
 	}
@@ -936,6 +961,8 @@ class GroupedWorkDisplaySetting extends DataObject {
 			return $this->_locations;
 		} elseif ($name == 'moreDetailsOptions') {
 			return $this->getMoreDetailsOptions();
+		} elseif ($name == 'prioritizedShelfLocations') {
+			return $this->getPrioritizedShelfLocations();
 		} else {
 			return parent::__get($name);
 		}
@@ -948,6 +975,8 @@ class GroupedWorkDisplaySetting extends DataObject {
 			$this->_locations = $value;
 		} elseif ($name == 'moreDetailsOptions') {
 			$this->setMoreDetailsOptions($value);
+		} elseif ($name == 'prioritizedShelfLocations') {
+			$this->setPrioritizedShelfLocations($value);
 		} else {
 			parent::__set($name, $value);
 		}
@@ -984,6 +1013,39 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public function clearMoreDetailsOptions() : void {
 		$this->clearOneToManyOptions('GroupedWorkMoreDetails', 'groupedWorkSettingsId');
 		$this->_moreDetailsOptions = [];
+	}
+
+	/**
+	 * @return PrioritizedShelfLocation[]|null
+	 */
+	public function getPrioritizedShelfLocations() : ?array {
+		if (!isset($this->_prioritizedShelfLocations) && $this->id) {
+			$this->_prioritizedShelfLocations = [];
+			$prioritizedShelfLocations = new PrioritizedShelfLocation();
+			$prioritizedShelfLocations->groupedWorkSettingsId = $this->id;
+			$prioritizedShelfLocations->orderBy('weight');
+			$prioritizedShelfLocations->find();
+			while ($prioritizedShelfLocations->fetch()) {
+				$this->_prioritizedShelfLocations[$prioritizedShelfLocations->id] = clone($prioritizedShelfLocations);
+			}
+		}
+		return $this->_prioritizedShelfLocations;
+	}
+
+	public function setPrioritizedShelfLocations($value) : void {
+		$this->_prioritizedShelfLocations = $value;
+	}
+
+	public function savePrioritizedShelfLocations() : void {
+		if (isset ($this->_prioritizedShelfLocations)) {
+			$this->saveOneToManyOptions($this->_prioritizedShelfLocations, 'groupedWorkSettingsId');
+			unset($this->_prioritizedShelfLocations);
+		}
+	}
+
+	public function clearPrioritizedShelfLocations() : void {
+		$this->clearOneToManyOptions('PrioritizedShelfLocation', 'groupedWorkSettingsId');
+		$this->_prioritizedShelfLocations = [];
 	}
 
 	public static function getDefaultDisplaySettings() : GroupedWorkDisplaySetting {

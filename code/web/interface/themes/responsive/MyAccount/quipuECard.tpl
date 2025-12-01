@@ -4,7 +4,7 @@
 	{if !empty($eCardSettings)}
 		{if !empty($selfRegistrationFormMessage)}
 			<div id="selfRegistrationMessage">
-				{translate text=$selfRegistrationFormMessage isPublicFacing=true isAdminEnteredData=true}
+				{$selfRegistrationFormMessage}
 			</div>
 		{/if}
 

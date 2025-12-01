@@ -604,6 +604,16 @@ class BookCoverProcessor {
 				}
 			}
 
+			require_once ROOT_DIR . '/sys/Enrichment/ChiliFreshSetting.php';
+			$chiliFreshSettings = new ChiliFreshSetting();
+			if ($chiliFreshSettings->find(true)) {
+				if ($chiliFreshSettings->enabled) {
+					if ($this->chiliFresh($chiliFreshSettings->genericArtCode)) {
+						return true;
+					}
+				}
+			}
+
 			require_once ROOT_DIR . '/sys/Enrichment/ContentCafeSetting.php';
 			$contentCafeSettings = new ContentCafeSetting();
 			if ($contentCafeSettings->find(true)) {
@@ -826,7 +836,6 @@ class BookCoverProcessor {
 			}
 
 			$this->log("Processing url $url to $finalFile", Logger::LOG_DEBUG);
-
 			// If some services can't provide an image, they will serve a 1x1 blank
 			// or give us invalid image data.  Let's analyze what came back before
 			// proceeding.
@@ -959,6 +968,33 @@ class BookCoverProcessor {
 			$this->log("Could not load the file as an image $url", Logger::LOG_NOTICE);
 			return false;
 		}
+	}
+
+	function chiliFresh($genericArtCode) {
+		if (is_null($this->isn) && is_null($this->upc) && is_null($this->issn)) {
+			return false;
+		}
+		switch ($this->size) {
+			case 'small':
+				$size = 'S';
+				break;
+			case 'medium':
+				$size = 'M';
+				break;
+			case 'large':
+				$size = 'L';
+				break;
+			default:
+				$size = 'S';
+		}
+
+		$url = "https://content.chilifresh.com/?size={$size}&isbn=";
+		$url .= implode(',', array_filter([$this->isn, $this->issn, $this->upc]));
+		if (isset($genericArtCode)) {
+			$url .= "&generic=$genericArtCode";
+		}
+		$this->log("Chilifresh URL: $url", Logger::LOG_DEBUG);
+		return $this->processImageURL('chilifresh', $url, true);
 	}
 
 	function syndetics($key) {
@@ -2065,7 +2101,7 @@ class BookCoverProcessor {
 		return false;
 	}
 
-	private function getReferencedGroupedWorkCover($permanentId) {
+	private function getReferencedGroupedWorkCover(string $permanentId): bool {
 		require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 		$groupedWork = new GroupedWork();
 		$groupedWork->permanent_id = $permanentId;
@@ -2094,6 +2130,16 @@ class BookCoverProcessor {
 						$referencedCoverInfo->setRecordType($referenceRecordType);
 						$referencedCoverInfo->setRecordId($referenceRecordId);
 						if ($referencedCoverInfo->find(true)) {
+							if ($referencedCoverInfo->getImageSource() === 'upload') {
+								// If there's an uploaded cover, check disk instead of using original URL
+								if (file_exists($referencedCoverURL_lg)) {
+									return $this->processImageURL('reference ' . $referenceId, $referencedCoverURL_lg);
+								} elseif (file_exists($referencedCoverURL_md)) {
+									return $this->processImageURL('reference ' . $referenceId, $referencedCoverURL_md);
+								}
+								return false;
+							}
+
 							$originalUrl = $referencedCoverInfo->getOriginalUrl();
 							if (!empty($originalUrl)) {
 								$url = $originalUrl;
@@ -2365,7 +2411,8 @@ class BookCoverProcessor {
 	private function checkForEarlyRedirect(): bool {
 		if ($this->bookCoverInfo &&
 			!empty($this->bookCoverInfo->getOriginalUrl()) &&
-			SystemVariables::getSystemVariables()->useOriginalCoverUrls
+			SystemVariables::getSystemVariables()->useOriginalCoverUrls &&
+			!str_starts_with($this->bookCoverInfo->getImageSource(), 'reference')
 		) {
 			$validationFields = [
 				$this->bookCoverInfo->imageSource,
