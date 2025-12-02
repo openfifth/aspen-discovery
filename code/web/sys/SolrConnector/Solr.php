@@ -1332,6 +1332,10 @@ abstract class Solr {
 
 		// Enable Spell Checking
 		if ($spell != '') {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			$maxCollationTries = ($systemVariables && $systemVariables->spellcheckMaxCollationTries > 0) ? $systemVariables->spellcheckMaxCollationTries : 25;
+
 			$options['spellcheck'] = 'true';
 			$options['spellcheck.q'] = $spell;
 //			if ($dictionary != null) {
@@ -1347,7 +1351,7 @@ abstract class Solr {
 			$options['spellcheck.collateParam.mm'] = '100%';
 			$options['spellcheck.maxCollations'] = 5;
 			$options['spellcheck.collateExtendedResults'] = 'true';
-			$options['spellcheck.maxCollationTries'] = 25;
+			$options['spellcheck.maxCollationTries'] = $maxCollationTries;
 			$options['spellcheck.accuracy'] = .5;
 		}
 

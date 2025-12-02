@@ -182,7 +182,17 @@ function getUpdates25_12_00(): array {
 					genericArtCode TINYTEXT
 				) ENGINE = InnoDB",
 			]
-		]
+		],
+
+		// Tomas Cohen Arazi - Theke Solutions
+		'configurable_solr_spellcheck_collation' => [
+			'title' => 'SolR - Spellcheck Collation max tries',
+			'description' => 'Make SolR spellcheck.maxCollationTries configurable',
+			'sql' => [
+				"ALTER TABLE system_variables ADD COLUMN spellcheckMaxCollationTries int(11) DEFAULT 25 AFTER solrQueryTimeout;"
+			],
+		],
+
 		//other
 
 	];

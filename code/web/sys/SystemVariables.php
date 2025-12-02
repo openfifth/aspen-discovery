@@ -32,6 +32,7 @@ class SystemVariables extends DataObject {
 	public $libraryToUseForPayments;
 	public $solrConnectTimeout;
 	public $solrQueryTimeout;
+	public $spellcheckMaxCollationTries;
 	public $catalogStatus;
 	public $offlineMessage;
 	public $appScheme;
@@ -302,6 +303,16 @@ class SystemVariables extends DataObject {
 				'required' => true,
 				'default' => 10,
 				'min' => 1,
+			],
+			'spellcheckMaxCollationTries' => [
+				'property' => 'spellcheckMaxCollationTries',
+				'type' => 'integer',
+				'label' => 'Spellcheck Max Collation Tries',
+				'description' => 'Maximum number of collation attempts for spellcheck queries (lower values improve performance)',
+				'required' => true,
+				'default' => 25,
+				'min' => 1,
+				'max' => 50,
 			],
 			'catalogStatus' => [
 				'property' => 'catalogStatus',
