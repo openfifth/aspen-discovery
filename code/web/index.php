@@ -132,14 +132,29 @@ try {
 		require_once ROOT_DIR . '/sys/Enrichment/GoogleApiSetting.php';
 		$googleSettings = new GoogleApiSetting();
 		if ($googleSettings->find(true)) {
-			$googleAnalyticsId = $googleSettings->googleAnalyticsTrackingId;
-			$googleAnalyticsLinkingId = $googleSettings->googleAnalyticsTrackingId;
-			$interface->assign('googleAnalyticsId', $googleSettings->googleAnalyticsTrackingId);
-			$interface->assign('googleAnalyticsLinkingId', $googleSettings->googleAnalyticsLinkingId);
+
+			//Check to see if we have library specific settings
+			global $library;
+			$libraryGoogleAnalytics = new LibraryGoogleAnalytics();
+			$libraryGoogleAnalytics->libraryId = $library->libraryId;
+			$libraryGoogleAnalytics->googleApiSettingId = $googleSettings->id;
+			if ($libraryGoogleAnalytics->find(true)) {
+				$googleAnalyticsId = $libraryGoogleAnalytics->googleAnalyticsTrackingId;
+				$googleAnalyticsLinkingId = '';
+				$googleAnalyticsLinkedProperties = '';
+				$googleAnalyticsDomainName = '';
+			}else{
+				$googleAnalyticsId = $googleSettings->googleAnalyticsTrackingId;
+				$googleAnalyticsLinkingId = $googleSettings->googleAnalyticsLinkingId;
+				$googleAnalyticsLinkedProperties = $googleSettings->googleAnalyticsLinkedProperties;
+				$googleAnalyticsDomainName = $googleSettings->googleAnalyticsDomainName;
+			}
+			$interface->assign('googleAnalyticsId', $googleAnalyticsId);
+			$interface->assign('googleAnalyticsLinkingId', $googleAnalyticsLinkingId);
 			$interface->assign('googleAnalyticsVersion', empty($googleSettings->googleAnalyticsVersion) ? 'v3' : $googleSettings->googleAnalyticsVersion);
 			$linkedProperties = '';
-			if (!empty($googleSettings->googleAnalyticsLinkedProperties)) {
-				$linkedPropertyArray = preg_split('~\\r\\n|\\r|\\n~', $googleSettings->googleAnalyticsLinkedProperties);
+			if (!empty($googleAnalyticsLinkedProperties)) {
+				$linkedPropertyArray = preg_split('~\\r\\n|\\r|\\n~', $googleAnalyticsLinkedProperties);
 				foreach ($linkedPropertyArray as $linkedProperty) {
 					if (strlen($linkedProperties) > 0) {
 						$linkedProperties .= ', ';
@@ -149,14 +164,14 @@ try {
 			}
 			$interface->assign('googleAnalyticsLinkedProperties', $linkedProperties);
 			if ($googleAnalyticsId) {
-				$googleAnalyticsDomainName = !empty($googleSettings->googleAnalyticsDomainName) ? $googleSettings->googleAnalyticsDomainName : strstr($_SERVER['SERVER_NAME'], '.');
+				$googleAnalyticsDomainName = !empty($googleAnalyticsDomainName) ? $googleAnalyticsDomainName : strstr($_SERVER['SERVER_NAME'], '.');
 				// check for a config setting, use that if found, otherwise grab domain name  but remove the first subdomain
 				$interface->assign('googleAnalyticsDomainName', $googleAnalyticsDomainName);
 			}
 		}	
 	}
 } catch (Exception $e) {
-	//This happens when Google analytics settings aren't setup yet
+	//This happens when Google Analytics settings aren't setup yet
 }
 
 global $library;

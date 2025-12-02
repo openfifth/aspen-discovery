@@ -86,6 +86,20 @@ function getUpdates25_12_00(): array {
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Lock Administration Records'))",
 			]
 		], //limit_access_to_shared_records
+		'library_google_analytics' => [
+			'title' => 'Library Google Analytics',
+			'description' => 'Add Library Google Analytics Table',
+			'sql' => [
+				"DROP TABLE library_google_analytics",
+				"CREATE TABLE IF NOT EXISTS library_google_analytics (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					libraryId int(11) NOT NULL,
+					googleApiSettingId INT(11) NOT NULL,
+					googleAnalyticsTrackingId varchar(50) DEFAULT NULL,
+					UNIQUE (libraryId, googleApiSettingId)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci"
+			]
+		], //library_google_analytics
 
 		//kirstien - Grove
 
