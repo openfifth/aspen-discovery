@@ -12,8 +12,7 @@ abstract class AbstractDriver {
 		return false;
 	}
 
-	public function getReadingHistory(User $patron): array
-	{
+	public function getReadingHistory(User $patron): array {
 		return [
 			'historyActive' => false,
 			'titles' => [],

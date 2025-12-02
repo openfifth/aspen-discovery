@@ -1056,7 +1056,7 @@ class Evergreen extends AbstractIlsDriver {
 										$curTitle['checkout'] = strtotime($circEntryMapped['xact_start']);;
 									}
 									$checkInDate = $circEntryMapped['checkin_time'];
-									$curTitle['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : null;
+									$curTitle['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : -1;
 									$curTitle['needToFindGroupedWork'] = true;
 								} else {
 									continue;
@@ -1074,7 +1074,7 @@ class Evergreen extends AbstractIlsDriver {
 									$curTitle['author'] = $checkout->author;
 									$curTitle['format'] = $checkout->format;
 									$curTitle['checkout'] = $checkout->checkoutDate;
-									$curTitle['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : null;
+									$curTitle['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : -1;
 								}
 							}
 							$readingHistoryTitles[] = $curTitle;
