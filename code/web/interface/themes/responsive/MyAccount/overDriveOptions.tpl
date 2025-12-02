@@ -62,7 +62,7 @@
 					</form>
 					{if $qrAuthEnabled}
 						<h2>{translate text="%1% Single Sign-On" 1=$readerName isPublicFacing=true}</h2>
-						<p>{translate text="Link your Aspen account to %1% once and future checkouts can skip the sign-in screen. The button opens a new window provided by OverDrive." 1=$readerName isPublicFacing=true}</p>
+						<p>{translate text="Link your Aspen account to %1% once and future checkouts and holds can skip the sign-in screen. The button opens a window provided by OverDrive." 1=$readerName isPublicFacing=true}</p>
 						{foreach from=$qrAuthStatuses key=settingId item=status}
 							{assign var=setting value=$availableSettings.$settingId}
 							{if $setting}
@@ -88,7 +88,7 @@
 											<p class="text-muted">
 												{translate text="Not yet connected." isPublicFacing=true}
 											</p>
-											<a href="/OverDrive/QRCodeAuth?settingId={$settingId}" target="_blank" rel="noopener" class="btn btn-primary">
+											<a href="/OverDrive/QRCodeAuth?settingId={$settingId}" class="btn btn-primary">
 												{translate text="Connect with QR Code" isPublicFacing=true}
 											</a>
 										{/if}
