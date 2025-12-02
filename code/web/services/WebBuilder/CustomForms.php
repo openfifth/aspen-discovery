@@ -97,4 +97,8 @@ class WebBuilder_CustomForms extends ObjectEditor {
 	function getActiveAdminSection(): string {
 		return 'web_builder';
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

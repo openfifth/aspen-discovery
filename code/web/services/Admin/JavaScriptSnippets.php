@@ -115,4 +115,8 @@ class Admin_JavaScriptSnippets extends ObjectEditor {
 	public function canCopy() : bool {
 		return $this->canAddNew();
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }
