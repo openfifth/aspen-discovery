@@ -88,6 +88,9 @@
 					{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 						<th>{translate text='Select' isAdminFacing=true}</th>
 					{/if}
+					{if $hasRecordLocking && count($lockedRecords) > 0}
+						<th>{translate text='Locked?' isAdminFacing=true}</th>
+					{/if}
 					{foreach from=$structure item=property key=id}
 						{if (!isset($property.hideInLists) || $property.hideInLists == false) && $property.type != 'section'}
 						<th><span {if !empty($property.description)}title='{$property.description}'{/if}>{translate text=$property.label isAdminFacing=true}</span></th>
@@ -104,6 +107,9 @@
 						{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 							<td><input type="checkbox" class="selectedObject" name="selectedObject[{$id}]" aria-label="Select Item {$id}"> </td>
 						{/if}
+						{if $hasRecordLocking && count($lockedRecords) > 0}
+							<td>{if in_array($id,$lockedRecords)}Yes{else}No{/if}</td>
+						{/if}
 						{foreach from=$structure item=property}
 							{if (!isset($property.hideInLists) || $property.hideInLists == false) && $property.type != 'section'}
 								{assign var=propName value=$property.property}
@@ -112,7 +118,7 @@
 								{if $property.type == 'label'}
 									{if empty($dataItem->class) || $dataItem->class != 'objectDeleted'}
 										{if $dataItem->canActiveUserEdit()}
-											{if $propName == $dataItem->getPrimaryKey()}<a class="btn btn-default btn-sm" href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}{$contextParams}'>
+											{if $propName == $dataItem->getPrimaryKey()}<a class="btn btn-default btn-sm" href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}{if !empty($contextParams)}{$contextParams}{/if}'>
 											<i class="fas fa-pencil-alt fa-xs" style="padding-right: .5em"></i>{/if}
 											{if empty($propValue)}
 												{translate text="Not Set" isAdminFacing=true}
@@ -210,7 +216,7 @@
 							<td>
 								<div class="btn-group-vertical">
 								{if $dataItem->canActiveUserEdit()}
-									<a href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}{$contextParams}' class="btn btn-default btn-sm" aria-label="Edit Item {$id}"><i class="fas fa-pencil-alt"></i> {translate text="Edit" isAdminFacing=true}</a>
+									<a href='/{$module}/{$toolName}?objectAction=edit&amp;id={$id}{if !empty($contextParams)}{if !empty($contextParams)}{$contextParams}{/if}{/if}' class="btn btn-default btn-sm" aria-label="Edit Item {$id}"><i class="fas fa-pencil-alt"></i> {translate text="Edit" isAdminFacing=true}</a>
 								{/if}
 								{if $dataItem->getAdditionalListActions()}
 									{foreach from=$dataItem->getAdditionalListActions() item=action}

@@ -17,6 +17,7 @@ import java.sql.*;
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.HashMap;
 
 public class GroupedReindexMain {
 	private static BaseIndexingLogEntry logEntry;
@@ -30,6 +31,7 @@ public class GroupedReindexMain {
 	private static boolean isNightlyReindex = false;
 	private static String individualWorkToProcess;
 	private static boolean processEmptyWorks = false;
+	private static boolean cleanupIndexTables = false;
 	private static Ini configIni;
 	private static String baseLogPath;
 
@@ -38,7 +40,7 @@ public class GroupedReindexMain {
 
 	/**
 	 * Starts the re-indexing process
-	 * 
+	 *
 	 * @param args String[] The server name to index with optional parameter for properties of indexing
 	 */
 	public static void main(String[] args) {
@@ -63,6 +65,8 @@ public class GroupedReindexMain {
 			isNightlyReindex = args[1].equalsIgnoreCase("nightly");
 		}else if (args.length >= 2 && args[1].equalsIgnoreCase("isNightlyIndexRunning")){
 			checkNightlyIndexRunning = true;
+		}else if (args.length >= 2 && args[1].equalsIgnoreCase("cleanupIndexTables")){
+			cleanupIndexTables = true;
 		}else if (args.length >= 2 && args[1].equalsIgnoreCase("singleWork")){
 			//Process a specific work
 			//Prompt for the work to process
@@ -80,9 +84,9 @@ public class GroupedReindexMain {
 				System.exit(1);
 			}
 		}
-		
+
 		initializeReindex();
-		
+
 		logEntry.addNote("Initialized Reindex ");
 		if (checkNightlyIndexRunning) {
 			boolean isNightlyIndexRunning = IndexingUtils.isNightlyIndexRunning(configIni, serverName, logger);
@@ -134,12 +138,17 @@ public class GroupedReindexMain {
 				} else if (processEmptyWorks) {
 					logger.info("Processing Empty Works");
 					groupedWorkIndexer.processEmptyGroupedWorks();
+				} else if (cleanupIndexTables) {
+					cleanupIndexTables();
 				} else {
 					logger.info("Running Reindex");
 					groupedWorkIndexer.processGroupedWorks();
+					if (isNightlyReindex) {
+						cleanupIndexTables();
+					}
 				}
-				groupedWorkIndexer.finishIndexing();
 
+				groupedWorkIndexer.finishIndexing();
 			}
 		} catch (Error e) {
 			logEntry.incErrors("Error processing reindex " + e);
@@ -164,11 +173,63 @@ public class GroupedReindexMain {
 		System.exit(0);
 	}
 
+	private static void cleanupIndexTables() {
+		try {
+			logEntry.addNote("Cleaning up index tables");
+			PreparedStatement getAllIndexedFormatsStmt = dbConn.prepareStatement("SELECT * FROM indexed_format");
+			ResultSet getAllIndexedFormatsRS = getAllIndexedFormatsStmt.executeQuery();
+			HashMap<Long, String> indexedFormats = new HashMap<>();
+			while (getAllIndexedFormatsRS.next()){
+				indexedFormats.put(getAllIndexedFormatsRS.getLong("id"), getAllIndexedFormatsRS.getString("format"));
+			}
+			PreparedStatement getInUseIndexedFormatsStmt = dbConn.prepareStatement("select indexed_format.id, indexed_format.format FROM grouped_work_record_items inner join grouped_work_records on groupedWorkRecordId = grouped_work_records.id join grouped_work_variation on grouped_work_variation.id = grouped_work_record_items.groupedWorkVariationId join indexed_format on grouped_work_variation.formatId = indexed_format.id join grouped_work on grouped_work_variation.groupedWorkId = grouped_work.id group by indexed_format.format;");
+			PreparedStatement deleteIndexedFormatStmt = dbConn.prepareStatement("delete from indexed_format where id = ?");
+			ResultSet getInUseIndexedFormatsRS = getInUseIndexedFormatsStmt.executeQuery();
+			while (getInUseIndexedFormatsRS.next()) {
+				indexedFormats.remove(getInUseIndexedFormatsRS.getLong("id"));
+			}
+			for (Long formatId : indexedFormats.keySet()){
+				logEntry.addNote("Deleted unused format " + indexedFormats.get(formatId));
+				deleteIndexedFormatStmt.setLong(1, formatId);
+				deleteIndexedFormatStmt.executeUpdate();
+			}
+			getInUseIndexedFormatsRS.close();
+			getInUseIndexedFormatsStmt.close();
+			deleteIndexedFormatStmt.close();
+
+			PreparedStatement getAllIndexedFormatCategoriesStmt = dbConn.prepareStatement("SELECT * FROM indexed_format_category");
+			ResultSet getAllIndexedFormatCategoriesRS = getAllIndexedFormatCategoriesStmt.executeQuery();
+			HashMap<Long, String> indexedFormatCategories = new HashMap<>();
+			while (getAllIndexedFormatCategoriesRS.next()){
+				indexedFormatCategories.put(getAllIndexedFormatCategoriesRS.getLong("id"), getAllIndexedFormatCategoriesRS.getString("formatCategory"));
+			}
+			PreparedStatement getInUseIndexedFormatCategoriesStmt = dbConn.prepareStatement("select indexed_format_category.id, indexed_format_category.formatCategory FROM grouped_work_record_items inner join grouped_work_records on groupedWorkRecordId = grouped_work_records.id join grouped_work_variation on grouped_work_variation.id = grouped_work_record_items.groupedWorkVariationId join indexed_format_category on grouped_work_variation.formatCategoryId = indexed_format_category.id join grouped_work on grouped_work_variation.groupedWorkId = grouped_work.id group by indexed_format_category.formatCategory;");
+			PreparedStatement deleteIndexedFormatCategoriesStmt = dbConn.prepareStatement("delete from indexed_format_category where id = ?");
+			ResultSet getInUseIndexedFormatCategoriesRS = getInUseIndexedFormatCategoriesStmt.executeQuery();
+			while (getInUseIndexedFormatCategoriesRS.next()) {
+				indexedFormatCategories.remove(getInUseIndexedFormatCategoriesRS.getLong("id"));
+			}
+			for (Long formatCategoryId : indexedFormatCategories.keySet()){
+				logEntry.addNote("Deleted unused format category " + indexedFormatCategories.get(formatCategoryId));
+				deleteIndexedFormatCategoriesStmt.setLong(1, formatCategoryId);
+				deleteIndexedFormatCategoriesStmt.executeUpdate();
+			}
+			getAllIndexedFormatCategoriesRS.close();
+			getAllIndexedFormatCategoriesStmt.close();
+			deleteIndexedFormatCategoriesStmt.close();
+
+			logEntry.addNote("Finished cleaning up index tables");
+		} catch (SQLException e) {
+			logger.error("Error cleaning up index tables", e);
+		}
+	}
+
 	private static void initializeReindex() {
 		// Delete the existing reindex.log file
 		File solrMarcLog = new File(baseLogPath + "/" + serverName + "/logs/grouped_reindex.log");
 		if (solrMarcLog.exists()){
 			if (!solrMarcLog.delete()){
+				//noinspection LoggingSimilarMessage
 				logger.warn("Could not remove " + solrMarcLog);
 			}
 		}
@@ -176,6 +237,7 @@ public class GroupedReindexMain {
 			solrMarcLog = new File(baseLogPath + "/" + serverName + "/logs/grouped_reindex.log." + i);
 			if (solrMarcLog.exists()){
 				if (!solrMarcLog.delete()){
+					//noinspection LoggingSimilarMessage
 					logger.warn("Could not remove " + solrMarcLog);
 				}
 			}
@@ -183,6 +245,7 @@ public class GroupedReindexMain {
 		solrMarcLog = new File("org.solrmarc.log");
 		if (solrMarcLog.exists()){
 			if (!solrMarcLog.delete()){
+				//noinspection LoggingSimilarMessage
 				logger.warn("Could not remove " + solrMarcLog);
 			}
 		}
@@ -190,6 +253,7 @@ public class GroupedReindexMain {
 			solrMarcLog = new File("org.solrmarc.log." + i);
 			if (solrMarcLog.exists()){
 				if (!solrMarcLog.delete()){
+					//noinspection LoggingSimilarMessage
 					logger.warn("Could not remove " + solrMarcLog);
 				}
 			}
@@ -246,8 +310,8 @@ public class GroupedReindexMain {
 			}
 
 			try {
-				//Mark that nightly index does not need to run since we are currently running it.
-				dbConn.prepareStatement("UPDATE system_variables set runNightlyFullIndex = 0").executeUpdate();
+				//Mark that the nightly index does not need to run since we are currently running it.
+				dbConn.prepareStatement("UPDATE system_variables set runNightlyFullIndex = 0 WHERE true").executeUpdate();
 			}catch (SQLException e) {
 				logger.error("Unable to determine if the nightly index should run, running it", e);
 			}
@@ -274,7 +338,7 @@ public class GroupedReindexMain {
 
 					//There is some variation in when the nightly index starts, we will only update if it is after 8pm or before 6am on the specified day.
 					LocalDateTime today = LocalDateTime.now();
-					if (updateOn == 0){ //Friday night, saturday morning
+					if (updateOn == 0){ //Friday night, Saturday morning
 						if (today.getDayOfWeek() == DayOfWeek.FRIDAY && today.getHour() >= 12 || today.getDayOfWeek() == DayOfWeek.SATURDAY && today.getHour() < 6){
 							reloadArData = true;
 						}
@@ -287,8 +351,8 @@ public class GroupedReindexMain {
 						reloadArData = false;
 						//It's the correct day to run, check the frequency.
 						long todayInSecs = new Date().getTime() / 1000;
-						long elapasedTime = todayInSecs - lastFetched;
-						int daysElapsed = (int)Math.ceil((double)elapasedTime / (double)(24 * 60 * 60));
+						long elapsedTime = todayInSecs - lastFetched;
+						int daysElapsed = (int)Math.ceil((double)elapsedTime / (double)(24 * 60 * 60));
 						logEntry.addNote("Correct day to run AR updates, checking if enough time has elapsed, " + daysElapsed + " have elapsed.");
 						if (updateFrequency == 0) { //Weekly
 							if (daysElapsed >= 7){
@@ -308,7 +372,7 @@ public class GroupedReindexMain {
 
 				//Fetch the file if we have never updated or if we last updated more than a week ago
 				boolean updateDB = false;
-				//Use 23 hours rather than 24 hours to avoid the day accelerated reader loads doesn't drift.
+				//Use 23 hours rather than 24 hours to ensure the day Accelerated Reader is loaded doesn't drift.
 				if (reloadArData){
 					updateDB = true;
 					logEntry.addNote("Fetching new Accelerated Reader Data");
@@ -356,7 +420,7 @@ public class GroupedReindexMain {
 				}
 
 				if (localFile.exists() && updateDB) {
-					PreparedStatement updateSettingsStmt = dbConn.prepareStatement("UPDATE accelerated_reading_settings SET lastFetched = ?");
+					PreparedStatement updateSettingsStmt = dbConn.prepareStatement("UPDATE accelerated_reading_settings SET lastFetched = ? WHERE true");
 					updateSettingsStmt.setLong(1, (new Date().getTime() / 1000));
 					updateSettingsStmt.executeUpdate();
 
@@ -364,11 +428,11 @@ public class GroupedReindexMain {
 					logEntry.saveResults();
 
 					//Update the database
-					//Load the ar_titles xml file
+					//Load the ar_titles XML file
 					File arTitles = new File(arExportPath + "/ar_titles.xml");
 					loadAcceleratedReaderTitlesXMLFile(arTitles);
 
-					//Load the ar_titles_isbn xml file
+					//Load the ar_titles_isbn XML file
 					File arTitlesIsbn = new File(arExportPath + "/ar_titles_isbn.xml");
 					loadAcceleratedReaderTitlesIsbnXMLFile(arTitlesIsbn);
 

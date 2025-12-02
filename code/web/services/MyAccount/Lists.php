@@ -5,25 +5,22 @@ require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 
 class Lists extends MyAccount {
 
-	function launch() {
+	function launch() : void {
 		global $interface;
 		global $library;
 
+		$user = UserAccount::getActiveUserObj();
 		$userLists = new UserList();
 		$userLists->user_id = UserAccount::getActiveUserId();
 		$userLists->deleted = "0";
-		if (isset($_REQUEST['sort'])) {
-			$sort = $_REQUEST['sort'];
-		} else {
-			$sort = 'title';
-		}
+		$sort = $_REQUEST['sort'] ?? 'title';
 		if (($sort == 'dateCreated') || ($sort == 'created') || ($sort == 'dateUpdated')) {
 			$order = ' DESC';
 		} else {
 			$order = ' ASC';
 		}
 
-		$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+		$page = $_REQUEST['page'] ?? 1;
 		$interface->assign('page', $page);
 
 		$listsPerPage = 20;
@@ -52,16 +49,25 @@ class Lists extends MyAccount {
 
 		$interface->assign('pageLinks', $pager->getLinks());
 
+		$lists = new UserList();
+		$lists->user_id = UserAccount::getActiveUserId();
+		$lists->listGroupId = -1;
+		$numUnassignedLists = $lists->count();
+		$interface->assign('numUnassignedLists', $numUnassignedLists);
+
 		$activeListGroup = [];
 		$listGroup = new UserListGroup();
 		$listGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		$groupId = null;
 		if (isset($_REQUEST['groupId'])) {
 			$groupId = $_REQUEST['groupId'];
+			$user->lastListGroupViewed = $groupId;
+			$user->update();
 			if ($groupId == -1) {
 				$activeListGroup = UserAccount::getActiveUserObj()->getUnassignedListsForListGroups();
 				$activeListGroupDetails = new UserListGroup();
 				$activeListGroupDetails->title = 'Unassigned Lists';
+				$activeListGroupDetails->id = -1;
 			} else {
 				$listGroup = new UserListGroup();
 				$listGroup->id = $groupId;
@@ -69,6 +75,7 @@ class Lists extends MyAccount {
 				if ($listGroup->find(true)) {
 					$activeListGroupDetails = $listGroup;
 					$userList = new UserList();
+					$userList->user_id = UserAccount::getActiveUserId();
 					$userList->listGroupId = $listGroup->id;
 					$userList->find();
 					while ($userList->fetch()) {
@@ -80,15 +87,21 @@ class Lists extends MyAccount {
 				}
 			}
 		} else {
-			$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
-			if (empty($activeListGroup) && count($listGroups) > 0) {
-				$activeListGroup = $listGroup->getListsForGroup(UserAccount::getActiveUserObj());
-				$activeListGroupDetails = $listGroups[0];
+			if ($user->lastListGroupViewed == -1) {
+				$activeListGroup = UserAccount::getActiveUserObj()->getUnassignedListsForListGroups();
+				$activeListGroupDetails = new UserListGroup();
+				$activeListGroupDetails->title = 'Unassigned Lists';
+				$activeListGroupDetails->id = -1;
 			} else {
-				$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+				$activeListGroup = UserListGroup::getLastViewedGroupForUser(UserAccount::getActiveUserObj());
+				if (empty($activeListGroup) && count($listGroups) > 0) {
+					$activeListGroup = $listGroup->getListsForGroup(UserAccount::getActiveUserObj());
+					$activeListGroupDetails = $listGroups[0];
+				} else {
+					$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
+				}
 			}
 		}
-
 		$interface->assign('groupId', $groupId);
 		$interface->assign('activeListGroup', $activeListGroup);
 		$interface->assign('activeListGroupDetails', $activeListGroupDetails);
