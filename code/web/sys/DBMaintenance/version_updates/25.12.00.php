@@ -100,6 +100,16 @@ function getUpdates25_12_00(): array {
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci"
 			]
 		], //library_google_analytics
+		'remove_google_analytics_3' => [
+			'title' => 'Remove Google Analytics 3',
+			'description' => 'Remove Google Analytics 3 support',
+			'sql' => [
+				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsLinkingId',
+				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsLinkedProperties',
+				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsDomainName',
+				"UPDATE google_api_settings SET googleAnalyticsVersion='v4' WHERE true"
+			],
+		],
 
 		//kirstien - Grove
 

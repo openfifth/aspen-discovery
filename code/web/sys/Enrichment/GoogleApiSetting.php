@@ -6,9 +6,6 @@ class GoogleApiSetting extends DataObject {
 	public $id;
 	public $googleAnalyticsVersion;
 	public $googleAnalyticsTrackingId;
-	public $googleAnalyticsLinkingId;
-	public $googleAnalyticsLinkedProperties;
-	public $googleAnalyticsDomainName;
 	public $googleBooksKey;
 	public $googleMapsKey;
 	public $googleTranslateKey;
@@ -33,7 +30,6 @@ class GoogleApiSetting extends DataObject {
 				'property' => 'googleAnalyticsVersion',
 				'type' => 'enum',
 				'values' => [
-					'v3' => 'Version 3',
 					'v4' => 'Version 4',
 				],
 				'label' => 'Google Analytics Version',
@@ -44,24 +40,6 @@ class GoogleApiSetting extends DataObject {
 				'type' => 'text',
 				'label' => 'Google Analytics Tracking ID',
 				'description' => 'The Google analytics Tracking ID to use',
-			],
-			'googleAnalyticsLinkingId' => [
-				'property' => 'googleAnalyticsLinkingId',
-				'type' => 'text',
-				'label' => 'Google Analytics Linking ID',
-				'description' => 'The Google analytics Linking ID to use',
-			],
-			'googleAnalyticsLinkedProperties' => [
-				'property' => 'googleAnalyticsLinkedProperties',
-				'type' => 'textarea',
-				'label' => 'Google Analytics Linked Properties (one per line)',
-				'description' => 'The Google analytics properties to link to',
-			],
-			'googleAnalyticsDomainName' => [
-				'property' => 'googleAnalyticsDomainName',
-				'type' => 'text',
-				'label' => 'Google Analytics Domain Name',
-				'description' => 'The Google analytics domain name to use',
 			],
 			'googleBooksKey' => [
 				'property' => 'googleBooksKey',

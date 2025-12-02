@@ -140,35 +140,12 @@ try {
 			$libraryGoogleAnalytics->googleApiSettingId = $googleSettings->id;
 			if ($libraryGoogleAnalytics->find(true)) {
 				$googleAnalyticsId = $libraryGoogleAnalytics->googleAnalyticsTrackingId;
-				$googleAnalyticsLinkingId = '';
-				$googleAnalyticsLinkedProperties = '';
-				$googleAnalyticsDomainName = '';
 			}else{
 				$googleAnalyticsId = $googleSettings->googleAnalyticsTrackingId;
-				$googleAnalyticsLinkingId = $googleSettings->googleAnalyticsLinkingId;
-				$googleAnalyticsLinkedProperties = $googleSettings->googleAnalyticsLinkedProperties;
-				$googleAnalyticsDomainName = $googleSettings->googleAnalyticsDomainName;
 			}
 			$interface->assign('googleAnalyticsId', $googleAnalyticsId);
-			$interface->assign('googleAnalyticsLinkingId', $googleAnalyticsLinkingId);
 			$interface->assign('googleAnalyticsVersion', empty($googleSettings->googleAnalyticsVersion) ? 'v3' : $googleSettings->googleAnalyticsVersion);
-			$linkedProperties = '';
-			if (!empty($googleAnalyticsLinkedProperties)) {
-				$linkedPropertyArray = preg_split('~\\r\\n|\\r|\\n~', $googleAnalyticsLinkedProperties);
-				foreach ($linkedPropertyArray as $linkedProperty) {
-					if (strlen($linkedProperties) > 0) {
-						$linkedProperties .= ', ';
-					}
-					$linkedProperties .= "'$linkedProperty'";
-				}
-			}
-			$interface->assign('googleAnalyticsLinkedProperties', $linkedProperties);
-			if ($googleAnalyticsId) {
-				$googleAnalyticsDomainName = !empty($googleAnalyticsDomainName) ? $googleAnalyticsDomainName : strstr($_SERVER['SERVER_NAME'], '.');
-				// check for a config setting, use that if found, otherwise grab domain name  but remove the first subdomain
-				$interface->assign('googleAnalyticsDomainName', $googleAnalyticsDomainName);
-			}
-		}	
+		}
 	}
 } catch (Exception $e) {
 	//This happens when Google Analytics settings aren't setup yet
