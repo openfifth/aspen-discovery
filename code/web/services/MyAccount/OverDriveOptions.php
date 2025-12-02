@@ -17,7 +17,7 @@ class MyAccount_OverDriveOptions extends MyAccount {
 				$interface->assign('availableSettings', $availableSettings);
 				$qrStatuses = [];
 				if (!empty($availableSettings)) {
-					foreach ($availableSettings as $settingId => $setting) {
+					foreach ($availableSettings as $setting) {
 						if (empty($setting->enableQRCodeAuth)) {
 							continue;
 						}
@@ -45,7 +45,7 @@ class MyAccount_OverDriveOptions extends MyAccount {
 					$user->updateOverDriveOptions();
 
 					session_write_close();
-					$actionUrl = '/MyAccount/OverDriveOptions'; // redirect after form submit completion
+					$actionUrl = '/MyAccount/OverDriveOptions';
 					header("Location: " . $actionUrl);
 					exit();
 				} elseif (!$offlineMode) {

@@ -1001,19 +1001,35 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 					}
 
 					foreach ($settingsToProcess as $settingId => $librarySettings) {
-						//Check to see if OverDrive circulation is enabled
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$overDriveDriver = OverDriveDriver::getOverDriveDriver($settingId);
 						$readerName = $overDriveDriver->getReaderName();
-						//Check if catalog is offline and login for eResources should be allowed for offline
 						global $offlineMode;
 						global $loginAllowedWhileOffline;
 						$activeLibrary = UserAccount::isLoggedIn() ? UserAccount::getActiveUserObj()->getHomeLibrary() : $library;
-						//Show a link to the OverDrive record when the catalog is offline and can't do logins
-						if ((!is_null($activeUser) && !$activeUser->isValidForEContentSource('overdrive')) || !$overDriveDriver->isCirculationEnabled($activeLibrary, $overDriveDriver->getActiveSettings()) || ($offlineMode && !$loginAllowedWhileOffline)) {
+						$activeSetting = $overDriveDriver->getActiveSettings();
+						// Show a link to the OverDrive record when the catalog is offline and can't do logins.
+						if ((!is_null($activeUser) && !$activeUser->isValidForEContentSource('overdrive')) || !$overDriveDriver->isCirculationEnabled($activeLibrary, $activeSetting, $activeUser) || ($offlineMode && !$loginAllowedWhileOffline)) {
 							$overDriveMetadata = $this->getOverDriveMetaData();
 							$crossRefId = $overDriveMetadata->getDecodedRawData()->crossRefId;
-							$productUrl = $overDriveDriver->getProductUrl($overDriveDriver->getActiveSettings(), $crossRefId);
+							$productUrl = $overDriveDriver->getProductUrl($activeSetting, $crossRefId);
+
+							$librarySettings = $activeLibrary ? $activeLibrary->getLibraryOverdriveSetting($activeSetting->id) : null;
+							if (!empty($activeSetting->enableQRCodeAuth) && !is_null($activeUser) && $librarySettings && !$librarySettings->circulationEnabled) {
+								// If in this branch, it means no valid/refreshable token exists.
+								// Show "Sign in with QR Code" action to initiate authentication.
+								$actionsByReader[$readerName]['qrSignIn'] = [
+									'title' => translate([
+										'text' => 'Sign in with QR Code',
+										'isPublicFacing' => true,
+									]),
+									'url' => '/OverDrive/QRCodeAuth?settingId=' . $activeSetting->id,
+									'target' => 'blank',
+									'requireLogin' => true,
+									'type' => 'overdrive_qr_signin',
+								];
+							}
+
 							if (!empty($productUrl)) {
 								$actionsByReader[$readerName]['accessOnline'] = [
 									'title' => translate([
@@ -1021,7 +1037,7 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 										1 => $readerName,
 										'isPublicFacing' => true,
 									]),
-									'url' => $overDriveDriver->getProductUrl($overDriveDriver->getActiveSettings(), $crossRefId),
+									'url' => $overDriveDriver->getProductUrl($activeSetting, $crossRefId),
 									'target' => 'blank',
 									'requireLogin' => false,
 									'type' => 'overdrive_access_online',

@@ -169,13 +169,24 @@ class OverDriveDriver extends AbstractEContentDriver {
 		return $baseUrl;
 	}
 
-	public function isCirculationEnabled(Library $activeLibrary, OverDriveSetting $settings) : bool {
+	public function isCirculationEnabled(Library $activeLibrary, OverDriveSetting $settings, ?User $user = null) : bool {
 		$librarySettings = $activeLibrary->getLibraryOverdriveSetting($settings->id);
 		if ($librarySettings == null) {
 			return false;
-		}else{
-			return (bool) $librarySettings->circulationEnabled;
 		}
+
+		if ($librarySettings->circulationEnabled) {
+			return true;
+		}
+
+		// If circulation is disabled but QR code auth is enabled, check if user has valid QR token.
+		// This will attempt to refresh the token if it's expired but has a refresh token.
+		if (!empty($settings->enableQRCodeAuth) && $user !== null) {
+			$qrTokenData = $this->getQRCodePatronToken($activeLibrary, $settings, $user);
+			return $qrTokenData !== null;
+		}
+
+		return false;
 	}
 	public function getTokenData(Library $activeLibrary, OverDriveSetting $settings) : false|stdClass|null {
 		return $this->_connectToAPI($activeLibrary, $settings, true, "getTokenData");
@@ -2100,7 +2111,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		} elseif ($data && isset($data->error)) {
 			$logger->log("OverDrive QR code authentication error: $data->error.", Logger::LOG_ERROR);
 		} else {
-			$logger->log("OverDrive QR code authentication returned unexpected response", Logger::LOG_ERROR);
+			$logger->log("OverDrive QR code authentication returned unexpected response.", Logger::LOG_ERROR);
 		}
 		return null;
 	}
@@ -2141,7 +2152,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		if ($data && empty($data->error)) {
 			return $data;
 		} elseif ($data && isset($data->error)) {
-			$logger->log("OverDrive QR code refresh error: {$data->error}", Logger::LOG_ERROR);
+			$logger->log("OverDrive QR code refresh error: $data->error", Logger::LOG_ERROR);
 		}
 		return null;
 	}
