@@ -180,17 +180,18 @@ class IIIRecordProcessor extends IlsRecordProcessor{
 		ItemInfo itemInfo = new ItemInfo();
 		String orderNumber = orderItem.getOrderRecordId();
 		String locationCode = orderItem.getLocationCode();
-		String location = "";
+		String location;
 		if (locationCode == null){
 			logger.warn("No location set for order " + orderNumber + " skipping");
 			return;
 		}
 		itemInfo.setLocationCode(locationCode);
-		if (hasTranslation("location", orderItem.getLocationCode())) {
-			location = translateValue("location", orderItem.getLocationCode(), recordInfo.getRecordIdentifier(), false);
-			itemInfo.setCollection(location);
-		}else {
+		location = getLocationLabel(locationCode);
+		if (location == null || location.isEmpty()) {
+			location = "";
 			itemInfo.setCollection("On Order");
+		} else {
+			itemInfo.setCollection(location);
 		}
 		itemInfo.setItemIdentifier(orderNumber + "-" + locationCode);
 		itemInfo.setNumCopies(orderItem.getNumCopies());
