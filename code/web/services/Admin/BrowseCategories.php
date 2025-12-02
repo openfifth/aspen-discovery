@@ -118,4 +118,7 @@ class Admin_BrowseCategories extends ObjectEditor {
 		return $this->_numObjects;
 	}
 
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

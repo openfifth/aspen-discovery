@@ -71,6 +71,21 @@ function getUpdates25_12_00(): array {
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer MessageBee Keys'))",
 			]
 		], //message_bee_settings
+		'limit_access_to_shared_records' => [
+			'title' => 'Limit Access To Shared Records',
+			'description' => 'Limit Access To Shared Administration Records',
+			'sql' => [
+				"CREATE TABLE administration_record_lock (
+					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					module varchar(30) NOT NULL,
+					toolName varchar(100) NOT NULL,
+					recordId INT NOT NULL,
+					UNIQUE (module, toolName, recordId)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('System Administration', 'Lock Administration Records', '', 70, 'Allows the user to lock administration records and change locked records.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Lock Administration Records'))",
+			]
+		], //limit_access_to_shared_records
 
 		//kirstien - Grove
 

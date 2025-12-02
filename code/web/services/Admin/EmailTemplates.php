@@ -88,4 +88,8 @@ class Admin_EmailTemplates extends ObjectEditor {
 	function canView(): bool {
 		return UserAccount::userHasPermission('Administer All Email Templates') || UserAccount::userHasPermission('Administer Library Email Templates');
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }
