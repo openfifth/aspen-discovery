@@ -20,7 +20,7 @@
 				{rdelim});
 			</script>
 
-			<div id="messageBeeSelfReg">{translate text="Loading..." isPublicFacing=true}</div>
+			<div id="messageBeeSelfReg" style="zoom:1.5;">{translate text="Loading..." isPublicFacing=true}</div>
 		</div>
 	{else}
 		{translate text="MessageBee Registration functionality is not properly configured." isPublicFacing=true}
