@@ -57,6 +57,35 @@ function getUpdates25_12_00(): array {
 				) ENGINE = InnoDB"
 			]
 		], //prioritized_shelf_locations
+		'message_bee_settings' => [
+			'title' => 'Message Bee Settings',
+			'description' => 'Message Bee Settings table and link to library',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS message_bee_settings (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					name VARCHAR(100) NOT NULL,
+					customerToken VARCHAR(50) NOT NULL 
+				) ENGINE = InnoDB",
+				"ALTER TABLE library ADD COLUMN messageBeeSettingId INT DEFAULT -1",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer MessageBee Keys', '', 70, 'Allows users to administer Message Bee Keys.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer MessageBee Keys'))",
+			]
+		], //message_bee_settings
+		'limit_access_to_shared_records' => [
+			'title' => 'Limit Access To Shared Records',
+			'description' => 'Limit Access To Shared Administration Records',
+			'sql' => [
+				"CREATE TABLE administration_record_lock (
+					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					module varchar(30) NOT NULL,
+					toolName varchar(100) NOT NULL,
+					recordId INT NOT NULL,
+					UNIQUE (module, toolName, recordId)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('System Administration', 'Lock Administration Records', '', 70, 'Allows the user to lock administration records and change locked records.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Lock Administration Records'))",
+			]
+		], //limit_access_to_shared_records
 
 		//kirstien - Grove
 

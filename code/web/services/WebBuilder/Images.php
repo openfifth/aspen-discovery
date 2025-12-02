@@ -99,4 +99,8 @@ class WebBuilder_Images extends ObjectEditor {
 	function getInitializationJs(): string {
 		return 'AspenDiscovery.Admin.toggleLibrarySharingOptions();';
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

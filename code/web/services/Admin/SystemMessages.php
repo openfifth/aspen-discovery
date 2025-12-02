@@ -106,4 +106,8 @@ class Admin_SystemMessages extends ObjectEditor {
 	function canCopy() : bool {
 		return $this->canAddNew();
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }
