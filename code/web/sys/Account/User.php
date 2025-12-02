@@ -1709,7 +1709,7 @@ class User extends DataObject {
 	 * @param $list UserList object of the user list to check permission for
 	 * @return bool true if this user can edit passed list
 	 */
-	function canEditList($list) {
+	function canEditList($list) : bool {
 		if (($this->id == $list->user_id) || $this->hasPermission('Edit All Lists')) {
 			return true;
 		}
@@ -4197,7 +4197,7 @@ class User extends DataObject {
 		return $locationValid;
 	}
 
-	public function hasEditableUsername() {
+	public function hasEditableUsername() : bool {
 		if ($this->hasIlsConnection()) {
 			$homeLibrary = $this->getHomeLibrary();
 			if ($homeLibrary != null && $homeLibrary->allowUsernameUpdates) {
@@ -4207,7 +4207,7 @@ class User extends DataObject {
 		return false;
 	}
 
-	public function getEditableUsername() {
+	public function getEditableUsername() : ?string {
 		if ($this->hasIlsConnection()) {
 			return $this->getCatalogDriver()->getEditableUsername($this);
 		} else {
@@ -4507,11 +4507,13 @@ class User extends DataObject {
 
 		$sections['third_party_enrichment'] = new AdminSection('Third Party Enrichment');
 		$sections['third_party_enrichment']->addAction(new AdminAction('Accelerated Reader Settings', 'Define settings to load Accelerated Reader information directly from Renaissance Learning.', '/Enrichment/ARSettings'), 'Administer Third Party Enrichment API Keys');
+		$sections['third_party_enrichment']->addAction(new AdminAction('ChiliFresh Settings', 'Define settings for ChiliFresh integration.', '/Enrichment/ChiliFreshSettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('Coce Server Settings', 'Define settings to load covers from a Coce server.', '/Enrichment/CoceServerSettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('ContentCafe Settings', 'Define settings for ContentCafe integration.', '/Enrichment/ContentCafeSettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('DP.LA Settings', 'Define settings for DP.LA integration.', '/Enrichment/DPLASettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('Google API Settings', 'Define settings for integrating Google APIs within Aspen Discovery.', '/Enrichment/GoogleApiSettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('LibKey Settings', 'Administer LibKey Settings', '/Admin/LibKeySettings'), 'Administer LibKey Settings');
+		$sections['third_party_enrichment']->addAction(new AdminAction('MessageBee Settings', 'Define settings for integrating MessageBee Card Registration within Aspen Discovery.', '/Enrichment/MessageBeeSettings'), 'Administer MessageBee Keys');
 		$nytSettingsAction = new AdminAction('New York Times Settings', 'Define settings for integrating New York Times Content within Aspen Discovery.', '/Enrichment/NewYorkTimesSettings');
 		$nytListsAction = new AdminAction('New York Times Lists', 'View Lists from the New York Times and manually refresh content.', '/Enrichment/NYTLists');
 		if ($sections['third_party_enrichment']->addAction($nytSettingsAction, 'Administer Third Party Enrichment API Keys')) {
@@ -6412,6 +6414,7 @@ class User extends DataObject {
 			$structure['firstname']['readOnly'] = true;
 			$structure['lastname']['readOnly'] = true;
 			$structure['email']['readOnly'] = true;
+			$structure['email']['required'] = false;
 			unset($structure['additionalAdministrationLocations']);
 		}
 

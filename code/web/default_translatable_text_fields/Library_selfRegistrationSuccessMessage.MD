@@ -1,0 +1,1 @@
+Congratulations! Your library card request is complete. A confirmation email may follow with additional details. Please visit the library with valid identification to finalize your account and enjoy full borrowing privileges.
