@@ -1,11 +1,8 @@
 <?php
 
 class Evergreen extends AbstractIlsDriver {
-	//Caching of sessionIds by patron for performance
-	private static $accessTokensForUsers = [];
-
-	/** @var CurlWrapper */
-	private $apiCurlWrapper;
+	private static array $accessTokensForUsers = [];
+	private ?CurlWrapper $apiCurlWrapper;
 
 	/**
 	 * @param AccountProfile $accountProfile
@@ -27,9 +24,8 @@ class Evergreen extends AbstractIlsDriver {
 	 * This is responsible for retrieving all checkouts (i.e. checked out items)
 	 * by a specific patron.
 	 *
-	 * @param User $patron The user to load transactions for
-	 * @return Checkout[]        Array of the patron's transactions on success
-	 * @access public
+	 * @param User $patron The user for which to load transactions.
+	 * @return Checkout[] Array of the patron's transactions on success.
 	 */
 	public function getCheckouts(User $patron): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
@@ -37,7 +33,6 @@ class Evergreen extends AbstractIlsDriver {
 
 		$authToken = $this->getAPIAuthToken($patron, true);
 		if ($authToken != null) {
-			//Get a list of circulations
 			$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
 			$headers = [
 				'Content-Type: application/x-www-form-urlencoded',
@@ -58,6 +53,8 @@ class Evergreen extends AbstractIlsDriver {
 						$mappedCheckout = $this->mapEvergreenFields($payload->circ->__p, $this->fetchIdl('circ'));
 						$mappedRecord = $this->mapEvergreenFields($payload->record->__p, $this->fetchIdl('mvr'));
 						$mappedCopy = $this->mapEvergreenFields($payload->copy->__p, $this->fetchIdl('acp'));
+						$callNumber = $this->getCallNumberForCopy($mappedCopy, $authToken);
+
 						$checkout = new Checkout();
 						$checkout->type = 'ils';
 						$checkout->source = $this->getIndexingProfile()->name;
@@ -77,7 +74,8 @@ class Evergreen extends AbstractIlsDriver {
 						$checkout->recordId = $mappedRecord['doc_id'];
 						$checkout->title = $mappedRecord['title'];
 						$checkout->author = $mappedRecord['author'];
-						$checkout->callNumber = $this->getCallNumberForCopy($mappedCopy, $authToken);
+						$checkout->callNumber = !empty($callNumber) ? $callNumber : null;
+						$checkout->volume = $this->getVolumeForCopy($mappedCopy);
 						require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 						$recordDriver = new MarcRecordDriver((string)$checkout->recordId);
 						if ($recordDriver->isValid()) {
@@ -94,7 +92,7 @@ class Evergreen extends AbstractIlsDriver {
 		return $checkedOutTitles;
 	}
 
-	private function loadCheckoutData(User $patron, $checkoutId, $authToken): ?Checkout {
+	private function loadCheckoutData(User $patron, string $checkoutId, string $authToken): ?Checkout {
 		$curCheckout = null;
 		$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
 		$request = 'service=open-ils.circ&method=open-ils.circ.retrieve';
@@ -114,20 +112,31 @@ class Evergreen extends AbstractIlsDriver {
 				$modsForCopy = null;
 				if (!empty($mappedCheckout['target_copy'])) {
 					$modsForCopy = $this->getModsForCopy($mappedCheckout['target_copy']);
-
 					$curCheckout->recordId = $modsForCopy['doc_id'];
 					$curCheckout->sourceId = $modsForCopy['doc_id'];
 
+					$flesh = [
+						"flesh" => 1,
+						"flesh_fields" => [
+							"acp" => [
+								"parts"
+							]
+						]
+					];
 					$copyRequest = 'service=open-ils.pcrud&method=open-ils.pcrud.retrieve.acp';
 					$copyRequest .= '&param=' . json_encode($authToken);
 					$copyRequest .= '&param=' . $mappedCheckout['target_copy'];
+					$copyRequest .= '&param=' . json_encode($flesh);
 					$copyResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $copyRequest);
 					ExternalRequestLogEntry::logRequest('evergreen.loadCheckoutData.getCopy', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $copyRequest, $this->apiCurlWrapper->getResponseCode(), $copyResponse, []);
 					if ($this->apiCurlWrapper->getResponseCode() == 200) {
 						$copyDecoded = json_decode($copyResponse);
 						if (isset($copyDecoded->payload[0])) {
 							$mappedCopy = $this->mapEvergreenFields($copyDecoded->payload[0]->__p, $this->fetchIdl('acp'));
+							$callNumber = $this->getCallNumberForCopy($mappedCopy, $authToken);
 							$curCheckout->barcode = $mappedCopy['barcode'] ?? null;
+							$curCheckout->callNumber = !empty($callNumber) ? $callNumber : null;
+							$curCheckout->volume = $this->getVolumeForCopy($mappedCopy);
 						}
 					}
 				}
@@ -148,7 +157,6 @@ class Evergreen extends AbstractIlsDriver {
 				if (!empty($modsForCopy)) {
 					$curCheckout->title = $modsForCopy['title'];
 					$curCheckout->author = $modsForCopy['author'];
-					$curCheckout->callNumber = reset($modsForCopy['call_numbers']);
 
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 					$recordDriver = new MarcRecordDriver((string)$curCheckout->recordId);
@@ -162,10 +170,10 @@ class Evergreen extends AbstractIlsDriver {
 	}
 
 	/**
-	 * Load mods data based on an item id
+	 * Load mods data based on item ID.
 	 *
 	 * @param int $copyId
-	 * @return []|null
+	 * @return array|null
 	 */
 	private function getModsForCopy(int $copyId): ?array {
 		$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
@@ -184,13 +192,38 @@ class Evergreen extends AbstractIlsDriver {
 	}
 
 	/**
-	 * Load call number label based on a mapped item object
+	 * Extract volume/part label from a mapped copy object.
 	 *
-	 * @param array $mappedCopy a mapped Evergreen copy object
-	 * @param $authtoken
-	 * @return string call number label associated with the copy
+	 * @param array $mappedCopy A mapped Evergreen copy object with parts fleshed.
+	 * @return string|null Volume/part label if exists, null otherwise.
 	 */
-	private function getCallNumberForCopy(array $mappedCopy, $authtoken) {
+	private function getVolumeForCopy(array $mappedCopy): ?string {
+		if (!empty($mappedCopy['parts']) && is_array($mappedCopy['parts'])) {
+			// Parts can contain multiple entries, so concatenate them.
+			$partLabels = [];
+			foreach ($mappedCopy['parts'] as $part) {
+				if (is_object($part) && isset($part->__c) && isset($part->__p)) {
+					$mappedPart = $this->mapEvergreenFields($part->__p, $this->fetchIdl($part->__c));
+					if (!empty($mappedPart['label'])) {
+						$partLabels[] = $mappedPart['label'];
+					}
+				}
+			}
+			if (!empty($partLabels)) {
+				return implode(', ', $partLabels);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Load call number label based on a mapped item object.
+	 *
+	 * @param array $mappedCopy A mapped Evergreen copy object.
+	 * @param string $authToken
+	 * @return string Call number label associated with the copy.
+	 */
+	private function getCallNumberForCopy(array $mappedCopy, string $authToken): string {
 		$label = '';
 		$flesh = [
 			"flesh" => 1,
@@ -203,7 +236,7 @@ class Evergreen extends AbstractIlsDriver {
 		];
 		$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
 		$request = 'service=open-ils.pcrud&method=open-ils.pcrud.retrieve.acn';
-		$request .= '&param=' . json_encode($authtoken);
+		$request .= '&param=' . json_encode($authToken);
 		$request .= '&param=' . $mappedCopy["call_number"];
 		$request .= '&param=' . json_encode($flesh);
 		$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
@@ -884,23 +917,71 @@ class Evergreen extends AbstractIlsDriver {
 	}
 
 	/**
+	 * Check if reading history is enabled for the patron in Evergreen
+	 *
+	 * @param User $patron
+	 * @return bool True if reading history is enabled, false otherwise
+	 */
+	private function getReadingHistoryStatus(User $patron): bool {
+		$authToken = $this->getAPIAuthToken($patron, false);
+		if ($authToken == null) {
+			return false;
+		}
+
+		$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
+		$headers = [
+			'Content-Type: application/x-www-form-urlencoded',
+		];
+		$this->apiCurlWrapper->addCustomHeaders($headers, false);
+
+		$request = 'service=open-ils.actor&method=open-ils.actor.patron.settings.retrieve';
+		$request .= '&param=' . json_encode($authToken);
+		$request .= '&param=' . json_encode($patron->unique_ils_id);
+		$request .= '&param=' . json_encode(['history.circ.retention_start']);
+
+		$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
+		ExternalRequestLogEntry::logRequest('evergreen.getReadingHistoryStatus', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $request, $this->apiCurlWrapper->getResponseCode(), $apiResponse, []);
+
+		if ($this->apiCurlWrapper->getResponseCode() == 200) {
+			$apiResponse = json_decode($apiResponse);
+			if (isset($apiResponse->payload[0]->{'history.circ.retention_start'})) {
+				// If the setting exists and has a value, reading history is enabled.
+				return !empty($apiResponse->payload[0]->{'history.circ.retention_start'});
+			}
+		}
+
+		// If setting doesn't exist or API call failed, assume disabled.
+		return false;
+	}
+
+	/**
 	 * @param User $patron
 	 * @return array
 	 * @throws Exception
 	 */
 	public function getReadingHistory(User $patron): array {
-		$historyActive = false;
+		$historyEnabled = $this->getReadingHistoryStatus($patron);
+		if ($historyEnabled != $patron->trackReadingHistory) {
+			$patron->trackReadingHistory = $historyEnabled;
+			$patron->update();
+		}
+
+		if (!$historyEnabled) {
+			return [
+				'historyActive' => false,
+				'titles' => [],
+				'numTitles' => 0,
+			];
+		}
+
 		$readingHistoryTitles = [];
 		$numTitles = 0;
 		$offset = 0;
 		$hasMoreHistory = true;
-
 		set_time_limit(0);
 		while ($hasMoreHistory) {
 			$authToken = $this->getAPIAuthToken($patron, false);
 			if ($authToken != null) {
-				//Get a list of checkouts
-
 				$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
 				$headers = [
 					'Content-Type: application/x-www-form-urlencoded',
@@ -928,9 +1009,6 @@ class Evergreen extends AbstractIlsDriver {
 						foreach ($circHistoryDecoded->payload as $circEntry) {
 							$circEntryMapped = $this->mapEvergreenFields($circEntry->__p, $this->fetchIdl('auch'));
 							$curTitle = [];
-							// The code block at the bottom that finds the Grouped Work of these records is unnecessary
-							// if loadCheckoutData is invoked, which is the common case, so skip them for optimization.
-							$curTitle['needToFindGroupedWork'] = false;
 							require_once ROOT_DIR . '/sys/User/Checkout.php';
 							if (empty($circEntryMapped['source_circ'])) {
 								$modsForCopy = $this->getModsForCopy($circEntryMapped['target_copy']);
@@ -942,21 +1020,30 @@ class Evergreen extends AbstractIlsDriver {
 									$curTitle['sourceId'] = $modsForCopy['doc_id'];
 									$curTitle['title'] = $modsForCopy['title'];
 									$curTitle['author'] = $modsForCopy['author'];
+
+									$flesh = [
+										"flesh" => 1,
+										"flesh_fields" => [
+											"acp" => [
+												"parts"
+											]
+										]
+									];
 									$copyRequest = 'service=open-ils.pcrud&method=open-ils.pcrud.retrieve.acp';
 									$copyRequest .= '&param=' . json_encode($authToken);
 									$copyRequest .= '&param=' . $circEntryMapped['target_copy'];
+									$copyRequest .= '&param=' . json_encode($flesh);
 									$copyResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $copyRequest);
 									ExternalRequestLogEntry::logRequest('evergreen.getReadingHistory.getCopy', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $copyRequest, $this->apiCurlWrapper->getResponseCode(), $copyResponse, []);
 									if ($this->apiCurlWrapper->getResponseCode() == 200) {
 										$copyDecoded = json_decode($copyResponse);
 										if (isset($copyDecoded->payload[0])) {
 											$mappedCopy = $this->mapEvergreenFields($copyDecoded->payload[0]->__p, $this->fetchIdl('acp'));
+											$callNumber = $this->getCallNumberForCopy($mappedCopy, $authToken);
 											$curTitle['barcode'] = $mappedCopy['barcode'] ?? null;
-										} else {
-											$curTitle['barcode'] = null;
+											$curTitle['callNumber'] = !empty($callNumber) ? $callNumber : null;
+											$curTitle['volume'] = $this->getVolumeForCopy($mappedCopy);
 										}
-									} else {
-										$curTitle['barcode'] = null;
 									}
 									require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 									$marcRecordDriver = new MarcRecordDriver($modsForCopy['doc_id']);
@@ -981,6 +1068,8 @@ class Evergreen extends AbstractIlsDriver {
 									$curTitle['id'] = $checkout->recordId;
 									$curTitle['sourceId'] = $checkout->recordId;
 									$curTitle['barcode'] = $checkout->barcode ?: null;
+									$curTitle['callNumber'] = $checkout->callNumber ?: null;
+									$curTitle['volume'] = $checkout->volume ?: null;
 									$curTitle['title'] = $checkout->title;
 									$curTitle['author'] = $checkout->author;
 									$curTitle['format'] = $checkout->format;
@@ -1006,10 +1095,6 @@ class Evergreen extends AbstractIlsDriver {
 		global $aspen_db;
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		foreach ($readingHistoryTitles as $key => $historyEntry) {
-//			if (!$historyEntry['needToFindGroupedWork']) {
-//				unset($historyEntry['needToFindGroupedWork']);
-//				continue;
-//			}
 			$historyEntry['ratingData'] = null;
 			$historyEntry['permanentId'] = null;
 			$historyEntry['linkUrl'] = null;
@@ -1017,6 +1102,7 @@ class Evergreen extends AbstractIlsDriver {
 			if (!empty($historyEntry['sourceId'])) {
 				if ($systemVariables->storeRecordDetailsInDatabase) {
 					/** @noinspection SqlResolve */
+					/** @noinspection SqlDialectInspection */
 					$getRecordDetailsQuery =
 						'SELECT permanent_id, indexed_format.format FROM grouped_work_records
 						LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
@@ -1054,7 +1140,7 @@ class Evergreen extends AbstractIlsDriver {
 		$numTitles = count($readingHistoryTitles);
 
 		return [
-			'historyActive' => $historyActive,
+			'historyActive' => $historyEnabled,
 			'titles' => $readingHistoryTitles,
 			'numTitles' => $numTitles,
 		];
@@ -1684,10 +1770,14 @@ class Evergreen extends AbstractIlsDriver {
 			ExternalRequestLogEntry::logRequest('evergreen.getStaffUserInfo', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), http_build_query($params), $this->apiCurlWrapper->getResponseCode(), $apiResponse, ['password' => $this->accountProfile->staffPassword]);
 			if ($this->apiCurlWrapper->getResponseCode() == 200) {
 				$apiResponse = json_decode($apiResponse);
-				$session['userValid'] = true;
-				$session['authToken'] = $apiResponse->payload[0]->payload->authtoken;
+				if (isset($apiResponse->payload[0]->payload->authtoken)) {
+						$session['userValid'] = true;
+						$session['authToken'] = $apiResponse->payload[0]->payload->authtoken;
 
-				Evergreen::$accessTokensForUsers[$this->accountProfile->staffUsername] = $session;
+						Evergreen::$accessTokensForUsers[$this->accountProfile->staffUsername] = $session;
+				} else {
+					Evergreen::$accessTokensForUsers[$this->accountProfile->staffUsername] = false;
+				}
 			} else {
 				Evergreen::$accessTokensForUsers[$this->accountProfile->staffUsername] = false;
 			}
@@ -1935,43 +2025,10 @@ class Evergreen extends AbstractIlsDriver {
 			return;
 		}
 
-		$authToken = $this->getAPIAuthToken($user, true);
-		if ($authToken == null) {
-			return;
-		}
-
-		$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
-		$headers = [
-			'Content-Type: application/x-www-form-urlencoded',
-		];
-		$this->apiCurlWrapper->addCustomHeaders($headers, false);
-
-		$request = 'service=open-ils.actor&method=open-ils.actor.patron.settings.retrieve';
-		$request .= '&param=' . json_encode($authToken);
-		$request .= '&param=' . json_encode($user->unique_ils_id);
-		$request .= '&param=' . json_encode(['history.circ.retention_start']);
-
-		$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
-		ExternalRequestLogEntry::logRequest('evergreen.getReadingHistoryStatus', 'POST', $evergreenUrl, $this->apiCurlWrapper->getHeaders(), $request, $this->apiCurlWrapper->getResponseCode(), $apiResponse, []);
-
-		$evergreenReadingHistoryEnabled = null;
-		if ($this->apiCurlWrapper->getResponseCode() == 200) {
-			$apiResponse = json_decode($apiResponse);
-			if (isset($apiResponse->payload[0]->{'history.circ.retention_start'})) {
-				// If the setting exists and has a value, reading history is enabled.
-				$evergreenReadingHistoryEnabled = !empty($apiResponse->payload[0]->{'history.circ.retention_start'});
-			} else {
-				// If setting doesn't exist, assume disabled.
-				$evergreenReadingHistoryEnabled = false;
-			}
-		}
-
-		// For new users, sync from Evergreen.
-		if ($isNewUser && $evergreenReadingHistoryEnabled !== null) {
+		$evergreenReadingHistoryEnabled = $this->getReadingHistoryStatus($user);
+		if ($isNewUser) {
 			$user->trackReadingHistory = $evergreenReadingHistoryEnabled ? 1 : 0;
-		}
-		// For existing users, check if there's a mismatch and sync from Evergreen.
-		elseif (!$isNewUser && $evergreenReadingHistoryEnabled !== null) {
+		} else {
 			$aspenReadingHistoryEnabled = (bool)$user->trackReadingHistory;
 			if ($aspenReadingHistoryEnabled !== $evergreenReadingHistoryEnabled) {
 				$user->trackReadingHistory = $evergreenReadingHistoryEnabled ? 1 : 0;
