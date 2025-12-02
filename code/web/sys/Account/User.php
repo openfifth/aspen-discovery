@@ -961,6 +961,13 @@ class User extends DataObject {
 							if ($libraryOverDriveSetting->circulationEnabled) {
 								return true;
 							}
+
+							require_once ROOT_DIR . '/sys/OverDrive/OverDriveSetting.php';
+							$overDriveSetting = new OverDriveSetting();
+							$overDriveSetting->id = $libraryOverDriveSetting->settingId;
+							if ($overDriveSetting->find(true) && !empty($overDriveSetting->enableQRCodeAuth)) {
+								return true;
+							}
 						}
 						return false;
 					} else {
@@ -2158,6 +2165,7 @@ class User extends DataObject {
 				'url' => "/MyAccount/CheckedOut",
 				'requireLogin' => false,
 				'btnType' => 'btn-info',
+				'type' => $source . '_checked_out',
 			];
 		} elseif ($this->isRecordOnHold($source, $recordId)) {
 			$actions[] = [
@@ -2172,7 +2180,8 @@ class User extends DataObject {
 				'url' => "/MyAccount/Holds",
 				'requireLogin' => false,
 				'btnType' => 'btn-info',
-				'id' => 'onHoldAction' . $recordId
+				'id' => 'onHoldAction' . $recordId,
+				'type' => $source . '_on_hold',
 			];
 		}
 		if (!$loadingLinkedUser) {

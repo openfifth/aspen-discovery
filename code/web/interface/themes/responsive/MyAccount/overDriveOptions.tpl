@@ -67,9 +67,6 @@
 							{assign var=setting value=$availableSettings.$settingId}
 							{if $setting}
 								<div class="panel panel-default">
-									<div class="panel-heading">
-										<strong>{$setting->name}</strong>
-									</div>
 									<div class="panel-body">
 										{if $status.connected}
 											<p class="{if $status.expired}text-warning{else}text-success{/if}">

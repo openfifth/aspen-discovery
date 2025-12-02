@@ -274,6 +274,8 @@ class OverDriveDriver extends AbstractEContentDriver {
 			$qrTokenData = $this->getQRCodePatronToken($homeLibrary, $settings, $user, $forceNewConnection);
 			if ($qrTokenData) {
 				return $qrTokenData;
+			} else {
+				return false;
 			}
 		}
 

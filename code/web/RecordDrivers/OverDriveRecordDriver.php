@@ -996,7 +996,8 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 						$actionsByReader[$reader] = [
 							'accessOnline' => null,
 							'checkout' => null,
-							'placeHold' => null
+							'placeHold' => null,
+							'qrSignIn' => null
 						];
 					}
 
@@ -1008,28 +1009,34 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 						global $loginAllowedWhileOffline;
 						$activeLibrary = UserAccount::isLoggedIn() ? UserAccount::getActiveUserObj()->getHomeLibrary() : $library;
 						$activeSetting = $overDriveDriver->getActiveSettings();
-						// Show a link to the OverDrive record when the catalog is offline and can't do logins.
-						if ((!is_null($activeUser) && !$activeUser->isValidForEContentSource('overdrive')) || !$overDriveDriver->isCirculationEnabled($activeLibrary, $activeSetting, $activeUser) || ($offlineMode && !$loginAllowedWhileOffline)) {
-							$overDriveMetadata = $this->getOverDriveMetaData();
-							$crossRefId = $overDriveMetadata->getDecodedRawData()->crossRefId;
-							$productUrl = $overDriveDriver->getProductUrl($activeSetting, $crossRefId);
-
+						// Show a link to the OverDrive record when circulation is not enabled or catalog is offline.
+						if (!$overDriveDriver->isCirculationEnabled($activeLibrary, $activeSetting, $activeUser) || ($offlineMode && !$loginAllowedWhileOffline)) {
 							$librarySettings = $activeLibrary ? $activeLibrary->getLibraryOverdriveSetting($activeSetting->id) : null;
 							if (!empty($activeSetting->enableQRCodeAuth) && !is_null($activeUser) && $librarySettings && !$librarySettings->circulationEnabled) {
 								// If in this branch, it means no valid/refreshable token exists.
 								// Show "Sign in with QR Code" action to initiate authentication.
+								// Determine the intended action (checkout or hold) based on availability.
+								$intendedAction = $isAvailable ? 'checkout' : 'hold';
+								// Include record page URL, record ID, and action for flow resumption.
+								$recordUrl = '/GroupedWork/' . $this->getPermanentId() . '/Home';
+								$qrAuthUrl = '/OverDrive/QRCodeAuth?settingId=' . $activeSetting->id .
+									'&returnUrl=' . urlencode($recordUrl) .
+									'&recordId=' . urlencode($this->id) .
+									'&resumeAction=' . $intendedAction;
+
 								$actionsByReader[$readerName]['qrSignIn'] = [
 									'title' => translate([
 										'text' => 'Sign in with QR Code',
 										'isPublicFacing' => true,
 									]),
-									'url' => '/OverDrive/QRCodeAuth?settingId=' . $activeSetting->id,
-									'target' => 'blank',
-									'requireLogin' => true,
+									'url' => $qrAuthUrl,
 									'type' => 'overdrive_qr_signin',
 								];
 							}
 
+							$overDriveMetadata = $this->getOverDriveMetaData();
+							$crossRefId = $overDriveMetadata->getDecodedRawData()->crossRefId;
+							$productUrl = $overDriveDriver->getProductUrl($activeSetting, $crossRefId);
 							if (!empty($productUrl)) {
 								$actionsByReader[$readerName]['accessOnline'] = [
 									'title' => translate([
@@ -1037,7 +1044,7 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 										1 => $readerName,
 										'isPublicFacing' => true,
 									]),
-									'url' => $overDriveDriver->getProductUrl($activeSetting, $crossRefId),
+									'url' => $productUrl,
 									'target' => 'blank',
 									'requireLogin' => false,
 									'type' => 'overdrive_access_online',
@@ -1046,7 +1053,7 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 						} else {
 							if ($loadDefaultActions && (!$offlineMode || $loginAllowedWhileOffline)) {
 								if ($isAvailable) {
-									//Only one setting with a checkout link so far using this reader name
+									// Only one setting with a checkout link so far using this reader name.
 									$checkoutAction = [
 										'title' => translate([
 											'text' => "Borrow with %1%",
@@ -1082,22 +1089,23 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 									$actionsByReader[$readerName]['placeHold'] = $holdAction;
 								}
 							}
-						} //End checking if circulation is enabled
-					} // Loop through each setting
+						}
+					}
 
-					//Add the appropriate actions to the action array
 					foreach ($actionsByReader as $readerActions) {
 						if (!is_null($readerActions['checkout'])){
 							$this->_actions[] = $readerActions['checkout'];
 						}elseif (!is_null($readerActions['placeHold'])){
 							$this->_actions[] = $readerActions['placeHold'];
+						}elseif (!is_null($readerActions['qrSignIn'])){
+							$this->_actions[] = $readerActions['qrSignIn'];
 						}elseif (!is_null($readerActions['accessOnline'])){
 							$this->_actions[] = $readerActions['accessOnline'];
 						}
 					}
 
-				} // End checking if we should load default actions
-			} // End check of if we have any scopes that apply to the library
+				}
+			}
 
 			$this->_actions = array_merge($this->_actions, $this->getPreviewActions());
 		}

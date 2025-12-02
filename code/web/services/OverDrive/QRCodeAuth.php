@@ -10,13 +10,10 @@ require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
 require_once ROOT_DIR . '/sys/Account/User.php';
 
 class OverDrive_QRCodeAuth extends Action {
-	/**
-	 * @throws RandomException
-	 */
 	function launch() : void {
 		// Check if this is a completion callback from OverDrive (has 'code' parameter)
-		// or a disconnect request (has 'disconnect' parameter)
-		// Otherwise, start the QR code flow
+		// or a disconnect request (has 'disconnect' parameter).
+		// Otherwise, start the QR code flow.
 		if (isset($_REQUEST['code'])) {
 			$this->handleAuthComplete();
 		} elseif (isset($_REQUEST['disconnect'])) {
@@ -26,9 +23,6 @@ class OverDrive_QRCodeAuth extends Action {
 		}
 	}
 
-	/**
-	 * @throws RandomException
-	 */
 	private function startQRCodeFlow(): void {
 		$user = UserAccount::getLoggedInUser();
 		if (!$user) {
@@ -84,19 +78,38 @@ class OverDrive_QRCodeAuth extends Action {
 		}
 		if (empty($activeSetting->websiteId)) {
 			$this->displayResult(false, translate([
-				'text' => 'The OverDrive website id is missing for this collection.',
+				'text' => 'The OverDrive website ID is missing for this collection.',
 				'isPublicFacing' => true,
 			]));
 			return;
 		}
 
-		// Store state in session instead of URL parameters since OverDrive rejects URLs with query params
-		$_SESSION['overdrive_qr_auth_state'] = [
+		// Store state in memcache keyed by session ID to avoid session data loss.
+		// Session data gets cleared when user re-authenticates during the OAuth flow,
+		// but the session ID remains the same, so use it as a stable key.
+		$returnUrl = $_REQUEST['returnUrl'] ?? null;
+		$recordId = $_REQUEST['recordId'] ?? null;
+		$action = $_REQUEST['resumeAction'] ?? null; // 'checkout' or 'hold'
+
+		$stateData = [
 			'userId' => $user->id,
 			'settingId' => $activeSetting->id,
 			'libraryId' => $homeLibrary->libraryId,
 			'timestamp' => time(),
+			'returnUrl' => $returnUrl,
+			'recordId' => $recordId,
+			'action' => $action,
 		];
+
+		$sessionId = session_id();
+		global $memCache;
+		if ($memCache) {
+			$cacheKey = "overdrive_qr_auth_state_{$sessionId}";
+			$memCache->set($cacheKey, $stateData, 300); // 5 minutes
+		} else {
+			$_SESSION['overdrive_qr_auth_state'] = $stateData;
+			session_write_close();
+		}
 
 		global $configArray;
 		$baseUrl = rtrim($configArray['Site']['url'], '/');
@@ -188,6 +201,30 @@ class OverDrive_QRCodeAuth extends Action {
 		}
 
 		$user->saveOverDriveQrToken($setting->id, $tokenData);
+
+		if (!empty($stateData['returnUrl']) && !empty($stateData['recordId']) && !empty($stateData['action'])) {
+			$returnUrl = $stateData['returnUrl'];
+			$recordId = $stateData['recordId'];
+			$action = $stateData['action'];
+
+			if ($action === 'checkout') {
+				global $interface;
+				$interface->assign('autoTriggerCheckout', true);
+				$interface->assign('recordId', $recordId);
+				$interface->assign('returnUrl', $returnUrl);
+				$this->display('qrCodeAuthRedirect.tpl', 'Authentication Complete');
+				return;
+			} elseif ($action === 'hold') {
+				// Trigger hold via JavaScript on the return page
+				global $interface;
+				$interface->assign('autoTriggerHold', true);
+				$interface->assign('recordId', $recordId);
+				$interface->assign('returnUrl', $returnUrl);
+				$this->display('qrCodeAuthRedirect.tpl', 'Authentication Complete');
+				return;
+			}
+		}
+
 		$this->displayResult(true, translate([
 			'text' => 'Success! Your OverDrive account is ready for one-click checkouts.',
 			'isPublicFacing' => true,
@@ -220,20 +257,49 @@ class OverDrive_QRCodeAuth extends Action {
 			]));
 			return;
 		}
+
 		$user->deleteOverDriveQrToken($settingId);
+		global $memCache;
+		$barcode = $user->getBarcode();
+		if ($memCache && !empty($barcode) && $homeLibrary) {
+			$cacheKey = "overdrive_patron_token_{$settingId}_{$homeLibrary->libraryId}_{$barcode}";
+			$memCache->delete($cacheKey);
+		}
+
 		$this->displayResult(true, translate([
-			'text' => 'The saved Sora/OverDrive session has been removed.',
+			'text' => 'The saved %1% session has been removed.',
+			1 => $settings[$settingId]->readerName,
 			'isPublicFacing' => true,
 		]));
 	}
 
 	private function getStateData(): ?array {
-		if (!isset($_SESSION['overdrive_qr_auth_state'])) {
+		global $logger;
+		global $memCache;
+		$sessionId = session_id();
+		$stateData = null;
+		if ($memCache) {
+			$cacheKey = "overdrive_qr_auth_state_{$sessionId}";
+			$stateData = $memCache->get($cacheKey);
+			if ($stateData !== false) {
+				$memCache->delete($cacheKey);
+			}
+		}
+
+		// Fallback to session if memcache wasn't available or didn't have the data.
+		if ($stateData === null || $stateData === false) {
+			if (isset($_SESSION['overdrive_qr_auth_state'])) {
+				$stateData = $_SESSION['overdrive_qr_auth_state'];
+				unset($_SESSION['overdrive_qr_auth_state']);
+			}
+		}
+
+		if ($stateData === null || $stateData === false) {
 			return null;
 		}
-		$stateData = $_SESSION['overdrive_qr_auth_state'];
-		unset($_SESSION['overdrive_qr_auth_state']);
-		if (isset($stateData['timestamp']) && (time() - $stateData['timestamp']) > 900) {
+
+		// Check if expired (5 minutes)
+		if (isset($stateData['timestamp']) && (time() - $stateData['timestamp']) > 300) {
 			return null;
 		}
 

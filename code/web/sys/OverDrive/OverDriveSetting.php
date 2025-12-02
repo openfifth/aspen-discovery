@@ -155,6 +155,7 @@ class OverDriveSetting extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Enable Single Sign On with QR Code Authentication',
 				'description' => 'Allow Aspen to use OverDrive\'s QR code authentication flow for this setting.',
+				'note' => 'When enabled, no fallback ILS authentication is performed. Disable "Circulation Enabled" for any libraries to which this should apply.',
 				'default' => 0,
 			],
 			'numExtractionThreads' => [
