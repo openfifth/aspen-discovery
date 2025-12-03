@@ -417,5 +417,89 @@ class Events_AJAX extends JSON_Action {
 				]) . "</button>",
 		];
 	}
+	/** @noinspection PhpUnused */
+	function checkEventsForType() {
+		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
+		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
+		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
+		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
+
+		//If everything is customizable no need to prompt user
+		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+
+		if (!empty($_REQUEST['objectId']) && is_numeric($_REQUEST['objectId']) && $booleanSum != 4) {
+			require_once ROOT_DIR . '/sys/Events/Event.php';
+			$eventOfType = new Event();
+			$eventOfType->eventTypeId = $_REQUEST['objectId'];
+			if ($eventOfType->find(true)) {
+				$result = [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Update All Events of This Type?',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => translate([
+						'text' => 'If customization settings have been changed, there may be events of this type with different customization settings, would you like to update them?',
+						'isAdminFacing' => true,
+					]),
+					'modalButtons' => "<button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(true)'>Yes</button><button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(false)'>No</button>",
+				];
+			} else {
+				$result = [
+					'success' => true,
+					'noEventsOfType' => true,
+				];
+			}
+		} else {
+			$result = [
+				'success' => true,
+				'noEventsOfType' => true,
+			];
+		}
+
+		return $result;
+
+	}
+
+	/** @noinspection PhpUnused */
+	function saveEventsForType() {
+		$result = [
+			'success' => true,
+		];
+		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
+		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
+		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
+		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
+
+		//If everything is customizable no need to update events with default data for the event type
+		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+
+		if ($_REQUEST['doFullSave'] == "true" && ($booleanSum != 4)) {
+			//Update all Events of this Event Type
+			require_once ROOT_DIR . '/sys/Events/Event.php';
+			$eventOfType = new Event();
+			$eventOfType->eventTypeId = $_REQUEST['objectId'];
+			$eventOfType->find();
+			while ($eventOfType->fetch()) {
+				if (!$titleCustomizable) {
+					$eventOfType->title = $_REQUEST['title'];
+				}
+				if (!$descriptionCustomizable) {
+					$eventOfType->description = $_REQUEST['description'];
+				}
+				if (!$coverCustomizable) {
+					$eventOfType->cover = $_REQUEST['cover'];
+				}
+				if (!$eventLengthCustomizable) {
+					$eventOfType->eventLength = $_REQUEST['eventLength'];
+				}
+				$eventOfType->update('',false);
+				$result = [
+					'success' => true,
+				];
+			}
+		}
+		return $result;
+	}
 
 }
