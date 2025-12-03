@@ -79,4 +79,7 @@ class WebBuilder_Categories extends ObjectEditor {
 		return 'web_builder';
 	}
 
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

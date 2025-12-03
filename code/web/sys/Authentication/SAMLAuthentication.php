@@ -182,6 +182,10 @@ class SAMLAuthentication{
 		return $this->_auth->getErrors();
 	}
 
+	public function getLastErrorReason(): string {
+		return $this->_auth->getLastErrorReason();
+	}
+
 	public function getSettings(): OneLogin_Saml2_Settings {
 		return $this->_settings;
 	}

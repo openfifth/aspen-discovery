@@ -184,6 +184,7 @@ class Library extends DataObject {
 	public $additionalLocationsToShowAvailabilityFor;
 	public $homeLink;
 	public $showAdvancedSearchbox;
+	public $showWebsiteSearch;
 	public $enableInnReachIntegration;
 	public /** @noinspection PhpUnused */
 		$showInnReachResultsAtEndOfSearch;
@@ -333,6 +334,7 @@ class Library extends DataObject {
 	public $showWhileYouWait;
 	public $showYouMightAlsoLike;
 
+	public $messageBeeSettingId;
 	public $useAllCapsWhenSubmittingSelfRegistration;
 	public $validSelfRegistrationStates;
 	public $validSelfRegistrationZipCodes;
@@ -970,11 +972,6 @@ class Library extends DataObject {
 			1 => 'ILS Based Self Registration',
 			2 => 'Redirect to Self Registration URL',
 		];
-		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
-		$quipuECardSettings = new QuipuECardSetting();
-		if ($quipuECardSettings->find(true) && $quipuECardSettings->hasECard) {
-			$validSelfRegistrationOptions[3] = 'Quipu eCARD';
-		}
 
 		$validCardRenewalOptions = [
 			0 => 'No Card Renewal',
@@ -983,8 +980,28 @@ class Library extends DataObject {
 		];
 		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
 		$quipuECardSettings = new QuipuECardSetting();
-		if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
-			$validCardRenewalOptions[3] = 'Quipu eRenewal';
+		if (!$quipuECardSettings->find(true)) {
+			$quipuECardSettings = null;
+		}
+
+		if ($quipuECardSettings != null) {
+			if ($quipuECardSettings->hasECard) {
+				$validSelfRegistrationOptions[3] = 'Quipu eCARD';
+			}
+			if ($quipuECardSettings->hasERenew) {
+				$validCardRenewalOptions[3] = 'Quipu eRenewal';
+			}
+		}
+		require_once ROOT_DIR . '/sys/Enrichment/MessageBeeSetting.php';
+		$messageBeeSetting = new MessageBeeSetting();
+		if ($messageBeeSetting->count() > 0) {
+			$messageBeeSetting = new MessageBeeSetting();
+			$messageBeeSettings = $messageBeeSetting->fetchAll('id', 'name');
+			$messageBeeSettings = [-1 => 'None'] + $messageBeeSettings;
+			$validSelfRegistrationOptions[4] = 'MessageBee Verified Borrower Registration';
+		}else{
+			$messageBeeSettings = [];
+			$messageBeeSettings[-1] = 'No MessageBee Settings defined';
 		}
 
 		/** @noinspection HtmlRequiredAltAttribute */
@@ -2539,6 +2556,14 @@ class Library extends DataObject {
 								'description' => 'Whether or not patrons can self register on the site',
 								'hideInLists' => true,
 							],
+							'messageBeeSettingId' => [
+								'property' => 'messageBeeSettingId',
+								'type' => 'enum',
+								'values' => $messageBeeSettings,
+								'label' => 'Message Bee Setting',
+								'descrption' => 'The Message Bee Settings to apply to this library',
+								'hideInLists' => true
+							],
 							'selfRegistrationLocationRestrictions' => [
 								'property' => 'selfRegistrationLocationRestrictions',
 								'type' => 'enum',
@@ -2605,16 +2630,18 @@ class Library extends DataObject {
 							],
 							'selfRegistrationFormMessage' => [
 								'property' => 'selfRegistrationFormMessage',
-								'type' => 'html',
+								'type' => 'translatableTextBlock',
 								'label' => 'Self Registration Form Message',
-								'description' => 'Message shown to users with the form to submit the self registration.  Leave blank to give users the default message.',
+								'description' => 'Message shown to users with the form to submit the self registration. Leave blank to provide users the default message.',
+								'defaultTextFile' => 'Library_selfRegistrationFormMessage.MD',
 								'hideInLists' => true,
 							],
 							'selfRegistrationSuccessMessage' => [
 								'property' => 'selfRegistrationSuccessMessage',
-								'type' => 'html',
+								'type' => 'translatableTextBlock',
 								'label' => 'Self Registration Success Message',
-								'description' => 'Message shown to users when the self registration has been completed successfully.  Leave blank to give users the default message.',
+								'description' => 'Message shown to users when the self registration has been completed successfully. Leave blank to provide users the default message.',
+								'defaultTextFile' => 'Library_selfRegistrationSuccessMessage.MD',
 								'hideInLists' => true,
 							],
 							'selfRegistrationTemplate' => [
@@ -3194,6 +3221,15 @@ class Library extends DataObject {
 								'type' => 'checkbox',
 								'label' => 'Show Advanced Search Option',
 								'description' => 'Enabling this will show the Advanced Search option in the &quot;search by&quot; dropdown menu next to the search box.',
+								'hideInLists' => true,
+								'default' => 1,
+							],
+							'showWebsiteSearch' => [
+								'property' => 'showWebsiteSearch',
+								'type' => 'checkbox',
+								'label' => 'Show Website Search',
+								'description' => 'Turn on to enable the "Library Websites" search when data exists.',
+								'note' => '"Library Websites" search will appear when on, if Web Builder or Indexed Websites Exist',
 								'hideInLists' => true,
 								'default' => 1,
 							],
@@ -5017,6 +5053,8 @@ class Library extends DataObject {
 			$this->saveTextBlockTranslations('paymentHistoryExplanation');
 			$this->saveTextBlockTranslations('costSavingsExplanationEnabled');
 			$this->saveTextBlockTranslations('costSavingsExplanationDisabled');
+			$this->saveTextBlockTranslations('selfRegistrationFormMessage');
+			$this->saveTextBlockTranslations('selfRegistrationSuccessMessage');
 			$this->saveTextBlockTranslations('localIllEmailSuccessMessage');
 			if (!empty($this->_changedFields) && in_array('cookieStorageConsent', $this->_changedFields)) {
 				$this->updateLocalAnalyticsPreferences();
@@ -5092,6 +5130,8 @@ class Library extends DataObject {
 			$this->saveTextBlockTranslations('paymentHistoryExplanation');
 			$this->saveTextBlockTranslations('costSavingsExplanationEnabled');
 			$this->saveTextBlockTranslations('costSavingsExplanationDisabled');
+			$this->saveTextBlockTranslations('selfRegistrationFormMessage');
+			$this->saveTextBlockTranslations('selfRegistrationSuccessMessage');
 			$this->saveTextBlockTranslations('localIllEmailSuccessMessage');
 		}
 		return $ret;
@@ -6028,6 +6068,19 @@ class Library extends DataObject {
 	public function getApiInfo(): array {
 		global $configArray;
 		global $interface;
+		global $activeLanguage;
+		$languageCode = 'en';
+		if (isset($activeLanguage) && !empty($activeLanguage->code)) {
+			$languageCode = $activeLanguage->code;
+		}
+		$selfRegFormMessage = $this->getTextBlockTranslation('selfRegistrationFormMessage', $languageCode);
+		if (empty($selfRegFormMessage)) {
+			$selfRegFormMessage = $this->selfRegistrationFormMessage;
+		}
+		$selfRegSuccessMessage = $this->getTextBlockTranslation('selfRegistrationSuccessMessage', $languageCode);
+		if (empty($selfRegSuccessMessage)) {
+			$selfRegSuccessMessage = $this->selfRegistrationSuccessMessage;
+		}
 		$apiInfo = [
 			'libraryId' => $this->libraryId,
 			'isDefault' => $this->isDefault,
@@ -6068,8 +6121,8 @@ class Library extends DataObject {
 			'showAlternateLibraryCard' => $this->showAlternateLibraryCard,
 			'enableAspenMaterialsRequest' => false,
 			'enableSelfRegistration' => (int)$this->enableSelfRegistration,
-			'selfRegistrationFormMessage' => $this->selfRegistrationFormMessage,
-			'selfRegistrationSuccessMessage' => $this->selfRegistrationSuccessMessage,
+			'selfRegistrationFormMessage' => $selfRegFormMessage,
+			'selfRegistrationSuccessMessage' => $selfRegSuccessMessage,
 			'promptForBirthDateInSelfReg' => $this->promptForBirthDateInSelfReg,
 			'allowRememberPickupLocation' => $this->allowRememberPickupLocation,
 			'allowPickupLocationUpdates' => $this->allowPickupLocationUpdates,

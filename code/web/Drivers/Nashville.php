@@ -1217,6 +1217,7 @@ EOT;
 						when collection = 'BOARD' then 1045
 						when collection = 'EVERY' then 1093
 						when collection = 'FIC' then 1013
+						when collection = 'HOL' then 1092
 						when collection = 'MOVIE' then 1020
 						when collection = 'OTHER' then 1059
 						when collection = 'PER' then 1027
@@ -1811,6 +1812,7 @@ EOT;
 				select '1059','other','1000','-1000' from dual union all -- loccode ~ .OTHER
 				select '1027','periodical','1000','-1000' from dual union all -- loccode ~ .PER
 				select '1076','technology/computers','1000','-1000' from dual union all -- loccode ~ .TECH
+				select '1092','holiday','-25','-31' from dual union all -- loccode ~ .HOL
 				select '1106','textured bags','1000','-1000' from dual -- loccode ~ .TEXT
 			), 
 			drange as ( -- "deranged" because James thinks he's funny
