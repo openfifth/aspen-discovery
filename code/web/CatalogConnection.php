@@ -602,26 +602,22 @@ class CatalogConnection {
 	}
 
 	/**
-	 * Get Reading History
+	 * Get Reading History for the user account.
 	 *
-	 * This is responsible for retrieving a history of checked out items for the patron.
-	 *
-	 * @param User $patron The patron array
+	 * @param User $patron
 	 * @param int $page
 	 * @param int $recordsPerPage
 	 * @param string $sortOption
 	 * @param string $filter
 	 * @param bool $forExport
-	 * @return  array               Array of the patron's reading list
-	 *                              If an error occurs, return a AspenError
+	 * @return array Array of the patron's reading list.
 	 * @access  public
 	 */
-	function getReadingHistory($patron, $page = 1, $recordsPerPage = 20, $sortOption = "checkedOut", $filter = "", $forExport = false) {
+	function getReadingHistory(User $patron, int $page = 1, int $recordsPerPage = 20, string $sortOption = "checkedOut", string $filter = "", bool $forExport = false): array {
 		global $timer;
 		global $offlineMode;
-		$timer->logTime("Starting to load reading history");
+		$timer->logTime("Starting to load reading history.");
 
-		//Get reading history from the database unless we specifically want to load from the driver.
 		$result = [
 			'historyActive' => $patron->trackReadingHistory,
 			'titles' => [],
@@ -642,22 +638,25 @@ class CatalogConnection {
 					$patron->update();
 				}
 			}
-			//Update the reading history based on titles that the patron currently has checked out if we are on the first page.
+
 			if ($page == 1 && empty($filter)) {
 				$this->updateReadingHistoryBasedOnCurrentCheckouts($patron, false);
-				$timer->logTime("Finished updating reading history based on current checkouts");
+				$timer->logTime("Finished updating reading history based on current checkouts.");
+				$this->updateReadingHistoryGroupedWorks($patron);
+				$timer->logTime("Finished updating reading history grouped works.");
 			}
 		}
 
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
-		$readingHistoryDB->whereAdd('deleted =  0'); //Only show titles that have not been deleted
+		$readingHistoryDB->whereAdd('deleted =  0');
 		if (!empty($filter)) {
 			$escapedFilter = $readingHistoryDB->escape('%' . $filter . '%');
 			$readingHistoryDB->whereAdd("title LIKE $escapedFilter OR author LIKE $escapedFilter OR format LIKE $escapedFilter");
 		}
 		$readingHistoryDB->selectAdd();
+		$readingHistoryDB->selectAdd('MAX(id) as id');
 		$readingHistoryDB->selectAdd('groupedWorkPermanentId');
 		$readingHistoryDB->selectAdd('MAX(title) as title');
 		$readingHistoryDB->selectAdd('MAX(author) as author');
@@ -678,10 +677,13 @@ class CatalogConnection {
 		} elseif ($sortOption == "format") {
 			$readingHistoryDB->orderBy('format ASC, title ASC, MAX(checkOutDate) DESC');
 		}
+		// Group by groupedWorkPermanentId to consolidate entries with the same work
+		// but different title/author punctuation variations. For NULL permanent IDs,
+		// group by title and author to prevent unrelated items from merging.
 		$readingHistoryDB->groupBy([
 			'groupedWorkPermanentId',
-			'title',
-			'author'
+			'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
+			'CASE WHEN groupedWorkPermanentId IS NULL THEN author ELSE NULL END'
 		]);
 
 		$numTitles = $readingHistoryDB->count();
@@ -694,10 +696,59 @@ class CatalogConnection {
 		}
 		$readingHistoryDB->find();
 		$readingHistoryTitles = [];
-
 		while ($readingHistoryDB->fetch()) {
 			$historyEntry = $this->getHistoryEntryForDatabaseEntry($readingHistoryDB, $forExport);
 			$historyEntry['index'] = ++$firstIndex;
+
+			$detailRecords = [];
+			$detailQuery = new ReadingHistoryEntry();
+			$detailQuery->userId = $patron->id;
+			$detailQuery->deleted = 0;
+
+			// Match by groupedWorkPermanentId to get all records in this group.
+			if (!empty($readingHistoryDB->groupedWorkPermanentId)) {
+				$detailQuery->groupedWorkPermanentId = $readingHistoryDB->groupedWorkPermanentId;
+			} else {
+				// For entries without a permanent ID, fall back to title and author matching.
+				$detailQuery->title = $readingHistoryDB->title;
+				$detailQuery->author = $readingHistoryDB->author;
+			}
+			$detailQuery->orderBy('checkOutDate DESC');
+			$detailQuery->find();
+
+			$hasBarcode = false;
+			$hasCallNumber = false;
+			$hasVolume = false;
+			if (!$forExport) {
+				while ($detailQuery->fetch()) {
+					$detailRecords[] = [
+						'id' => $detailQuery->id,
+						'checkOutDate' => $detailQuery->checkOutDate,
+						'checkInDate' => $detailQuery->checkInDate,
+						'editedCheckInDate' => $detailQuery->editedCheckInDate,
+						'format' => $detailQuery->format,
+						'source' => $detailQuery->source,
+						'sourceId' => $detailQuery->sourceId,
+						'barcode' => $detailQuery->barcode,
+						'callNumber' => $detailQuery->callNumber,
+						'volume' => $detailQuery->volume,
+					];
+					if (!empty($detailQuery->barcode)) {
+						$hasBarcode = true;
+					}
+					if (!empty($detailQuery->callNumber)) {
+						$hasCallNumber = true;
+					}
+					if (!empty($detailQuery->volume)) {
+						$hasVolume = true;
+					}
+				}
+			}
+			$historyEntry['detailRecords'] = $detailRecords;
+			$historyEntry['hasBarcode'] = $hasBarcode;
+			$historyEntry['hasCallNumber'] = $hasCallNumber;
+			$historyEntry['hasVolume'] = $hasVolume;
+
 			$readingHistoryTitles[] = $historyEntry;
 		}
 		$timer->logTime("Loaded " . count($readingHistoryTitles) . " titles from the reading history");
@@ -724,42 +775,69 @@ class CatalogConnection {
 	function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): array {
 		$result = [
 			'success' => false,
+			'title' => translate([
+				'text' => 'Failed to Perform Reading History Action',
+				'isPublicFacing' => true
+			]),
 			'message' => translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
 			]),
 		];
 		if ($action == 'deleteMarked') {
-			//Remove titles from database (do not remove from ILS)
 			$numDeleted = 0;
+			$numFailed = 0;
 			foreach ($selectedTitles as $id => $titleId) {
 				$readingHistoryDB = new ReadingHistoryEntry();
 				$readingHistoryDB->userId = $patron->id;
-				$readingHistoryDB->groupedWorkPermanentId = strtolower($id);
-				$readingHistoryDB->find();
-				if ($id && $readingHistoryDB->getNumResults() > 0) {
-					while ($readingHistoryDB->fetch()) {
-						$readingHistoryDB->deleted = 1;
-						$readingHistoryDB->update();
-						$numDeleted++;
-					}
-				} else {
-					$readingHistoryDB = new ReadingHistoryEntry();
-					$readingHistoryDB->userId = $patron->id;
-					$readingHistoryDB->id = str_replace('rsh', '', $titleId);
+				if (is_numeric($id) || is_numeric($titleId)) {
+					$readingHistoryDB->id = is_numeric($id) ? $id : $titleId;
 					if ($readingHistoryDB->find(true)) {
 						$readingHistoryDB->deleted = 1;
 						$readingHistoryDB->update();
 						$numDeleted++;
+					} else {
+						$numFailed++;
 					}
+				} else {
+					$numFailed++;
 				}
 			}
-			$result['success'] = true;
-			$result['message'] = translate([
-				'text' => 'Deleted %1% entries from Reading History.',
-				1 => $numDeleted,
-				'isPublicFacing' => true,
-			]);
+
+			if ($numDeleted > 0) {
+				$result['success'] = true;
+				$result['title'] = translate([
+					'text' => $numDeleted === 1 ? 'Successfully Deleted Reading History Entry' : 'Successfully Deleted Reading History Entries',
+					'isPublicFacing' => true
+				]);
+				if ($numFailed > 0) {
+					$deletedText = $numDeleted === 1 ? 'entry' : 'entries';
+					$failedText = $numFailed === 1 ? 'entry' : 'entries';
+					$result['message'] = translate([
+						'text' => "Deleted %1% $deletedText from your reading history. %2% $failedText could not be deleted.",
+						1 => $numDeleted,
+						2 => $numFailed,
+						'isPublicFacing' => true,
+					]);
+				} else {
+					$entryText = $numDeleted === 1 ? 'entry' : 'entries';
+					$result['message'] = translate([
+						'text' => "Deleted %1% $entryText from your reading history.",
+						1 => $numDeleted,
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['success'] = false;
+				$result['title'] = translate([
+					'text' => 'Failed to Delete Reading History Entries',
+					'isPublicFacing' => true
+				]);
+				$result['message'] = translate([
+					'text' => 'No entries could be deleted from your reading history.',
+					'isPublicFacing' => true,
+				]);
+			}
 		} elseif ($action == 'deleteAll') {
 			//Remove all titles from the database (do not remove from ILS)
 			$readingHistoryDB = new ReadingHistoryEntry();
@@ -831,40 +909,6 @@ class CatalogConnection {
 	}
 
 	/**
-	 * @param User $patron
-	 * @param string $title
-	 * @param string $author
-	 *
-	 * @return array
-	 */
-	function deleteReadingHistoryEntryByTitleAuthor($patron, $title, $author) {
-		$numDeleted = 0;
-
-		$readingHistoryDB = new ReadingHistoryEntry();
-		$readingHistoryDB->userId = $patron->id;
-		$readingHistoryDB->title = $title;
-		$readingHistoryDB->author = $author;
-		$readingHistoryDB->find();
-		if ($readingHistoryDB->getNumResults() > 0) {
-			while ($readingHistoryDB->fetch()) {
-				$readingHistoryDB->deleted = 1;
-				$readingHistoryDB->update();
-				$numDeleted++;
-			}
-		}
-
-		$result['success'] = true;
-		$result['message'] = translate([
-			'text' => 'Deleted %1% entries from Reading History.',
-			1 => $numDeleted,
-			'isPublicFacing' => true,
-		]);
-
-		return $result;
-	}
-
-
-	/**
 	 * Get Patron Holds
 	 *
 	 * This is responsible for retrieving all holds for a specific patron.
@@ -875,7 +919,22 @@ class CatalogConnection {
 	 * @access public
 	 */
 	public function getHolds(User $user): array {
-		return $this->driver->getHolds($user);
+		$holds = $this->driver->getHolds($user);
+		$userLibrary = $user->getHomeLibrary();
+		foreach ($holds as $sectionName => $holdSection) {
+			//Check all unavailable holds to see if we can't update pickup location
+			//We will not do available here because the individual drivers check more specifically
+			//allowChangingPickupLocationForUnavailableHolds defaults to on
+			if ($sectionName == 'unavailable') {
+				if (!$userLibrary->allowChangingPickupLocationForUnavailableHolds) {
+					/** @var Hold $hold */
+					foreach ($holdSection as $hold) {
+						$hold->locationUpdateable = false;
+					}
+				}
+			}
+		}
+		return $holds;
 	}
 
 	/**
@@ -1083,12 +1142,11 @@ class CatalogConnection {
 
 	/**
 	 * @param ReadingHistoryEntry $readingHistoryDB
-	 * @param bool $forExport True if this is being used while exporting to Excel
-	 * @return mixed
+	 * @return array
 	 */
-	public function getHistoryEntryForDatabaseEntry($readingHistoryDB, $forExport = false) {
+	public function getHistoryEntryForDatabaseEntry(ReadingHistoryEntry $readingHistoryDB, bool $forExport): array {
 		$historyEntry = [];
-
+		$historyEntry['id'] = $readingHistoryDB->id;
 		$historyEntry['title'] = $readingHistoryDB->title;
 		$historyEntry['author'] = $readingHistoryDB->author;
 		$historyEntry['format'] = $readingHistoryDB->format;
@@ -1097,21 +1155,20 @@ class CatalogConnection {
 		/** @noinspection PhpUndefinedFieldInspection */
 		$historyEntry['timesUsed'] = $readingHistoryDB->timesUsed;
 		/** @noinspection PhpUndefinedFieldInspection */
-		$historyEntry['checkedOut'] = $readingHistoryDB->checkedOut == null ? false : true;
+		$historyEntry['checkedOut'] = $readingHistoryDB->checkedOut !== null;
 		$historyEntry['permanentId'] = $readingHistoryDB->groupedWorkPermanentId;
 		$historyEntry['isIll'] = $readingHistoryDB->isIll;
 		if (!$forExport) {
 			require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 			$recordDriver = new GroupedWorkDriver($readingHistoryDB->groupedWorkPermanentId);
-
 			if ($recordDriver->isValid()) {
 				$historyEntry['recordDriver'] = $recordDriver;
 				$historyEntry['ratingData'] = $recordDriver->getRatingData();
 				$historyEntry['linkUrl'] = $recordDriver->getLinkUrl();
-				$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('small');
-				$historyEntry['existsInCatalog'] = true;
+				$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium');
+				$historyEntry['existsInCatalog'] = TRUE;
 			} else {
-				$historyEntry['existsInCatalog'] = false;
+				$historyEntry['existsInCatalog'] = FALSE;
 				$historyEntry['ratingData'] = '';
 				$historyEntry['linkUrl'] = '';
 				$historyEntry['coverUrl'] = '';
@@ -1121,66 +1178,85 @@ class CatalogConnection {
 		return $historyEntry;
 	}
 
-	public function bypassReadingHistoryUpdate($patron, $isNightlyUpdate): bool {
-		//Check to see if we need to update the reading history.  Only update every 5 minutes in normal situations.
+	public function bypassReadingHistoryUpdate(User $patron, bool $isNightlyUpdate): bool {
+		// Only update every 5 minutes in normal situations.
 		$curTime = time();
 		if ((($curTime - $patron->lastReadingHistoryUpdate) < 60 * 5) && !isset($_REQUEST['reload'])) {
 			return true;
 		}
-		// Check the ILS to see if it is ok to update
 		return $this->driver->bypassReadingHistoryUpdate($patron, $isNightlyUpdate);
 	}
 
 	/**
 	 * @param User $patron
+	 * @param bool $isNightlyUpdate
+	 * @return array
 	 */
-	public function updateReadingHistoryBasedOnCurrentCheckouts($patron, $isNightlyUpdate) {
+	public function updateReadingHistoryBasedOnCurrentCheckouts(User $patron, bool $isNightlyUpdate): array {
 		if ($this->bypassReadingHistoryUpdate($patron, $isNightlyUpdate)) {
 			return [
 				'message' => 'Bypassed reading history update',
 				'skipped' => true
 			];
 		}
+		$activeHistoryTitles = [];
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
-		//Note, include deleted titles here so they are not added multiple times.
+		// Include deleted titles to prevent duplicates.
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
 		$readingHistoryDB->whereAdd('checkInDate IS NULL');
 		$readingHistoryDB->find();
-
-		$activeHistoryTitles = [];
-		global $logger;
 		while ($readingHistoryDB->fetch()) {
 			$historyEntry = [];
 			$historyEntry['source'] = $readingHistoryDB->source;
 			$historyEntry['sourceId'] = $readingHistoryDB->sourceId;
+			$historyEntry['barcode'] = $readingHistoryDB->barcode ?: null;
 			$historyEntry['ids'] = [];
 			$historyEntry['ids'][] = $readingHistoryDB->id;
-			$key = strtolower($historyEntry['source'] . ':' . $historyEntry['sourceId']);
+			if (!empty($historyEntry['barcode'])) {
+				$key = strtolower($historyEntry['source'] . ':' . $historyEntry['sourceId'] . '_' . $historyEntry['barcode']);
+			} else {
+				$key = strtolower($historyEntry['source'] . ':' . $historyEntry['sourceId']);
+			}
 			if (array_key_exists($key, $activeHistoryTitles)) {
 				if (IPAddress::showDebuggingInformation()) {
+					global $logger;
 					$logger->log("Adding {$readingHistoryDB->id} to active history entry $key.", Logger::LOG_ERROR);
 				}
 				$activeHistoryTitles[$key]['ids'][] = $readingHistoryDB->id;
 			} else {
 				if (IPAddress::showDebuggingInformation()) {
+					global $logger;
 					$logger->log("Adding new record $key, {$readingHistoryDB->id} to active history entries.", Logger::LOG_ERROR);
 				}
 				$activeHistoryTitles[$key] = $historyEntry;
 			}
 		}
 
-		//Update reading history based on current checkouts.  That way it never looks out of date
-		$checkouts = $patron->getCheckouts(false, 'all');
+		$checkouts = $patron->getCheckouts(false);
 		foreach ($checkouts as $checkout) {
 			$source = $checkout->source;
 			$sourceId = $checkout->sourceId;
-			$key = strtolower($source . ':' . $sourceId);
+			$barcode = $checkout->barcode;
+			if (!empty($barcode)) {
+				$key = strtolower($source . ':' . $sourceId . '_' . $barcode);
+			} else {
+				$key = strtolower($source . ':' . $sourceId);
+			}
 			if (array_key_exists($key, $activeHistoryTitles)) {
 				unset($activeHistoryTitles[$key]);
 			} else {
-				//TODO: This should check to see if the grouped work has been checked out rather than the record
+				// If a checkout is currently active and there is already an active history entry for the same title without a barcode,
+				// skip creating a duplicate (with a barcode) and keep the no-barcode entry active without assigning a check-in date.
+				if (!empty($barcode)) {
+					$noBarcodeKey = strtolower($source . ':' . $sourceId);
+					if (array_key_exists($noBarcodeKey, $activeHistoryTitles)) {
+						unset($activeHistoryTitles[$noBarcodeKey]);
+						continue;
+					}
+				}
+
 				$historyEntryDB = new ReadingHistoryEntry();
 				$historyEntryDB->userId = $patron->id;
 				if (!empty($checkout->groupedWorkId)) {
@@ -1188,17 +1264,19 @@ class CatalogConnection {
 				} else {
 					$historyEntryDB->groupedWorkPermanentId = "";
 				}
-
 				$historyEntryDB->source = $source;
 				$historyEntryDB->sourceId = $sourceId;
-				$historyEntryDB->title = StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true);
-				$historyEntryDB->author = isset($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
-				$historyEntryDB->format = substr($checkout->format, 0, 50);
-				$historyEntryDB->checkOutDate = time();
+				$historyEntryDB->barcode = $barcode;
+				$historyEntryDB->callNumber = $checkout->callNumber ?? null;
+				$historyEntryDB->volume = $checkout->volume ?? null;
+				$historyEntryDB->title = !empty($checkout->title) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true) : "";
+				$historyEntryDB->author = !empty($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
+				$historyEntryDB->format = substr($checkout->format ?? "", 0, 50);
+				$historyEntryDB->checkOutDate = $checkout->checkoutDate ?? time();
 				$historyEntryDB->costSavings = $checkout->getReplacementCost();
 				if (!$historyEntryDB->insert()) {
 					global $logger;
-					$logger->log("Could not insert new reading history entry", Logger::LOG_ERROR);
+					$logger->log("Could not insert new reading history entry.", Logger::LOG_ERROR);
 				} else {
 					if ($patron->enableCostSavings) {
 						$patron->__set('totalCostSavings', $patron->totalCostSavings + $historyEntryDB->costSavings);
@@ -1207,16 +1285,16 @@ class CatalogConnection {
 			}
 		}
 
-		//Anything that was still active is now checked in
-		global $logger;
 		if (IPAddress::showDebuggingInformation()) {
+			global $logger;
 			$logger->log("There are " . count($activeHistoryTitles) . " titles that have been checked in.", Logger::LOG_ERROR);
 		}
 		foreach ($activeHistoryTitles as $historyEntry) {
 			if (IPAddress::showDebuggingInformation()) {
+				global $logger;
 				$logger->log("There are " . count($historyEntry['ids']) . " ids for this history entry.", Logger::LOG_ERROR);
 			}
-			//Update even if deleted to make sure code is cleaned up correctly
+			// Set checkInDate for all reading history entries that are no longer checked out.
 			foreach ($historyEntry['ids'] as $id) {
 				$historyEntryDB = new ReadingHistoryEntry();
 				$historyEntryDB->id = $id;
@@ -1224,8 +1302,9 @@ class CatalogConnection {
 					$historyEntryDB->checkInDate = time();
 					$numUpdates = $historyEntryDB->update();
 					if (IPAddress::showDebuggingInformation()) {
+						global $logger;
 						if ($numUpdates != 1) {
-							$logger->log("Could not update reading history entry $id", Logger::LOG_ERROR);
+							$logger->log("Could not update reading history entry $id.", Logger::LOG_ERROR);
 						} else {
 							$logger->log("Marked $id as checked in.", Logger::LOG_ERROR);
 						}
@@ -1234,7 +1313,6 @@ class CatalogConnection {
 			}
 		}
 
-		//Set the last update time
 		$patron->__set('lastReadingHistoryUpdate', time());
 		$patron->update();
 
@@ -1242,6 +1320,58 @@ class CatalogConnection {
 			'message' => 'Reading history updated',
 			'skipped' => false
 		];
+	}
+
+	/**
+	 * Update NULL groupedWorkPermanentId values in reading history by
+	 * looking up the current grouped work for the sourceId.
+	 * This is for checked out items that were suppressed and had no valid
+	 * grouped work, but now they do after no longer being suppressed.
+	 *
+	 * @param User $patron
+	 * @return void
+	 * @noinspection SqlResolve
+	 * @noinspection SqlDialectInspection
+	 */
+	public function updateReadingHistoryGroupedWorks(User $patron): void {
+		if ($this->bypassReadingHistoryUpdate($patron, false)) {
+			return;
+		}
+
+		// First check if there are any NULL groupedWorkPermanentId entries to update.
+		$checkSql = "
+			SELECT COUNT(*) as count
+			FROM user_reading_history_work
+			WHERE userId = :userId
+			AND (groupedWorkPermanentId IS NULL OR groupedWorkPermanentId = '')
+		";
+
+		try {
+			global $aspen_db;
+			$stmt = $aspen_db->prepare($checkSql);
+			$stmt->bindValue(':userId', $patron->id, PDO::PARAM_INT);
+			$stmt->execute();
+			$result = $stmt->fetch(PDO::FETCH_ASSOC);
+
+			if ($result['count'] > 0) {
+				// Use a direct SQL query to efficiently update entries with joined grouped work data.
+				$updateSql = "
+					UPDATE user_reading_history_work urh
+					JOIN grouped_work_primary_identifiers gwpi ON gwpi.type = urh.source AND gwpi.identifier = urh.sourceId
+					JOIN grouped_work gw ON gw.id = gwpi.grouped_work_id
+					SET urh.groupedWorkPermanentId = gw.permanent_id
+					WHERE urh.userId = :userId
+					AND (urh.groupedWorkPermanentId IS NULL OR urh.groupedWorkPermanentId = '')
+				";
+
+				$updateStmt = $aspen_db->prepare($updateSql);
+				$updateStmt->bindValue(':userId', $patron->id, PDO::PARAM_INT);
+				$updateStmt->execute();
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error updating reading history grouped works for user $patron->id: " . $e->getMessage(), Logger::LOG_ERROR);
+		}
 	}
 
 	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
@@ -1661,11 +1791,11 @@ class CatalogConnection {
 		return $this->driver->supportsLoginWithUsername();
 	}
 
-	public function hasEditableUsername() {
+	public function hasEditableUsername() : bool {
 		return $this->driver->hasEditableUsername();
 	}
 
-	public function getEditableUsername(User $user) {
+	public function getEditableUsername(User $user) : ?string {
 		return $this->driver->getEditableUsername($user);
 	}
 

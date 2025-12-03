@@ -286,7 +286,7 @@ class SearchObject_ListsSearcher extends SearchObject_SolrSearcher {
 	 * @param string $scopedFieldName
 	 * @return string
 	 */
-	protected function getUnscopedFieldName(string $scopedFieldName): string {
+	public function getUnscopedFieldName(string $scopedFieldName): string {
 		if (str_starts_with($scopedFieldName, 'local_time_since_added')) {
 			$scopedFieldName = 'local_time_since_added';
 		}else if (str_starts_with($scopedFieldName, 'local_time_since_updated')) {

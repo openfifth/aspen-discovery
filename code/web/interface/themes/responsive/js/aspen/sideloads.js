@@ -30,10 +30,11 @@ AspenDiscovery.SideLoads = (() => {
 				const { success, message } = data;
 				if (success){
 					$("#file" + fileIndex).hide();
-				}else{
+				} else {
 					AspenDiscovery.showMessage('Delete Failed', message, false);
 				}
 			}).fail(AspenDiscovery.ajaxFail);
+
 			return false;
 		}
 	}

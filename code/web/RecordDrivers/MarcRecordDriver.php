@@ -42,9 +42,8 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 			$this->marcRecord = $recordData;
 			$this->valid = true;
 		} elseif (is_string($recordData) || is_numeric($recordData)) {
-			//Just the id
 			require_once ROOT_DIR . '/sys/MarcLoader.php';
-			if (strpos($recordData, ':') !== false) {
+			if (str_contains($recordData, ':')) {
 				$recordInfo = explode(':', $recordData);
 				$this->profileType = $recordInfo[0];
 				$this->id = $recordInfo[1];
@@ -2465,6 +2464,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	static array $additionalNotesFields = [
+		'246' => 'Other Title',
 		'310' => 'Current Publication Frequency',
 		'321' => 'Former Publication Frequency',
 		'351' => 'Organization & arrangement of materials',

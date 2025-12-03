@@ -1,7 +1,7 @@
 <?php
 
 class Hoopla_AJAX extends Action {
-	function launch() {
+	function launch() : void {
 		global $timer;
 		header('Content-type: application/json');
 		header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
@@ -18,10 +18,10 @@ class Hoopla_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getCheckOutPrompts() {
+	function getCheckOutPrompts() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['id'];
-		if (strpos($id, ':') !== false) {
+		if (str_contains($id, ':')) {
 			[
 				,
 				$id,
@@ -98,13 +98,14 @@ class Hoopla_AJAX extends Action {
 					if ($hooplaUser->hooplaCheckOutConfirmation && $hooplaType == 'Instant') {
 						// Instant titles require a prompt to show the remaining checkouts
 						$interface->assign('hooplaPatronStatus', $checkOutStatus);
+						/** @noinspection CommaExpressionJS */
 						return [
 							'title' => translate([
 								'text' => 'Confirm Hoopla Check Out',
 								'isPublicFacing' => true,
 							]),
 							'body' => $interface->fetch('Hoopla/ajax-hoopla-single-user-checkout-prompt.tpl'),
-							'buttons' => '<button class="btn btn-primary" type="button" title="Check Out" onclick="return AspenDiscovery.Hoopla.checkOutHooplaTitle(\'' . $id . '\', ' . $hooplaUser->id . ', \'' . $hooplaType . '\');">' . translate([
+							'buttons' => '<button class="btn btn-primary" type="button" title="Check Out" onclick="return AspenDiscovery.Hoopla.checkOutHooplaTitle(\'' . $id . '\', ' . $hooplaUser->id . ', \'' . $hooplaType . '\')">' . translate([
 									'text' => 'Check Out',
 									'isPublicFacing' => true,
 								]) . '</button>',
@@ -165,7 +166,7 @@ class Hoopla_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getHoldPrompts() {
+	function getHoldPrompts() : array {
 		$user = UserAccount::getLoggedInUser();
 		if ($user) {
 			$id = $_REQUEST['id'];
@@ -175,7 +176,7 @@ class Hoopla_AJAX extends Action {
 			$interface->assign('hooplaId', $id);
 
 			$driver = new HooplaDriver();
-			$holdQueueSize = $driver->getHoldQueueSize($id);
+			$holdQueueSize = $driver->getHoldQueueSize($id, $user->getHomeLibrary()->libraryId);
 			$interface->assign('holdQueueSize', $holdQueueSize);
 			if (count($hooplaUsers) > 0) {
 				$interface->assign('hooplaUsers', $hooplaUsers);
@@ -222,7 +223,7 @@ class Hoopla_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function placeHold() {
+	function placeHold() : array {
 		$user = UserAccount::getLoggedInUser();
 		if ($user) {
 			$patronId = !empty($_REQUEST['patronId']) ? $_REQUEST['patronId'] : $user->id;
@@ -236,8 +237,7 @@ class Hoopla_AJAX extends Action {
 				}
 				require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 				$driver = new HooplaDriver();
-				$result = $driver->placeHold($patron, $id);
-				return $result;
+				return $driver->placeHold($patron, $id);
 			} else {
 				return [
 					'success' => false,
@@ -248,7 +248,7 @@ class Hoopla_AJAX extends Action {
 		return ['success' => false, 'message' => 'You must be logged in to place holds'];
 	}
 
-	function cancelHold() {
+	function cancelHold() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['recordId'];
 		if ($user) {
@@ -279,7 +279,7 @@ class Hoopla_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function checkOutHooplaTitle() {
+	function checkOutHooplaTitle() : array {
 		$user = UserAccount::getLoggedInUser();
 		if ($user) {
 			$patronId = !empty($_REQUEST['patronId']) ? $_REQUEST['patronId'] : $user->id;
@@ -347,7 +347,7 @@ class Hoopla_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function returnCheckout() {
+	function returnCheckout() : array {
 		$user = UserAccount::getLoggedInUser();
 		if ($user) {
 			$patronId = $_REQUEST['patronId'];
@@ -378,7 +378,7 @@ class Hoopla_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getLargeCover() {
+	function getLargeCover() : array {
 		global $interface;
 
 		$id = $_REQUEST['id'];
@@ -394,7 +394,7 @@ class Hoopla_AJAX extends Action {
 		];
 	}
 
-	function getStaffView() {
+	function getStaffView() : array {
 		$result = [
 			'success' => false,
 			'message' => translate([

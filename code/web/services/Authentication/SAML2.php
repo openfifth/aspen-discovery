@@ -11,7 +11,7 @@ class Authentication_SAML2 extends Action {
 
 		if(isset($_GET['init'])) {
 			global $logger;
-			$logger->log('Starting SAML Authentication', Logger::LOG_ERROR);
+			$logger->log('Starting SAML Authentication', Logger::LOG_NOTICE);
 			$auth = new SAMLAuthentication();
 			$returnTo = $configArray['Site']['url'];
 			$action = isset($_REQUEST['followupAction']) ? strip_tags($_REQUEST['followupAction']) : 'Home';
@@ -42,18 +42,16 @@ class Authentication_SAML2 extends Action {
 			$auth->login($returnTo);
 		} elseif(isset($_GET['acs'])) {
 			global $logger;
-			$logger->log('Completing SAML Authentication', Logger::LOG_ERROR);
+			$logger->log('Completing SAML Authentication', Logger::LOG_NOTICE);
 			try {
 				$auth = new SAMLAuthentication();
-				if (isset($_SESSION) && isset($_SESSION['AuthNRequestID'])) {
-					$requestID = $_SESSION['AuthNRequestID'];
-				} else {
-					$requestID = null;
-				}
+				$requestID = $_SESSION['AuthNRequestID'] ?? null;
 				$auth->processResponse($requestID);
 				$errors = $auth->getErrors();
 				if (!empty($errors)) {
 					echo(htmlentities(implode(', ', $errors)));
+					$logger->log("Errors during authentication " . implode(', ', $errors), Logger::LOG_ERROR);
+					$logger->log("Error Reason " . $auth->getLastErrorReason(), Logger::LOG_ERROR);
 					die();
 				}
 
@@ -112,11 +110,7 @@ class Authentication_SAML2 extends Action {
 			$logger->log('Completing SAML SLS', Logger::LOG_ERROR);
 			try {
 				$auth = new SAMLAuthentication();
-				if (isset($_SESSION) && isset($_SESSION['LogoutRequestID'])) {
-					$requestID = $_SESSION['LogoutRequestID'];
-				} else {
-					$requestID = null;
-				}
+				$requestID = $_SESSION['LogoutRequestID'] ?? null;
 
 				$auth->processSLO(false, $requestID);
 				$errors = $auth->getErrors();
@@ -124,7 +118,7 @@ class Authentication_SAML2 extends Action {
 					echo(htmlentities(implode(', ', $errors)));
 					die();
 				}
-			} catch (Exception $e) {
+			} catch (Exception) {
 				header('Location: /');
 			}
 		} else {

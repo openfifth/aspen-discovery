@@ -499,8 +499,11 @@ class KohaRecordProcessor extends IlsRecordProcessor {
 		String subLocationCode = MarcUtil.getItemSubfieldData(settings.getSubLocationSubfield(), itemField, indexer.getLogEntry(), logger);
 		String locationCode = MarcUtil.getItemSubfieldData(settings.getLocationSubfield(), itemField, indexer.getLogEntry(), logger);
 		if (settings.isIncludeLocationNameInDetailedLocation()) {
-			location = translateValue("location", locationCode, identifier);
+			location = getLocationLabel(locationCode);
 		}else{
+			location = "";
+		}
+		if (location == null) {
 			location = "";
 		}
 		if (subLocationCode != null && !subLocationCode.isEmpty()){

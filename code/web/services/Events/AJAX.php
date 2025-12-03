@@ -363,77 +363,47 @@ class Events_AJAX extends JSON_Action {
 		$calendarDisplaySettingId = 0;
 		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySettingLibrary.php';
 		$setting = new CalendarDisplaySettingLibrary();
-		$setting->libraryId = $library->id;
+		$setting->libraryId = $library->libraryId;
 		if ($setting->find(true)) {
 			$calendarDisplaySettingId = $setting->calendarDisplaySettingId;
 		}
 
 		$eventFieldIds = [];
-		$eventFieldNamesCalendar = [];
-		$eventFieldNamesAgenda = [];
 		if (!empty ($calendarDisplaySettingId)) {
 			require_once ROOT_DIR . '/sys/Events/EventFieldCalendarOptions.php';
 			require_once ROOT_DIR . '/sys/Events/EventField.php';
-			$printedCalendarOptions = new EventFieldCalendarOptions();
-			$printedCalendarOptions->calendarDisplaySettingId = $calendarDisplaySettingId;
-			$printedCalendarOptions->printedCalendar = 1;
-			$printedCalendarOptions->orderBy('weight');
-			$printedCalendarOptions->find();
-			while ($printedCalendarOptions->fetch()) {
-				$eventFieldIds[$printedCalendarOptions->eventFieldId] = 'calendar';
-			}
-
-			$printedAgendaOptions = new EventFieldCalendarOptions();
-			$printedAgendaOptions->calendarDisplaySettingId = $calendarDisplaySettingId;
-			$printedAgendaOptions->printedAgenda = 1;
-			$printedAgendaOptions->orderBy('weight');
-			$printedAgendaOptions->find();
-			while ($printedAgendaOptions->fetch()) {
-				if (!array_key_exists ($printedAgendaOptions->eventFieldId, $eventFieldIds)) {
-					$eventFieldIds[$printedAgendaOptions->eventFieldId] = 'agenda';
-				} else {
-					$eventFieldIds[$printedAgendaOptions->eventFieldId] = 'both';
-				}
+			$printedOptions = new EventFieldCalendarOptions();
+			$printedOptions->calendarDisplaySettingId = $calendarDisplaySettingId;
+			$printedOptions->orderBy('weight');
+			$printedOptions->find();
+			while ($printedOptions->fetch()) {
+				$eventFieldIds[$printedOptions->eventFieldId] = array(
+					'name' => null,
+					'printedCalendar' => $printedOptions->printedCalendar,
+					'printedAgenda' => $printedOptions->printedAgenda,
+				);
 			}
 
 			foreach ($eventFieldIds as $eventFieldId => $printOption) {
 				if ($eventFieldId < 0) {
 					if ($eventFieldId == -2) {
-						$fieldName = 'Description';
+						$eventFieldIds[$eventFieldId]['name'] = 'Description';
 					}else if ($eventFieldId == -3) {
-						$fieldName = 'Branch';
+						$eventFieldIds[$eventFieldId]['name'] = 'Branch';
 					}else if ($eventFieldId == -4) {
-						$fieldName = 'Room';
-					}else{
-						continue;
-					}
-					if ($printOption == 'calendar') {
-						$eventFieldNamesCalendar[$eventFieldId] = $fieldName;
-					} else if ($printOption == 'agenda') {
-						$eventFieldNamesAgenda[$eventFieldId] = $fieldName;
-					} else {
-						$eventFieldNamesCalendar[$eventFieldId] = $fieldName;
-						$eventFieldNamesAgenda[$eventFieldId] = $fieldName;
+						$eventFieldIds[$eventFieldId]['name'] = 'Room';
 					}
 				} else {
 					$eventField = new EventField();
 					$eventField->id = $eventFieldId;
 					if ($eventField->find(true)) {
-						if ($printOption == 'calendar') {
-							$eventFieldNamesCalendar[$eventFieldId] = $eventField->name;
-						} else if ($printOption == 'agenda') {
-							$eventFieldNamesAgenda[$eventFieldId] = $eventField->name;
-						} else {
-							$eventFieldNamesCalendar[$eventFieldId] = $eventField->name;
-							$eventFieldNamesAgenda[$eventFieldId] = $eventField->name;
-						}
+						$eventFieldIds[$eventFieldId]['name'] = $eventField->name;
 					}
 				}
 			}
 		}
 
-		$interface->assign('eventFieldNamesCalendar', $eventFieldNamesCalendar);
-		$interface->assign('eventFieldNamesAgenda', $eventFieldNamesAgenda);
+		$interface->assign('eventFields', $eventFieldIds);
 
 		return [
 			'title' => translate([
@@ -446,6 +416,90 @@ class Events_AJAX extends JSON_Action {
 					'isAdminFacing' => 'true',
 				]) . "</button>",
 		];
+	}
+	/** @noinspection PhpUnused */
+	function checkEventsForType() {
+		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
+		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
+		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
+		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
+
+		//If everything is customizable no need to prompt user
+		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+
+		if (!empty($_REQUEST['objectId']) && is_numeric($_REQUEST['objectId']) && $booleanSum != 4) {
+			require_once ROOT_DIR . '/sys/Events/Event.php';
+			$eventOfType = new Event();
+			$eventOfType->eventTypeId = $_REQUEST['objectId'];
+			if ($eventOfType->find(true)) {
+				$result = [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Update All Events of This Type?',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => translate([
+						'text' => 'If customization settings have been changed, there may be events of this type with different customization settings, would you like to update them?',
+						'isAdminFacing' => true,
+					]),
+					'modalButtons' => "<button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(true)'>Yes</button><button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(false)'>No</button>",
+				];
+			} else {
+				$result = [
+					'success' => true,
+					'noEventsOfType' => true,
+				];
+			}
+		} else {
+			$result = [
+				'success' => true,
+				'noEventsOfType' => true,
+			];
+		}
+
+		return $result;
+
+	}
+
+	/** @noinspection PhpUnused */
+	function saveEventsForType() {
+		$result = [
+			'success' => true,
+		];
+		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
+		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
+		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
+		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
+
+		//If everything is customizable no need to update events with default data for the event type
+		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+
+		if ($_REQUEST['doFullSave'] == "true" && ($booleanSum != 4)) {
+			//Update all Events of this Event Type
+			require_once ROOT_DIR . '/sys/Events/Event.php';
+			$eventOfType = new Event();
+			$eventOfType->eventTypeId = $_REQUEST['objectId'];
+			$eventOfType->find();
+			while ($eventOfType->fetch()) {
+				if (!$titleCustomizable) {
+					$eventOfType->title = $_REQUEST['title'];
+				}
+				if (!$descriptionCustomizable) {
+					$eventOfType->description = $_REQUEST['description'];
+				}
+				if (!$coverCustomizable) {
+					$eventOfType->cover = $_REQUEST['cover'];
+				}
+				if (!$eventLengthCustomizable) {
+					$eventOfType->eventLength = $_REQUEST['eventLength'];
+				}
+				$eventOfType->update('',false);
+				$result = [
+					'success' => true,
+				];
+			}
+		}
+		return $result;
 	}
 
 }
