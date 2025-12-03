@@ -553,7 +553,7 @@ public class HooplaExporter {
 		}
 	}
 
-	public boolean exportSingleHooplaTitle(String singleWorkId, String singleWorkType) {
+	public static boolean exportSingleHooplaTitle(String singleWorkId, String singleWorkType) {
 		boolean updatesRun = false;
 		try{
 			logEntry.addNote("Doing extract of single work " + singleWorkId);
