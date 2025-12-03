@@ -12,7 +12,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-class HooplaExtractLogEntry2 implements BaseIndexingLogEntry {
+public class HooplaExtractLogEntry2 implements BaseIndexingLogEntry {
 	private Long logEntryId = null;
 	private final Date startTime;
 	private Date endTime;

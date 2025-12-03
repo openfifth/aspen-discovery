@@ -3,8 +3,6 @@ package com.turning_leaf_technologies.hoopla;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import oracle.net.aso.f;
-
 class HooplaLibrarySettings {
 	private final long id;
 	private final long settingId;

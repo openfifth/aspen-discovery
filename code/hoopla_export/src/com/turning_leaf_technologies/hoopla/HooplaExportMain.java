@@ -89,7 +89,7 @@ public class HooplaExportMain {
 		long myChecksumAtStart = JarUtil.getChecksumForJar(logger, processName, "./" + processName + ".jar");
 		long reindexerChecksumAtStart = JarUtil.getChecksumForJar(logger, "reindexer", "../reindexer/reindexer.jar");
 		long timeAtStart = new Date().getTime();
-		
+
 		while (true) {
 			// Hoopla only needs to run once a day, so run it in cron
 			Date startTime = new Date();
@@ -143,7 +143,7 @@ public class HooplaExportMain {
 					if (singleWorkId == null) {
 						updatesRun = exporter.exportHooplaData();
 					} else {
-						updatesRun = exporter.exportSingleHooplaTitle(singleWorkId, singleWorkType);
+						updatesRun = HooplaExporter.exportSingleHooplaTitle(singleWorkId, singleWorkType);
 					}
 					exporter.exporterCleanUp();
 
@@ -160,7 +160,7 @@ public class HooplaExportMain {
 
 					// Mark that indexing has finished
 					logEntry.setFinished();
-					
+
 					if (!updatesRun && !logEntry.hasErrors()) {
 						// delete the log entry
 						try {
@@ -197,7 +197,7 @@ public class HooplaExportMain {
 
 					// Mark that indexing has finished
 					logEntry2.setFinished();
-					
+
 					if (!updatesRun && !logEntry2.hasErrors()) {
 						// delete the log entry
 						try {
