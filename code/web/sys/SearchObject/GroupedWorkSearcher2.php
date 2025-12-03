@@ -591,7 +591,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * @param string $scopedFieldName
 	 * @return string
 	 */
-	protected function getUnscopedFieldName(string $scopedFieldName): string {
+	public function getUnscopedFieldName(string $scopedFieldName): string {
 		if (str_starts_with($scopedFieldName, 'availability_toggle_')) {
 			$scopedFieldName = 'availability_toggle';
 		} elseif (str_starts_with($scopedFieldName, 'available_at')) {
@@ -602,10 +602,14 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		return $scopedFieldName;
 	}
 
+	/**
+	 * @param string $field
+	 * @return string
+	 */
 	protected function getScopedFieldName(string $field): string {
 		global $solrScope;
 		if ($solrScope) {
-			if ($field === 'time_since_added') {
+			if ($field === 'time_since_added' || $field === 'local_time_since_added') {
 				$field = 'local_time_since_added_' . $solrScope;
 			}
 			$validFields = $this->getIndexEngine()->loadValidFields();
