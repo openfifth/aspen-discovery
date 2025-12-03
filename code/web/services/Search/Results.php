@@ -769,6 +769,8 @@ class Search_Results extends ResultsAction {
 			if ($placardToDisplay != null) {
 				global $interface;
 				$interface->assign('placard', $placardToDisplay);
+				require_once ROOT_DIR . '/sys/IP/IPAddress.php';
+				$interface->assign('showDebuggingInformation', IPAddress::showDebuggingInformation());
 			}
 		} catch (Exception) {
 			//Placards are not defined yet

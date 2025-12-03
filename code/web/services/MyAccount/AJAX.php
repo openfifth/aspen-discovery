@@ -9659,97 +9659,106 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function exportUserList() {
+	/** @noinspection PhpUnused */
+	function exportUserListCSV(): array {
 		$result = [
 			'success' => false,
+			'title' => "Export to CSV Failed",
 			'message' => translate([
-				'text' => 'Export User List to CSV: something went wrong.',
+				'text' => 'An error has occurred exporting this list to CSV.',
 				'isPublicFacing' => true,
 			]),
 		];
-		global $interface;
-		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) { // validly formatted List Id
-			$userListId = $_REQUEST['listId'];
-			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-			$list = new UserList();
-			$list->id = $userListId;
-			if ($list->find(true)) {
-				// Load the User object for the owner of the list (if necessary):
-				if ($list->public == true || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
-					$list->buildCSV();
-				} else {
-					$result = [
-						'result' => false,
-						'message' => translate([
-							'text' => 'Export User List to CSV: You do not have access to this list.',
-							'isPublicFacing' => true,
-						]),
-					];
-				}
-			} else {
-				$result = [
-					'result' => false,
-					'message' => translate([
-						'text' => 'Export User List to CSV: Unable to read list.',
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-		} else { // Invalid listId
-			$result = [
-				'result' => false,
-				'message' => translate([
-					'text' => 'Export User List to CSV: Invalid list id.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
-	}
 
-	function exportUserListRIS() {
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Export User List to RIS: something went wrong.',
-				'isPublicFacing' => true,
-			]),
-		];
-		global $interface;
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
 			$userListId = $_REQUEST['listId'];
 			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 			$list = new UserList();
 			$list->id = $userListId;
 			if ($list->find(true)) {
-				if ($list->public == true || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
-					$list->buildRIS();
+				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+					// Get user's saved filters if logged in.
+					$activeFilters = [];
+					if (UserAccount::isLoggedIn()) {
+						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
+						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
+						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
+							$formatFilters = explode(',', $pageDefaults->userListFilters);
+							$activeFilters['format'] = array_filter($formatFilters);
+						}
+					}
+					$list->buildCSV($activeFilters);
+					// If buildCSV succeeds, it exits.
 				} else {
-					$result = [
-						'result' => false,
-						'message' => translate([
-							'text' => 'Export User List to RIS: You do not have access to this list.',
-							'isPublicFacing' => true,
-						]),
-					];
+					$result['message'] = translate([
+						'text' => 'You do not have access to this list to export to CSV.',
+						'isPublicFacing' => true,
+					]);
 				}
 			} else {
-				$result = [
-					'result' => false,
-					'message' => translate([
-						'text' => 'Export User List to RIS: Unable to read list.',
-						'isPublicFacing' => true,
-					]),
-				];
+				$result['message'] = translate([
+					'text' => 'The list you wish to export to CSV could not be found.',
+					'isPublicFacing' => true,
+				]);
 			}
 		} else {
-			$result = [
-				'result' => false,
-				'message' => translate([
-					'text' => 'Export User List to RIS: Invalid list id.',
-					'isPublicFacing' => true,
-				]),
-			];
+			$result['message'] = translate([
+				'text' => 'No list ID or an invalid list ID has been provided.',
+				'isPublicFacing' => true,
+			]);
 		}
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function exportUserListRIS(): array {
+		$result = [
+			'success' => false,
+			'title' => "Export to RIS Failed",
+			'message' => translate([
+				'text' => 'An error has occurred exporting this list to RIS.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
+			$userListId = $_REQUEST['listId'];
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$list = new UserList();
+			$list->id = $userListId;
+			if ($list->find(true)) {
+				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+					// Get user's saved filters if logged in.
+					$activeFilters = [];
+					if (UserAccount::isLoggedIn()) {
+						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
+						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
+						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
+							$formatFilters = explode(',', $pageDefaults->userListFilters);
+							$activeFilters['format'] = array_filter($formatFilters);
+						}
+					}
+					$list->buildRIS($activeFilters);
+					// If buildRIS succeeds, it exits.
+				} else {
+					$result['message'] = translate([
+						'text' => 'You do not have access to this list to export to RIS.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The list you wish to export to RIS could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'No list ID or an invalid list ID has been provided.',
+				'isPublicFacing' => true,
+			]);
+		}
+		return $result;
 	}
 
 	function getILSMessage() {

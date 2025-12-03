@@ -1,5 +1,7 @@
 <?php
 
+use JetBrains\PhpStorm\NoReturn;
+
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
 require_once ROOT_DIR . '/sys/ObjectRestoration.php';
 
@@ -55,7 +57,7 @@ class Admin_ObjectRestorations extends ObjectEditor {
 	function canView(): bool { return UserAccount::userHasPermission('Administer Object Restoration'); }
 	function canAddNew(): bool { return false; }
 	function canDelete(): bool { return true; }
-	function canEdit(DataObject $object): bool { return false; }
+	function canEdit(): bool { return false; }
 	function canCopy(): bool { return false; }
 	function canBatchDelete(): bool { return false; }
 	function canBatchEdit(): bool { return false; }
@@ -65,13 +67,12 @@ class Admin_ObjectRestorations extends ObjectEditor {
 	public function canActiveUserEdit() : bool { return false; }
 	public function canExportToCSV() : bool { return false; }
 
-	function getAllObjects($page, $recordsPerPage): array {
+	function getAllObjects(int $page, int $recordsPerPage): array {
 		$sort = $this->getSort();
 		$filterFields = $this->getFilterFields(ObjectRestoration::getObjectStructure());
 		$appliedFilters = $this->getAppliedFilters($filterFields);
 		$filterKey = md5(serialize($appliedFilters));
 		$cacheKey = "page_{$page}_size_{$recordsPerPage}_sort_{$sort}_filter_{$filterKey}";
-
 		if (!isset($this->cachedRows[$cacheKey])) {
 			if (!isset($this->cachedRows['_all_filtered'])) {
 				$this->cachedRows['_all_filtered'] = $this->buildAllFilteredRows($sort);
@@ -375,6 +376,7 @@ class Admin_ObjectRestorations extends ObjectEditor {
 	/**
 	 * Restore a single object from the "recycle-bin" back to an active state.
 	 */
+	#[NoReturn]
 	public function restore(): void {
 		$compositeId = $_REQUEST['id'] ?? '';
 		$user = UserAccount::getActiveUserObj();
@@ -410,6 +412,7 @@ class Admin_ObjectRestorations extends ObjectEditor {
 	 *
 	 * @noinspection PhpUnused
 	 */
+	#[NoReturn]
 	public function hardDeleteSingle(): void {
 		$compositeId = $_REQUEST['id'] ?? '';
 		$user = UserAccount::getActiveUserObj();
@@ -447,6 +450,7 @@ class Admin_ObjectRestorations extends ObjectEditor {
 	 *
 	 * @noinspection PhpUnused
 	 */
+	#[NoReturn]
 	public function batchHardDelete(): void {
 		$selected = $_REQUEST['selectedObject'] ?? [];
 		if (empty($selected)) {

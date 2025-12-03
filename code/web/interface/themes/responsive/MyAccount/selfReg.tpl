@@ -74,7 +74,7 @@
 
 		<div id="selfRegDescription" class="alert alert-info">
 			{if !empty($selfRegistrationFormMessage)}
-				{translate text=$selfRegistrationFormMessage isPublicFacing=true isAdminEnteredData=true}
+				{$selfRegistrationFormMessage}
 			{else}
 				{translate text='This page allows you to register as a patron of our library online. You will have limited privileges initially.' isPublicFacing=true}
 			{/if}

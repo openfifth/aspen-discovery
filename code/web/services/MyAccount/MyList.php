@@ -167,11 +167,13 @@ class MyAccount_MyList extends MyAccount {
 		//Check to see if we have page defaults
 		$defaultPageSize = 20;
 		$defaultSort = $list->defaultSort;
+		$defaultFilters = '';
 		if ($userObj !== false) {
 			$pageDefaults = PageDefaults::getPageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id);
 			if ($pageDefaults != null) {
 				$defaultPageSize = $pageDefaults->pageSize ?? $defaultPageSize;
 				$defaultSort = $pageDefaults->pageSort ?? $defaultSort;
+				$defaultFilters = $pageDefaults->userListFilters ?? $defaultFilters;
 			}
 		}
 
@@ -214,7 +216,7 @@ class MyAccount_MyList extends MyAccount {
 			$activeSort = $_REQUEST['sort'];
 			//Update the default sort for the user as well
 			if ($userObj !== false) {
-				PageDefaults::updatePageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id, null, $activeSort);
+				PageDefaults::updatePageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id, null, $activeSort, null);
 			}
 		}
 		if (empty($activeSort)) {
@@ -225,7 +227,7 @@ class MyAccount_MyList extends MyAccount {
 		if (isset($_REQUEST['pageSize']) && (is_numeric($_REQUEST['pageSize']))) {
 			$defaultPageSize = $_REQUEST['pageSize'];
 			if ($userObj !== false) {
-				PageDefaults::updatePageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id, $defaultPageSize, null);
+				PageDefaults::updatePageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id, $defaultPageSize, null, null);
 			}
 		}
 
@@ -239,10 +241,20 @@ class MyAccount_MyList extends MyAccount {
 		$availableFilters = $list->getAvailableFormatFilters();
 		$interface->assign('availableFilters', $availableFilters);
 		$activeFilters = [];
-		if (!empty($_REQUEST['filters'])) {
+
+		if (isset($_REQUEST['filters'])) {
 			$filterString = $_REQUEST['filters'];
-			$formatFilters = explode(',', $filterString);
-			$activeFilters['format'] = array_filter($formatFilters); // Remove empty values
+			if (!empty($filterString)) {
+				$formatFilters = explode(',', $filterString);
+				$activeFilters['format'] = array_filter($formatFilters);
+			}
+			if ($userObj !== false) {
+				PageDefaults::updatePageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id, null, null, $filterString);
+			}
+		} elseif (!empty($defaultFilters)) {
+			// Use saved filters from user preferences.
+			$formatFilters = explode(',', $defaultFilters);
+			$activeFilters['format'] = array_filter($formatFilters);
 		}
 		$interface->assign('activeFilters', $activeFilters);
 

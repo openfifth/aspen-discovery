@@ -18,7 +18,7 @@ class Admin_EmailTemplates extends ObjectEditor {
 		return 'Email Templates';
 	}
 
-	function getAllObjects($page, $recordsPerPage): array {
+	function getAllObjects(int $page, int $recordsPerPage): array {
 		$list = [];
 
 		$object = new EmailTemplate();
@@ -87,5 +87,9 @@ class Admin_EmailTemplates extends ObjectEditor {
 
 	function canView(): bool {
 		return UserAccount::userHasPermission('Administer All Email Templates') || UserAccount::userHasPermission('Administer Library Email Templates');
+	}
+
+	public function hasRecordLocking() : bool {
+		return true;
 	}
 }

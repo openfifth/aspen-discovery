@@ -27,7 +27,7 @@ class Admin_YearInReview extends ObjectEditor {
 		]);
 	}
 
-	function getAllObjects($page, $recordsPerPage): array {
+	function getAllObjects(int $page, int $recordsPerPage): array {
 		$object = new YearInReviewSetting();
 		$object->orderBy($this->getSort());
 		$this->applyFilters($object);
@@ -103,5 +103,9 @@ class Admin_YearInReview extends ObjectEditor {
 
 	function canCopy() : bool {
 		return $this->canAddNew();
+	}
+
+	public function hasRecordLocking() : bool {
+		return true;
 	}
 }
