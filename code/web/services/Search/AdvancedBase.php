@@ -160,6 +160,7 @@ abstract class Search_AdvancedBase extends Action {
 				}
 				if (!$valueSelected) {
 					$currentList[$availabilityToggleValue]['selected'] = true;
+					$currentList[$availabilityToggleValue]['filter'] = '';
 				}
 			}
 

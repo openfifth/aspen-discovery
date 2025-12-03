@@ -32,6 +32,8 @@ class Placard extends DB_LibraryLocationLinkedObject {
 	protected $_triggers;
 	/** @var int[] */
 	protected $_languages;
+	/** @var array */
+	protected $_debugCandidates = [];
 
 	protected $_libraries;
 	protected $_locations;
@@ -239,6 +241,8 @@ class Placard extends DB_LibraryLocationLinkedObject {
 		} elseif ($name == 'languages') {
 			$this->getLanguages();
 			return $this->_languages;
+		} elseif ($name == 'debugCandidates') {
+			return $this->_debugCandidates;
 		} else {
 			return parent::__get($name);
 		}
@@ -253,9 +257,23 @@ class Placard extends DB_LibraryLocationLinkedObject {
 			$this->_triggers = $value;
 		} elseif ($name == 'languages') {
 			$this->_languages = $value;
+		} elseif ($name == 'debugCandidates') {
+			$this->_debugCandidates = $value;
 		} else {
 			parent::__set($name, $value);
 		}
+	}
+
+	/** @noinspection PhpUnused */
+	public function __isset($name): bool {
+		if ($name == 'debugCandidates') {
+			return !empty($this->_debugCandidates);
+		}
+
+		if (property_exists($this, $name)) {
+			return isset($this->$name);
+		}
+		return isset($this->_data[$name]);
 	}
 
 	/**
@@ -432,6 +450,11 @@ class Placard extends DB_LibraryLocationLinkedObject {
 		}
 	}
 
+	/** @noinspection PhpUnused */
+	public function bodyHasAnchor() : bool {
+		return !empty($this->body) && (stripos($this->body, '<a') !== false);
+	}
+
 	public function isDismissed() : bool {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/PlacardDismissal.php';
 		//Make sure the user has not dismissed the placard
@@ -586,7 +609,8 @@ class Placard extends DB_LibraryLocationLinkedObject {
 	public static function getPlacardForTriggerWord(string $triggerWord) : ?Placard {
 		$trigger = new PlacardTrigger();
 		$escapedWord = $trigger->escape($triggerWord);
-		$trigger->whereAdd("CASE WHEN exactMatch = 0 THEN $escapedWord like concat('%', triggerWord, '%') ELSE $escapedWord = triggerWord END");
+		// Allow matches where the search term contains the trigger or is contained within the trigger (partial/prefix).
+		$trigger->whereAdd("CASE WHEN exactMatch = 0 THEN ($escapedWord like concat('%', triggerWord, '%') OR triggerWord LIKE concat('%', $escapedWord, '%')) ELSE $escapedWord = triggerWord END");
 		$trigger->selectAdd();
 		$trigger->selectAdd('placard_trigger.*');
 		//Pre-filter for date and scope
@@ -606,30 +630,96 @@ class Placard extends DB_LibraryLocationLinkedObject {
 			$placardLibrary->libraryId = $library->libraryId;
 			$placard->joinAdd($placardLibrary, 'INNER', 'placardLibrary', 'id', 'placardId');
 		}
-		//also check language
+
 		global $activeLanguage;
+		$candidates = [];
+		$searchTermLower = strtolower($triggerWord);
 		$placardLanguage = new PlacardLanguage();
 		$placardLanguage->languageId = $activeLanguage->id;
 		$placard->joinAdd($placardLanguage, 'INNER', 'placardLanguage', 'id', 'placardId');
-
 		$trigger->joinAdd($placard, 'INNER', 'placard', 'placardId', 'id');
 		$trigger->find();
-		$placardToDisplay = null;
 		while ($trigger->fetch()) {
-			$placardToDisplay = new Placard();
-			$placardToDisplay->id = $trigger->placardId;
-			if ($placardToDisplay->find(true)) {
-				if ($placardToDisplay->isDismissed()) {
-					$placardToDisplay = null;
-				}
-			} else {
-				$placardToDisplay = null;
+			$placardCandidate = new Placard();
+			$placardCandidate->id = $trigger->placardId;
+			if (!$placardCandidate->find(true) || $placardCandidate->isDismissed()) {
+				continue;
 			}
-			if ($placardToDisplay != null) {
-				break;
+
+			$triggerLower = strtolower($trigger->triggerWord);
+			$score = self::calculateTriggerMatchScore($searchTermLower, $triggerLower, $trigger->exactMatch);
+			if (!isset($candidates[$trigger->placardId]) || $score > $candidates[$trigger->placardId]['score']) {
+				$candidates[$trigger->placardId] = [
+					'placard' => $placardCandidate,
+					'score' => $score,
+					'triggerWord' => $trigger->triggerWord,
+				];
 			}
 		}
-		return $placardToDisplay;
+
+		if (empty($candidates)) {
+			return null;
+		}
+
+		uasort($candidates, function($a, $b) {
+			return $b['score'] <=> $a['score'];
+		});
+
+		$best = reset($candidates);
+		$bestPlacard = $best['placard'];
+
+		// Store debug information for display if debugging is enabled
+		$debugInfo = [];
+		foreach ($candidates as $placardId => $candidate) {
+			$debugInfo[] = [
+				'title' => $candidate['placard']->title,
+				'triggerWord' => $candidate['triggerWord'],
+				'score' => $candidate['score'],
+				'isSelected' => ($placardId === $bestPlacard->id),
+			];
+		}
+		$bestPlacard->debugCandidates = $debugInfo;
+
+		return $bestPlacard;
 	}
 
+	/**
+	 * Calculate a match score for a trigger word match.
+	 * Higher scores indicate better/more specific matches.
+	 *
+	 * Match type priorities (additive bonuses):
+	 * - Exact match: 3
+	 * - Whole word match: 2
+	 * - Partial match (trigger contains search term / prefix-subset): 1.5 + overlap ratio
+	 * - Partial match (search term contains trigger): 1
+	 *
+	 * Longer trigger words receive a fractional bonus equal to a multiple of 0.01 times their length.
+	 *
+	 * @param string $searchTerm The search term (lowercased).
+	 * @param string $triggerWord The trigger word (lowercased).
+	 * @param int $exactMatch Whether this trigger requires exact match.
+	 * @return float The match score.
+	 */
+	private static function calculateTriggerMatchScore(string $searchTerm, string $triggerWord, int $exactMatch): float {
+		$triggerLength = strlen($triggerWord);
+		if ($searchTerm === $triggerWord) {
+			return 3.0 + ($triggerLength * 0.01);
+		}
+		if (preg_match('/\b' . preg_quote($triggerWord, '/') . '\b/', $searchTerm)) {
+			return 2.0 + ($triggerLength * 0.01);
+		}
+		// If exact match is enabled, no partial word consideration.
+		if ($exactMatch == 0) {
+			// Handle cases where the search term is a prefix/subset of the trigger word (e.g., "union lead" vs "union leader").
+			if (str_contains($triggerWord, $searchTerm)) {
+				$overlapRatio = strlen($searchTerm) / $triggerLength;
+				return 1.5 + $overlapRatio + ($triggerLength * 0.01);
+			}
+			if (str_contains($searchTerm, $triggerWord)) {
+				return 1.0 + ($triggerLength * 0.01);
+			}
+		}
+
+		return 0.0;
+	}
 }

@@ -657,17 +657,17 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 				$pluralAudiencesToSkip = preg_split($splitPattern, strtolower($searchInterpreterSettings->pluralAudiencesToSkip), -1, PREG_SPLIT_NO_EMPTY);;
 				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('kid', $audiencesToSkip);
 				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('kids', $pluralAudiencesToSkip);
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(kid|children|juvenile)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Juvenile');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(kid|children|juvenile)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, 'target_audience', 'Juvenile');
 				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('teen', $audiencesToSkip);
 				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('teens', $pluralAudiencesToSkip);
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(teen|young adult)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Young Adult');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(teen|young adult)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, 'target_audience', 'Young Adult');
 				$processSingular = $searchInterpreterSettings->processAudiences && !in_array('adult', $audiencesToSkip);
 				$processPlural = $searchInterpreterSettings->processPluralAudiences && !in_array('adults', $pluralAudiencesToSkip);
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(adult|senior)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->audienceFacet, 'Adult');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(adult|senior)', $processSingular, $processPlural, $searchInterpreterSettings->processNew, false, 'target_audience', 'Adult');
 			}
 			if ($searchInterpreterSettings->processFictionNonFiction) {
-				$this->checkAndApplyFacetValueToSearch($searchTerm, 'non[-\s]?fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->fictionNonFictionFacet, 'Non Fiction');
-				$this->checkAndApplyFacetValueToSearch($searchTerm, '(?<!science\s)fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, $searchInterpreterSettings->fictionNonFictionFacet, 'Fiction');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, 'non[-\s]?fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, 'literary_form', 'Non Fiction');
+				$this->checkAndApplyFacetValueToSearch($searchTerm, '(?<!science\s)fiction(al)?', true, false, $searchInterpreterSettings->processNew, false, 'literary_form', 'Fiction');
 			}
 			if ($this->automaticFacetsApplied && $searchInterpreterSettings->processAvailable) {
 				$this->checkAndApplyFacetValueToSearch($searchTerm, 'available', true, false, false, false, 'availability_toggle', 'available');
@@ -926,7 +926,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 			header('Content-Disposition: attachment;filename="SearchResults.csv"');
 			$fp = fopen('php://output', 'w');
 
-			$fields = array('Link', 'Title', 'Author', 'Publisher', 'Publish Date', 'Place of Publication', 'Format', 'Location & Call Number');
+			$fields = array('Link', 'Title', 'Author', 'ISBN', 'UPC', 'Publisher', 'Publish Date', 'Place of Publication', 'Format', 'Location & Call Number');
 			fputcsv($fp, $fields);
 
 			$docs = $result['response']['docs'];
@@ -946,6 +946,30 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 
 					$author = '';
 					$author = $curDoc['author_display'];
+
+					$isbn = '';
+					if (isset($curDoc['primary_isbn'])) {
+						$isbn = $curDoc['primary_isbn'];
+					} elseif (isset($curDoc['isbn'])) {
+						if (is_array($curDoc['isbn'])) {
+							$isbnArray = array_slice($curDoc['isbn'], 0, 3);
+							$isbn = implode(', ', $isbnArray);
+						} else {
+							$isbn = $curDoc['isbn'];
+						}
+					}
+
+					$upc = '';
+					if (isset($curDoc['primary_upc'])) {
+						$upc = $curDoc['primary_upc'];
+					} elseif (isset($curDoc['upc'])) {
+						if (is_array($curDoc['upc'])) {
+							$upcArray = array_slice($curDoc['upc'], 0, 3);
+							$upc = implode(', ', $upcArray);
+						} else {
+							$upc = $curDoc['upc'];
+						}
+					}
 
 					$publisher = '';
 					if (isset($curDoc['publisherStr'])) {
@@ -1035,7 +1059,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 					}
 					$groupedWorkDriver = null;
 					$output = implode(',', $output);
-					$row = array ($link, $title, $author, $publisher, $publishDate, $placeOfPublication, $uniqueFormats, $output);
+					$row = array ($link, $title, $author, $isbn, $upc, $publisher, $publishDate, $placeOfPublication, $uniqueFormats, $output);
 					fputcsv($fp, $row);
 				}
 			}

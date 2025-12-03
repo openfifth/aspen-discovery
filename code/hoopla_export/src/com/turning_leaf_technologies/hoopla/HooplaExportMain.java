@@ -274,13 +274,10 @@ public class HooplaExportMain {
 				getItemDetailsForRecordStmt.setLong(1, hooplaId);
 				ResultSet getItemDetailsForRecordRS = getItemDetailsForRecordStmt.executeQuery();
 				if (getItemDetailsForRecordRS.next()){
-					String rawResponse = getItemDetailsForRecordRS.getString("rawResponse");
 					String hooplaType = getItemDetailsForRecordRS.getString("hooplaType");
 					try {
-						JSONObject itemDetails = new JSONObject(rawResponse);
-						String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(itemDetails, hooplaId);
-						//Reindex the record
-						getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
+						//Refetch the record from Hoopla
+						exportSingleHooplaTitle(recordId, hooplaType);
 
 						if (hooplaType != null && hooplaType.equalsIgnoreCase("Flex")){
 							numFlexRecords++;
@@ -307,6 +304,8 @@ public class HooplaExportMain {
 				logEntry.addNote("Regrouped " + numRecordsToReloadProcessed + " records marked for reprocessing");
 				logEntry.addNote("Regrouped " + numInstantRecords + " Instant records");
 				logEntry.addNote("Regrouped " + numFlexRecords + " Flex records");
+			}else{
+				logEntry.addNote("No records marked for reprocessing");
 			}
 			getRecordsToReloadRS.close();
 		}catch (Exception e){
@@ -700,8 +699,8 @@ public class HooplaExportMain {
 							String newStatus = availability.getString("status");
 							int newHoldsQueueSize = newStatus.equals("BORROW") ? 0 :
 							availability.has("holdsQueueSize") ? availability.getInt("holdsQueueSize") : 0;
-							int newAvailableCopies = availability.getInt("availableCopies");
-							int newTotalCopies = availability.getInt("totalCopies");
+							int newAvailableCopies = availability.has("availableCopies") ? availability.getInt("availableCopies") : 0;
+							int newTotalCopies = availability.has("totalCopies") ? availability.getInt("totalCopies") : 0;
 
 
 							boolean needsUpdate =  !existingInDB || existingHoldsQueueSize != newHoldsQueueSize || existingAvailableCopies != newAvailableCopies || existingTotalCopies != newTotalCopies || !Objects.equals(existingStatus, newStatus);
@@ -837,6 +836,18 @@ public class HooplaExportMain {
 									}
 								}
 							}
+						}else{
+							//The title has been deleted
+							RemoveRecordFromWorkResult result = getRecordGroupingProcessor().removeRecordFromGroupedWork("hoopla", singleWorkId);
+							if (result.reindexWork) {
+								getGroupedWorkIndexer().processGroupedWork(result.permanentId);
+							} else if (result.deleteWork) {
+								//Delete the work from solr and the database
+								getGroupedWorkIndexer().deleteRecord(result.permanentId, result.groupedWorkId);
+							}
+							logEntry.incDeleted();
+							deleteHooplaItemStmt.setLong(1, numericSingleWorkId);
+							deleteHooplaItemStmt.executeUpdate();
 						}
 					}
 				}
