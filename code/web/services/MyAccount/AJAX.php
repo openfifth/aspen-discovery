@@ -3627,7 +3627,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	public function exportReadingHistory() {
+	public function exportReadingHistory(): void {
 		$user = UserAccount::getActiveUserObj();
 		if ($user) {
 			$selectedSortOption = $this->setSort('sort', 'readingHistory');
@@ -3640,9 +3640,7 @@ class MyAccount_AJAX extends JSON_Action {
 			header('Content-Disposition: attachment;filename="ReadingHistory.csv"');
 			header('Cache-Control: max-age=0');
 			$fp = fopen('php://output', 'w');
-
 			try {
-				// Set properties
 				$fields = array(
 					'Title',
 					'Author',
@@ -3651,9 +3649,7 @@ class MyAccount_AJAX extends JSON_Action {
 				);
 				fputcsv($fp, $fields);
 
-				//Loop Through The Report Data
 				foreach ($readingHistory['titles'] as $row) {
-
 					$title = $row['title'];
 					$author = $row['author'];
 					$format = is_array($row['format']) ? implode(',', $row['format']) : $row['format'];
@@ -3679,7 +3675,7 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			} catch (Exception $e) {
 				global $logger;
-				$logger->log("Error exporting to csv " . $e, Logger::LOG_ERROR);
+				$logger->log("Error exporting to csv " . $e->getMessage(), Logger::LOG_ERROR);
 			}
 		}
 		exit;
@@ -4337,6 +4333,9 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 		$showCovers = $this->setShowCovers();
 
+		require_once ROOT_DIR . '/sys/IP/IPAddress.php';
+		$interface->assign('showDebuggingInformation', IPAddress::showDebuggingInformation());
+
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -4383,16 +4382,16 @@ class MyAccount_AJAX extends JSON_Action {
 
 			$interface->assign('sortOptions', $sortOptions);
 			$interface->assign('defaultSortOption', $selectedSortOption);
-			$page = isset($_REQUEST['page']) ? $_REQUEST['page'] : 1;
+			$page = $_REQUEST['page'] ?? 1;
 			$interface->assign('page', $page);
 
 			$recordsPerPage = 20;
 			$interface->assign('curPage', $page);
 
-			$filter = isset($_REQUEST['readingHistoryFilter']) ? $_REQUEST['readingHistoryFilter'] : '';
+			$filter = $_REQUEST['readingHistoryFilter'] ?? '';
 			$interface->assign('readingHistoryFilter', $filter);
 
-			$result = $patron->getReadingHistory($page, $recordsPerPage, $selectedSortOption, $filter, false);
+			$result = $patron->getReadingHistory($page, $recordsPerPage, $selectedSortOption, $filter);
 
 			$link = $_SERVER['REQUEST_URI'];
 			if (preg_match('/[&?]page=/', $link)) {
@@ -4425,6 +4424,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('historyActive', $result['historyActive']);
 				$interface->assign('transList', $result['titles']);
 				$patronHomeLibrary = $patron->getHomeLibrary();
+				$interface->assign('library', $patronHomeLibrary);
 				$result['showCostSavings'] = $patronHomeLibrary->enableCostSavings && $patron->enableCostSavings;
 				$result['costSavingsMessage'] = $user->getTotalCostSavingsMessage(true);
 			}
@@ -4562,15 +4562,15 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 
-	function deleteReadingHistoryEntry() {
+	function deleteReadingHistoryEntry(): array {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Error',
+				'text' => 'Failed to Delete Reading History Entry',
 				'isPublicFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Unknown Error',
+				'text' => 'An unknown error has occurred deleting this reading history entry.',
 				'isPublicFacing' => true,
 			]),
 		];
@@ -4580,31 +4580,140 @@ class MyAccount_AJAX extends JSON_Action {
 			$patronId = $_REQUEST['patronId'];
 			$patron = $user->getUserReferredTo($patronId);
 			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user';
+				$result['message'] = 'You do not have permissions to delete reading history for this user.';
 			} else {
-				$permanentId = $_REQUEST['permanentId'];
-				$selectedTitles = [$permanentId => $permanentId];
-				$readingHistoryAction = 'deleteMarked';
-				$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
+				$entryId = $_REQUEST['entryId'] ?? null;
+				if (!empty($entryId)) {
+					$selectedTitles = [$entryId => $entryId];
+					$readingHistoryAction = 'deleteMarked';
+					$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
+				} else {
+					$result['message'] = 'No reading history entry ID was provided.';
+				}
 			}
 		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history';
+			$result['message'] = 'You must be logged in to delete from the reading history.';
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function deleteReadingHistoryEntryByTitleAuthor() {
+	function updateReadingHistoryReturnDate(): array {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Error',
+				'text' => 'Check-In Update Failed',
 				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Unknown Error',
+			])
+		];
+
+		$user = UserAccount::getActiveUserObj();
+		if (!$user) {
+			$result['message'] = translate([
+				'text' => 'You must be logged in to update reading history.',
 				'isPublicFacing' => true,
-			]),
+			]);
+			return $result;
+		}
+
+		$entryId = $_REQUEST['entryId'] ?? null;
+		$newReturnDate = $_REQUEST['newReturnDate'] ?? null;
+
+		if (empty($entryId) || !is_numeric($entryId)) {
+			$result['title'] = translate([
+				'text' => 'Invalid Entry',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Invalid entry ID provided.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if (empty($newReturnDate) || !is_numeric($newReturnDate)) {
+			$result['title'] = translate([
+				'text' => 'Invalid Date Input',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Invalid return date provided.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$todayTimestamp = strtotime('today');
+		if ($newReturnDate > $todayTimestamp) {
+			$result['title'] = translate([
+				'text' => 'Invalid Date Input',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Return date cannot be in the future.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+		$readingHistoryEntry = new ReadingHistoryEntry();
+		$readingHistoryEntry->id = $entryId;
+
+		if (!$readingHistoryEntry->find(true)) {
+			$result['title'] = translate([
+				'text' => 'Entry Not Found',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Reading history entry not found.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if ($readingHistoryEntry->userId != $user->id) {
+			$result['title'] = translate([
+				'text' => 'Permission Denied',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You do not have permission to update this entry.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$readingHistoryEntry->editedCheckInDate = $newReturnDate;
+		if ($readingHistoryEntry->update()) {
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Check-In Date Updated',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Return date updated successfully.',
+				'isPublicFacing' => true,
+			]);
+			$result['formattedDate'] = date('M d, Y', $newReturnDate);
+		} else {
+			$result['message'] = translate([
+				'text' => 'Failed to update return date in database.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function deleteGroupedReadingHistoryEntry(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Failed to Delete Reading History Entry',
+				'isPublicFacing' => true,
+			])
 		];
 
 		$user = UserAccount::getActiveUserObj();
@@ -4612,14 +4721,156 @@ class MyAccount_AJAX extends JSON_Action {
 			$patronId = $_REQUEST['patronId'];
 			$patron = $user->getUserReferredTo($patronId);
 			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user';
+				$result['message'] = 'You do not have permissions to delete reading history for this user.';
 			} else {
-				$title = $_REQUEST['title'];
-				$author = $_REQUEST['author'];
-				$result = $patron->deleteReadingHistoryEntryByTitleAuthor($title, $author);
+				$groupedWorkPermanentId = $_REQUEST['groupedWorkPermanentId'] ?? null;
+				$title = $_REQUEST['title'] ?? null;
+				$author = $_REQUEST['author'] ?? null;
+
+				if (!empty($groupedWorkPermanentId) || (!empty($title))) {
+					require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+					$readingHistoryEntry = new ReadingHistoryEntry();
+					$readingHistoryEntry->userId = $patron->id;
+					$readingHistoryEntry->deleted = 0;
+
+					// Match by groupedWorkPermanentId if available, otherwise by title/author
+					if (!empty($groupedWorkPermanentId)) {
+						$readingHistoryEntry->groupedWorkPermanentId = $groupedWorkPermanentId;
+					} else {
+						$readingHistoryEntry->title = $title;
+						if (!empty($author)) {
+							$readingHistoryEntry->author = $author;
+						}
+					}
+
+					$readingHistoryEntry->find();
+					$numDeleted = 0;
+					while ($readingHistoryEntry->fetch()) {
+						$readingHistoryEntry->deleted = 1;
+						$readingHistoryEntry->update();
+						$numDeleted++;
+					}
+
+					if ($numDeleted > 0) {
+						$result['success'] = true;
+						$result['title'] = translate([
+							'text' => 'Successfully Deleted Reading History Entry',
+							'isPublicFacing' => true,
+						]);
+						$entryText = $numDeleted === 1 ? 'entry' : 'entries';
+						$result['message'] = translate([
+							'text' => "Deleted %1% $entryText from your reading history.",
+							1 => $numDeleted,
+							'isPublicFacing' => true,
+						]);
+					} else {
+						$result['message'] = translate([
+							'text' => 'No entries found to delete.',
+							'isPublicFacing' => true,
+						]);
+					}
+				} else {
+					$result['message'] = 'No reading history entry information was provided.';
+				}
 			}
 		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history';
+			$result['message'] = 'You must be logged in to delete from the reading history.';
+		}
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function deleteSelectedReadingHistoryEntries(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Failed to Delete Reading History Entries',
+				'isPublicFacing' => true,
+			])
+		];
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user) {
+			$patronId = $_REQUEST['patronId'];
+			$patron = $user->getUserReferredTo($patronId);
+			if ($patron == null) {
+				$result['message'] = 'You do not have permissions to delete reading history for this user.';
+			} else {
+				$ids = $_REQUEST['ids'] ?? [];
+				if (is_array($ids) && count($ids) > 0) {
+					require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+					$totalDeleted = 0;
+					$numFailed = 0;
+					// For each selected grouped entry, delete all associated checkout records.
+					foreach ($ids as $id) {
+						$groupedEntry = new ReadingHistoryEntry();
+						$groupedEntry->id = $id;
+						$groupedEntry->userId = $patron->id;
+						$groupedEntry->deleted = 0;
+						if ($groupedEntry->find(true)) {
+							// Now find and delete all entries with the same groupedWorkPermanentId (or title/author).
+							$deleteQuery = new ReadingHistoryEntry();
+							$deleteQuery->userId = $patron->id;
+							$deleteQuery->deleted = 0;
+							if (!empty($groupedEntry->groupedWorkPermanentId)) {
+								$deleteQuery->groupedWorkPermanentId = $groupedEntry->groupedWorkPermanentId;
+							} else {
+								$deleteQuery->title = $groupedEntry->title;
+								if (!empty($groupedEntry->author)) {
+									$deleteQuery->author = $groupedEntry->author;
+								}
+							}
+							$deleteQuery->find();
+							while ($deleteQuery->fetch()) {
+								$deleteQuery->deleted = 1;
+								$deleteQuery->update();
+								$totalDeleted++;
+							}
+						} else {
+							$numFailed++;
+						}
+					}
+
+					if ($totalDeleted > 0) {
+						$result['success'] = true;
+						$result['title'] = translate([
+							'text' => $totalDeleted === 1 ? 'Successfully Deleted Reading History Entry' : 'Successfully Deleted Reading History Entries',
+							'isPublicFacing' => true,
+						]);
+						if ($numFailed > 0) {
+							$deletedText = $totalDeleted === 1 ? 'entry' : 'entries';
+							$failedText = $numFailed === 1 ? 'entry' : 'entries';
+							$result['message'] = translate([
+								'text' => "Deleted %1% $deletedText from your reading history. %2% $failedText could not be deleted.",
+								1 => $totalDeleted,
+								2 => $numFailed,
+								'isPublicFacing' => true,
+							]);
+						} else {
+							$entryText = $totalDeleted === 1 ? 'entry' : 'entries';
+							$result['message'] = translate([
+								'text' => "Deleted %1% $entryText from your reading history.",
+								1 => $totalDeleted,
+								'isPublicFacing' => true,
+							]);
+						}
+					} else {
+						$result['success'] = false;
+						$result['title'] = translate([
+							'text' => 'Failed to Delete Reading History Entries',
+							'isPublicFacing' => true,
+						]);
+						$result['message'] = translate([
+							'text' => 'No entries could be deleted from your reading history.',
+							'isPublicFacing' => true,
+						]);
+					}
+				} else {
+					$result['message'] = 'No reading history entries were selected.';
+				}
+			}
+		} else {
+			$result['message'] = 'You must be logged in to delete from the reading history.';
 		}
 		return $result;
 	}

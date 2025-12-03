@@ -324,7 +324,7 @@ class IPAddress extends DataObject {
 				$endIp = $startIp;
 			}
 		}
-		//echo("\r\n<br/>$ipAddress: " . sprintf('%u', $startIp) . " - " .  sprintf('%u', $endIp));
+
 		$this->setProperty('startIpVal', $startIp, null);
 		$this->setProperty('endIpVal', $endIp, null);
 		if (!$startIp || !$endIp) {
@@ -452,7 +452,6 @@ class IPAddress extends DataObject {
 				// Current IP as hex without prefix.
 				$currentHex = substr($ipVal, 5);
 
-				// Check if the IP is within the range.
 				if (IPAddress::ipv6HexInRange($currentHex, $startHex, $endHex)) {
 					enableErrorHandler();
 					IPAddress::$ipAddressesForIP[$ipVal] = $ipObject;
@@ -571,14 +570,6 @@ class IPAddress extends DataObject {
 	public static function allowAPIAccessForClientIP(): bool {
 		$clientIP = IPAddress::getClientIP();
 		$ipInfo = IPAddress::getIPAddressForIP($clientIP);
-
-		global $logger;
-		if ($ipInfo) {
-			$logger->log("IP rule found with allowAPIAccess: " . ($ipInfo->allowAPIAccess ? 'true.' : 'false.'), Logger::LOG_DEBUG);
-		} else {
-			$logger->log("No IP rule found for $clientIP, denying API access.", Logger::LOG_DEBUG);
-		}
-
 		if (!empty($ipInfo)) {
 			return $ipInfo->allowAPIAccess;
 		} else {

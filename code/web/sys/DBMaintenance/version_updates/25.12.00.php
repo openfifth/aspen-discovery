@@ -230,6 +230,40 @@ function getUpdates25_12_00(): array {
 				WHERE l.selfRegistrationSuccessMessage IS NOT NULL AND l.selfRegistrationSuccessMessage <> '' AND existing.id IS NULL AND lang.code NOT IN ('ubb','pig')"
 			]
 		], //library_self_reg_success_message_translations
+		'reading_history_add_barcode' => [
+			'title' => 'Reading History - Add Barcode Field',
+			'description' => 'Add barcode column to user_reading_history_work table to store item barcode for historical checkouts.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS barcode VARCHAR(50) DEFAULT NULL AFTER sourceId",
+			]
+		],
+		'reading_history_add_edited_checkin_date' => [
+			'title' => 'Reading History - Add Edited Check-In Date Field',
+			'description' => 'Add editedCheckInDate column to user_reading_history_work table to store user-edited check-in dates while preserving original checkInDate.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS editedCheckInDate BIGINT(20) DEFAULT NULL AFTER checkInDate",
+			]
+		],
+		'library_display_call_number_and_volume_in_checkout_history' => [
+			'title' => 'Library - Display Call Number and Volume in Checkout History',
+			'description' => 'Add options to display call number and volume in checkout history.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN IF NOT EXISTS displayCallNumberInCheckoutHistory TINYINT(1) DEFAULT 0',
+				'ALTER TABLE library ADD COLUMN IF NOT EXISTS displayVolumeInCheckoutHistory TINYINT(1) DEFAULT 0',
+			]
+		], //library_display_call_number_and_volume_in_checkout_history
+		'reading_history_add_call_number_and_volume' => [
+			'title' => 'Reading History - Add Call Number and Volume Fields',
+			'description' => 'Add callNumber and volume columns to user_reading_history_work table to store item call number and volume information.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS callNumber VARCHAR(255) DEFAULT NULL AFTER barcode",
+				"ALTER TABLE user_reading_history_work ADD COLUMN IF NOT EXISTS volume VARCHAR(255) DEFAULT NULL AFTER callNumber",
+			]
+		], //reading_history_add_call_number_and_volume
 
 		// Imani -BWS
 		'externalRequestSettings' => [

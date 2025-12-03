@@ -76,6 +76,7 @@ class RecordDriverFactory {
 		}
 
 		disableErrorHandler();
+		$recordDriver = null;
 		if ($recordType == 'overdrive') {
 			require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
 			$recordDriver = new OverDriveRecordDriver($recordId, $groupedWork);
