@@ -8973,7 +8973,22 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteListForm(): array {
-		$modalBody = translate([
+		$userObj = UserAccount::getActiveUserObj();
+		$hideUI = false;
+		if ($userObj !== false) {
+			$patronHomeLibrary = $userObj->getHomeLibrary();
+			if ($patronHomeLibrary) {
+				$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
+			}
+		}
+
+		if ($hideUI) {
+			$modalBody = translate([
+				'text' => 'Are you sure you want to delete this entire list?',
+				'isPublicFacing' => true
+			]);
+		} else {
+			$modalBody = translate([
 				'text' => 'Are you sure you want to delete this entire list? The list and all titles within it will be soft-deleted and can be restored by library staff within 30 days.',
 				'isPublicFacing' => true
 			]) . '<br/><br/>' .
@@ -8984,6 +8999,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true
 			]) . '</label>' .
 			'</div>';
+		}
 
 		$modalButtons = '<button id="confirmDeleteList" class="tool btn btn-danger" onclick="AspenDiscovery.Lists.doDeleteList()"><span class="fas fa-spinner fa-spin" style="display:none; margin-right: 4px;"></span>' . translate([
 				'text' => 'Yes',
@@ -9006,17 +9022,33 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteSelectedListsForm(): array {
-		$modalBody = translate([
-				'text' => 'Are you sure you want to delete the selected lists? The lists and all titles within them will be soft-deleted and can be restored by library staff within 30 days.',
+		$userObj = UserAccount::getActiveUserObj();
+		$hideUI = false;
+		if ($userObj !== false) {
+			$patronHomeLibrary = $userObj->getHomeLibrary();
+			if ($patronHomeLibrary) {
+				$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
+			}
+		}
+
+		if ($hideUI) {
+			$modalBody = translate([
+				'text' => 'Are you sure you want to delete the selected lists?',
 				'isPublicFacing' => true
-			]) . '<br/><br/>' .
-			'<div>' .
-			'<input type="checkbox" id="optOutSoftDeletionBulk" style="margin-right: 5px;">' .
-			'<label class="form-check-label" for="optOutSoftDeletionBulk">' . translate([
-				'text' => 'Opt Out of Soft Deletion',
-				'isPublicFacing' => true
-			]) . '</label>' .
-			'</div>';
+			]);
+		} else {
+			$modalBody = translate([
+					'text' => 'Are you sure you want to delete the selected lists? The lists and all titles within them will be soft-deleted and can be restored by library staff within 30 days.',
+					'isPublicFacing' => true
+				]) . '<br/><br/>' .
+				'<div>' .
+				'<input type="checkbox" id="optOutSoftDeletionBulk" style="margin-right: 5px;">' .
+				'<label class="form-check-label" for="optOutSoftDeletionBulk">' . translate([
+					'text' => 'Opt Out of Soft Deletion',
+					'isPublicFacing' => true
+				]) . '</label>' .
+				'</div>';
+		}
 
 		$modalButtons = '<button id="confirmDeleteSelectedLists" class="tool btn btn-danger" onclick="AspenDiscovery.Account.doDeleteSelectedLists()"><span class="fas fa-spinner fa-spin" style="display:none; margin-right: 4px;"></span>' . translate([
 				'text' => 'Yes',

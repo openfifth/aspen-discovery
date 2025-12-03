@@ -120,6 +120,13 @@ function getUpdates25_12_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'hide_soft_delete_list_ui' => [
+			'title' => 'Hide Soft Delete List UI',
+			'description' => 'Add setting to hide soft delete messaging and checkbox when deleting lists',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN IF NOT EXISTS hideSoftDeleteListUI TINYINT(1) DEFAULT 0",
+			],
+		], //hide_soft_delete_list_ui
 		'list_format_filter_persistence' => [
 			'title' => 'Allow Persistence of User List Format Filters',
 			'description' => 'Add userListFilters column to persist format filters per list for users.',
