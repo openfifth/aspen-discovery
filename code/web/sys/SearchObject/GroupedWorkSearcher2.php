@@ -286,11 +286,12 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		$allEditionFilters = [];
 		if (!$this->indexEngine->editionLimitersAreDisabled()) {
 			foreach ($selectedAvailableAtValues as $selectedAvailableAtValue) {
-				$selectedAvailableAtValue = str_replace('(', '\(', $selectedAvailableAtValue);
-				$selectedAvailableAtValue = str_replace(')', '\)', $selectedAvailableAtValue);
+				$escapedAvailableAt = str_replace([' ', '(', ')'], ['_', '\\(', '\\)'], $selectedAvailableAtValue);
 				foreach ($selectedFormatCategoryValues as $selectedFormatCategoryValue) {
+					$escapedFormatCategory = str_replace([' ', '(', ')'], ['_', '\\(', '\\)'], $selectedFormatCategoryValue);
 					foreach ($selectedFormatValues as $selectedFormatValue) {
-						$allEditionFilters[] = str_replace(' ', '_', "edition_info:$solrScope#$selectedFormatCategoryValue#$selectedFormatValue#$this->selectedAvailabilityToggleValue#$selectedAvailableAtValue#");
+						$escapedFormat = str_replace([' ', '(', ')'], ['_', '\\(', '\\)'], $selectedFormatValue);
+						$allEditionFilters[] = "edition_info:$solrScope#$escapedFormatCategory#$escapedFormat#$this->selectedAvailabilityToggleValue#$escapedAvailableAt#";
 					}
 				}
 			}
@@ -590,7 +591,7 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	 * @param string $scopedFieldName
 	 * @return string
 	 */
-	protected function getUnscopedFieldName(string $scopedFieldName): string {
+	public function getUnscopedFieldName(string $scopedFieldName): string {
 		if (str_starts_with($scopedFieldName, 'availability_toggle_')) {
 			$scopedFieldName = 'availability_toggle';
 		} elseif (str_starts_with($scopedFieldName, 'available_at')) {
@@ -601,10 +602,14 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 		return $scopedFieldName;
 	}
 
+	/**
+	 * @param string $field
+	 * @return string
+	 */
 	protected function getScopedFieldName(string $field): string {
 		global $solrScope;
 		if ($solrScope) {
-			if ($field === 'time_since_added') {
+			if ($field === 'time_since_added' || $field === 'local_time_since_added') {
 				$field = 'local_time_since_added_' . $solrScope;
 			}
 			$validFields = $this->getIndexEngine()->loadValidFields();
@@ -987,11 +992,11 @@ class SearchObject_GroupedWorkSearcher2 extends SearchObject_AbstractGroupedWork
 	/**
 	 * Retrieves a document specified by the ID.
 	 *
-	 * @param string $id The document to retrieve from Solr
-	 * @return  array              The requested resource
+	 * @param string $id The document to retrieve from Solr.
+	 * @return  array|null The requested resource, or null if not found.
 	 * @throws  AspenError
 	 */
-	function getRecord($id): array {
+	function getRecord($id): ?array {
 		$recordData = $this->indexEngine->getRecord($id, $this->getFieldsToReturn());
 		if ($recordData != null) {
 			$recordData = $this->cleanScopedFieldsForRecord($recordData);

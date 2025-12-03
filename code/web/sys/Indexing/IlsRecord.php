@@ -68,7 +68,10 @@ class IlsRecord extends DataObject {
 	 * @return ?IlsRecord
 	 */
 	static function getIlsRecordForId(string $type, string $identifier) : ?IlsRecord {
-		if (!isset(self::$preloadedIlsRecords[$type]) || !array_key_exists($identifier, self::$preloadedIlsRecords[$type])) {
+		if (!isset(self::$preloadedIlsRecords[$type])) {
+			self::$preloadedIlsRecords[$type] = [];
+		}
+		if (!array_key_exists($identifier, self::$preloadedIlsRecords[$type])) {
 			$ilsRecord = new IlsRecord();
 			$ilsRecord->source = $type;
 			$ilsRecord->ilsId = $identifier;

@@ -1453,13 +1453,16 @@ abstract class MarcRecordProcessor {
 		return publisher;
 	}
 
-	String languageFields = "008[35-37]";
+	String languageFields = "041a:008[35-37]";
 
 	void loadLanguageDetails(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, HashSet<RecordInfo> ilsRecords, String identifier) {
 		Set <String> languages = MarcUtil.getFieldList(record, languageFields);
 		HashSet<String> translatedLanguages = new HashSet<>();
 		boolean isFirstLanguage = true;
 		for (String language : languages){
+			if (!indexer.hasSystemTranslation("language", language)) {
+				continue;
+			}
 			String translatedLanguage = indexer.translateSystemValue("language", language, identifier);
 			if (settings != null) {
 				if (settings.getTreatUnknownLanguageAs() != null && !settings.getTreatUnknownLanguageAs().isEmpty() && translatedLanguage.equals("Unknown")) {
@@ -1548,7 +1551,7 @@ abstract class MarcRecordProcessor {
 		}
 
 		groupedWork.addAuthor2Role(contributors);
-		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100acq:110ab");
+		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100acdq:110ab");
 		if (displayAuthor != null && displayAuthor.indexOf(';') > 0){
 			displayAuthor = displayAuthor.substring(0, displayAuthor.indexOf(';') -1);
 		}

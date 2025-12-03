@@ -10,8 +10,6 @@ class HooplaScope extends DataObject {
 	public /** @noinspection PhpUnused */
 		$excludeTitlesWithCopiesFromOtherVendors;
 	/** @noinspection PhpUnused */
-	public $includeInstant;
-	public $includeFlex;
 	public /** @noinspection PhpUnused */
 		$includeEBooks;
 	public /** @noinspection PhpUnused */
@@ -56,11 +54,15 @@ class HooplaScope extends DataObject {
 		$excludeProfanity;
 	public /** @noinspection PhpUnused */
 		$genresToExclude;
+	// Legacy Hoopla v1 column
+	public $includeInstant;
+	public $includeFlex;
 
 	private $_libraries;
 	private $_locations;
 
 	static $_objectStructure = [];
+	private static ?bool $isHooplaVersion2 = null;
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
@@ -109,140 +111,166 @@ class HooplaScope extends DataObject {
 				'default' => 0,
 				'forcesReindex' => true,
 			],
-			'includeInstant' => [
+		];
+
+		// Legacy Hoopla v1 columns
+		if (!self::isHooplaVersion2()) {
+			$structure['includeInstant'] = [
 				'property' => 'includeInstant',
 				'type' => 'checkbox',
-				'label' => 'Include Instant',
-				'description' => 'Whether or not Instant are included',
+				'label' => 'Include Instant Titles',
+				'description' => 'Legacy Hoopla (v1) option that determines whether the Instant collection is indexed.',
 				'default' => 1,
 				'forcesReindex' => true,
-			],
-			'includeFlex' => [
+			];
+			$structure['includeFlex'] = [
 				'property' => 'includeFlex',
 				'type' => 'checkbox',
-				'label' => 'Include Flex',
-				'description' => 'Whether or not Flex are included',
+				'label' => 'Include Flex Titles',
+				'description' => 'Legacy Hoopla (v1) option that determines whether the Flex collection is indexed.',
 				'default' => 0,
 				'forcesReindex' => true,
+			];
+		}
+
+		$structure += [
+			'includeFormats' => [
+				'property' => 'includeFormats',
+				'type' => 'section',
+				'label' => 'Include Formats',
+				'description' => 'Whether or not formats are included',
+				'expandByDefault' => true,
+				'properties' => [
+					'includeEAudiobook' => [
+						'property' => 'includeEAudiobook',
+						'type' => 'checkbox',
+						'label' => 'Include eAudio books',
+						'description' => 'Whether or not EAudiobook are included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+					'includeEBooks' => [
+						'property' => 'includeEBooks',
+						'type' => 'checkbox',
+						'label' => 'Include eBooks',
+						'description' => 'Whether or not EBooks are included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+					'includeEComics' => [
+						'property' => 'includeEComics',
+						'type' => 'checkbox',
+						'label' => 'Include eComics',
+						'description' => 'Whether or not EComics are included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+					'includeMovies' => [
+						'property' => 'includeMovies',
+						'type' => 'checkbox',
+						'label' => 'Include Movies',
+						'description' => 'Whether or not Movies are included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+					'includeMusic' => [
+						'property' => 'includeMusic',
+						'type' => 'checkbox',
+						'label' => 'Include Music',
+						'description' => 'Whether or not Music is included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+					'includeTelevision' => [
+						'property' => 'includeTelevision',
+						'type' => 'checkbox',
+						'label' => 'Include Television',
+						'description' => 'Whether or not Television is included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+					'includeBingePass' => [
+						'property' => 'includeBingePass',
+						'type' => 'checkbox',
+						'label' => 'Include Binge Pass',
+						'description' => 'Whether or not Binge Pass is included',
+						'default' => 1,
+						'forcesReindex' => true,
+					],
+				],
 			],
-			'includeEAudiobook' => [
-				'property' => 'includeEAudiobook',
-				'type' => 'checkbox',
-				'label' => 'Include eAudio books',
-				'description' => 'Whether or not EAudiobook are included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutEAudiobook' => [
-				'property' => 'maxCostPerCheckoutEAudiobook',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for eAudio books',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
-			],
-			'includeEBooks' => [
-				'property' => 'includeEBooks',
-				'type' => 'checkbox',
-				'label' => 'Include eBooks',
-				'description' => 'Whether or not EBooks are included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutEBooks' => [
-				'property' => 'maxCostPerCheckoutEBooks',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for eBooks',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
-			],
-			'includeEComics' => [
-				'property' => 'includeEComics',
-				'type' => 'checkbox',
-				'label' => 'Include eComics',
-				'description' => 'Whether or not EComics are included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutEComics' => [
-				'property' => 'maxCostPerCheckoutEComics',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for eComics',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
-			],
-			'includeMovies' => [
-				'property' => 'includeMovies',
-				'type' => 'checkbox',
-				'label' => 'Include Movies',
-				'description' => 'Whether or not Movies are included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutMovies' => [
-				'property' => 'maxCostPerCheckoutMovies',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for Movies',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
-			],
-			'includeMusic' => [
-				'property' => 'includeMusic',
-				'type' => 'checkbox',
-				'label' => 'Include Music',
-				'description' => 'Whether or not Music is included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutMusic' => [
-				'property' => 'maxCostPerCheckoutMusic',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for Music',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
-			],
-			'includeTelevision' => [
-				'property' => 'includeTelevision',
-				'type' => 'checkbox',
-				'label' => 'Include Television',
-				'description' => 'Whether or not Television is included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutTelevision' => [
-				'property' => 'maxCostPerCheckoutTelevision',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for Television',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
-			],
-			'includeBingePass' => [
-				'property' => 'includeBingePass',
-				'type' => 'checkbox',
-				'label' => 'Include Binge Pass',
-				'description' => 'Whether or not Binge Pass is included',
-				'default' => 1,
-				'forcesReindex' => true,
-			],
-			'maxCostPerCheckoutBingePass' => [
-				'property' => 'maxCostPerCheckoutBingePass',
-				'type' => 'currency',
-				'displayFormat' => '%0.2f',
-				'label' => 'Max Cost Per Checkout for Binge Pass',
-				'description' => 'The maximum per checkout cost to include',
-				'default' => 5,
-				'forcesReindex' => true,
+			'priceSection' => [
+				'property' => 'priceSection',
+				'type' => 'section',
+				'label' => 'Max Cost Per Checkout for Instant',
+				'description' => 'Whether or not the max cost per checkout is included for Instant titles only',
+				'expandByDefault' => true,
+				'properties' => [
+					'maxCostPerCheckoutEAudiobook' => [
+						'property' => 'maxCostPerCheckoutEAudiobook',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for eAudio books',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],			
+					'maxCostPerCheckoutEBooks' => [
+						'property' => 'maxCostPerCheckoutEBooks',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for eBooks',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],
+					'maxCostPerCheckoutEComics' => [
+						'property' => 'maxCostPerCheckoutEComics',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for eComics',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],
+					'maxCostPerCheckoutMovies' => [
+						'property' => 'maxCostPerCheckoutMovies',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for Movies',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],
+					'maxCostPerCheckoutMusic' => [
+						'property' => 'maxCostPerCheckoutMusic',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for Music',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],
+					'maxCostPerCheckoutTelevision' => [
+						'property' => 'maxCostPerCheckoutTelevision',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for Television',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],
+
+					'maxCostPerCheckoutBingePass' => [
+						'property' => 'maxCostPerCheckoutBingePass',
+						'type' => 'currency',
+						'displayFormat' => '%0.2f',
+						'label' => 'Max Cost Per Checkout for Binge Pass',
+						'description' => 'The maximum per checkout cost to include',
+						'default' => 5,
+						'forcesReindex' => true,
+					],
+				],
 			],
 			'includeAdult' => [
 				'property' => 'includeAdult',
@@ -454,5 +482,14 @@ class HooplaScope extends DataObject {
 			}
 			unset($this->_locations);
 		}
+	}
+
+	private static function isHooplaVersion2(): bool {
+		if (self::$isHooplaVersion2 == null) {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			self::$isHooplaVersion2 = ($systemVariables !== false && !empty($systemVariables->hooplaVersion) && (int)$systemVariables->hooplaVersion == 2);
+		}
+		return self::$isHooplaVersion2;
 	}
 }

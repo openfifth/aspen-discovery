@@ -32,6 +32,7 @@ class SystemVariables extends DataObject {
 	public $libraryToUseForPayments;
 	public $solrConnectTimeout;
 	public $solrQueryTimeout;
+	public $spellcheckMaxCollationTries;
 	public $catalogStatus;
 	public $offlineMessage;
 	public $appScheme;
@@ -49,7 +50,7 @@ class SystemVariables extends DataObject {
 	public $removeTheWordSeriesFromEndOfSeries;
 	public $disable_user_agent_logging;
 	public $logFrequentCrons;
-
+	public $hooplaVersion;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -226,6 +227,19 @@ class SystemVariables extends DataObject {
 						'description' => 'Whether to remove the word "series" from the end of series names',
 						'default' => true,
 					],
+					'hooplaVersion' => [
+						'property' => 'hooplaVersion',
+						'type' => 'enum',
+						'values' => [
+							1 => 'Version 1 (Old Integration)',
+							2 => 'Version 2 (New Integration)',
+						],
+						'label' => 'Hoopla Exporter Version',
+						'description' => 'The version of Hoopla Exporter to use, version 2 has the new endpoint',
+						'note' => 'If you switch to Version 2, run the Database Maintenance immediately after saving and allow the nightly index to complete. Perform the switch outside business hours. Once the database maintenance is complete, you can NOT switch back to Version 1.',
+						'default' => 1,
+						'required' => true,
+					],
 				],
 			],
 
@@ -302,6 +316,16 @@ class SystemVariables extends DataObject {
 				'required' => true,
 				'default' => 10,
 				'min' => 1,
+			],
+			'spellcheckMaxCollationTries' => [
+				'property' => 'spellcheckMaxCollationTries',
+				'type' => 'integer',
+				'label' => 'Spellcheck Max Collation Tries',
+				'description' => 'Maximum number of collation attempts for spellcheck queries (lower values improve performance)',
+				'required' => true,
+				'default' => 25,
+				'min' => 1,
+				'max' => 50,
 			],
 			'catalogStatus' => [
 				'property' => 'catalogStatus',
@@ -403,6 +427,7 @@ class SystemVariables extends DataObject {
 			$objectStructure['indexingSection']['properties']['storeRecordDetailsInDatabase']['type'] = 'hidden';
 			$objectStructure['indexingSection']['properties']['indexVersion']['type'] = 'hidden';
 			$objectStructure['indexingSection']['properties']['searchVersion']['type'] = 'hidden';
+			$objectStructure['indexingSection']['properties']['hooplaVersion']['type'] = 'hidden';
 		}
 
 		global $enabledModules;
@@ -482,6 +507,14 @@ class SystemVariables extends DataObject {
 			$usageByUserAgent->delete(true);
 			$userAgent = new UserAgent();
 			$userAgent->delete(true);
+		}
+		if ($this->hooplaVersion == 2) {
+			$existingSystemVariables = new SystemVariables();
+			if ($existingSystemVariables->find(true)) {
+				if ($existingSystemVariables->hooplaVersion != 2) {
+					$this->__set('runNightlyFullIndex', 1);
+				}
+			}
 		}
 		return parent::update($context);
 	}

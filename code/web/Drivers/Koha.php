@@ -35,6 +35,25 @@ class Koha extends AbstractIlsDriver {
 		'W' => 'Writeoff',
 	];
 
+	static $accoundlineCodeToDescriptionMap = [
+		'ACCOUNT' => 'Account creation fee',
+		'ACCOUNT_RENEW' => 'Account renewal fee',
+		'ARTICLE_REQUEST' => 'Article request fee',
+		'LOST' => 'Lost item',
+		'MANUAL' => 'Manual fee',
+		'NEW_CARD' => 'New card',
+		'OVERDUE' => 'Fine',
+		'PROCESSING' => 'Lost item processing fee',
+		'RENT' => 'Rental fee',
+		'RENT_DAILY' => 'Daily rental fee',
+		'RENT_RENEW' => 'Renewal of rental item',
+		'RENT_DAILY_RENEW' => 'Renewal of daily rental item',
+		'RESERVE' => 'Hold fee',
+		'RESERVE_EXPIRED' => 'Hold waiting too long',
+		'PAYOUT' => 'Payment from library to patron',
+		'VOID' => 'Credit has been voided',
+	];
+
 	function updateHomeLibrary(User $patron, string $homeLibraryCode) {
 		$result = [
 			'success' => false,
@@ -505,11 +524,12 @@ class Koha extends AbstractIlsDriver {
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
 		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			$curCheckout = new Checkout();
 			$curCheckout->type = 'ils';
 			$curCheckout->source = $this->getIndexingProfile()->name;
-			$curCheckout->sourceId = $curRow['issue_id'];
+			$curCheckout->sourceId = $curRow['biblionumber'];
 			$allIssueIds[] = $curRow['issue_id'];
 			$curCheckout->userId = $patron->id;
 			$curCheckout->checkoutDate = strtotime($curRow['issuedate']);
@@ -567,7 +587,16 @@ class Koha extends AbstractIlsDriver {
 			if ($circControl == 'PatronLibrary') {
 				$circBranch = $patron->getHomeLocationCode();
 			} else if ($circControl == 'PickupLibrary') {
-				$circBranch = Library::getActiveLibrary()->subdomain;
+				$circBranch = $curRow['branchcode'];
+				if ($activeLibrary) {
+					$locations = $activeLibrary->getLocations();
+					if (!empty($locations)) {
+						$firstLocation = reset($locations);
+						if ($firstLocation != null && !empty($firstLocation->code)) {
+							$circBranch = $firstLocation->code;
+						}
+					}
+				}
 			} else {
 				$circBranch = $curRow['branchcode'];
 			}
@@ -1522,86 +1551,94 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
+	/**
+	 * Update patron's reading history privacy setting in Koha.
+	 *
+	 * Privacy values: 0 = Keep reading history forever, 1 = Keep until checkout returned, 2 = Never keep reading history.
+	 *
+	 * @param User $patron The patron whose privacy setting should be updated.
+	 * @param string $action The action to perform ('optIn' or 'optOut').
+	 * @param array $selectedTitles Array of selected titles (not used for opt-in/out).
+	 * @return array|null Array with 'success' boolean and 'message' string, or null for unsupported actions.
+	 */
 	public function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): ?array {
-		$doUpdate = false;
+		$result = ['success' => false];
+
 		if ($action == 'optIn') {
-			$doUpdate = true;
-			$newPrivacySetting = 0; // Keep reading history forever
-		}elseif ($action == 'optOut') {
-			$doUpdate = true;
-			$newPrivacySetting = 2; // Never keep reading history
+			$newPrivacySetting = 0;
+		} elseif ($action == 'optOut') {
+			$newPrivacySetting = 2;
+		} else {
+			return null;
 		}
-		if ($doUpdate) {
-			$this->initDatabaseConnection();
-			/** @noinspection SqlResolve */
-			$sql = "SELECT address, city FROM borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "';";
-			$results = mysqli_query($this->dbConnection, $sql);
-			$address = '';
-			$city = '';
-			if ($results !== false && $results != null) {
-				while ($curRow = $results->fetch_assoc()) {
-					$address = $curRow['address'];
-					$city = $curRow['city'];
-				}
-				$results->close();
-			} else {
-				//We could not connect to the database, don't update, so we don't corrupt the DB
-				global $logger;
-				$logger->log("Could not load existing user information from the DB during doReadingHistoryAction", Logger::LOG_ERROR);
-				return null;
-			}
 
-			$postVariables = [
-				'surname' => $patron->lastname,
-				'address' => $address,
-				'city' => $city,
-				'library_id' => $patron->getHomeLocationCode(),
-				'category_id' => $patron->patronType,
-				'privacy' => $newPrivacySetting
-			];
-
-			$oauthToken = $this->getOAuthToken();
-			if ($oauthToken == false) {
-				//The update failed, we don't return error messages from this so just log it
-				global $logger;
-				$logger->log("Unable to authenticate with the ILS from doReadingHistoryAction", Logger::LOG_ERROR);
-			} else {
-				$apiUrl = $this->getWebServiceURL() . "/api/v1/patrons/$patron->unique_ils_id";
-				$postParams = json_encode($postVariables);
-
-				$this->apiCurlWrapper->addCustomHeaders([
-					'Authorization: Bearer ' . $oauthToken,
-					'User-Agent: Aspen Discovery',
-					'Accept: */*',
-					'Cache-Control: no-cache',
-					'Content-Type: application/json;charset=UTF-8',
-					'Host: ' . preg_replace('~http[s]?://~', '', $this->getWebServiceURL()),
-				], true);
-
-				$response = $this->apiCurlWrapper->curlSendPage($apiUrl, 'PUT', $postParams);
-				ExternalRequestLogEntry::logRequest('koha.updatePatronInfo', 'PUT', $apiUrl, $this->apiCurlWrapper->getHeaders(), $postParams, $this->apiCurlWrapper->getResponseCode(), $response, []);
-				if ($this->apiCurlWrapper->getResponseCode() != 200) {
-					global $logger;
-					$logger->log("Failed to update ILS from doReadingHistoryAction " . $this->apiCurlWrapper->getResponseCode(), Logger::LOG_ERROR);
-				} else {
-					//Everything seems to have worked fine
-				}
-			}
+		$endpoint = "/api/v1/patrons/" . $patron->unique_ils_id;
+		$extraHeaders = [
+			'Accept-Encoding: gzip, deflate',
+			'Content-Type: application/json'
+		];
+		$patronResponse = $this->kohaApiUserAgent->get($endpoint, 'koha.getPatronForPrivacyUpdate', [], $extraHeaders);
+		if (!$patronResponse || $patronResponse['code'] != 200 || empty($patronResponse['content'])) {
+			global $logger;
+			$logger->log("Failed to fetch patron data for privacy update. Response code: " . ($patronResponse['code'] ?? 'unknown'), Logger::LOG_ERROR);
+			$result['message'] = 'Failed to retrieve patron information from the ILS.';
+			return $result;
 		}
-		return null;
+
+		$patronData = $patronResponse['content'];
+		$requestParameters = [
+			'surname' => $patronData['surname'],
+			'library_id' => $patronData['library_id'],
+			'category_id' => $patronData['category_id'],
+			'privacy' => $newPrivacySetting
+		];
+		$response = $this->kohaApiUserAgent->put($endpoint, $requestParameters, 'koha.updatePatronPrivacy', [], $extraHeaders);
+		if (!$response || $response['code'] != 200) {
+			global $logger;
+			$logger->log("Failed to update patron privacy setting from doReadingHistoryAction. Response code: " . ($response['code'] ?? 'unknown'), Logger::LOG_ERROR);
+			$result['message'] = $action == 'optIn' ? 'Failed to enable reading history in the ILS.' : 'Failed to disable reading history in the ILS.';
+		} else {
+			$result['success'] = true;
+			$result['message'] = $action == 'optIn' ? 'Reading history has been enabled in the ILS.' : 'Reading history has been disabled in the ILS.';
+		}
+
+		return $result;
 	}
 
 	/**
 	 * @param User $patron
-	 * @param int $page
-	 * @param int $recordsPerPage
-	 * @param string $sortOption
 	 * @return array
 	 * @throws Exception
 	 */
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
-		// TODO implement sorting, currently only done in catalogConnection for koha reading history
-		//TODO prepend indexProfileType
+	public function getReadingHistory(User $patron): array {
+		$historyEnabled = true;
+		$endpoint = "/api/v1/patrons/" . $patron->unique_ils_id;
+		$extraHeaders = [
+			'Accept-Encoding: gzip, deflate',
+			'Content-Type: application/json'
+		];
+
+		$patronResponse = $this->kohaApiUserAgent->get($endpoint, 'koha.getPatron', [], $extraHeaders);
+		if ($patronResponse && $patronResponse['code'] == 200 && !empty($patronResponse['content'])) {
+			$patronData = $patronResponse['content'];
+			if (isset($patronData['privacy']) && $patronData['privacy'] == 2) {
+				$historyEnabled = false;
+			}
+		}
+
+		// Update patron's setting in Aspen if the setting has changed in Koha.
+		if ($historyEnabled != $patron->trackReadingHistory) {
+			$patron->trackReadingHistory = $historyEnabled;
+			$patron->update();
+		}
+
+		if (!$historyEnabled) {
+			return [
+				'historyActive' => false,
+				'titles' => [],
+				'numTitles' => 0,
+			];
+		}
 
 		$illItemTypes = [];
 		if (file_exists(ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php')) {
@@ -1615,145 +1652,129 @@ class Koha extends AbstractIlsDriver {
 			}
 		}
 
-		$this->initDatabaseConnection();
+		// Fetch both current and historical checkouts.
+		// Need to make separate calls for current (checked_in=false) and historical (checked_in=true).
+		ini_set('memory_limit', '2G');
+		set_time_limit(0);
+		$readingHistoryTitles = [];
+		$perPage = 100;
+		foreach ([false, true] as $checkedIn) {
+			$page = 1;
+			$hasMorePages = true;
+			while ($hasMorePages) {
+				$checkedInParam = $checkedIn ? 'true' : 'false';
+				$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage;
+				$extraHeaders = [
+					'Accept-Encoding: gzip, deflate',
+					'Content-Type: application/json',
+					'x-koha-embed: item,item.biblio'
+				];
 
-		//Figure out if the user is opted in to reading history.  Only LibLime Koha has the option to turn it off
-		//So assume that it is on
-		/** @noinspection SqlResolve */
-		$historyEnabled = true;
+				$checkoutType = $checkedIn ? 'historical' : 'current';
+				$checkoutsResponse = $this->kohaApiUserAgent->get($endpoint, 'koha.getReadingHistory.' . $checkoutType . '.page' . $page, [], $extraHeaders);
 
-		// Update patron's setting in Aspen if the setting has changed in Koha
-		if ($historyEnabled != $patron->trackReadingHistory) {
-			$patron->trackReadingHistory = (boolean)$historyEnabled;
-			$patron->update();
-		}
+				if ($checkoutsResponse && $checkoutsResponse['code'] == 200 && !empty($checkoutsResponse['content'])) {
+					$pageCheckouts = $checkoutsResponse['content'];
 
-		if (!$historyEnabled) {
-			return [
-				'historyActive' => false,
-				'titles' => [],
-				'numTitles' => 0,
-			];
-		} else {
-			$historyActive = true;
-			$readingHistoryTitles = [];
-
-			//Borrowed from C4:Members.pm
-			if($this->getKohaVersion() >= 22.11) {
-				/** @noinspection SqlResolve */
-				$readingHistoryTitleSql = "SELECT issues.*,issues.renewals_count AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp,biblio.biblionumber,biblio.title, author, iType
-				FROM issues
-				LEFT JOIN items on items.itemnumber=issues.itemnumber
-				LEFT JOIN biblio ON items.biblionumber=biblio.biblionumber
-				LEFT JOIN biblioitems ON items.biblioitemnumber=biblioitems.biblioitemnumber
-				WHERE borrowernumber='" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'
-				UNION ALL
-				SELECT old_issues.*,old_issues.renewals_count AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp,biblio.biblionumber,biblio.title, author, iType
-				FROM old_issues
-				LEFT JOIN items on items.itemnumber=old_issues.itemnumber
-				LEFT JOIN biblio ON items.biblionumber=biblio.biblionumber
-				LEFT JOIN biblioitems ON items.biblioitemnumber=biblioitems.biblioitemnumber
-				WHERE borrowernumber='" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "';";
-			} else {
-				/** @noinspection SqlResolve */
-				$readingHistoryTitleSql = "SELECT issues.*,issues.renewals AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp,biblio.biblionumber,biblio.title, author, iType
-				FROM issues
-				LEFT JOIN items on items.itemnumber=issues.itemnumber
-				LEFT JOIN biblio ON items.biblionumber=biblio.biblionumber
-				LEFT JOIN biblioitems ON items.biblioitemnumber=biblioitems.biblioitemnumber
-				WHERE borrowernumber='" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'
-				UNION ALL
-				SELECT old_issues.*,old_issues.renewals AS renewals,items.renewals AS totalrenewals,items.timestamp AS itemstimestamp,biblio.biblionumber,biblio.title, author, iType
-				FROM old_issues
-				LEFT JOIN items on items.itemnumber=old_issues.itemnumber
-				LEFT JOIN biblio ON items.biblionumber=biblio.biblionumber
-				LEFT JOIN biblioitems ON items.biblioitemnumber=biblioitems.biblioitemnumber
-				WHERE borrowernumber='" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "';";
-			}
-			$readingHistoryTitleRS = mysqli_query($this->dbConnection, $readingHistoryTitleSql);
-			if ($readingHistoryTitleRS) {
-				while ($readingHistoryTitleRow = $readingHistoryTitleRS->fetch_assoc()) {
-					/** @noinspection SpellCheckingInspection */
-					if (!empty($readingHistoryTitleRow['issuedate'])) {
-						/** @noinspection SpellCheckingInspection */
-						$checkOutDate = new DateTime($readingHistoryTitleRow['issuedate']);
-					} else {
-						$checkOutDate = new DateTime($readingHistoryTitleRow['itemstimestamp']);
-					}
-
-					$returnDate = null;
-					/** @noinspection SpellCheckingInspection */
-					if (!empty($readingHistoryTitleRow['returndate'])) {
-						/** @noinspection SpellCheckingInspection */
-						$returnDate = new DateTime($readingHistoryTitleRow['returndate']);
-					}
-					$curTitle = [];
-					$curTitle['id'] = $readingHistoryTitleRow['biblionumber'];
-					$curTitle['shortId'] = $readingHistoryTitleRow['biblionumber'];
-					$curTitle['recordId'] = $readingHistoryTitleRow['biblionumber'];
-					$curTitle['title'] = $readingHistoryTitleRow['title'];
-					$curTitle['author'] = $readingHistoryTitleRow['author'];
-					$curTitle['format'] = $readingHistoryTitleRow['iType'];
-					$curTitle['checkout'] = $checkOutDate->getTimestamp();
-					if (!empty($returnDate)) {
-						$curTitle['checkin'] = $returnDate->getTimestamp();
-					} else {
-						$curTitle['checkin'] = null;
-					}
-
-					// check if item is ILL
-					if ($illItemTypes) {
-						if(array_search($readingHistoryTitleRow['iType'], $illItemTypes)) {
-							$curTitle['isIll'] = true;
+					foreach ($pageCheckouts as $checkout) {
+						$checkOutDate = null;
+						if (!empty($checkout['checkout_date'])) {
+							$checkOutDate = new DateTime($checkout['checkout_date']);
+						} else if (!empty($checkout['timestamp'])) {
+							$checkOutDate = new DateTime($checkout['timestamp']);
 						}
-					} else {
-						if ($readingHistoryTitleRow['iType'] == 'ILL') {
-							$curTitle['isIll'] = true;
+
+						$returnDate = null;
+						if (!empty($checkout['checkin_date'])) {
+							$returnDate = new DateTime($checkout['checkin_date']);
 						}
+
+						$biblionumber = null;
+						$title = null;
+						$author = null;
+						if (!empty($checkout['item']) && !empty($checkout['item']['biblio'])) {
+							$biblionumber = $checkout['item']['biblio']['biblio_id'] ?? null;
+							$title = $checkout['item']['biblio']['title'] ?? null;
+							$author = $checkout['item']['biblio']['author'] ?? null;
+						}
+
+						$barcode = null;
+						$iType = null;
+						$callNumber = null;
+						$volume = null;
+						if (!empty($checkout['item'])) {
+							$barcode = $checkout['item']['external_id'] ?? null;
+							$iType = $checkout['item']['item_type_id'] ?? null;
+							$callNumber = $checkout['item']['callnumber'] ?? null;
+							$volume = $checkout['item']['serial_issue_number'] ?? null;
+						}
+
+						$curTitle = [];
+						$curTitle['id'] = $biblionumber;
+						$curTitle['sourceId'] = $biblionumber;
+						$curTitle['barcode'] = $barcode ?: null;
+						$curTitle['title'] = $title;
+						$curTitle['author'] = $author;
+						$curTitle['format'] = $iType;
+						$curTitle['callNumber'] = $callNumber;
+						$curTitle['volume'] = $volume;
+						$curTitle['checkout'] = $checkOutDate ? $checkOutDate->getTimestamp() : null;
+						if (!empty($returnDate)) {
+							$curTitle['checkin'] = $returnDate->getTimestamp();
+						} else {
+							$curTitle['checkin'] = $checkoutType === 'historical' ? -1 : null;
+						}
+
+						if ($illItemTypes) {
+							if (array_search($iType, $illItemTypes)) {
+								$curTitle['isIll'] = true;
+							}
+						} else {
+							if ($iType == 'ILL') {
+								$curTitle['isIll'] = true;
+							}
+						}
+
+						$readingHistoryTitles[] = $curTitle;
 					}
-					$readingHistoryTitles[] = $curTitle;
+
+					if (count($pageCheckouts) < $perPage) {
+						$hasMorePages = false;
+					} else {
+						$page++;
+					}
+				} else {
+					// No results or error, so stop pagination.
+					$hasMorePages = false;
 				}
-
-				$readingHistoryTitleRS->close();
 			}
 		}
 
 		$numTitles = count($readingHistoryTitles);
-
-		//process pagination
-		if ($recordsPerPage != -1) {
-			$startRecord = ($page - 1) * $recordsPerPage;
-			$readingHistoryTitles = array_slice($readingHistoryTitles, $startRecord, $recordsPerPage);
-		}
-
-		set_time_limit(20 * count($readingHistoryTitles));
 		$systemVariables = SystemVariables::getSystemVariables();
 		global $aspen_db;
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		foreach ($readingHistoryTitles as $key => $historyEntry) {
-			//Get additional information from resources table
 			$historyEntry['ratingData'] = null;
 			$historyEntry['permanentId'] = null;
 			$historyEntry['linkUrl'] = null;
 			$historyEntry['coverUrl'] = null;
-			if (!empty($historyEntry['recordId'])) {
+			if (!empty($historyEntry['sourceId'])) {
 				if ($systemVariables->storeRecordDetailsInDatabase) {
 					/** @noinspection SqlResolve */
-					$getRecordDetailsQuery = 'SELECT permanent_id, indexed_format.format FROM grouped_work_records 
-								  LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
-								  LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
-								  LEFT JOIN indexed_format on formatId = indexed_format.id
-								  where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['recordId']);
+					$getRecordDetailsQuery =
+						'SELECT permanent_id, indexed_format.format FROM grouped_work_records 
+						LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
+						LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
+						LEFT JOIN indexed_format on formatId = indexed_format.id
+						where source = ' . $aspen_db->quote($this->accountProfile->recordSource) . ' and recordIdentifier = ' . $aspen_db->quote($historyEntry['sourceId']);
 					$results = $aspen_db->query($getRecordDetailsQuery, PDO::FETCH_ASSOC);
 					if ($results) {
 						$result = $results->fetch();
 						if ($result) {
 							$groupedWorkDriver = new GroupedWorkDriver($result['permanent_id']);
 							if ($groupedWorkDriver->isValid()) {
-								$historyEntry['ratingData'] = $groupedWorkDriver->getRatingData();
 								$historyEntry['permanentId'] = $groupedWorkDriver->getPermanentId();
-								$historyEntry['linkUrl'] = $groupedWorkDriver->getLinkUrl();
-								$historyEntry['coverUrl'] = $groupedWorkDriver->getBookcoverUrl('medium', true);
 								$historyEntry['format'] = $result['format'];
 								$historyEntry['title'] = $groupedWorkDriver->getTitle();
 								$historyEntry['author'] = $groupedWorkDriver->getPrimaryAuthor();
@@ -1762,12 +1783,9 @@ class Koha extends AbstractIlsDriver {
 					}
 				} else {
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 					if ($recordDriver->isValid()) {
-						$historyEntry['ratingData'] = $recordDriver->getRatingData();
 						$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-						$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-						$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 						$historyEntry['format'] = $recordDriver->getFormats();
 						$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
 					}
@@ -1779,7 +1797,7 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		return [
-			'historyActive' => $historyActive,
+			'historyActive' => true,
 			'titles' => $readingHistoryTitles,
 			'numTitles' => $numTitles,
 		];
@@ -2345,7 +2363,7 @@ class Koha extends AbstractIlsDriver {
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
 		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
-
+		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			//Each row in the table represents a hold
 			$curHold = new Hold();
@@ -2429,7 +2447,16 @@ class Koha extends AbstractIlsDriver {
 					if ($circControl == 'PatronLibrary') {
 						$circBranch = $patron->getHomeLocationCode();
 					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = Library::getActiveLibrary()->subdomain;
+						$circBranch = $curRow['branchcode'];
+						if ($activeLibrary) {
+							$locations = $activeLibrary->getLocations();
+							if (!empty($locations)) {
+								$firstLocation = reset($locations);
+								if ($firstLocation != null && !empty($firstLocation->code)) {
+									$circBranch = $firstLocation->code;
+								}
+							}
+						}
 					} else {
 						$circBranch = $curRow['branchcode'];
 					}
@@ -2986,6 +3013,7 @@ class Koha extends AbstractIlsDriver {
 			ExternalRequestLogEntry::logRequest('koha.renewCheckout', 'GET', $renewURL, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $renewResponse, []);
 
 			$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+			$activeLibrary = Library::getActiveLibrary();
 
 			//Parse the result
 			if (isset($renewResponse->success) && ($renewResponse->success == 1)) {
@@ -2997,7 +3025,16 @@ class Koha extends AbstractIlsDriver {
 					if ($circControl == 'PatronLibrary') {
 						$circBranch = $patron->getHomeLocationCode();
 					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = Library::getActiveLibrary()->subdomain;
+						$circBranch = $curRow['branchcode'];
+						if ($activeLibrary) {
+							$locations = $activeLibrary->getLocations();
+							if (!empty($locations)) {
+								$firstLocation = reset($locations);
+								if ($firstLocation != null && !empty($firstLocation->code)) {
+									$circBranch = $firstLocation->code;
+								}
+							}
+						}
 					} else {
 						$circBranch = $curRow['branchcode'];
 					}
@@ -3176,7 +3213,7 @@ class Koha extends AbstractIlsDriver {
 					'date' => $allFeesRow['date'],
 					'type' => $type,
 					'reason' => $type,
-					'message' => $allFeesRow['description'],
+					'message' => $this->getAccountLineDescription($allFeesRow),
 					'amountVal' => $allFeesRow['amount'],
 					'amountOutstandingVal' => $allFeesRow['amountoutstanding'],
 					'amount' => $currencyFormatter->formatCurrency($allFeesRow['amount'], $currencyCode),
@@ -3233,7 +3270,7 @@ class Koha extends AbstractIlsDriver {
 			'date' => $fine['date'],
 			'type' => $type,
 			'reason' => $type,
-			'message' => $fine['description'],
+			'message' => $this->getAccountLineDescription($fine),
 			'amountVal' => $fine['amount'],
 			'amountOutstandingVal' => $fine['amountoutstanding'],
 			'amount' => $currencyFormatter->formatCurrency($fine['amount'], $currencyCode),
@@ -6490,6 +6527,7 @@ class Koha extends AbstractIlsDriver {
 		$systemPreferencesSql = "SELECT * FROM systempreferences where variable = 'SMSSendDriver' OR variable ='TalkingTechItivaPhoneNotification' OR variable ='PhoneNotification'";
 		$systemPreferencesRS = mysqli_query($this->dbConnection, $systemPreferencesSql);
 		$enablePhoneMessaging = false;
+		$phoneMessagingType = 'phone';
 		while ($systemPreference = $systemPreferencesRS->fetch_assoc()) {
 			if ($systemPreference['variable'] == 'SMSSendDriver') {
 				$interface->assign('enableSmsMessaging', !empty($systemPreference['value']));
@@ -6505,9 +6543,13 @@ class Koha extends AbstractIlsDriver {
 				$interface->assign('smsProviders', $smsProviders);
 			} elseif ($systemPreference['variable'] == 'TalkingTechItivaPhoneNotification' || $systemPreference['variable'] == 'PhoneNotification') {
 				$enablePhoneMessaging |= !empty($systemPreference['value']);
+				if (!empty($systemPreference['value'])) {
+					$phoneMessagingType = ($systemPreference['variable'] == 'TalkingTechItivaPhoneNotification') ? 'itiva' : 'phone';
+				}
 			}
 		}
 		$systemPreferencesRS->close();
+		$interface->assign('phoneMessagingType', $phoneMessagingType);
 		$interface->assign('enablePhoneMessaging', $enablePhoneMessaging);
 
 		/** @noinspection SqlResolve */
@@ -6580,6 +6622,7 @@ class Koha extends AbstractIlsDriver {
 		$systemPreferencesRS->close();
 
 		$messageAttributes = [];
+		$phoneCapableMessageAttributes = [];
 		$messageAttributesSql = "SELECT * FROM message_attributes";
 		$messageAttributesRS = mysqli_query($this->dbConnection, $messageAttributesSql);
 		while ($messageType = $messageAttributesRS->fetch_assoc()) {
@@ -6597,6 +6640,10 @@ class Koha extends AbstractIlsDriver {
 				"Patron_Expiry" => 'Patron Expiry',
 				default => $messageType['message_name'],
 			};
+			// Koha TalkingTech only allow phone for specific notices.
+			if (in_array($messageType['message_name'], ['Advance_Notice', 'Hold_Filled', 'Hold_Reminder'])) {
+				$phoneCapableMessageAttributes[$messageType['message_attribute_id']] = true;
+			}
 			$messageAttributes[] = $messageType;
 		}
 		$messageAttributesRS->close();
@@ -6647,10 +6694,21 @@ class Koha extends AbstractIlsDriver {
 				$messagingSettings[$messageType]['daysInAdvance'] = $userMessagingSetting['days_in_advance'];
 			}
 			if ($userMessagingSetting['message_transport_type'] != null) {
-				$messagingSettings[$messageType]['selectedTransports'][$userMessagingSetting['message_transport_type']] = $userMessagingSetting['message_transport_type'];
+				$transportType = $userMessagingSetting['message_transport_type'];
+				$messagingSettings[$messageType]['selectedTransports'][$transportType] = $transportType;
 			}
 		}
 		$userMessagingSettingsRS->close();
+
+		// Only show phone/Itiva options for message types Koha allows.
+		if ($phoneMessagingType == 'itiva') {
+			foreach ($messagingSettings as $messageAttributeId => &$messagingSetting) {
+				if (!array_key_exists($messageAttributeId, $phoneCapableMessageAttributes)) {
+					unset($messagingSetting['allowableTransports'][$phoneMessagingType], $messagingSetting['selectedTransports'][$phoneMessagingType]);
+				}
+			}
+			unset($messagingSetting);
+		}
 		$interface->assign('messagingSettings', $messagingSettings);
 
 		$validNoticeDays = [];
@@ -7559,11 +7617,11 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function hasEditableUsername() {
+	public function hasEditableUsername() : bool {
 		return true;
 	}
 
-	public function getEditableUsername(User $user) {
+	public function getEditableUsername(User $user) : ?string {
 		$this->initDatabaseConnection();
 		/** @noinspection SqlResolve */
 		$sql = "SELECT userId from borrowers where borrowernumber = '" . mysqli_escape_string($this->dbConnection, $user->unique_ils_id) . "'";
@@ -9299,5 +9357,18 @@ class Koha extends AbstractIlsDriver {
 
 	public function hasAdditionalFineFields(): bool {
 		return true;
+	}
+
+	private function getAccountLineDescription($accountline): string {
+		if ($accountline['description']) {
+			return $accountline['description'];
+		} 
+		if (isset($accountline['debit_type_code'])) {
+			return array_key_exists($accountline['debit_type_code'], Koha::$accoundlineCodeToDescriptionMap) ? Koha::$accoundlineCodeToDescriptionMap[$accountline['debit_type_code']] : $accountline['debit_type_code'];
+		} 
+		if (isset($accountline['credit_type_code'])) {
+			return array_key_exists($accountline['credit_type_code'], Koha::$accoundlineCodeToDescriptionMap) ? Koha::$accoundlineCodeToDescriptionMap[$accountline['credit_type_code']] : $accountline['credit_type_code'];
+		}
+		return'No description available';
 	}
 }

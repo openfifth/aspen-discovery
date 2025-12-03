@@ -112,7 +112,9 @@ class UserAPI extends AbstractAPI {
 					'addActivityProgress',
 					'optUserIntoCampaignEmails',
 					'enrollUserInCampaignLeaderboard',
-					'unenrollUserFromCampaignLeaderboard'
+					'unenrollUserFromCampaignLeaderboard',
+					'trackAppLaunches',
+					'trackAppResume'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -1050,6 +1052,13 @@ class UserAPI extends AbstractAPI {
 
 			$aspenToLiDACheckoutSortMapping = array_flip(User::$lidaToAspenCheckoutSortMapping);
 			$userData->checkoutSort = array_key_exists($user->checkoutSort, $aspenToLiDACheckoutSortMapping) ? $aspenToLiDACheckoutSortMapping[$user->checkoutSort] : $user->checkoutSort;
+
+			$patronHomeLibrary = $user->getHomeLibrary();
+			if ($patronHomeLibrary) {
+				$userData->hideSoftDeleteListUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
+			} else {
+				$userData->hideSoftDeleteListUI = false;
+			}
 
 			return [
 				'success' => true,
@@ -7525,5 +7534,17 @@ class UserAPI extends AbstractAPI {
 		$_GET = $originalGet;
 
 		return $response;
+	}
+
+	function trackAppLaunches() {
+		return [
+			'success' => true,
+		];
+	}
+
+	function trackAppResume() {
+		return [
+			'success' => true,
+		];
 	}
  }

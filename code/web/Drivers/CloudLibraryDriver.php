@@ -37,7 +37,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 
 		$checkouts = [];
 		$settings = $this->getSettings($patron);
-		if ($settings == false) {
+		if (!$settings) {
 			return $checkouts;
 		}
 
@@ -51,11 +51,12 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 
 				$checkout->sourceId = (string)$checkoutFromCloudLibrary->ItemId;
 				$checkout->recordId = (string)$checkoutFromCloudLibrary->ItemId;
+				$checkout->checkoutDate = strtotime((string)$checkoutFromCloudLibrary->EventStartDateInUTC);
 				$checkout->dueDate = strtotime((string)$checkoutFromCloudLibrary->EventEndDateInUTC);
 
 				try {
 					$timeDiff = $checkout->dueDate - time();
-					//Checkouts cannot be renewed 3 days before the title is due
+					// Checkouts cannot be renewed 3 days before the title is due.
 					if ($timeDiff < (3 * 24 * 60 * 60)) {
 						$checkout->canRenew = true;
 					} else {

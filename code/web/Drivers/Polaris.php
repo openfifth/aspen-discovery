@@ -155,8 +155,7 @@ class Polaris extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") {
-		//Get preferences for the barcode
+	public function getReadingHistory(User $patron): array {
 		$readingHistoryEnabled = false;
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/preferences";
 		$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
@@ -170,7 +169,6 @@ class Polaris extends AbstractIlsDriver {
 		if ($readingHistoryEnabled) {
 			ini_set('memory_limit', '2G');
 
-			$readingHistoryTitles = [];
 			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/readinghistory?rowsperpage=5&page=0";
 			$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.getReadingHistory', 'GET', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
@@ -182,24 +180,17 @@ class Polaris extends AbstractIlsDriver {
 					$checkOutDate = $this->parsePolarisDate($readingHistoryItem->CheckOutDate);
 					$curTitle = [];
 					$curTitle['id'] = $readingHistoryItem->BibID;
-					$curTitle['shortId'] = $readingHistoryItem->BibID;
-					$curTitle['recordId'] = $readingHistoryItem->BibID;
+					$curTitle['sourceId'] = $readingHistoryItem->BibID;
+					$curTitle['barcode'] = $readingHistoryItem->Barcode;
 					$curTitle['title'] = $readingHistoryItem->Title;
 					$curTitle['author'] = $readingHistoryItem->Author;
 					$curTitle['format'] = $readingHistoryItem->FormatDescription;
 					$curTitle['checkout'] = $checkOutDate;
-					$curTitle['checkin'] = null; //Polaris doesn't indicate when things are checked in
-					$curTitle['ratingData'] = null;
-					$curTitle['permanentId'] = null;
-					$curTitle['linkUrl'] = null;
-					$curTitle['coverUrl'] = null;
+					$curTitle['checkin'] = -1; // Polaris doesn't indicate when items are checked in.
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['recordId']);
+					$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $curTitle['sourceId']);
 					if ($recordDriver->isValid()) {
-						$curTitle['ratingData'] = $recordDriver->getRatingData();
 						$curTitle['permanentId'] = $recordDriver->getPermanentId();
-						$curTitle['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-						$curTitle['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 						$curTitle['format'] = $recordDriver->getFormats();
 						$curTitle['author'] = $recordDriver->getPrimaryAuthor();
 					}
@@ -232,7 +223,7 @@ class Polaris extends AbstractIlsDriver {
 					$curCheckout = new Checkout();
 					$curCheckout->type = 'ils';
 					$curCheckout->source = $this->getIndexingProfile()->name;
-					$curCheckout->sourceId = $itemOut->ItemID;
+					$curCheckout->sourceId = $itemOut->BibID;
 					$curCheckout->userId = $patron->id;
 
 					$curCheckout->recordId = $itemOut->BibID;
@@ -617,7 +608,7 @@ class Polaris extends AbstractIlsDriver {
 					$curHold->holdQueueLength = $holdInfo->QueueTotal;
 					$curHold->position = $holdInfo->QueuePosition;
 				}
-				$curHold->canFreeze = $holdInfo->CanSuspend;
+				$curHold->canFreeze = $holdInfo->CanSuspend && $patron->getHomeLibrary()->allowFreezeHolds;
 				$curHold->title = $holdInfo->Title;
 				$curHold->author = $holdInfo->Author;
 				$curHold->callNumber = $holdInfo->CallNumber;
@@ -2439,7 +2430,7 @@ class Polaris extends AbstractIlsDriver {
 		return $interface->fetch('DataObjectUtil/objectEditForm.tpl');
 	}
 
-	function getSelfRegistrationFields($type = 'selfReg') {
+	function getSelfRegistrationFields(string $type = 'selfReg'): array {
 		global $library;
 		$location = new Location();
 
@@ -2572,7 +2563,7 @@ class Polaris extends AbstractIlsDriver {
 		];
 		if ($type == 'selfReg' && $library && $library->promptForBirthDateInSelfReg) {
 			$birthDateMin = date('Y-m-d', strtotime('-113 years'));
-			$birthDateMax = date('Y-m-d', strtotime('-13 years'));
+			$birthDateMax = date('Y-m-d', strtotime('-' . $library->minSelfRegAge . ' years'));
 			$fields['personalInformationSection']['properties']['birthDate'] = [
 				'property' => 'birthDate',
 				'type' => 'date',
@@ -2889,6 +2880,42 @@ class Polaris extends AbstractIlsDriver {
 				'autocomplete' => false,
 			];
 			$fields['logonInformationSection'] = $logonInfoSection;
+
+			require_once ROOT_DIR . '/sys/LibraryLocation/LibraryUserDefinedField.php';
+			$udfProperties = [];
+			$userDefinedField = new LibraryUserDefinedField();
+			$userDefinedField->libraryId = $library->libraryId;
+			$userDefinedField->orderBy('fieldNumber');
+			$userDefinedField->find();
+			while ($userDefinedField->fetch()) {
+				if (!empty($userDefinedField->label)) {
+					// Extract the number from fieldNumber (e.g., "User Defined Field 1" -> "1").
+					preg_match('/(\d+)$/', $userDefinedField->fieldNumber, $matches);
+					$fieldNum = $matches[1] ?? '';
+					if (!empty($fieldNum)) {
+						$udfProperties['udf' . $fieldNum] = [
+							'property' => 'udf' . $fieldNum,
+							'type' => 'text',
+							'label' => $userDefinedField->label,
+							'description' => '',
+							'maxLength' => $userDefinedField->maxLength,
+							'required' => !empty($userDefinedField->required),
+							'autocomplete' => false,
+						];
+					}
+				}
+			}
+
+			if (!empty($udfProperties)) {
+				$fields['userDefinedFieldsSection'] = [
+					'property' => 'userDefinedFieldsSection',
+					'type' => 'section',
+					'label' => 'Additional Information',
+					'hideInLists' => true,
+					'expandByDefault' => true,
+					'properties' => $udfProperties,
+				];
+			}
 		}
 
 		return $fields;
@@ -2916,7 +2943,14 @@ class Polaris extends AbstractIlsDriver {
 
 		$encodedBody = json_encode($body);
 		$response = $this->getWebServiceResponse($polarisUrl, 'POST', '', $encodedBody);
-		ExternalRequestLogEntry::logRequest('polaris.selfRegister', 'POST', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), $encodedBody, $this->lastResponseCode, $response, []);
+		$dataToSanitize = [];
+		for ($i = 1; $i <= 5; $i++) {
+			$bodyProperty = 'User' . $i;
+			if (isset($body->$bodyProperty)) {
+				$dataToSanitize[$bodyProperty] = $body->$bodyProperty;
+			}
+		}
+		ExternalRequestLogEntry::logRequest('polaris.selfRegister', 'POST', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), $encodedBody, $this->lastResponseCode, $response, $dataToSanitize);
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResult = json_decode($response);
 			if ($jsonResult->PAPIErrorCode != 0) {
@@ -2941,6 +2975,7 @@ class Polaris extends AbstractIlsDriver {
 	}
 
 	/**
+	 * @param $type
 	 * @param stdClass $body
 	 * @param Library $library
 	 */
@@ -2981,11 +3016,16 @@ class Polaris extends AbstractIlsDriver {
 		if (isset($_REQUEST['middleName'])) {
 			$body->NameMiddle = $_REQUEST['middleName'];
 		}
-		//$body->User1 = '';
-		//$body->User2 = '';
-		//$body->User3 = '';
-		//$body->User4 = '';
-		//$body->User5 = '';
+
+		// Handle User-Defined Fields (UDFs)
+		for ($i = 1; $i <= 5; $i++) {
+			$udfField = 'udf' . $i;
+			if (isset($_REQUEST[$udfField])) {
+				$bodyProperty = 'User' . $i;
+				$body->$bodyProperty = $_REQUEST[$udfField];
+			}
+		}
+
 		//$body->Gender = '';
 		if (isset($_REQUEST['birthDate'])) {
 			if ($type == 'selfReg' && $library && $library->promptForBirthDateInSelfReg) {

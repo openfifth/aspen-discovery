@@ -1,25 +1,29 @@
-<?php /** @noinspection PhpMissingFieldTypeInspection */
-
+<?php
+/** @noinspection PhpMissingFieldTypeInspection */
 
 class ReadingHistoryEntry extends DataObject {
-	public $__table = 'user_reading_history_work';   // table name
+	public $__table = 'user_reading_history_work';
 	public $id;
 	public $userId;
 	public $groupedWorkPermanentId;
 	public $source;
 	public $sourceId;
+	public $barcode;
+	public $callNumber;
+	public $volume;
 	public $title;
 	public $author;
 	public $format;
 	public $checkOutDate;
 	public $checkInDate;
+	public $editedCheckInDate;
 	public $deleted;
 	public $isIll;
 	public $isManuallyAdded;
 	public $costSavings;
 
 	function getNumericColumnNames() : array {
-		return ['userId', 'checkOutDate', 'checkInDate', 'deleted', 'isIll', 'costSavings', 'isManuallyAdded'];
+		return ['userId', 'checkOutDate', 'checkInDate', 'editedCheckInDate', 'deleted', 'isIll', 'costSavings', 'isManuallyAdded'];
 	}
 
 	function objectHistoryEnabled() : bool {
@@ -81,5 +85,23 @@ class ReadingHistoryEntry extends DataObject {
 				$this->userId = $user->id;
 			}
 		}
+	}
+
+	public function insert($context = false): bool|int {
+		$existingEntry = new ReadingHistoryEntry();
+		$existingEntry->userId = $this->userId;
+		$existingEntry->source = $this->source;
+		$existingEntry->sourceId = $this->sourceId;
+		$existingEntry->barcode = $this->barcode;
+		$existingEntry->format = $this->format;
+		$existingEntry->checkOutDate = $this->checkOutDate;
+		$existingEntry->deleted = 0;
+		if ($existingEntry->find(true)) {
+			global $logger;
+			$logger->log("Skipping duplicate reading history entry for userId=$this->userId, source=$this->source, sourceId=$this->sourceId, checkOutDate=$this->checkOutDate", Logger::LOG_DEBUG);
+			return false;
+		}
+
+		return parent::insert($context);
 	}
 }

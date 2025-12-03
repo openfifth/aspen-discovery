@@ -103,7 +103,14 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 		$interface->assign('dateFirstDetected', $this->dateFirstDetected);
 
-		$interface->assign('hooplaExtract', $this->hooplaRawMetadata);
+		$rawData = $this->hooplaRawMetadata;
+		if (IPAddress::showDebuggingInformation()) {
+			$interface->assign('price', $rawData->price ?? 0);
+		}
+		unset($rawData->price);
+
+		$interface->assign('hooplaExtract', $rawData);
+		$interface->assign('hooplaType', $this->getHooplaType());
 		return 'RecordDrivers/Hoopla/staff-view.tpl';
 	}
 
@@ -114,12 +121,8 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 */
 	public function getTitle() {
 		//if episode or subtitle data, match what is displayed in search results
-		if (!empty($this->hooplaRawMetadata->episode)) {
-			if (!empty($this->hooplaRawMetadata->titleTitle)) {
-				return $this->hooplaRawMetadata->titleTitle . ': ' . $this->hooplaExtract->title;
-			} else {
-				return $this->hooplaExtract->title;
-			}
+		if (!empty($this->hooplaRawMetadata->episode) && !empty($this->hooplaRawMetadata->episodeNumber)) {
+			return $this->hooplaExtract->title;
 		} elseif (!empty($this->hooplaRawMetadata->subtitle)) {
 			return $this->hooplaExtract->title . ': ' . $this->hooplaRawMetadata->subtitle;
 		} else {
@@ -136,7 +139,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 */
 	public function getTableOfContents() {
 		$tableOfContents = [];
-		$segments = $this->hooplaRawMetadata->segments;
+		$segments = $this->hooplaRawMetadata->segments ?? [];
 		if (!empty($segments)) {
 			foreach ($segments as $segment) {
 				$label = $segment->name;
@@ -265,7 +268,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 				/** @var Library $searchLibrary */
 				$searchLibrary = Library::getSearchLibrary();
-				if ($searchLibrary->hooplaLibraryID > 0) { // Library is enabled for Hoopla patron action integration
+				if ($searchLibrary->getHooplaLibraryID() > 0) { // Library is enabled for Hoopla patron action integration
 					$id = $this->id;
 					$hooplaType = $this->getHooplaType();
 					if (!$isAvailable) {
@@ -341,15 +344,16 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getFormats() {
-		if ($this->hooplaExtract->kind == "MOVIE" || $this->hooplaExtract->kind == "TELEVISION") {
+		$format = $this->hooplaExtract->format ?? $this->hooplaExtract->kind;
+		if ($format == "MOVIE" || $format == "TELEVISION") {
 			return ['eVideo'];
-		} elseif ($this->hooplaExtract->kind == "AUDIOBOOK") {
+		} elseif ($format == "AUDIOBOOK") {
 			return ['eAudiobook'];
-		} elseif ($this->hooplaExtract->kind == "EBOOK") {
+		} elseif ($format == "EBOOK") {
 			return ['eBook'];
-		} elseif ($this->hooplaExtract->kind == "ECOMIC") {
+		} elseif ($format == "ECOMIC" || $format == "COMIC") {
 			return ['eComic'];
-		} elseif ($this->hooplaExtract->kind == "MUSIC") {
+		} elseif ($format == "MUSIC") {
 			return ['eMusic'];
 		} else {
 			return ['eBook'];
@@ -362,14 +366,15 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return  array
 	 */
 	function getFormatCategory() : string|array|null {
-		if ($this->hooplaExtract->kind == "AUDIOBOOK") {
+		$format = $this->hooplaExtract->format ?? $this->hooplaExtract->kind;
+		if ($format == "AUDIOBOOK") {
 			return [
 				'eBook',
 				'Audio Books',
 			];
-		} elseif ($this->hooplaExtract->kind == "MOVIE" || $this->hooplaExtract->kind == "TELEVISION") {
+		} elseif ($format == "MOVIE" || $format == "TELEVISION") {
 			return ['Movies'];
-		} elseif ($this->hooplaExtract->kind == "MUSIC") {
+		} elseif ($format == "MUSIC") {
 			return ['Music'];
 		} else {
 			return ['eBook'];
@@ -377,7 +382,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getLanguage() {
-		return ucfirst(strtolower($this->hooplaRawMetadata->language));
+		return ucfirst(strtolower($this->hooplaRawMetadata->language ?? ''));
 	}
 
 	public function getNumHolds(): int {
@@ -385,11 +390,29 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getHooplaType() : string {
-		if (!empty($this->hooplaExtract->hooplaType)) {
+		require_once ROOT_DIR . '/sys/SystemVariables.php';
+		$systemVariables = SystemVariables::getSystemVariables();
+		$hooplaVersion = ($systemVariables !== false && !empty($systemVariables->hooplaVersion)) ? (int)$systemVariables->hooplaVersion : 1;
+		if ($hooplaVersion == 2) {
+			require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
+			$searchLibrary = Library::getSearchLibrary();
+			if ($searchLibrary && $searchLibrary->libraryId) {
+				require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
+				require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
+
+				$hooplaEntitlement = new HooplaEntitlement();
+				$hooplaEntitlement->hooplaId = $this->getUniqueID();
+				$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
+				$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$searchLibrary->libraryId);
+				if ($hooplaEntitlement->find(true)) {
+					return $hooplaEntitlement->hooplaType;
+				}
+			}
+		} elseif (!empty($this->hooplaExtract->hooplaType)) {
 			return $this->hooplaExtract->hooplaType;
-		} else {
-			return 'Instant';
 		}
+		return 'Instant';
+
 	}
 
 	/**
@@ -420,14 +443,14 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return array
 	 */
 	function getPublishers() {
-		return [$this->hooplaRawMetadata->publisher];
+		return [$this->hooplaRawMetadata->publisher] ?? [];
 	}
 
 	/**
 	 * @return array
 	 */
 	function getPublicationDates() {
-		return [$this->hooplaRawMetadata->year];
+		return [$this->hooplaRawMetadata->releaseYear ?? $this->hooplaRawMetadata->year ?? ''];
 	}
 
 	public function getRecordType() {
@@ -493,7 +516,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 	function loadSubjects() {
 		$subjects = [];
-		if ($this->hooplaRawMetadata->genres) {
+		if (!empty($this->hooplaRawMetadata->genres)) {
 			$subjects = $this->hooplaRawMetadata->genres;
 		}
 		global $interface;
@@ -506,7 +529,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 		/** @var Library $searchLibrary */
 		$searchLibrary = Library::getSearchLibrary();
-		if ($searchLibrary->hooplaLibraryID > 0) { // Library is enabled for Hoopla patron action integration
+		if ($searchLibrary->getHooplaLibraryID() > 0) { // Library is enabled for Hoopla patron action integration
 			$hooplaType = $this->getHooplaType();
 			$title = translate([
 				'text' => 'Check Out Hoopla',
@@ -534,6 +557,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			'url' => $this->hooplaRawMetadata->url,
 			'title' => $title,
 			'requireLogin' => false,
+			'type' => 'hoopla_access_online',
 		];
 		return $accessLink;
 	}
@@ -553,7 +577,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	function getHooplaCoverUrl() {
-		return $this->hooplaRawMetadata->coverImageUrl;
+		return $this->hooplaRawMetadata->coverImageUrl ?? '';
 	}
 
 	function getStatusSummary() : array {

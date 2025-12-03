@@ -37,4 +37,16 @@ class Hoopla_IndexingLog extends Admin_IndexingLog {
 	function getActiveAdminSection(): string {
 		return 'hoopla';
 	}
+
+	function launch() : void {
+		global $interface;
+
+		// Detect Hoopla version and pass it to the template
+		require_once ROOT_DIR . '/sys/SystemVariables.php';
+		$systemVariables = SystemVariables::getSystemVariables();
+		$hooplaVersion2 = ($systemVariables !== false && !empty($systemVariables->hooplaVersion) && (int)$systemVariables->hooplaVersion == 2);
+
+		$interface->assign('hooplaVersion2', $hooplaVersion2);
+		parent::launch();
+	}
 }

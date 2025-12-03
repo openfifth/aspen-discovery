@@ -1,4 +1,7 @@
 <?php
+/** @noinspection SqlResolve */
+/** @noinspection SqlDialectInspection */
+
 /**
  * Load Initial Reading History for users who haven't had their reading history loaded yet.
  *
@@ -55,6 +58,7 @@ $loadedCount = 0;
 $errorCount = 0;
 
 $cronLogEntry->notes .= "<br/>Starting initial reading history load. Found ". count($usersToProcess) ." potential users to process.";
+$cronLogEntry->update();
 
 foreach ($usersToProcess as $userId) {
 
@@ -78,21 +82,23 @@ foreach ($usersToProcess as $userId) {
 		if ($claimStmt->rowCount() === 0) {
 			$cronLogEntry->numErrors++;
 			$cronLogEntry->notes .= "<br/>User $userId already claimed by another process or state changed. Skipping.";
+			$cronLogEntry->update();
 			continue;
 		}
 	} catch (Exception $e) {
 		$cronLogEntry->numErrors++;
 		$cronLogEntry->notes .= "<br/>Error claiming user $userId: " . $e->getMessage() . ".";
+		$cronLogEntry->update();
 		$errorCount++;
 		continue;
 	}
 
-	// Successfully claimed, now load the full User object for processing.
 	$user = new User();
 	$user->id = $userId;
 	if (!$user->find(true)) {
 		$cronLogEntry->numErrors++;
 		$cronLogEntry->notes .= "<br/>Failed to load claimed user object for $userId. Skipping.";
+		$cronLogEntry->update();
 		// Note: The timestamp remains set, will be retried later if needed.
 		$errorCount++;
 		continue;
@@ -102,28 +108,48 @@ foreach ($usersToProcess as $userId) {
 
 	try {
 		$catalog = $user->getCatalogDriver();
-
 		if ($catalog) {
 			if ($catalog->driver->hasNativeReadingHistory()) {
-				$result = $catalog->driver->getReadingHistory($user, -1, -1, "checkedOut");
+				$result = $catalog->driver->getReadingHistory($user);
+				if (isset($result['historyActive']) && $result['historyActive'] === false) {
+					$cronLogEntry->notes .= "<br/>Reading history is disabled for $user->displayName ($user->id).";
+				}
 				if ($result['numTitles'] > 0) {
 					$cronLogEntry->notes .= "<br/>Found {$result['numTitles']} titles to load for $user->displayName ($user->id).";
-
 					foreach ($result['titles'] as $title) {
 						$userReadingHistoryEntry = new ReadingHistoryEntry();
 						$userReadingHistoryEntry->userId = $user->id;
-						$userReadingHistoryEntry->groupedWorkPermanentId = $title['permanentId'];
+						$userReadingHistoryEntry->groupedWorkPermanentId = $title['permanentId'] ?? null;
 						$userReadingHistoryEntry->source = $catalog->accountProfile->recordSource;
-						$userReadingHistoryEntry->sourceId = $title['recordId'];
+						$userReadingHistoryEntry->sourceId = $title['sourceId'];
+						$userReadingHistoryEntry->barcode = $title['barcode'] ?? null;
+						$userReadingHistoryEntry->callNumber = $title['callNumber'] ?? null;
+						$userReadingHistoryEntry->volume = $title['volume'] ?? null;
 						$userReadingHistoryEntry->title = substr($title['title'], 0, 150);
 						$userReadingHistoryEntry->author = substr($title['author'], 0, 75);
-						$userReadingHistoryEntry->format = $title['format'];
+						$userReadingHistoryEntry->format = is_array($title['format']) ? implode(', ', $title['format']) : $title['format'];
 						$userReadingHistoryEntry->checkOutDate = $title['checkout'];
+						$userReadingHistoryEntry->checkInDate = $title['checkin'] ?? null;
 
-						if (!empty($title['checkin'])) {
-							$userReadingHistoryEntry->checkInDate = $title['checkin'];
-						} else {
-							$userReadingHistoryEntry->checkInDate = null;
+						// -1 for imported entries to distinguish them from currently checked-out items.
+						if ($userReadingHistoryEntry->checkInDate === -1) {
+							// If the new entry's barcode exists and check-in data is missing,
+							// while the existing entry's check-in has no barcode but has a check-in date,
+							// assume that this is a duplicate entry, so don't insert it.
+							if (!empty($title['barcode'])) {
+								$checkDuplicateEntry = new ReadingHistoryEntry();
+								$checkDuplicateEntry->userId = $user->id;
+								$checkDuplicateEntry->source = $catalog->accountProfile->recordSource;
+								$checkDuplicateEntry->sourceId = $title['sourceId'];
+								$checkDuplicateEntry->format = is_array($title['format']) ? implode(', ', $title['format']) : $title['format'];
+								$checkDuplicateEntry->checkOutDate = $title['checkout'];
+								$checkDuplicateEntry->deleted = 0;
+								$checkDuplicateEntry->whereAdd('barcode IS NULL OR barcode = ""');
+								$checkDuplicateEntry->whereAdd('checkInDate IS NOT NULL');
+								if ($checkDuplicateEntry->find(true)) {
+									continue;
+								}
+							}
 						}
 
 						if (empty($title['isIll'])) {
@@ -133,7 +159,11 @@ foreach ($usersToProcess as $userId) {
 						}
 
 						$userReadingHistoryEntry->deleted = 0;
-						$userReadingHistoryEntry->insert();
+						if (!$userReadingHistoryEntry->insert()) {
+							$cronLogEntry->numErrors++;
+							$cronLogEntry->notes .= "<br/>Error inserting reading history entry for user $user->id: " . $userReadingHistoryEntry->getLastError();
+							$errorCount++;
+						}
 					}
 
 				}
@@ -171,11 +201,13 @@ foreach ($usersToProcess as $userId) {
 		} else {
 			$cronLogEntry->numErrors++;
 			$cronLogEntry->notes .= "<br/>Could not get catalog driver for $user->displayName ($user->id).";
+			$cronLogEntry->update();
 			$errorCount++;
 		}
 	} catch (Exception $e) {
 		$cronLogEntry->numErrors++;
 		$cronLogEntry->notes .= "<br/>Error loading reading history for $user->displayName ($user->id): " . $e->getMessage() . ".";
+		$cronLogEntry->update();
 		$errorCount++;
 	}
 

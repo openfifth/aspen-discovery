@@ -21,7 +21,7 @@ class Hoopla_Settings extends ObjectEditor {
 		return 'Hoopla Settings';
 	}
 
-	function getAllObjects($page, $recordsPerPage): array {
+	function getAllObjects(int $page, int $recordsPerPage): array {
 		$object = new HooplaSetting();
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
@@ -50,15 +50,19 @@ class Hoopla_Settings extends ObjectEditor {
 		return 'id';
 	}
 
-	function canAddNew() {
+	function canAddNew() : bool {
+		$setting  = new HooplaSetting();
+		if ($setting->count() >= 1){
+			return false;
+		}
 		return true;
 	}
 
-	function canDelete() {
+	function canDelete() : bool {
 		return true;
 	}
 
-	function getAdditionalObjectActions($existingObject): array {
+	function getAdditionalObjectActions(?DataObject $existingObject): array {
 		return [];
 	}
 

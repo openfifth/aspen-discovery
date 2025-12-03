@@ -9,6 +9,8 @@ class HooplaDriver extends AbstractEContentDriver {
 	public $hooplaAPIBaseURL = 'hoopla-api-dev.hoopladigital.com';
 	private $accessToken;
 	private $hooplaEnabled = false;
+	private ?bool $isHooplaVersion2 = null;
+	// Legacy Hoopla v1 settings
 	private $hooplaInstantEnabled = false;
 	private $hooplaFlexEnabled = false;
 
@@ -18,9 +20,11 @@ class HooplaDriver extends AbstractEContentDriver {
 			$hooplaSettings = new HooplaSetting();
 			if ($hooplaSettings->find(true)) {
 				$this->hooplaEnabled = true;
-				$this->hooplaInstantEnabled = $hooplaSettings->hooplaInstantEnabled;
-				$this->hooplaFlexEnabled = $hooplaSettings->hooplaFlexEnabled;
 				$this->hooplaAPIBaseURL = $hooplaSettings->apiUrl;
+				if (!$this->isHooplaVersion2()) {
+					$this->hooplaInstantEnabled = $hooplaSettings->hooplaInstantEnabled;
+					$this->hooplaFlexEnabled = $hooplaSettings->hooplaFlexEnabled;
+				}
 				$this->hooplaSettings = $hooplaSettings;
 				$this->getAccessToken();
 			}
@@ -161,7 +165,7 @@ class HooplaDriver extends AbstractEContentDriver {
 				return self::$hooplaLibraryIdsForUser[$user->id]['libraryId'];
 			} else {
 				$library = $user->getHomeLibrary();
-				$hooplaID = $library->hooplaLibraryID;
+				$hooplaID = $library->getHooplaLibraryID();
 				self::$hooplaLibraryIdsForUser[$user->id]['libraryId'] = $hooplaID;
 				return $hooplaID;
 			}
@@ -400,24 +404,38 @@ class HooplaDriver extends AbstractEContentDriver {
 	 * @param string $titleId
 	 * @return string 'Instant' or 'Flex'
 	 */
-	private function getHooplaType($titleId)
-	{
-		require_once ROOT_DIR . '/sys/Hoopla/HooplaExtract.php';
-		$hooplaItem = new HooplaExtract();
-		$hooplaItem->hooplaId = $titleId;
-		if ($hooplaItem->find(true)) {
-			if (!empty($hooplaItem->hooplaType)) {
-				return $hooplaItem->hooplaType;
+	private function getHooplaType($titleId, $libraryId): string {
+		if ($this->isHooplaVersion2()) {
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlement.php';
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaEntitlementScope.php';
+
+			$hooplaEntitlement = new HooplaEntitlement();
+			$hooplaEntitlement->hooplaId = $titleId;
+			$hooplaEntitlement->joinAdd(new HooplaEntitlementScope(), 'INNER', 'hes', 'id','entitlementId');
+			$hooplaEntitlement->whereAdd('hes.scopeLibraryId = ' . (int)$libraryId);
+			if ($hooplaEntitlement->find(true)) {
+				return $hooplaEntitlement->hooplaType;
+			}
+		} else {
+			require_once ROOT_DIR . '/sys/Hoopla/HooplaExtract.php';
+			$hooplaItem = new HooplaExtract();
+			$hooplaItem->hooplaId = $titleId;
+			if ($hooplaItem->find(true)) {
+				if (!empty($hooplaItem->hooplaType)) {
+					return $hooplaItem->hooplaType;
+				}
 			}
 		}
-		// default to Instant
 		return 'Instant';
 	}
 
-	public function getHoldQueueSize($titleId) {
+	public function getHoldQueueSize($titleId, $libraryId) {
 		require_once ROOT_DIR . '/sys/Hoopla/HooplaFlexAvailability.php';
 		$flexAvailability = new HooplaFlexAvailability();
 		$flexAvailability->hooplaId = $titleId;
+		if ($this->isHooplaVersion2()) {
+			$flexAvailability->scopeLibraryId = $libraryId;
+		}
 		if ($flexAvailability->find(true)) {
 			return $flexAvailability->holdsQueueSize;
 		}
@@ -435,8 +453,9 @@ class HooplaDriver extends AbstractEContentDriver {
 			if (!empty($checkoutURL)) {
 
 				$titleId = self::recordIDtoHooplaID($titleId);
-				$hooplaType = $this->getHooplaType($titleId);
-				if ($hooplaType == 'Flex' && !$this->hooplaFlexEnabled) {
+				$scopeLibraryId = $patron->getHomeLibrary()->libraryId;
+				$hooplaType = $this->getHooplaType($titleId, $scopeLibraryId);
+				if ($hooplaType == 'Flex' && !$patron->isValidForEContentSource('hoopla_flex')) {
 					return [
 						'success' => false,
 						'title' => translate([
@@ -524,7 +543,7 @@ class HooplaDriver extends AbstractEContentDriver {
 								])
 							]
 						];
-					} else if ($checkoutResponse['httpCode'] == 412) {
+					} else if ($checkoutResponse['httpCode'] == 422) {
 						if ($hooplaType == 'Flex') {
 							// prompt user to place a hold for Flex titles
 							return [
@@ -550,9 +569,19 @@ class HooplaDriver extends AbstractEContentDriver {
 									]),
 								]
 							];
-					 	} else {
-							return [
-								'success' => false,
+						}
+					} else if ($checkoutResponse['httpCode'] == 412) {
+						return [
+							'success' => false,
+							'title' => translate([
+								'text' => 'Checkout Unavailable',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => $checkoutResponse['body']->message,
+								'isPublicFacing' => true,
+							]),
+							'api' => [
 								'title' => translate([
 									'text' => 'Checkout Unavailable',
 									'isPublicFacing' => true,
@@ -561,20 +590,9 @@ class HooplaDriver extends AbstractEContentDriver {
 									'text' => $checkoutResponse['body']->message,
 									'isPublicFacing' => true,
 								]),
-								'api' => [
-									'title' => translate([
-										'text' => 'Checkout Unavailable',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => $checkoutResponse['body']->message,
-										'isPublicFacing' => true,
-									]),
-								]
-							];
-						}
+							]
+						];
 					}
-
 				} else {
 					// Result for API or app use
 					$apiResult = [];
@@ -817,8 +835,14 @@ class HooplaDriver extends AbstractEContentDriver {
 			'available' => [],
 			'unavailable' => [],
 		];
-
-		if ($this->hooplaFlexEnabled) {
+		$patronHomeLibrary = $patron->getHomeLibrary();
+		$primaryHooplaSetting = $patronHomeLibrary->getPrimaryHooplaSetting();
+		if ($this->isHooplaVersion2() && !$primaryHooplaSetting != null) {
+			$flexEnabled = $primaryHooplaSetting->hooplaFlexEnabled;
+		} else {
+			$flexEnabled = $this ->hooplaFlexEnabled;
+		}
+		if ($flexEnabled) {
 			$holdUrl = $this->getHooplaBasePatronURL($patron);
 			if (!empty($holdUrl)) {
 				$holdUrl .= '/holds/current';
@@ -902,10 +926,11 @@ class HooplaDriver extends AbstractEContentDriver {
 			$holdURL = $this->getHooplaBasePatronURL($patron);
 			if (!empty($holdURL)) {
 				$titleId = self::recordIDtoHooplaID($recordId);
-				$titleType = $this->getHooplaType($titleId);
+				$scopeLibraryId = $patron->getHomeLibrary()->libraryId;
+				$titleType = $this->getHooplaType($titleId, $scopeLibraryId);
 
 				// Check if Flex is enabled
-				if ($titleType == 'Flex' && !$this->hooplaFlexEnabled) {
+				if ($titleType == 'Flex' && !$patron->isValidForEContentSource('hoopla_flex')) {
 					return [
 						'success' => false,
 						'title' => translate([
@@ -1183,5 +1208,13 @@ class HooplaDriver extends AbstractEContentDriver {
 				$recordUsage->insert();
 			}
 		}
+	}
+	private function isHooplaVersion2(): bool {
+		if ($this->isHooplaVersion2 == null) {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			$this->isHooplaVersion2 = ($systemVariables !== false && !empty($systemVariables->hooplaVersion) && (int)$systemVariables->hooplaVersion == 2);
+		}
+		return $this->isHooplaVersion2;
 	}
 }
