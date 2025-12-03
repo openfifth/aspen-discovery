@@ -88,6 +88,9 @@
 					{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 						<th>{translate text='Select' isAdminFacing=true}</th>
 					{/if}
+					{if $hasRecordLocking && count($lockedRecords) > 0}
+						<th>{translate text='Locked?' isAdminFacing=true}</th>
+					{/if}
 					{foreach from=$structure item=property key=id}
 						{if (!isset($property.hideInLists) || $property.hideInLists == false) && $property.type != 'section'}
 						<th><span {if !empty($property.description)}title='{$property.description}'{/if}>{translate text=$property.label isAdminFacing=true}</span></th>
@@ -103,6 +106,9 @@
 					<tr class='{cycle values="odd,even"} {if !empty($dataItem->class)}{$dataItem->class}{/if}'>
 						{if $canCompare || $canBatchUpdate || $canExportToCSV || $canBatchDelete}
 							<td><input type="checkbox" class="selectedObject" name="selectedObject[{$id}]" aria-label="Select Item {$id}"> </td>
+						{/if}
+						{if $hasRecordLocking && count($lockedRecords) > 0}
+							<td>{if in_array($id,$lockedRecords)}Yes{else}No{/if}</td>
 						{/if}
 						{foreach from=$structure item=property}
 							{if (!isset($property.hideInLists) || $property.hideInLists == false) && $property.type != 'section'}

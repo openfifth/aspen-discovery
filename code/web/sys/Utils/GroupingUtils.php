@@ -68,6 +68,25 @@ function comparePeriodicalItems($a, $b) :int  {
 	}
 }
 
+function getShelfLocationPriority(string $shelfLocation) : int {
+	global $shelfLocationPriorities;
+	if ($shelfLocationPriorities == null) {
+		$shelfLocationPriorities = [];
+	}
+	if (!array_key_exists($shelfLocation, $shelfLocationPriorities)) {
+		global $library;
+		//Sort anything that isn't prioritized to the end
+		$shelfLocationPriorities[$shelfLocation] = 999;
+		if ($library->getGroupedWorkDisplaySettings()->getPrioritizedShelfLocations() != null) {
+			foreach ($library->getGroupedWorkDisplaySettings()->getPrioritizedShelfLocations() as $prioritizedShelfLocation) {
+				if (preg_match("~$prioritizedShelfLocation->shelfLocation~i", $shelfLocation)) {
+					$shelfLocationPriorities[$shelfLocation] = $prioritizedShelfLocation->weight;
+				}
+			}
+		}
+	}
+	return $shelfLocationPriorities[$shelfLocation];
+}
 /**
  *
  * @param $a - an array of item data
@@ -78,8 +97,15 @@ function compareItemBasics($a, $b) :int  {
 	//Sort library and location information
 	$localComparison = $a['locationKey'] <=> $b['locationKey'];
 	if ($localComparison == 0) {
-		//First sort by shelfLocation
-		return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
+		//Compare the priority of the shelf locations
+		$shelfLocationAPriority = getShelfLocationPriority($a['shelfLocation']);
+		$shelfLocationBPriority = getShelfLocationPriority($b['shelfLocation']);
+		$priorityComparison = $shelfLocationAPriority <=> $shelfLocationBPriority;
+		if ($priorityComparison == 0) {
+			//First sort by shelfLocation
+			return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
+		}
+		return $priorityComparison;
 	}
 	return  $localComparison;
 }

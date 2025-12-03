@@ -112,4 +112,8 @@ class WebBuilder_GrapesPages extends ObjectEditor {
 	public function canExportToCSV() : bool {
     	return false;
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

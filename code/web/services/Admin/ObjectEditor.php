@@ -65,6 +65,8 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('initializationAdditionalJs', $this->getInitializationAdditionalJs());
 		$interface->assign('onSubmissionJS', $this->getOnSubmissionJS());
 		$interface->assign('allowSearchingProperties', $this->allowSearchingProperties($structure));
+		$interface->assign('hasRecordLocking', $this->hasRecordLocking());
+		$interface->assign('userCanChangeRecordLocks', $this->userCanChangeRecordLocks());
 
 		//Define the structure of the object.
 		$interface->assign('structure', $structure);
@@ -85,6 +87,10 @@ abstract class ObjectEditor extends Admin_Admin {
 			$this->copyObject($structure);
 		} elseif ($objectAction == 'getCopyOptions') {
 			$this->getCopyOptions();
+		} elseif ($objectAction == 'lockRecord') {
+			$this->lockRecord($structure);
+		} elseif ($objectAction == 'unlockRecord') {
+			$this->unlockRecord($structure);
 		} elseif ($objectAction == 'shareForm') {
 			$this->showShareForm();
 		} elseif ($objectAction == 'shareToCommunity') {
@@ -226,15 +232,25 @@ abstract class ObjectEditor extends Admin_Admin {
 		return $newObject;
 	}
 
+	/**
+	 * This is called:
+	 * - when adding a new object
+	 * - after adding a new object fails due to validation errors
+	 */
 	function setDefaultValues($object, $structure) : void {
+		$fieldLocks = $this->getFieldLocks();
 		foreach ($structure as $property) {
 			$propertyName = $property['property'];
-			if (isset($_REQUEST[$propertyName])) {
-				$object->$propertyName = $_REQUEST[$propertyName];
-			} elseif (isset($property['default'])) {
-				$object->$propertyName = $property['default'];
-			} elseif ($property['type'] == 'section') {
+			if ($property['type'] == 'section') {
 				$this->setDefaultValues($object, $property['properties']);
+			}else {
+				if (isset($_REQUEST[$propertyName])) {
+					//Use Process Property to make sure values are interpreted properly (i.e. checkboxes)
+					DataObjectUtil::processProperty($object, $property, $fieldLocks);
+				} elseif (isset($property['default']) && $this->objectAction == 'addNew') {
+					//We're adding a new object, use the defaults
+					$object->$propertyName = $property['default'];
+				}
 			}
 		}
 	}
@@ -287,6 +303,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('filterFields', $filterFields);
 		$interface->assign('appliedFilters', $this->getAppliedFilters($filterFields));
 		$interface->assign('hiddenFields', $this->getHiddenFields());
+		$interface->assign('lockedRecords', $this->getLockedRecordIds());
 
 		$numObjects = $this->getNumObjects();
 		$page = $_REQUEST['page'] ?? 1;
@@ -633,6 +650,11 @@ abstract class ObjectEditor extends Admin_Admin {
 			$isNewObject = true;
 		} else {
 			$structure = $existingObject->updateStructureForEditingObject($structure);
+			if ($this->objectAction == 'save') {
+				//We are redisplaying an object that failed to save. Set values provided using setDefaultValues
+				$this->setDefaultValues($existingObject, $structure);
+			}
+
 			$interface->assign('structure', $structure);
 			$isNewObject = false;
 		}
@@ -651,6 +673,14 @@ abstract class ObjectEditor extends Admin_Admin {
 			$interface->assign('fieldLocks', $fieldLocks);
 			if (!empty($fieldLocks)) {
 				$structure = $this->applyFieldLocksToObjectStructure($structure, $fieldLocks, $userCanChangeFieldLocks);
+				$interface->assign('structure', $structure);
+			}
+
+			$id = $_REQUEST['id'];
+			$isRecordLocked = $this->isRecordLocked($id);
+			$interface->assign('isRecordLocked', $isRecordLocked);
+			if ($isRecordLocked && !$this->userCanChangeRecordLocks()) {
+				$structure = $this->makeObjectStructureReadOnly($structure);
 				$interface->assign('structure', $structure);
 			}
 		}
@@ -760,11 +790,39 @@ abstract class ObjectEditor extends Admin_Admin {
 		}
 		if (empty($id) && $errorOccurred) {
 			if ($this->canAddNew()) {
-				header("Location: /{$this->getModule()}/{$this->getToolName()}?objectAction=addNew");
+				//Don't do a redirect here, display the data with the user's inputs
+
+				//Display the error message
+				global $interface;
+				$user = UserAccount::getActiveUserObj();
+				$interface->assign('updateMessage', $user->updateMessage);
+				$interface->assign('updateMessageIsError', $user->updateMessageIsError);
+				$user->updateMessage = '';
+				$user->updateMessageIsError = 0;
+				$user->update();
+
+				//Redisplay the form
+				$this->viewIndividualObject($structure);
+				return;
+				//header("Location: /{$this->getModule()}/{$this->getToolName()}?objectAction=addNew");
 			} else {
 				header("Location: /{$this->getModule()}/{$this->getToolName()}");
 			}
-		} elseif (isset($_REQUEST['submitStay']) || $errorOccurred) {
+		} elseif ($errorOccurred) {
+			//An error occurred updating an existing object, redisplay the form so the user doesn't lose their changes
+			//Display the error message
+			global $interface;
+			$user = UserAccount::getActiveUserObj();
+			$interface->assign('updateMessage', $user->updateMessage);
+			$interface->assign('updateMessageIsError', $user->updateMessageIsError);
+			$user->updateMessage = '';
+			$user->updateMessageIsError = 0;
+			$user->update();
+
+			//Redisplay the form
+			$this->viewIndividualObject($structure);
+			return;
+		} elseif (isset($_REQUEST['submitStay'])) {
 			$editUrl = "/{$this->getModule()}/{$this->getToolName()}?objectAction=edit&id=$id";
 			// Preserve all context parameters for submitStay to maintain list context.
 			$preservedParams = ['page', 'pageSize', 'sort', 'filterType', 'filterValue', 'filterValue2'];
@@ -1541,18 +1599,22 @@ abstract class ObjectEditor extends Admin_Admin {
 		return $hasSections || count($structure) > 6;
 	}
 
+	private ?array $_fieldLocks = null;
 	public function getFieldLocks() : array {
-		$fieldLocks = [];
-		try {
-			require_once ROOT_DIR . '/sys/Administration/FieldLock.php';
-			$fieldLock = new FieldLock();
-			$fieldLock->module = $this->getModule();
-			$fieldLock->toolName = $this->getToolName();
-			$fieldLocks = $fieldLock->fetchAll('id', 'field');
-		}catch (Exception) {
-			//Nothing since it's not setup yet
+		if ($this->_fieldLocks == null) {
+			$this->_fieldLocks = [];
+			try {
+				require_once ROOT_DIR . '/sys/Administration/FieldLock.php';
+				$fieldLock = new FieldLock();
+				$fieldLock->module = $this->getModule();
+				$fieldLock->toolName = $this->getToolName();
+				$this->_fieldLocks = $fieldLock->fetchAll('id', 'field');
+			}catch (Exception) {
+				//Nothing since it's not setup yet
+			}
 		}
-		return $fieldLocks;
+
+		return $this->_fieldLocks;
 	}
 
 	public function userCanChangeFieldLocks() : bool {
@@ -1585,6 +1647,48 @@ abstract class ObjectEditor extends Admin_Admin {
 		return $structure;
 	}
 
+	public function makeObjectStructureReadOnly($structure) : array {
+		foreach ($structure as &$property) {
+			if ($property['type'] == 'section') {
+				$property['properties'] = $this->makeObjectStructureReadOnly($property['properties']);
+			} else {
+				$property['readOnly'] = true;
+			}
+		}
+		return $structure;
+	}
+
+	public function getLockedRecordIds() : array {
+		try {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			return $recordLock->fetchAll('recordId', 'recordId');
+		}catch (Exception) {
+			//Nothing since it's not setup yet
+			return [];
+		}
+	}
+
+	public function isRecordLocked(int $id) : bool {
+		try {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			$recordLock->recordId = $id;
+			return $recordLock->count() == 1;
+		}catch (Exception) {
+			//Nothing since it's not setup yet
+			return false;
+		}
+	}
+
+	public function userCanChangeRecordLocks() : bool {
+		return UserAccount::userHasPermission('Lock Administration Records');
+	}
+
 	public function getCopyNotes() : string {
 		return ''
 ;	}
@@ -1600,7 +1704,6 @@ abstract class ObjectEditor extends Admin_Admin {
 	public function hasMultiStepAddNew() : bool {
 		return false;
 	}
-
 
 	/**
 	 * Builds a return URL that preserves the user's complete list context including page number,
@@ -1651,5 +1754,35 @@ abstract class ObjectEditor extends Admin_Admin {
 			}
 		}
 		return $baseUrl;
+	}
+
+	public function hasRecordLocking() : bool {
+		return false;
+	}
+
+	public function lockRecord($structure) : void {
+		if (!empty($_REQUEST['id'])) {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			$recordLock->recordId = $_REQUEST['id'];
+			$recordLock->insert();
+		}
+
+		$this->viewIndividualObject($structure);
+	}
+
+	public function unlockRecord($structure) : void {
+		if (!empty($_REQUEST['id'])) {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			$recordLock->recordId = $_REQUEST['id'];
+			$recordLock->delete(true);
+		}
+
+		$this->viewIndividualObject($structure);
 	}
 }

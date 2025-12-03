@@ -57,6 +57,9 @@ $.fn.rater = function(options) {
 		}
 		if (opts.id == undefined) opts.id = $this.attr('id');
 		var initialRating = opts.rating;
+		if ($this.data('currentRating') === undefined) {
+			$this.data('currentRating', initialRating);
+		}
 
 		if (!$this.hasClass('ui-rater-bindings-done')) {
 			$this.addClass('ui-rater-bindings-done');
@@ -71,13 +74,17 @@ $.fn.rater = function(options) {
 				$this.attr('title', 'Click to Rate "' +  r  + ' stars"');
 			}).on('mouseenter', function(e) { // Hover In
 					$on.addClass('ui-rater-starsHover');
-				}).on('mouseleave', function(e) { // Hover out
-					$on.removeClass('ui-rater-starsHover');
-					$on.width(initialRating * opts.size); // restore to original rating if none was selected.
-				}).on('click', function(e) {
-						var r = Math.round($on.width() / $off.width() * (opts.ratings.length * opts.step)) / opts.step;
-						$.fn.rater.rate($this, opts, r);
-					}).css('cursor', 'pointer'); $on.css('cursor', 'pointer');
+			}).on('mouseleave', function(e) { // Hover out
+				$on.removeClass('ui-rater-starsHover');
+				let currentRating = $this.data('currentRating');
+				if (currentRating === undefined) {
+					currentRating = initialRating;
+				}
+				$on.width(currentRating * opts.size);
+			}).on('click', function(e) {
+				const r = Math.round($on.width() / $off.width() * (opts.ratings.length * opts.step)) / opts.step;
+				$.fn.rater.rate($this, opts, r);
+			}).css('cursor', 'pointer'); $on.css('cursor', 'pointer');
 		}
 	});
 };
@@ -100,7 +107,7 @@ $.fn.rater.rate = function($this, opts, rating) {
 					$off.fadeTo(500, 1).mouseleave(); // Reset rater in light of failure
 				}
 				if (data.rating) { // success
-					opts.rating = data.rating;
+					opts.rating = parseFloat(data.rating);
 					//$on.css('cursor', 'default');
 					$off
 						// detach rater.
@@ -110,6 +117,7 @@ $.fn.rater.rate = function($this, opts, rating) {
 						// wrap-up
 							.fadeTo(600, 0.1, function() {
 								$on.removeClass('ui-rater-starsHover').width(opts.rating * opts.size).addClass('userRated');
+								$this.data('currentRating', opts.rating);
 								$off.fadeTo(500, 1);
 								$this.attr('title', 'Your rating: ' + rating.toFixed(1));
 								if ($this.data('show_review') == true){
