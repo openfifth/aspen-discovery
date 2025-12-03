@@ -5,11 +5,12 @@ require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFacetGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkMoreDetails.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFormatSortingGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkEContentSortingGroup.php';
+require_once ROOT_DIR . '/sys/Grouping/PrioritizedShelfLocation.php';
 
 /**
  * Class GroupedWorkDisplaySetting
  * Stores information about display settings for Grouped Work searches and full records,
- * so they can be configured once and applied to different libraries and locations
+ * so they can be configured once and applied to different libraries and locations.
  */
 class GroupedWorkDisplaySetting extends DataObject {
 	public $__table = 'grouped_work_display_settings';
@@ -20,10 +21,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	public $sortOwnedEditionsFirst;
 
-	//Processing search
+	// Processing search
 	public $applyNumberOfHoldingsBoost;
 
-	//Search Results Display
+	// Search Results Display
 	public $showSearchTools;
 	public $showSearchToolsAtTop;
 	public $showQuickCopy;
@@ -33,10 +34,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showRelatedRecordLabels;
 	public $showEditionCovers;
 
-	//Contents of search
+	// Contents of search
 	public $includeOutOfSystemExternalLinks;
 
-	//Availability Toggles
+	// Availability Toggles
 	public $availabilityToggleLabelSuperScope;
 	public $availabilityToggleLabelLocal;
 	public $availabilityToggleLabelAvailable;
@@ -45,7 +46,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $baseAvailabilityToggleOnLocalHoldingsOnly;
 	public $includeOnlineMaterialsInAvailableToggle;
 
-	//Faceting
+	// Faceting
 	public $includeAllRecordsInShelvingFacets;
 	public $includeAllRecordsInDateAddedFacets;
 	public $facetCountsToShow;
@@ -56,7 +57,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $formatSortingGroupId;
 	public $eContentSortingGroupId;
 
-	//Enrichment
+	// Enrichment
 	public $showStandardReviews;
 	public $showGoodReadsReviews;
 	public $preferSyndeticsSummary;
@@ -64,11 +65,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showSimilarAuthors;
 	public $showRatings; // User Ratings
 	public $showComments; // User Reviews switch
-	public $hideCommentsWithBadWords; //tinyint(4)
+	public $hideCommentsWithBadWords;
 
-	//Full record display
+	// Full record display
 	public $show856LinksAsTab;
-//	public $show856LinksAsAccessOnlineButtons;
 	public $showCheckInGrid;
 	public $showStaffView;
 	public $showLCSubjects; // Library of Congress Subjects
@@ -78,7 +78,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showInMainDetails;
 	public $preferIlsDescription;
 
-	//search options
+	// Search options
 	public $searchSpecVersion;
 	public $limitBoosts;
 	public $maxTotalBoost;
@@ -86,13 +86,19 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $maxFormatBoost;
 	public $maxHoldingsBoost;
 
-	//Item details
+	// Item details
 	public $showItemDueDates;
 	public $showItemNotes;
 	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
 
+	// Series display
+	public $showIndexedSeriesWithNoveList;
+	public $hideIndexedEContentSeries;
+	public $numSeriesToShowBeforeMore;
+
 	private $_moreDetailsOptions;
+	private $_prioritizedShelfLocations;
 
 	// Use this to set which details will be shown in the Main Details section of the record in the search results.
 	// You should be able to add options here without needing to change the database.
@@ -166,6 +172,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 		$moreDetailsStructure = GroupedWorkMoreDetails::getObjectStructure($context);
 		unset($moreDetailsStructure['weight']);
 		unset($moreDetailsStructure['groupedWorkSettingsId']);
+
+		$prioritizedShelfLocationStructure = PrioritizedShelfLocation::getObjectStructure($context);
+		unset($prioritizedShelfLocationStructure['weight']);
+		unset($prioritizedShelfLocationStructure['groupedWorkSettingsId']);
 
 		$structure = [
 			'id' => [
@@ -396,6 +406,23 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'Whether or not the Description loaded from ILS should be preferred over eContent Description',
 						'hideInLists' => true,
 						'default' => false,
+					],
+					'prioritizedShelfLocations' => [
+						'property' => 'prioritizedShelfLocations',
+						'type' => 'oneToMany',
+						'label' => 'Prioritized Shelf Locations',
+						'description' => 'A list of Shelf Locations to show higher in the list of items',
+						'hideInLists' => true,
+						'keyThis' => 'id',
+						'keyOther' => 'groupedWorkDisplaySettingId',
+						'subObjectType' => 'PrioritizedShelfLocation',
+						'structure' => $prioritizedShelfLocationStructure,
+						'sortable' => true,
+						'storeDb' => true,
+						'allowEdit' => true,
+						'canEdit' => false,
+						'canAddNew' => true,
+						'canDelete' => true,
 					],
 					'showItemDueDates' => [
 						'property' => 'showItemDueDates',
@@ -709,6 +736,32 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'listStyle' => 'checkboxSimple',
 						'values' => self::$searchResultsMainDetailsOptions,
 					],
+					'showIndexedSeriesWithNoveList' => [
+						'property' => 'showIndexedSeriesWithNoveList',
+						'type' => 'checkbox',
+						'label' => 'Show Indexed Series with NoveList/Manual Override Series',
+						'description' => 'When checked, indexed series from MARC records will be displayed alongside NoveList or manually overridden series. When unchecked, only the NoveList or manual override series will be shown.',
+						'default' => 0,
+						'hideInLists' => true,
+					],
+					'numSeriesToShowBeforeMore' => [
+						'property' => 'numSeriesToShowBeforeMore',
+						'type' => 'integer',
+						'label' => 'Number of Series to Show Before "More Series" Link',
+						'description' => 'The number of series entries to display before showing the &quot;More Series...&quot; link. Default is 3.',
+						'default' => 3,
+						'min' => 1,
+						'max' => 6,
+						'hideInLists' => true,
+					],
+					'hideIndexedEContentSeries' => [
+						'property' => 'hideIndexedEContentSeries',
+						'type' => 'checkbox',
+						'label' => 'Hide Indexed E-Content Series',
+						'description' => 'When checked, indexed series from e-content sources (OverDrive and Hoopla) will be hidden from display. Reduces duplicate series entries by preventing e-content series from appearing alongside series from other sources.',
+						'default' => 0,
+						'hideInLists' => true,
+					],
 					'alwaysShowSearchResultsMainDetails' => [
 						'property' => 'alwaysShowSearchResultsMainDetails',
 						'type' => 'checkbox',
@@ -855,6 +908,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 			$this->saveLibraries();
 			$this->saveLocations();
 			$this->saveMoreDetailsOptions();
+			$this->savePrioritizedShelfLocations();
 		}
 		return $ret;
 	}
@@ -879,6 +933,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 			$this->saveLibraries();
 			$this->saveLocations();
 			$this->saveMoreDetailsOptions();
+			$this->savePrioritizedShelfLocations();
 		}
 		return $ret;
 	}
@@ -936,6 +991,8 @@ class GroupedWorkDisplaySetting extends DataObject {
 			return $this->_locations;
 		} elseif ($name == 'moreDetailsOptions') {
 			return $this->getMoreDetailsOptions();
+		} elseif ($name == 'prioritizedShelfLocations') {
+			return $this->getPrioritizedShelfLocations();
 		} else {
 			return parent::__get($name);
 		}
@@ -948,6 +1005,8 @@ class GroupedWorkDisplaySetting extends DataObject {
 			$this->_locations = $value;
 		} elseif ($name == 'moreDetailsOptions') {
 			$this->setMoreDetailsOptions($value);
+		} elseif ($name == 'prioritizedShelfLocations') {
+			$this->setPrioritizedShelfLocations($value);
 		} else {
 			parent::__set($name, $value);
 		}
@@ -984,6 +1043,39 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public function clearMoreDetailsOptions() : void {
 		$this->clearOneToManyOptions('GroupedWorkMoreDetails', 'groupedWorkSettingsId');
 		$this->_moreDetailsOptions = [];
+	}
+
+	/**
+	 * @return PrioritizedShelfLocation[]|null
+	 */
+	public function getPrioritizedShelfLocations() : ?array {
+		if (!isset($this->_prioritizedShelfLocations) && $this->id) {
+			$this->_prioritizedShelfLocations = [];
+			$prioritizedShelfLocations = new PrioritizedShelfLocation();
+			$prioritizedShelfLocations->groupedWorkSettingsId = $this->id;
+			$prioritizedShelfLocations->orderBy('weight');
+			$prioritizedShelfLocations->find();
+			while ($prioritizedShelfLocations->fetch()) {
+				$this->_prioritizedShelfLocations[$prioritizedShelfLocations->id] = clone($prioritizedShelfLocations);
+			}
+		}
+		return $this->_prioritizedShelfLocations;
+	}
+
+	public function setPrioritizedShelfLocations($value) : void {
+		$this->_prioritizedShelfLocations = $value;
+	}
+
+	public function savePrioritizedShelfLocations() : void {
+		if (isset ($this->_prioritizedShelfLocations)) {
+			$this->saveOneToManyOptions($this->_prioritizedShelfLocations, 'groupedWorkSettingsId');
+			unset($this->_prioritizedShelfLocations);
+		}
+	}
+
+	public function clearPrioritizedShelfLocations() : void {
+		$this->clearOneToManyOptions('PrioritizedShelfLocation', 'groupedWorkSettingsId');
+		$this->_prioritizedShelfLocations = [];
 	}
 
 	public static function getDefaultDisplaySettings() : GroupedWorkDisplaySetting {

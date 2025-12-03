@@ -53,6 +53,7 @@ public class GroupedWorkIndexer {
 	private HooplaProcessor2 hooplaProcessor2;
 	private PalaceProjectProcessor palaceProjectProcessor;
 	private final HashMap<String, HashMap<String, String>> translationMaps = new HashMap<>();
+	private final HashMap<String, String> locationLabelsByCode = new HashMap<>();
 	private final HashMap<String, LexileTitle> lexileInformation = new HashMap<>();
 	protected final HashSet<String> hideSubjects = new HashSet<>();
 	protected final HashSet<String> hideSeries = new HashSet<>();
@@ -406,6 +407,7 @@ public class GroupedWorkIndexer {
 			}else{
 				logger.info("Loaded " + scopes.size() + " scopes");
 			}
+			loadLocationLabels();
 
 			HashMap<String, ExistingScopeInfo> existingScopes = this.getExistingScopes();
 			for (Scope scope : scopes){
@@ -2644,6 +2646,45 @@ public class GroupedWorkIndexer {
 			subLocationCodeIds.put(subLocationCode, id);
 		}
 		return id;
+	}
+
+	private void loadLocationLabels() {
+		locationLabelsByCode.clear();
+		try (PreparedStatement getLocationLabelsStmt = dbConn.prepareStatement("SELECT code, facetLabel, displayName FROM location", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
+			ResultSet locationLabelsRS = getLocationLabelsStmt.executeQuery();
+			while (locationLabelsRS.next()) {
+				String code = locationLabelsRS.getString("code");
+				if (code == null) {
+					continue;
+				}
+				String normalizedCode = code.trim().toLowerCase();
+				if (normalizedCode.isEmpty()) {
+					continue;
+				}
+				String label = locationLabelsRS.getString("facetLabel");
+				if (label == null || label.isEmpty()) {
+					label = locationLabelsRS.getString("displayName");
+				}
+				if (label == null || label.isEmpty()) {
+					label = code.trim();
+				}
+				locationLabelsByCode.put(normalizedCode, label);
+			}
+			locationLabelsRS.close();
+		} catch (SQLException e) {
+			logEntry.incErrors("Error loading location names from the Location table", e);
+		}
+	}
+
+	String getLocationNameForCode(String locationCode) {
+		if (locationCode == null) {
+			return null;
+		}
+		String normalizedCode = locationCode.trim().toLowerCase();
+		if (normalizedCode.isEmpty()) {
+			return null;
+		}
+		return locationLabelsByCode.get(normalizedCode);
 	}
 
 	void removeGroupedWorkRecord(long recordId) {

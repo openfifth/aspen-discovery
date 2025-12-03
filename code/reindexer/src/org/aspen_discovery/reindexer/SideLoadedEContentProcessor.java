@@ -175,7 +175,13 @@ class SideLoadedEContentProcessor extends MarcRecordProcessor{
 							relatedRecord.addItem(itemInfo);
 
 							loadEContentFormatInformation(groupedWork, record, relatedRecord, itemInfo);
+						} else {
+							indexer.getLogEntry().addNote("Record " + identifier + " skipped: invalid 856 indicator2 '" + urlField.getIndicator2() + "'. Valid values are: whitespace (i.e., blank), 0, 1, 4.");
+							indexer.getLogEntry().incInvalidRecords(identifier);
 						}
+					} else {
+						indexer.getLogEntry().addNote("Record " + identifier + " skipped: invalid 856 indicator1 '" + urlField.getIndicator1() + "' Valid values are: 0, 4, whitespace (i.e., blank).");
+						indexer.getLogEntry().incInvalidRecords(identifier);
 					}
 				}
 			}
