@@ -391,8 +391,10 @@ class SystemAPI extends AbstractAPI {
 		$communityEngagementUpdates = getCommunityEngagementUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/talpa_updates.php';
 		$talpaUpdates = getTalpaUpdates();
-		
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates);
+		require_once ROOT_DIR . '/sys/DBMaintenance/hoopla_version2_updates.php';
+		$hooplaVersion2Updates = getHooplaVersion2Updates();
+
+		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';

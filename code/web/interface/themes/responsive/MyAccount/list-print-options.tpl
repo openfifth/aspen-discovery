@@ -3,7 +3,7 @@
 	<input type="hidden" name="listId" id="listId" value="{$printListId}">
 	<div class="row">
 		<div class="col-xs-12">
-			<p>{translate text="Select the elements you'd like to print" isPublicFacing=true}</p>
+			<p>{translate text="Select the elements you would like to print." isPublicFacing=true}</p>
 		</div>
 		<div class="col-md-4">
 			<h4 class="bold">Layout Options</h4>

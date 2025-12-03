@@ -4,11 +4,11 @@ require_once ROOT_DIR . '/sys/SIP2.php';
 require_once ROOT_DIR . '/Drivers/AbstractIlsDriver.php';
 
 class CarlX extends AbstractIlsDriver {
-	public $patronWsdl;
-	public $catalogWsdl;
+	public string $patronWsdl;
+	public string $catalogWsdl;
 
-	private $soapClient;
-	protected $dbConnection;
+	/** @var resource|object|false|null Oracle database connection */
+	protected mixed $dbConnection = null;
 
 	public function __construct($accountProfile) {
 		parent::__construct($accountProfile);
@@ -23,7 +23,7 @@ class CarlX extends AbstractIlsDriver {
 		}
 	}
 
-	function initDatabaseConnection() {
+	function initDatabaseConnection(): void {
 		if (!isset($this->dbConnection)) {
 			$port = empty($this->accountProfile->databasePort) ? '1521' : $this->accountProfile->databasePort;
 			$ociConnection = $this->accountProfile->databaseHost . ':' . $port . '/' . $this->accountProfile->databaseName;
@@ -36,6 +36,88 @@ class CarlX extends AbstractIlsDriver {
 			global $timer;
 			$timer->logTime("Initialized connection to CARL.X database");
 		}
+	}
+
+	/**
+	 * Execute a SOAP request to the CarlX API.
+	 *
+	 * @param string $requestName The name of the SOAP method to call.
+	 * @param stdClass $request The request object containing parameters for the SOAP call.
+	 * @param string $WSDL The WSDL URL (defaults to patronWsdl if empty).
+	 * @param array $soapRequestOptions Options for the SOAP client.
+	 * @param array $dataToSanitize Data to sanitize in logs (e.g., ['password' => $password]).
+	 * @return stdClass|false Returns the SOAP response object or false on failure.
+	 * @noinspection HttpUrlsUsage
+	 */
+	protected function doSoapRequest(string $requestName, stdClass $request, string $WSDL = '', array $soapRequestOptions = [], array $dataToSanitize = []): stdClass|false {
+		if (empty($WSDL)) { // Let the patron WSDL be the assumed default WSDL when not specified.
+			if (!empty($this->patronWsdl)) {
+				$WSDL = $this->patronWsdl;
+			} else {
+				global $logger;
+				$logger->log('No Default Patron WSDL defined for SOAP calls in CarlX Driver.', Logger::LOG_ERROR);
+				return false;
+			}
+		}
+
+		$connectionPassed = false;
+		$numTries = 0;
+		$result = false;
+		if (IPAddress::showDebuggingInformation() || php_sapi_name() === 'cli') {
+			$soapRequestOptions['trace'] = true;
+		}
+		while (!$connectionPassed && $numTries < 2) {
+			try {
+				try {
+					$soapClient = new SoapClient($WSDL, $soapRequestOptions);
+					$result = $soapClient->$requestName($request);
+				} catch (SoapFault $e) {
+					global $logger;
+					$logger->log("SOAP Fault calling $requestName: " . $e->getMessage(), Logger::LOG_ERROR);
+					throw $e;
+				}
+				$connectionPassed = true;
+				ExternalRequestLogEntry::logRequest('carlx.' . $requestName, 'POST', $WSDL, $soapClient->__getLastRequestHeaders() ?? '', $soapClient->__getLastRequest() ?? '', '0', $soapClient->__getLastResponse() ?? '', $dataToSanitize);
+				if (is_null($result)) {
+					$lastResponse = $soapClient->__getLastResponse();
+					$lastResponse = simplexml_load_string($lastResponse, NULL, NULL, 'http://schemas.xmlsoap.org/soap/envelope/');
+					$lastResponse->registerXPathNamespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
+					if ($requestName == 'settleFinesAndFees') {
+						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/systemAPI');
+						$lastResponse->registerXPathNamespace('ns4', 'http://tlcdelivers.com/cx/schemas/transaction');
+					} else {
+						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/patronAPI');
+					}
+					$lastResponse->registerXPathNamespace('ns2', 'http://tlcdelivers.com/cx/schemas/response');
+					$result = new stdClass();
+					$result->ResponseStatuses = new stdClass();
+					$result->ResponseStatuses->ResponseStatus = new stdClass();
+					$shortMessages = $lastResponse->xpath('//ns2:ShortMessage');
+					$result->ResponseStatuses->ResponseStatus->ShortMessage = implode('; ', $shortMessages);
+					$longMessages = $lastResponse->xpath('//ns2:LongMessage');
+					$result->ResponseStatuses->ResponseStatus->LongMessage = implode('; ', array_filter($longMessages));
+
+					if ($requestName == 'settleFinesAndFees') {
+						// If ReceiptNumber is present, settlement with CarlX was successful.
+						$result->ReceiptNumber = $lastResponse->xpath('//ns3:ReceiptNumber') ?? false;
+					}
+				}
+			} catch (SoapFault $e) {
+				global $logger;
+				$logger->log("Error connecting to SOAP " . $e->getMessage(), Logger::LOG_ERROR);
+				// Create a result object with error information.
+				if ($result === false) {
+					$result = new stdClass();
+				}
+				$result->error = "EXCEPTION: " . $e->getMessage();
+			}
+			$numTries++;
+		}
+		if (!$connectionPassed) {
+			return false;
+		}
+
+		return $result;
 	}
 
 	public function patronLogin($username, $password, $validatedViaSSO) {
@@ -305,90 +387,11 @@ class CarlX extends AbstractIlsDriver {
 		return $renew_result;
 	}
 
-	protected $genericResponseSOAPCallOptions = [
+	protected array $genericResponseSOAPCallOptions = [
 		'connection_timeout' => 1,
 		'features' => SOAP_SINGLE_ELEMENT_ARRAYS | SOAP_WAIT_ONE_WAY_CALLS,
 		'trace' => 1,
 	];
-
-	/**
-	 * @param $requestName
-	 * @param $request
-	 * @param string $WSDL
-	 * @param array $soapRequestOptions
-	 * @return false|stdClass
-	 */
-	protected function doSoapRequest($requestName, $request, string $WSDL = '', array $soapRequestOptions = [], $dataToSanitize = []) {
-		if (empty($WSDL)) { // Let the patron WSDL be the assumed default WSDL when not specified.
-			if (!empty($this->patronWsdl)) {
-				$WSDL = $this->patronWsdl;
-			} else {
-				global $logger;
-				$logger->log('No Default Patron WSDL defined for SOAP calls in CarlX Driver', Logger::LOG_ERROR);
-				return false;
-			}
-		}
-
-		// There are exceptions in the Soap Client that need to be caught for smooth functioning
-		$connectionPassed = false;
-		$numTries = 0;
-		$result = false;
-		if (IPAddress::showDebuggingInformation()) {
-			$soapRequestOptions['trace'] = true;
-		}
-		while (!$connectionPassed && $numTries < 2) {
-			try {
-				try {
-					$this->soapClient = new SoapClient($WSDL, $soapRequestOptions);
-					$result = $this->soapClient->$requestName($request);
-				} catch (SoapFault $e) {
-					global $logger;
-					$logger->log("SOAP Fault calling $requestName: " . $e->getMessage(), Logger::LOG_ERROR);
-					throw $e;
-				}
-				$connectionPassed = true;
-				if (IPAddress::showDebuggingInformation()) {
-					ExternalRequestLogEntry::logRequest('carlx.' . $requestName, 'GET', $WSDL, $this->soapClient->__getLastRequestHeaders(), $this->soapClient->__getLastRequest(), 0, $this->soapClient->__getLastResponse(), $dataToSanitize);
-				}
-				if (is_null($result)) {
-					$lastResponse = $this->soapClient->__getLastResponse();
-					$lastResponse = simplexml_load_string($lastResponse, NULL, NULL, 'http://schemas.xmlsoap.org/soap/envelope/');
-					$lastResponse->registerXPathNamespace('soap-env', 'http://schemas.xmlsoap.org/soap/envelope/');
-					if ($requestName == 'settleFinesAndFees') {
-						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/systemAPI');
-						$lastResponse->registerXPathNamespace('ns4', 'http://tlcdelivers.com/cx/schemas/transaction');
-					} else {
-						$lastResponse->registerXPathNamespace('ns3', 'http://tlcdelivers.com/cx/schemas/patronAPI');
-					}
-					$lastResponse->registerXPathNamespace('ns2', 'http://tlcdelivers.com/cx/schemas/response');
-					$result = new stdClass();
-					$result->ResponseStatuses = new stdClass();
-					$result->ResponseStatuses->ResponseStatus = new stdClass();
-					$shortMessages = $lastResponse->xpath('//ns2:ShortMessage');
-					$result->ResponseStatuses->ResponseStatus->ShortMessage = implode('; ', $shortMessages);
-					$longMessages = $lastResponse->xpath('//ns2:LongMessage');
-					// TODO make empty
-					$result->ResponseStatuses->ResponseStatus->LongMessage = implode('; ', array_filter($longMessages));
-
-					if ($requestName == 'settleFinesAndFees') {
-						// if ReceiptNumber is present, settlement with Carl.X was successful
-						$result->ReceiptNumber = $lastResponse->xpath('//ns3:ReceiptNumber') ?? false;
-					}
-				}
-			} catch (SoapFault $e) {
-				if ($numTries == 2) {
-					global $logger;
-					$logger->log("Error connecting to SOAP " . $e, Logger::LOG_WARNING);
-					$result->error = "EXCEPTION: " . $e->getMessage();
-				}
-			}
-			$numTries++;
-		}
-		if (!$connectionPassed) {
-			return false;
-		}
-		return $result;
-	}
 
 	protected function initSIPConnection() {
 		$mySip = new sip2();
@@ -698,7 +701,7 @@ class CarlX extends AbstractIlsDriver {
 				$curTitle->author = $chargeItem->Author;
 				$curTitle->dueDate = strtotime($dueDate);
 				$curTitle->checkoutDate = strtotime(strstr($chargeItem->TransactionDate, 'T', true));
-				$curTitle->renewCount = isset($chargeItem->RenewalCount) ? $chargeItem->RenewalCount : 0;
+				$curTitle->renewCount = $chargeItem->RenewalCount ?? 0;
 				$curTitle->ilsStatus = $chargeItem->Status; // CarlX "Charged", "Overdue", "Lost"
 				$curTitle->canRenew = true; // Default for Status = 'Charged' or 'Overdue'
 				$curTitle->showFineButton = false; // Default for Status = 'Charged' or 'Overdue'
@@ -1462,8 +1465,10 @@ class CarlX extends AbstractIlsDriver {
 		}
 	}
 
-	public function getReadingHistory(User $patron, $page = 1, $recordsPerPage = -1, $sortOption = 'checkedOut') {
-		$homeLibrary = $patron->getHomeLibrary();
+	/**
+	 * @throws Exception
+	 */
+	public function getReadingHistory(User $patron): array {
 		$readHistoryEnabledInCarlX = false;
 		$request = $this->getSearchbyPatronIdRequest($patron);
 		$result = $this->doSoapRequest('getPatronInformation', $request, $this->patronWsdl);
@@ -1474,97 +1479,74 @@ class CarlX extends AbstractIlsDriver {
 				$patron->update();
 			}
 		}
-
-		//Make sure that we are trying to synchronize reading history
+		$homeLibrary = $patron->getHomeLibrary();
 		if ($homeLibrary->optOutOfReadingHistoryUpdatesILS && $homeLibrary->optInToReadingHistoryUpdatesILS) {
 			$readingHistoryEnabled = $readHistoryEnabledInCarlX;
 		} else {
 			$readingHistoryEnabled = $patron->trackReadingHistory;
 		}
 
-		if ($readHistoryEnabledInCarlX) { // Create Reading History Request
+		if ($readHistoryEnabledInCarlX) {
+			ini_set('memory_limit', '2G');
+			set_time_limit(0);
 			$historyActive = true;
 			$readingHistoryTitles = [];
 			$numTitles = 0;
 
-			$request->HistoryType = 'L'; //  From Documentation: The type of charge history to return, (O)utreach or (L)oan History opt-in
+			$request->HistoryType = 'L'; // The type of charge history to return: (O)utreach or (L)oan History opt-in.
 			$result = $this->doSoapRequest('getPatronChargeHistory', $request);
-
 			if ($result) {
-				// Process Reading History Response
 				if (!empty($result->ChargeHistoryItems->ChargeItem)) {
 					foreach ($result->ChargeHistoryItems->ChargeItem as $readingHistoryEntry) {
-						// Process Reading History Entries
-						$checkOutDate = new DateTime($readingHistoryEntry->ChargeDateTime);
+						// Example in documentations includes a ReturnDate property, but it is never returned.
+						$checkInDate = $readingHistoryEntry->ReturnDate;
 						$curTitle = [];
-						$curTitle['itemId'] = $readingHistoryEntry->ItemNumber;
 						$curTitle['id'] = $readingHistoryEntry->BID;
-						$curTitle['shortId'] = $readingHistoryEntry->BID;
-						$curTitle['recordId'] = $this->fullCarlIDfromBID($readingHistoryEntry->BID);
+						$curTitle['sourceId'] = $this->fullCarlIDfromBID($readingHistoryEntry->BID);
+						$curTitle['barcode'] = $readingHistoryEntry->ItemNumber;
 						$curTitle['title'] = rtrim($readingHistoryEntry->Title, ' /');
-						$curTitle['checkout'] = $checkOutDate->getTimestamp(); // this format is expected by Aspen Discovery's java cron program.
+						$curTitle['author'] = $readingHistoryEntry->Author;
+						$curTitle['checkout'] = new DateTime($readingHistoryEntry->ChargeDateTime)->getTimestamp();
+						$curTitle['checkin'] = !empty($checkInDate) ? new DateTime($checkInDate)->getTimestamp() : -1;
 						$curTitle['borrower_num'] = $patron->id;
-						$curTitle['dueDate'] = null; // Not available in ChargeHistoryItems
-						$curTitle['author'] = null; // Not available in ChargeHistoryItems
 
 						$readingHistoryTitles[] = $curTitle;
 					}
 
 					$numTitles = count($readingHistoryTitles);
-
-					//process pagination
-					if ($recordsPerPage != -1) {
-						$startRecord = ($page - 1) * $recordsPerPage;
-						$readingHistoryTitles = array_slice($readingHistoryTitles, $startRecord, $recordsPerPage);
-					}
-
-					set_time_limit(20 * count($readingHistoryTitles)); // Taken from Aspencat Driver
-
-					// Fetch Additional Information for each Item
 					foreach ($readingHistoryTitles as $key => $historyEntry) {
-						//Get additional information from resources table
-						$historyEntry['ratingData'] = null;
-						$historyEntry['permanentId'] = null;
-						$historyEntry['linkUrl'] = null;
-						$historyEntry['coverUrl'] = null;
 						$historyEntry['format'] = 'Unknown';
-						if (!empty($historyEntry['recordId'])) {
+						if (!empty($historyEntry['sourceId'])) {
 							require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-							$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+							$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 							if ($recordDriver->isValid()) {
-								$historyEntry['ratingData'] = $recordDriver->getRatingData();
 								$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-								$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-								$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 								$historyEntry['format'] = $recordDriver->getFormats();
 								$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
 								if (empty($curTitle['title'])) {
 									$curTitle['title'] = $recordDriver->getTitle();
 								}
 							}
-
 							$recordDriver = null;
 						}
 						$historyEntry['title_sort'] = preg_replace('/[^a-z\s]/', '', strtolower($historyEntry['title']));
-
 						$readingHistoryTitles[$key] = $historyEntry;
 					}
 
 
 				}
 
-				// Return Reading History
 				return [
 					'historyActive' => $historyActive,
 					'titles' => $readingHistoryTitles,
 					'numTitles' => $numTitles,
 				];
-
 			} else {
 				global $logger;
-				$logger->log('CarlX ILS gave no response when attempting to get Reading History.', Logger::LOG_ERROR);
+				$logger->log('CarlX ILS gave no response when attempting to get reading history.', Logger::LOG_ERROR);
 			}
 		}
+
 		return [
 			'historyActive' => $readingHistoryEnabled,
 			'titles' => [],

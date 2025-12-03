@@ -901,6 +901,75 @@ class DataObjectUtil {
 				$propName = $property['property'];
 				$propValue = $object->$propName;
 
+				// Handle prefilled rows.
+				if (!empty($property['prefilledRows']) && is_array($property['prefilledRows'])) {
+					$subObjectType = $property['subObjectType'];
+					$keyOther = $property['keyOther'];
+					$primaryKey = $object->__primaryKey;
+
+					if (!empty($object->$primaryKey)) {
+						// Parent object exists; load existing rows and create missing ones in database.
+						$existingSubObject = new $subObjectType();
+						$existingSubObject->$keyOther = $object->$primaryKey;
+						$existingRows = [];
+						$existingSubObject->find();
+						while ($existingSubObject->fetch()) {
+							// Create a unique key based on all the prefilled field values.
+							$rowKey = [];
+							foreach ($property['prefilledRows'][0] as $fieldName => $value) {
+								if (isset($existingSubObject->$fieldName)) {
+									$rowKey[] = $fieldName . ':' . $existingSubObject->$fieldName;
+								}
+							}
+							$existingRows[implode('|', $rowKey)] = clone $existingSubObject;
+						}
+
+						foreach ($property['prefilledRows'] as $prefilledRow) {
+							// Generate the same key for comparison.
+							$rowKey = [];
+							foreach ($prefilledRow as $fieldName => $value) {
+								$rowKey[] = $fieldName . ':' . $value;
+							}
+							$rowKeyString = implode('|', $rowKey);
+
+							if (!isset($existingRows[$rowKeyString])) {
+								$newSubObject = new $subObjectType();
+								$newSubObject->$keyOther = $object->$primaryKey;
+								foreach ($prefilledRow as $fieldName => $value) {
+									$newSubObject->$fieldName = $value;
+								}
+								$newSubObject->insert();
+								$existingRows[$rowKeyString] = $newSubObject;
+							}
+						}
+
+						// Reload the property to include all rows.
+						$reloadedSubObject = new $subObjectType();
+						$reloadedSubObject->$keyOther = $object->$primaryKey;
+						$propValue = [];
+						$reloadedSubObject->find();
+						while ($reloadedSubObject->fetch()) {
+							$propValue[$reloadedSubObject->getPrimaryKeyValue()] = clone $reloadedSubObject;
+						}
+					} else {
+						// Parent object is new (not yet saved); create temporary placeholder objects.
+						$propValue = [];
+						$tempId = -1;
+						foreach ($property['prefilledRows'] as $prefilledRow) {
+							$tempSubObject = new $subObjectType();
+							// Set a temporary negative ID for the form.
+							$tempSubObject->id = $tempId;
+							$tempSubObject->$keyOther = null;
+							foreach ($prefilledRow as $fieldName => $value) {
+								$tempSubObject->$fieldName = $value;
+							}
+							$propValue[$tempId] = $tempSubObject;
+							$tempId--;
+						}
+					}
+					$object->$propName = $propValue;
+				}
+
 				if (!empty($propValue) && is_array($propValue)) {
 					foreach ($propValue as $subObject) {
 						if (method_exists($subObject, 'updateStructureForEditingObject')) {

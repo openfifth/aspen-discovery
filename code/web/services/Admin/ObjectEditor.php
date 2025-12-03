@@ -65,6 +65,8 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('initializationAdditionalJs', $this->getInitializationAdditionalJs());
 		$interface->assign('onSubmissionJS', $this->getOnSubmissionJS());
 		$interface->assign('allowSearchingProperties', $this->allowSearchingProperties($structure));
+		$interface->assign('hasRecordLocking', $this->hasRecordLocking());
+		$interface->assign('userCanChangeRecordLocks', $this->userCanChangeRecordLocks());
 
 		//Define the structure of the object.
 		$interface->assign('structure', $structure);
@@ -85,6 +87,10 @@ abstract class ObjectEditor extends Admin_Admin {
 			$this->copyObject($structure);
 		} elseif ($objectAction == 'getCopyOptions') {
 			$this->getCopyOptions();
+		} elseif ($objectAction == 'lockRecord') {
+			$this->lockRecord($structure);
+		} elseif ($objectAction == 'unlockRecord') {
+			$this->unlockRecord($structure);
 		} elseif ($objectAction == 'shareForm') {
 			$this->showShareForm();
 		} elseif ($objectAction == 'shareToCommunity') {
@@ -297,6 +303,7 @@ abstract class ObjectEditor extends Admin_Admin {
 		$interface->assign('filterFields', $filterFields);
 		$interface->assign('appliedFilters', $this->getAppliedFilters($filterFields));
 		$interface->assign('hiddenFields', $this->getHiddenFields());
+		$interface->assign('lockedRecords', $this->getLockedRecordIds());
 
 		$numObjects = $this->getNumObjects();
 		$page = $_REQUEST['page'] ?? 1;
@@ -666,6 +673,14 @@ abstract class ObjectEditor extends Admin_Admin {
 			$interface->assign('fieldLocks', $fieldLocks);
 			if (!empty($fieldLocks)) {
 				$structure = $this->applyFieldLocksToObjectStructure($structure, $fieldLocks, $userCanChangeFieldLocks);
+				$interface->assign('structure', $structure);
+			}
+
+			$id = $_REQUEST['id'];
+			$isRecordLocked = $this->isRecordLocked($id);
+			$interface->assign('isRecordLocked', $isRecordLocked);
+			if ($isRecordLocked && !$this->userCanChangeRecordLocks()) {
+				$structure = $this->makeObjectStructureReadOnly($structure);
 				$interface->assign('structure', $structure);
 			}
 		}
@@ -1632,6 +1647,48 @@ abstract class ObjectEditor extends Admin_Admin {
 		return $structure;
 	}
 
+	public function makeObjectStructureReadOnly($structure) : array {
+		foreach ($structure as &$property) {
+			if ($property['type'] == 'section') {
+				$property['properties'] = $this->makeObjectStructureReadOnly($property['properties']);
+			} else {
+				$property['readOnly'] = true;
+			}
+		}
+		return $structure;
+	}
+
+	public function getLockedRecordIds() : array {
+		try {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			return $recordLock->fetchAll('recordId', 'recordId');
+		}catch (Exception) {
+			//Nothing since it's not setup yet
+			return [];
+		}
+	}
+
+	public function isRecordLocked(int $id) : bool {
+		try {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			$recordLock->recordId = $id;
+			return $recordLock->count() == 1;
+		}catch (Exception) {
+			//Nothing since it's not setup yet
+			return false;
+		}
+	}
+
+	public function userCanChangeRecordLocks() : bool {
+		return UserAccount::userHasPermission('Lock Administration Records');
+	}
+
 	public function getCopyNotes() : string {
 		return ''
 ;	}
@@ -1647,7 +1704,6 @@ abstract class ObjectEditor extends Admin_Admin {
 	public function hasMultiStepAddNew() : bool {
 		return false;
 	}
-
 
 	/**
 	 * Builds a return URL that preserves the user's complete list context including page number,
@@ -1698,5 +1754,35 @@ abstract class ObjectEditor extends Admin_Admin {
 			}
 		}
 		return $baseUrl;
+	}
+
+	public function hasRecordLocking() : bool {
+		return false;
+	}
+
+	public function lockRecord($structure) : void {
+		if (!empty($_REQUEST['id'])) {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			$recordLock->recordId = $_REQUEST['id'];
+			$recordLock->insert();
+		}
+
+		$this->viewIndividualObject($structure);
+	}
+
+	public function unlockRecord($structure) : void {
+		if (!empty($_REQUEST['id'])) {
+			require_once ROOT_DIR . '/sys/Administration/RecordLock.php';
+			$recordLock = new RecordLock();
+			$recordLock->module = $this->getModule();
+			$recordLock->toolName = $this->getToolName();
+			$recordLock->recordId = $_REQUEST['id'];
+			$recordLock->delete(true);
+		}
+
+		$this->viewIndividualObject($structure);
 	}
 }

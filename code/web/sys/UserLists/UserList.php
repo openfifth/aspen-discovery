@@ -207,13 +207,21 @@ class UserList extends DataObject {
 		return $result;
 	}
 
-	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
+	public function delete(bool $useWhere = false, bool $hardDelete = false, int $deletedByUserId = null) : bool|int {
+		// Use provided user ID, fall back to active user ID, then to list owner.
+		if (empty($deletedByUserId)) {
+			$deletedByUserId = UserAccount::getActiveUserId();
+		}
+		if (empty($deletedByUserId)) {
+			$deletedByUserId = $this->user_id;
+		}
+		$this->deletedBy = $deletedByUserId;
+
 		if ($hardDelete && !empty($this->id) && $this->id >= 1) {
 			// Hard delete by marking for index cleanup and updating deletion information.
 			$this->deleteFromIndex = 1;
 			$this->deleted = 1;
 			$this->dateDeleted = time();
-			$this->deletedBy = UserAccount::getActiveUserId();
 			$ret = $this->update();
 			if ($ret) {
 				require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
@@ -226,7 +234,13 @@ class UserList extends DataObject {
 		}
 
 		global $memCache;
-		$memCache->delete('user_list_data_' . UserAccount::getActiveUserId());
+		$activeUserId = UserAccount::getActiveUserId();
+		if (!empty($activeUserId)) {
+			$memCache->delete('user_list_data_' . $activeUserId);
+		}
+		if (!empty($this->user_id) && $this->user_id != $activeUserId) {
+			$memCache->delete('user_list_data_' . $this->user_id);
+		}
 		return $ret;
 	}
 
@@ -312,25 +326,26 @@ class UserList extends DataObject {
 					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
-					$indexedPubDate = new class extends DataObject {
-						public $__table = 'indexed_publication_date';
-						public $id;
-						public $publicationDate;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedPublicationDate.php';
+					$indexedPubDate = new IndexedPublicationDate();
 					$listEntry->joinAdd($indexedPubDate, "LEFT", 'indexedPubDate', 'gwRecords.publicationDateId', 'id');
-					
+
 					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
-					$listEntry->selectAdd("CASE
+					// Use MIN for oldest first, MAX for newest first to handle multiple records per grouped work.
+					$aggregate = $sort == "publication_date" ? "MIN" : "MAX";
+					$yearExpression = "CASE
 						WHEN user_list_entry.source = 'GroupedWork' $fmtGate
 							AND indexedPubDate.publicationDate IS NOT NULL
 							AND indexedPubDate.publicationDate REGEXP '[0-9]{4}' THEN
 							CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, '[0-9]{4}') AS UNSIGNED)
 						ELSE NULL
-					END AS NormalizedYear");
+					END";
+					$listEntry->selectAdd("$aggregate($yearExpression) AS NormalizedYear");
 					$listEntry->groupBy('user_list_entry.id');
 
 					$order = $sort == "publication_date" ? "ASC" : "DESC";
-					$listEntry->orderBy("CASE WHEN NormalizedYear IS NULL THEN 1 ELSE 0 END ASC, NormalizedYear $order");
+					// Must repeat the aggregate expression in ORDER BY due to MariaDB limitation with group function references.
+					$listEntry->orderBy("CASE WHEN $aggregate($yearExpression) IS NULL THEN 1 ELSE 0 END ASC, $aggregate($yearExpression) $order");
 
 					// Call number sort: Sorts ILS records by call number then shelf location; places other record types at bottom.
 					// Joins through grouped_work -> grouped_work_records -> grouped_work_record_items -> indexed_call_number + indexed_shelf_location.
@@ -358,29 +373,24 @@ class UserList extends DataObject {
 					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
-					$indexedCallNumber = new class extends DataObject {
-						public $__table = 'indexed_call_number';
-						public $id;
-						public $callNumber;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedCallNumber.php';
+					$indexedCallNumber = new IndexedCallNumber();
 					$listEntry->joinAdd($indexedCallNumber, "LEFT", 'indexedCallNumber', 'gwItems.callNumberId', 'id');
 
-					$shelfLocation = new class extends DataObject {
-						public $__table = 'indexed_shelf_location';
-						public $id;
-						public $shelfLocation;
-					};
+					require_once ROOT_DIR . '/sys/Indexing/IndexedShelfLocation.php';
+					$shelfLocation = new IndexedShelfLocation();
 					$listEntry->joinAdd($shelfLocation, "LEFT", 'shelfLoc', 'gwItems.shelfLocationId', 'id');
 
 					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
 
 					$listEntry->selectAdd("
 						MIN(
-							CASE 
+							CASE
 								WHEN user_list_entry.source = 'GroupedWork'
 									AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0)
 									$fmtGate
 									AND indexedCallNumber.callNumber IS NOT NULL
+									AND indexedCallNumber.callNumber != ''
 								THEN indexedCallNumber.callNumber
 								ELSE NULL
 							END
@@ -398,6 +408,7 @@ class UserList extends DataObject {
 								AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0)
 								$fmtGate
 								AND indexedCallNumber.callNumber IS NOT NULL
+								AND indexedCallNumber.callNumber != ''
 							THEN indexedCallNumber.callNumber
 							ELSE NULL
 						END
@@ -1552,13 +1563,6 @@ class UserList extends DataObject {
 	 * @return array Array of available filters with counts.
 	 */
 	public function getAvailableFormatFilters(): array {
-		global $memCache;
-		$cacheKey = 'list_available_filters_' . $this->id;
-		$cachedFilters = $memCache->get($cacheKey);
-		if ($cachedFilters !== false) {
-			return $cachedFilters;
-		}
-
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
@@ -1586,28 +1590,35 @@ class UserList extends DataObject {
 			
 			if (!empty($groupedWorkInternalIds)) {
 				// Obtain format information for these grouped works.
+				// Count by grouped work, not by individual records/editions.
+				$formatsByGroupedWork = [];
 				require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
 				$gwRecord = new GroupedWorkRecord();
 				$gwRecord->whereAdd("groupedWorkId IN (" . implode(", ", $groupedWorkInternalIds) . ")");
-				$formatIds = [];
 				$gwRecord->find();
 				while ($gwRecord->fetch()) {
 					if (!empty($gwRecord->formatId)) {
-						$formatIds[] = $gwRecord->formatId;
+						if (!isset($formatsByGroupedWork[$gwRecord->groupedWorkId])) {
+							$formatsByGroupedWork[$gwRecord->groupedWorkId] = [];
+						}
+						$formatsByGroupedWork[$gwRecord->groupedWorkId][$gwRecord->formatId] = true;
 					}
 				}
-				
-				
-				if (!empty($formatIds)) {
-					// Get format names and count occurrences.
+
+				$formatCounts = [];
+				if (!empty($formatsByGroupedWork)) {
 					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
-					$formatCounts = [];
-					
-					foreach (array_count_values($formatIds) as $formatId => $count) {
-						$indexedFormat = new IndexedFormat();
-						$indexedFormat->id = $formatId;
-						if ($indexedFormat->find(true)) {
-							$formatCounts[$indexedFormat->format] = $count;
+
+					foreach ($formatsByGroupedWork as $formatIds) {
+						foreach (array_keys($formatIds) as $formatId) {
+							$indexedFormat = new IndexedFormat();
+							$indexedFormat->id = $formatId;
+							if ($indexedFormat->find(true)) {
+								if (!isset($formatCounts[$indexedFormat->format])) {
+									$formatCounts[$indexedFormat->format] = 0;
+								}
+								$formatCounts[$indexedFormat->format]++;
+							}
 						}
 					}
 					ksort($formatCounts);
@@ -1616,25 +1627,20 @@ class UserList extends DataObject {
 			}
 		}
 
-		$filters = [
+		return [
 			'format' => $formatFilters
 		];
-
-		// Cache for 5 minutes.
-		$memCache->set($cacheKey, $filters, 300);
-		
-		return $filters;
 	}
 
 	/**
-	 * Turn our results into a csv document
-	 * @param null|array $result
+	 * Turns list into a CSV document.
+	 *
+	 * @param array $activeFilters
 	 */
-	public function buildCSV() : void {
+	public function buildCSV(array $activeFilters = []) : void {
 		try {
-			$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers'); // get all titles for email list, not just a page's worth
+			$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers', null, null, false, 0, $activeFilters); // get all titles for email list, not just a page's worth
 
-			//Output to the browser
 			header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 			header("Cache-Control: no-store, no-cache, must-revalidate");
 			header("Cache-Control: post-check=0, pre-check=0", false);
@@ -1688,21 +1694,26 @@ class UserList extends DataObject {
 							$formats = $curDoc->getFormats();
 						}
 						$uniqueFormats = array_unique($formats);
-						$uniqueFormats = implode(', ', $formats);
+						if (!empty($activeFilters['format'])) {
+							$uniqueFormats = array_intersect($uniqueFormats, $activeFilters['format']);
+						}
+						$uniqueFormats = implode(', ', $uniqueFormats);
 
 						// Format / Location / Call number, max 3 records
-						//Get the Grouped Work Driver so we can get information about the formats and locations within the record
+						// Get the Grouped Work Driver for information about the formats and locations within the record.
 						require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 						$output = [];
 						foreach ($curDoc->getRelatedManifestations() as $relatedManifestation) {
-							//Manifestation gives us Format & Format Category
 							if (!$relatedManifestation->isHideByDefault()) {
 								$format = $relatedManifestation->format;
-								//Variation gives us the sort
+
+								// Skip this manifestation if filtering and it doesn't match.
+								if (!empty($activeFilters['format']) && !in_array($format, $activeFilters['format'])) {
+									continue;
+								}
+
 								foreach ($relatedManifestation->getVariations() as $variation) {
 									if (!$variation->isHideByDefault()) {
-										//Record will give us the call number, and location
-										//Only do up to 3 records per format?
 										foreach ($variation->getRecords() as $record) {
 											if ($record->isLocallyOwned() || $record->isLibraryOwned()) {
 												$copySummary = $record->getItemSummary();
@@ -1860,34 +1871,31 @@ class UserList extends DataObject {
 		}
 	}
 
-	public function buildRIS() {
+	public function buildRIS(array $activeFilters = []): void {
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		try {
-			$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers'); // get all titles for export, not just a page's worth
+			$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers', null, null, false, 0, $activeFilters); // get all titles for export, not just a page's worth
 
 			$risCitations = array();
 
 			foreach ($titleDetails as $curDoc) {
-				//check document type
 				if ($curDoc instanceof GroupedWorkDriver && $curDoc->isValid()) {
-					$risCitation =$curDoc-> formatGroupedWorkCitation();
+					$risCitation =$curDoc-> getRISData();
 				} else {
 					continue;
 				}
-				// Add formated entry to citation array
+				// Add formated entry to citation array.
 				if (!empty($risCitation)) {
 					$risCitations[] = $risCitation;
 				}
 			}
 
-			// Output to the browser
 			header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 			header("Cache-Control: no-store, no-cache, must-revalidate");
 			header("Cache-Control: post-check=0, pre-check=0", false);
 			header("Pragma: no-cache");
 			header('Content-Type: text/plain; charset=utf-8');
 			header('Content-Disposition: attachment; filename="UserList.ris"');
-
 
 			echo implode("\n", $risCitations);
 			exit();

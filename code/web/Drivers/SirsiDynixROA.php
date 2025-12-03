@@ -1093,14 +1093,14 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 			foreach ($patronCheckouts->fields->circRecordList as $checkout) {
 				if (empty($checkout->fields->claimsReturnedDate) && $checkout->fields->status != 'INACTIVE') { // Titles with a claims return date will not be displayed in check outs.
+					[$bibId] = explode(':', $checkout->key);
 					$curCheckout = new Checkout();
 					$curCheckout->type = 'ils';
 					$curCheckout->source = $this->getIndexingProfile()->name;
-					$curCheckout->sourceId = $checkout->key;
+					$curCheckout->sourceId = 'a' . $bibId;
 					$curCheckout->userId = $patron->id;
-
-					[$bibId] = explode(':', $checkout->key);
 					$curCheckout->recordId = 'a' . $bibId;
+
 					require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 					$recordDriver = RecordDriverFactory::initRecordDriverById($this->getIndexingProfile()->name . ':' . $curCheckout->recordId);
 					if (!$recordDriver->isValid()) {
@@ -1803,7 +1803,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		if (empty($cancelHoldResponse)) {
 			$patron->forceReloadOfHolds();
 			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			
+
 			$result['success'] = true;
 			$result['message'] = translate([
 				'text' => 'The hold was successfully canceled.',
@@ -3237,28 +3237,22 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 	/**
 	 * @param User $patron
-	 * @param int $page
-	 * @param int $recordsPerPage
-	 * @param string $sortOption
 	 * @return array
 	 * @throws Exception
 	 */
-	public function getReadingHistory($patron, $page = 1, $recordsPerPage = -1, $sortOption = "checkedOut") : array {
-		//Get reading history information
-		$historyActive = false;
+	public function getReadingHistory(User $patron): array {
+		$historyActive = false; // Kept false if $keepCircHistory == 'NOHISTORY'.
 		$readingHistoryTitles = [];
 		$staffSessionToken = $this->getStaffSessionToken();
 		if (!empty($staffSessionToken)) {
 			$webServiceURL = $this->getWebServiceURL();
-			$includeFields = urlEncode("keepCircHistory,circHistoryRecordList{checkInDate,checkOutDate,itemType,bib,title,author}");
+			$includeFields = urlEncode("keepCircHistory,circHistoryRecordList{checkInDate,checkOutDate,itemType,bib,title,author,item{barcode}}");
 			$getCircHistoryUrl = $webServiceURL . '/user/patron/barcode/' . $patron->getBarcode() . '?includeFields=' . $includeFields;
 			$getCircHistoryResponse = $this->getWebServiceResponse('getReadingHistory', $getCircHistoryUrl, null, $staffSessionToken);
 			if ($getCircHistoryResponse && !isset($getCircHistoryResponse->messageList)) {
 				$keepCircHistory = $getCircHistoryResponse->fields->keepCircHistory;
 				if ($keepCircHistory == 'ALLCHARGES') {
 					$historyActive = true;
-				} elseif ($keepCircHistory == 'NOHISTORY') {
-					$historyActive = false;
 				} elseif ($keepCircHistory == 'CIRCRULE') {
 					$historyActive = !empty($getCircHistoryResponse->fields->circRecordList);
 				} else {
@@ -3266,29 +3260,23 @@ class SirsiDynixROA extends AbstractIlsDriver {
 					$logger->log('Unknown keepCircHistory value: ' . $keepCircHistory, Logger::LOG_DEBUG);
 				}
 				if ($historyActive) {
-					$readingHistoryTitles = [];
-					$systemVariables = SystemVariables::getSystemVariables();
-					global $aspen_db;
-					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
-
 					foreach ($getCircHistoryResponse->fields->circHistoryRecordList as $circEntry) {
 						$historyEntry = [];
 						$shortId = $circEntry->fields->bib->key;
 						$bibId = 'a' . $circEntry->fields->bib->key;
+						$checkInDate = $circEntry->fields->checkInDate;
 						$historyEntry['id'] = $bibId;
-						$historyEntry['shortId'] = $bibId;
-						$historyEntry['recordId'] = $bibId;
-						$historyEntry['ratingData'] = null;
-						$historyEntry['permanentId'] = null;
-						$historyEntry['linkUrl'] = null;
-						$historyEntry['coverUrl'] = null;
+						$historyEntry['sourceId'] = $bibId;
+						$historyEntry['barcode'] = $circEntry->fields->item->fields->barcode ?: null;
 						$historyEntry['title'] = $circEntry->fields->title;
 						$historyEntry['author'] = $circEntry->fields->author;
 						$historyEntry['format'] = $circEntry->fields->itemType->key;
 						$historyEntry['checkout'] = strtotime($circEntry->fields->checkOutDate);
-						$historyEntry['checkin'] = strtotime($circEntry->fields->checkInDate);
-						if (!empty($historyEntry['recordId'])) {
+						$historyEntry['checkin'] = !empty($checkInDate) ? strtotime($checkInDate) : -1;
+						if (!empty($historyEntry['sourceId'])) {
+							$systemVariables = SystemVariables::getSystemVariables();
 							if ($systemVariables->storeRecordDetailsInDatabase) {
+								global $aspen_db;
 								/** @noinspection SqlResolve */
 								$getRecordDetailsQuery = 'SELECT permanent_id, indexed_format.format, recordIdentifier FROM grouped_work_records
 								  LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
@@ -3300,14 +3288,11 @@ class SirsiDynixROA extends AbstractIlsDriver {
 									$result = $results->fetch();
 									if ($result) {
 										$historyEntry['id'] = $result['recordIdentifier'];
-										$historyEntry['shortId'] = $result['recordIdentifier'];
-										$historyEntry['recordId'] = $result['recordIdentifier'];
+										$historyEntry['sourceId'] = $result['recordIdentifier'];
+										require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 										$groupedWorkDriver = new GroupedWorkDriver($result['permanent_id']);
 										if ($groupedWorkDriver->isValid()) {
-											$historyEntry['ratingData'] = $groupedWorkDriver->getRatingData();
 											$historyEntry['permanentId'] = $groupedWorkDriver->getPermanentId();
-											$historyEntry['linkUrl'] = $groupedWorkDriver->getLinkUrl();
-											$historyEntry['coverUrl'] = $groupedWorkDriver->getBookcoverUrl('medium', true);
 											$historyEntry['format'] = $result['format'];
 											$historyEntry['title'] = $groupedWorkDriver->getTitle();
 											$historyEntry['author'] = $groupedWorkDriver->getPrimaryAuthor();
@@ -3316,22 +3301,17 @@ class SirsiDynixROA extends AbstractIlsDriver {
 								}
 							} else {
 								require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-								$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['recordId']);
+								$recordDriver = new MarcRecordDriver($this->accountProfile->recordSource . ':' . $historyEntry['sourceId']);
 								if ($recordDriver->isValid()) {
-									$historyEntry['ratingData'] = $recordDriver->getRatingData();
 									$historyEntry['permanentId'] = $recordDriver->getPermanentId();
-									$historyEntry['linkUrl'] = $recordDriver->getGroupedWorkDriver()->getLinkUrl();
-									$historyEntry['coverUrl'] = $recordDriver->getBookcoverUrl('medium', true);
 									$historyEntry['format'] = $recordDriver->getFormats();
 									$historyEntry['title'] = $recordDriver->getTitle();
 									$historyEntry['author'] = $recordDriver->getPrimaryAuthor();
 								}
 							}
-							$recordDriver = null;
-						} else {
-							continue;
+							$readingHistoryTitles[] = $historyEntry;
 						}
-						$readingHistoryTitles[] = $historyEntry;
+
 					}
 				}
 			}

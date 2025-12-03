@@ -200,6 +200,7 @@ class User extends DataObject {
 			'hooplaCheckOutConfirmation',
 			'initialReadingHistoryLoaded',
 			'forceReadingHistoryLoad',
+			'readingHistoryImportStartedAt',
 			'updateMessageIsError',
 			'rememberHoldPickupLocation',
 			'materialsRequestSendEmailOnAssign',
@@ -266,13 +267,12 @@ class User extends DataObject {
 	protected ?CatalogConnection $_catalogDriver = null;
 
 	/**
-	 * Get a connection to the catalog for the user
+	 * Get a connection to the catalog for the user.
 	 *
 	 * @return null|CatalogConnection
 	 */
 	function getCatalogDriver(): ?CatalogConnection {
 		if ($this->_catalogDriver == null) {
-			//Based off the source of the user, get the AccountProfile
 			$accountProfile = $this->getAccountProfile();
 			if ($accountProfile) {
 				$catalogDriver = trim($accountProfile->driver);
@@ -923,11 +923,19 @@ class User extends DataObject {
 						return false;
 					}
 				} elseif ($source == 'hoopla') {
-					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->hooplaLibraryID > 0;
+					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->getHooplaLibraryID() > 0;
 				} elseif ($source == 'hoopla_flex') {
+					if (!array_key_exists('Hoopla', $enabledModules) || $userHomeLibrary->getHooplaLibraryID() <= 0) {
+						return false;
+					}
+					$primaryHooplaSetting = $userHomeLibrary->getPrimaryHooplaSetting();
+					if ($primaryHooplaSetting != null) {
+						return $primaryHooplaSetting->hooplaFlexEnabled;
+					}
+					// Legacy Hoopla v1 installs determine Flex availability via the Hoopla scope.
 					$libraryHooplaScope = $userHomeLibrary->getHooplaScope();
-					$isFlexAvilable = $libraryHooplaScope ? $libraryHooplaScope->includeFlex : false;
-					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->hooplaLibraryID > 0 && $isFlexAvilable;
+					$isFlexAvailable = $libraryHooplaScope ? $libraryHooplaScope->includeFlex : false;
+					return $isFlexAvailable;
 				} elseif ($source == 'cloud_library') {
 					return array_key_exists('Cloud Library', $enabledModules) && ($userHomeLibrary->cloudLibraryScope > 0);
 				} elseif ($source == 'axis360') {
@@ -3176,14 +3184,14 @@ class User extends DataObject {
 		return $paymentHistory;
 	}
 
-	public function getReadingHistory($page = 1, $recordsPerPage = 20, $sortOption = "checkedOut", $filter = "", $forExport = false) {
+	public function getReadingHistory(int $page = 1, int $recordsPerPage = 20, string $sortOption = "checkedOut", string $filter = "", bool $forExport = false): array {
 		if ($this->isReadingHistoryEnabled()) {
 			return $this->getCatalogDriver()->getReadingHistory($this, $page, $recordsPerPage, $sortOption, $filter, $forExport);
 		} else {
 			return [
 				'success' => false,
 				'message' => translate([
-					'text' => 'Reading History Functionality is not available',
+					'text' => 'Reading History functionality is not available for this catalog.',
 					'isPublicFacing' => true,
 				]),
 			];
@@ -3230,22 +3238,7 @@ class User extends DataObject {
 		}
 	}
 
-	public function deleteReadingHistoryEntryByTitleAuthor($title, $author) {
-		if ($this->isReadingHistoryEnabled()) {
-			$catalogDriver = $this->getCatalogDriver();
-			return $catalogDriver->deleteReadingHistoryEntryByTitleAuthor($this, $title, $author);
-		} else {
-			return [
-				'success' => false,
-				'message' => translate([
-					'text' => 'Reading History Functionality is not available',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
-	}
-
-	public function updateReadingHistoryBasedOnCurrentCheckouts($isNightlyUpdate) {
+	public function updateReadingHistoryBasedOnCurrentCheckouts(bool $isNightlyUpdate): array {
 		if ($this->isReadingHistoryEnabled()) {
 			$catalogDriver = $this->getCatalogDriver();
 			return $catalogDriver->updateReadingHistoryBasedOnCurrentCheckouts($this, $isNightlyUpdate);
@@ -3560,7 +3553,14 @@ class User extends DataObject {
 				$yearEnd = strtotime(($year + 1) . '-01-01');
 				$readingHistoryDB->whereAdd("checkOutDate >= $yearStart");
 				$readingHistoryDB->whereAdd("checkOutDate < $yearEnd");
-				$readingHistoryDB->groupBy('groupedWorkPermanentId, title, author');
+				// Group by groupedWorkPermanentId to consolidate entries with the same work
+				// but different title/author punctuation variations. For NULL permanent IDs,
+				// we need to also group by title and author to prevent unrelated items from merging.
+				$readingHistoryDB->groupBy([
+					'groupedWorkPermanentId',
+					'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
+					'CASE WHEN groupedWorkPermanentId IS NULL THEN author ELSE NULL END'
+				]);
 				return $readingHistoryDB->count();
 			}
 		}
@@ -3741,7 +3741,14 @@ class User extends DataObject {
 					$readingHistoryDB = new ReadingHistoryEntry();
 					$readingHistoryDB->userId = $this->id;
 					$readingHistoryDB->whereAdd('deleted = 0');
-					$readingHistoryDB->groupBy('groupedWorkPermanentId, title, author');
+					// Group by groupedWorkPermanentId to consolidate entries with the same work
+					// but different title/author punctuation variations. For NULL permanent IDs,
+					// we need to also group by title and author to prevent unrelated items from merging.
+					$readingHistoryDB->groupBy([
+						'groupedWorkPermanentId',
+						'CASE WHEN groupedWorkPermanentId IS NULL THEN title ELSE NULL END',
+						'CASE WHEN groupedWorkPermanentId IS NULL THEN author ELSE NULL END'
+					]);
 					$this->_readingHistorySize = $readingHistoryDB->count();
 					$timer->logTime("Updated reading history size");
 				} else {
@@ -4513,6 +4520,7 @@ class User extends DataObject {
 		$sections['third_party_enrichment']->addAction(new AdminAction('DP.LA Settings', 'Define settings for DP.LA integration.', '/Enrichment/DPLASettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('Google API Settings', 'Define settings for integrating Google APIs within Aspen Discovery.', '/Enrichment/GoogleApiSettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('LibKey Settings', 'Administer LibKey Settings', '/Admin/LibKeySettings'), 'Administer LibKey Settings');
+		$sections['third_party_enrichment']->addAction(new AdminAction('MessageBee Settings', 'Define settings for integrating MessageBee Card Registration within Aspen Discovery.', '/Enrichment/MessageBeeSettings'), 'Administer MessageBee Keys');
 		$nytSettingsAction = new AdminAction('New York Times Settings', 'Define settings for integrating New York Times Content within Aspen Discovery.', '/Enrichment/NewYorkTimesSettings');
 		$nytListsAction = new AdminAction('New York Times Lists', 'View Lists from the New York Times and manually refresh content.', '/Enrichment/NYTLists');
 		if ($sections['third_party_enrichment']->addAction($nytSettingsAction, 'Administer Third Party Enrichment API Keys')) {
@@ -5944,6 +5952,9 @@ class User extends DataObject {
 
 		if ($result['success']) {
 			$format = '';
+			$itemData = $result['itemData'] ?? [];
+			$itemIdFromResult = $itemData['itemId'] ?? null;
+			$itemBarcodeFromResult = $itemData['barcode'] ?? null;
 			//Get the item for the barcode
 			/** @var SearchObject_AbstractGroupedWorkSearcher $searcher */
 			$searcher = SearchObjectFactory::initSearchObject();
@@ -5954,7 +5965,7 @@ class User extends DataObject {
 				// Get all the related records, use for covers since we don't need actions
 				foreach ($groupedWorkDriver->getRelatedRecords(true) as $record) {
 					foreach ($record->getItems() as $item) {
-						if ($item->itemId == $result['itemData']['itemId'] || $item->itemId == $result['itemData']['barcode']) {
+						if (($itemIdFromResult && $item->itemId == $itemIdFromResult) || ($itemBarcodeFromResult && $item->itemId == $itemBarcodeFromResult)) {
 							$format = $record->getFormat();
 							break;
 						}
@@ -5966,8 +5977,8 @@ class User extends DataObject {
 			require_once ROOT_DIR . '/sys/AspenLiDA/SelfCheckCompletionMessage.php';
 			$selfCheckCompletionMessage = new SelfCheckCompletionMessage();
 			$escapedFormat = $selfCheckCompletionMessage->escape($format);
-			$escapedOwningLocationCode = $selfCheckCompletionMessage->escape($result['itemData']['owningLocationCode']);
-			$escapedCheckoutLocationCode = $selfCheckCompletionMessage->escape($result['itemData']['checkoutLocationCode']);
+			$escapedOwningLocationCode = $selfCheckCompletionMessage->escape($itemData['owningLocationCode'] ?? '');
+			$escapedCheckoutLocationCode = $selfCheckCompletionMessage->escape($itemData['checkoutLocationCode'] ?? '');
 			$selfCheckCompletionMessage->whereAdd("$escapedFormat REGEXP formats");
 			$selfCheckCompletionMessage->whereAdd("$escapedOwningLocationCode REGEXP owningLocations");
 			$selfCheckCompletionMessage->whereAdd("$escapedCheckoutLocationCode REGEXP checkoutLocations");

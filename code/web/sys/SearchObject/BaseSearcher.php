@@ -1137,10 +1137,8 @@ abstract class SearchObject_BaseSearcher {
 
 	/**
 	 * Add filters to the object based on values found in the $_REQUEST super global.
-	 *
-	 * @access  protected
 	 */
-	protected function initFilters() {
+	protected function initFilters(): void {
 		if (isset($_REQUEST['filter'])) {
 			if (is_array($_REQUEST['filter'])) {
 				foreach ($_REQUEST['filter'] as $filter) {
@@ -1152,18 +1150,22 @@ abstract class SearchObject_BaseSearcher {
 				$this->addFilter(strip_tags($_REQUEST['filter']));
 			}
 		} else {
-			//Check for locked filters
 			if (UserAccount::isLoggedIn()) {
 				$user = UserAccount::getActiveUserObj();
 				$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
 			} else {
-				$lockedFacets = isset($_SESSION['lockedFilters']) ? $_SESSION['lockedFilters'] : [];
+				$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 			}
 			if (!empty($lockedFacets) && !empty($lockedFacets[$this->getSearchName()])) {
 				$lockedFilters = $lockedFacets[$this->getSearchName()];
 				foreach ($lockedFilters as $fieldName => $values) {
-					foreach ($values as $value) {
-						$this->addFilter($fieldName . ':' . $value);
+					// Only apply locked facets that match the current scope.
+					$unscopedFieldName = $this->getUnscopedFieldName($fieldName);
+					$currentScopedFieldName = $this->getScopedFieldName($unscopedFieldName);
+					if ($fieldName === $currentScopedFieldName) {
+						foreach ($values as $value) {
+							$this->addFilter($fieldName . ':' . $value);
+						}
 					}
 				}
 			}
@@ -2787,7 +2789,7 @@ abstract class SearchObject_BaseSearcher {
 	 * @param string $scopedFieldName
 	 * @return string
 	 */
-	protected function getUnscopedFieldName(string $scopedFieldName): string {
+	public function getUnscopedFieldName(string $scopedFieldName): string {
 		return $scopedFieldName;
 	}
 

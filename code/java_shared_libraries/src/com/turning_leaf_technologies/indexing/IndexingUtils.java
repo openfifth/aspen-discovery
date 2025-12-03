@@ -73,8 +73,6 @@ public class IndexingUtils {
 				hooplaScope.setId(hooplaScopesRS.getLong("id"));
 				hooplaScope.setName(hooplaScopesRS.getString("name"));
 				hooplaScope.setExcludeTitlesWithCopiesFromOtherVendors(hooplaScopesRS.getInt("excludeTitlesWithCopiesFromOtherVendors"));
-				hooplaScope.setIncludeInstant(hooplaScopesRS.getBoolean("includeInstant"));
-				hooplaScope.setIncludeFlex(hooplaScopesRS.getBoolean("includeFlex"));
 				hooplaScope.setIncludeEBooks(hooplaScopesRS.getBoolean("includeEBooks"));
 				hooplaScope.setMaxCostPerCheckoutEBooks(hooplaScopesRS.getFloat("maxCostPerCheckoutEBooks"));
 				hooplaScope.setIncludeEComics(hooplaScopesRS.getBoolean("includeEComics"));
@@ -97,6 +95,15 @@ public class IndexingUtils {
 				hooplaScope.setExcludeParentalAdvisory(hooplaScopesRS.getBoolean("excludeParentalAdvisory"));
 				hooplaScope.setExcludeProfanity(hooplaScopesRS.getBoolean("excludeProfanity"));
 				hooplaScope.setGenreFilters(hooplaScopesRS.getString("genresToExclude"));
+
+				// includeInstant and includeFlex are only used for Hoopla Version 1
+				try {
+					hooplaScope.setIncludeInstant(hooplaScopesRS.getBoolean("includeInstant"));
+					hooplaScope.setIncludeFlex(hooplaScopesRS.getBoolean("includeFlex"));
+				} catch (SQLException e) {
+					hooplaScope.setIncludeInstant(true);
+					hooplaScope.setIncludeFlex(true);
+				}
 
 				hooplaScopes.put(hooplaScope.getId(), hooplaScope);
 			}
@@ -236,8 +243,8 @@ public class IndexingUtils {
 	}
 
 	private static void loadLocationScopes(TreeSet<Scope> scopes, HashMap<Long, GroupedWorkDisplaySettings> groupedWorkDisplaySettings, HashMap<Long, OverDriveScope> overDriveScopes, HashMap<Long, HooplaScope> hooplaScopes, HashMap<Long, CloudLibraryScope> cloudLibraryScopes, HashMap<Long, Axis360Scope> axis360Scopes, HashMap<Long, PalaceProjectScope> palaceProjectScopes, HashMap<Long, SideLoadScope> sideLoadScopes, Connection dbConn, Logger logger) throws SQLException {
-		//To minimize the amount of data in the index, only load locations that have more than one location within the library.
-		PreparedStatement librariesWithMoreThanOneLocationStmt = dbConn.prepareStatement("select libraryId, count(*) as numLocations from location WHERE createSearchInterface = 1 group by libraryId having numLocations > 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+		// To minimize the amount of data in the index, only load locations that have more than one location within the library.
+		PreparedStatement librariesWithMoreThanOneLocationStmt = dbConn.prepareStatement("SELECT libraryId, COUNT(*) AS numLocations FROM location WHERE createSearchInterface = 1 GROUP BY libraryId HAVING numLocations > 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		ResultSet librariesWithMoreThanOneLocation = librariesWithMoreThanOneLocationStmt.executeQuery();
 		String librariesToFetch = new String();
 		while (librariesWithMoreThanOneLocation.next()){
@@ -281,11 +288,10 @@ public class IndexingUtils {
 			if (facetLabel.length() == 0) {
 				facetLabel = displayName;
 			}
-
-			//Determine if we need to build a scope for this location
 			long libraryId = locationInformationRS.getLong("libraryId");
 			long locationId = locationInformationRS.getLong("locationId");
 
+			// Determine if a scope should be built for this location.
 			Scope locationScopeInfo = new Scope();
 			locationScopeInfo.setIsLibraryScope(false);
 			locationScopeInfo.setIsLocationScope(true);
@@ -308,8 +314,8 @@ public class IndexingUtils {
 			}
 			if (groupedWorkDisplaySettings.containsKey(groupedWorkDisplaySettingId)) {
 				locationScopeInfo.setGroupedWorkDisplaySettings(groupedWorkDisplaySettings.get(groupedWorkDisplaySettingId));
-			}else{
-				logger.error("Invalid groupedWorkDisplaySettingId provided, got " + groupedWorkDisplaySettingId + " not loading location scope " + scopeName);
+			} else {
+				logger.error("Invalid groupedWorkDisplaySettingId provided, got " + groupedWorkDisplaySettingId + ", not loading location scope " + scopeName + ".");
 				continue;
 			}
 			locationScopeInfo.setGroupedWorkDisplaySettings(groupedWorkDisplaySettings.get(groupedWorkDisplaySettingId));
@@ -320,7 +326,7 @@ public class IndexingUtils {
 			long hooplaScopeLocation = locationInformationRS.getLong("hooplaScopeLocation");
 			long hooplaScopeLibrary = locationInformationRS.getLong("hooplaScopeLibrary");
 
-			//No records
+			// No records
 			if (hooplaScopeLocation == -1) {
 				if (hooplaScopeLibrary != -1) {
 					locationScopeInfo.setHooplaScope(hooplaScopes.get(hooplaScopeLibrary));
@@ -617,17 +623,29 @@ public class IndexingUtils {
 			}
 			numLocationsForLibraryRS.close();
 
-			//Determine if we need to build a scope for this library
-			//MDN 10/1/2014 always build scopes because it makes coding more consistent elsewhere.
-			//We need to build a scope
+			// For single-location libraries, and to be granular, use the location's facetLabel instead of the library's.
+			if (numLocations == 1) {
+				try (PreparedStatement singleLocationStmt = dbConn.prepareStatement(
+				"SELECT facetLabel, displayName FROM location WHERE libraryId = ? AND createSearchInterface = 1 LIMIT 1")) {
+					singleLocationStmt.setLong(1, libraryId);
+					ResultSet locationRS = singleLocationStmt.executeQuery();
+					if (locationRS.next()) {
+						String locationFacetLabel = locationRS.getString("facetLabel");
+						if (locationFacetLabel != null && !locationFacetLabel.isEmpty()) {
+							facetLabel = locationFacetLabel;
+						}
+						// If location facetLabel is empty, fall back to library facetLabel (already set above).
+					}
+					locationRS.close();
+				} catch (SQLException e) {
+					logger.error("Error loading location facetLabel for single-location library " + libraryId + ": ", e);
+				}
+			}
+
 			Scope newScope = new Scope();
 			newScope.setIsLibraryScope(true);
-			if (numLocations == 1) {
-				//Scopes with only 1 location for the library will be boht library and location
-				newScope.setIsLocationScope(true);
-			}else{
-				newScope.setIsLocationScope(false);
-			}
+			// Scopes with only 1 location for the library will be both library and location.
+			newScope.setIsLocationScope(numLocations == 1);
 			newScope.setScopeName(subdomain);
 			newScope.setLibraryId(libraryId);
 			newScope.setFacetLabel(facetLabel);
@@ -637,8 +655,8 @@ public class IndexingUtils {
 			long groupedWorkDisplaySettingId = libraryInformationRS.getLong("groupedWorkDisplaySettingId");
 			if (groupedWorkDisplaySettings.containsKey(groupedWorkDisplaySettingId)) {
 				newScope.setGroupedWorkDisplaySettings(groupedWorkDisplaySettings.get(groupedWorkDisplaySettingId));
-			}else{
-				logger.error("Invalid groupedWorkDisplaySettingId provided, got " + groupedWorkDisplaySettingId + " not loading library scope " + subdomain);
+			} else {
+				logger.error("Invalid groupedWorkDisplaySettingId provided, got " + groupedWorkDisplaySettingId + ", not loading library scope " + subdomain + ".");
 				continue;
 			}
 			newScope.setCourseReserveLibrariesToInclude(libraryInformationRS.getString("courseReserveLibrariesToInclude"));

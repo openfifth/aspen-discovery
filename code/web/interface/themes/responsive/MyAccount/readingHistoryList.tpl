@@ -12,7 +12,7 @@
 						<div style="margin-right: auto; margin-bottom: 5px;">
 							<div class="btn-group btn-group-sm">
 								{if $historyActive == true}
-									<button class="btn btn-sm btn-info" onclick="return AspenDiscovery.Account.ReadingHistory.exportListAction()">{translate text="Export To CSV" isPublicFacing=true}</button>
+									<button class="btn btn-sm btn-primary" onclick="return AspenDiscovery.Account.ReadingHistory.exportListAction()">{translate text="Export To CSV" isPublicFacing=true}</button>
 								{else}
 									<button class="btn btn-sm btn-primary" onclick="return AspenDiscovery.Account.ReadingHistory.optInAction()">{translate text="Start Recording My Reading History" isPublicFacing=true}</button>
 								{/if}
@@ -22,7 +22,29 @@
 							<div style="margin-bottom: 5px;">
 								<div class="btn-group btn-group-sm">
 									{if !empty($transList)}
-										<button class="btn btn-sm btn-danger" onclick="return AspenDiscovery.Account.ReadingHistory.deleteAllAction()">{translate text="Delete All" isPublicFacing=true}</button>
+										{* Show when NOT in selection mode *}
+										<button type="button" class="btn btn-sm btn-default" id="selectItemsBtn" onclick="return AspenDiscovery.Account.ReadingHistory.toggleSelectionMode()" style="display: inline-block;">
+											{translate text='Select Items' isPublicFacing=true}
+										</button>
+										<button class="btn btn-sm btn-danger" id="deleteAllBtn" onclick="return AspenDiscovery.Account.ReadingHistory.deleteAllAction()" style="display: inline-block;">
+											{translate text="Delete All" isPublicFacing=true}
+										</button>
+
+										{* Show when IN selection mode *}
+										<button type="button" class="btn btn-sm btn-default" id="cancelSelectionBtn" onclick="return AspenDiscovery.Account.ReadingHistory.toggleSelectionMode()" style="display: none;">
+											{translate text='Cancel' isPublicFacing=true}
+										</button>
+										<button type="button" class="btn btn-sm btn-danger dropdown-toggle" id="deleteDropdown" data-toggle="dropdown" aria-expanded="false" style="display: none;">
+											{translate text='Delete' isPublicFacing=true}&nbsp;<span class="caret"></span>
+										</button>
+										<ul class="dropdown-menu" role="menu">
+											<li>
+												<a onclick="return AspenDiscovery.Account.ReadingHistory.deleteSelectedAction()">{translate text="Selected Items" isPublicFacing=true}</a>
+											</li>
+											<li>
+												<a onclick="return AspenDiscovery.Account.ReadingHistory.deleteAllAction()">{translate text="All Items" isPublicFacing=true}</a>
+											</li>
+										</ul>
 									{/if}
 									<button class="btn btn-sm btn-danger" onclick="return AspenDiscovery.Account.ReadingHistory.optOutAction()">{translate text="Stop Recording My Reading History" isPublicFacing=true}</button>
 								</div>
@@ -50,7 +72,7 @@
 								<div class="input-group">
 									<input aria-label="{translate text="Filter Reading History" inAttribute=true isPublicFacing=true}" type="text" class="form-control" name="readingHistoryFilter" id="readingHistoryFilter" value="{$readingHistoryFilter}"/>
 									<span class="input-group-btn">
-										<button type="submit" class="btn btn-default" onclick="return AspenDiscovery.Account.loadReadingHistory($('#patronId').val(),$('#sortMethod option:selected').val(), 1,undefined, $('#readingHistoryFilter').val())">{translate text="Filter" isPublicFacing=true}</button>
+										<button type="submit" class="btn btn-default" onclick="return AspenDiscovery.Account.loadReadingHistory($('#patronId').val(),$('#sortMethod option:selected').val(), 1,undefined, $('#readingHistoryFilter').val())"><span class="glyphicon glyphicon-search" aria-hidden="true"></span><span class="sr-only">{translate text="Filter" isPublicFacing=true}</span></button>
 										{if !empty($readingHistoryFilter)}
 											<button type="submit" class="btn btn-default" onclick="return AspenDiscovery.Account.loadReadingHistory($('#patronId').val(),$('#sortMethod option:selected').val(), 1,undefined, '')">{translate text="Clear" isPublicFacing=true}</button>
 										{/if}
@@ -93,4 +115,6 @@
 {/strip}
 <script type="text/javascript">
 	AspenDiscovery.Ratings.initializeRaters();
+	AspenDiscovery.Account.ReadingHistory.initAccordions();
+	AspenDiscovery.Account.ReadingHistory.initEditableReturnDates();
 </script>

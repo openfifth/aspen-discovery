@@ -104,4 +104,8 @@ class Admin_YearInReview extends ObjectEditor {
 	function canCopy() : bool {
 		return $this->canAddNew();
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

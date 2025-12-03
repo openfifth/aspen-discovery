@@ -584,7 +584,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 	 * @param string $scopedFieldName
 	 * @return string
 	 */
-	protected function getUnscopedFieldName(string $scopedFieldName): string {
+	public function getUnscopedFieldName(string $scopedFieldName): string {
 		if (str_starts_with($scopedFieldName, 'availability_toggle_')) {
 			$scopedFieldName = 'availability_toggle';
 		} elseif (str_starts_with($scopedFieldName, 'format')) {

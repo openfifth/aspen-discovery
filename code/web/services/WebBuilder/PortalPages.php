@@ -117,4 +117,8 @@ class WebBuilder_PortalPages extends ObjectEditor {
 	public function getCopyNotes() : string {
 		return '/admin_instructions/portal_page_copy.MD';
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }
