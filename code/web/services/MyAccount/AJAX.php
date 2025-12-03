@@ -9224,7 +9224,22 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteListForm(): array {
-		$modalBody = translate([
+		$userObj = UserAccount::getActiveUserObj();
+		$hideUI = false;
+		if ($userObj !== false) {
+			$patronHomeLibrary = $userObj->getHomeLibrary();
+			if ($patronHomeLibrary) {
+				$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
+			}
+		}
+
+		if ($hideUI) {
+			$modalBody = translate([
+				'text' => 'Are you sure you want to delete this entire list?',
+				'isPublicFacing' => true
+			]);
+		} else {
+			$modalBody = translate([
 				'text' => 'Are you sure you want to delete this entire list? The list and all titles within it will be soft-deleted and can be restored by library staff within 30 days.',
 				'isPublicFacing' => true
 			]) . '<br/><br/>' .
@@ -9235,6 +9250,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true
 			]) . '</label>' .
 			'</div>';
+		}
 
 		$modalButtons = '<button id="confirmDeleteList" class="tool btn btn-danger" onclick="AspenDiscovery.Lists.doDeleteList()"><span class="fas fa-spinner fa-spin" style="display:none; margin-right: 4px;"></span>' . translate([
 				'text' => 'Yes',
@@ -9257,17 +9273,33 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteSelectedListsForm(): array {
-		$modalBody = translate([
-				'text' => 'Are you sure you want to delete the selected lists? The lists and all titles within them will be soft-deleted and can be restored by library staff within 30 days.',
+		$userObj = UserAccount::getActiveUserObj();
+		$hideUI = false;
+		if ($userObj !== false) {
+			$patronHomeLibrary = $userObj->getHomeLibrary();
+			if ($patronHomeLibrary) {
+				$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
+			}
+		}
+
+		if ($hideUI) {
+			$modalBody = translate([
+				'text' => 'Are you sure you want to delete the selected lists?',
 				'isPublicFacing' => true
-			]) . '<br/><br/>' .
-			'<div>' .
-			'<input type="checkbox" id="optOutSoftDeletionBulk" style="margin-right: 5px;">' .
-			'<label class="form-check-label" for="optOutSoftDeletionBulk">' . translate([
-				'text' => 'Opt Out of Soft Deletion',
-				'isPublicFacing' => true
-			]) . '</label>' .
-			'</div>';
+			]);
+		} else {
+			$modalBody = translate([
+					'text' => 'Are you sure you want to delete the selected lists? The lists and all titles within them will be soft-deleted and can be restored by library staff within 30 days.',
+					'isPublicFacing' => true
+				]) . '<br/><br/>' .
+				'<div>' .
+				'<input type="checkbox" id="optOutSoftDeletionBulk" style="margin-right: 5px;">' .
+				'<label class="form-check-label" for="optOutSoftDeletionBulk">' . translate([
+					'text' => 'Opt Out of Soft Deletion',
+					'isPublicFacing' => true
+				]) . '</label>' .
+				'</div>';
+		}
 
 		$modalButtons = '<button id="confirmDeleteSelectedLists" class="tool btn btn-danger" onclick="AspenDiscovery.Account.doDeleteSelectedLists()"><span class="fas fa-spinner fa-spin" style="display:none; margin-right: 4px;"></span>' . translate([
 				'text' => 'Yes',
@@ -9878,97 +9910,106 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function exportUserList() {
+	/** @noinspection PhpUnused */
+	function exportUserListCSV(): array {
 		$result = [
 			'success' => false,
+			'title' => "Export to CSV Failed",
 			'message' => translate([
-				'text' => 'Export User List to CSV: something went wrong.',
+				'text' => 'An error has occurred exporting this list to CSV.',
 				'isPublicFacing' => true,
 			]),
 		];
-		global $interface;
-		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) { // validly formatted List Id
-			$userListId = $_REQUEST['listId'];
-			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-			$list = new UserList();
-			$list->id = $userListId;
-			if ($list->find(true)) {
-				// Load the User object for the owner of the list (if necessary):
-				if ($list->public == true || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
-					$list->buildCSV();
-				} else {
-					$result = [
-						'result' => false,
-						'message' => translate([
-							'text' => 'Export User List to CSV: You do not have access to this list.',
-							'isPublicFacing' => true,
-						]),
-					];
-				}
-			} else {
-				$result = [
-					'result' => false,
-					'message' => translate([
-						'text' => 'Export User List to CSV: Unable to read list.',
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-		} else { // Invalid listId
-			$result = [
-				'result' => false,
-				'message' => translate([
-					'text' => 'Export User List to CSV: Invalid list id.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
-	}
 
-	function exportUserListRIS() {
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Export User List to RIS: something went wrong.',
-				'isPublicFacing' => true,
-			]),
-		];
-		global $interface;
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
 			$userListId = $_REQUEST['listId'];
 			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 			$list = new UserList();
 			$list->id = $userListId;
 			if ($list->find(true)) {
-				if ($list->public == true || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
-					$list->buildRIS();
+				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+					// Get user's saved filters if logged in.
+					$activeFilters = [];
+					if (UserAccount::isLoggedIn()) {
+						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
+						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
+						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
+							$formatFilters = explode(',', $pageDefaults->userListFilters);
+							$activeFilters['format'] = array_filter($formatFilters);
+						}
+					}
+					$list->buildCSV($activeFilters);
+					// If buildCSV succeeds, it exits.
 				} else {
-					$result = [
-						'result' => false,
-						'message' => translate([
-							'text' => 'Export User List to RIS: You do not have access to this list.',
-							'isPublicFacing' => true,
-						]),
-					];
+					$result['message'] = translate([
+						'text' => 'You do not have access to this list to export to CSV.',
+						'isPublicFacing' => true,
+					]);
 				}
 			} else {
-				$result = [
-					'result' => false,
-					'message' => translate([
-						'text' => 'Export User List to RIS: Unable to read list.',
-						'isPublicFacing' => true,
-					]),
-				];
+				$result['message'] = translate([
+					'text' => 'The list you wish to export to CSV could not be found.',
+					'isPublicFacing' => true,
+				]);
 			}
 		} else {
-			$result = [
-				'result' => false,
-				'message' => translate([
-					'text' => 'Export User List to RIS: Invalid list id.',
-					'isPublicFacing' => true,
-				]),
-			];
+			$result['message'] = translate([
+				'text' => 'No list ID or an invalid list ID has been provided.',
+				'isPublicFacing' => true,
+			]);
 		}
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function exportUserListRIS(): array {
+		$result = [
+			'success' => false,
+			'title' => "Export to RIS Failed",
+			'message' => translate([
+				'text' => 'An error has occurred exporting this list to RIS.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
+			$userListId = $_REQUEST['listId'];
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$list = new UserList();
+			$list->id = $userListId;
+			if ($list->find(true)) {
+				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+					// Get user's saved filters if logged in.
+					$activeFilters = [];
+					if (UserAccount::isLoggedIn()) {
+						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
+						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
+						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
+							$formatFilters = explode(',', $pageDefaults->userListFilters);
+							$activeFilters['format'] = array_filter($formatFilters);
+						}
+					}
+					$list->buildRIS($activeFilters);
+					// If buildRIS succeeds, it exits.
+				} else {
+					$result['message'] = translate([
+						'text' => 'You do not have access to this list to export to RIS.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = translate([
+					'text' => 'The list you wish to export to RIS could not be found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = translate([
+				'text' => 'No list ID or an invalid list ID has been provided.',
+				'isPublicFacing' => true,
+			]);
+		}
+		return $result;
 	}
 
 	function getILSMessage() {

@@ -9,6 +9,7 @@ class PageDefaults extends DataObject {
 	public $objectId;
 	public $pageSize;
 	public $pageSort;
+	public $userListFilters;
 
 	public static function getPageDefaultsForUser(int $userId, string $module, string $action, ?int $objectId) : ?PageDefaults {
 		$pageDefaults = new PageDefaults();
@@ -25,7 +26,7 @@ class PageDefaults extends DataObject {
 		}
 	}
 
-	public static function updatePageDefaultsForUser(int $userId, string $module, string $action, ?int $objectId, ?string $defaultPageSize, ?string $defaultSort) : void {
+	public static function updatePageDefaultsForUser(int $userId, string $module, string $action, ?int $objectId, ?string $defaultPageSize, ?string $defaultSort, ?string $defaultFilters = null) : void {
 		$pageDefaults = new PageDefaults();
 		$pageDefaults->userId = $userId;
 		$pageDefaults->module = $module;
@@ -43,12 +44,18 @@ class PageDefaults extends DataObject {
 				$pageDefaults->pageSort = $defaultSort;
 				$updateDefaults = true;
 			}
+			// Allow empty string to clear filters, only skip if null (not provided)
+			if ($defaultFilters !== null && $pageDefaults->userListFilters != $defaultFilters) {
+				$pageDefaults->userListFilters = $defaultFilters;
+				$updateDefaults = true;
+			}
 			if ($updateDefaults) {
 				$pageDefaults->update();
 			}
 		}else{
 			$pageDefaults->pageSize = $defaultPageSize;
 			$pageDefaults->pageSort = $defaultSort;
+			$pageDefaults->userListFilters = $defaultFilters;
 			$pageDefaults->insert();
 		}
 	}

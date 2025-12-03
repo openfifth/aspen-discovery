@@ -54,6 +54,10 @@ class Events_EventTypes extends ObjectEditor {
 		return 'https://help.aspendiscovery.org/help/catalog/events';
 	}
 
+	function getOnSubmissionJS(): string {
+		return 'AspenDiscovery.Events.checkEventsForType(submitForm)';
+	}
+
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');

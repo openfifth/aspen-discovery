@@ -110,7 +110,10 @@ class SymphonyRecordProcessor extends IlsRecordProcessor {
 
 	protected String getDetailedLocationForItem(ItemInfo itemInfo, DataField itemField, String identifier) {
 		String locationCode = MarcUtil.getItemSubfieldData(settings.getLocationSubfield(), itemField, indexer.getLogEntry(), logger);
-		String location = translateValue("location", locationCode, identifier, true);
+		String location = getLocationLabel(locationCode);
+		if (location == null) {
+			location = "";
+		}
 
 		String subLocationCode = MarcUtil.getItemSubfieldData(settings.getSubLocationSubfield(), itemField, indexer.getLogEntry(), logger);
 		if (subLocationCode != null && subLocationCode.length() > 0){

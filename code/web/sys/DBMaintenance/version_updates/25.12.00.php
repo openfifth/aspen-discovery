@@ -86,6 +86,30 @@ function getUpdates25_12_00(): array {
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Lock Administration Records'))",
 			]
 		], //limit_access_to_shared_records
+		'library_google_analytics' => [
+			'title' => 'Library Google Analytics',
+			'description' => 'Add Library Google Analytics Table',
+			'sql' => [
+				"DROP TABLE library_google_analytics",
+				"CREATE TABLE IF NOT EXISTS library_google_analytics (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					libraryId int(11) NOT NULL,
+					googleApiSettingId INT(11) NOT NULL,
+					googleAnalyticsTrackingId varchar(50) DEFAULT NULL,
+					UNIQUE (libraryId, googleApiSettingId)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci"
+			]
+		], //library_google_analytics
+		'remove_google_analytics_3' => [
+			'title' => 'Remove Google Analytics 3',
+			'description' => 'Remove Google Analytics 3 support',
+			'sql' => [
+				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsLinkingId',
+				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsLinkedProperties',
+				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsDomainName',
+				"UPDATE google_api_settings SET googleAnalyticsVersion='v4' WHERE true"
+			],
+		],
 
 		//kirstien - Grove
 
@@ -94,8 +118,92 @@ function getUpdates25_12_00(): array {
 		// Myranda - Grove
 
 		//Yanjun Li - ByWater
+		'add_hoopla_version_to_system_variables' => [
+			'title' => 'Add Hoopla Version to System Variables',
+			'description' => 'Add Hoopla Version to System Variables',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN hooplaVersion INT DEFAULT 1',
+			]
+		], //add_hoopla_version_to_system_variables
 
 		// Leo Stoyanov - BWS
+		'grouped_work_display_settings_showIndexedSeriesWithNoveList' => [
+			'title' => 'Grouped Work Display Settings - Add Show Indexed Series with NoveList',
+			'description' => 'Add showIndexedSeriesWithNoveList field to grouped_work_display_settings table to control whether indexed series are displayed alongside NoveList or manual override series.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS showIndexedSeriesWithNoveList TINYINT(1) DEFAULT 0",
+			]
+		], //grouped_work_display_settings_showIndexedSeriesWithNoveList
+		'grouped_work_display_settings_numSeriesToShowBeforeMore' => [
+			'title' => 'Grouped Work Display Settings - Add Number of Series to Show Before "More Series" Link',
+			'description' => 'Add numSeriesToShowBeforeMore field to grouped_work_display_settings table to configure the number of series entries displayed before showing "More Series..." link.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS numSeriesToShowBeforeMore INT(11) DEFAULT 3",
+			]
+		], //grouped_work_display_settings_numSeriesToShowBeforeMore
+		'grouped_work_display_settings_hideIndexedEContentSeries' => [
+			'title' => 'Grouped Work Display Settings - Add Hide Indexed E-Content Series',
+			'description' => 'Add hideIndexedEContentSeries field to grouped_work_display_settings table to control whether indexed series from eContent sources (OverDrive, Hoopla) are hidden from display.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN IF NOT EXISTS hideIndexedEContentSeries TINYINT(1) DEFAULT 0",
+			]
+		], //grouped_work_display_settings_hideIndexedEContentSeries
+		'hide_soft_delete_list_ui' => [
+			'title' => 'Hide Soft Delete List UI',
+			'description' => 'Add setting to hide soft delete messaging and checkbox when deleting lists',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN IF NOT EXISTS hideSoftDeleteListUI TINYINT(1) DEFAULT 0",
+			],
+		], //hide_soft_delete_list_ui
+		'list_format_filter_persistence' => [
+			'title' => 'Allow Persistence of User List Format Filters',
+			'description' => 'Add userListFilters column to persist format filters per list for users.',
+			'sql' => [
+				'ALTER TABLE user_page_defaults ADD COLUMN IF NOT EXISTS userListFilters VARCHAR(512) DEFAULT NULL'
+			]
+		], //list_format_filter_persistence
+		'library_user_defined_fields_table' => [
+			'title' => 'Library User Defined Fields Table',
+			'description' => 'Create table for library user defined fields.',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS library_user_defined_field (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					libraryId INT NOT NULL,
+					fieldNumber VARCHAR(30) NOT NULL,
+					label VARCHAR(255) DEFAULT '',
+					required TINYINT(1) DEFAULT 0,
+					maxLength INT DEFAULT 255,
+					INDEX (libraryId),
+					UNIQUE KEY library_field (libraryId, fieldNumber)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+			],
+		], //library_user_defined_fields_table
+		'populate_location_facet_labels' => [
+			'title' => 'Populate Location Facet Labels',
+			'description' => 'Copy legacy "location" Translation Map values into the Location table facet labels based on matching codes.',
+			'continueOnError' => false,
+			'sql' => [
+				// First, handle exact matches (non-regex entries).
+				"UPDATE location
+					INNER JOIN translation_maps tm ON tm.name = 'location' AND tm.usesRegularExpressions = 0
+					INNER JOIN translation_map_values tmv ON tmv.translationMapId = tm.id
+					SET location.facetLabel = tmv.translation
+					WHERE LOWER(location.code) = LOWER(tmv.value)
+					AND (location.facetLabel IS NULL OR location.facetLabel = '')",
+
+				// Then, handle regex matches (regex entries).
+				"UPDATE location
+					INNER JOIN translation_maps tm ON tm.name = 'location' AND tm.usesRegularExpressions = 1
+					INNER JOIN translation_map_values tmv ON tmv.translationMapId = tm.id
+					SET location.facetLabel = tmv.translation
+					WHERE LOWER(location.code) REGEXP LOWER(tmv.value)
+					AND (location.facetLabel IS NULL OR location.facetLabel = '')"
+			]
+		], //populate_location_facet_labels
 		'library_self_reg_form_message_translations' => [
 			'title' => 'Library - Translate Self Registration Form Message',
 			'description' => 'Copy existing self registration form messages into the text block translation table for all available languages.',
@@ -157,6 +265,21 @@ function getUpdates25_12_00(): array {
 			]
 		], //reading_history_add_call_number_and_volume
 
+		// Imani -BWS
+		'externalRequestSettings' => [
+			'title' => 'Add External Request Settings',
+			'description' => 'Create table for External Request Settings',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS `external_request_settings` (
+				`id` int(11) NOT NULL AUTO_INCREMENT,
+				`requestType` varchar(50) DEFAULT NULL,
+				`enabled` tinyint(1) DEFAULT 0,
+				`expireDate` DATE DEFAULT NULL,
+				PRIMARY KEY (`id`)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;'
+			]
+		], //add external request settings table
+
 		//alexander - Open Fifth
 
 		//chloe - Open Fifth
@@ -177,7 +300,17 @@ function getUpdates25_12_00(): array {
 					genericArtCode TINYTEXT
 				) ENGINE = InnoDB",
 			]
-		]
+		],
+
+		// Tomas Cohen Arazi - Theke Solutions
+		'configurable_solr_spellcheck_collation' => [
+			'title' => 'SolR - Spellcheck Collation max tries',
+			'description' => 'Make SolR spellcheck.maxCollationTries configurable',
+			'sql' => [
+				"ALTER TABLE system_variables ADD COLUMN spellcheckMaxCollationTries int(11) DEFAULT 25 AFTER solrQueryTimeout;"
+			],
+		],
+
 		//other
 
 	];
