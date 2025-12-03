@@ -923,11 +923,19 @@ class User extends DataObject {
 						return false;
 					}
 				} elseif ($source == 'hoopla') {
-					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->hooplaLibraryID > 0;
+					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->getHooplaLibraryID() > 0;
 				} elseif ($source == 'hoopla_flex') {
+					if (!array_key_exists('Hoopla', $enabledModules) || $userHomeLibrary->getHooplaLibraryID() <= 0) {
+						return false;
+					}
+					$primaryHooplaSetting = $userHomeLibrary->getPrimaryHooplaSetting();
+					if ($primaryHooplaSetting != null) {
+						return $primaryHooplaSetting->hooplaFlexEnabled;
+					}
+					// Legacy Hoopla v1 installs determine Flex availability via the Hoopla scope.
 					$libraryHooplaScope = $userHomeLibrary->getHooplaScope();
-					$isFlexAvilable = $libraryHooplaScope ? $libraryHooplaScope->includeFlex : false;
-					return array_key_exists('Hoopla', $enabledModules) && $userHomeLibrary->hooplaLibraryID > 0 && $isFlexAvilable;
+					$isFlexAvailable = $libraryHooplaScope ? $libraryHooplaScope->includeFlex : false;
+					return $isFlexAvailable;
 				} elseif ($source == 'cloud_library') {
 					return array_key_exists('Cloud Library', $enabledModules) && ($userHomeLibrary->cloudLibraryScope > 0);
 				} elseif ($source == 'axis360') {

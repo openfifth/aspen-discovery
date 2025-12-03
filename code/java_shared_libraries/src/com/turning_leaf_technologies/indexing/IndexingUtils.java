@@ -73,8 +73,6 @@ public class IndexingUtils {
 				hooplaScope.setId(hooplaScopesRS.getLong("id"));
 				hooplaScope.setName(hooplaScopesRS.getString("name"));
 				hooplaScope.setExcludeTitlesWithCopiesFromOtherVendors(hooplaScopesRS.getInt("excludeTitlesWithCopiesFromOtherVendors"));
-				hooplaScope.setIncludeInstant(hooplaScopesRS.getBoolean("includeInstant"));
-				hooplaScope.setIncludeFlex(hooplaScopesRS.getBoolean("includeFlex"));
 				hooplaScope.setIncludeEBooks(hooplaScopesRS.getBoolean("includeEBooks"));
 				hooplaScope.setMaxCostPerCheckoutEBooks(hooplaScopesRS.getFloat("maxCostPerCheckoutEBooks"));
 				hooplaScope.setIncludeEComics(hooplaScopesRS.getBoolean("includeEComics"));
@@ -97,6 +95,15 @@ public class IndexingUtils {
 				hooplaScope.setExcludeParentalAdvisory(hooplaScopesRS.getBoolean("excludeParentalAdvisory"));
 				hooplaScope.setExcludeProfanity(hooplaScopesRS.getBoolean("excludeProfanity"));
 				hooplaScope.setGenreFilters(hooplaScopesRS.getString("genresToExclude"));
+
+				// includeInstant and includeFlex are only used for Hoopla Version 1
+				try {
+					hooplaScope.setIncludeInstant(hooplaScopesRS.getBoolean("includeInstant"));
+					hooplaScope.setIncludeFlex(hooplaScopesRS.getBoolean("includeFlex"));
+				} catch (SQLException e) {
+					hooplaScope.setIncludeInstant(true);
+					hooplaScope.setIncludeFlex(true);
+				}
 
 				hooplaScopes.put(hooplaScope.getId(), hooplaScope);
 			}

@@ -173,9 +173,10 @@ class Library extends DataObject {
 		$repeatInWorldCat;
 	public $repeatInCloudSource;
 	public $cloudSourceBaseUrl;
-	public $hooplaLibraryID;
 	public /** @noinspection PhpUnused */
 		$hooplaScopeId;
+	// legacy Hoopla v1 column
+	public $hooplaLibraryID;
 	public /** @noinspection PhpUnused */
 		$axis360ScopeId;
 	public $palaceProjectLibraryId;
@@ -832,6 +833,57 @@ class Library extends DataObject {
 		while ($hooplaScope->fetch()) {
 			$hooplaScopes[$hooplaScope->id] = $hooplaScope->name;
 		}
+
+		$libraryHooplaSettingsStructure = [];
+		if (self::isHooplaVersion2()) {
+			// Only Hoopla Version 2
+			require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSetting.php';
+			$libraryHooplaSettingsStructure = LibraryHooplaSetting::getObjectStructure($context);
+			unset($libraryHooplaSettingsStructure['libraryId']);
+			unset($libraryHooplaSettingsStructure['weight']);
+		}
+		$hooplaSectionProperties = [];
+		// Build the Hoopla Section Properties based on Hoopla Version
+		if (self::isHooplaVersion2()) {
+			// Hoopla Version 2: Load Hoopla Library Settings
+			$hooplaSectionProperties['hooplaSettings'] = [
+				'property' => 'hooplaSettings',
+				'type' => 'oneToMany',
+				'label' => "Hoopla Settings",
+				'description' => "Additional Settings information for Hoopla",
+				'keyThis' => 'libraryId',
+				'keyOther' => 'libraryId',
+				'subObjectType' => 'LibraryHooplaSetting',
+				'structure' => $libraryHooplaSettingsStructure,
+				'sortable' => true,
+				'storeDb' => true,
+				'allowEdit' => true,
+				'canEdit' => true,
+				'canAddNew' => true,
+				'canDelete' => true,
+				'forcesReindex' => true,
+			];
+		} else {
+			// Only for Hoopla version 1
+			$hooplaSectionProperties['hooplaLibraryID'] = [
+				'property' => 'hooplaLibraryID',
+				'type' => 'integer',
+				'label' => 'Hoopla Library ID',
+				'description' => 'The ID Number Hoopla uses for this library',
+				'note' => 'Set to 0 to replace the "Check Out" and "Place Hold" buttons with the "Access Online" button.',
+				'hideInLists' => true,
+			];
+		}
+		$hooplaSectionProperties['hooplaScopeId'] = [
+			'property' => 'hooplaScopeId',
+			'type' => 'enum',
+			'values' => $hooplaScopes,
+			'label' => 'Hoopla Scope',
+			'description' => 'The hoopla scope to use',
+			'hideInLists' => true,
+			'default' => -1,
+			'forcesReindex' => true,
+		];
 
 		require_once ROOT_DIR . '/sys/Axis360/Axis360Scope.php';
 		$axis360Scope = new Axis360Scope();
@@ -4234,26 +4286,7 @@ class Library extends DataObject {
 				'hideInLists' => true,
 				'renderAsHeading' => true,
 				'permissions' => ['Library Records included in Catalog'],
-				'properties' => [
-					'hooplaLibraryID' => [
-						'property' => 'hooplaLibraryID',
-						'type' => 'integer',
-						'label' => 'Hoopla Library ID',
-						'description' => 'The ID Number Hoopla uses for this library',
-						'note' => 'Set to 0 to replace the "Check Out" and "Place Hold" buttons with the "Access Online" button.',
-						'hideInLists' => true,
-					],
-					'hooplaScopeId' => [
-						'property' => 'hooplaScopeId',
-						'type' => 'enum',
-						'values' => $hooplaScopes,
-						'label' => 'Hoopla Scope',
-						'description' => 'The hoopla scope to use',
-						'hideInLists' => true,
-						'default' => -1,
-						'forcesReindex' => true,
-					],
-				],
+				'properties' => $hooplaSectionProperties,
 			],
 			'overdriveSection' => [
 				'property' => 'overdriveSection',
@@ -4957,6 +4990,8 @@ class Library extends DataObject {
 			return $this->getLibraryOverDriveScopes();
 		} elseif ($name == 'overDriveSettings') {
 			return $this->getLibraryOverDriveSettings();
+		} elseif ($name == 'hooplaSettings') {
+			return $this->getLibraryHooplaSettings();
 		} elseif ($name == 'materialsRequestFieldsToDisplay') {
 			return $this->getMaterialsRequestFieldsToDisplay();
 		} elseif ($name == 'materialsRequestFormats') {
@@ -4991,6 +5026,8 @@ class Library extends DataObject {
 			$this->_libraryOverDriveScopes = $value;
 		}elseif ($name == 'overDriveSettings') {
 			$this->_libraryOverDriveSettings = $value;
+		} elseif ($name == 'hooplaSettings') {
+			$this->_libraryHooplaSettings = $value;
 		} elseif ($name == 'materialsRequestFieldsToDisplay') {
 			$this->_materialsRequestFieldsToDisplay = $value;
 		} elseif ($name == 'materialsRequestFormats') {
@@ -5051,6 +5088,7 @@ class Library extends DataObject {
 			$this->saveSideLoadScopes();
 			$this->saveOverDriveScopes();
 			$this->saveOverDriveSettings();
+			$this->saveHooplaSettings();
 			$this->saveMaterialsRequestFieldsToDisplay();
 			$this->saveMaterialsRequestFormFields();
 			$this->saveLibraryLinks();
@@ -5127,6 +5165,7 @@ class Library extends DataObject {
 			$this->saveSideLoadScopes();
 			$this->saveOverDriveScopes();
 			$this->saveOverDriveSettings();
+			$this->saveHooplaSettings();
 			$this->saveMaterialsRequestFieldsToDisplay();
 			$this->saveMaterialsRequestFormats();
 			$this->saveMaterialsRequestFormFields();
@@ -5980,6 +6019,105 @@ class Library extends DataObject {
 		}
 	}
 
+	private $_libraryHooplaSettings = null;
+	private static ?bool $isHooplaVersion2 = null;
+
+	/**
+	 * Get Library Hoopla settings for this library
+	 *
+	 * Hoopla Version 1: Returns empty array (uses legacy library.hooplaLibraryID column)
+	 * Hoopla Version 2: Returns array of LibraryHooplaSetting objects from library_hoopla_settings table
+	 *
+	 * @return LibraryHooplaSetting[] Array of library Hoopla settings, empty for Version 1
+	 */
+	public function getLibraryHooplaSettings() : array {
+		if (!self::isHooplaVersion2()) {
+			return [];
+		}
+		if ($this->_libraryHooplaSettings == null) {
+			$this->_libraryHooplaSettings = [];
+			if ($this->libraryId > 0) {
+				try {
+					require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSetting.php';
+					$libraryHooplaSetting = new LibraryHooplaSetting();
+					$libraryHooplaSetting->libraryId = $this->libraryId;
+					$libraryHooplaSetting->orderBy('weight');
+					$this->_libraryHooplaSettings = $libraryHooplaSetting->fetchAll(null, null, false, true);
+				} catch (Exception) {
+					// Silently fail if table doesn't exsit yet
+				}
+			}
+		}
+		return $this->_libraryHooplaSettings;
+	}
+
+	/**
+	 * Hoopla Version 1: Not supported, always returns null
+	 * Hoopla Version 2: Returns the first LibraryHooplaSetting for this library (by weight)
+	 *
+	 * @return LibraryHooplaSetting|null Primary setting for Version 2, null for Version 1
+	 */
+	public function getPrimaryHooplaSetting(): ?LibraryHooplaSetting {
+		// Version 1 returns null
+		if (!self::isHooplaVersion2()) {
+			return null;
+		}
+		$libraryHooplaSettings = $this->getLibraryHooplaSettings();
+		foreach ($libraryHooplaSettings as $libraryHooplaSetting) {
+			if ($libraryHooplaSetting->libraryId == $this->libraryId) {
+				return $libraryHooplaSetting;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Get the Hoopla Library ID for this library
+	 *
+	 * Hoopla Version 1: Returns value from library.hooplaLibraryID column
+	 * Hoopla Version 2: Returns value from LibraryHooplaSetting.hooplaLibraryID
+	 *
+	 * @return int Hoopla Library ID, or 0 if not configured/circulation disabled
+	 */
+	public function getHooplaLibraryID(): int {
+		// Version 2 returns the values in Hoopla Library Settings
+		if (self::isHooplaVersion2()) {
+			$libraryHooplaSetting = $this->getPrimaryHooplaSetting();
+			if ($libraryHooplaSetting != null && $libraryHooplaSetting->circulationEnabled && !empty($libraryHooplaSetting->hooplaLibraryID)) {
+				return (int)$libraryHooplaSetting->hooplaLibraryID;
+			}
+			return 0;
+		}
+		// Version 1 returns hooplaLibraryId column
+		$legacyHooplaId = $this->hooplaLibraryID ?? null;
+		return empty($legacyHooplaId) ? 0 : (int)$legacyHooplaId;
+	}
+
+	public function saveHooplaSettings() : void {
+		if (self::isHooplaVersion2() && isset ($this->_libraryHooplaSettings) && is_array($this->_libraryHooplaSettings)) {
+			$this->saveOneToManyOptions($this->_libraryHooplaSettings, 'libraryId');
+			unset($this->_libraryHooplaSettings);
+		}
+	}
+
+	/**
+	 * Determine if library Hoopla settings should be used based on Hoopla Version
+	 *
+	 * Hoopla Version 1: Returns false (uses legacy library.hooplaLibraryID column)
+	 * Hoopla Version 2: Returns true (uses library_hoopla_settings table)
+	 *
+	 * @return bool True if Version 2, false if Version 1
+	 */
+	private static function isHooplaVersion2(): bool {
+		// Check System Variables to get Hoopla version
+		if (self::$isHooplaVersion2 == null) {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			self::$isHooplaVersion2 = ($systemVariables !== false && !empty($systemVariables->hooplaVersion) && (int)$systemVariables->hooplaVersion == 2);
+		}
+		return self::$isHooplaVersion2;
+	}
+
 	public function setMaterialsRequestFormFields($value) : void {
 		$this->_materialsRequestFormFields = $value;
 	}
@@ -6368,12 +6506,15 @@ class Library extends DataObject {
 				$index--;
 			}
 		}
-		if (empty($_REQUEST['eContent'])) {
-			$this->axis360ScopeId = -1;
-			$this->hooplaLibraryID = 0;
-			$this->hooplaScopeId = -1;
-			$this->palaceProjectScopeId = -1;
-		} else {
+			if (empty($_REQUEST['eContent'])) {
+				$this->axis360ScopeId = -1;
+				if (!self::isHooplaVersion2()) {
+					// Version 1 returns hooplaLibraryId column
+					$this->hooplaLibraryID = 0;
+				}
+				$this->hooplaScopeId = -1;
+				$this->palaceProjectScopeId = -1;
+			} else {
 			$this->getCloudLibraryScope();
 			$this->getSideLoadScopes();
 			$index = -1;

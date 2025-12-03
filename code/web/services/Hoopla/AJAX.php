@@ -176,7 +176,7 @@ class Hoopla_AJAX extends Action {
 			$interface->assign('hooplaId', $id);
 
 			$driver = new HooplaDriver();
-			$holdQueueSize = $driver->getHoldQueueSize($id);
+			$holdQueueSize = $driver->getHoldQueueSize($id, $user->getHomeLibrary()->libraryId);
 			$interface->assign('holdQueueSize', $holdQueueSize);
 			if (count($hooplaUsers) > 0) {
 				$interface->assign('hooplaUsers', $hooplaUsers);

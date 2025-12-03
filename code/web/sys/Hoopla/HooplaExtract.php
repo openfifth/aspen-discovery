@@ -3,9 +3,8 @@
 class HooplaExtract extends DataObject {
 	public $id;
 	public $hooplaId;
-	public $active;
 	public $title;
-	public $kind;
+	public $format;
 	public $pa;  //Parental Advisory
 	/** @noinspection PhpUnused */
 	public $demo;
@@ -15,11 +14,16 @@ class HooplaExtract extends DataObject {
 	/** @noinspection PhpUnused */
 	public $abridged;
 	/** @noinspection PhpUnused */
-	public $price;
+	public $ppuPrice;
 	/** @noinspection PhpUnused */
 	public $rawChecksum;
 	public $rawResponse;
 	public $dateFirstDetected;
+
+	// Legacy Hoopla v1 columns
+	public $active;
+	public $kind;
+	public $price;
 	public $hooplaType;
 
 	public $__table = 'hoopla_export';
@@ -57,14 +61,34 @@ class HooplaExtract extends DataObject {
 	static function getHooplaTitleForId(string $identifier) : ?HooplaExtract {
 		if (isset(self::$_preloadedTitles[$identifier])) {
 			return self::$_preloadedTitles[$identifier];
+		}
+
+		$hooplaProduct = new HooplaExtract();
+		$hooplaProduct->hooplaId = $identifier;
+		if ($hooplaProduct->find(true)) {
+			return $hooplaProduct;
 		}else{
-			$hooplaProduct = new HooplaExtract();
-			$hooplaProduct->hooplaId = $identifier;
-			if ($hooplaProduct->find(true)) {
-				return $hooplaProduct;
-			}else{
-				return null;
+			return null;
+		}
+	}
+
+	// Override the find method to only select the columns that exist
+	// TODO: Remove this block once v1 is retired
+	public function find($fetchFirst = false, $requireOneMatchToReturn = false): bool {
+		$actualColumns = $this->table();
+
+		$selectParts = [];
+		foreach ($actualColumns as $columnName => $columnInfo) {
+			if ($columnName === 'rawResponse') {
+				$selectParts[] = 'UNCOMPRESS(' . $this->__table . '.rawResponse) as rawResponse';
+			} else {
+				$selectParts[] = $this->__table . '.' . $columnName;
 			}
 		}
+
+		$this->selectAdd();
+		$this->selectAdd(implode(', ', $selectParts));
+
+		return parent::find($fetchFirst, $requireOneMatchToReturn);
 	}
 }

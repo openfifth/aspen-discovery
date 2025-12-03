@@ -42,11 +42,13 @@
 	{/if}
 
 	{include file="RecordDrivers/GroupedWork/grouping-information.tpl"}
-
 	{if !empty($hooplaExtract)}
 		<h3>{translate text="Hoopla Extract Information" isPublicFacing=true}</h3>
 		<table class="table-striped table table-condensed notranslate">
 			<tr><td>{translate text="Date First Detected" isPublicFacing=true}</td><td>{$dateFirstDetected|date_format:"%D %T"}</td></tr>
+			{if !empty($hooplaType)}
+					<tr><td>{translate text="Hoopla Type" isPublicFacing=true}</td><td>{$hooplaType}</td></tr>
+			{/if}
 			{if !empty($price)}
 				<tr><td>{translate text="Price" isPublicFacing=true}</td><td>{$price}</td></tr>
 			{/if}
