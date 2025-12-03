@@ -617,7 +617,7 @@ class Polaris extends AbstractIlsDriver {
 					$curHold->holdQueueLength = $holdInfo->QueueTotal;
 					$curHold->position = $holdInfo->QueuePosition;
 				}
-				$curHold->canFreeze = $holdInfo->CanSuspend;
+				$curHold->canFreeze = $holdInfo->CanSuspend && $patron->getHomeLibrary()->allowFreezeHolds;
 				$curHold->title = $holdInfo->Title;
 				$curHold->author = $holdInfo->Author;
 				$curHold->callNumber = $holdInfo->CallNumber;
@@ -2439,7 +2439,7 @@ class Polaris extends AbstractIlsDriver {
 		return $interface->fetch('DataObjectUtil/objectEditForm.tpl');
 	}
 
-	function getSelfRegistrationFields($type = 'selfReg') {
+	function getSelfRegistrationFields(string $type = 'selfReg'): array {
 		global $library;
 		$location = new Location();
 
@@ -2572,7 +2572,7 @@ class Polaris extends AbstractIlsDriver {
 		];
 		if ($type == 'selfReg' && $library && $library->promptForBirthDateInSelfReg) {
 			$birthDateMin = date('Y-m-d', strtotime('-113 years'));
-			$birthDateMax = date('Y-m-d', strtotime('-13 years'));
+			$birthDateMax = date('Y-m-d', strtotime('-' . $library->minSelfRegAge . ' years'));
 			$fields['personalInformationSection']['properties']['birthDate'] = [
 				'property' => 'birthDate',
 				'type' => 'date',
@@ -2889,6 +2889,42 @@ class Polaris extends AbstractIlsDriver {
 				'autocomplete' => false,
 			];
 			$fields['logonInformationSection'] = $logonInfoSection;
+
+			require_once ROOT_DIR . '/sys/LibraryLocation/LibraryUserDefinedField.php';
+			$udfProperties = [];
+			$userDefinedField = new LibraryUserDefinedField();
+			$userDefinedField->libraryId = $library->libraryId;
+			$userDefinedField->orderBy('fieldNumber');
+			$userDefinedField->find();
+			while ($userDefinedField->fetch()) {
+				if (!empty($userDefinedField->label)) {
+					// Extract the number from fieldNumber (e.g., "User Defined Field 1" -> "1").
+					preg_match('/(\d+)$/', $userDefinedField->fieldNumber, $matches);
+					$fieldNum = $matches[1] ?? '';
+					if (!empty($fieldNum)) {
+						$udfProperties['udf' . $fieldNum] = [
+							'property' => 'udf' . $fieldNum,
+							'type' => 'text',
+							'label' => $userDefinedField->label,
+							'description' => '',
+							'maxLength' => $userDefinedField->maxLength,
+							'required' => !empty($userDefinedField->required),
+							'autocomplete' => false,
+						];
+					}
+				}
+			}
+
+			if (!empty($udfProperties)) {
+				$fields['userDefinedFieldsSection'] = [
+					'property' => 'userDefinedFieldsSection',
+					'type' => 'section',
+					'label' => 'Additional Information',
+					'hideInLists' => true,
+					'expandByDefault' => true,
+					'properties' => $udfProperties,
+				];
+			}
 		}
 
 		return $fields;
@@ -2916,7 +2952,14 @@ class Polaris extends AbstractIlsDriver {
 
 		$encodedBody = json_encode($body);
 		$response = $this->getWebServiceResponse($polarisUrl, 'POST', '', $encodedBody);
-		ExternalRequestLogEntry::logRequest('polaris.selfRegister', 'POST', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), $encodedBody, $this->lastResponseCode, $response, []);
+		$dataToSanitize = [];
+		for ($i = 1; $i <= 5; $i++) {
+			$bodyProperty = 'User' . $i;
+			if (isset($body->$bodyProperty)) {
+				$dataToSanitize[$bodyProperty] = $body->$bodyProperty;
+			}
+		}
+		ExternalRequestLogEntry::logRequest('polaris.selfRegister', 'POST', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), $encodedBody, $this->lastResponseCode, $response, $dataToSanitize);
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResult = json_decode($response);
 			if ($jsonResult->PAPIErrorCode != 0) {
@@ -2941,6 +2984,7 @@ class Polaris extends AbstractIlsDriver {
 	}
 
 	/**
+	 * @param $type
 	 * @param stdClass $body
 	 * @param Library $library
 	 */
@@ -2981,11 +3025,16 @@ class Polaris extends AbstractIlsDriver {
 		if (isset($_REQUEST['middleName'])) {
 			$body->NameMiddle = $_REQUEST['middleName'];
 		}
-		//$body->User1 = '';
-		//$body->User2 = '';
-		//$body->User3 = '';
-		//$body->User4 = '';
-		//$body->User5 = '';
+
+		// Handle User-Defined Fields (UDFs)
+		for ($i = 1; $i <= 5; $i++) {
+			$udfField = 'udf' . $i;
+			if (isset($_REQUEST[$udfField])) {
+				$bodyProperty = 'User' . $i;
+				$body->$bodyProperty = $_REQUEST[$udfField];
+			}
+		}
+
 		//$body->Gender = '';
 		if (isset($_REQUEST['birthDate'])) {
 			if ($type == 'selfReg' && $library && $library->promptForBirthDateInSelfReg) {

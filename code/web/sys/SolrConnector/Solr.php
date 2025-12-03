@@ -32,6 +32,12 @@ abstract class Solr {
 	public $client;
 
 	/**
+	 * The base URL without the solr core
+	 * @var string
+	 */
+	public $baseUrl;
+
+	/**
 	 * The host to connect to
 	 * @var string
 	 */
@@ -139,9 +145,9 @@ abstract class Solr {
 		if (empty($index)) {
 			global $library;
 			if ($library) {
-				$index = 'grouped_works';
+				$index = 'grouped_works_v2';
 			} else {
-				$index = isset($configArray['Index']['default_core']) ? $configArray['Index']['default_core'] : "grouped_works";
+				$index = isset($configArray['Index']['default_core']) ? $configArray['Index']['default_core'] : "grouped_works_v2";
 			}
 
 			$this->index = $index;
@@ -151,7 +157,8 @@ abstract class Solr {
 
 		$timer->logTime("Load search specs");
 
-		$this->host = $host . '/' . $index;
+		$this->baseUrl = $host;  // e.g., http://solr:8084/solr
+		$this->host = $host . '/' . $index;  // Keep for backward compatibility
 
 		// If we're still processing then solr is online
 		$this->client = new CurlWrapper();
@@ -1325,6 +1332,10 @@ abstract class Solr {
 
 		// Enable Spell Checking
 		if ($spell != '') {
+			require_once ROOT_DIR . '/sys/SystemVariables.php';
+			$systemVariables = SystemVariables::getSystemVariables();
+			$maxCollationTries = ($systemVariables && $systemVariables->spellcheckMaxCollationTries > 0) ? $systemVariables->spellcheckMaxCollationTries : 25;
+
 			$options['spellcheck'] = 'true';
 			$options['spellcheck.q'] = $spell;
 //			if ($dictionary != null) {
@@ -1340,7 +1351,7 @@ abstract class Solr {
 			$options['spellcheck.collateParam.mm'] = '100%';
 			$options['spellcheck.maxCollations'] = 5;
 			$options['spellcheck.collateExtendedResults'] = 'true';
-			$options['spellcheck.maxCollationTries'] = 25;
+			$options['spellcheck.maxCollationTries'] = $maxCollationTries;
 			$options['spellcheck.accuracy'] = .5;
 		}
 
@@ -2103,25 +2114,31 @@ abstract class Solr {
 			//There are very large performance gains for caching this in memory since we need to do a remote call and file parse
 			$fields = $memCache->get("schema_fields_$key");
 			if (!$fields || isset($_REQUEST['reload'])) {
-				$schemaUrl = $this->host . '/admin/file?file=schema.xml&contentType=text/xml;charset=utf-8';
-				$schema = @simplexml_load_file($schemaUrl);
-				if ($schema == null) {
+				$schemaApiUrl = $this->baseUrl . '/' . $this->index . '/schema/fields';
+				$schemaJson = @file_get_contents($schemaApiUrl);
+				$schemaData = $schemaJson ? json_decode($schemaJson, true) : null;
+				if ($schemaData === null) {
 					AspenError::raiseError("Solr is not currently running");
 				}
 				$fields = [];
-				foreach ($schema->fields->field as $field) {
-					//print_r($field);
-					if ($field['stored'] == 'true' || $field['indexed'] == 'true') {
-						$fields[] = (string)$field['name'];
+				foreach ($schemaData['fields'] as $field) {
+					if (($field['stored'] ?? false) || ($field['indexed'] ?? false)) {
+						$fields[] = $field['name'];
 					}
 				}
 				if ($solrScope) {
-					foreach ($schema->fields->dynamicField as $field) {
-						if ($field['name'] != 'custom_facet_*') {
-							$fields[] = substr((string)$field['name'], 0, -1) . $solrScope;
-						}else{
-							for ($i = 1; $i <= 4; $i++) {
-								$fields[] = substr((string)$field['name'], 0, -1) . $i;
+					// Get dynamic fields from Schema API
+					$dynamicFieldsUrl = $this->baseUrl . '/' . $this->index . '/schema/dynamicfields';
+					$dynamicJson = @file_get_contents($dynamicFieldsUrl);
+					$dynamicData = $dynamicJson ? json_decode($dynamicJson, true) : null;
+					if ($dynamicData && isset($dynamicData['dynamicFields'])) {
+						foreach ($dynamicData['dynamicFields'] as $field) {
+							if ($field['name'] != 'custom_facet_*') {
+								$fields[] = substr($field['name'], 0, -1) . $solrScope;
+							} else {
+								for ($i = 1; $i <= 4; $i++) {
+									$fields[] = substr($field['name'], 0, -1) . $i;
+								}
 							}
 						}
 					}

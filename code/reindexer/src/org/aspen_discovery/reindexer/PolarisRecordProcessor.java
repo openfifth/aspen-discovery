@@ -24,8 +24,11 @@ public class PolarisRecordProcessor extends IlsRecordProcessor{
 		String locationCode = MarcUtil.getItemSubfieldData(settings.getLocationSubfield(), itemField, indexer.getLogEntry(), logger);
 		String collectionCode = MarcUtil.getItemSubfieldData(settings.getCollectionSubfield(), itemField, indexer.getLogEntry(), logger);
 		if (settings.isIncludeLocationNameInDetailedLocation()) {
-			location = translateValue("location", locationCode, identifier, true);
+			location = getLocationLabel(locationCode);
 		}else{
+			location = "";
+		}
+		if (location == null) {
 			location = "";
 		}
 		if (subLocationCode != null && !subLocationCode.isEmpty()){

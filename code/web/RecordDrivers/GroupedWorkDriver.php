@@ -3591,12 +3591,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		return $locations;
 	}
 
-	public function formatGroupedWorkCitation() {
-		// require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
-		require_once ROOT_DIR . '/sys/CitationBuilder.php';
-
+	public function getRISData(): string {
 		if ($this->isValid()) {
-			// Initialize an array to store the RIS-formatted citation fields
 			$risFields = array();
 
 			// RIS TY - Format
@@ -3605,43 +3601,24 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				$format = implode(', ', $format);
 
 				switch ($format) {
+					case 'Reference':
+					case 'Journal':
+					case 'JOURNAL':
+					case 'Books':
+					case 'BK':
+					case 'books':
+					case 'Book':
+					case 'BOOKS':
+					case 'BOOK':
 					case 'book':
 						$format = 'BOOK';
 						break;
-					case 'BOOK':
-						$format = 'BOOK';
-						break;
-					case 'BOOKS':
-						$format = 'BOOK';
-						break;
-					case 'Book':
-						$format = 'BOOK';
-						break;
-					case 'books':
-						$format = 'BOOK';
-						break;
-					case 'BK':
-						$format = 'BOOK';
-						break;
-					case 'Books':
-						$format = 'BOOK';
-						break;
-					case 'JOURNAL':
-						$format = 'BOOK';
-						break;
+					case 'JOURNAL ARTICLE':
 					case 'Journal Article':
 						$format = 'JOUR';
 						break;
-					case 'JOURNAL ARTICLE':
-						$format = 'JOUR';
-						break;
-					case 'Journal':
-						$format = 'BOOK';
-						break;
-					case 'Audio-Visual':
-						$format = 'SOUND';
-						break;
 					case 'AudioBook':
+					case 'Audio-Visual':
 						$format = 'SOUND';
 						break;
 					case 'Catalog':
@@ -3653,50 +3630,31 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					case 'Electronic Article':
 						$format = 'EJOUR';
 						break;
+					case 'Electronic Database':
+					case 'E-Book':
 					case 'Electronic Book':
 						$format = 'EBOOK';
 						break;
-					case 'E-Book':
-						$format = 'EBOOK';
-						break;
+					case 'Magazine Article':
 					case 'Magazine':
 						$format = 'MGZN';
 						break;
-					case 'Magazine Article':
-						$format = 'MGZN';
-						break;
+					case 'MUSIC':
 					case 'Music':
 						$format = 'MUSIC';
 						break;
-					case 'MUSIC':
-						$format = 'MUSIC';
-						break;
-					case 'Newspaper':
-						$format = 'NEWS';
-						break;
 					case 'Newspaper Article':
+					case 'Newspaper':
 						$format = 'NEWS';
 						break;
 					case 'Web Page':
 						$format = 'ELEC';
 						break;
+					case 'Movie':
+					case 'Movie -- DVD':
+					case 'Movie -- VHS':
 					case 'Visual Materials':
 						$format = 'VIDEO';
-						break;
-					case 'Movie':
-						$format = 'VIDEO';
-						break;
-					case 'Movie -- DVD':
-						$format = 'VIDEO';
-						break;
-					case 'Movie -- VHS':
-						$format = 'VIDEO';
-						break;
-					case 'Electronic Database':
-						$format = 'EBOOK';
-						break;
-					case 'Reference':
-						$format = 'BOOK';
 						break;
 				}
 
@@ -3746,7 +3704,6 @@ class GroupedWorkDriver extends IndexRecordDriver {
 
 			$placesOfPublication = $this->getPlaceOfPublication();
 			if (is_array($placesOfPublication) && count($placesOfPublication) > 0) {
-				$placesOfPublicationClean = implode(', ', $placesOfPublication);
 				$placesOfPublicationClean = str_replace([
 					':',
 					'; '
@@ -3796,8 +3753,21 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			//RIS T2 - Series
 			$series = $this->getSeries();
 			if (is_array($series) && count($series) > 0) {
-				$series = implode(', ', $series);
-				$risFields[] = "T2  - " . $series;
+				// getSeries() can return either a single series (assoc array) or multiple series (array of assoc arrays).
+				// Check if it's a single series by looking for 'seriesTitle' key.
+				if (isset($series['seriesTitle'])) {
+					$risFields[] = "T2  - " . $series['seriesTitle'];
+				} else {
+					$seriesTitles = [];
+					foreach ($series as $seriesItem) {
+						if (isset($seriesItem['seriesTitle'])) {
+							$seriesTitles[] = $seriesItem['seriesTitle'];
+						}
+					}
+					if (!empty($seriesTitles)) {
+						$risFields[] = "T2  - " . implode(', ', $seriesTitles);
+					}
+				}
 			}
 
 			//RIS ST - Short Title
@@ -3816,9 +3786,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			$risFields[] = "ER  -";
 
 			return implode("\n", $risFields);
-		} else {
-			return '';
 		}
+
+		return '';
 	}
 
 	public function getRecordGroupingOverrides(): ?array {
