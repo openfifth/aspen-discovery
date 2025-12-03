@@ -120,6 +120,22 @@ function getUpdates25_12_00(): array {
 		//Yanjun Li - ByWater
 
 		// Leo Stoyanov - BWS
+		'library_user_defined_fields_table' => [
+			'title' => 'Library User Defined Fields Table',
+			'description' => 'Create table for library user defined fields.',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS library_user_defined_field (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					libraryId INT NOT NULL,
+					fieldNumber VARCHAR(30) NOT NULL,
+					label VARCHAR(255) DEFAULT '',
+					required TINYINT(1) DEFAULT 0,
+					maxLength INT DEFAULT 255,
+					INDEX (libraryId),
+					UNIQUE KEY library_field (libraryId, fieldNumber)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+			],
+		], //library_user_defined_fields_table
 		'populate_location_facet_labels' => [
 			'title' => 'Populate Location Facet Labels',
 			'description' => 'Copy legacy "location" Translation Map values into the Location table facet labels based on matching codes.',
