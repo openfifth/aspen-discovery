@@ -1169,8 +1169,12 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	}
 
 	protected array|null|false $_indexedSeries = false;
+	protected ?array $_eContentSeriesTitles = null;
 
 	public function getIndexedSeries(): ?array {
+		global $logger;
+		global $library;
+
 		if ($this->_indexedSeries === false) {
 			global $timer;
 			$this->_indexedSeries = null;
@@ -1197,6 +1201,33 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$timer->logTime("Loaded indexed series information");
 		}
+
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		$shouldFilterEContent = !empty($groupedWorkDisplaySettings->hideIndexedEContentSeries);
+		if ($shouldFilterEContent && !empty($this->_indexedSeries)) {
+			if ($this->_eContentSeriesTitles === null) {
+				$this->_eContentSeriesTitles = $this->getEContentSeriesTitles();
+			}
+
+			if (!empty($this->_eContentSeriesTitles)) {
+				// Filter out any indexed series that match eContent series titles (case-insensitive).
+				$filteredSeries = [];
+				foreach ($this->_indexedSeries as $indexedSeries) {
+					$isEContentSeries = false;
+					foreach ($this->_eContentSeriesTitles as $eContentTitle) {
+						if (strcasecmp($indexedSeries['seriesTitle'], $eContentTitle) === 0) {
+							$isEContentSeries = true;
+							break;
+						}
+					}
+					if (!$isEContentSeries) {
+						$filteredSeries[] = $indexedSeries;
+					}
+				}
+				return $filteredSeries;
+			}
+		}
+
 		return $this->_indexedSeries;
 	}
 
@@ -2444,6 +2475,27 @@ class GroupedWorkDriver extends IndexRecordDriver {
 							'fromSeriesIndex' => false
 						];
 					}
+
+					$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+					if (!empty($groupedWorkDisplaySettings->showIndexedSeriesWithNoveList)) {
+						$seriesFromIndex = $this->getIndexedSeries();
+						if ($seriesFromIndex != null && count($seriesFromIndex) > 0) {
+							$this->sortSeriesByNameAndVolume($seriesFromIndex);
+
+							$this->seriesData['additionalSeries'] = [];
+							foreach ($seriesFromIndex as $indexedSeries) {
+								// Skip if it matches the manual override series title (case-insensitive).
+								if (strcasecmp($indexedSeries['seriesTitle'], $existingDisplayInfo->seriesName) !== 0) {
+									$this->seriesData['additionalSeries'][] = [
+										'seriesTitle' => $indexedSeries['seriesTitle'],
+										'volume' => $indexedSeries['volume'] ?? '',
+										'fromNovelist' => false,
+										'fromSeriesIndex' => false
+									];
+								}
+							}
+						}
+					}
 				} else if ($novelistData != null && !empty($novelistData->seriesTitle) && !$this->isSeriesHidden($novelistData->seriesTitle)) {
 					$this->seriesData = [
 						'seriesTitle' => $novelistData->seriesTitle,
@@ -2451,49 +2503,31 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						'fromNovelist' => true,
 						'fromSeriesIndex' => false
 					];
+
+					$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+					if (!empty($groupedWorkDisplaySettings->showIndexedSeriesWithNoveList)) {
+						$seriesFromIndex = $this->getIndexedSeries();
+						if ($seriesFromIndex != null && count($seriesFromIndex) > 0) {
+							$this->sortSeriesByNameAndVolume($seriesFromIndex);
+
+							$this->seriesData['additionalSeries'] = [];
+							foreach ($seriesFromIndex as $indexedSeries) {
+								// Skip if it matches the NoveList series title (case-insensitive).
+								if (strcasecmp($indexedSeries['seriesTitle'], $novelistData->seriesTitle) !== 0) {
+									$this->seriesData['additionalSeries'][] = [
+										'seriesTitle' => $indexedSeries['seriesTitle'],
+										'volume' => $indexedSeries['volume'] ?? '',
+										'fromNovelist' => false,
+										'fromSeriesIndex' => false
+									];
+								}
+							}
+						}
+					}
 				} else {
 					$seriesFromIndex = $this->getIndexedSeries();
 					if ($seriesFromIndex != null && count($seriesFromIndex) > 0) {
-						// Sort series entries by series name first, then by volume.
-						usort($seriesFromIndex, function($a, $b) {
-							$seriesA = $a['seriesTitle'] ?? '';
-							$seriesB = $b['seriesTitle'] ?? '';
-
-							$seriesCompare = strcmp($seriesA, $seriesB);
-							if ($seriesCompare !== 0) {
-								return $seriesCompare;
-							}
-							// Within the same series, sort by volume.
-							$volA = $a['volume'] ?? '';
-							$volB = $b['volume'] ?? '';
-
-							$hasVolA = !empty($volA);
-							$hasVolB = !empty($volB);
-							// If one has volume and one doesn't, the one with volume comes first.
-							if ($hasVolA && !$hasVolB) {
-								return -1;
-							}
-							if (!$hasVolA && $hasVolB) {
-								return 1;
-							}
-							// If neither has volume, they're equal.
-							if (!$hasVolA && !$hasVolB) {
-								return 0;
-							}
-
-							// Both have volumes: extract numeric portion for comparison.
-							preg_match('/(\d+)/', $volA, $matchesA);
-							preg_match('/(\d+)/', $volB, $matchesB);
-							$numA = isset($matchesA[1]) ? intval($matchesA[1]) : 0;
-							$numB = isset($matchesB[1]) ? intval($matchesB[1]) : 0;
-
-							// If numeric portions differ, sort by number.
-							if ($numA !== $numB) {
-								return $numA - $numB;
-							}
-							// If numeric portions are the same, do string comparison of full volume.
-							return strcmp($volA, $volB);
-						});
+						$this->sortSeriesByNameAndVolume($seriesFromIndex);
 
 						$firstSeries = $seriesFromIndex[0];
 						$this->seriesData = [
@@ -2520,6 +2554,54 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 		}
 		return $this->seriesData;
+	}
+
+	/**
+	 * Sort series entries by series name first, then by volume.
+	 *
+	 * @param array $seriesArray Array of series entries to sort.
+	 * @return void Sorts the array in place.
+	 */
+	private function sortSeriesByNameAndVolume(array &$seriesArray): void {
+		usort($seriesArray, function($a, $b) {
+			$seriesA = $a['seriesTitle'] ?? '';
+			$seriesB = $b['seriesTitle'] ?? '';
+
+			$seriesCompare = strcmp($seriesA, $seriesB);
+			if ($seriesCompare !== 0) {
+				return $seriesCompare;
+			}
+			// Within the same series, sort by volume.
+			$volA = $a['volume'] ?? '';
+			$volB = $b['volume'] ?? '';
+
+			$hasVolA = !empty($volA);
+			$hasVolB = !empty($volB);
+			// If one has volume and one doesn't, the one with volume comes first.
+			if ($hasVolA && !$hasVolB) {
+				return -1;
+			}
+			if (!$hasVolA && $hasVolB) {
+				return 1;
+			}
+			// If neither has volume, they're equal.
+			if (!$hasVolA && !$hasVolB) {
+				return 0;
+			}
+
+			// Both have volumes: extract numeric portion for comparison.
+			preg_match('/(\d+)/', $volA, $matchesA);
+			preg_match('/(\d+)/', $volB, $matchesB);
+			$numA = isset($matchesA[1]) ? intval($matchesA[1]) : 0;
+			$numB = isset($matchesB[1]) ? intval($matchesB[1]) : 0;
+
+			// If numeric portions differ, sort by number.
+			if ($numA !== $numB) {
+				return $numA - $numB;
+			}
+			// If numeric portions are the same, do string comparison of full volume.
+			return strcmp($volA, $volB);
+		});
 	}
 
 	/**
@@ -2970,6 +3052,50 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		//Get a list of isbns from the record
 		$novelist = NovelistFactory::getNovelist();
 		return $novelist->doesGroupedWorkHaveCachedSeries($this->getPermanentId());
+	}
+
+	/**
+	 * Get series titles from eContent sources (OverDrive and Hoopla) for this grouped work.
+	 *
+	 * @return array Array of series titles from eContent sources.
+	 */
+	public function getEContentSeriesTitles(): array {
+		global $logger;
+		$eContentSeries = [];
+		$relatedRecords = $this->getRelatedRecords();
+		$sources = [];
+		foreach ($relatedRecords as $record) {
+			$sources[] = $record->source;
+		}
+
+		foreach ($relatedRecords as $record) {
+			$source = $record->source;
+			$identifier = $record->id;
+			$cleanId = $identifier;
+			if (str_contains($cleanId, ':')) {
+				$parts = explode(':', $cleanId);
+				$cleanId = end($parts);
+			}
+
+			if ($source === 'overdrive') {
+				require_once ROOT_DIR . '/sys/OverDrive/OverDriveAPIProduct.php';
+				$overDriveProduct = OverDriveAPIProduct::getOverDriveProductForId($cleanId);
+				if ($overDriveProduct && !empty($overDriveProduct->series)) {
+					$eContentSeries[] = trim($overDriveProduct->series);
+				}
+			} elseif ($source === 'hoopla') {
+				require_once ROOT_DIR . '/sys/Hoopla/HooplaExtract.php';
+				$hooplaExtract = HooplaExtract::getHooplaTitleForId($cleanId);
+				if ($hooplaExtract && !empty($hooplaExtract->rawResponse)) {
+					$rawData = json_decode($hooplaExtract->rawResponse);
+					if ($rawData && !empty($rawData->series)) {
+						$eContentSeries[] = trim($rawData->series);
+					}
+				}
+			}
+		}
+
+		return array_unique($eContentSeries);
 	}
 
 	public function isValid() {

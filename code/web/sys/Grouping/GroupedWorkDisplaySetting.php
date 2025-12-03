@@ -10,7 +10,7 @@ require_once ROOT_DIR . '/sys/Grouping/PrioritizedShelfLocation.php';
 /**
  * Class GroupedWorkDisplaySetting
  * Stores information about display settings for Grouped Work searches and full records,
- * so they can be configured once and applied to different libraries and locations
+ * so they can be configured once and applied to different libraries and locations.
  */
 class GroupedWorkDisplaySetting extends DataObject {
 	public $__table = 'grouped_work_display_settings';
@@ -21,10 +21,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	public $sortOwnedEditionsFirst;
 
-	//Processing search
+	// Processing search
 	public $applyNumberOfHoldingsBoost;
 
-	//Search Results Display
+	// Search Results Display
 	public $showSearchTools;
 	public $showSearchToolsAtTop;
 	public $showQuickCopy;
@@ -34,10 +34,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showRelatedRecordLabels;
 	public $showEditionCovers;
 
-	//Contents of search
+	// Contents of search
 	public $includeOutOfSystemExternalLinks;
 
-	//Availability Toggles
+	// Availability Toggles
 	public $availabilityToggleLabelSuperScope;
 	public $availabilityToggleLabelLocal;
 	public $availabilityToggleLabelAvailable;
@@ -46,7 +46,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $baseAvailabilityToggleOnLocalHoldingsOnly;
 	public $includeOnlineMaterialsInAvailableToggle;
 
-	//Faceting
+	// Faceting
 	public $includeAllRecordsInShelvingFacets;
 	public $includeAllRecordsInDateAddedFacets;
 	public $facetCountsToShow;
@@ -57,7 +57,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $formatSortingGroupId;
 	public $eContentSortingGroupId;
 
-	//Enrichment
+	// Enrichment
 	public $showStandardReviews;
 	public $showGoodReadsReviews;
 	public $preferSyndeticsSummary;
@@ -65,11 +65,10 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showSimilarAuthors;
 	public $showRatings; // User Ratings
 	public $showComments; // User Reviews switch
-	public $hideCommentsWithBadWords; //tinyint(4)
+	public $hideCommentsWithBadWords;
 
-	//Full record display
+	// Full record display
 	public $show856LinksAsTab;
-//	public $show856LinksAsAccessOnlineButtons;
 	public $showCheckInGrid;
 	public $showStaffView;
 	public $showLCSubjects; // Library of Congress Subjects
@@ -79,7 +78,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showInMainDetails;
 	public $preferIlsDescription;
 
-	//search options
+	// Search options
 	public $searchSpecVersion;
 	public $limitBoosts;
 	public $maxTotalBoost;
@@ -87,11 +86,16 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $maxFormatBoost;
 	public $maxHoldingsBoost;
 
-	//Item details
+	// Item details
 	public $showItemDueDates;
 	public $showItemNotes;
 	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
+
+	// Series display
+	public $showIndexedSeriesWithNoveList;
+	public $hideIndexedEContentSeries;
+	public $numSeriesToShowBeforeMore;
 
 	private $_moreDetailsOptions;
 	private $_prioritizedShelfLocations;
@@ -731,6 +735,32 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'description' => 'Selected details will be shown in the main details section of a record on a search results page.',
 						'listStyle' => 'checkboxSimple',
 						'values' => self::$searchResultsMainDetailsOptions,
+					],
+					'showIndexedSeriesWithNoveList' => [
+						'property' => 'showIndexedSeriesWithNoveList',
+						'type' => 'checkbox',
+						'label' => 'Show Indexed Series with NoveList/Manual Override Series',
+						'description' => 'When checked, indexed series from MARC records will be displayed alongside NoveList or manually overridden series. When unchecked, only the NoveList or manual override series will be shown.',
+						'default' => 0,
+						'hideInLists' => true,
+					],
+					'numSeriesToShowBeforeMore' => [
+						'property' => 'numSeriesToShowBeforeMore',
+						'type' => 'integer',
+						'label' => 'Number of Series to Show Before "More Series" Link',
+						'description' => 'The number of series entries to display before showing the &quot;More Series...&quot; link. Default is 3.',
+						'default' => 3,
+						'min' => 1,
+						'max' => 6,
+						'hideInLists' => true,
+					],
+					'hideIndexedEContentSeries' => [
+						'property' => 'hideIndexedEContentSeries',
+						'type' => 'checkbox',
+						'label' => 'Hide Indexed E-Content Series',
+						'description' => 'When checked, indexed series from e-content sources (OverDrive and Hoopla) will be hidden from display. Reduces duplicate series entries by preventing e-content series from appearing alongside series from other sources.',
+						'default' => 0,
+						'hideInLists' => true,
 					],
 					'alwaysShowSearchResultsMainDetails' => [
 						'property' => 'alwaysShowSearchResultsMainDetails',
