@@ -78,4 +78,8 @@ class WebBuilder_Audiences extends ObjectEditor {
 	function getActiveAdminSection(): string {
 		return 'web_builder';
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }

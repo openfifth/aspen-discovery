@@ -74,7 +74,7 @@ class Enrichment_ChiliFreshSettings extends ObjectEditor {
 		return UserAccount::userHasPermission('Administer Third Party Enrichment API Keys');
 	}
 
-	function canAddNew() {
+	function canAddNew() : bool {
 		return $this->getNumObjects() == 0;
 	}
 }

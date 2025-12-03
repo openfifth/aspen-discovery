@@ -5,6 +5,13 @@
 		{$updateMessage}
 	</div>
 {/if}
+{if $isRecordLocked && !$userCanChangeRecordLocks}
+	{if $canCopy}
+		<div class="alert alert-warning">{translate text="This is a restricted page which you can view but not edit. You may make copies to use it for your library." isAdminFacing=true}</div>
+	{else}
+		<div class="alert alert-warning">{translate text="This is a restricted page which you can view but not edit." isAdminFacing=true}</div>
+	{/if}
+{/if}
 {strip}
 	<div class="col-xs-12">
 		<div class="row">
@@ -49,6 +56,15 @@
 				<div class="btn-group">
 					{if !empty($id) && $canShareToCommunity}
 						<a class="btn btn-default" href='/{$module}/{$toolName}?sourceId={$id}&amp;objectAction=shareForm'><i class="fas fa-file-upload" role="presentation"></i> {translate text="Share with Community" isAdminFacing=true}</a>
+					{/if}
+				</div>
+				<div class="btn-group">
+					{if !empty($id) && $hasRecordLocking && $userCanChangeRecordLocks}
+						{if $isRecordLocked}
+							<a class="btn btn-default" href='/{$module}/{$toolName}?id={$id}&amp;objectAction=unlockRecord'><i class="fas fa-lock" role="presentation"></i> {translate text="Unlock" isAdminFacing=true}</a>
+						{else}
+							<a class="btn btn-default" href='/{$module}/{$toolName}?id={$id}&amp;objectAction=lockRecord'><i class="fas fa-lock-open" role="presentation"></i> {translate text="Lock" isAdminFacing=true}</a>
+						{/if}
 					{/if}
 				</div>
 				<div class="btn-group" role="group">

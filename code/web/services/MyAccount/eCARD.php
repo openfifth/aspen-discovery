@@ -1,7 +1,7 @@
 <?php
 
 class eCARD extends Action {
-	public function launch() {
+	public function launch() : void {
 		global $interface;
 
 		require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';

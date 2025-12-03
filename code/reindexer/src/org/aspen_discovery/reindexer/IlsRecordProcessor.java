@@ -720,6 +720,7 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 				}
 			}
 		}
+
 	}
 
 	private void loadOrderIds(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record) {
@@ -1033,6 +1034,7 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 				}
 			}
 		}
+
 	}
 
 	private void loadScopeInfoForEContentItem(AbstractGroupedWorkSolr groupedWork, ItemInfo itemInfo, org.marc4j.marc.Record record) {
@@ -1065,6 +1067,7 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 				}
 			}
 		}
+
 	}
 
 	private void loadScopeInfoForVirtualChildItem(AbstractGroupedWorkSolr groupedWork, ItemInfo itemInfo, org.marc4j.marc.Record record) {
@@ -1089,6 +1092,7 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 				}
 			}
 		}
+
 	}
 
 	private void loadScopeInfoForPrintIlsItem(AbstractGroupedWorkSolr groupedWork, RecordInfo recordInfo, TreeSet<String> audiences, String audiencesAsString, ItemInfo itemInfo, org.marc4j.marc.Record record) {
@@ -1143,6 +1147,7 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 				}
 			}
 		}
+
 	}
 
 	protected boolean determineLibraryUseOnly(ItemInfo itemInfo) {
@@ -1393,16 +1398,33 @@ abstract class IlsRecordProcessor extends MarcRecordProcessor {
 		}
 	}
 
+	protected String getLocationLabel(String locationCode) {
+		if (locationCode == null || locationCode.isEmpty()) {
+			return null;
+		}
+		String translatedLocation = indexer.getLocationNameForCode(locationCode);
+		if (translatedLocation == null || translatedLocation.isEmpty()) {
+			// If not found in location table, fall back to the location translation map.
+			// This primarily to handle regex patterns.
+			translatedLocation = translateValue("location", locationCode, "", false, false);
+			if (translatedLocation != null && !translatedLocation.isEmpty() && !translatedLocation.equals(locationCode)) {
+				return translatedLocation;
+			}
+			return locationCode;
+		}
+		return translatedLocation;
+	}
+
 	protected String getDetailedLocationForItem(ItemInfo itemInfo, DataField itemField, String identifier) {
 		String location;
 		String subLocationCode = MarcUtil.getItemSubfieldData(settings.getSubLocationSubfield(), itemField, indexer.getLogEntry(), logger);
 		if (settings.isIncludeLocationNameInDetailedLocation()) {
 			String locationCode = MarcUtil.getItemSubfieldData(settings.getLocationSubfield(), itemField, indexer.getLogEntry(), logger);
-			location = translateValue("location", locationCode, identifier, true);
-			if (location == null){
-				location = "";
-			}
+			location = getLocationLabel(locationCode);
 		}else{
+			location = "";
+		}
+		if (location == null) {
 			location = "";
 		}
 		if (subLocationCode != null && !subLocationCode.isEmpty()){

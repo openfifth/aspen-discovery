@@ -87,4 +87,8 @@ class Admin_LayoutSettings extends ObjectEditor {
 			'Administer All Layout Settings',
 		]);
 	}
+
+	public function hasRecordLocking() : bool {
+		return true;
+	}
 }
