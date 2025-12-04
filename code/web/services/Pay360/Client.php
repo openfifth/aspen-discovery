@@ -235,11 +235,11 @@ class Pay360_Client  {
 			$vatCode = 'test';
 			$fundCode = 'test';
 			$reference = 'test';
-			$fineAmountInMinorUnits = str_replace(['.', '0000'], '', $fineDetails['amountVal']);
+			$amountInMinorUnits = $this->getMinorUnitsAmount($fineDetails['amountVal']);
 			$item = [
 			'itemSummary' =>[
 						'description' => $fineDetails['reason'],
-						'amountInMinorUnits' => $fineAmountInMinorUnits,
+						'amountInMinorUnits' => $amountInMinorUnits,
 						'reference' => $reference,
 						'displayableReference' => $fineDetails['reason'], 
 				],
@@ -263,7 +263,7 @@ class Pay360_Client  {
 		}
 
 		global $configArray;
-		$amountInMinorUnits = str_replace('.', '', $this->payment->totalPaid);
+		$amountInMinorUnits = $this->getMinorUnitsAmount($this->payment->totalPaid);
 
 		$returnUrl = $configArray['Site']['url'] . "/MyAccount/AJAX?method=completePay360Order&paymentId=" . $this->payment->id ."&settingsId=" . $this->_pay360Settings->id;
 
@@ -317,4 +317,23 @@ class Pay360_Client  {
 		$hash = hash_hmac('sha256', $credentialsStr, base64_decode($this->_pay360Settings->privateKey), true);
 		$this->_digest = base64_encode($hash);
 	}
+
+	private function getMinorUnitsAmount(string $totalAmount): string {
+		$numDec = strlen($totalAmount) - strpos($totalAmount, '.') - 1;
+
+		if ($numDec == 1) {
+			return str_replace('.', '', $totalAmount .= "0");
+		}
+		
+		if ( $numDec == 0 ) {
+			return str_replace('.', '', $totalAmount .= "00");
+		}
+		
+		if ( $numDec == 6 ) {
+			// Handle discrete fine item amount format
+			return str_replace(['.', '0000'], '', $totalAmount);
+		}
+
+		return str_replace('.', '', $totalAmount);
+	} 
 }
