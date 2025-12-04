@@ -8010,13 +8010,10 @@ class MyAccount_AJAX extends JSON_Action {
 
 		require_once ROOT_DIR . '/services/Pay360/Client.php';
 		$client = new Pay360_Client($pay360SettingsId, $payment->id, $selectedFines, $patron->getCatalogDriver(), true);
-		$client->createOrder();
+		$success = $client->createOrder();
 
 
-		if ($client->invokeResponse->invokeResult->status !== "SUCCESS") {
-			$payment->cancelled = true;
-			$payment->error = "invoke request for scpReference $response->scpReference failed with status " . $response->invokeResult->status;
-			$payment->update(); 
+		if (!$success) {
 			return [
 				'success' => false,
 				'message' => 'Could not connect to Pay360.'
@@ -8046,11 +8043,10 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $payment);
-		$client->getOrderStatus();
-
-		// TODO: handle status change checks outcome
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?");
+		$client = new Pay360_Client($pay360SettingsId, $paymentId);
+		$client->getOrderStatus(true);
+		$client->handleOutcome();
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
 	}
 
 	/** @noinspection PhpUnused */
