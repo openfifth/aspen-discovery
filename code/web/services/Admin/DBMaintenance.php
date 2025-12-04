@@ -3,6 +3,7 @@
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/Admin/Admin.php';
 require_once ROOT_DIR . '/services/API/SystemAPI.php';
+require_once ROOT_DIR . '/sys/DBMaintenance/hoopla_version2_updates.php';
 
 /**
  * Provides a method of running SQL updates to the database.
@@ -13,6 +14,19 @@ class Admin_DBMaintenance extends Admin_Admin {
 		global $interface;
 
 		$systemAPI = new SystemAPI();
+
+		if (isset($_REQUEST['objectAction']) && $_REQUEST['objectAction'] == 'runHooplaVersion2Background') {
+			require_once ROOT_DIR . '/sys/Utils/SystemUtils.php';
+			SystemUtils::startBackgroundProcess('runHooplaVersion2Updates', []);
+			header('Location: /Admin/DBMaintenance');
+			exit();
+		}
+
+		$hooplaVersion2UpdateKeys = [];
+		$hooplaVersion2Updates = getHooplaVersion2Updates();
+		if (!empty($hooplaVersion2Updates)) {
+			$hooplaVersion2UpdateKeys = array_keys($hooplaVersion2Updates);
+		}
 		//Create the Updates table if one doesn't exist already
 		$this->createUpdatesTable();
 
@@ -42,6 +56,16 @@ class Admin_DBMaintenance extends Admin_Admin {
 
 		//Check to see which updates have already been performed.
 		$availableUpdates = $systemAPI->checkWhichUpdatesHaveRun($availableUpdates);
+
+		$showHooplaVersion2BackgroundButton = false;
+		foreach ($hooplaVersion2UpdateKeys as $hooplaUpdateKey) {
+			if (isset($availableUpdates[$hooplaUpdateKey]) && empty($availableUpdates[$hooplaUpdateKey]['alreadyRun'])) {
+				$showHooplaVersion2BackgroundButton = true;
+				break;
+			}
+		}
+		$interface->assign('showHooplaVersion2BackgroundButton', $showHooplaVersion2BackgroundButton);
+		$interface->assign('hooplaVersion2BackgroundAction', '/Admin/DBMaintenance?objectAction=runHooplaVersion2Background');
 
 		$interface->assign('sqlUpdates', $availableUpdates);
 

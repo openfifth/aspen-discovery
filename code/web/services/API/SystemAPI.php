@@ -448,6 +448,7 @@ class SystemAPI extends AbstractAPI {
 					$sql($updateToRun);
 				} else {
 					if (!$this->runSQLStatement($updateToRun, $sql)) {
+						$updateOk = false;
 						break;
 					}
 				}

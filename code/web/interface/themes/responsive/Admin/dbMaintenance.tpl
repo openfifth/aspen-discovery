@@ -1,5 +1,13 @@
 {strip}
 	<h1>{translate text="Database Maintenance" isAdminFacing=true}</h1>
+	{if !empty($showHooplaVersion2BackgroundButton)}
+		<div class="alert alert-info">
+			<p>{translate text="Hoopla Version 2 updates can take a long time to run. Start them in the background to avoid browser timeouts." isAdminFacing=true}</p>
+			<a class="btn btn-warning" href="{$hooplaVersion2BackgroundAction}">
+				{translate text="Run Hoopla Version 2 Updates in Background" isAdminFacing=true}
+			</a>
+		</div>
+	{/if}
 	<form id="dbMaintenanceForm" action="/Admin/{$action}" method="post">
 		<input type="hidden" name="submitting" value="true">
 		<div>
