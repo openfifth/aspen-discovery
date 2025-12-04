@@ -4059,7 +4059,7 @@ class Koha extends AbstractIlsDriver {
 			$defaultBranchCode = null;
 			if ($type == 'selfReg') {
 				global $locationSingleton;
-				$physicalLocation = $locationSingleton->getIPLocation();
+				$physicalLocation = $locationSingleton->getPhysicalLocation();
 				if ($physicalLocation != null && isset($pickupLocations[$physicalLocation->code])) {
 					$defaultBranchCode = $physicalLocation->code;
 				}
