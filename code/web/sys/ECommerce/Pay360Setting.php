@@ -7,8 +7,6 @@ class Pay360Setting extends DataObject {
 	public $privateKey;
 	public $urlSection;
 	public $wsldUrl;
-	public $returnUrl;
-	public $backUrl;
 	public $scpId;
 	public $hmacKeyId;
 	public $siteId;
@@ -49,39 +47,14 @@ class Pay360Setting extends DataObject {
 				'description' => 'The Pay360 Private Key (provided by Capita)',
 				'maxLength' => 255,
 			],
-			'urlSection' => [
-				'property' => 'urlSection',
-				'type' => 'section',
-				'label' => 'URLS',
+			'wsldUrl' => [
+				'property' => 'wsldUrl',
+				'type' => 'text',
 				'hideInLists' => true,
-				'expandByDefault' => true,
-				'properties' => [
-					'wsldUrl' => [
-						'property' => 'wsldUrl',
-						'type' => 'text',
-						'hideInLists' => true,
-						'label' => 'Pay360 WSLD URL',
-						'description' => 'The WSLD URL for use when sending requests to Pay360',
-						'maxLength' => 255,
-						'required' => true,
-					],
-					'returnUrl' => [
-						'property' => 'returnUrl',
-						'hideInLists' => true,
-						'type' => 'text',
-						'label' => 'Aspen Return URL',
-						'description' => 'The URL to which the user is redirected after their payment attempt',
-						'maxLength' => 255,
-					],
-					'backUrl' => [
-						'property' => 'backUrl',
-						'hideInLists' => true,
-						'type' => 'text',
-						'label' => 'Aspen Back URL',
-						'description' => 'The URL to which the user is redirected upon using the "Back" SCP button',
-						'maxLength' => 255,
-					],
-				],
+				'label' => 'Pay360 WSLD URL',
+				'description' => 'The WSLD URL for use when sending requests to Pay360',
+				'maxLength' => 255,
+				'required' => true,
 			],
 			'scpId' => [
 				'property' => 'scpId',
