@@ -80,6 +80,15 @@
 					</div>
 				{/if}
 
+				{if $paymentDetails.pay360TransactionStateMessage}
+					<div class="row">
+						<div class="result-label col-sm-3 col-xs-12">{translate text="Pay 360 Transaction Status" isPublicFacing=true}</div>
+						<div class="result-value col-sm-9 col-xs-12">
+							{translate text=$paymentDetails.pay360TransactionStateMessage isPublicFacing=true}
+						</div>
+					</div>
+				{/if}
+
 				{if !empty($paymentDetails.paymentLines)}
 					<h2>{translate text='Payment Lines' isPublicFacing=true}</h2>
 					<table class="table table-condensed table-striped table-bordered">
