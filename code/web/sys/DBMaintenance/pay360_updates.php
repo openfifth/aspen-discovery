@@ -28,8 +28,6 @@ function getPay360Updates() {
 				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
 				name VARCHAR(50) NOT NULL UNIQUE,		
 				wsldUrl VARCHAR(255),
-				returnUrl VARCHAR(255),
-				backUrl VARCHAR(255),
 				privateKey VARCHAR(255) NOT NULL,
 				scpId VARCHAR(50),
 				hmacKeyId VARCHAR(50),
