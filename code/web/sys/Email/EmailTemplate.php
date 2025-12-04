@@ -42,6 +42,8 @@ class EmailTemplate extends DataObject {
 				'campaignComplete' => 'Campaign Complete',
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
+				'paymentSuccess' => 'Payment Success',
+				'paymentFailure' => 'Payment Failure',
 			];
 		}
 		require_once ROOT_DIR . '/sys/Translation/Language.php';
@@ -307,6 +309,14 @@ class EmailTemplate extends DataObject {
 		$text = str_ireplace('%user.lastname%', $user->lastname ?? '', $text);
 		$text = str_ireplace('%user.userPreferredName%', $user->userPreferredName ?? '', $text);
 		$text = str_ireplace('%user.ils_barcode%', $user->ils_barcode ?? '', $text);
+
+		if ($this->templateType == 'paymentFailure') {
+			$text = str_replace('%payment.amount%', $parameters['paymentAmount'] ?? '', $text);  
+			$text = str_replace('%payment.status%', $parameters['paymentStatus'] ?? '', $text);
+			$text = str_replace('%payment.reason%', $parameters['reason'] ?? '', $text);
+			$text = str_replace('%payment.orderId%', $parameters['orderId'] ?? '', $text);
+			return $text;
+		}
 
 		if ($this->templateType == 'campaignStart' || $this->templateType == 'campaignEnroll' || $this->templateType == 'campaignComplete' ||  $this->templateType == 'campaignEnding') {
 			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);

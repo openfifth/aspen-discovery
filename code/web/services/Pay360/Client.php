@@ -129,6 +129,7 @@ class Pay360_Client  {
 			$this->payment->message = 'Patron did not attempt the payment and back out of the process.';
 			$this->payment->pay360TransactionStateMessage = 'This payment was not attempted.';
 			$this->payment->update();
+			$this->sendEmail();
 			return false;
 		}
 		
@@ -149,6 +150,7 @@ class Pay360_Client  {
 			$this->payment->message = 'Transaction not found - could not fetch from Pay360.';
 			$this->payment->pay360TransactionStateMessage = 'Transaction could not be retrieved.';
 			$this->payment->update();
+			$this->sendEmail();
 			return false;
 		}
 
@@ -158,6 +160,7 @@ class Pay360_Client  {
 			$this->payment->message = 'Transaction not found - invalid reference.';
 			$this->payment->pay360TransactionStateMessage = 'Transaction could not be retrieved.';
 			$this->payment->update();
+			$this->sendEmail();
 			return false;
 		}
 
@@ -172,6 +175,7 @@ class Pay360_Client  {
 				$this->payment->message = 'This payment was successful.';
 				$this->payment->pay360TransactionStateMessage = 'Payment successful.';
 				$this->completeFineInIls();
+				// No email sent as both Pay360 handles sending receipts.
 				return false;
 			}
 
@@ -180,6 +184,7 @@ class Pay360_Client  {
 				$this->payment->message = 'cancelled by patron. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = 'Transaction attempt was cancelled.';
 				$this->payment->update();
+				$this->sendEmail();
 				return false;
 			}
 
@@ -188,6 +193,7 @@ class Pay360_Client  {
 				$this->payment->message = 'card details rejected. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = 'This payment failed - card details were rejected.';
 				$this->payment->update();
+				$this->sendEmail();
 				return false;
 			}
 
@@ -196,6 +202,7 @@ class Pay360_Client  {
 				$this->payment->message = 'patron logged out. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage ='This payment failed - user logged out.';
 				$this->payment->update();
+				$this->sendEmail();
 				return false;
 			}
 
@@ -204,6 +211,7 @@ class Pay360_Client  {
 				$this->payment->message = 'patron did not attempt payment. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = 'This payment was interrupted by the user.';
 				$this->payment->update();
+				$this->sendEmail();
 				return false;
 			}
 
@@ -213,12 +221,45 @@ class Pay360_Client  {
 				$this->payment->message = 'error: ' . $this->queryResponse->paymentResult->errorDetails->errorId . ': ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = 'This payment failed due to a third party error. Contact your library.';
 				$this->payment->update();
+				$this->sendEmail();
 				return false;
 			}
 
 			return false;
 		}
 		return false;
+	}
+
+	function sendEmail() : void {
+		global $logger;
+
+		$emailTemplate = EmailTemplate::getActiveTemplate('paymentFailure');
+		if (empty($emailTemplate)) {
+			$logger->log("Could not send email: no active template found", Logger::LOG_ERROR);
+			return;
+		}
+		$user = UserAccount::getLoggedInUser();
+		if (empty($user) || !$user->email) {
+			$logger->log("Could not send email: user not found", Logger::LOG_ERROR);
+			return;
+		}
+		if (empty($this->payment)) {
+			$logger->log("Could not send email to $user->email: no transaction was assigned", Logger::LOG_ERROR);
+			return;
+		}
+
+		$parameters = [
+			'paymentAmount' => $this->payment->amount,  
+			'paymentStatus' => $this->payment->status,
+			'outcome' => $this->payment->pay360TransactionStateMessage,
+			'orderId' => $this->payment->orderId,
+		];
+
+		try {
+			$emailTemplate->sendEmail($user->email, $parameters);
+		} catch (Exception $e) {
+			$logger->log("Exception while sending email to $user->email: " . $e->getMessage(), Logger::LOG_ERROR);
+		}
 	}
 
 	// API queries
