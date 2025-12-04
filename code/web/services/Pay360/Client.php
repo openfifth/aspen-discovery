@@ -33,6 +33,15 @@ class Pay360_Client  {
 		$this->_setDigest();
 	}
 
+	public function completeFineInIls(): void {
+		$patron = new User;
+		$patron->id = $this->payment->userId;
+		if(!$patron->find(true)) {
+			return;
+		}
+		$patron->completeFinePayment($this->payment);
+	}
+
 	public function setSettings($settingsId): void {
 		$this->_pay360Settings = new Pay360Setting();
 		$this->_pay360Settings->id = $settingsId;
