@@ -159,9 +159,9 @@ global $configArray;
 //$inLibrary, is used to pre-select auto-logout on place hold forms;
 // to hide the "remember me" option on login pages;
 // and to show the Location in the page footer
-if ($locationSingleton->getIPLocation() != null) {
+if ($locationSingleton->getPhysicalLocation() != null) {
 	$interface->assign('inLibrary', true);
-	$physicalLocation = $locationSingleton->getIPLocation()->displayName;
+	$physicalLocation = $locationSingleton->getPhysicalLocation()->displayName;
 } else {
 	$interface->assign('inLibrary', false);
 	$physicalLocation = 'Home';
