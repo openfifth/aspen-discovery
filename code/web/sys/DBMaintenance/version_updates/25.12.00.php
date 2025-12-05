@@ -90,7 +90,6 @@ function getUpdates25_12_00(): array {
 			'title' => 'Library Google Analytics',
 			'description' => 'Add Library Google Analytics Table',
 			'sql' => [
-				"DROP TABLE library_google_analytics",
 				"CREATE TABLE IF NOT EXISTS library_google_analytics (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					libraryId int(11) NOT NULL,
