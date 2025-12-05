@@ -3,7 +3,7 @@ require_once ROOT_DIR . '/sys/SearchObject/SolrSearcher.php';
 require_once ROOT_DIR . '/RecordDrivers/RecordDriverFactory.php';
 
 abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_SolrSearcher {
-	protected ?string $searchSubType;
+	protected ?string $searchSubType = null;
 	protected int $searchVersion;
 
 	public ?string $selectedAvailabilityToggleValue;
