@@ -16,7 +16,6 @@ grep -q solr /etc/passwd || useradd -r -s /bin/bash -G aspen solr
 
 # Change file permissions so /usr/local/aspen-discovery is owned by the aspen user
 chown aspen:aspen /usr/local/aspen-discovery/*
-chown -R aspen:aspen /usr/local/aspen-discovery/bin
 chown -R aspen:aspen /usr/local/aspen-discovery/code
 chown -R aspen:aspen /usr/local/aspen-discovery/d*
 chown -R aspen:aspen /usr/local/aspen-discovery/install
