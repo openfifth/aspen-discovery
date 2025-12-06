@@ -126,9 +126,9 @@ class ImageUpload extends DataObject {
 				'property' => 'fullSizePath',
 				'type' => 'image',
 				'label' => 'Full Size Image',
-				'description' => 'The full size image (max width 1068px).',
-				'maxWidth' => 1068,
-				'maxHeight' => 1068,
+				'description' => 'The full size image (max width 1068px for web builder images, 3840px for hero sliders).',
+				'maxWidth' => 3840,  // 4K width - suitable for digital signage
+				'maxHeight' => 2160, // 4K height
 				'path' => '/data/aspen-discovery/' . $serverName . '/uploads/web_builder_image/full',
 				'displayUrl' => '/WebBuilder/ViewImage?size=full&id=',
 				'hideInLists' => true,
@@ -291,14 +291,14 @@ class ImageUpload extends DataObject {
 	}
 
 	public function insert(string $context = '') : int|bool {
-		$this->generateDerivatives();
 		$this->calculateAspectRatio();
+		$this->generateDerivatives();
 		return parent::insert();
 	}
 
 	public function update(string $context = '') : int|bool {
-		$this->generateDerivatives();
 		$this->calculateAspectRatio();
+		$this->generateDerivatives();
 		return parent::update();
 	}
 
@@ -328,7 +328,7 @@ class ImageUpload extends DataObject {
 	 * @param int $b Second number
 	 * @return int The GCD
 	 */
-	private function gcd($a, $b): int {
+	private function gcd(int $a, int $b): int {
 		return $b ? $this->gcd($b, $a % $b) : $a;
 	}
 

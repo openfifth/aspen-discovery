@@ -49,10 +49,11 @@ class HeroSliderPlaylistImage extends DataObject {
 			],
 			'weight' => [
 				'property' => 'weight',
-				'type' => 'integer',
+				'type' => 'numeric',
 				'label' => 'Weight',
-				'description' => 'The sort order (lower numbers appear first).',
+				'description' => 'Defines how items are sorted. Lower weights are displayed first.',
 				'default' => 0,
+				'required' => true,
 			],
 			'imageId' => [
 				'property' => 'imageId',
@@ -65,7 +66,7 @@ class HeroSliderPlaylistImage extends DataObject {
 			'duration' => [
 				'property' => 'duration',
 				'type' => 'integer',
-				'label' => 'Duration (seconds)',
+				'label' => 'Duration (Seconds)',
 				'description' => 'How long to display this slide.',
 				'default' => 5,
 				'min' => 1,

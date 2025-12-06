@@ -10703,13 +10703,14 @@ AspenDiscovery.HeroSlider = (function(){
 		initWebsiteSlider(options){
 			const slides = document.querySelectorAll('.hero-slide');
 			if (!slides.length) {
-				console.error('No slides found for hero slider');
+				console.error('No slides found for hero slider.');
 				return;
 			}
 
 			let swiperOptions = {
 				direction: 'horizontal',
 				loop: true,
+				speed: 1000,
 				navigation: {
 					nextEl: '.swiper-button-next',
 					prevEl: '.swiper-button-prev',
@@ -10719,7 +10720,8 @@ AspenDiscovery.HeroSlider = (function(){
 				},
 				a11y: {
 					enabled: true
-				}
+				},
+				effect: 'slide'
 			};
 
 			if (options.autoRotate) {
@@ -10773,7 +10775,7 @@ AspenDiscovery.HeroSlider = (function(){
 
 			const slides = document.querySelectorAll('.signage-slide');
 			if (!slides.length) {
-				console.error('No slides found for digital signage');
+				console.error('No slides found for digital signage.');
 				return;
 			}
 

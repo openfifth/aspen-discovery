@@ -149,7 +149,7 @@ class HeroSliderLocation extends DataObject {
 			'rotationInterval' => [
 				'property' => 'rotationInterval',
 				'type' => 'integer',
-				'label' => 'Default Rotation Interval (seconds)',
+				'label' => 'Default Rotation Interval (Seconds)',
 				'description' => 'Default time between slides (overridden by per-slide duration).',
 				'default' => 5,
 				'min' => 1,
