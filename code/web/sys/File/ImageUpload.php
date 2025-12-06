@@ -22,6 +22,13 @@ class ImageUpload extends DataObject {
 	public $deleted;
 	public $dateDeleted;
 	public $deletedBy;
+	// Hero slider specific fields.
+	public $aspectRatioWidth;
+	public $aspectRatioHeight;
+	public $altText;
+	public $pageLink;
+	public $startDate;
+	public $endDate;
 
 	static $xLargeSize = 1100;
 	static $largeSize = 600;
@@ -78,10 +85,16 @@ class ImageUpload extends DataObject {
 			],
 			'type' => [
 				'property' => 'type',
-				'type' => 'text',
-				'label' => 'Type',
+				'type' => 'enum',
+				'values' => [
+					'web_builder_image' => 'Web Builder Image',
+					'hero_slider' => 'Hero Slider Image',
+				],
+				'label' => 'Image Type',
 				'description' => 'The type of image being uploaded.',
-				'maxLength' => 50,
+				'default' => 'web_builder_image',
+				'required' => true,
+				'onchange' => 'return AspenDiscovery.Admin.toggleHeroSliderFields();',
 			],
 			'owningLibrary' => [
 				'property' => 'owningLibrary',
@@ -202,6 +215,57 @@ class ImageUpload extends DataObject {
 				'note' => translate(['text' => 'Allowed formats: GIF, JPG, JPEG, PNG, SVG', 'isAdminFacing' => true]),
 				'validTypes' => ['image/gif', 'image/jpeg', 'image/png', 'image/svg+xml']
 			],
+			'altText' => [
+				'property' => 'altText',
+				'type' => 'text',
+				'label' => 'Alt Text',
+				'description' => 'Alternative text for accessibility.',
+				'maxLength' => 512,
+				'hideInLists' => true,
+			],
+			'pageLink' => [
+				'property' => 'pageLink',
+				'type' => 'url',
+				'label' => 'Page Link',
+				'description' => 'URL to link to when image is clicked.',
+				'maxLength' => 512,
+				'hideInLists' => true,
+			],
+			'startDate' => [
+				'property' => 'startDate',
+				'type' => 'date',
+				'label' => 'Start Date',
+				'description' => 'Date when this image should start displaying.',
+				'hideInLists' => true,
+			],
+			'endDate' => [
+				'property' => 'endDate',
+				'type' => 'date',
+				'label' => 'End Date',
+				'description' => 'Date when this image should stop displaying.',
+				'hideInLists' => true,
+			],
+			'aspectRatioWidth' => [
+				'property' => 'aspectRatioWidth',
+				'type' => 'hidden',
+				'label' => 'Aspect Ratio Width',
+				'description' => 'Calculated aspect ratio width (e.g., 16 for 16:9). Auto-calculated on upload.',
+				'hideInLists' => true,
+			],
+			'aspectRatioHeight' => [
+				'property' => 'aspectRatioHeight',
+				'type' => 'hidden',
+				'label' => 'Aspect Ratio Height',
+				'description' => 'Calculated aspect ratio height (e.g., 9 for 16:9). Auto-calculated on upload.',
+				'hideInLists' => true,
+			],
+			'calculatedAspectRatio' => [
+				'property' => 'calculatedAspectRatio',
+				'type' => 'label',
+				'label' => 'Calculated Aspect Ratio',
+				'description' => 'Aspect ratio as width:height (e.g., 16:9). Auto-calculated on upload.',
+				'hideInLists' => true,
+			],
 		];
 
 		self::$_objectStructure[$context] = $structure;
@@ -228,12 +292,54 @@ class ImageUpload extends DataObject {
 
 	public function insert(string $context = '') : int|bool {
 		$this->generateDerivatives();
+		$this->calculateAspectRatio();
 		return parent::insert();
 	}
 
 	public function update(string $context = '') : int|bool {
 		$this->generateDerivatives();
+		$this->calculateAspectRatio();
 		return parent::update();
+	}
+
+	private function calculateAspectRatio() : void {
+		if ($this->type === 'hero_slider' && !empty($this->fullSizePath)) {
+			global $serverName;
+			$imagePath = '/data/aspen-discovery/' . $serverName . '/uploads/web_builder_image/full/' . $this->fullSizePath;
+			if (file_exists($imagePath)) {
+				$imageInfo = getimagesize($imagePath);
+				if ($imageInfo !== false) {
+					[$width, $height] = $imageInfo;
+					if ($width && $height) {
+						$gcd = $this->gcd($width, $height);
+						$this->aspectRatioWidth = $width / $gcd;
+						$this->aspectRatioHeight = $height / $gcd;
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * Calculate the Greatest Common Divisor (GCD) of two numbers.
+	 * Used to simplify aspect ratios (e.g., 1920/1080 = 16/9).
+	 *
+	 * @param int $a First number
+	 * @param int $b Second number
+	 * @return int The GCD
+	 */
+	private function gcd($a, $b): int {
+		return $b ? $this->gcd($b, $a % $b) : $a;
+	}
+
+	public function __get($name) {
+		if ($name === 'calculatedAspectRatio') {
+			if (!empty($this->aspectRatioWidth) && !empty($this->aspectRatioHeight)) {
+				return $this->aspectRatioWidth . ':' . $this->aspectRatioHeight;
+			}
+			return '';
+		}
+		return parent::__get($name);
 	}
 
 	private function generateDerivatives() : void {

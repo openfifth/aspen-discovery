@@ -12135,6 +12135,93 @@ input[type="radio"][name="colorScheme"]:checked + label::after {
 .webResourceRow {
   margin-bottom: 4px;
 }
+.hero-slider-actions {
+  margin-bottom: 15px;
+}
+.heroSliderLocationDetails {
+  margin-top: 20px;
+}
+.hero-slider-config dt {
+  text-align: left;
+  font-weight: bold;
+}
+.hero-slider-config dd {
+  margin-bottom: 10px;
+}
+body.hero-slider-website,
+html.hero-slider-website {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.hero-slider-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+.hero-slider {
+  width: 100%;
+  height: 100%;
+}
+.hero-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+}
+.hero-slide img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.hero-slide a {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.swiper-button-next,
+.swiper-button-prev {
+  color: #fff;
+}
+.swiper-pagination-bullet-active {
+  background: #fff;
+}
+body.hero-slider-signage,
+html.hero-slider-signage {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+.digital-signage-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+.signage-slide {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.signage-slide.active {
+  display: flex;
+}
+.signage-slide img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
 .toast-notification {
   display: flex;
   align-items: center;

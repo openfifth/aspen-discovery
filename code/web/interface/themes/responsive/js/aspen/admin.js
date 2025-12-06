@@ -1994,6 +1994,41 @@ AspenDiscovery.Admin = (function () {
 				$('#propertyRowsharedWithLibrary').hide();
 			}
 		},
+		toggleHeroSliderFields() {
+			const imageType = $('#typeSelect').val();
+			if (imageType === 'hero_slider') {
+				$('#propertyRowaltText').show();
+				$('#propertyRowpageLink').show();
+				$('#propertyRowstartDate').show();
+				$('#propertyRowendDate').show();
+				$('#propertyRowaspectRatioWidth').show();
+				$('#propertyRowaspectRatioHeight').show();
+				$('#propertyRowcalculatedAspectRatio').show();
+			} else {
+				$('#propertyRowaltText').hide();
+				$('#propertyRowpageLink').hide();
+				$('#propertyRowstartDate').hide();
+				$('#propertyRowendDate').hide();
+				$('#propertyRowaspectRatioWidth').hide();
+				$('#propertyRowaspectRatioHeight').hide();
+				$('#propertyRowcalculatedAspectRatio').hide();
+			}
+		},
+		updateHeroSliderAspectRatioFields() {
+			const preset = $('#aspectRatioPresetSelect').val();
+			if (preset === 'custom') {
+				$('#propertyRowaspectRatioWidth').show();
+				$('#propertyRowaspectRatioHeight').show();
+			} else {
+				$('#propertyRowaspectRatioWidth').hide();
+				$('#propertyRowaspectRatioHeight').hide();
+				if (preset && preset.includes(':')) {
+					var parts = preset.split(':');
+					$('#aspectRatioWidth').val(parts[0]);
+					$('#aspectRatioHeight').val(parts[1]);
+				}
+			}
+		},
 		linkingSettingOptionChange: function () {
 			var url = Globals.path + "/Admin/AJAX";
 			var pType = $("#pType").val();
