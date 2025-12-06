@@ -33,6 +33,9 @@
 
 			{if $location->autoRotate}
 				<div class="swiper-pagination"></div>
+				<button class="swiper-button-pause" aria-label="Pause auto-rotation" title="Pause">
+					<i class="fas fa-pause"></i>
+				</button>
 			{/if}
 			<div class="swiper-button-prev"></div>
 			<div class="swiper-button-next"></div>

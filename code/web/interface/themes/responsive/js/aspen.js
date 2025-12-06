@@ -10766,6 +10766,29 @@ AspenDiscovery.HeroSlider = (function(){
 				$(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img")
 					.removeAttr("tabindex");
 			});
+
+			// Pause/play button for auto-rotation.
+			if (options.autoRotate) {
+				const pauseButton = document.querySelector('.swiper-button-pause');
+				if (pauseButton) {
+					let isPaused = false;
+					pauseButton.addEventListener('click', () => {
+						if (isPaused) {
+							swiper.autoplay.start();
+							pauseButton.innerHTML = '<i class="fas fa-pause"></i>';
+							pauseButton.setAttribute('aria-label', 'Pause auto-rotation');
+							pauseButton.setAttribute('title', 'Pause');
+							isPaused = false;
+						} else {
+							swiper.autoplay.stop();
+							pauseButton.innerHTML = '<i class="fas fa-play"></i>';
+							pauseButton.setAttribute('aria-label', 'Resume auto-rotation');
+							pauseButton.setAttribute('title', 'Play');
+							isPaused = true;
+						}
+					});
+				}
+			}
 		},
 
 		initDigitalSignage(options) {
@@ -10773,13 +10796,16 @@ AspenDiscovery.HeroSlider = (function(){
 				return;
 			}
 
-			const slides = document.querySelectorAll('.signage-slide');
+			let slides = document.querySelectorAll('.signage-slide');
 			if (!slides.length) {
 				console.error('No slides found for digital signage.');
 				return;
 			}
 
 			let currentSlide = 0;
+			let rotationTimer = null;
+			let refreshTimer = null;
+			let isRotating = false;
 
 			function showSlide(index) {
 				slides.forEach((slide, i) => {
@@ -10791,18 +10817,159 @@ AspenDiscovery.HeroSlider = (function(){
 				});
 			}
 
-			function nextSlide() {
-				currentSlide = (currentSlide + 1) % slides.length;
-				showSlide(currentSlide);
-
-				// Schedule next transition based on current slide's duration.
-				const currentDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
-				setTimeout(nextSlide, currentDuration);
+			function stopRotation() {
+				if (rotationTimer) {
+					clearTimeout(rotationTimer);
+					rotationTimer = null;
+				}
+				if (refreshTimer) {
+					clearTimeout(refreshTimer);
+					refreshTimer = null;
+				}
+				isRotating = false;
 			}
 
-			// Start rotation after first slide's duration.
-			const firstDuration = parseInt(slides[0].dataset.duration) * 1000;
-			setTimeout(nextSlide, firstDuration);
+			function nextSlide() {
+				if (!isRotating) return;
+
+				let nextIndex = (currentSlide + 1) % slides.length;
+				let attempts = 0;
+				let firstEnabledIndex = -1;
+				for (let i = 0; i < slides.length; i++) {
+					if (parseInt(slides[i].dataset.duration) !== 0) {
+						firstEnabledIndex = i;
+						break;
+					}
+				}
+
+				// Skip slides with duration=0 (temporarily disabled).
+				while (parseInt(slides[nextIndex].dataset.duration) === 0 && attempts < slides.length) {
+					nextIndex = (nextIndex + 1) % slides.length;
+					attempts++;
+				}
+				// If all slides are disabled, stop rotation.
+				if (attempts >= slides.length) {
+					stopRotation();
+					return;
+				}
+
+				// If we're about to loop back to first enabled slide and reload is enabled, refresh content instead.
+				if (nextIndex === firstEnabledIndex && currentSlide !== firstEnabledIndex && options.reload) {
+					refreshContent();
+					return;
+				}
+
+				currentSlide = nextIndex;
+				showSlide(currentSlide);
+				const currentDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
+				rotationTimer = setTimeout(nextSlide, currentDuration);
+			}
+
+			function refreshContent() {
+				const url = '/API/HeroSliderAPI';
+				const params = {
+					method: 'getSlides',
+					id: options.locationId
+				};
+
+				$.getJSON(url, params)
+					.done(function(data) {
+						if (data.success && data.slides && data.slides.length > 0) {
+							// Preload all new images before updating DOM.
+							let imagesToLoad = data.slides.length;
+							let imagesLoaded = 0;
+
+							const checkAllLoaded = function() {
+								imagesLoaded++;
+								if (imagesLoaded === imagesToLoad) {
+									updateSlides(data.slides);
+								}
+							};
+
+							data.slides.forEach(slideData => {
+								const tempImg = new Image();
+								tempImg.onload = checkAllLoaded;
+								tempImg.onerror = checkAllLoaded;
+								tempImg.src = slideData.imageUrl;
+							});
+						} else {
+							isRotating = true;
+							const firstDuration = parseInt(slides[0].dataset.duration) * 1000;
+							rotationTimer = setTimeout(nextSlide, firstDuration);
+						}
+					})
+					.fail(function() {
+						console.error('Failed to refresh content');
+						isRotating = true;
+						const firstDuration = parseInt(slides[0].dataset.duration) * 1000;
+						rotationTimer = setTimeout(nextSlide, firstDuration);
+					});
+			}
+
+			function updateSlides(newSlidesData) {
+				stopRotation();
+
+				// Update DOM directly (last slide is still showing, so transition is seamless)
+                // TODO: This does not work yet.
+				const container = document.querySelector('.digital-signage-container');
+				container.innerHTML = '';
+
+				newSlidesData.forEach(slideData => {
+					const slideDiv = document.createElement('div');
+					slideDiv.className = 'signage-slide';
+					slideDiv.setAttribute('data-duration', slideData.duration);
+
+					const img = document.createElement('img');
+					img.src = slideData.imageUrl;
+					img.alt = slideData.altText;
+
+					if (slideData.pageLink) {
+						const link = document.createElement('a');
+						link.href = slideData.pageLink;
+						link.target = '_blank';
+						link.appendChild(img);
+						slideDiv.appendChild(link);
+					} else {
+						slideDiv.appendChild(img);
+					}
+
+					container.appendChild(slideDiv);
+				});
+
+				slides = document.querySelectorAll('.signage-slide');
+				let startIndex = 0;
+				while (parseInt(slides[startIndex].dataset.duration) === 0 && startIndex < slides.length) {
+					startIndex++;
+				}
+
+				if (startIndex < slides.length) {
+					currentSlide = startIndex;
+					isRotating = true;
+					showSlide(currentSlide);
+
+					const firstDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
+					rotationTimer = setTimeout(nextSlide, firstDuration);
+				}
+			}
+
+			let startIndex = 0;
+			while (parseInt(slides[startIndex].dataset.duration) === 0 && startIndex < slides.length) {
+				startIndex++;
+			}
+
+			if (startIndex >= slides.length) {
+				return;
+			}
+
+			currentSlide = startIndex;
+			isRotating = true;
+			showSlide(currentSlide);
+			const firstDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
+			rotationTimer = setTimeout(nextSlide, firstDuration);
+
+			if (options.reload && options.reloadDuration) {
+				refreshTimer = setTimeout(refreshContent, options.reloadDuration);
+			}
 		}
 	};
 })();
@@ -17757,13 +17924,11 @@ AspenDiscovery.CurbsidePickup = {
 					return;
 				}
 
-				console.log("1.", unavailableDaysData);
 				const todayISO = moment().format("YYYY-MM-DD");
 				$.getJSON(Globals.path + "/CurbsidePickups/AJAX?method=getCurbsidePickupAvailableTimes&date=" + todayISO + "&locationCode=" + locationCode)
 					.done(function (availableTimesData) {
 						// If today has no time slots because the current time is past them all, then disable today.
 						// This will return a false success flag if no time slots have been set in the respective ILS.
-						console.log("2.", availableTimesData);
 						if (!availableTimesData.success || (availableTimesData.times && availableTimesData.times.length === 0)) {
 							unavailableDaysData.days = unavailableDaysData.days || [];
 							unavailableDaysData.days.push(todayISO);
@@ -17789,7 +17954,6 @@ AspenDiscovery.CurbsidePickup = {
 							},
 
 							onChange: function (selectedDates, dateStr) {
-								console.log("3.", unavailableDaysData.days);
 								// Reset time slot sections before loading new ones.
 								$("#morningTimeSlotsAccordion, #afternoonTimeSlotsAccordion, #eveningTimeSlotsAccordion").hide();
 								$("#morningTimeSlots, #afternoonTimeSlots, #eveningTimeSlots").empty();

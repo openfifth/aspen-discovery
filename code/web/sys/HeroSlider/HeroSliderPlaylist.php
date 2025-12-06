@@ -67,6 +67,8 @@ class HeroSliderPlaylist extends DataObject {
 				'structure' => $playlistImageStructure,
 				'label' => 'Images',
 				'description' => 'Images in this playlist.',
+				'noteBullets' => ['For images to display, they must match the Aspect Ratio chosen for this playlist\'s Hero Slider Location(s).',
+								 'For "Digital Signage" display, images with a Duration of "0" are not displayed.'],
 				'sortable' => true,
 				'storeDb' => true,
 				'allowEdit' => false,
@@ -111,6 +113,7 @@ class HeroSliderPlaylist extends DataObject {
 			return false;
 		}
 		$this->saveImages();
+		$this->validateAspectRatios();
 		return true;
 	}
 
@@ -120,7 +123,36 @@ class HeroSliderPlaylist extends DataObject {
 			return false;
 		}
 		$this->saveImages();
+		$this->validateAspectRatios();
 		return true;
+	}
+
+	private function validateAspectRatios(): void {
+		require_once ROOT_DIR . '/sys/File/ImageUpload.php';
+		$aspectRatios = [];
+		$playlistImage = new HeroSliderPlaylistImage();
+		$playlistImage->playlistId = $this->id;
+		$playlistImage->find();
+		while ($playlistImage->fetch()) {
+			$image = new ImageUpload();
+			$image->id = $playlistImage->imageId;
+			if ($image->find(true)) {
+				if (!empty($image->aspectRatioWidth) && !empty($image->aspectRatioHeight)) {
+					$ratio = $image->aspectRatioWidth . ':' . $image->aspectRatioHeight;
+					$aspectRatios[$ratio] = true;
+				}
+			}
+		}
+
+		if (count($aspectRatios) > 1) {
+			$ratioList = implode(', ', array_keys($aspectRatios));
+			$user = UserAccount::getActiveUserObj();
+			if ($user) {
+				$user->updateMessage = "Warning: This playlist contains images with different aspect ratios ($ratioList). Images will only display in locations with matching aspect ratios.";
+				$user->updateMessageIsError = true;
+				$user->update();
+			}
+		}
 	}
 
 	public function saveImages(): void {
@@ -154,10 +186,8 @@ class HeroSliderPlaylist extends DataObject {
 			$image->id = $playlistImage->imageId;
 			$image->type = 'hero_slider';
 			if ($image->find(true)) {
-				// Check aspect ratio match
 				if ($image->aspectRatioWidth == $aspectRatioWidth &&
 					$image->aspectRatioHeight == $aspectRatioHeight) {
-					// Check date validity (check startDate and endDate)
 					$curTime = time();
 					$isValid = true;
 					if ($image->startDate != 0 && $image->startDate > $curTime) {

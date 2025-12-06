@@ -95,6 +95,7 @@ class HeroSliderLocation extends DataObject {
 				],
 				'label' => 'Display Style',
 				'description' => 'How this slider will be displayed.',
+				'note' => 'For the best quality with "Digital Signage", the dimensions of the chosen images must match the resolution of the screen on which they will be displayed.',
 				'required' => true,
 				'default' => 'website',
 				'onchange' => 'return AspenDiscovery.Admin.updateHeroSliderFields();',

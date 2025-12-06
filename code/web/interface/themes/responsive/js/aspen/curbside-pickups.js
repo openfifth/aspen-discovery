@@ -80,13 +80,11 @@ AspenDiscovery.CurbsidePickup = {
 					return;
 				}
 
-				console.log("1.", unavailableDaysData);
 				const todayISO = moment().format("YYYY-MM-DD");
 				$.getJSON(Globals.path + "/CurbsidePickups/AJAX?method=getCurbsidePickupAvailableTimes&date=" + todayISO + "&locationCode=" + locationCode)
 					.done(function (availableTimesData) {
 						// If today has no time slots because the current time is past them all, then disable today.
 						// This will return a false success flag if no time slots have been set in the respective ILS.
-						console.log("2.", availableTimesData);
 						if (!availableTimesData.success || (availableTimesData.times && availableTimesData.times.length === 0)) {
 							unavailableDaysData.days = unavailableDaysData.days || [];
 							unavailableDaysData.days.push(todayISO);
@@ -112,7 +110,6 @@ AspenDiscovery.CurbsidePickup = {
 							},
 
 							onChange: function (selectedDates, dateStr) {
-								console.log("3.", unavailableDaysData.days);
 								// Reset time slot sections before loading new ones.
 								$("#morningTimeSlotsAccordion, #afternoonTimeSlotsAccordion, #eveningTimeSlotsAccordion").hide();
 								$("#morningTimeSlots, #afternoonTimeSlots, #eveningTimeSlots").empty();

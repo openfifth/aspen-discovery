@@ -52,9 +52,9 @@
 		<h4>{translate text="Web Builder Portal Cell" isAdminFacing=true}</h4>
 		<div class="well">
 			<ol>
-				<li>{translate text="Create or edit a Portal Cell in Web Builder" isAdminFacing=true}</li>
-				<li>{translate text="Set <strong>Source Type</strong> to \"Hero Slider\"" isAdminFacing=true inAttribute=true}</li>
-				<li>{translate text="Select <strong>\"%1%\"</strong> from the Source dropdown" 1=$object->name isAdminFacing=true inAttribute=true}</li>
+				<li>{translate text="Create or edit a Portal Cell in Web Builder." isAdminFacing=true}</li>
+				<li>{translate text="Set <strong>Source Type</strong> to \"Hero Slider\"." isAdminFacing=true inAttribute=true}</li>
+				<li>{translate text="Select <strong>\"%1%\"</strong> from the Source dropdown." 1=$object->name isAdminFacing=true inAttribute=true}</li>
 			</ol>
 		</div>
 	</div>

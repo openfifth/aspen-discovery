@@ -18,7 +18,6 @@ class HeroSliderPlaylistImage extends DataObject {
 
 		require_once ROOT_DIR . '/sys/File/ImageUpload.php';
 		$imageList = [];
-		$imageList[-1] = 'Select an image';
 		$image = new ImageUpload();
 		$image->type = 'hero_slider';
 		$image->orderBy('title ASC');
@@ -69,7 +68,7 @@ class HeroSliderPlaylistImage extends DataObject {
 				'label' => 'Duration (Seconds)',
 				'description' => 'How long to display this slide.',
 				'default' => 5,
-				'min' => 1,
+				'min' => 0,
 				'max' => 60,
 			],
 		];
