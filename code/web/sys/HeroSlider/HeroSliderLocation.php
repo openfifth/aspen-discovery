@@ -18,6 +18,7 @@ class HeroSliderLocation extends DataObject {
 	public $libraryId;
 	public $deleted;
 	public $dateDeleted;
+	public $deletedBy;
 
 	static $_objectStructure = [];
 

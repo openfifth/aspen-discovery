@@ -46,6 +46,7 @@ function getUpdates26_01_00(): array {
 					libraryId INT(11) DEFAULT -1,
 					deleted TINYINT(1) DEFAULT 0,
 					dateDeleted INT(11),
+					deletedBy INT(11),
 					INDEX libraryId(libraryId)
 				) ENGINE=INNODB",
 			],
@@ -87,6 +88,7 @@ function getUpdates26_01_00(): array {
 					libraryId INT(11) DEFAULT -1,
 					deleted TINYINT(1) DEFAULT 0,
 					dateDeleted INT(11),
+					deletedBy INT(11),
 					INDEX playlistId(playlistId),
 					INDEX libraryId(libraryId),
 					FOREIGN KEY (playlistId) REFERENCES hero_slider_playlist(id) ON DELETE SET NULL

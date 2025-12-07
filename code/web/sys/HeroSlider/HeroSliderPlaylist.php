@@ -10,6 +10,7 @@ class HeroSliderPlaylist extends DataObject {
 	public $libraryId;
 	public $deleted;
 	public $dateDeleted;
+	public $deletedBy;
 
 	private ?array $playlistImages = null;
 
@@ -211,7 +212,16 @@ class HeroSliderPlaylist extends DataObject {
 		return $activeImages;
 	}
 
-	// TODO
+	public function delete(bool $useWhere = false, bool $hardDelete = false): bool|int {
+		$ret = parent::delete($useWhere, $hardDelete);
+		if ($ret && $hardDelete && !empty($this->id)) {
+			$playlistImage = new HeroSliderPlaylistImage();
+			$playlistImage->playlistId = $this->id;
+			$playlistImage->delete(true);
+		}
+		return $ret;
+	}
+
 	public function supportsSoftDelete(): bool {
 		return true;
 	}
