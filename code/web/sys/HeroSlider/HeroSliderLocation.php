@@ -84,7 +84,7 @@ class HeroSliderLocation extends DataObject {
 				'type' => 'enum',
 				'values' => $libraryList,
 				'label' => 'Library',
-				'description' => 'The library this slider belongs to.',
+				'description' => 'On what library catalogs to display this hero slider.',
 			],
 			'displayStyle' => [
 				'property' => 'displayStyle',

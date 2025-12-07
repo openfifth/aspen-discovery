@@ -1,5 +1,11 @@
+/* global Swiper, $ */
 AspenDiscovery.HeroSlider = (function(){
 	return {
+		/**
+		 * @param {Object} options
+		 * @param {boolean} options.autoRotate
+		 * @param {number} options.defaultInterval
+		 */
 		initWebsiteSlider(options){
 			const slides = document.querySelectorAll('.hero-slide');
 			if (!slides.length) {
@@ -91,6 +97,12 @@ AspenDiscovery.HeroSlider = (function(){
 			}
 		},
 
+		/**
+		 * @param {Object} options
+		 * @param {boolean} options.autoRotate
+		 * @param {number} options.locationId
+		 * @param {boolean} [options.reload]
+		 */
 		initDigitalSignage(options) {
 			if (!options.autoRotate) {
 				return;
@@ -102,122 +114,112 @@ AspenDiscovery.HeroSlider = (function(){
 				return;
 			}
 
+			const container = document.querySelector('.digital-signage-container');
 			let currentSlide = 0;
 			let rotationTimer = null;
-			let refreshTimer = null;
-			let isRotating = false;
+			let pendingUpdate = null;
+
+			function getDuration(slide) {
+				return parseInt(slide.dataset.duration, 10) || 0;
+			}
+
+			function getEnabledIndex(fromEnd) {
+				if (fromEnd) {
+					for (let i = slides.length - 1; i >= 0; i--) {
+						if (getDuration(slides[i]) !== 0) return i;
+					}
+				} else {
+					for (let i = 0; i < slides.length; i++) {
+						if (getDuration(slides[i]) !== 0) return i;
+					}
+				}
+				return -1;
+			}
 
 			function showSlide(index) {
 				slides.forEach((slide, i) => {
-					if (i === index) {
-						slide.classList.add('active');
-					} else {
-						slide.classList.remove('active');
-					}
+					slide.classList.toggle('active', i === index);
 				});
 			}
 
-			function stopRotation() {
-				if (rotationTimer) {
-					clearTimeout(rotationTimer);
-					rotationTimer = null;
-				}
-				if (refreshTimer) {
-					clearTimeout(refreshTimer);
-					refreshTimer = null;
-				}
-				isRotating = false;
+			function scheduleNext() {
+				const duration = getDuration(slides[currentSlide]) * 1000;
+				rotationTimer = setTimeout(nextSlide, duration);
 			}
 
 			function nextSlide() {
-				if (!isRotating) return;
+				const firstEnabled = getEnabledIndex(false);
+				const lastEnabled = getEnabledIndex(true);
 
+				// Find next enabled slide.
 				let nextIndex = (currentSlide + 1) % slides.length;
 				let attempts = 0;
-				let firstEnabledIndex = -1;
-				for (let i = 0; i < slides.length; i++) {
-					if (parseInt(slides[i].dataset.duration) !== 0) {
-						firstEnabledIndex = i;
-						break;
-					}
-				}
-
-				// Skip slides with duration=0 (temporarily disabled).
-				while (parseInt(slides[nextIndex].dataset.duration) === 0 && attempts < slides.length) {
+				while (getDuration(slides[nextIndex]) === 0 && attempts < slides.length) {
 					nextIndex = (nextIndex + 1) % slides.length;
 					attempts++;
 				}
-				// If all slides are disabled, stop rotation.
+
 				if (attempts >= slides.length) {
-					stopRotation();
-					return;
+					return; // All slides disabled.
 				}
 
-				// If we're about to loop back to first enabled slide and reload is enabled, refresh content instead.
-				if (nextIndex === firstEnabledIndex && currentSlide !== firstEnabledIndex && options.reload) {
-					refreshContent();
+				// Apply pending update when looping back to first slide.
+				if (nextIndex === firstEnabled && currentSlide === lastEnabled && pendingUpdate) {
+					applyPendingUpdate();
 					return;
 				}
 
 				currentSlide = nextIndex;
 				showSlide(currentSlide);
-				const currentDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
-				rotationTimer = setTimeout(nextSlide, currentDuration);
+				scheduleNext();
+
+				// Prefetch on last slide if reload enabled.
+				if (options.reload && currentSlide === lastEnabled && !pendingUpdate) {
+					prefetchContent();
+				}
 			}
 
-			function refreshContent() {
-				const url = '/API/HeroSliderAPI';
-				const params = {
-					method: 'getSlides',
-					id: options.locationId
-				};
-
-				$.getJSON(url, params)
+			function prefetchContent() {
+                // noinspection JSUnresolvedFunction
+				$.getJSON('/API/HeroSliderAPI', {method: 'getSlides', id: options.locationId})
 					.done(function(data) {
 						if (data.success && data.slides && data.slides.length > 0) {
-							// Preload all new images before updating DOM.
-							let imagesToLoad = data.slides.length;
-							let imagesLoaded = 0;
-
-							const checkAllLoaded = function() {
-								imagesLoaded++;
-								if (imagesLoaded === imagesToLoad) {
-									updateSlides(data.slides);
-								}
-							};
-
-							data.slides.forEach(slideData => {
-								const tempImg = new Image();
-								tempImg.onload = checkAllLoaded;
-								tempImg.onerror = checkAllLoaded;
-								tempImg.src = slideData.imageUrl;
+							preloadImages(data.slides, function() {
+								buildPendingUpdate(data.slides);
 							});
-						} else {
-							isRotating = true;
-							const firstDuration = parseInt(slides[0].dataset.duration) * 1000;
-							rotationTimer = setTimeout(nextSlide, firstDuration);
 						}
 					})
 					.fail(function() {
-						console.error('Failed to refresh content');
-						isRotating = true;
-						const firstDuration = parseInt(slides[0].dataset.duration) * 1000;
-						rotationTimer = setTimeout(nextSlide, firstDuration);
+						console.error('Failed to prefetch content');
 					});
 			}
 
-			function updateSlides(newSlidesData) {
-				stopRotation();
+			/**
+			 * @param {{imageUrl: string, altText: string, duration: number, pageLink: string}[]} slidesData
+			 * @param {function} callback
+			 */
+			function preloadImages(slidesData, callback) {
+				let remaining = slidesData.length;
+				slidesData.forEach(function(slideData) {
+					const img = new Image();
+					img.onload = img.onerror = function() {
+						if (--remaining === 0) callback();
+					};
+					img.src = slideData.imageUrl;
+				});
+			}
 
-				// Update DOM directly (last slide is still showing, so transition is seamless)
-                // TODO: This does not work yet, causes a flicker on first slide.
-				const container = document.querySelector('.digital-signage-container');
-				container.innerHTML = '';
+			/**
+			 * @param {{imageUrl: string, altText: string, duration: number, pageLink: string}[]} slidesData
+			 */
+			function buildPendingUpdate(slidesData) {
+				const fragment = document.createDocumentFragment();
+				let firstEnabled = null;
 
-				newSlidesData.forEach(slideData => {
+				slidesData.forEach(function(slideData, index) {
 					const slideDiv = document.createElement('div');
 					slideDiv.className = 'signage-slide';
-					slideDiv.setAttribute('data-duration', slideData.duration);
+					slideDiv.dataset.duration = String(slideData.duration);
 
 					const img = document.createElement('img');
 					img.src = slideData.imageUrl;
@@ -233,43 +235,43 @@ AspenDiscovery.HeroSlider = (function(){
 						slideDiv.appendChild(img);
 					}
 
-					container.appendChild(slideDiv);
+					if (firstEnabled === null && slideData.duration !== 0) {
+						slideDiv.classList.add('active');
+						firstEnabled = index;
+					}
+
+					fragment.appendChild(slideDiv);
 				});
 
-				slides = document.querySelectorAll('.signage-slide');
-				let startIndex = 0;
-				while (parseInt(slides[startIndex].dataset.duration) === 0 && startIndex < slides.length) {
-					startIndex++;
-				}
-
-				if (startIndex < slides.length) {
-					currentSlide = startIndex;
-					isRotating = true;
-					showSlide(currentSlide);
-
-					const firstDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
-					rotationTimer = setTimeout(nextSlide, firstDuration);
-				}
+				pendingUpdate = {fragment: fragment, firstEnabled: firstEnabled};
 			}
 
-			let startIndex = 0;
-			while (parseInt(slides[startIndex].dataset.duration) === 0 && startIndex < slides.length) {
-				startIndex++;
+			function applyPendingUpdate() {
+				if (!pendingUpdate) return;
+
+				clearTimeout(rotationTimer);
+
+				const newSlides = Array.from(pendingUpdate.fragment.children);
+				container.replaceChildren(...newSlides);
+				slides = container.querySelectorAll('.signage-slide');
+
+				if (pendingUpdate.firstEnabled !== null) {
+					currentSlide = pendingUpdate.firstEnabled;
+					scheduleNext();
+				}
+
+				pendingUpdate = null;
 			}
 
-			if (startIndex >= slides.length) {
+			// Initialize: find first enabled slide and start rotation.
+			const startIndex = getEnabledIndex(false);
+			if (startIndex === -1) {
 				return;
 			}
 
 			currentSlide = startIndex;
-			isRotating = true;
 			showSlide(currentSlide);
-			const firstDuration = parseInt(slides[currentSlide].dataset.duration) * 1000;
-			rotationTimer = setTimeout(nextSlide, firstDuration);
-
-			if (options.reload && options.reloadDuration) {
-				refreshTimer = setTimeout(refreshContent, options.reloadDuration);
-			}
+			scheduleNext();
 		}
 	};
 })();

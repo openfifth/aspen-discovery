@@ -57,15 +57,9 @@ class API_HeroSliderAPI extends Action {
 
 		$interface->assign('slides', $activeImages);
 
-		// Check for reload parameter (for digital signage).
+		// Check for reload parameter for digital signage.
 		if (isset($_REQUEST['reload'])) {
 			$interface->assign('reload', true);
-			// Calculate total duration for meta refresh
-			$totalDuration = 0;
-			foreach ($activeImages as $slide) {
-				$totalDuration += $slide['duration'];
-			}
-			$interface->assign('totalDuration', $totalDuration);
 		} else {
 			$interface->assign('reload', false);
 		}
@@ -108,7 +102,6 @@ class API_HeroSliderAPI extends Action {
 			return ['success' => false, 'message' => 'No active images in playlist.'];
 		}
 
-		// Format slides data for JSON response
 		$slides = [];
 		foreach ($activeImages as $slide) {
 			$slides[] = [

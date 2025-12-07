@@ -25,8 +25,7 @@
 			AspenDiscovery.HeroSlider.initDigitalSignage({
 				autoRotate: {if $location->autoRotate}true{else}false{/if},
 				locationId: {$location->id}{if $reload},
-				reload: true,
-				reloadDuration: {$totalDuration * 1000}{/if}
+				reload: true{/if}
 			});
 		});
 	</script>
