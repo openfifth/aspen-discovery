@@ -85,7 +85,7 @@ class HeroSliderPlaylist extends DataObject {
 
 	public function __get($name) {
 		if ($name == "images") {
-			if ($this->playlistImages == null) {
+			if ($this->playlistImages == null && $this->id) {
 				$this->playlistImages = [];
 				$playlistImage = new HeroSliderPlaylistImage();
 				$playlistImage->playlistId = $this->id;

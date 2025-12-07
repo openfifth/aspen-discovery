@@ -6,10 +6,7 @@
 	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 
 	{include file="cssAndJsIncludes.tpl" includeAutoLogoutCode=false}
-
 	<link rel="stylesheet" href="/interface/themes/responsive/css/lib/swiper-bundle.css" />
-	<script src="/interface/themes/responsive/js/lib/swiper-bundle.js"></script>
-	<script src="/interface/themes/responsive/js/aspen/hero-slider.js"></script>
 </head>
 
 <body class="hero-slider-website">

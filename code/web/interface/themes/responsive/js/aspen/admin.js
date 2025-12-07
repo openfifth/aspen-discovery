@@ -2014,7 +2014,18 @@ AspenDiscovery.Admin = (function () {
 				$('#propertyRowcalculatedAspectRatio').hide();
 			}
 		},
-		updateHeroSliderAspectRatioFields() {
+		updateHeroSliderFields() {
+			const displayStyle = $('#displayStyleSelect').val();
+			const $autoRotate = $('#autoRotate');
+
+			if (displayStyle === 'digital_signage') {
+                // noinspection JSUnresolvedReference
+				$autoRotate.prop('checked', true).prop('disabled', true);
+			} else {
+                // noinspection JSUnresolvedReference
+				$autoRotate.prop('disabled', false);
+			}
+
 			const preset = $('#aspectRatioPresetSelect').val();
 			if (preset === 'custom') {
 				$('#propertyRowaspectRatioWidth').show();
@@ -2023,7 +2034,7 @@ AspenDiscovery.Admin = (function () {
 				$('#propertyRowaspectRatioWidth').hide();
 				$('#propertyRowaspectRatioHeight').hide();
 				if (preset && preset.includes(':')) {
-					var parts = preset.split(':');
+					const parts = preset.split(':');
 					$('#aspectRatioWidth').val(parts[0]);
 					$('#aspectRatioHeight').val(parts[1]);
 				}

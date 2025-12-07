@@ -13,6 +13,56 @@ AspenDiscovery.HeroSlider = (function(){
 				return;
 			}
 
+			const heroSliderEl = document.querySelector('.hero-slider');
+			let navHideTimer = null;
+			let lastPointerType = 'mouse';
+			function showNavTemporarily() {
+				if (!heroSliderEl) return;
+				heroSliderEl.classList.add('nav-visible');
+				if (navHideTimer) {
+					clearTimeout(navHideTimer);
+				}
+				navHideTimer = setTimeout(() => {
+					heroSliderEl.classList.remove('nav-visible');
+				}, 3000);
+			}
+
+			function hideNav() {
+				if (!heroSliderEl) return;
+				heroSliderEl.classList.remove('nav-visible');
+				if (navHideTimer) {
+					clearTimeout(navHideTimer);
+					navHideTimer = null;
+				}
+			}
+
+			if (heroSliderEl) {
+				heroSliderEl.addEventListener('mouseenter', () => {
+					lastPointerType = 'mouse';
+					showNavTemporarily();
+				});
+				heroSliderEl.addEventListener('mousemove', () => {
+					lastPointerType = 'mouse';
+					showNavTemporarily();
+				});
+				heroSliderEl.addEventListener('pointerdown', (event) => {
+					lastPointerType = event.pointerType || 'mouse';
+					showNavTemporarily();
+				});
+				heroSliderEl.addEventListener('pointerup', showNavTemporarily);
+				heroSliderEl.addEventListener('mouseleave', hideNav);
+				heroSliderEl.addEventListener('pointerleave', hideNav);
+				heroSliderEl.addEventListener('focusin', showNavTemporarily);
+				heroSliderEl.addEventListener('focusout', (event) => {
+					if (!heroSliderEl.contains(event.relatedTarget)) {
+						hideNav();
+					}
+				});
+				heroSliderEl.addEventListener('keydown', () => {
+					lastPointerType = 'keyboard';
+				});
+			}
+
 			let swiperOptions = {
 				direction: 'horizontal',
 				loop: true,
@@ -65,12 +115,24 @@ AspenDiscovery.HeroSlider = (function(){
 
 			const swiper = new Swiper('.hero-slider', swiperOptions);
 
+			const navButtons = heroSliderEl ? heroSliderEl.querySelectorAll('.swiper-button-next, .swiper-button-prev') : [];
+			navButtons.forEach(button => {
+				button.addEventListener('click', () => {
+					showNavTemporarily();
+					if (lastPointerType !== 'keyboard') {
+						button.blur();
+					}
+				});
+			});
+
 			// Accessibility: Keep off-screen slides out of tab order.
 			swiper.on('slideChangeTransitionEnd', function() {
+                // noinspection JSUnresolvedReference
 				$(".hero-slider .swiper-slide:not(.swiper-slide-visible) a, .hero-slider .swiper-slide:not(.swiper-slide-visible) img")
-					.prop("tabindex", "-1");
+                    .prop("tabindex", "-1");
+                // noinspection JSUnresolvedReference
 				$(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img")
-					.removeAttr("tabindex");
+                    .removeAttr("tabindex");
 			});
 
 			// Pause/play button for auto-rotation.
@@ -215,7 +277,6 @@ AspenDiscovery.HeroSlider = (function(){
 			function buildPendingUpdate(slidesData) {
 				const fragment = document.createDocumentFragment();
 				let firstEnabled = null;
-
 				slidesData.forEach(function(slideData, index) {
 					const slideDiv = document.createElement('div');
 					slideDiv.className = 'signage-slide';

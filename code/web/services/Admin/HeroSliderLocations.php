@@ -106,11 +106,10 @@ class Admin_HeroSliderLocations extends ObjectEditor {
 	}
 
 	function getInitializationJs(): string {
-		return 'AspenDiscovery.Admin.updateHeroSliderAspectRatioFields();';
+		return 'AspenDiscovery.Admin.updateHeroSliderFields();';
 	}
 
 	function updateFromUI($object, $structure, $fieldLocks): array {
-		// Set aspect ratio width/height from preset if not custom
 		if (!empty($object->aspectRatioPreset) && $object->aspectRatioPreset !== 'custom') {
 			$parts = explode(':', $object->aspectRatioPreset);
 			if (count($parts) === 2) {
@@ -118,7 +117,11 @@ class Admin_HeroSliderLocations extends ObjectEditor {
 				$object->aspectRatioHeight = (int)$parts[1];
 			}
 		}
-		return parent::updateFromUI($object, $structure, $fieldLocks);
+		$validationResults = parent::updateFromUI($object, $structure, $fieldLocks);
+		if ($object->displayStyle === 'digital_signage') {
+			$object->autoRotate = 1;
+		}
+		return $validationResults;
 	}
 
 	function getAdditionalObjectActions(?DataObject $existingObject): array {

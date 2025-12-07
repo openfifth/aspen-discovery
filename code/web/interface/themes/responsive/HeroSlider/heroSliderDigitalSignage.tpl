@@ -6,7 +6,6 @@
 	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
 
 	{include file="cssAndJsIncludes.tpl" includeAutoLogoutCode=false}
-	<script src="/interface/themes/responsive/js/aspen/hero-slider.js"></script>
 </head>
 
 <body class="hero-slider-signage">
@@ -23,7 +22,7 @@
 	<script>
 		$(() => {
 			AspenDiscovery.HeroSlider.initDigitalSignage({
-				autoRotate: {if $location->autoRotate}true{else}false{/if},
+				autoRotate: true,
 				locationId: {$location->id}{if $reload},
 				reload: true{/if}
 			});
