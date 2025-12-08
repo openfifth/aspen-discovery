@@ -28,7 +28,7 @@ class HeroSliderPlaylistImage extends DataObject {
 		$image->find();
 		while ($image->fetch()) {
 			$aspectRatio = ($image->aspectRatioWidth && $image->aspectRatioHeight)
-				? "{$image->aspectRatioWidth}:{$image->aspectRatioHeight}"
+				? "$image->aspectRatioWidth:$image->aspectRatioHeight"
 				: "Unknown";
 			$imageList[$image->id] = "$image->title ($aspectRatio)";
 		}
@@ -79,6 +79,6 @@ class HeroSliderPlaylistImage extends DataObject {
 
 	/** @noinspection PhpUnusedParameterInspection */
 	public function getEditLink(string $context): string {
-		return '';
+		return '/WebBuilder/Images?objectAction=edit&id=' . $this->imageId;
 	}
 }

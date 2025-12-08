@@ -69,11 +69,11 @@ class HeroSliderPlaylist extends DataObject {
 				'label' => 'Images',
 				'description' => 'Images in this playlist.',
 				'noteBullets' => ['For images to display, they must match the Aspect Ratio chosen for this playlist\'s Hero Slider Location(s).',
-								 'For "Digital Signage" display, images with a Duration of "0" are not displayed.'],
+								 'Images with a Duration of "0" are not displayed.'],
 				'sortable' => true,
 				'storeDb' => true,
-				'allowEdit' => false,
-				'canEdit' => false,
+				'allowEdit' => true,
+				'canEdit' => true,
 				'canAddNew' => true,
 				'canDelete' => true,
 			],
@@ -195,6 +195,9 @@ class HeroSliderPlaylist extends DataObject {
 						$isValid = false;
 					}
 					if ($image->endDate != 0 && $image->endDate < $curTime) {
+						$isValid = false;
+					}
+					if ($playlistImage->duration == 0) {
 						$isValid = false;
 					}
 

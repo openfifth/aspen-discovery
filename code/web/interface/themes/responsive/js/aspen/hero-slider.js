@@ -163,7 +163,7 @@ AspenDiscovery.HeroSlider = (function(){
 		 * @param {Object} options
 		 * @param {boolean} options.autoRotate
 		 * @param {number} options.locationId
-		 * @param {boolean} [options.reload]
+		 * @param {boolean} [options.reload] - If true, enables automatic content refresh.
 		 */
 		initDigitalSignage(options) {
 			if (!options.autoRotate) {
@@ -179,23 +179,10 @@ AspenDiscovery.HeroSlider = (function(){
 			const container = document.querySelector('.digital-signage-container');
 			let currentSlide = 0;
 			let rotationTimer = null;
-			let pendingUpdate = null;
+			let pendingUpdate = null; // Holds prefetched content until ready to apply.
 
 			function getDuration(slide) {
 				return parseInt(slide.dataset.duration, 10) || 0;
-			}
-
-			function getEnabledIndex(fromEnd) {
-				if (fromEnd) {
-					for (let i = slides.length - 1; i >= 0; i--) {
-						if (getDuration(slides[i]) !== 0) return i;
-					}
-				} else {
-					for (let i = 0; i < slides.length; i++) {
-						if (getDuration(slides[i]) !== 0) return i;
-					}
-				}
-				return -1;
 			}
 
 			function showSlide(index) {
@@ -210,23 +197,11 @@ AspenDiscovery.HeroSlider = (function(){
 			}
 
 			function nextSlide() {
-				const firstEnabled = getEnabledIndex(false);
-				const lastEnabled = getEnabledIndex(true);
-
-				// Find next enabled slide.
+				const lastIndex = slides.length - 1;
 				let nextIndex = (currentSlide + 1) % slides.length;
-				let attempts = 0;
-				while (getDuration(slides[nextIndex]) === 0 && attempts < slides.length) {
-					nextIndex = (nextIndex + 1) % slides.length;
-					attempts++;
-				}
-
-				if (attempts >= slides.length) {
-					return; // All slides disabled.
-				}
 
 				// Apply pending update when looping back to first slide.
-				if (nextIndex === firstEnabled && currentSlide === lastEnabled && pendingUpdate) {
+				if (nextIndex === 0 && currentSlide === lastIndex && pendingUpdate) {
 					applyPendingUpdate();
 					return;
 				}
@@ -236,11 +211,12 @@ AspenDiscovery.HeroSlider = (function(){
 				scheduleNext();
 
 				// Prefetch on last slide if reload enabled.
-				if (options.reload && currentSlide === lastEnabled && !pendingUpdate) {
+				if (options.reload && currentSlide === lastIndex && !pendingUpdate) {
 					prefetchContent();
 				}
 			}
 
+			// Fetch updated slide data from server.
 			function prefetchContent() {
                 // noinspection JSUnresolvedFunction
 				$.getJSON('/API/HeroSliderAPI', {method: 'getSlides', id: options.locationId})
@@ -256,6 +232,7 @@ AspenDiscovery.HeroSlider = (function(){
 					});
 			}
 
+			// Preload images in background to prevent flicker when applying update.
 			/**
 			 * @param {{imageUrl: string, altText: string, duration: number, pageLink: string}[]} slidesData
 			 * @param {function} callback
@@ -271,15 +248,18 @@ AspenDiscovery.HeroSlider = (function(){
 				});
 			}
 
+			// Build DOM elements for new slides and store them for later.
 			/**
 			 * @param {{imageUrl: string, altText: string, duration: number, pageLink: string}[]} slidesData
 			 */
 			function buildPendingUpdate(slidesData) {
 				const fragment = document.createDocumentFragment();
-				let firstEnabled = null;
 				slidesData.forEach(function(slideData, index) {
 					const slideDiv = document.createElement('div');
 					slideDiv.className = 'signage-slide';
+					if (index === 0) {
+						slideDiv.classList.add('active');
+					}
 					slideDiv.dataset.duration = String(slideData.duration);
 
 					const img = document.createElement('img');
@@ -296,41 +276,29 @@ AspenDiscovery.HeroSlider = (function(){
 						slideDiv.appendChild(img);
 					}
 
-					if (firstEnabled === null && slideData.duration !== 0) {
-						slideDiv.classList.add('active');
-						firstEnabled = index;
-					}
-
 					fragment.appendChild(slideDiv);
 				});
 
-				pendingUpdate = {fragment: fragment, firstEnabled: firstEnabled};
+				pendingUpdate = fragment;
 			}
 
+			// Replace current slides with prefetched content and restart rotation.
 			function applyPendingUpdate() {
 				if (!pendingUpdate) return;
 
 				clearTimeout(rotationTimer);
 
-				const newSlides = Array.from(pendingUpdate.fragment.children);
-				container.replaceChildren(...newSlides);
+				container.replaceChildren(pendingUpdate);
 				slides = container.querySelectorAll('.signage-slide');
 
-				if (pendingUpdate.firstEnabled !== null) {
-					currentSlide = pendingUpdate.firstEnabled;
-					scheduleNext();
-				}
+				currentSlide = 0;
+				scheduleNext();
 
 				pendingUpdate = null;
 			}
 
-			// Initialize: find first enabled slide and start rotation.
-			const startIndex = getEnabledIndex(false);
-			if (startIndex === -1) {
-				return;
-			}
-
-			currentSlide = startIndex;
+			// Initialize: start rotation from the first slide.
+			currentSlide = 0;
 			showSlide(currentSlide);
 			scheduleNext();
 		}

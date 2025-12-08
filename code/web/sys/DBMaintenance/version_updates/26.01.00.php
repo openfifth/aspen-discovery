@@ -1,4 +1,5 @@
 <?php
+/** @noinspection SqlDialectInspection */
 
 /** @noinspection PhpUnused */
 function getUpdates26_01_00(): array {
@@ -105,7 +106,7 @@ function getUpdates26_01_00(): array {
 					('Local Enrichment', 'Administer Library Hero Sliders', '', 161, 'Allows the user to manage hero sliders for their home library.')
 				",
 				"INSERT INTO `permission_groups` (`groupKey`,`sectionName`,`label`,`description`) VALUES
-					('adminHeroSliders','Local Enrichment','Administer Hero Sliders','Specify whether the role can manage all hero sliders or only those for its home library.')",
+					('adminHeroSliders','Local Enrichment','Administer Hero Sliders','Specify whether the role can manage all hero sliders or only those for the user''s home library.')",
 				"INSERT IGNORE INTO `permission_group_permissions` (`groupId`,`permissionId`) SELECT pg.id, p.id FROM `permission_groups` pg JOIN `permissions` p ON p.name IN ('Administer All Hero Sliders','Administer Library Hero Sliders') WHERE pg.groupKey = 'adminHeroSliders'",
 			],
 		], //hero_slider_permissions
