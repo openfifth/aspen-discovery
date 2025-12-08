@@ -228,6 +228,7 @@ class Library extends DataObject {
 		$eContentLinkRules;
 	public $novelistSettingId;
 	public $syndeticsSettingId;
+	public $loralSettingId;
 	public $allowAutomaticSearchReplacements;
 	public $enableSearchInterpreter;
 
@@ -645,6 +646,13 @@ class Library extends DataObject {
 		while ($syndetics->fetch()) {
 			$availableSyndeticsSettings[$syndetics->id] = $syndetics->name;
 		}
+
+		require_once ROOT_DIR . '/sys/Enrichment/LoralSetting.php';
+		$loral = new LoralSetting();
+		$availableLoralSettings = [
+			'-1' => 'None',
+		];
+		$loral->orderBy('name');
 
 		$materialsRequestOptions = [
 			0 => 'None',
@@ -3399,6 +3407,15 @@ class Library extends DataObject {
 						'default' => '-1',
 						'hideInLists' => true,
 					],
+					'loralSettingId' => [
+						'property' => 'loralSettingId',
+						'type' => 'enum',
+						'values' => $availableLoralSettings,
+						'label' => 'Loral Setting',
+						'description' => 'The Loral Settings to use',
+						'default' => '-1',
+						'hideInLists' => true,
+					]
 				],
 			],
 

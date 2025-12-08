@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/JSON_Action.php';
 class MyAccount_AJAX extends JSON_Action {
 	const SORT_LAST_ALPHA = 'zzzzz';
 
-	function launch($method = null) {
+	function launch($method = null) : void {
 		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
 		switch ($method) {
 			case 'renewItem':

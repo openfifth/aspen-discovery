@@ -3,7 +3,7 @@
 require_once 'Action.php';
 
 class JSON_Action extends Action {
-	function launch($method = null) {
+	function launch($method = null) : void {
 		global $timer;
 		if ($method == null) {
 			$method = (isset($_REQUEST['method']) && !is_array($_REQUEST['method'])) ? $_REQUEST['method'] : '';
