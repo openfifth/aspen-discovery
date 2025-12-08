@@ -128,11 +128,9 @@ AspenDiscovery.HeroSlider = (function(){
 			// Accessibility: Keep off-screen slides out of tab order.
 			swiper.on('slideChangeTransitionEnd', function() {
 				// noinspection JSUnresolvedReference
-				$(".hero-slider .swiper-slide:not(.swiper-slide-visible) a, .hero-slider .swiper-slide:not(.swiper-slide-visible) img")
-				    .prop("tabindex", "-1");
+				$(".hero-slider .swiper-slide:not(.swiper-slide-visible) a, .hero-slider .swiper-slide:not(.swiper-slide-visible) img").prop("tabindex", "-1");
 				// noinspection JSUnresolvedReference
-				$(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img")
-				    .removeAttr("tabindex");
+				$(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img").removeAttr("tabindex");
 			});
 
 			// Pause/play button for auto-rotation.
@@ -218,7 +216,7 @@ AspenDiscovery.HeroSlider = (function(){
 
 			// Fetch updated slide data from server.
 			function prefetchContent() {
-                // noinspection JSUnresolvedFunction
+				// noinspection JSUnresolvedFunction
 				$.getJSON('/API/HeroSliderAPI', {method: 'getSlides', id: options.locationId})
 					.done(function(data) {
 						if (data.success && data.slides && data.slides.length > 0) {
