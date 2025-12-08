@@ -49,7 +49,7 @@ class Greenhouse_ExternalRequestSettings extends ObjectEditor {
 		return 'id';
 	}
 
-	function canDelete() {
+	function canDelete(): bool {
 		return true;
 	}
 
