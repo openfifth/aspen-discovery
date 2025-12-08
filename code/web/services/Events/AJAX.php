@@ -439,7 +439,7 @@ class Events_AJAX extends JSON_Action {
 						'isAdminFacing' => true,
 					]),
 					'modalBody' => translate([
-						'text' => 'If customization settings have been changed, there may be events of this type with different customization settings, would you like to update them?',
+						'text' => 'Customization settings for this Event Type have changed, would you like to update all existing events of this type to match the current defaults?',
 						'isAdminFacing' => true,
 					]),
 					'modalButtons' => "<button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(true)'>Yes</button><button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(false)'>No</button>",
