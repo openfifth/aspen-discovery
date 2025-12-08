@@ -3862,7 +3862,18 @@ class User extends DataObject {
 		return $overDriveDriver->getOptions($this);
 	}
 
-	function completeFinePayment(UserPayment $payment) {
+	function completeFinePayment(UserPayment $payment): array {
+		if (
+			$payment->completed ||
+			$payment->cancelled ||
+			$payment->error
+		){
+			return [
+				'success' => false,
+				'message' => 'This payment has already been processed',
+			];
+		}
+
 		$result = $this->getCatalogDriver()->completeFinePayment($this, $payment);
 		if ($result['success']) {
 			$payment->completed = 1;
