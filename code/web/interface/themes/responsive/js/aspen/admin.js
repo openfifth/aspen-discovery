@@ -2019,11 +2019,11 @@ AspenDiscovery.Admin = (function () {
 			const $autoRotate = $('#autoRotate');
 
 			if (displayStyle === 'digital_signage') {
-                // noinspection JSUnresolvedReference
-                $autoRotate.prop('checked', true).prop('disabled', true);
+				// noinspection JSUnresolvedReference
+				$autoRotate.prop('checked', true).prop('disabled', true);
 			} else {
-                // noinspection JSUnresolvedReference
-                $autoRotate.prop('disabled', false);
+				// noinspection JSUnresolvedReference
+				$autoRotate.prop('disabled', false);
 			}
 
 			const preset = $('#aspectRatioPresetSelect').val();

@@ -7266,11 +7266,11 @@ AspenDiscovery.Admin = (function () {
 			const $autoRotate = $('#autoRotate');
 
 			if (displayStyle === 'digital_signage') {
-                // noinspection JSUnresolvedReference
-                $autoRotate.prop('checked', true).prop('disabled', true);
+				// noinspection JSUnresolvedReference
+				$autoRotate.prop('checked', true).prop('disabled', true);
 			} else {
-                // noinspection JSUnresolvedReference
-                $autoRotate.prop('disabled', false);
+				// noinspection JSUnresolvedReference
+				$autoRotate.prop('disabled', false);
 			}
 
 			const preset = $('#aspectRatioPresetSelect').val();
@@ -10838,12 +10838,12 @@ AspenDiscovery.HeroSlider = (function(){
 
 			// Accessibility: Keep off-screen slides out of tab order.
 			swiper.on('slideChangeTransitionEnd', function() {
-                // noinspection JSUnresolvedReference
-                $(".hero-slider .swiper-slide:not(.swiper-slide-visible) a, .hero-slider .swiper-slide:not(.swiper-slide-visible) img")
-                    .prop("tabindex", "-1");
-                // noinspection JSUnresolvedReference
-                $(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img")
-                    .removeAttr("tabindex");
+				// noinspection JSUnresolvedReference
+				$(".hero-slider .swiper-slide:not(.swiper-slide-visible) a, .hero-slider .swiper-slide:not(.swiper-slide-visible) img")
+				    .prop("tabindex", "-1");
+				// noinspection JSUnresolvedReference
+				$(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img")
+				    .removeAttr("tabindex");
 			});
 
 			// Pause/play button for auto-rotation.
