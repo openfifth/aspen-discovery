@@ -3182,7 +3182,7 @@ class Library extends DataObject {
 					'showPaymentHistory' => [
 						'property' => 'showPaymentHistory',
 						'type' => 'checkbox',
-						'label' => 'Show Payment History for fines paid in Aspen',
+						'label' => 'Show Payment History for Fines Paid in Aspen',
 						'default' => 0,
 						'hideInLists' => true,
 					],

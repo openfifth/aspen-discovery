@@ -25,6 +25,7 @@ class UserPayment extends DataObject {
 	public $deluxeSecurityId;
 	public $heyCentricPaymentReferenceNumber;
 	public $requestingUrl;
+	public $stripeReceiptUrl;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -149,6 +150,13 @@ class UserPayment extends DataObject {
 				'type' => 'url',
 				'label' => 'Requesting Url',
 				'description' => 'Where the payment was requested from',
+				'readOnly' => true,
+			],
+			'stripeReceiptUrl' => [
+				'property' => 'stripeReceiptUrl',
+				'type' => 'url',
+				'label' => 'Stripe Receipt URL',
+				'description' => 'The URL to the Stripe payment receipt.',
 				'readOnly' => true,
 			]
 		];

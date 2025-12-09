@@ -148,7 +148,7 @@ class StripeSetting extends DataObject {
 		}
 	}
 
-	private function createPaymentIntent($paymentAmount, $paymentMethodId) {
+	private function createPaymentIntent($paymentAmount, $paymentMethodId, $payment, $transactionType) {
 		$baseUrl = 'https://api.stripe.com';
 		require_once ROOT_DIR . '/sys/CurlWrapper.php';
 		$paymentIntentSetup = new CurlWrapper();
@@ -158,14 +158,56 @@ class StripeSetting extends DataObject {
 			'Accept: application/json',
 		], false);
 
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		require_once ROOT_DIR . '/sys/SystemVariables.php';
+		$systemVariables = SystemVariables::getSystemVariables();
+		$currencyCode = 'USD';
+		$currencySymbol = '$';
+		if (!empty($systemVariables) && !empty($systemVariables->currencyCode)) {
+			$currencyCode = $systemVariables->currencyCode;
+			$currencySymbol = $systemVariables->getCurrencySymbol();
+		}
+		$stripeCurrency = strtolower($currencyCode);
+
+		$user = new User();
+		$user->id = $payment->userId;
+		$user->find(true);
+
+		$amountDisplay = trim(($currencySymbol) . number_format($payment->totalPaid, 2) . ' ' . $currencyCode);
+		$description = ucfirst($transactionType);
+		if (!empty($payment->finesPaid)) {
+			$finesArray = explode(',', $payment->finesPaid);
+			$fineCount = count($finesArray);
+			$description .= ' - ' . $fineCount . ' fine(s) - Total: ' . $amountDisplay;
+		} else {
+			$description .= ' - Total: ' . $amountDisplay;
+		}
+
+		$metadata = [
+			'Transaction Type' => ucfirst($transactionType),
+		];
+		if (!empty($payment->finesPaid)) {
+			$finesArray = explode(',', $payment->finesPaid);
+			$metadata['Fines Paid Count'] = (string)count($finesArray);
+			$metadata['Fines Paid IDs'] = $payment->finesPaid;
+		}
+		if (!empty($user->unique_ils_id)) {
+			$metadata['Patron ILS ID'] = $user->unique_ils_id;
+		}
+		if (!empty($user->ils_barcode)) {
+			$metadata['Patron Barcode'] = $user->ils_barcode;
+		}
+
 		$postParams = [
 			'amount' => $paymentAmount,
-			'currency' => 'usd',
+			'currency' => $stripeCurrency,
 			'automatic_payment_methods' => [
 				'enabled' => 'true',
 				'allow_redirects' => 'never',
 			],
 			'payment_method' => $paymentMethodId,
+			'description' => $description,
+			'metadata' => $metadata,
 		];
 
 		$url = $baseUrl . '/v1/payment_intents';
@@ -186,7 +228,7 @@ class StripeSetting extends DataObject {
 		$paymentAmount = $paymentAmount * 100;
 		$paymentAmount = (int)$paymentAmount;
 
-		$paymentIntent = $this->createPaymentIntent($paymentAmount, $paymentMethodId);
+		$paymentIntent = $this->createPaymentIntent($paymentAmount, $paymentMethodId, $payment, $transactionType);
 		$paymentIntentId = $paymentIntent['id'];
 
 		$paymentRequest = new CurlWrapper();
@@ -213,16 +255,44 @@ class StripeSetting extends DataObject {
 				$payment->orderId = $paymentResponse['id'];
 				$payment->totalPaid = number_format($totalPaid / 100, 2, '.', '');
 
+				// Extract receipt URL from the charge.
+				// PaymentIntent has a latest_charge field that contains the receipt_url.
+				if (!empty($paymentResponse['latest_charge'])) {
+					$chargeId = $paymentResponse['latest_charge'];
+					$baseUrl = 'https://api.stripe.com';
+					$chargeUrl = $baseUrl . '/v1/charges/' . $chargeId;
+
+					require_once ROOT_DIR . '/sys/CurlWrapper.php';
+					$chargeRequest = new CurlWrapper();
+					$chargeRequest->addCustomHeaders([
+						'Authorization: Bearer ' . $this->stripeSecretKey,
+						'Accept: application/json',
+					], false);
+
+					$chargeResponse = $chargeRequest->curlGetPage($chargeUrl);
+
+					if ($chargeRequest->getResponseCode() == 200) {
+						$chargeData = json_decode($chargeResponse, true);
+						if (!empty($chargeData['receipt_url'])) {
+							$payment->stripeReceiptUrl = $chargeData['receipt_url'];
+						}
+					}
+				}
+
 				if ($transactionType == 'donation'){
 					$payment->message .= "Donation sent, TransactionId = $payment->transactionId, Net Amount = $payment->totalPaid. ";
 					$payment->update();
-					return [
+					$result = [
 						'success' => true,
 						'message' => translate([
 							'text' => 'Your donation has been sent. Thank you! ',
 							'isPublicFacing' => true,
 						]),
 					];
+					if (!empty($payment->stripeReceiptUrl)) {
+						$result['receiptUrl'] = $payment->stripeReceiptUrl;
+					}
+					return $result;
 				} else {
 					$user = new User();
 					$user->id = $payment->userId;
@@ -231,13 +301,17 @@ class StripeSetting extends DataObject {
 						if ($finePaymentCompleted['success']) {
 							$payment->message .= "Payment completed, TransactionId = $payment->transactionId, Net Amount = $payment->totalPaid. ";
 							$payment->update();
-							return [
+							$result = [
 								'success' => true,
 								'message' => translate([
 									'text' => 'Your payment has been completed. ',
 									'isPublicFacing' => true,
 								]),
 							];
+							if (!empty($payment->stripeReceiptUrl)) {
+								$result['receiptUrl'] = $payment->stripeReceiptUrl;
+							}
+							return $result;
 						} else {
 							$payment->error = true;
 							$payment->message .= $finePaymentCompleted['message'];

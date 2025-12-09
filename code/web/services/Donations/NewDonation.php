@@ -5,7 +5,7 @@ require_once ROOT_DIR . "/sys/ECommerce/DonationsSetting.php";
 
 class Donations_NewDonation extends Action {
 
-	function launch() {
+	function launch(): void {
 		global $interface;
 		global $library;
 
@@ -137,7 +137,6 @@ class Donations_NewDonation extends Action {
 			// Stripe
 			if ($donationPaymentProcessor['paymentType'] == 13) {
 				$interface->assign('stripePublicKey', $donationPaymentProcessor['stripePublicKey']);
-				$interface->assign('stripeSecretKey', $donationPaymentProcessor['stripeSecretKey']);
 			}
 
 			// Get the fields to display for the form

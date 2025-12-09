@@ -22,6 +22,13 @@
 		{/if}
 
 		{strip}
+			{assign var="hasStripePayments" value=false}
+			{foreach from=$paymentHistory item=$payment}
+				{if $payment.paymentType == 'stripe'}
+					{assign var="hasStripePayments" value=true}
+				{/if}
+			{/foreach}
+
 			<table id="paymentHistory" class="table table-striped">
 				<thead>
 					<tr>
@@ -29,6 +36,9 @@
 						<th>{translate text="Type" isPublicFacing=true}</th>
 						<th>{translate text="Amount" isPublicFacing=true}</th>
 						<th>{translate text="Completed?" isPublicFacing=true}</th>
+						{if $hasStripePayments}
+							<th>{translate text="Receipt" isPublicFacing=true}</th>
+						{/if}
 						<th></th>
 					</tr>
 				</thead>
@@ -39,6 +49,15 @@
 							<td>{$payment.type}</td>
 							<td>{$payment.totalPaid}</td>
 							<td>{$payment.completed}</td>
+							{if $hasStripePayments}
+								<td>
+									{if !empty($payment.stripeReceiptUrl)}
+										<a href="{$payment.stripeReceiptUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-default" title="{translate text='View Stripe Receipt' isPublicFacing=true inAttribute=true}">
+											<i class="fas fa-receipt"></i> {translate text="View" isPublicFacing=true}
+										</a>
+									{/if}
+								</td>
+							{/if}
 							<td><a href="/MyAccount/PaymentDetails?paymentId={$payment.id}" class="btn btn-sm btn-info">{translate text="More details" isPublicFacing=true}</a></td>
 						</tr>
 					{/foreach}
