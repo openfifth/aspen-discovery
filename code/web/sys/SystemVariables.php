@@ -42,6 +42,7 @@ class SystemVariables extends DataObject {
 	public $trackIpAddresses;
 	public $disableIpSpammyControl;
 	public $monitorAntivirus;
+	public $monitorWaitTime;
 	public $useOriginalCoverUrls;
 	public $lidaGitHubRepository;
 	/** @noinspection PhpUnused */
@@ -395,6 +396,13 @@ class SystemVariables extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Monitor Antivirus',
 				'description' => 'Determine whether or not Antivirus logs should be monitored',
+				'default' => true,
+			],
+			'monitorWaitTime' => [
+				'property' => 'monitorWaitTime',
+				'type' => 'checkbox',
+				'label' => 'Monitor Wait Time',
+				'description' => 'Determine whether or not Wait Time should be monitored',
 				'default' => true,
 			],
 			'useOriginalCoverUrls' => [
