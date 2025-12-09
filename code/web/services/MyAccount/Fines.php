@@ -5,10 +5,10 @@ use Random\RandomException;
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 
 class MyAccount_Fines extends MyAccount {
-    /**
-     * @throws RandomException
-     */
-    function launch() : void {
+	/**
+	* @throws RandomException
+	*/
+	function launch() : void {
 		global $interface;
 		global $configArray;
 
