@@ -32,11 +32,11 @@ class MessageBeeSetting extends DataObject {
 			],
 			'customerToken' => [
 				'property' => 'customerToken',
-				'type' => 'text',
+				'type' => 'storedPassword',
 				'label' => 'Customer Token',
 				'description' => 'The Customer Token for Registration',
 				'maxLength' => 50,
-				'required' => true
+				'hideInLists' => true
 			],
 			'libraries' => [
 				'property' => 'libraries',
@@ -59,7 +59,7 @@ class MessageBeeSetting extends DataObject {
 			if (!isset($this->_libraries) && $this->id) {
 				$this->_libraries = [];
 				$obj = new Library();
-				$obj->novelistSettingId = $this->id;
+				$obj->messageBeeSettingId = $this->id;
 				$obj->find();
 				while ($obj->fetch()) {
 					$this->_libraries[$obj->libraryId] = $obj->libraryId;
