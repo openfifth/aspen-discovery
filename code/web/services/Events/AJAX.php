@@ -466,15 +466,17 @@ class Events_AJAX extends JSON_Action {
 		$result = [
 			'success' => true,
 		];
+		$doFullSave = isset($_REQUEST['doFullSave']) && $_REQUEST['doFullSave'] == 'true';
 		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
 		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
 		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
 		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
 
 		//If everything is customizable no need to update events with default data for the event type
-		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+		$numCustomizableFields = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
 
-		if ($_REQUEST['doFullSave'] == "true" && ($booleanSum != 4)) {
+		/** @noinspection PhpConditionAlreadyCheckedInspection */
+		if ($doFullSave && ($numCustomizableFields !== 4)) {
 			//Update all Events of this Event Type
 			require_once ROOT_DIR . '/sys/Events/Event.php';
 			$eventOfType = new Event();
