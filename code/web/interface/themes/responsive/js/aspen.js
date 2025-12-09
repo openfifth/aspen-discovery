@@ -10631,35 +10631,39 @@ AspenDiscovery.Events = (function(){
 			})
 		},
 		saveEventsForType: function(doFullSave){
-			var titleCustomizable = $("#titleCustomizable").is(':checked');
-			var descriptionCustomizable = $("#descriptionCustomizable").is(':checked');
-			var coverCustomizable = $("#coverCustomizable").is(':checked');
-			var eventLengthCustomizable = $("#lengthCustomizable").is(':checked');
+			if (doFullSave) {
+				var titleCustomizable = $("#titleCustomizable").is(':checked');
+				var descriptionCustomizable = $("#descriptionCustomizable").is(':checked');
+				var coverCustomizable = $("#coverCustomizable").is(':checked');
+				var eventLengthCustomizable = $("#lengthCustomizable").is(':checked');
 
-			var eventLengthHoursToMinutes = $("#eventLength_hours").val() * 60;
-			var eventLengthMinutes = $("#eventLength_minutes").val();
-			var eventLength = parseInt(eventLengthHoursToMinutes) + parseInt(eventLengthMinutes);
+				var eventLengthHoursToMinutes = $("#eventLength_hours").val() * 60;
+				var eventLengthMinutes = $("#eventLength_minutes").val();
+				var eventLength = parseInt(eventLengthHoursToMinutes) + parseInt(eventLengthMinutes);
 
-			var params = {
-				objectId: $("#id").val(),
-				title: $("#title").val(),
-				description: $("#description").val(),
-				cover: $("#importFile-label-cover").val(),
-				eventLength: eventLength,
-				titleCustomizable: titleCustomizable,
-				descriptionCustomizable: descriptionCustomizable,
-				coverCustomizable: coverCustomizable,
-				eventLengthCustomizable: eventLengthCustomizable,
-				doFullSave: doFullSave
-			};
-			var url = Globals.path + '/Events/AJAX?method=saveEventsForType';
-			$.getJSON(url, params,function(data){
-				if (data.success === true){
-					AspenDiscovery.Events.saveEventsObjCallback();
-				}else{
-					AspenDiscovery.showMessage('Sorry', data.message);
-				}
-			});
+				var params = {
+					objectId: $("#id").val(),
+					title: $("#title").val(),
+					description: $("#description").val(),
+					cover: $("#importFile-label-cover").val(),
+					eventLength: eventLength,
+					titleCustomizable: titleCustomizable,
+					descriptionCustomizable: descriptionCustomizable,
+					coverCustomizable: coverCustomizable,
+					eventLengthCustomizable: eventLengthCustomizable,
+					doFullSave: doFullSave
+				};
+				var url = Globals.path + '/Events/AJAX?method=saveEventsForType';
+				$.getJSON(url, params, function (data) {
+					if (data.success === true) {
+						AspenDiscovery.Events.saveEventsObjCallback();
+					} else {
+						AspenDiscovery.showMessage('Sorry', data.message);
+					}
+				});
+			}else{
+				AspenDiscovery.Events.saveEventsObjCallback();
+			}
 		}
 	};
 }(AspenDiscovery.Events || {}));

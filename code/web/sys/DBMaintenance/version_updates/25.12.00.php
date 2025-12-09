@@ -108,7 +108,15 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsDomainName',
 				"UPDATE google_api_settings SET googleAnalyticsVersion='v4' WHERE true"
 			],
-		],
+		], //remove_google_analytics_3
+		'monitorWaitTime' => [
+			'title' => 'Add an option to allow Wait Time to not be monitored',
+			'description' => 'Add an option to allow Wait Time to not be monitored',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN monitorWaitTime TINYINT(1) DEFAULT 1'
+			]
+		], //monitorWaitTime
 
 		//kirstien - Grove
 
