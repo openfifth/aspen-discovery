@@ -6344,6 +6344,7 @@ class User extends DataObject {
 				$userYearInReview = new UserYearInReview();
 				$userYearInReview->userId = $this->id;
 				$userYearInReview->wrappedActive = true;
+				$userYearInReview->orderBy('id DESC');
 				if ($userYearInReview->find(true)) {
 					$this->_yearInReviewResults = $userYearInReview;
 					$yearInReviewSetting = new YearInReviewSetting();
