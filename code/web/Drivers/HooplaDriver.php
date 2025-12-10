@@ -837,7 +837,7 @@ class HooplaDriver extends AbstractEContentDriver {
 		];
 		$patronHomeLibrary = $patron->getHomeLibrary();
 		$primaryHooplaSetting = $patronHomeLibrary->getPrimaryHooplaSetting();
-		if ($this->isHooplaVersion2() && !$primaryHooplaSetting != null) {
+		if ($this->isHooplaVersion2() && $primaryHooplaSetting != null) {
 			$flexEnabled = $primaryHooplaSetting->hooplaFlexEnabled;
 		} else {
 			$flexEnabled = $this ->hooplaFlexEnabled;
