@@ -365,6 +365,7 @@ class YearInReviewSetting extends DataObject {
 
 			$white = imagecolorallocate($slideCanvas, 255, 255, 255);
 			$black = imagecolorallocate($slideCanvas, 0, 0, 0);
+			$green = imagecolorallocate($slideCanvas, 53, 114, 72); // #357248
 
 			//Add overlay text to the image
 			foreach ($slideInfo->overlay_text as $overlayText) {
@@ -396,6 +397,8 @@ class YearInReviewSetting extends DataObject {
 
 				if ($overlayText->color == 'white') {
 					$color = $white;
+				}elseif ($overlayText->color == 'green') {
+					$color = $green;	
 				}else{
 					$color = $black;
 				}
