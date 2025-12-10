@@ -1,6 +1,7 @@
 {strip}
 	<div id="main-content" class="col-sm-12">
 		<h1>{translate text=$graphTitle isAdminFacing=true}</h1>
+		{include file="Admin/usage-graph-data-filters.tpl"}
 		<div class="chart-container" style="position: relative; height:50%; width:100%">
 			<canvas id="chart"></canvas>
 		</div>
