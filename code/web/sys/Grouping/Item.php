@@ -264,6 +264,11 @@ class Grouping_Item {
 			$location = new Location();
 			Grouping_Item::$locationCodeToDisplayName = $location->fetchAll('code', 'displayName', true);
 		}
-		return Grouping_Item::$locationCodeToDisplayName[strtolower($this->locationCode)];
+		$lowerLocationCode = strtolower($this->locationCode);
+		if (array_key_exists($lowerLocationCode, Grouping_Item::$locationCodeToDisplayName)) {
+			return Grouping_Item::$locationCodeToDisplayName[$lowerLocationCode];
+		}else{
+			return $this->locationCode;
+		}
 	}
 }
