@@ -245,6 +245,7 @@ class Grouping_Item {
 			'volumeId' => $this->volumeId,
 			'isEContent' => $this->isEContent,
 			'locationCode' => $this->locationCode,
+			'locationName' => $this->getLocationName(),
 			'subLocation' => $this->subLocation,
 			'itemId' => $this->itemId,
 			'variationId' => $this->variationId,
@@ -255,5 +256,14 @@ class Grouping_Item {
 
 	public function setRecord(Grouping_Record $record) : void {
 		$this->_record = $record;
+	}
+
+	private static ?array $locationCodeToDisplayName = null;
+	public function getLocationName() {
+		if (Grouping_Item::$locationCodeToDisplayName === null) {
+			$location = new Location();
+			Grouping_Item::$locationCodeToDisplayName = $location->fetchAll('code', 'displayName', true);
+		}
+		return Grouping_Item::$locationCodeToDisplayName[strtolower($this->locationCode)];
 	}
 }
