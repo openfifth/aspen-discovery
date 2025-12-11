@@ -1088,6 +1088,11 @@ class Evergreen extends AbstractIlsDriver {
 					$hasMoreHistory = false;
 					break;
 				}
+			} else {
+				global $logger;
+				$logger->log("Failed to authenticate patron when getting their Evergreen reading history for $patron->ils_barcode.", Logger::LOG_ERROR);
+				$hasMoreHistory = false;
+				break;
 			}
 		}
 
