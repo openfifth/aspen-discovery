@@ -2166,6 +2166,18 @@ class MyAccount_AJAX extends JSON_Action {
 			$reactivateDateNotRequired = $user->reactivateDateNotRequired();
 			$interface->assign('reactivateDateNotRequired', $reactivateDateNotRequired);
 
+			// Fetch the hold's createDate to calculate maxDaysToFreeze from hold placement date (Koha only)
+			$accountProfile = $patronOwningHold->getAccountProfile();
+			if ($accountProfile != null && $accountProfile->ils == 'koha') {
+				require_once ROOT_DIR . '/sys/User/Hold.php';
+				$hold = new Hold();
+				$hold->cancelId = $id;
+				$hold->userId = $patronOwningHold->id;
+				if ($hold->find(true) && !empty($hold->createDate)) {
+					$interface->assign('holdCreateDate', $hold->createDate);
+				}
+			}
+
 			$title = translate([
 				'text' => 'Freeze Hold',
 				'isPublicFacing' => true,

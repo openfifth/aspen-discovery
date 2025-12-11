@@ -5,7 +5,15 @@
 		<input type="hidden" name="recordId" value="{$recordId}" id="recordId">
 		<div class="form-group">
 			<label for="reactivationDate">{translate text="Select the date when you want the hold thawed." isPublicFacing=true}</label>
-			<input type="date" name="reactivationDate" id="reactivationDate" min="{$smarty.now|date_format:"%Y-%m-%d"}" {if $allowMaxDaysToFreeze > -1}max="{$maxDaysToFreeze|date_format:"%Y-%m-%d"}"{/if} class="form-control{if empty($reactivateDateNotRequired)} required{/if}">
+			{* Calculate max freeze date from hold placement date if available, otherwise use default *}
+			{if $allowMaxDaysToFreeze > -1}
+				{if !empty($holdCreateDate)}
+					{assign var="maxFreezeTimestamp" value=$holdCreateDate+($allowMaxDaysToFreeze*86400)}
+				{else}
+					{assign var="maxFreezeTimestamp" value=$maxDaysToFreeze}
+				{/if}
+			{/if}
+			<input type="date" name="reactivationDate" id="reactivationDate" min="{$smarty.now|date_format:"%Y-%m-%d"}" {if $allowMaxDaysToFreeze > -1}max="{$maxFreezeTimestamp|date_format:"%Y-%m-%d"}"{/if} class="form-control{if empty($reactivateDateNotRequired)} required{/if}">
 		</div>
 		{if !empty($reactivateDateNotRequired)}
 			<p class="alert alert-info">
