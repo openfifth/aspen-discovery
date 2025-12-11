@@ -39,6 +39,12 @@ if [ ! -f "$confSiteFile" ] ; then
 	fi
 fi
 
+# Sync environment variables to config files (runs every start)
+log "Syncing environment variables to config..."
+if ! php syncEnvToConfig.php ; then
+	log "WARNING: Environment sync failed, using existing config"
+fi
+
 # Initialize Aspen database
 log "Initializing database";
 if ! php initDatabase.php ; then
