@@ -97,6 +97,7 @@ class SearchAPI extends AbstractAPI {
 		$checks = [];
 		$serverStats = [];
 		$systemApi = new SystemAPI();
+		$systemVariables = SystemVariables::getSystemVariables();
 
 		//Check if solr is running by pinging it
 		/** @var SearchObject_AbstractGroupedWorkSearcher $solrSearcher */
@@ -265,21 +266,26 @@ class SearchAPI extends AbstractAPI {
 				$this->addCheck($checks, 'Load Average');
 			}
 
-			//Check wait time
-			$topInfo = shell_exec("top -n 1 -b | grep %Cpu");
-			if (preg_match('/(\d+\.\d+) wa,/', $topInfo, $matches)) {
-				$waitTime = $matches[1];
-				$this->addServerStat($serverStats, 'Wait Time', $waitTime);
-				if ($waitTime > 30) {
-					$this->addCheck($checks, 'Wait Time', self::STATUS_CRITICAL, "Wait time is over 30 $waitTime");
-				} else if ($waitTime > 15) {
-					$this->addCheck($checks, 'Wait Time', self::STATUS_WARN, "Wait time is over 15 $waitTime");
+			if ($systemVariables->monitorWaitTime) {
+				//Check wait time
+				$topInfo = shell_exec("top -n 1 -b | grep %Cpu");
+				if (preg_match('/(\d+\.\d+) wa,/', $topInfo, $matches)) {
+					$waitTime = $matches[1];
+					$this->addServerStat($serverStats, 'Wait Time', $waitTime);
+					if ($waitTime > 30) {
+						$this->addCheck($checks, 'Wait Time', self::STATUS_CRITICAL, "Wait time is over 30 $waitTime");
+					} else if ($waitTime > 15) {
+						$this->addCheck($checks, 'Wait Time', self::STATUS_WARN, "Wait time is over 15 $waitTime");
+					} else {
+						$this->addCheck($checks, 'Wait Time');
+					}
 				} else {
-					$this->addCheck($checks, 'Wait Time');
+					$this->addCheck($checks, 'Wait Time', self::STATUS_CRITICAL, "Wait time not found in $topInfo");
 				}
-			} else {
-				$this->addCheck($checks, 'Wait Time', self::STATUS_CRITICAL, "Wait time not found in $topInfo");
+			}else{
+				$this->addCheck($checks, 'Wait Time');
 			}
+
 		}
 
 		//Check nightly index
@@ -640,7 +646,6 @@ class SearchAPI extends AbstractAPI {
 		}
 
 		//Check antivirus & offline mode
-		$systemVariables = SystemVariables::getSystemVariables();
 		if (!empty($systemVariables)) {
 			if ($systemVariables->monitorAntivirus){
 				$antivirusLog = "/var/log/aspen-discovery/clam_av.log";

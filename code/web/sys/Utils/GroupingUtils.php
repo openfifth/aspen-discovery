@@ -97,15 +97,20 @@ function compareItemBasics($a, $b) :int  {
 	//Sort library and location information
 	$localComparison = $a['locationKey'] <=> $b['locationKey'];
 	if ($localComparison == 0) {
-		//Compare the priority of the shelf locations
-		$shelfLocationAPriority = getShelfLocationPriority($a['shelfLocation']);
-		$shelfLocationBPriority = getShelfLocationPriority($b['shelfLocation']);
-		$priorityComparison = $shelfLocationAPriority <=> $shelfLocationBPriority;
-		if ($priorityComparison == 0) {
-			//First sort by shelfLocation
-			return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
+		//Compare the location
+		$locationComparison = strnatcasecmp($a['locationName'], $b['locationName']);
+		if ($locationComparison == 0) {
+			//Compare the priority of the shelf locations
+			$shelfLocationAPriority = getShelfLocationPriority($a['shelfLocation']);
+			$shelfLocationBPriority = getShelfLocationPriority($b['shelfLocation']);
+			$priorityComparison = $shelfLocationAPriority <=> $shelfLocationBPriority;
+			if ($priorityComparison == 0) {
+				//First sort by shelfLocation
+				return strnatcasecmp($a['shelfLocation'], $b['shelfLocation']);
+			}
+			return $priorityComparison;
 		}
-		return $priorityComparison;
+		return $locationComparison;
 	}
 	return  $localComparison;
 }

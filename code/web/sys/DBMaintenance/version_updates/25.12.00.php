@@ -108,7 +108,55 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE google_api_settings DROP COLUMN googleAnalyticsDomainName',
 				"UPDATE google_api_settings SET googleAnalyticsVersion='v4' WHERE true"
 			],
-		],
+		], //remove_google_analytics_3
+		'monitorWaitTime' => [
+			'title' => 'Add an option to allow Wait Time to not be monitored',
+			'description' => 'Add an option to allow Wait Time to not be monitored',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN monitorWaitTime TINYINT(1) DEFAULT 1'
+			]
+		], //monitorWaitTime
+		'system_maintenance_permission' => [
+			'title' => 'Add System Maintenance Permission',
+			'description' => 'Add System Maintenance Permission',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('System Administration', 'Perform System Maintenance', '', 40, 'Allows users to perform system maintenance to keep Aspen running smoothly.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Perform System Maintenance'))",
+			]
+		], //system_maintenance_permission
+		'increase_background_process_notes_length' => [
+			'title' => 'Increase Background Process Notes Length',
+			'description' => 'Increase Background Process Notes Length',
+			'sql' => [
+				'ALTER TABLE background_process CHANGE COLUMN notes notes LONGTEXT'
+			]
+		], //increase_background_process_notes_length
+		'loral_settings' => [
+			'title' => 'Loral Integration',
+			'description' => 'Create Settings for Loral Integration',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS loral_settings (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					loralUrl varchar(255),
+					loralId varchar(10),
+					password varchar(50) NOT NULL,
+					enabled tinyint(1) DEFAULT 1
+				)',
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer Loral', '', 40, 'Allows users to administer Loral content Enrichment.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Loral'))",
+			]
+		], //loral_settings
+		'link_loral_and_libraries' => [
+			'title' => 'Link Loral and Libraries',
+			'description' => 'Link Loral and libraries so each library can have a different Loral subscription',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN loralSettingId INT DEFAULT -1",
+				"ALTER TABLE loral_settings ADD COLUMN name TINYTEXT default 'default' UNIQUE",
+			]
+		], //link_loral_and_libraries
 
 		//kirstien - Grove
 
@@ -167,7 +215,7 @@ function getUpdates25_12_00(): array {
 		], //list_format_filter_persistence
 		'library_user_defined_fields_table' => [
 			'title' => 'Library User Defined Fields Table',
-			'description' => 'Create table for library user defined fields.',
+			'description' => 'Create a table for library user defined fields.',
 			'sql' => [
 				"CREATE TABLE IF NOT EXISTS library_user_defined_field (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -267,7 +315,7 @@ function getUpdates25_12_00(): array {
 		// Imani -BWS
 		'externalRequestSettings' => [
 			'title' => 'Add External Request Settings',
-			'description' => 'Create table for External Request Settings',
+			'description' => 'Create a table for External Request Settings',
 			'sql' => [
 				'CREATE TABLE IF NOT EXISTS `external_request_settings` (
 				`id` int(11) NOT NULL AUTO_INCREMENT,
