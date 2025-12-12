@@ -23,7 +23,7 @@
 	{/if}
 	<div class="row">
 		<div class="col-xs-12">
-			<div class="alert alert-info">{translate text="Enter the barcode for the user whose reading history you want to consolidate. To consolidate for all patrons with a reading history, enter \"all\". Consolidation will merge any consecutive checkouts of the same title as well as checkouts that overlap or ar duplicated." isAdminFacing=true}</div>
+			<div class="alert alert-info">{translate text="Enter the barcode for the user whose reading history you want to consolidate. To consolidate for all patrons with a reading history, enter \"all\". Consolidation will merge any consecutive checkouts of the same title as well as checkouts that overlap or are duplicated." isAdminFacing=true}</div>
 		</div>
 	</div>
 	<form name="consolidateReadingHistory" method="post" enctype="multipart/form-data" class="form-horizontal">
