@@ -4189,8 +4189,8 @@ AspenDiscovery.Account = (function () {
 		},
 
 		completeStripeOrder: function (patronId, transactionType, paymentId, paymentMethodId) {
-			var url = Globals.path + "/MyAccount/AJAX";
-			var params = {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
 				method: "completeStripeOrder",
 				paymentId: paymentId,
 				paymentMethodId: paymentMethodId,
@@ -4200,26 +4200,45 @@ AspenDiscovery.Account = (function () {
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
+					const cardButton = document.getElementById('process-stripe-payment');
+					if (cardButton) {
+						cardButton.disabled = true;
+						cardButton.innerHTML = "Payment Submitted";
+					}
+					// noinspection JSUnresolvedReference
 					if (data.isDonation) {
 						window.location.href = Globals.path + '/Donations/DonationCompleted?id=' + data.paymentId;
 					} else {
-						AspenDiscovery.showMessage('Thank you', data.message, false, true);
+						let buttons = '';
+						// noinspection JSUnresolvedReference
+						if (data.receiptUrl) {
+							const safeReceiptUrl = encodeURI(data.receiptUrl);
+							buttons = '<a href="' + safeReceiptUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">' +
+								'<i class="fas fa-receipt"></i> View Receipt</a>';
+						}
+						AspenDiscovery.showMessageWithButtons('Thank You', data.message, buttons, true);
 					}
 				} else {
+					// noinspection JSUnresolvedReference
 					if (data.isDonation) {
 						window.location.href = Globals.path + '/Donations/DonationCancelled?id=' + data.paymentId;
 					} else {
-						var message;
+						let message;
 						if (data.message) {
 							message = data.message;
 						} else {
 							message = 'Unable to process your payment, please visit the library with your receipt';
 						}
 						AspenDiscovery.showMessage('Error', message, false);
+						const cardButton = document.getElementById('process-stripe-payment');
+						if (cardButton) {
+							cardButton.disabled = false;
+							cardButton.innerHTML = "{translate text = 'Submit Payment' isPublicFacing=true}";
+						}
 					}
 				}
 			}).fail(function () {
-				var cardButton = document.getElementById('process-stripe-payment');
+				const cardButton = document.getElementById('process-stripe-payment');
 				AspenDiscovery.ajaxFail();
 				cardButton.disabled = false;
 			})

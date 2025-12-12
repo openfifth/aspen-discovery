@@ -27,22 +27,23 @@
 				cardButton.disabled = true;
 				cardButton.innerHTML = "Submitting Payment...";
 
-				var paymentId = AspenDiscovery.Account.createStripeOrder('#donation{/literal}{$userId}{literal}', 'donation');
+				const paymentId = AspenDiscovery.Account.createStripeOrder('#donation{/literal}{$userId}{literal}', 'donation');
 
 				stripe.createPaymentMethod({
 					type: 'card',
 					card: card,
 				})
-						.then(function(result) {
-							// Handle result.error or result.paymentMethod
-							if (result.error){
-								console.log(result.error.message);
-								cardButton.disabled = false;
-								cardButton.innerHTML = "{/literal}{translate text = 'Submit Payment' isPublicFacing=true}{literal}";
-							} else {
-								AspenDiscovery.Account.completeStripeOrder('{/literal}{$userId}{literal}', 'donation', paymentId, result.paymentMethod.id);
-							}
-						});
+				.then(function(result) {
+					// Handle result.error or result.paymentMethod
+					if (result.error){
+						console.log(result.error.message);
+						cardButton.disabled = false;
+						cardButton.innerHTML = "{/literal}{translate text = 'Submit Payment' isPublicFacing=true}{literal}";
+					} else {
+						cardButton.innerHTML = "Processing...";
+						AspenDiscovery.Account.completeStripeOrder('{/literal}{$userId}{literal}', 'donation', paymentId, result.paymentMethod.id);
+					}
+				});
 			});
 		</script>
 		{/literal}

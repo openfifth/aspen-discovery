@@ -29,7 +29,7 @@
 					cardButton.disabled = true;
 					cardButton.innerHTML = "Submitting Payment...";
 
-					var paymentId = AspenDiscovery.Account.createStripeOrder('#fines{/literal}{$userId}{literal}', 'fine');
+					const paymentId = AspenDiscovery.Account.createStripeOrder('#fines{/literal}{$userId}{literal}', 'fine');
 					if (paymentId === false) {
 						cardButton.disabled = false;
 						cardButton.innerHTML = "{/literal}{if !empty($payFinesLinkText)}{$payFinesLinkText}{else}{translate text = 'Submit Payment' isPublicFacing=true}{/if}{literal}";
@@ -39,17 +39,17 @@
 						type: 'card',
 						card: card,
 					})
-							.then(function(result) {
-								// Handle result.error or result.paymentMethod
-								if (result.error){
-									console.log(result.error.message);
-									cardButton.disabled = false;
-									cardButton.innerHTML = "{/literal}{if !empty($payFinesLinkText)}{$payFinesLinkText}{else}{translate text = 'Submit Payment' isPublicFacing=true}{/if}{literal}";
-								} else {
-									AspenDiscovery.Account.completeStripeOrder({/literal}{$userId}{literal}, 'fine', paymentId, result.paymentMethod.id);
-									cardButton.innerHTML = "{/literal}{if !empty($payFinesLinkText)}{$payFinesLinkText}{else}{translate text = 'Submit Payment' isPublicFacing=true}{/if}{literal}";
-								}
-							});
+					.then(function(result) {
+						// Handle result.error or result.paymentMethod
+						if (result.error){
+							console.log(result.error.message);
+							cardButton.disabled = false;
+							cardButton.innerHTML = "{/literal}{if !empty($payFinesLinkText)}{$payFinesLinkText}{else}{translate text = 'Submit Payment' isPublicFacing=true}{/if}{literal}";
+						} else {
+							cardButton.innerHTML = "Processing...";
+							AspenDiscovery.Account.completeStripeOrder({/literal}{$userId}{literal}, 'fine', paymentId, result.paymentMethod.id);
+						}
+					});
 				});
 			</script>
 		{/literal}
