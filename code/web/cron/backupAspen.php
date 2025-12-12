@@ -91,7 +91,7 @@ foreach ($allTables as $table) {
 	$cronLogEntry->notes .= date('g:i:s A') . " Exporting $table.<br/>";
 	$cronLogEntry->update();
 	if ($exportData) {
-		$dumpCommand = "$dumpScript -u$dbUser -p$dbPassword -h$dbHost -P$dbPort  --single-transaction --quick $dbName $table $compressCommand > $todaysBackupDir/$exportFile";
+		$dumpCommand = "$dumpScript -u$dbUser -p$dbPassword -h$dbHost -P$dbPort --opt --hex-blob --no-autocommit --extended-insert --net-buffer-length=1M --max-allowed-packet=16M --single-transaction --quick $dbName $table $compressCommand > $todaysBackupDir/$exportFile";
 	}else{
 		$dumpCommand = "$dumpScript -u$dbUser -p$dbPassword -h$dbHost -P$dbPort --no-data $dbName $table $compressCommand > $todaysBackupDir/$exportFile";
 	}
