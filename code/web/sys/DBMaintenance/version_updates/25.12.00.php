@@ -133,6 +133,30 @@ function getUpdates25_12_00(): array {
 				'ALTER TABLE background_process CHANGE COLUMN notes notes LONGTEXT'
 			]
 		], //increase_background_process_notes_length
+		'loral_settings' => [
+			'title' => 'Loral Integration',
+			'description' => 'Create Settings for Loral Integration',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS loral_settings (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					loralUrl varchar(255),
+					loralId varchar(10),
+					password varchar(50) NOT NULL,
+					enabled tinyint(1) DEFAULT 1
+				)',
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer Loral', '', 40, 'Allows users to administer Loral content Enrichment.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Loral'))",
+			]
+		], //loral_settings
+		'link_loral_and_libraries' => [
+			'title' => 'Link Loral and Libraries',
+			'description' => 'Link Loral and libraries so each library can have a different Loral subscription',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN loralSettingId INT DEFAULT -1",
+				"ALTER TABLE loral_settings ADD COLUMN name TINYTEXT default 'default' UNIQUE",
+			]
+		], //link_loral_and_libraries
 
 		//kirstien - Grove
 
