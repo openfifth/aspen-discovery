@@ -3950,7 +3950,18 @@ class User extends DataObject {
 		return $overDriveDriver->getOptions($this);
 	}
 
-	function completeFinePayment(UserPayment $payment) {
+	function completeFinePayment(UserPayment $payment): array {
+		if (
+			$payment->completed ||
+			$payment->cancelled ||
+			$payment->error
+		){
+			return [
+				'success' => false,
+				'message' => 'This payment has already been processed',
+			];
+		}
+
 		$result = $this->getCatalogDriver()->completeFinePayment($this, $payment);
 		if ($result['success']) {
 			$payment->completed = 1;
@@ -4280,6 +4291,7 @@ class User extends DataObject {
 		$sections['system_admin']->addAction(new AdminAction('System Variables', 'Settings for Aspen Discovery that apply to all libraries on this installation.', '/Admin/SystemVariables'), 'Administer System Variables');
 		$sections['system_admin']->addAction(new AdminAction('Object Restorations', 'Restore soft-deleted objects from the recycle bin.', '/Admin/ObjectRestorations'), 'Administer Object Restoration');
 		$sections['system_admin']->addAction(new AdminAction('Manually Run Cron', 'Manually Start Cron Processes.', '/Admin/CronRunner'), 'Manually Run Cron Processes');
+		$sections['system_admin']->addAction(new AdminAction('Consolidate Reading History', 'Consolidate Reading History Entries to minimize database size.', '/Admin/ConsolidateReadingHistory'), 'Perform System Maintenance');
 
 		$sections['system_reports'] = new AdminSection('System Reports');
 		$sections['system_reports']->addAction(new AdminAction('Site Status', 'View Status of Aspen Discovery.', '/Admin/SiteStatus'), 'View System Reports');
@@ -4520,6 +4532,7 @@ class User extends DataObject {
 		$sections['third_party_enrichment']->addAction(new AdminAction('DP.LA Settings', 'Define settings for DP.LA integration.', '/Enrichment/DPLASettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('Google API Settings', 'Define settings for integrating Google APIs within Aspen Discovery.', '/Enrichment/GoogleApiSettings'), 'Administer Third Party Enrichment API Keys');
 		$sections['third_party_enrichment']->addAction(new AdminAction('LibKey Settings', 'Administer LibKey Settings', '/Admin/LibKeySettings'), 'Administer LibKey Settings');
+		$sections['third_party_enrichment']->addAction(new AdminAction('Loral Settings', 'Define settings for Loral integration.', '/Enrichment/LoralSettings'), 'Administer Loral');
 		$sections['third_party_enrichment']->addAction(new AdminAction('MessageBee Settings', 'Define settings for integrating MessageBee Card Registration within Aspen Discovery.', '/Enrichment/MessageBeeSettings'), 'Administer MessageBee Keys');
 		$nytSettingsAction = new AdminAction('New York Times Settings', 'Define settings for integrating New York Times Content within Aspen Discovery.', '/Enrichment/NewYorkTimesSettings');
 		$nytListsAction = new AdminAction('New York Times Lists', 'View Lists from the New York Times and manually refresh content.', '/Enrichment/NYTLists');
@@ -6333,6 +6346,7 @@ class User extends DataObject {
 				$userYearInReview = new UserYearInReview();
 				$userYearInReview->userId = $this->id;
 				$userYearInReview->wrappedActive = true;
+				$userYearInReview->orderBy('id DESC');
 				if ($userYearInReview->find(true)) {
 					$this->_yearInReviewResults = $userYearInReview;
 					$yearInReviewSetting = new YearInReviewSetting();
