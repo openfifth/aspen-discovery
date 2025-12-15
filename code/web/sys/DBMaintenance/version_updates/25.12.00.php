@@ -157,6 +157,13 @@ function getUpdates25_12_00(): array {
 				"ALTER TABLE loral_settings ADD COLUMN name TINYTEXT default 'default' UNIQUE",
 			]
 		], //link_loral_and_libraries
+		'encrypt_loral_password' => [
+			'title' => 'Encrypt Loral Password',
+			'description' => 'Extend password field to store Loral Password encrypted',
+			'sql' => [
+				'ALTER TABLE loral_settings CHANGE COLUMN password password VARCHAR(250)'
+			]
+		], //encrypt_loral_password
 
 		//kirstien - Grove
 
