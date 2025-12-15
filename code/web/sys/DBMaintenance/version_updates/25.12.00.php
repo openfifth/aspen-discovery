@@ -67,7 +67,7 @@ function getUpdates25_12_00(): array {
 					customerToken VARCHAR(50) NOT NULL 
 				) ENGINE = InnoDB",
 				"ALTER TABLE library ADD COLUMN messageBeeSettingId INT DEFAULT -1",
-				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer MessageBee Keys', '', 70, 'Allows users to administer Message Bee Keys.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer MessageBee Keys', '', 70, 'Allows users to administer MessageBee Keys.')",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer MessageBee Keys'))",
 			]
 		], //message_bee_settings
