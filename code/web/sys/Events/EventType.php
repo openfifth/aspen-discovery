@@ -56,6 +56,7 @@ class EventType extends DataObject {
 				'label' => 'Title',
 				'description' => 'The default title for this type of event',
 				'maxLength' => 50,
+				'required' => true,
 			],
 			'titleCustomizable' => [
 				'property' => 'titleCustomizable',
