@@ -76,7 +76,7 @@ class Events_AJAX extends JSON_Action {
 					$fieldHTML[] = $interface->fetch('DataObjectUtil/property.tpl');
 				}
 				$locations = $eventType->getLocations();
-				$editFormInstructions = $eventType->getTextBlockTranslation('editFormInstructions', $activeLanguage->code, true);
+				$editFormInstructions = $eventType->getTextBlockTranslation('editFormInstructions', $activeLanguage->code);
 				$result = [
 					'success' => true,
 					'eventType' => $eventType->jsonSerialize(),
@@ -95,12 +95,14 @@ class Events_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
 	public function exportUsageData() : void {
 		require_once ROOT_DIR . '/services/Events/EventGraphs.php';
 		$aspenUsageGraph = new Events_EventGraphs();
 		$aspenUsageGraph->buildCSV();
 	}
 
+	/** @noinspection PhpUnused */
 	public function iCalendarExport() : array  {
 		$result = [
 			'success' => false,
@@ -143,7 +145,7 @@ class Events_AJAX extends JSON_Action {
 						$driver = new AspenEventRecordDriver($eventId);
 						break;
 					default:
-						$result = [
+						return [
 							'success' => false,
 							'title' => translate([
 								'text' => "Error",
@@ -154,7 +156,6 @@ class Events_AJAX extends JSON_Action {
 								'isAdminFacing' => false,
 							])
 						];
-						return $result;
 				}
 				$interface->assign('title', $driver->getTitle());
 				$description = $driver->getDescription() ?? '';
@@ -164,7 +165,7 @@ class Events_AJAX extends JSON_Action {
 				$description = str_replace("&nbsp;", "", $description);
 				$description = preg_replace("/(<br\s?\/?>)|(<\/p>)/", "\\n\\n", $description);
 				$description = strip_tags($description);
-				$description = preg_replace("(;|,)", '\\\\$0', $description);
+				$description = preg_replace("([;,])", '\\\\$0', $description);
 				$interface->assign('description', $description);
 				$interface->assign('location', $driver->getBranch());
 				$interface->assign('sublocation', $driver->getRoom());
@@ -209,6 +210,7 @@ class Events_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
 	function getCopyEventsForm() : array {
 		if (!empty($_REQUEST['eventId'])) {
 			global $interface;
@@ -280,6 +282,8 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 	}
+
+	/** @noinspection PhpUnused */
 	function doCopyEvent() : array {
 
 		if (!empty($_REQUEST['name']) && !empty($_REQUEST['locationId']) && !empty($_REQUEST['date'])) {
@@ -353,6 +357,7 @@ class Events_AJAX extends JSON_Action {
 		];
 	}
 
+	/** @noinspection PhpUnused */
 	function getListPrintOptions() : array {
 		global $interface;
 		global $library;
@@ -418,16 +423,16 @@ class Events_AJAX extends JSON_Action {
 		];
 	}
 	/** @noinspection PhpUnused */
-	function checkEventsForType() {
-		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
-		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
-		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
-		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
+	function checkEventsForType() : array {
+		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true');
+		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true');
+		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true');
+		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true');
 
 		//If everything is customizable no need to prompt user
 		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
 
-		if (!empty($_REQUEST['objectId']) && is_numeric($_REQUEST['objectId']) && $booleanSum != 4) {
+		if (!empty($_REQUEST['objectId']) && is_numeric($_REQUEST['objectId']) && (!$titleCustomizable || !$descriptionCustomizable || !$coverCustomizable || !$eventLengthCustomizable)) {
 			require_once ROOT_DIR . '/sys/Events/Event.php';
 			$eventOfType = new Event();
 			$eventOfType->eventTypeId = $_REQUEST['objectId'];
@@ -439,10 +444,10 @@ class Events_AJAX extends JSON_Action {
 						'isAdminFacing' => true,
 					]),
 					'modalBody' => translate([
-						'text' => 'If customization settings have been changed, there may be events of this type with different customization settings, would you like to update them?',
+						'text' => 'Customization settings for this Event Type have changed, saving will update all existing events of this type to match the defaults. Do you want to continue?',
 						'isAdminFacing' => true,
 					]),
-					'modalButtons' => "<button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(true)'>Yes</button><button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.Events.saveEventsForType(false)'>No</button>",
+					'modalButtons' => "<button class='tool btn btn-primary modal-btn' onclick='AspenDiscovery.Events.saveEventsForType(true)'>Yes</button><button class='tool btn btn-primary modal-btn' onclick='return AspenDiscovery.closeLightbox()'>No</button>",
 				];
 			} else {
 				$result = [
@@ -462,19 +467,19 @@ class Events_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function saveEventsForType() {
+	function saveEventsForType() : array {
 		$result = [
 			'success' => true,
 		];
-		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
-		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
-		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
-		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
+		$titleCustomizable = isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true';
+		$descriptionCustomizable = isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true';
+		$coverCustomizable = isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true';
+		$eventLengthCustomizable = isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true';
 
 		//If everything is customizable no need to update events with default data for the event type
-		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+		$numCustomizableFields = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
 
-		if ($_REQUEST['doFullSave'] == "true" && ($booleanSum != 4)) {
+		if (!$titleCustomizable || !$descriptionCustomizable || !$coverCustomizable || !$eventLengthCustomizable) {
 			//Update all Events of this Event Type
 			require_once ROOT_DIR . '/sys/Events/Event.php';
 			$eventOfType = new Event();
@@ -493,7 +498,7 @@ class Events_AJAX extends JSON_Action {
 				if (!$eventLengthCustomizable) {
 					$eventOfType->eventLength = $_REQUEST['eventLength'];
 				}
-				$eventOfType->update('',false);
+				$eventOfType->update('Save Event Type');
 				$result = [
 					'success' => true,
 				];

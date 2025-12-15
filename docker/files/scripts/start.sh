@@ -39,6 +39,12 @@ if [ ! -f "$confSiteFile" ] ; then
 	fi
 fi
 
+# Sync environment variables to config files (runs every start)
+log "Syncing environment variables to config..."
+if ! php syncEnvToConfig.php ; then
+	log "WARNING: Environment sync failed, using existing config"
+fi
+
 # Initialize Aspen database
 log "Initializing database";
 if ! php initDatabase.php ; then
@@ -92,7 +98,7 @@ done
 
 # Run pending database updates
 log "Running pending database updates..."
-php updateDatabase.php
+php updateDatabase.php "$SITE_NAME"
 
 sudo -u www-data php /usr/local/aspen-discovery/docker/files/cron/checkBackgroundProcessesDocker.php $SITE_NAME >/proc/1/fd/1 2>/proc/1/fd/2
 

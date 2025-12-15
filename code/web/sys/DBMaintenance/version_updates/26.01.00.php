@@ -38,5 +38,14 @@ function getUpdates26_01_00(): array {
 
 		//other
 
+	'user_payments_stripe_receipt_url' => [
+		'title' => 'Add Stripe Receipt URL to User Payments',
+		'description' => 'Add column to store Stripe receipt URL for payment receipts.',
+		'continueOnError' => false,
+		'sql' => [
+			'ALTER TABLE user_payments ADD COLUMN IF NOT EXISTS stripeReceiptUrl VARCHAR(255) DEFAULT NULL'
+		]
+	], //user_payments_stripe_receipt_url
+
 	];
 }

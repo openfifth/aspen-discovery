@@ -5,9 +5,6 @@ DockerLogger::init('BACKEND');
 
 require_once __DIR__ . '/../database/DatabaseHealth.php';
 
-// Set server name
-$_SERVER['SERVER_NAME'] = getenv('SITE_NAME');
-
 require_once __DIR__ . '/../../../code/web/bootstrap.php';
 require_once __DIR__ . '/../../../code/web/bootstrap_aspen.php';
 

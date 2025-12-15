@@ -1,8 +1,13 @@
 <?php
 
+use Random\RandomException;
+
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 
 class MyAccount_Fines extends MyAccount {
+	/**
+	* @throws RandomException
+	*/
 	function launch() : void {
 		global $interface;
 		global $configArray;
@@ -188,14 +193,14 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// Certified Payments by Deluxe
-				if($paymentLibrary->finePaymentType == 10) {
+				if ($paymentLibrary->finePaymentType == 10) {
 					require_once ROOT_DIR . '/sys/ECommerce/CertifiedPaymentsByDeluxeSetting.php';
 					$deluxeSettings = new CertifiedPaymentsByDeluxeSetting();
 					$deluxeSettings->id = $paymentLibrary->deluxeCertifiedPaymentsSettingId;
-					if($deluxeSettings->find(true)) {
+					if ($deluxeSettings->find(true)) {
 						// connection URL to payment portal
 						$url = 'https://www.velocitypayment.com/vrelay/verify.do';
-						if($deluxeSettings->sandboxMode == 1 || $deluxeSettings->sandboxMode == "1") {
+						if ($deluxeSettings->sandboxMode == 1 || $deluxeSettings->sandboxMode == "1") {
 							$url = 'https://demo.velocitypayment.com/vrelay/verify.do';
 						}
 						$interface->assign('deluxeAPIConnectionUrl', $url);
@@ -210,13 +215,13 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// Square
-				if($paymentLibrary->finePaymentType == 12) {
+				if ($paymentLibrary->finePaymentType == 12) {
 					require_once ROOT_DIR . '/sys/ECommerce/SquareSetting.php';
 					$squareSetting = new SquareSetting();
 					$squareSetting->id = $paymentLibrary->squareSettingId;
-					if($squareSetting->find(true)) {
+					if ($squareSetting->find(true)) {
 						$cdnUrl = 'https://web.squarecdn.com/v1/square.js';
-						if($squareSetting->sandboxMode == 1 || $squareSetting->sandboxMode == '1') {
+						if ($squareSetting->sandboxMode == 1 || $squareSetting->sandboxMode == '1') {
 							$cdnUrl = 'https://sandbox.web.squarecdn.com/v1/square.js';
 						}
 						$interface->assign('squareCdnUrl', $cdnUrl);
@@ -230,19 +235,17 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// Stripe
-				if($paymentLibrary->finePaymentType == 13) {
+				if ($paymentLibrary->finePaymentType == 13) {
 					require_once ROOT_DIR . '/sys/ECommerce/StripeSetting.php';
 					$stripeSetting = new StripeSetting();
 					$stripeSetting->id = $paymentLibrary->stripeSettingId;
-					if($stripeSetting->find(true)) {
-						//$baseUrl = 'https://api.stripe.com';
+					if ($stripeSetting->find(true)) {
 						$interface->assign('stripePublicKey', $stripeSetting->stripePublicKey);
-						$interface->assign('stripeSecretKey', $stripeSetting->stripeSecretKey);
 					}
 				}
 
 				// SnapPay
-				if($paymentLibrary->finePaymentType == 15) {
+				if ($paymentLibrary->finePaymentType == 15) {
 					// Set SNapPay URL for production vs. sandbox
 					require_once ROOT_DIR . '/sys/ECommerce/SnapPaySetting.php';
 					$snapPaySetting = new SnapPaySetting();
@@ -281,7 +284,7 @@ class MyAccount_Fines extends MyAccount {
 				}
 
 				// HeyCentric result message
-				if($paymentLibrary->finePaymentType == 16) {
+				if ($paymentLibrary->finePaymentType == 16) {
 					$rc = $_REQUEST['Rc'] ?? null;
 					$finePaymentResult = (object)[];
 
@@ -296,7 +299,7 @@ class MyAccount_Fines extends MyAccount {
 							$finePaymentResult->success = false;
 							$finePaymentResult->message = "Your payment of $pmt GBP was declined";
 						}
-						if($rc == 'C') {
+						if ($rc == 'C') {
 							$finePaymentResult->success = false;
 							$finePaymentResult->message = "Your payment of $pmt GBP was cancelled before it could be executed";
 						}

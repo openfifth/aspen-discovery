@@ -464,7 +464,6 @@ class Donation extends DataObject {
 		global $library;
 		$clientId = null;
 		$showPayLater = null;
-		$stripeSecretKey = null;
 		$stripePublicKey = null;
 		$squareCdnUrl = null;
 		$squareApplicationId = null;
@@ -600,7 +599,6 @@ class Donation extends DataObject {
 				$stripeSetting->id = $library->stripeSettingId;
 				if ($stripeSetting->find(true)) {
 					$stripePublicKey = $stripeSetting->stripePublicKey;
-					$stripeSecretKey = $stripeSetting->stripeSecretKey;
 				}
 			}
 		} else {
@@ -637,7 +635,6 @@ class Donation extends DataObject {
 				$stripeSetting->id = $library->stripeSettingId;
 				if ($stripeSetting->find(true)) {
 					$stripePublicKey = $stripeSetting->stripePublicKey;
-					$stripeSecretKey = $stripeSetting->stripeSecretKey;
 				}
 			}
 		}
@@ -654,7 +651,6 @@ class Donation extends DataObject {
 			'clientId' => $clientId,
 			'showPayLater' => $showPayLater,
 			'stripePublicKey' => $stripePublicKey,
-			'stripeSecretKey' => $stripeSecretKey,
 			'squareCdnUrl' => $squareCdnUrl,
 			'squareApplicationId' => $squareApplicationId,
 			'squareAccessToken' => $squareAccessToken,
