@@ -436,6 +436,7 @@ class Events_AJAX extends JSON_Action {
 			require_once ROOT_DIR . '/sys/Events/Event.php';
 			$eventOfType = new Event();
 			$eventOfType->eventTypeId = $_REQUEST['objectId'];
+			$eventOfType->deleted = 0;
 			if ($eventOfType->find(true)) {
 				$result = [
 					'success' => true,
