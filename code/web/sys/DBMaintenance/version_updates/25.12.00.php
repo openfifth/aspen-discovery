@@ -67,7 +67,7 @@ function getUpdates25_12_00(): array {
 					customerToken VARCHAR(50) NOT NULL 
 				) ENGINE = InnoDB",
 				"ALTER TABLE library ADD COLUMN messageBeeSettingId INT DEFAULT -1",
-				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer MessageBee Keys', '', 70, 'Allows users to administer Message Bee Keys.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Third Party Enrichment', 'Administer MessageBee Keys', '', 70, 'Allows users to administer MessageBee Keys.')",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer MessageBee Keys'))",
 			]
 		], //message_bee_settings
@@ -157,6 +157,20 @@ function getUpdates25_12_00(): array {
 				"ALTER TABLE loral_settings ADD COLUMN name TINYTEXT default 'default' UNIQUE",
 			]
 		], //link_loral_and_libraries
+		'encrypt_loral_password' => [
+			'title' => 'Encrypt Loral Password',
+			'description' => 'Extend password field to store Loral Password encrypted',
+			'sql' => [
+				'ALTER TABLE loral_settings CHANGE COLUMN password password VARCHAR(250)'
+			]
+		], //encrypt_loral_password
+		'increase_new_york_times_key_length' => [
+			'title' => 'Increatese New York Times Key Length',
+			'description' => 'Increase the length of the key for the new NYT API Keys',
+			'sql' => [
+				'ALTER TABLE nyt_api_settings CHANGE COLUMN booksApiKey booksApiKey VARCHAR(48) NOT NULL'
+			]
+		], //increase_new_york_times_key_length
 
 		//kirstien - Grove
 

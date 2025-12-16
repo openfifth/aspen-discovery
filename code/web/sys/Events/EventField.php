@@ -29,6 +29,7 @@ class EventField extends DataObject {
 				'label' => 'Name',
 				'description' => 'A name for the field',
 				'maxLength' => 50,
+				'required' => true,
 			],
 			'description' => [
 				'property' => 'description',

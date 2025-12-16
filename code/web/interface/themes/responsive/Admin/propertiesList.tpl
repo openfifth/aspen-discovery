@@ -256,7 +256,7 @@
 			<button type='submit' value='compare' id='compareButton' class="btn btn-default" disabled onclick="$('#objectAction').val('compare');return AspenDiscovery.Admin.validateCompare();">{translate text='Compare' isAdminFacing=true}</button>
 		</div>
 	{/if}
-	{if !empty($canBatchUpdate)}
+	{if !empty($canBatchUpdate) && !($hasRecordLocking && count($lockedRecords) > 0 && !$userCanChangeRecordLocks)}
 		<div class="btn-group">
 			<button type='submit' value='batchUpdate' class="btn btn-default" onclick="return AspenDiscovery.Admin.showBatchUpdateFieldForm('{$module}', '{$toolName}', 'selected')">{translate text='Batch Update Selected' isAdminFacing=true}</button>
 			<button type='submit' value='batchUpdate' class="btn btn-default" onclick="return AspenDiscovery.Admin.showBatchUpdateFieldForm('{$module}', '{$toolName}', 'all')">{translate text='Batch Update All' isAdminFacing=true}</button>
