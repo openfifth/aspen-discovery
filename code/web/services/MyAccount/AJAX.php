@@ -4824,8 +4824,8 @@ class MyAccount_AJAX extends JSON_Action {
 							while ($deleteQuery->fetch()) {
 								$deleteQuery->deleted = 1;
 								$deleteQuery->update();
-								$totalDeleted++;
 							}
+							$totalDeleted++;
 						} else {
 							$numFailed++;
 						}
