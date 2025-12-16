@@ -37,6 +37,8 @@ class EventType extends DataObject {
 	}
 
 	static function getObjectStructure(string $context = ''): array {
+		global $configArray;
+		$coverPath = $configArray['Site']['coverPath'];
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
 		}
@@ -95,6 +97,7 @@ class EventType extends DataObject {
 				'maxHeight' => 280,
 				'maxLength' => 150,
 				'description' => 'The default cover image for this type of event',
+				'path' => "$coverPath/aspenEvents/",
 				'hideInLists' => true,
 			],
 			'coverCustomizable' => [
