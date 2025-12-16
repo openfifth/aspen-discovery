@@ -17,6 +17,13 @@ function getUpdates26_01_00(): array {
 		//kirstien
 
 		//kodi
+		'toggle_timestamps_for_events' => [
+			'title' => 'Toggle Event Timestamps',
+			'description' => 'Toggle Event Timestamps',
+			'sql' => [
+				'ALTER TABLE event ADD COLUMN hideTimestamps TINYINT(1) NOT NULL DEFAULT 0'
+			]
+		], //toggle_timestamps_for_events
 
 		//leo
 

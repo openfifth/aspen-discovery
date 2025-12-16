@@ -18,6 +18,7 @@ class Event extends DataObject {
 	public $_typeFields = [];
 	public $startDate;
 	public $_startDateForList;
+	public $hideTimestamps;
 	public $startTime;
 	public $eventLength;
 	public $recurrenceOption;
@@ -205,6 +206,13 @@ class Event extends DataObject {
 				'label' => 'Event Date',
 				'description' => 'The date this event starts',
 				'onchange' => "return AspenDiscovery.Events.updateRecurrenceOptions(this.value);",
+			],
+			'hideTimestamps' => [
+				'property' => 'hideTimestamps',
+				'type' => 'checkbox',
+				'label' => 'Hide Start and End Times for This Event',
+				'description' => 'Hide the start and end times of the event',
+				'onchange' => 'return AspenDiscovery.Events.toggleStartEndTimestamp();',
 			],
 			'startTime' => [
 				'property' => 'startTime',
