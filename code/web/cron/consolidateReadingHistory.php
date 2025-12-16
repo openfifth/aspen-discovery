@@ -48,8 +48,8 @@ if ($barcodeToUpdate != 'all') {
 
 $readingHistoryDB2 = new ReadingHistoryEntry();
 $readingHistoryDB2->whereAdd('deleted =  0');
-$numEntries = $readingHistoryDB2->count();
-logMessage("At the start of processing there are $numEntries Entries in the database.", $backgroundProcess);
+$numAtStartEntries = $readingHistoryDB2->count();
+logMessage("At the start of processing there are $numAtStartEntries Entries in the database.", $backgroundProcess);
 
 $user->find();
 $numProcessed = 0;
@@ -204,7 +204,7 @@ $readingHistoryDB2 = new ReadingHistoryEntry();
 $readingHistoryDB2->whereAdd('deleted =  0');
 $numEntriesAtEnd = $readingHistoryDB2->count();
 logMessage("At the end of processing there are $numEntriesAtEnd Entries in the database.", $backgroundProcess);
-$numEntriesRemoved = $numEntries - $numEntriesAtEnd;
+$numEntriesRemoved = $numAtStartEntries - $numEntriesAtEnd;
 logMessage("A total of $numEntriesRemoved entries were removed.", $backgroundProcess);
 
 finish('Finished consolidating reading history.', $backgroundProcess);
