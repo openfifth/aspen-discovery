@@ -4757,10 +4757,10 @@ class MyAccount_AJAX extends JSON_Action {
 							'text' => 'Successfully Deleted Reading History Entry',
 							'isPublicFacing' => true,
 						]);
-						$entryText = $numDeleted === 1 ? 'entry' : 'entries';
+						//Based on user testing, this was confusing to users since they only clicked
+						// on a button to delete the group. Simplify to just indicate it was deleted.
 						$result['message'] = translate([
-							'text' => "Deleted %1% $entryText from your reading history.",
-							1 => $numDeleted,
+							'text' => "Deleted entry from your reading history.",
 							'isPublicFacing' => true,
 						]);
 					} else {

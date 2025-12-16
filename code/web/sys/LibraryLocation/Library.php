@@ -2589,8 +2589,8 @@ class Library extends DataObject {
 								'property' => 'messageBeeSettingId',
 								'type' => 'enum',
 								'values' => $messageBeeSettings,
-								'label' => 'Message Bee Setting',
-								'descrption' => 'The Message Bee Settings to apply to this library',
+								'label' => 'MessageBee Setting',
+								'descrption' => 'The MessageBee Settings to apply to this library',
 								'hideInLists' => true
 							],
 							'selfRegistrationLocationRestrictions' => [
