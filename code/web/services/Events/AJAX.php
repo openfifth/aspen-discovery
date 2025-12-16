@@ -424,18 +424,35 @@ class Events_AJAX extends JSON_Action {
 	}
 	/** @noinspection PhpUnused */
 	function checkEventsForType() : array {
-		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true');
-		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true');
-		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true');
-		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true');
+		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
+		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
+		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
+		$eventLengthCustomizable = (isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true') ? 1 : 0;
 
 		//If everything is customizable no need to prompt user
-		$booleanSum = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+		$customizableFields = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
+		$numChanges = 0;
 
-		if (!empty($_REQUEST['objectId']) && is_numeric($_REQUEST['objectId']) && (!$titleCustomizable || !$descriptionCustomizable || !$coverCustomizable || !$eventLengthCustomizable)) {
+		if ($customizableFields < 4) {
+			require_once ROOT_DIR . '/sys/Events/EventType.php';
+			$eventType = new EventType();
+			$eventType->id = $_REQUEST['objectId'];
+			if ($eventType->find(true)) {
+				$titleCustomizationChanged = ($eventType->titleCustomizable != $titleCustomizable) ? 1 : 0;
+				$descriptionCustomizationChanged = ($eventType->descriptionCustomizable != $descriptionCustomizable) ? 1 : 0;
+				$coverCustomizationChanged = ($eventType->coverCustomizable != $coverCustomizable) ? 1 : 0;
+				$eventLengthCustomizationChanged = ($eventType->lengthCustomizable != $eventLengthCustomizable) ? 1 : 0;
+
+				$numChanges = $titleCustomizationChanged + $descriptionCustomizationChanged + $coverCustomizationChanged + $eventLengthCustomizationChanged;
+			}
+		}
+
+
+		if (!empty($_REQUEST['objectId']) && is_numeric($_REQUEST['objectId']) && $customizableFields < 4 && $numChanges > 0) {
 			require_once ROOT_DIR . '/sys/Events/Event.php';
 			$eventOfType = new Event();
 			$eventOfType->eventTypeId = $_REQUEST['objectId'];
+			$eventOfType->deleted = 0;
 			if ($eventOfType->find(true)) {
 				$result = [
 					'success' => true,
@@ -475,9 +492,6 @@ class Events_AJAX extends JSON_Action {
 		$descriptionCustomizable = isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true';
 		$coverCustomizable = isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true';
 		$eventLengthCustomizable = isset($_REQUEST['eventLengthCustomizable']) && $_REQUEST['eventLengthCustomizable'] == 'true';
-
-		//If everything is customizable no need to update events with default data for the event type
-		$numCustomizableFields = $titleCustomizable + $descriptionCustomizable + $coverCustomizable + $eventLengthCustomizable;
 
 		if (!$titleCustomizable || !$descriptionCustomizable || !$coverCustomizable || !$eventLengthCustomizable) {
 			//Update all Events of this Event Type
