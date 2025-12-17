@@ -4372,6 +4372,7 @@ class UserAPI extends AbstractAPI {
 		if (isset($_REQUEST['browseCategoryId'])) {
 			$user = $this->getUserForApiCall();
 			$givenId = $_REQUEST['browseCategoryId'];
+			$hide = $_REQUEST['all'] ?? 'single';
 			$label = explode('_', $givenId);
 			$id = $label[3];
 			if ($user && !($user instanceof AspenError)) {
@@ -4424,6 +4425,32 @@ class UserAPI extends AbstractAPI {
 								'isPublicFacing' => true,
 							]),
 						];
+					}
+
+					if ($hide == 'all') {
+						// Hide all subcategories as well
+						$allCategoriesToHide = [];
+						$subCategories = new SubBrowseCategories();
+						$subCategories->browseCategoryId = $browseCategory->id;
+						$subCategories->find();
+						while ($subCategories->fetch()) {
+							$allCategoriesToHide[] = $subCategories->subCategoryId;
+						}
+
+						foreach ($allCategoriesToHide as $categoryId) {
+							$browseCategory = new BrowseCategory();
+							$browseCategory->id = $categoryId;
+							if ($browseCategory->find(true)) {
+								$browseCategory->numTimesDismissed += 1;
+								$browseCategory->update();
+							}
+							$dismissBrowseCategory = new BrowseCategoryDismissal();
+							$dismissBrowseCategory->browseCategoryId = $categoryId;
+							$dismissBrowseCategory->userId = $user->id;
+							if (!$dismissBrowseCategory->find(true)) {
+								$dismissBrowseCategory->insert();
+							}
+						}
 					}
 
 					$isDismissed = new BrowseCategoryDismissal();
