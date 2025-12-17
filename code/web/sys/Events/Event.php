@@ -187,6 +187,7 @@ class Event extends DataObject {
 						'label' => 'Enable Waiting List ?',
 						'description' => 'Whether or not to enable a waiting list for this event.',
 						'default' => 0,
+						'onchange' => 'AspenDiscovery.Events.displayWaitingListNumberOfSeats()',
 					],
 					'waitingListNumberOfSeats' => [
 						'property' => 'waitingListNumberOfSeats',
