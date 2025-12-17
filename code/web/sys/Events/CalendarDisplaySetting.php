@@ -9,6 +9,7 @@ class CalendarDisplaySetting extends DataObject {
 	public $name;
 	public $cover;
 	public $altText;
+	public $footer;
 
 	private $_libraries;
 	/** @var EventFieldCalendarOptions[] */
@@ -67,6 +68,12 @@ class CalendarDisplaySetting extends DataObject {
 				'canEdit' => false,
 				'canAddNew' => true,
 				'canDelete' => true,
+			],
+			'footer' => [
+				'property' => 'footer',
+				'type' => 'html',
+				'label' => 'Footer',
+				'description' => 'The footer for the calendar',
 			],
 			'libraries' => [
 				'property' => 'libraries',

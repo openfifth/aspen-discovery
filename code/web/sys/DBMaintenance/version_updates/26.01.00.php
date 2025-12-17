@@ -17,6 +17,14 @@ function getUpdates26_01_00(): array {
 		//kirstien
 
 		//kodi
+		'events_calendar_footer' => [
+			'title' => 'Events Calendar Footer',
+			'description' => 'Add column footer in calendar_display_settings and rename Print Calendars With Header Images permissions to include Footer.',
+			'sql' => [
+				"ALTER TABLE calendar_display_settings ADD COLUMN footer VARCHAR(500)",
+				"UPDATE permissions set name='Print Calendars with Header Images and Footer' where name='Print Calendars with Header Images'"
+			]
+		], //events_calendar_footer
 
 		//leo
 
