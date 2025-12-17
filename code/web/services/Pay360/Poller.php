@@ -46,17 +46,4 @@ class Pay360_Poller {
 		$this->_client->handleOutcome($this->_transactionInfo);
 		return;
 	}
-	// TODO: send email if payment successful -> receipt
- 
-	// TODO: private function handleSuccess($_transactionId, $_status) {
-	// }
-
-	// TODO: private function handleFailure($_transactionId, $_status) {
-	// }
-
-	// TODO: private function handleInProgress($_transactionId, $_status) {
-	// }
-
-	// TODO: private function handleTimeout($_transactionId) {
-	// }
 }
