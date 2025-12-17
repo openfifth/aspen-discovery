@@ -13,6 +13,7 @@ class EventInstance extends DataObject {
 	public $note;
 	public $numberOfSeats;
 	public $waitingList;
+	public $waitingListNumberOfSeats;
 
 	public $dateUpdated;
 	public $deleted;
@@ -84,6 +85,13 @@ class EventInstance extends DataObject {
 				'label' => 'Waiting List Override',
 				'description' => 'Override whether waiting list is enabled for this specific instance.',
 			],
+			'waitingListNumberOfSeats' => [
+				'property' => 'waitingListNumberOfSeats',
+				'type' => 'integer',
+				'label' => 'Number of Seats on Waiting List Override',
+				'description' => 'Override waiting list capacity for thie specific instance.',
+				'min' => 0,
+			],
 			'status' => [
 				'property' => 'status',
 				'type' => 'checkbox',
@@ -108,6 +116,7 @@ class EventInstance extends DataObject {
 			'length',
 			'dateUpdated',
 			'numberOfSeats',
+			'waitingListNumberOfSeats',
 		];
 	}
 
@@ -124,6 +133,10 @@ class EventInstance extends DataObject {
 		if ($this->waitingList === null) {
 			$event = $this->getParentEvent();
 			$this->waitingList = $event->waitingList;
+		}
+		if ($this->waitingListNumberOfSeats === null) {
+			$event = $this->getParentEvent();
+			$this->waitingListNumberOfSeats = $event->waitingListNumberOfSeats;
 		}
 		return parent::insert();
 	}
@@ -144,6 +157,10 @@ class EventInstance extends DataObject {
 			if (empty($this->sublocationId)) {
 				$event = $this->getParentEvent();
 				$this->sublocationId = $event->sublocationId;
+			}
+			if ($this->waitingListNumberOfSeats === null) {
+				$event = $this->getParentEvent();
+				$this->waitingListNumberOfSeats = $event->waitingListNumberOfSeats;
 			}
 		}
 		return $return;
