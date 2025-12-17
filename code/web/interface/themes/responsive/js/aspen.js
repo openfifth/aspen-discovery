@@ -10651,6 +10651,16 @@ AspenDiscovery.Events = (function(){
 			} else {
 				waitingListEnabled.style.display = 'none';
 			}
+		},
+		displayWaitingListNumberOfSeats: function () {
+			let waitingList = document.getElementById('waitingList');
+			let waitingListNumberOfSeats = document.getElementById('propertyRowwaitingListNumberOfSeats');
+
+			if (waitingList && waitingList.checked) {
+				waitingListNumberOfSeats.style.display = '';
+			} else {
+				waitingListNumberOfSeats.style.display = 'none';
+			}
 		}
 	};
 }(AspenDiscovery.Events || {}));
