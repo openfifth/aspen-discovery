@@ -10,7 +10,7 @@ class OverDriveScope extends DataObject {
 	public $includeAdult;
 	public $includeTeen;
 	public $includeKids;
-
+	public $ignoreKindleFormat;
 	protected $_libraries;
 	protected $_locations;
 
@@ -86,7 +86,14 @@ class OverDriveScope extends DataObject {
 				'default' => true,
 				'forcesReindex' => true,
 			],
-
+			'suppressKindleFormat' => [
+				'property' => 'suppressKindleFormat',
+				'type' => 'checkbox',
+				'label' => 'Suppress Kindle Format',
+				'description' => 'When checked, Kindle format will not display in the grouped work',
+				'default' => false,
+				'forcesReindex' => true,
+			],
 			'libraries' => [
 				'property' => 'libraries',
 				'type' => 'multiSelect',
