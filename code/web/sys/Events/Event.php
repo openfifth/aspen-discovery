@@ -160,7 +160,8 @@ class Event extends DataObject {
 						'type' => 'checkbox',
 						'label' => 'Enable Registration ?',
 						'default' => false,
-						'describe' => 'Enable registration for this event and mark is as required'
+						'describe' => 'Enable registration for this event and mark is as required',
+						'onchange' => 'AspenDiscovery.Events.displayWaitingListEnable()',
 					],
 					'numberOfSeats' => [
 						'property' => 'numberOfSeats',
