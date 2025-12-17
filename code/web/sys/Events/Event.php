@@ -26,6 +26,7 @@ class Event extends DataObject {
 	public $registrationRequired;
 	public $numberOfSeats;
 	public $waitingList;
+	public $waitingListNumberOfSeats;
 	/** @noinspection PhpUnused */
 	public $recurrenceInterval;
 	public $recurrenceFrequency;
@@ -186,6 +187,13 @@ class Event extends DataObject {
 						'label' => 'Enable Waiting List ?',
 						'description' => 'Whether or not to enable a waiting list for this event.',
 						'default' => 0,
+					],
+					'waitingListNumberOfSeats' => [
+						'property' => 'waitingListNumberOfSeats',
+						'type' => 'integer',
+						'label' => 'Number of Seats on Waiting List',
+						'description' => 'Number of seats on waiting list. Leave blank or 0 for unlimited.',
+						'min' => 0,
 					],
 				],
 			],
