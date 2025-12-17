@@ -34,6 +34,8 @@ class AspenEvent {
 	private final Boolean hideTimestamps;
 	private final Boolean registrationRequired;
 	private final Integer numberOfSeats;
+	private final Boolean waitingList;
+	private final Integer waitingListNumberOfSeats;
 	private final ArrayList<EventField> fields = new ArrayList<EventField>();
 
 	AspenEvent(ResultSet existingEventsRS) throws SQLException{
@@ -56,6 +58,9 @@ class AspenEvent {
 		this.hideTimestamps = existingEventsRS.getBoolean("hideTimestamps");
 		this.registrationRequired = existingEventsRS.getBoolean("registrationRequired");
 		this.numberOfSeats = existingEventsRS.getObject("effectiveNumberOfSeats") != null ? existingEventsRS.getInt("effectiveNumberOfSeats") : null;
+		this.waitingList = existingEventsRS.getBoolean("waitingList");
+		int tmpSeats = existingEventsRS.getInt("waitingListNumberOfSeats");
+		this.waitingListNumberOfSeats = existingEventsRS.wasNull() ? null : tmpSeats;
 	}
 
 	void addField(String name, String value, String[] allowableValues, int type, int facet) {
@@ -167,6 +172,14 @@ class AspenEvent {
 
 	public Integer getNumberOfSeats() {
 		return numberOfSeats;
+	}
+
+	public boolean isWaitingListEnabled() {
+		return waitingList;
+	}
+
+	public Integer getNumberOfSeatsOnWaitingList() {
+		return waitingListNumberOfSeats;
 	}
 
 	private final DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
