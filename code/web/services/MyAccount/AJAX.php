@@ -4299,6 +4299,8 @@ class MyAccount_AJAX extends JSON_Action {
 				if ($eventInstance->find(true)) {
 					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
 					$availableSeats = $eventInstance->getAvailableSeats();
+					$waitingList = $eventInstance->waitingList;
+					$waitingListNumberOfSeats = $eventInstance->waitingListNumberOfSeats;
 				}
 			}
 
@@ -4337,6 +4339,8 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
+				$events[$entry->sourceId]['waitingList'] = $waitingList;
+				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
 			}
 		}
 
