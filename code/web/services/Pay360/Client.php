@@ -273,7 +273,7 @@ class Pay360_Client  {
 
 		$returnUrl = $configArray['Site']['url'] . "/MyAccount/AJAX?method=completePay360Order&paymentId=" . $this->payment->id ."&settingsId=" . $this->_pay360Settings->id;
 
-		return [
+		$parameters = [
 			'credentials' => $this->_getCredentialParams(),
 			'requestType' => 'payOnly',
 			'requestId' => 'TEST',
@@ -291,6 +291,25 @@ class Pay360_Client  {
 				],
 			],  
 		];
+		
+		$patron = new User;
+		$patron->id = $this->payment->userId;
+		if(!$patron->find(true)) {
+			return $parameters;
+		}
+
+		// pre-populate the cardholder billing information form
+		$parameters['billing'] = [
+			'cardHolderDetails' => [
+				'cardHolderName' => $patron->firstname . ' ' . $patron->lastname,
+			],
+		];
+		
+		if($patron->email) {
+			$parameters['billing']['cardHolderDetails']['contact'] = ['email' => $patron->email];
+		}
+		
+		return $parameters;
 	}
 
 	private function _getCredentialParams(): array|null {
