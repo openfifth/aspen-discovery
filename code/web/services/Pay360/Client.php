@@ -113,8 +113,11 @@ class Pay360_Client  {
 		if (empty($transactionStatus)) {
     	    $transactionStatus = [
     	        'state' => $this->queryResponse->transactionState,
-    	        'status' => $this->queryResponse->paymentResult->status
+    	        'status' => null
     	    ];
+			if (!empty($this->queryResponse->paymentResult)) {
+				$transactionStatus['status'] = $this->queryResponse->paymentResult->status;
+			}
     	}
 
 		if ($transactionStatus['state'] === 'INVALID_REFERENCE') {
@@ -142,7 +145,7 @@ class Pay360_Client  {
 
 			if ($transactionStatus['status'] === 'CANCELLED') {
 				$this->payment->cancelled = true;
-				$this->payment->message = 'cancelled by patron. error id: '  . $this->queryResponse->error->errorId;
+				$this->payment->message = 'cancelled by patron. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = "This payment was cancelled.";
 				$this->payment->update();
 				return false;
@@ -150,7 +153,7 @@ class Pay360_Client  {
 
 			if ($transactionStatus['status'] === 'CARD_DETAILS_REJECTED') {
 				$this->payment->cancelled = true;
-				$this->payment->message = 'card details rejected. error id: '  . $this->queryResponse->error->errorId;
+				$this->payment->message = 'card details rejected. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = "This payment failed - card details were rejected.";
 				$this->payment->update();
 				return false;
@@ -158,7 +161,7 @@ class Pay360_Client  {
 
 			if ($transactionStatus['status'] === 'LOGGED_OUT') {
 				$this->payment->cancelled = true;
-				$this->payment->message = 'patron logged out. error id: '  . $this->queryResponse->error->errorId;
+				$this->payment->message = 'patron logged out. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = "This payment failed.";
 				$this->payment->update();
 				return false;
@@ -166,7 +169,7 @@ class Pay360_Client  {
 
 			if ($transactionStatus['status'] === 'NOT_ATTEMPTED') {
 				$this->payment->cancelled = true;
-				$this->payment->message = 'patron did not attempt payment. error id: '  . $this->queryResponse->error->errorId;
+				$this->payment->message = 'patron did not attempt payment. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = "This payment was not attempted.";
 				$this->payment->update();
 				return false;
@@ -175,7 +178,7 @@ class Pay360_Client  {
 			if ($transactionStatus['status'] === 'ERROR') {
 				$this->payment->error = true;
 				$this->payment->cancelled = true;
-				$this->payment->message = 'error: ' . $this->queryResponse->error->errorId . ': ' . $this->queryResponse->error->errorMessage;
+				$this->payment->message = 'error: ' . $this->queryResponse->paymentResult->errorDetails->errorId . ': ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = "This payment failed.";
 				$this->payment->update();
 				return false;
