@@ -20,6 +20,12 @@ class Pay360_Poller {
 		
 		$this->_transactionInfo = $this->_client->getOrderStatus(true);
 
+		if ($this->_transactionInfo['state'] === 'COMPLETE') {
+			$this->_priorStatus = $this->_transactionInfo['status'];
+			$this->_client->handleOutcome($this->_transactionInfo);
+			return;
+		}
+
 		while ($counter <= $this->_maxAttempts) {
 
 			if ($this->_transactionInfo['state'] === 'COMPLETE') {
@@ -36,7 +42,8 @@ class Pay360_Poller {
 
 			$this->_transactionInfo = $this->_client->getOrderStatus(true);
 		}
-		// TODO: store pay360 transaction state / status in user_payments;
+
+		$this->_client->handleOutcome($this->_transactionInfo);
 		return;
 	}
 	// TODO: send email if payment successful -> receipt
