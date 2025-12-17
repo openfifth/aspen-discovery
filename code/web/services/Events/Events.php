@@ -123,6 +123,6 @@ class Events_Events extends ObjectEditor {
 	}
 
 	function getInitializationJs(): string {
-		return 'AspenDiscovery.Events.displayWaitingListEnable();';
+		return 'AspenDiscovery.Events.displayWaitingListEnable(); AspenDiscovery.Events.displayWaitingListNumberOfSeats();';
 	}
 }
