@@ -121,4 +121,8 @@ class Events_Events extends ObjectEditor {
 	public function hasMultiStepAddNew() : bool {
 		return false;
 	}
+
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.Events.displayWaitingListEnable();';
+	}
 }

@@ -10925,6 +10925,16 @@ AspenDiscovery.Events = (function(){
 			}else{
 				AspenDiscovery.Events.saveEventsObjCallback();
 			}
+		},
+		displayWaitingListEnable: function () {
+			let requireEventRegistration = document.getElementById('registrationRequired');
+			let waitingListEnabled = document.getElementById('propertyRowwaitingList');
+
+			if (requireEventRegistration && requireEventRegistration.checked) {
+				waitingListEnabled.style.display = '';
+			} else {
+				waitingListEnabled.style.display = 'none';
+			}
 		}
 	};
 }(AspenDiscovery.Events || {}));
