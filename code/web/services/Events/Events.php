@@ -90,6 +90,10 @@ class Events_Events extends ObjectEditor {
 		return 'AspenDiscovery.Events.toggleStartEndTimestamp();';
 	}
 
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.Events.handleRegistrationEnabledToggle();';
+	}
+
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
