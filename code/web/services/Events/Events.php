@@ -86,6 +86,10 @@ class Events_Events extends ObjectEditor {
 		return 'https://help.aspendiscovery.org/help/catalog/events';
 	}
 
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.Events.handleRegistrationEnabledToggle();';
+	}
+
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
