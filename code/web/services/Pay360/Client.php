@@ -18,7 +18,7 @@ class Pay360_Client  {
 	public $invokeResponse;
 	public $queryResponse;
 
-	public function __construct($settingsId, $paymentId, $selectedFines = [], $catalogDriver = [], $setTimestamp = false) {
+	public function __construct($settingsId, $paymentId, $selectedFines = [], $catalogDriver = null, $setTimestamp = false) {
 		$this->setSettings($settingsId);
 		$this->setPayment($paymentId);
 
@@ -228,6 +228,9 @@ class Pay360_Client  {
 	// services
 	private function handleTimeout() {}
 	private function _getMultiLineItemParameters(): array|null {
+		if (!$this->catalogDriver) {
+			return null;
+		}
 		$items = [];
 		foreach( $this->selectedFines as $fine) {	
 			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : [];
