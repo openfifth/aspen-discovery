@@ -46,6 +46,14 @@ function getAspenEventRegistrationUpdates() {
 				'ALTER TABLE event_instance ADD COLUMN numberOfSeats INT DEFAULT NULL',
 			],
 		], // add_numberOfSeats_to_events
+		'add_waitingList_to_events_and_instances' => [
+			'title' => 'Add waitingList to Events and Event Instances',
+			'description' => 'Add waiting list column to events.',
+			'sql' => [
+				'ALTER TABLE event ADD COLUMN waitingList TINYINT(1) DEFAULT 0',
+				'ALTER TABLE event_instance ADD COLUMN waitingList TINYINT(1) DEFAULT NULL',
+			],
+		], // add_waitingList_to_events_and_instances
 
 	];
 }

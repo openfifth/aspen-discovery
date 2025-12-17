@@ -12,6 +12,7 @@ class EventInstance extends DataObject {
 	public $status;
 	public $note;
 	public $numberOfSeats;
+	public $waitingList;
 
 	public $dateUpdated;
 	public $deleted;
@@ -76,6 +77,12 @@ class EventInstance extends DataObject {
 				'description' => 'Override capacity for this specific instance. Leave blank to use event default.',
 				'min' => 0,
 			],
+			'waitingList' => [
+				'property' => 'waitingList',
+				'type' => 'checkbox',
+				'label' => 'Waiting List Override',
+				'description' => 'Override whether waiting list is enabled for this specific instance.',
+			],
 			'status' => [
 				'property' => 'status',
 				'type' => 'checkbox',
@@ -113,6 +120,10 @@ class EventInstance extends DataObject {
 
 	public function insert(string $context = '') : int|bool {
 		$this->dateUpdated = time();
+		if ($this->waitingList === null) {
+			$event = $this->getParentEvent();
+			$this->waitingList = $event->waitingList;
+		}
 		return parent::insert();
 	}
 
