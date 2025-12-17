@@ -1389,7 +1389,7 @@ class SearchAPI extends AbstractAPI {
 								$results = [];
 								if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 									if ($isLiDA) {
-										$results = $this->getAppBrowseCategoryResults($subCategory->subCategoryTextId);
+										$results = $this->getAppBrowseCategoryResults($temp->textId);
 										$results = $results['items'];
 									} else {
 										$this->getBrowseCategoryResults($temp, $results);
