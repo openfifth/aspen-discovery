@@ -8,6 +8,7 @@ public class OverDriveScope {
 	private boolean includeAdult;
 	private boolean includeTeen;
 	private boolean includeKids;
+	private boolean suppressKindleFormat;
 	//Reader Name from the OverDrive Setting
 	private String readerName;
 
@@ -57,6 +58,14 @@ public class OverDriveScope {
 
 	void setIncludeKids(boolean includeKids) {
 		this.includeKids = includeKids;
+	}
+
+	public boolean isSuppressKindleFormat() {
+		return suppressKindleFormat;
+	}
+
+	void setSuppressKindleFormat(boolean suppressKindleFormat) {
+		this.suppressKindleFormat = suppressKindleFormat;
 	}
 
 	public long getSettingId() {
