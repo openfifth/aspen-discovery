@@ -50,7 +50,7 @@
 					<div class="col-xs-12">
 						<div style="width: 100%; display: inline-flex; flex-direction: row; justify-content: space-around; flex-wrap: wrap; gap: 1rem">
 							{if !empty($curLocation.map_link)}
-								<a class="btn btn-default btn-lg" style="flex-grow: 1" href="{$curLocation.map_link}" role="button" target="_blank"><i class="fas fa-directions"></i> {translate text="Visit Library" isPublicFacing=true}</a>
+								<a class="btn btn-default btn-lg" style="flex-grow: 1" href="{$curLocation.map_link}" role="button" target="_blank" aria-label="{translate text='Visit Library' isPublicFacing=true} ({translate text='opens in new window' isPublicFacing=true})"><i class="fas fa-directions"></i> {translate text="Visit Library" isPublicFacing=true}</a>
 							{/if}
 							{if !empty($curLocation.phone)}
 								<a class="btn btn-default btn-lg" style="flex-grow: 1" href="tel:{$curLocation.phone}" role="button"><i class="fas fa-phone"></i> {translate text="Call Library" isPublicFacing=true}</a>
