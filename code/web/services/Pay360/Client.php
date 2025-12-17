@@ -124,7 +124,7 @@ class Pay360_Client  {
 			$this->payment->cancelled = true;
 			$this->payment->error = true;
 			$this->payment->message = "invalid reference";
-			$this->payment->pay360TransactionStateMessage = "This payment failed.";
+			$this->payment->pay360TransactionStateMessage = "Transaction not found - invalid reference.";
 			$this->payment->update();
 			return false;
 		}
