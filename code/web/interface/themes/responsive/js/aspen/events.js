@@ -711,6 +711,7 @@ AspenDiscovery.Events = (function(){
 		handleRegistrationEnabledToggle: function () {
 			AspenDiscovery.Events.displayRegistrationNumberOfSeats();
 			AspenDiscovery.Events.displayWaitingListEnable();
+			AspenDiscovery.Events.displayWaitingListNumberOfSeats();
 		},
 		displayRegistrationNumberOfSeats: function () {
 			const requireEventRegistration = document.getElementById('registrationRequired');
@@ -738,6 +739,16 @@ AspenDiscovery.Events = (function(){
 				waitingListEnabled.style.display = '';
 			} else {
 				waitingListEnabled.style.display = 'none';
+			}
+		},
+		displayWaitingListNumberOfSeats: function () {
+			let waitingList = document.getElementById('waitingList');
+			let waitingListNumberOfSeats = document.getElementById('propertyRowwaitingListNumberOfSeats');
+
+			if (waitingList && waitingList.checked) {
+				waitingListNumberOfSeats.style.display = '';
+			} else {
+				waitingListNumberOfSeats.style.display = 'none';
 			}
 		},
 		unsetNumberOfSeats: function () {
