@@ -694,9 +694,9 @@ class Axis360Driver extends AbstractEContentDriver {
 	}
 
 	/**
-	 * @param $user
+	 * @param User $user
 	 */
-	public function trackUserUsageOfAxis360($user): void {
+	public function trackUserUsageOfAxis360(User $user): void {
 		require_once ROOT_DIR . '/sys/Axis360/UserAxis360Usage.php';
 		$userUsage = new UserAxis360Usage();
 		$userUsage->userId = $user->id;
@@ -705,7 +705,7 @@ class Axis360Driver extends AbstractEContentDriver {
 		global $aspenUsage;
 		global $library;
 		$userUsage->instance = $aspenUsage->getInstance();
-		$userAxis360Tracking = $user->userCookiePreferenceLocalAnalytics;
+		$userAxis360Tracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;;
 
 		if ($userAxis360Tracking) {
 			if ($userUsage->find(true)) {

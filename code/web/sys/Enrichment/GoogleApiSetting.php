@@ -38,8 +38,8 @@ class GoogleApiSetting extends DataObject {
 			'googleAnalyticsTrackingId' => [
 				'property' => 'googleAnalyticsTrackingId',
 				'type' => 'text',
-				'label' => 'Google Analytics Tracking ID',
-				'description' => 'The Google analytics Tracking ID to use',
+				'label' => 'Google Analytics Measurement ID',
+				'description' => 'The Google Analytics Measurement ID to use globally or as a fallback value',
 			],
 			'googleBooksKey' => [
 				'property' => 'googleBooksKey',
