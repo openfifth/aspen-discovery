@@ -1060,6 +1060,15 @@ class UserAPI extends AbstractAPI {
 				$userData->hideSoftDeleteListUI = false;
 			}
 
+			// Get list group information
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$listGroups = new UserListGroup();
+			$listGroups->userId = $user->id;
+			$listGroups->find();
+			$userData->numListGroups = $listGroups->count();
+			$userData->lastViewedGroup = UserListGroup::getLastViewedGroupForUser($user);
+			$userData->lastAddedGroup = UserListGroup::getLastAddedGroupForUser($user);
+
 			return [
 				'success' => true,
 				'profile' => $userData,
