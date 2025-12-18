@@ -33,6 +33,13 @@ class ListAPI extends AbstractAPI {
 					'getSavedSearchesForLiDA',
 					'getSavedSearchTitles',
 					'getListDetails',
+					'getUserListGroups',
+					'getListGroupDetails',
+					'createListGroup',
+					'deleteListGroup',
+					'editListGroup',
+					'editListGroupParent',
+					'getListGroupDetails'
 				])) {
 					$result = ['result' => $this->$method()];
 					$output = json_encode($result);
@@ -301,6 +308,28 @@ class ListAPI extends AbstractAPI {
 			'success' => true,
 			'lists' => $results,
 			'count' => $count,
+		];
+	}
+
+	function getUserListGroups(): array {
+		$user = $this->getUserForApiCall();
+
+		if ($user === false) {
+			return [
+				'success' => false,
+				'message' => 'Sorry, we could not find a user with those credentials.',
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+		$listGroup = new UserListGroup();
+		$listGroups = $listGroup->getListGroups($user);
+		$unassignedLists = $user->getUnassignedListsForListGroups();
+
+		return [
+			'success' => true,
+			'groups' => $listGroups,
+			'unassigned' => $unassignedLists,
 		];
 	}
 
@@ -1072,6 +1101,27 @@ class ListAPI extends AbstractAPI {
 			$list->public = isset($_REQUEST['public']) ? (($_REQUEST['public'] == true || $_REQUEST['public'] == 1) ? 1 : 0) : 0;
 			$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) ? (($_REQUEST['displayListAuthor'] == true || $_REQUEST['displayListAuthor'] == 1) ? 1 : 0) : 0;
 
+			$list->listGroupId = -1;
+			if (isset($_REQUEST['addToListGroupOption'])) {
+				$addToListGroupOption = $_REQUEST['addToListGroupOption'];
+				$addToListGroupNested = $_REQUEST['addToListGroupNested'] ?? 'none';
+				if ($addToListGroupOption == 'new') {
+					//Create a new list group
+					require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+					$listGroup = new UserListGroup();
+					$listGroup->title = $_REQUEST['addToListGroupNewName'];
+					$listGroup->userId = $user->id;
+					if ($addToListGroupNested != 'none') {
+						$listGroup->parentGroupId = $addToListGroupNested;
+					}
+					$listGroup->insert();
+					$list->listGroupId = $listGroup->id;
+				} elseif ($addToListGroupOption == "existing" && is_numeric($addToListGroupNested)) {
+					//Add to an existing list group
+					$list->listGroupId = intval($addToListGroupNested);
+				}
+			}
+
 			if ($existingList) {
 				$list->update();
 				$success = false;
@@ -1633,6 +1683,374 @@ class ListAPI extends AbstractAPI {
 			return [
 				'success' => false,
 				'message' => 'Login unsuccessful',
+			];
+		}
+	}
+
+	public function createListGroup(): ?array {
+		$user = $this->getUserForApiCall();
+		if ($user && !($user instanceof AspenError)) {
+			$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
+			if (strlen(trim($title)) == 0) {
+				return [
+					'success' => false,
+					'message' => 'You must provide a title for the list group',
+				];
+			} else {
+				$parentId = $_REQUEST['nestedGroupId'] ?? -1;
+				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+				$listGroup = new UserListGroup();
+				$listGroup->userId = $user->id;
+				$listGroup->title = $title;
+				$listGroup->parentGroupId = $parentId;
+				if ($listGroup->insert()) {
+					return [
+						'success' => true,
+						'message' => "List group $listGroup->title created successfully"
+					];
+				} else {
+					return [
+						'success' => false,
+						'message' => 'Could not create list group',
+					];
+				}
+			}
+		} else {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Login unsuccessful',
+					'isPublicFacing' => true
+				])
+			];
+		}
+	}
+
+	public function deleteListGroup() {
+		$user = $this->getUserForApiCall();
+		if ($user && !($user instanceof AspenError)) {
+			$groupId = $_REQUEST['groupId'] ?? null;
+			if ($groupId == null) {
+				return [
+					'success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true
+					]),
+					'message' => translate([
+						'text' => 'You must provide the id of the group to delete.',
+						'isPublicFacing' => true
+					]),
+				];
+			} else {
+				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+				$group = new UserListGroup();
+				$group->id = $groupId;
+				$group->userId = UserAccount::getActiveUserId();
+				if ($group->find(true)) {
+					if ($group->delete()) {
+						// Unassign any lists that were in this group
+						require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+						$userList = new UserList();
+						$userList->listGroupId = $groupId;
+						$userList->user_id = UserAccount::getActiveUserId();
+						$userList->find();
+						while ($userList->fetch()) {
+							$userList->listGroupId = -1;
+							$userList->update();
+						}
+
+						// Unassign any sub-groups that were in this group
+						$subGroup = new UserListGroup();
+						$subGroup->parentGroupId = $groupId;
+						$subGroup->userId = UserAccount::getActiveUserId();
+						$subGroup->find();
+						while ($subGroup->fetch()) {
+							$subGroup->parentGroupId = -1;
+							$subGroup->update();
+						}
+
+						return [
+							'success' => true,
+							'title' => translate([
+								'text' => 'Success',
+								'isPublicFacing' => true
+							]),
+							'message' => translate([
+								'text' => 'The list group was successfully deleted.',
+								'isPublicFacing' => true
+							]),
+						];
+					} else {
+						return [
+							'success' => false,
+							'title' => translate([
+								'text' => 'Error',
+								'isPublicFacing' => true
+							]),
+							'message' => translate([
+								'text' => 'The list group could not be deleted.',
+								'isPublicFacing' => true
+							]),
+						];
+					}
+				} else {
+					return [
+						'success' => false,
+						'title' => translate([
+							'text' => 'Error',
+							'isPublicFacing' => true
+						]),
+						'message' => translate([
+							'text' => 'The specified group could not be found.',
+							'isPublicFacing' => true
+						]),
+					];
+				}
+			}
+		} else {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Login unsuccessful',
+					'isPublicFacing' => true
+				])
+			];
+		}
+	}
+
+	public function editListGroup() {
+		$user = $this->getUserForApiCall();
+		if ($user && !($user instanceof AspenError)) {
+			$groupId = $_REQUEST['groupId'];
+			$newName = $_REQUEST['listGroupNameNew'];
+			if ($groupId && $newName) {
+				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+				$group = new UserListGroup();
+				$group->id = $groupId;
+				$group->userId = UserAccount::getActiveUserId();
+				if ($group->find(true)) {
+					$group->title = $newName;
+					if ($group->update()) {
+						return [
+							'success' => true,
+							'title' => translate([
+								'text' => 'Success',
+								'isPublicFacing' => true
+							]),
+							'message' => translate([
+								'text' => 'The list group was successfully updated.',
+								'isPublicFacing' => true
+							])
+						];
+					} else {
+						return [
+							'success' => false,
+							'title' => translate([
+								'text' => 'Error',
+								'isPublicFacing' => true
+							]),
+							'message' => translate([
+								'text' => 'The list group could not be updated.',
+								'isPublicFacing' => true
+							])
+						];
+					}
+				} else {
+					return [
+						'success' => false,
+						'title' => translate([
+							'text' => 'Error',
+							'isPublicFacing' => true
+						]),
+						'message' => translate([
+							'text' => 'The specified group could not be found.',
+							'isPublicFacing' => true
+						])
+					];
+				}
+			} else {
+				return [
+					'success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true
+					]),
+					'message' => translate([
+						'text' => 'You must provide the id of the group to modify and a new title.',
+						'isPublicFacing' => true,
+					])
+				];
+			}
+		} else {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Login unsuccessful',
+					'isPublicFacing' => true
+				])
+			];
+		}
+	}
+
+	public function editListGroupParent() {
+		$user = $this->getUserForApiCall();
+		if ($user && !($user instanceof AspenError)) {
+			$groupId = $_REQUEST['groupId'];
+			$listGroupMoveId = $_REQUEST['listGroupMove'];
+			if ($groupId && $listGroupMoveId) {
+				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+				$group = new UserListGroup();
+				$group->id = $groupId;
+				$group->userId = $user->id;
+				if ($group->find(true)) {
+					$group->parentGroupId = $listGroupMoveId;
+					if ($group->update()) {
+						return [
+							'success' => true,
+							'title' => translate([
+								'text' => 'Success',
+								'isPublicFacing' => true
+							]),
+							'message' => translate([
+								'text' => 'Your list group was successfully moved.',
+								'isPublicFacing' => true
+							])
+						];
+					} else {
+						return [
+							'success' => false,
+							'title' => translate([
+								'text' => 'Error',
+								'isPublicFacing' => true
+							]),
+							'message' => translate([
+								'text' => 'The list group could not be updated.',
+								'isPublicFacing' => true
+							])
+						];
+					}
+				} else {
+					return [
+						'success' => false,
+						'title' => translate([
+							'text' => 'Error',
+							'isPublicFacing' => true
+						]),
+						'message' => translate([
+							'text' => 'The specified group could not be found.',
+							'isPublicFacing' => true
+						])
+					];
+				}
+			} else {
+				return [
+					'success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true
+					]),
+					'message' => translate([
+						'text' => 'You must provide the id of the group to modify and a new parent id.',
+						'isPublicFacing' => true,
+					])
+				];
+			}
+		} else {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Login unsuccessful'
+				]),
+			];
+		}
+	}
+
+	public function getListGroupDetails() {
+		$user = $this->getUserForApiCall();
+		if ($user && !($user instanceof AspenError)) {
+			if (isset($_REQUEST['groupId'])) {
+				$groupId = $_REQUEST['groupId'];
+				$user->lastListGroupViewed = $groupId;
+				$user->update();
+				$activeListGroup = [];
+				if ($groupId == -1) {
+					$activeListGroup = $user->getUnassignedListsForListGroups();
+					require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+					$activeListGroupDetails = new UserListGroup();
+					$activeListGroupDetails->title = 'Unassigned Lists';
+					$activeListGroupDetails->id = -1;
+
+					return [
+						'success' => true,
+						'listGroupDetails' => $activeListGroupDetails,
+						'listsInGroup' => $activeListGroup,
+					];
+				} else {
+					require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+					$listGroup = new UserListGroup();
+					$listGroup->id = $groupId;
+					$listGroup->userId = $user->id;
+					if ($listGroup->find(true)) {
+						$listGroupDetails = $listGroup;
+						$userList = new UserList();
+						$userList->user_id = $user->id;
+						$userList->listGroupId = $listGroup->id;
+						$userList->find();
+						while ($userList->fetch()) {
+							$activeListGroup[] = clone $userList;
+						}
+					} else {
+						$activeListGroup = UserListGroup::getLastViewedGroupForUser($user);
+						$listGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser($user);
+					}
+
+					return [
+						'success' => true,
+						'listGroupDetails' => $listGroupDetails,
+						'listsInGroup' => $activeListGroup,
+					];
+				}
+			} else {
+				return [
+					'success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true
+					]),
+					'message' => translate([
+						'text' => 'You must provide the id of the group to get details for.',
+						'isPublicFacing' => true
+					]),
+				];
+			}
+		} else {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true
+				]),
+				'message' => translate([
+					'text' => 'Login unsuccessful',
+					'isPublicFacing' => true
+				])
 			];
 		}
 	}
