@@ -2,7 +2,7 @@
 set -e
 
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [BACKEND] $1"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [BACKEND] $1"
 }
 
 echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
@@ -82,18 +82,21 @@ for dir in "${directories[@]}"; do
     # Ensure persistent target directory exists
     mkdir -p "$dest"
 
-    # Move original data only if target is empty
-    if [ -d "$source" ] && [ "$(ls -A "$dest")" == "" ]; then
-        mv "$source"/* "$dest"/
+    # Move original data only if source is a real directory and target is empty
+    if [ -d "$source" ] && [ ! -L "$source" ] && [ "$(ls -A "$dest")" == "" ]; then
+        mv "$source"/* "$dest"/ 2>/dev/null || true
     fi
 
-    # Remove the source directory or symlink
-	rm -rf "$source"
+    # Remove source only if it's a real directory (not a symlink)
+    # This is required because ln -sfn can't replace a directory
+    if [ -d "$source" ] && [ ! -L "$source" ]; then
+        rm -rf "$source"
+    fi
 
-    # Create symlink
-    ln -s "$dest" "$source"
+    # Create symlink atomically (ln -sfn replaces existing symlink in one operation)
+    ln -sfn "$dest" "$source"
 
-	log "Created symlink: $source → $dest"
+    log "Created symlink: $source → $dest"
 done
 
 # Run pending database updates
