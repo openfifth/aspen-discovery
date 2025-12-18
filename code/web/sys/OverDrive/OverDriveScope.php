@@ -10,7 +10,7 @@ class OverDriveScope extends DataObject {
 	public $includeAdult;
 	public $includeTeen;
 	public $includeKids;
-	public $ignoreKindleFormat;
+	public $suppressKindleFormat;
 	protected $_libraries;
 	protected $_locations;
 
