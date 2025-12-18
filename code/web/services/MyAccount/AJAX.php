@@ -6138,7 +6138,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function completeStripeOrder() {
+	function completeStripeOrder() : array {
 		global $configArray;
 
 		$patronId = $_REQUEST['patronId'];
@@ -6170,14 +6170,23 @@ class MyAccount_AJAX extends JSON_Action {
 					$stripeSettings->id = $paymentLibrary->stripeSettingId;
 					if ($stripeSettings->find(true)) {
 						//header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCompleted?id=' . $payment->id);
-						return $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+						$result = $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+						$result['submitPaymentText'] = translate(['text' => 'Submit Payment', 'isPublicFacing'=>true]);
+						return $result;
 					} else {
 						return [
 							'success' => false,
-							'message' => 'Could not complete donation. Stripe is not setup for this library.'
+							'message' => 'Could not complete donation. Stripe is not setup for this library.',
+							'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
 						];
 					}
 				}
+			}else{
+				return [
+					'success' => false,
+					'message' => 'Payment settings were not properly configured.',
+					'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
+				];
 			}
 		} else {
 			//Get the order information
@@ -6201,17 +6210,21 @@ class MyAccount_AJAX extends JSON_Action {
 				$stripeSettings = new StripeSetting();
 				$stripeSettings->id = $paymentLibrary->stripeSettingId;
 				if ($stripeSettings->find(true)) {
-					return $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+					$result = $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+					$result['submitPaymentText'] = translate(['text' => 'Submit Payment', 'isPublicFacing'=>true]);
+					return $result;
 				} else {
 					return [
 						'success' => false,
-						'message' => 'Could not complete payment. Stripe is not setup for this library.'
+						'message' => 'Could not complete payment. Stripe is not setup for this library.',
+						'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
 					];
 				}
 			} else {
 				return [
 					'success' => false,
-					'message' => 'Unable to find payment in system to complete.'
+					'message' => 'Unable to find payment in system to complete.',
+					'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
 				];
 			}
 		}
