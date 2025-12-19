@@ -1506,6 +1506,9 @@ public class MarcRecordFormatClassifier {
 			printFormats.clear();
 			printFormats.add("Zines");
 		}
+		if (printFormats.contains("NintendoSwitch2")) {
+			printFormats.remove("NintendoSwitch");
+		}
 		if (printFormats.contains("Kinect") || printFormats.contains("XBox360")  || printFormats.contains("Xbox360")
 				|| printFormats.contains("XboxOne") || printFormats.contains("XBoxSeriesX") || printFormats.contains("PlayStation")
 				|| printFormats.contains("PlayStation2") || printFormats.contains("PlayStation3")
