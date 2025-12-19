@@ -4497,7 +4497,7 @@ class UserAPI extends AbstractAPI {
 		$browseCategoryId = $_REQUEST['browseCategoryId'];
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
-			if (strpos($browseCategoryId, "system_saved_searches") !== false) {
+			if ($browseCategoryId != "system_saved_searches" && strpos($browseCategoryId, "system_saved_searches") !== false) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				$searchEntry = new SearchEntry();
@@ -4532,7 +4532,7 @@ class UserAPI extends AbstractAPI {
 						];
 					}
 				}
-			} elseif (strpos($browseCategoryId, "system_user_lists") !== false) {
+			} elseif ($browseCategoryId != "system_user_lists" && str_starts_with($browseCategoryId, "system_user_lists")) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
@@ -4632,7 +4632,7 @@ class UserAPI extends AbstractAPI {
 		$browseCategoryId = $_REQUEST['browseCategoryId'];
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
-			if (strpos($browseCategoryId, "system_saved_searches") !== false) {
+			if ($browseCategoryId != "system_saved_searches" && str_starts_with($browseCategoryId, "system_saved_searches")) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				$searchEntry = new SearchEntry();
@@ -4667,7 +4667,7 @@ class UserAPI extends AbstractAPI {
 						]);
 					}
 				}
-			} elseif (strpos($browseCategoryId, "system_user_lists") !== false) {
+			} elseif ($browseCategoryId != "system_user_lists" && str_starts_with($browseCategoryId, "system_user_lists")) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
@@ -4771,7 +4771,7 @@ class UserAPI extends AbstractAPI {
 			if ($hiddenCategories > 0) {
 				$categories = [];
 				foreach ($hiddenCategories as $hiddenCategory) {
-					if (strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
+					if ($hiddenCategory->browseCategoryId != 'system_saved_searches' && strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$savedSearchesBrowseCategory = new BrowseCategory();
@@ -4792,7 +4792,7 @@ class UserAPI extends AbstractAPI {
 							}
 							$categories[] = $category;
 						}
-					} elseif (strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
+					} elseif ($hiddenCategory->browseCategoryId != 'system_user_lists' && strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$userListsBrowseCategory = new BrowseCategory();
