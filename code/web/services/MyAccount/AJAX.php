@@ -7960,7 +7960,7 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($patronId != UserAccount::getActiveUserId()) {
 			$result['message'] = 'Incorrect user information, please login again.';
 		} else {
-			if (strpos($browseCategoryId, "system_saved_searches") !== false) {
+			if ($browseCategoryId != "system_saved_searches" && strpos($browseCategoryId, "system_saved_searches") !== false) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				$searchEntry = new SearchEntry();
@@ -7992,7 +7992,7 @@ class MyAccount_AJAX extends JSON_Action {
 						];
 					}
 				}
-			} elseif (strpos($browseCategoryId, "system_user_lists") !== false) {
+			} elseif ($browseCategoryId != "system_user_lists" && str_starts_with($browseCategoryId, "system_user_lists")) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
@@ -8071,7 +8071,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($browseCategoryDismissals->count() > 0) {
 				$categories = [];
 				foreach ($hiddenCategories as $hiddenCategory) {
-					if (strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
+					if ($hiddenCategory->browseCategoryId != 'system_saved_searches' && strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$savedSearchesBrowseCategory = new BrowseCategory();
@@ -8093,7 +8093,7 @@ class MyAccount_AJAX extends JSON_Action {
 							$category['description'] = "";
 							$categories[] = $category;
 						}
-					} elseif (strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
+					} elseif ($hiddenCategory->browseCategoryId != 'system_user_lists' && strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$userListsBrowseCategory = new BrowseCategory();
@@ -8183,7 +8183,7 @@ class MyAccount_AJAX extends JSON_Action {
 		if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
 			$categoriesToShow = $_REQUEST['selected'];
 			foreach ($categoriesToShow as $showThisCategory => $selected) {
-				if (strpos($showThisCategory, "system_saved_searches") !== false) {
+				if ($showThisCategory != "system_saved_searches" && strpos($showThisCategory, "system_saved_searches") !== false) {
 					$label = explode('_', $showThisCategory);
 					$id = $label[3];
 					$searchEntry = new SearchEntry();
@@ -8205,7 +8205,7 @@ class MyAccount_AJAX extends JSON_Action {
 							$result['message'] = "User already had this category visible.";
 						}
 					}
-				} elseif (strpos($showThisCategory, "system_user_lists") !== false) {
+				} elseif ($showThisCategory != "system_user_lists" && strpos($showThisCategory, "system_user_lists") !== false) {
 					$label = explode('_', $showThisCategory);
 					$id = $label[3];
 					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
