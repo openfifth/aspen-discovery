@@ -6153,10 +6153,10 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/Donations/Donation.php';
 		require_once ROOT_DIR . '/sys/ECommerce/StripeSetting.php';
 
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
 		if ($transactionType == 'donation') {
 			//Get the order information
-			$payment = new UserPayment();
-			$payment->id = $paymentId;
 			$payment->transactionType = 'donation';
 			if ($payment->find(true)) {
 				$paymentId = $payment->id;
@@ -6190,8 +6190,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		} else {
 			//Get the order information
-			$payment = new UserPayment();
-			$payment->id = $paymentId;
 			$payment->userId = $patronId;
 			if ($payment->find(true)) {
 
