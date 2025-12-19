@@ -1,4 +1,4 @@
-image: docker:stable-git
+image: docker:29.0.1-cli
 
 services:
   - docker:dind

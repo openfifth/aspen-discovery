@@ -1,51 +1,107 @@
-### 1) Install Docker & Docker-Compose
+# Aspen Discovery - Docker
 
-Only these components are necessary before proceeding with the installation of Aspen:
+## Quick Start
 
-* Docker ([install instructions](https://docs.docker.com/engine/install/))
-* Docker Compose ([install instructions](https://docs.docker.com/compose/install/#install-compose-on-linux-systems))
-
-### 2) Prepare host
-
-This example deployment will persist the data on a directory structure inside
-the directory pointed by `$ASPEN_DATA_DIR`. You will need to adjust it for a production
-deployment.
-
-```
-echo "export ASPEN_INSTANCE=aspen" >> ~/.bashrc
-echo "export ASPEN_DATA_DIR=~/aspen-repos/${ASPEN_INSTANCE}" >> ~/.bashrc
-source ~/.bashrc
-```
-#### 2.1) Create the directories
-
-```
-mkdir -p ${ASPEN_DATA_DIR}/database \
-         ${ASPEN_DATA_DIR}/conf \
-         ${ASPEN_DATA_DIR}/data \
-         ${ASPEN_DATA_DIR}/logs
+```bash
+git clone https://github.com/Aspen-Discovery/aspen-discovery.git
+cd aspen-discovery/docker
+cp files/env/default.env .env
+docker compose up -d
 ```
 
-### 3.0) Copy docker-compose.yml and .env
-
-```
-curl -O ${ASPEN_DATA_DIR}/docker-compose.yml https://raw.githubusercontent.com/Aspen-Discovery/aspen-discovery/24.08.00/docker/docker-compose.yml
-curl -O ${ASPEN_DATA_DIR}/.env https://raw.githubusercontent.com/Aspen-Discovery/aspen-discovery/24.08.00/docker/env/default.env
-```
- 
-### 4) Create and start containers
-
-We go to the directory where the docker-compose.yml is located and execute :
-
-```
-docker compose -p aspen up -d
+Wait for initialization to complete:
+```bash
+docker compose logs -f backend
+# Look for: "Starting PHP-FPM in foreground mode..."
 ```
 
-You need to wait until "Aspen is ready to use!" message is displayed
-(Check 'docker logs -f aspen_backend' )
-### 5) Check Aspen instance is up
+Access Aspen at http://localhost:85 (default credentials: `aspen_admin` / `secretPass123`)
 
-On the browser :
+## Environment Variables
 
-```
-$URL:80
+### Site Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SITE_NAME` | `aspen` | Site identifier |
+| `URL` | `http://localhost:85` | Public URL |
+| `TITLE` | `Aspen Discovery` | Library title |
+| `LIBRARY` | `Test Library` | Library name |
+| `TIMEZONE` | `America/Argentina/Cordoba` | PHP timezone |
+| `ASPEN_ADMIN_PASSWORD` | `secretPass123` | Admin password |
+| `SUPPORTING_COMPANY` | `ByWater Solutions` | Support company name |
+
+### Database
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_HOST` | `db` | MariaDB hostname |
+| `DATABASE_PORT` | `3306` | MariaDB port |
+| `DATABASE_NAME` | `aspen` | Database name |
+| `DATABASE_USER` | `aspenusr` | Database user |
+| `DATABASE_PASSWORD` | `aspenpasswd` | Database password |
+| `DATABASE_ROOT_PASSWORD` | `password` | MariaDB root password |
+
+### Services
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `SOLR_HOST` | `solr` | Solr hostname |
+| `SOLR_PORT` | `8983` | Solr port |
+| `PHP_FPM_HOST` | `backend` | PHP-FPM hostname |
+| `PHP_FPM_PORT` | `9000` | PHP-FPM port |
+
+### Docker Images
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `BACKEND_IMAGE_TAG` | `aspendiscovery/aspen:latest` | Backend image |
+| `SOLR_IMAGE_TAG` | `aspendiscovery/solr:latest` | Solr image |
+| `MARIADB_IMAGE` | `mariadb:10.5` | MariaDB image |
+
+## Updating Configuration
+
+Environment variables are synced to configuration files on every container start. To apply changes:
+
+1. Edit your `.env` file
+2. Recreate containers:
+   ```bash
+   docker compose up -d --force-recreate
+   ```
+
+**Supported variables for runtime updates:**
+- `DATABASE_HOST`, `DATABASE_PORT`, `DATABASE_NAME`, `DATABASE_USER`, `DATABASE_PASSWORD`
+- `TIMEZONE`, `URL`, `TITLE`, `LIBRARY`
+- `SOLR_HOST`, `SOLR_PORT`
+
+**Note:** Changing database credentials requires the MariaDB user to already exist. MariaDB only creates users on first initialization.
+
+## Services & Ports
+
+| Service | Port | Description |
+|---------|------|-------------|
+| apache | 85 | Web interface |
+| solr | 8983 | Search engine admin |
+| backend | - | PHP-FPM (internal) |
+| cron | - | Background tasks (internal) |
+| db | 3306 | MariaDB (internal) |
+
+## Common Commands
+
+```bash
+# View logs
+docker compose logs -f backend
+
+# Shell access
+docker compose exec backend bash
+
+# Stop services
+docker compose down
+
+# Apply configuration changes
+docker compose up -d --force-recreate
+
+# Full reset (delete all data)
+docker compose down -v
+rm -rf data/
 ```

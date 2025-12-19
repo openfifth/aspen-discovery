@@ -1,7 +1,5 @@
 networks:
   net-aspen:
-  kohadev_kohanet:
-    external: true
 volumes:
   solr:
 
@@ -82,8 +80,9 @@ services:
       - SOLR_PORT=${SOLR_PORT:-8983}
     ports:
       - "${SOLR_PORT}:${SOLR_PORT:-8983}"
+    working_dir: /var/solr/data
     volumes:
-      - solr:/var/solr
+      - solr_data:/var/solr/data
     networks:
       - net-aspen
     depends_on:
