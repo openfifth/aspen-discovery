@@ -1273,4 +1273,14 @@ class UserPayment extends DataObject {
 			}
 		}
 	}
+
+	/**
+	 * @return UserPaymentLine[]
+	 */
+	public function getPaymentLines() : array {
+		require_once ROOT_DIR . '/sys/Account/UserPaymentLine.php';
+		$paymentLines = new UserPaymentLine();
+		$paymentLines->paymentId = $this->id;
+		return $paymentLines->fetchAll();
+	}
 }
