@@ -1162,13 +1162,13 @@ class UserPayment extends DataObject {
 				);
 				$userPayment->message .= $userPayment->id . " : " . $payload['transactionamount'] . " != " . $userPayment->totalPaid;
 			} else {
-				$userPayment->completed = true; //  Payment was processed successfully at SnapPay
 				$userPayment->totalPaid = $payload['transactionamount'];
 				if ($userPayment->transactionType == 'donation') { //Check to see if we have a donation for this payment
 					require_once ROOT_DIR . '/sys/Donations/Donation.php';
 					$donation = new Donation();
 					$donation->paymentId = $userPayment->id;
 					if ($donation->find(true)) {
+                        $userPayment->completed = true; //  Payment was processed successfully at SnapPay
 						$userPayment->message = translate([
 							'text' => 'Your donation payment has been completed. ',
 							'isPublicFacing' => true,
@@ -1182,6 +1182,7 @@ class UserPayment extends DataObject {
 						$userPayment->message .= $userPayment->id;
 						$donation->sendReceiptEmail();
 					} else {
+                        $userPayment->error = true;
 						$userPayment->message = translate(
 							[
 								'text' => 'Unable to locate donation with Payment Reference ID ',
@@ -1271,5 +1272,15 @@ class UserPayment extends DataObject {
 				$this->userId = $user->id;
 			}
 		}
+	}
+
+	/**
+	 * @return UserPaymentLine[]
+	 */
+	public function getPaymentLines() : array {
+		require_once ROOT_DIR . '/sys/Account/UserPaymentLine.php';
+		$paymentLines = new UserPaymentLine();
+		$paymentLines->paymentId = $this->id;
+		return $paymentLines->fetchAll();
 	}
 }

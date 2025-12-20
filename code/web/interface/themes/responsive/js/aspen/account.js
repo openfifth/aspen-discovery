@@ -2047,7 +2047,7 @@ AspenDiscovery.Account = (function () {
 						const cardButton = document.getElementById('process-stripe-payment');
 						if (cardButton) {
 							cardButton.disabled = false;
-							cardButton.innerHTML = "{translate text = 'Submit Payment' isPublicFacing=true}";
+							cardButton.innerHTML = data.submitPaymentText;
 						}
 					}
 				}
