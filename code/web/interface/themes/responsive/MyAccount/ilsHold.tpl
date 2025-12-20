@@ -3,7 +3,7 @@
 	<div class="result row ilsHold_{$record->sourceId|escapeCSS}_{$record->cancelId|escapeCSS}">
 		{if $section != 'available'}
 			<div class="selectTitle col-xs-12 col-sm-1">
-				{if $record->cancelable || $record->canFreeze}
+				{if ($record->cancelable || $record->canFreeze) && !$record->cancelled}
 					<input type="checkbox" name="selected[{$record->userId}|{$record->sourceId}|{$record->cancelId}]"
 						   class="titleSelect" id="selected{$record->cancelId}">
 				{/if}
@@ -207,6 +207,14 @@
 								</div>
 							</div>
 						{/if}
+						{if $record->expirationDate && $record->cancelled}
+							<div class="row">
+								<div class="result-label col-tn-4">{translate text='Cancelled On' isPublicFacing=true}</div>
+								<div class="col-tn-8 result-value">
+									<strong>{$record->expirationDate|date_format:"%b %d, %Y"}</strong>
+								</div>
+							</div>
+						{/if}
 
 						{if !empty($record->automaticCancellationDate) && $showHoldCancelDate}
 							<div class="row">
@@ -253,29 +261,35 @@
 								{/if}
 							{/if}
 						{else}
-							{if $record->cancelable}
-								{* First step in cancelling a hold is now fetching confirmation message, with better labeled buttons. *}
-								<button onclick="return AspenDiscovery.Account.confirmCancelHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', {if $record->isIll}1{else}0{/if});"
+							{if $record->cancelled}
+								{*Give user option to re-place a cancelled hold using the same information used to place the hold before being cancelled*}
+								<button onclick="return AspenDiscovery.Account.confirmReplaceHold('{$record->userId}', '{$record->recordId}', '{$record->pickupLocationId}', {if $record->isIll}1{else}0{/if});"
+										class="btn btn-sm btn-primary btn-wrap replaceButton">{translate text="Place Hold" isPublicFacing=true}</button>
+							{else}
+								{if $record->cancelable}
+									{* First step in cancelling a hold is now fetching confirmation message, with better labeled buttons. *}
+									<button onclick="return AspenDiscovery.Account.confirmCancelHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', {if $record->isIll}1{else}0{/if});"
 										class="btn btn-sm btn-warning cancelButton">{translate text="Cancel Hold" isPublicFacing=true}</button>
-							{/if}
-							{if $record->canFreeze}
-								{if !$record->isIll}
-									{if $record->frozen}
-										<button onclick="return AspenDiscovery.Account.thawHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', this);"
+								{/if}
+								{if $record->canFreeze}
+									{if !$record->isIll}
+										{if $record->frozen}
+											<button onclick="return AspenDiscovery.Account.thawHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', this);"
 												class="btn btn-sm btn-default thawButton">{translate text="Thaw Hold" isPublicFacing=true}</button>
-									{else}
-										<button onclick="return AspenDiscovery.Account.freezeHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', {if !empty($suspendRequiresReactivationDate)}true{else}false{/if}, this);"
+										{else}
+											<button onclick="return AspenDiscovery.Account.freezeHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', {if !empty($suspendRequiresReactivationDate)}true{else}false{/if}, this);"
 												class="btn btn-sm btn-default freezeButton">{translate text="Freeze Hold" isPublicFacing=true}</button>
+										{/if}
 									{/if}
 								{/if}
-							{/if}
-							{if $record->locationUpdateable && $numPickupBranches > 1}
-								<button onclick="return AspenDiscovery.Account.changeHoldPickupLocation('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', '{$record->pickupLocationId}', '{$record->source}');"
+								{if $record->locationUpdateable && $numPickupBranches > 1}
+									<button onclick="return AspenDiscovery.Account.changeHoldPickupLocation('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', '{$record->pickupLocationId}', '{$record->source}');"
 										class="btn btn-sm btn-default btn-wrap changePickupLocationButton">{translate text="Change Pickup Loc." isPublicFacing=true}</button>
+								{/if}
 							{/if}
 						{/if}
 					</div>
-					{if !empty($showWhileYouWait) && !$record->isIll}
+					{if !empty($showWhileYouWait) && !$record->isIll && !$record->cancelled}
 						<div class="btn-group btn-group-vertical btn-block">
 							{if !empty($record->getGroupedWorkId())}
 								<button onclick="return AspenDiscovery.GroupedWork.getWhileYouWait('{$record->getGroupedWorkId()}', '{$record->format}');"

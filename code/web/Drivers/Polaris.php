@@ -532,9 +532,11 @@ class Polaris extends AbstractIlsDriver {
 		global $library;
 		$availableHolds = [];
 		$unavailableHolds = [];
+		$cancelledHolds = [];
 		$holds = [
 			'available' => $availableHolds,
 			'unavailable' => $unavailableHolds,
+			'cancelled' => $cancelledHolds,
 		];
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/all";
 		$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
@@ -554,6 +556,7 @@ class Polaris extends AbstractIlsDriver {
 				$curHold->locationUpdateable = true;
 				$curHold->cancelable = true;
 				$isAvailable = false;
+				$isCancelled = false;
 				switch ($holdInfo->StatusID) {
 					case 1:
 						//Frozen
@@ -591,17 +594,20 @@ class Polaris extends AbstractIlsDriver {
 					case 8:
 						//Unclaimed - Don't show this one
 						$curHold->status = $holdInfo->StatusDescription;
-						continue 2;
+						$curHold->expirationDate = $this->parsePolarisDate($holdInfo->ExpirationDate);
+						$isCancelled = true;
 						break;
 					case 9:
 						//Expired - Don't show this one
 						$curHold->status = $holdInfo->StatusDescription;
-						continue 2;
+						$curHold->expirationDate = $this->parsePolarisDate($holdInfo->ExpirationDate);
+						$isCancelled = true;
 						break;
 					case 16:
-						//Cancelled - Don't show this one
+						//Cancelled
 						$curHold->status = $holdInfo->StatusDescription;
-						continue 2;
+						$curHold->expirationDate = $this->parsePolarisDate($holdInfo->ExpirationDate);
+						$isCancelled = true;
 						break;
 				}
 				if (!$isAvailable) {
@@ -636,7 +642,6 @@ class Polaris extends AbstractIlsDriver {
 					$curHold->pickupLocationName = $holdInfo->PickupBranchName;
 				}
 
-				$curHold->expirationDate = $this->parsePolarisDate($holdInfo->PickupByDate);
 				$curHold->position = $holdInfo->QueuePosition;
 				$curHold->holdQueueLength = $holdInfo->QueueTotal;
 				$curHold->volume = $holdInfo->VolumeNumber;
@@ -656,6 +661,7 @@ class Polaris extends AbstractIlsDriver {
 				}
 
 				$curHold->available = $isAvailable;
+				$curHold->cancelled = $isCancelled;
 				if ($curHold->available) {
 					if (!$library->allowChangingPickupLocationForAvailableHolds) {
 						$curHold->locationUpdateable = false;
@@ -665,6 +671,8 @@ class Polaris extends AbstractIlsDriver {
 					}
 
 					$holds['available'][] = $curHold;
+				} else if ($curHold->cancelled) {
+					$holds['cancelled'][] = $curHold;
 				} else {
 					$holds['unavailable'][] = $curHold;
 				}
@@ -853,7 +861,7 @@ class Polaris extends AbstractIlsDriver {
 		}
 
 		//Need to set the Workstation
-		$body->WorkstationID = $this->getWorkstationID($patron);
+		$body->WorkstationID = "1";
 		//Get the ID of the staff user
 		$staffUserInfo = $this->getStaffUserInfo();
 		$body->UserID = (int)$staffUserInfo['polarisId'];
@@ -1019,12 +1027,12 @@ class Polaris extends AbstractIlsDriver {
 	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
 		if (!$isIll) {
 			$staffInfo = $this->getStaffUserInfo();
-			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$cancelId/cancelled?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}";
+			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$cancelId/cancelled?wsid=1&userid={$staffInfo['polarisId']}";
 			$response = $this->getWebServiceResponse($polarisUrl, 'PUT', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.cancelHold', 'PUT', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		} else {
 			$staffInfo = $this->getStaffUserInfo();
-			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/illrequests/$cancelId/cancelled?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}";
+			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/illrequests/$cancelId/cancelled?wsid=1&userid={$staffInfo['polarisId']}";
 			$response = $this->getWebServiceResponse($polarisUrl, 'PUT', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.cancelIllHold', 'PUT', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		}

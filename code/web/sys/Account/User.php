@@ -1936,7 +1936,7 @@ class User extends DataObject {
 		return $this->_isBlockedFromIllRequests;
 	}
 
-	public function getHolds($includeLinkedUsers = true, $unavailableSort = 'sortTitle', $availableSort = 'expire', $source = 'all'): array {
+	public function getHolds($includeLinkedUsers = true, $unavailableSort = 'sortTitle', $availableSort = 'expire', $source = 'all', $cancelledSort = 'expirationDate'): array {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		// Reload cached information if it was last fetched more than the cache timeout or if the refresh option is selected.
 		$reloadHoldInformation = false;
@@ -1947,11 +1947,13 @@ class User extends DataObject {
 		$holdsToReturn = [
 			'available' => [],
 			'unavailable' => [],
+			'cancelled' => [],
 		];
 		if ($reloadHoldInformation) {
 			$allHolds = [
 				'available' => [],
 				'unavailable' => [],
+				'cancelled' => [],
 			];
 			global $offlineMode;
 			if ($this->hasIlsConnection() && !$offlineMode) {
@@ -2040,8 +2042,7 @@ class User extends DataObject {
 					global $logger;
 					$logger->log('Could not save available hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
 				}
-			}
-			foreach ($allHolds['unavailable'] as $holdToSave) {
+			}foreach ($allHolds['unavailable'] as $holdToSave) {
 				if (is_null($holdToSave->sourceId)) {
 					$holdToSave->sourceId = '';
 				}
@@ -2052,6 +2053,18 @@ class User extends DataObject {
 					global $logger;
 					$logger->log('Could not save unavailable hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
 				}
+			}foreach ($allHolds['cancelled'] as $holdToSave) {
+				if (is_null($holdToSave->sourceId)) {
+					$holdToSave->sourceId = '';
+				}
+				if (is_null($holdToSave->recordId)) {
+					$holdToSave->recordId = '';
+				}
+				if (!$holdToSave->insert()) {
+					global $logger;
+					$logger->log('Could not save cancelled hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
+				}
+
 			}
 			$this->__set('holdInfoLastLoaded', time());
 			$this->update();
@@ -2072,6 +2085,8 @@ class User extends DataObject {
 				$key .= $hold->userId;
 				if ($hold->available) {
 					$holdsToReturn['available'][$key] = $hold;
+				} elseif ($hold->cancelled) {
+					$holdsToReturn['cancelled'][$key] = $hold;
 				} else {
 					$holdsToReturn['unavailable'][$key] = $hold;
 				}
@@ -2081,7 +2096,7 @@ class User extends DataObject {
 		if ($includeLinkedUsers) {
 			if ($this->getLinkedUsers() != null) {
 				foreach ($this->getLinkedUsers() as $user) {
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $user->getHolds(false, $unavailableSort, $availableSort, $source));
+					$holdsToReturn = array_merge_recursive($holdsToReturn, $user->getHolds(false, $unavailableSort, $availableSort, $source, $cancelledSort));
 				}
 			}
 		}
@@ -2152,6 +2167,10 @@ class User extends DataObject {
 					$indexToSortBy = 'expirationDate';
 			}
 			uasort($holdsToReturn['available'], $holdSort);
+		}
+		if (!empty($holdsToReturn['cancelled'])) {
+			uasort($holdsToReturn['cancelled'], $holdSort);
+			arsort($holdsToReturn['cancelled']);
 		}
 		if (!empty($holdsToReturn['unavailable'])) {
 			if ($unavailableSort === 'reactivate') {
