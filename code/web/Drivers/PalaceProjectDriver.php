@@ -778,13 +778,13 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	}
 
 	/**
-	 * @param $user
+	 * @param User $user
 	 */
-	public function trackUserUsageOfPalaceProject($user): void {
+	public function trackUserUsageOfPalaceProject(User $user): void {
 		require_once ROOT_DIR . '/sys/PalaceProject/UserPalaceProjectUsage.php';
 		$userUsage = new UserPalaceProjectUsage();
 
-		$userPalaceProjectTracking = $user->userCookiePreferenceLocalAnalytics;
+		$userPalaceProjectTracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;;
 		$userUsage->userId = $user->id;
 		$userUsage->year = date('Y');
 		$userUsage->month = date('n');
