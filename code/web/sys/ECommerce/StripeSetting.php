@@ -183,6 +183,7 @@ class StripeSetting extends DataObject {
 			$description .= ' - Total: ' . $amountDisplay;
 		}
 
+		$paymentLines = $payment->getPaymentLines();
 		$metadata = [
 			'Transaction Type' => ucfirst($transactionType),
 		];
@@ -196,6 +197,10 @@ class StripeSetting extends DataObject {
 		}
 		if (!empty($user->ils_barcode)) {
 			$metadata['Patron Barcode'] = $user->ils_barcode;
+		}
+		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
+		foreach ($paymentLines as $i => $paymentLine) {
+			$metadata['Line ' . ($i + 1)] = $paymentLine->description . " - " . StringUtils::formatCurrency($paymentLine->amountPaid);
 		}
 
 		$postParams = [
@@ -265,7 +270,7 @@ class StripeSetting extends DataObject {
 					$payment->totalPaid = number_format($totalPaid / 100, 2, '.', '');
 
 					// Extract receipt URL from the charge.
-					// PaymentIntent has a latest_charge field that contains the receipt_url.
+					// PaymentIntent has the latest_charge field that contains the receipt_url.
 					if (!empty($paymentResponse['latest_charge'])) {
 						$chargeId = $paymentResponse['latest_charge'];
 						$baseUrl = 'https://api.stripe.com';
