@@ -137,8 +137,16 @@ AspenDiscovery.Events = (function(){
 						// Wait a tick for the DOM to render before running the display logic
 						setTimeout(function() {
 							AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+							AspenDiscovery.Events.displayWaitingListEnable();
+							AspenDiscovery.Events.displayWaitingListNumberOfSeats();
+
 							$('#registrationRequired').off('change').on('change', function() {
 								AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+								AspenDiscovery.Events.displayWaitingListEnable();
+								AspenDiscovery.Events.displayWaitingListNumberOfSeats();
+							});
+							$('#waitingList').off('change').on('change', function() {
+								AspenDiscovery.Events.displayWaitingListNumberOfSeats();
 							});
 						}, 0);
 
