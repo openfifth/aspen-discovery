@@ -3130,8 +3130,20 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
-		joinEventWaitingList: function () {
-			console.log("join event waiting list");
+		joinEventWaitingList: function (eventId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=joinEventWaitingList";
+			var params = {
+				eventId: eventId
+			}
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail (AspenDiscovery.ajaxFail);
+			return false;
 		}
 	};
 }(AspenDiscovery.Account || {}));

@@ -11577,4 +11577,142 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 
 	}
+
+	public function joinEventWaitingList() {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Unknown error occurred',
+				'isPublicFacing' => true,
+			])
+		];
+
+		if (!UserAccount::isLoggedIn()) {
+			$result['message'] = translate([
+				'text' => 'You must be logged in to join the waiting list.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$user = UserAccount::getLoggedInUser();
+		$userId = $user->id;
+		$eventInstanceId = $_REQUEST['eventId'] ?? null;
+
+		if (empty($eventInstanceId)) {
+			$result['message'] = translate([
+				'text' => 'Invalid Event ID.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		// Load the event instance
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate([
+				'text' => 'Event not found.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		// Check if waiting list is enabled
+		if (!$eventInstance->waitingList) {
+			$result['message'] = translate([
+				'text' => 'This event does not have a waiting list enabled',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		// Check if user is already on the waiting list
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		$existingEntry = new UserAspenEventInstanceWaitingList();
+		$existingEntry->eventInstanceId = $eventInstanceId;
+		$existingEntry->userId = $userId;
+		
+		if ($existingEntry->find(true)) {
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Already on Waiting List',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You are already on the waiting list for this event.',
+				'isPublicFacing' => true,
+			]);
+			$result['position'] = $existingEntry->position;
+			return $result;
+		}
+
+		// Check available waiting list spaces
+		if ($eventInstance->waitingListNumberOfSeats !== null) {
+			$waitingList = new UserAspenEventInstanceWaitingList();
+			$waitingList->eventInstanceId = $eventInstanceId;
+			$waitingList->whereAdd("status IN ('waiting', 'notified')");
+			$currentCount = $waitingList->count();
+
+			if ($currentCount >= $eventInstance->waitingListNumberOfSeats) {
+				$result['message'] = translate([
+				'text' => 'The waiting list for this event is full.',
+				'isPublicFacing' => true,
+			]);
+				return $result;
+			}
+		}
+
+		// Get next position
+		$positionQuery = new UserAspenEventInstanceWaitingList();
+		$positionQuery->eventInstanceId = $eventInstanceId;
+		$positionQuery->orderBy('position DESC');
+		$positionQuery->limit(0,1);
+		
+		$nextPosition = 1;
+		if ($positionQuery->find(true)) {
+			$nextPosition = $positionQuery->position + 1;
+		}
+
+		// Get event title for the message
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+		$event = new Event();
+		$event->id = $eventInstance->eventId;
+		$event->find(true);
+
+		// Create new waiting list entry
+		$newEntry = new UserAspenEventInstanceWaitingList();
+		$newEntry->eventId = $eventInstanceId;
+		$newEntry->userId = $userId;
+		$newEntry->position = $nextPosition;
+		$newEntry->status = 'waiting';
+		$newEntry->joinedAt = date('Y-m-d H:i:s');
+
+		if ($newEntry->insert()) {
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Added to Waiting List',
+				'isPublicFacing' => true,
+			]);
+			$message = translate([
+				'text' => 'You have been added to the waiting list for %1%. You are in position #%2%.',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = str_replace(['%1%', '%2%'], [$event->title, $nextPosition], $message);
+			$result['position'] = $nextPosition;
+		} else {
+			$result['message'] = translate([
+				'text' => 'Failed to add you to the waiting list. Please try again.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
 }
