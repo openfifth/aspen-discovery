@@ -3280,6 +3280,9 @@ AspenDiscovery.Account = (function () {
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				console.error('AJAX Error: ', textStatus, errorThrown);
 			})
+		},
+		joinEventWaitingList: function () {
+			console.log("join event waiting list");
 		}
 	};
 }(AspenDiscovery.Account || {}));
