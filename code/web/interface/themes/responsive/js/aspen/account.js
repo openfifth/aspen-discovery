@@ -3119,5 +3119,8 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
+		joinEventWaitingList: function () {
+			console.log("join event waiting list");
+		}
 	};
 }(AspenDiscovery.Account || {}));
