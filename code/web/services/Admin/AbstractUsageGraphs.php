@@ -6,13 +6,14 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 	abstract function getBreadcrumbs(): array;
 	abstract function getActiveAdminSection(): string;
 	abstract protected function assignGraphSpecificTitle(string $stat): void;
-	abstract protected function getAndSetInterfaceDataSeries(string $stat, string $instanceName): void;
+	abstract protected function getAndSetInterfaceDataSeries(string $stat, string $instanceName, array $timeframes): void;
 
 	// methods shared amongst all usagegraph classes
 	protected function launchGraph(string $sectionName): void {
 		global $interface;
 
 		$stat = $_REQUEST['stat'];
+		$timeframe = $_REQUEST['timeframe'] ?? 'month';
 		if (!empty($_REQUEST['instance'])) {
 			$instanceName = $_REQUEST['instance'];
 		} else {
@@ -35,10 +36,44 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$interface->assign('propName', 'exportToCSV');
 
 		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
+		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), $this->setSelectAdd($timeframe));
 		
 		$graphTitle = $interface->getVariable('graphTitle');
 		$this->display('../Admin/usage-graph.tpl', $graphTitle);
+	}
+
+	private function setGroupBy(string $timeframe, string $startDate = null, string $periodLength = null): array {
+		if ($timeframe == 'day') {
+			return ['year', 'month', 'day'];
+		}
+		if ($timeframe == 'month') {
+			return ['year', 'month'];
+		}
+		if ($timeframe == 'week') {
+			return ['year', 'week'];
+		}
+		if ($timeframe == 'year') {
+			return ['year'];
+		}
+		// if ($timeframe == 'custom') {}
+		return ['year', 'month']; // monthly is the default
+	}
+
+	private function setSelectAdd(string $timeframe, string $startDate = null, string $periodLength = null): string {
+		if ($timeframe == 'day') {
+			return "DAY(date) AS day, MONTH(date) AS month, YEAR(date) AS year";
+		}
+		if ($timeframe == 'month') {
+			return "MONTH(date) AS month, YEAR(date) AS year";
+		}
+		if ($timeframe == 'week') {
+			return "WEEK(date) AS week, YEAR(date) AS year";
+		}
+		if ($timeframe == 'year') {
+			return "YEAR(date) AS year";
+		}
+		// if ($timeframe == 'custom') {}
+		return "MONTH(date) AS month, YEAR(date) AS year"; // monthly is the default
 	}
 
 	public function canView(): bool {
