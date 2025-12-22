@@ -22,21 +22,24 @@ class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return 'system_reports';
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
 		global $interface;
 
+		$groupByTimeframe = implode(',', $timeframes);
 		$dataSeries = [];
 		$columnLabels = [];
 		$usage = new APIUsage();
-		$usage->groupBy('year, month');
+		$usage->groupBy($groupByTimeframe);
+		$usage->orderBy($groupByTimeframe);
 		if (!empty($instanceName)) {
 			$usage->instance = $instanceName;
 		}
 		$usage->whereAdd("method = '$stat'");
 		$usage->selectAdd();
-		$usage->selectAdd('year');
-		$usage->selectAdd('month');
-		$usage->orderBy('year, month');
+		
+		foreach ($timeframes as $timeframe) {
+			$usage->selectAdd($timeframe);
+		}
 		$dataSeries[$stat] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 		$usage->selectAdd('SUM(numCalls) as numCalls');
 
