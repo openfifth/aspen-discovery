@@ -13,6 +13,14 @@ function getUpdates26_01_00(): array {
 		 ], //name*/
 
 		//mark n
+		'library_control_holds_ready_for_pickup' => [
+			'title' => 'Library - Add Control over Holds Ready For Pickup Section',
+			'description' => 'Library - Add Control over Holds Ready For Pickup Section',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN showHoldsReadyForPickupSection TINYINT DEFAULT 1'
+			]
+		], //library_control_holds_ready_for_pickup
 
 		//kirstien
 

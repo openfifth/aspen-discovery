@@ -4042,11 +4042,7 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 
 		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
+			'success' => false
 		];
 
 		global $offlineMode;
@@ -4058,7 +4054,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$this->setShowCovers();
 
 			$user = UserAccount::getActiveUserObj();
-			if (UserAccount::isLoggedIn() == false || empty($user)) {
+			if (!UserAccount::isLoggedIn() || empty($user)) {
 				$result['message'] = translate([
 					'text' => "Your login has timed out. Please login again.",
 					'isPublicFacing' => true,
@@ -4182,11 +4178,10 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('showNotInterested', false);
 
 				global $offlineMode;
+				$allHolds = null;
 				if (!$offlineMode) {
-					if ($user) {
-						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUser);
-						$interface->assign('recordList', $allHolds);
-					}
+					$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUser);
+					$interface->assign('recordList', $allHolds);
 				}
 
 				$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
@@ -4200,6 +4195,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$readerName = new OverDriveDriver();
 				$readerName = $readerName->getReaderName();
 				$interface->assign('readerName', $readerName);
+
+				if ($source == 'ils') {
+					$showAvailableHoldsSection = $library->showHoldsReadyForPickupSection == 1 || ($allHolds != null && count($allHolds['available']) > 0);
+					$interface->assign('showAvailableHoldsSection', $showAvailableHoldsSection);
+				}else{
+					$interface->assign('showAvailableHoldsSection', true);
+				}
 
 				$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 			}
@@ -6165,6 +6167,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$donation->paymentId = $payment->id;
 				if (!$donation->find(true)) {
 					header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+					die();
 				} else {
 					$stripeSettings = new StripeSetting();
 					$stripeSettings->id = $paymentLibrary->stripeSettingId;
