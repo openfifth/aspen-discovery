@@ -34,6 +34,7 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$interface->assign('graphTitle', $sectionTitle);
 		$interface->assign('showCSVExportButton', true);
 		$interface->assign('propName', 'exportToCSV');
+		$interface->assign('timeframe', $timeframe);
 
 		$this->assignGraphSpecificTitle($stat);
 		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), $this->setSelectAdd($timeframe));
@@ -87,12 +88,13 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		global $interface;
 
 		$stat = $_REQUEST['stat'];
+		$timeframe = $_REQUEST['timeframe'] ?? 'month';
 		if (!empty($_REQUEST['instance'])) {
 			$instanceName = $_REQUEST['instance'];
 		} else {
 			$instanceName = '';
 		}
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName);
+		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), $this->setSelectAdd($timeframe));
 		$dataSeries = $interface->getVariable('dataSeries');
 
 		// ensures csv filename contains dashboard subsection name if relevant
