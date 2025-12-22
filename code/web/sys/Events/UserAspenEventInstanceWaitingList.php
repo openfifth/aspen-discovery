@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
-class UserAspenEvevntInstanceWaitingList extends DataObject {
+class UserAspenEventInstanceWaitingList extends DataObject {
 	public $__table = 'user_aspen_event_instance_waiting_list';
 	public $id;
 	public $userId;
@@ -9,4 +9,5 @@ class UserAspenEvevntInstanceWaitingList extends DataObject {
 	public $joinedAt;
 	public $notifiedAt;
 	public $expiresAt;
+	public $eventId;
 }
