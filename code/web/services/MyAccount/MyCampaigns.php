@@ -38,6 +38,9 @@ class MyCampaigns extends MyAccount {
         $campaignLeaderboardDisplay = $this->userLeaderboardButtonDisplay();
         $interface->assign('campaignLeaderboardDisplay', $campaignLeaderboardDisplay);
 
+        $useCampaignLeaderboards = $this->useCampaignLeaderboards();
+        $interface->assign('useCampaignLeaderboards', $useCampaignLeaderboards);
+
         $url = $this->getBaseUrl();
         $interface->assign('url', $url);
 
@@ -78,6 +81,18 @@ class MyCampaigns extends MyAccount {
             $campaignLeaderboardDisplay = $library->campaignLeaderboardDisplay;
         }
         return $campaignLeaderboardDisplay;
+    }
+
+    function useCampaignLeaderboards() {
+        global $library;
+        $user = UserAccount::getLoggedInUser();
+        if ($user->getHomeLibrary() != null) {
+            $userLibrary = $user->getHomeLibrary();
+            $useCampaignLeaderboards = $userLibrary->displayCampaignLeaderboard;
+        } else {
+            $useCampaignLeaderboards = $library->displayCampaignLeaderboard;
+        }
+        return $useCampaignLeaderboards;
     }
 
     public function getBaseUrl(): string {
