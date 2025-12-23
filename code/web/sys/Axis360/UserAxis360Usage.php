@@ -1,7 +1,7 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
+require_once ROOT_DIR . '/sys/AbstractUsage.php';
 
-
-class UserAxis360Usage extends DataObject {
+class UserAxis360Usage extends AbstractUsage {
 	public $__table = 'user_axis360_usage';
 	public $id;
 	public $instance;

@@ -1,7 +1,7 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
+require_once ROOT_DIR . '/sys/AbstractUsage.php';
 
-
-class UserSideLoadUsage extends DataObject {
+class UserSideLoadUsage extends AbstractUsage {
 	public $__table = 'user_sideload_usage';
 	public $id;
 	public $instance;
