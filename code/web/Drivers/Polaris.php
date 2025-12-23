@@ -140,7 +140,7 @@ class Polaris extends AbstractIlsDriver {
 	 * @return stdClass|null
 	 */
 	private function getBasicDataResponse(string $patronBarcode, ?string $password, bool $fromMasquerade = false) {
-		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patronBarcode}/basicdata?addresses=1";
+		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patronBarcode}/basicdata?addresses";
 		$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patronBarcode, $password, $fromMasquerade), false, $fromMasquerade);
 		ExternalRequestLogEntry::logRequest('polaris.getBasicDataResponse', 'GET', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		if ($response && $this->lastResponseCode == 200) {
