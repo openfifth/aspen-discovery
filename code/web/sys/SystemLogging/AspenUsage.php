@@ -1,6 +1,7 @@
 <?php
 /** @noinspection PhpUnused */
 /** @noinspection PhpMissingFieldTypeInspection */
+require_once ROOT_DIR . '/sys/AbstractUsage.php';
 
 class AspenUsage extends DataObject {
 	public $__table = 'aspen_usage';

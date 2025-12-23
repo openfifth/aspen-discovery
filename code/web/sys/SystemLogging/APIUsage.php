@@ -1,7 +1,7 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
+require_once ROOT_DIR . '/sys/AbstractUsage.php';
 
-
-class APIUsage extends DataObject {
+class APIUsage extends AbstractUsage {
 	public $__table = 'api_usage';
 	public $id;
 	public $instance;
@@ -43,20 +43,6 @@ class APIUsage extends DataObject {
 		} catch (PDOException) {
 			//This happens if the table has not been created, ignore it
 		}
-	}
-
-	public function getCurPeriod($timeframe) {
-		if ($timeframe == 'day') {
-			return "{$this->day}-{$this->month}-{$this->year}";
-		}
-		if ($timeframe == 'month') {
-			return "{$this->month}-{$this->year}";
-		}
-		if ($timeframe == 'year') {
-			return "{$this->year}";
-		}
-		// if ($timeframe == 'custom') {}
-		return "{$this->month}-{$this->year}"; // monthly is the default
 	}
 
 	public function okToExport(array $selectedFilters): bool {

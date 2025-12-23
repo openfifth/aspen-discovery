@@ -1,6 +1,7 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
+require_once ROOT_DIR . '/sys/AbstractUsage.php';
 
-class MaterialsRequestUsage extends DataObject {
+class MaterialsRequestUsage extends AbstractUsage {
 	public $__table = 'materials_request_usage';
 	public $id;
 	public $libraryId;
