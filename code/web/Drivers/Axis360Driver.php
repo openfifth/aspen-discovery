@@ -975,6 +975,7 @@ class Axis360Driver extends AbstractEContentDriver {
 		$axis360Stats->instance = $aspenUsage->getInstance();
 		$axis360Stats->year = date('Y');
 		$axis360Stats->month = date('n');
+		$axis360Stats->day = date('d');
 		if ($axis360Stats->find(true)) {
 			$axis360Stats->$fieldName++;
 			$axis360Stats->update();
