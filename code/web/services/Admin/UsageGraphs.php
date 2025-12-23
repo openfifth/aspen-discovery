@@ -29,16 +29,20 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		$dataSeries = [];
 		$columnLabels = [];
+
+		$groupByTimeframe = implode(',', $timeframes);
+
 		// Default: AspenUsage
 		$userUsage = new AspenUsage();
-		$userUsage->groupBy('year, month');
+		$userUsage->groupBy($groupByTimeframe);
 		if (!empty($instanceName)) {
 			$userUsage->instance = $instanceName;
 		}
 		$userUsage->selectAdd();
-		$userUsage->selectAdd('year');
-		$userUsage->selectAdd('month');
-		$userUsage->orderBy('year, month');
+		foreach ($timeframes as $timeframe) {
+			$userUsage->selectAdd($timeframe);
+		}
+		$userUsage->orderBy($groupByTimeframe);
 
 		//General Usage Stats
 		if ($stat == 'pageViews' || $stat == 'generalUsage') {
