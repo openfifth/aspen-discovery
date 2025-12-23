@@ -9,6 +9,7 @@ class UserSideLoadUsage extends DataObject {
 	public $sideLoadId;
 	public $year;
 	public $month;
+	public $day;
 	public $usageCount; //Number of clicks
 
 	public function getUniquenessFields(): array {
@@ -18,6 +19,7 @@ class UserSideLoadUsage extends DataObject {
 			'sideLoadId',
 			'year',
 			'month',
+			'day',
 		];
 	}
 

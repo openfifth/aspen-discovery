@@ -97,6 +97,7 @@ class ExternalEContent_AccessOnline extends Action {
 		$userUsage->sideLoadId = $sideLoadId;
 		$userUsage->year = date('Y');
 		$userUsage->month = date('n');
+		$userUsage->day = date('d');
 
 		if ($userUsage->find(true)) {
 			$userUsage->usageCount++;
