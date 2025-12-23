@@ -309,6 +309,9 @@ class Events_Calendar extends Action {
 		$interface->assign('headerImage', $headerImage['image'] ?? '');
 		$interface->assign('headerAlt', $headerImage['altText'] ?? '');
 
+		$calendarTitle = $this->getCalendarTitle($calendarDisplaySettingId);
+		$interface->assign('calendarTitle', $calendarTitle);
+
 		if ($useWeek) {
 			$this->display('calendar.tpl', 'Events Calendar ' . $formattedWeekYear, '');
 		} else {
@@ -334,6 +337,17 @@ class Events_Calendar extends Action {
 			$headerImage["altText"] =  $setting->altText ?? '';
 		}
 		return $headerImage;
+	}
+
+	function getCalendarTitle(int $calendarDisplaySettingId = 0) {
+		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
+		$setting = new CalendarDisplaySetting();
+		$setting->id = $calendarDisplaySettingId;
+		$calendarTitle = "";
+		if ($setting->find(true)) {
+			$calendarTitle =  $setting->calendarTitle;
+		}
+		return $calendarTitle;
 	}
 
 	function getCalendarDisplaySettingId() : int {
