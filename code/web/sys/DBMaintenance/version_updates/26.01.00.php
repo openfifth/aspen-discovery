@@ -26,6 +26,13 @@ function getUpdates26_01_00(): array {
 		//kirstien
 
 		//kodi
+		'full_month_names_events_calendar' => [
+			'title' => 'Events Calendar Full Month Names',
+			'description' => 'Add ability to display full month names on events calendars',
+			'sql' => [
+				'ALTER TABLE calendar_display_settings ADD COLUMN fullMonthName TINYINT NOT NULL DEFAULT 0'
+			]
+		], //full_month_names_events_calendar
 		'events_calendar_title' => [
 			'title' => 'Events Calendar Title',
 			'description' => 'Add the ability to create titles for event calendars in Calendar Display Settings',
