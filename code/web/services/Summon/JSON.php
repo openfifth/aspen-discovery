@@ -22,6 +22,7 @@ class Summon_JSON extends JSON_Action {
 		$summonRecordUsage->summonId = $id;
 		$summonRecordUsage->year = date('Y');
 		$summonRecordUsage->month = date('n');
+		$summonRecordUsage->day = date('d');
 		if ($summonRecordUsage->find(true)) {
 			$summonRecordUsage->timesUsed++;
 			$ret = $summonRecordUsage->update();
