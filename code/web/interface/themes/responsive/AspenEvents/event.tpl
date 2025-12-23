@@ -75,7 +75,9 @@
 						<li>{translate text="End Date: " isPublicFacing=true}{$recordDriver->getEndDate()|date_format:"%a %b %e, %Y %l:%M%p"}</li>
 					{else}
 						<li>{translate text="Date: " isPublicFacing=true}{$recordDriver->getStartDate()|date_format:"%A %B %e, %Y"}</li>
-						<li>{translate text="Time: " isPublicFacing=true}{$recordDriver->getStartDate()|date_format:"%l:%M %p"} to {$recordDriver->getEndDate()|date_format:"%l:%M %p"}</li>
+						{if !$recordDriver->hiddenTimestamps()}
+							<li>{translate text="Time: " isPublicFacing=true}{$recordDriver->getStartDate()|date_format:"%l:%M %p"} to {$recordDriver->getEndDate()|date_format:"%l:%M %p"}</li>
+						{/if}
 					{/if}
 					<li>{translate text="Branch: " isPublicFacing=true}{$recordDriver->getBranch()}</li>
 					{if !empty($recordDriver->getRoom())}

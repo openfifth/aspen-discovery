@@ -10158,6 +10158,17 @@ AspenDiscovery.Events = (function(){
 			return false;
 		},
 
+		toggleStartEndTimestamp: function () {
+			const hideTimestamps = $('#hideTimestamps');
+			if (hideTimestamps.is(":checked")) {
+				$("#propertyRowstartTime").hide();
+				$("#propertyRowendTime").hide();
+			} else {
+				$("#propertyRowstartTime").show();
+				$("#propertyRowendTime").hide();
+			}
+		},
+
 		getWeekofMonth: function (date) {
 			return date.week() - date.startOf('month').week() + 1;
 		},

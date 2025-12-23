@@ -227,6 +227,10 @@ class Events_Calendar extends Action {
 						if (array_key_exists('reservation_state', $result) && in_array('Cancelled', $result['reservation_state'])) {
 							$isCancelled = true;
 						}
+						$hiddenTimestamps = false;
+						if (!empty($result['hidden_timestamps']) && $result['hidden_timestamps'] == "true") {
+							$hiddenTimestamps = true;
+						}
 						$url = "";
 						$eventFields = [];
 						if (str_starts_with($result['id'], 'communico')){
@@ -278,6 +282,7 @@ class Events_Calendar extends Action {
 							'link' => $url,
 							'formattedTime' => $formattedTime,
 							'isCancelled' => $isCancelled,
+							'hiddenTimestamps' => $hiddenTimestamps,
 							'eventFields' => $eventFields,
 						];
 					}

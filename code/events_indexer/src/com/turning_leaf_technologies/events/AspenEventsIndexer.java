@@ -12,6 +12,9 @@ import java.io.IOException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.Date;
 import java.util.zip.CRC32;
@@ -103,9 +106,9 @@ public class AspenEventsIndexer {
 			PreparedStatement deleteEventsStmt;
 			if (runFullUpdate) {
 				// Get event instance and event info
-				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND ei.deleted = 0;");
+				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private, e.hideTimestamps FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND ei.deleted = 0;");
 			} else {
-				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND (e.dateUpdated > ? OR ei.dateUpdated > ?) AND ei.deleted = 0;");
+				eventsStmt = aspenConn.prepareStatement("SELECT ei.*, e.title, e.description, e.eventTypeId, e.locationId, l.displayName, sl.name AS sublocationName, sl2.name AS sublocationOverride, e.sublocationId, e.cover, e.private, e.hideTimestamps FROM event_instance AS ei LEFT JOIN event as e ON e.id = ei.eventID LEFT JOIN location AS l ON e.locationId = l.locationId LEFT JOIN sublocation AS sl on e.sublocationId = sl.id LEFT JOIN sublocation AS sl2 ON ei.sublocationId = sl2.id WHERE ei.date < ? AND (e.dateUpdated > ? OR ei.dateUpdated > ?) AND ei.deleted = 0;");
 				deleteEventsStmt = aspenConn.prepareStatement("SELECT id FROM event_instance WHERE deleted = 1 AND dateUpdated > ?;");
 				eventsStmt.setLong(2, lastUpdateOfChangedEvents);
 				eventsStmt.setLong(3, lastUpdateOfChangedEvents);
@@ -180,13 +183,19 @@ public class AspenEventsIndexer {
 				solrDocument.addField("last_change", null);
 				//Make sure the start date exists
 				Date startDate = eventInfo.getStartDateTime(logEntry);
-
 				solrDocument.addField("start_date", startDate);
 				if (startDate == null) {
 					continue;
 				}
 
-				solrDocument.addField("start_date_sort", startDate.getTime() / 1000);
+				if (eventInfo.getHideTimestamps()) {
+					//sort hidden timestamp events to top of that day
+					solrDocument.addField("start_date_sort", eventInfo.getHideTimestampsStart(logEntry).getTime() / 1000);
+					solrDocument.addField("hidden_timestamps", "true");
+				} else {
+					solrDocument.addField("start_date_sort", startDate.getTime() / 1000);
+					solrDocument.addField("hidden_timestamps", "false");
+				}
 				Date endDate = eventInfo.getEndDateTime(logEntry);
 				solrDocument.addField("end_date", endDate);
 
