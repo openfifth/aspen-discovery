@@ -111,6 +111,8 @@ class SearchObject_SummonSearcher extends SearchObject_BaseSearcher{
 		$this->searchType = 'summon';
 		$this->resultsModule = 'Summon';
 		$this->resultsAction = 'Results';
+		$this->sort = $_GET['sort'] ?? 'relevance';
+		$this->getSort();
 	}
 
 	/**
@@ -218,14 +220,41 @@ class SearchObject_SummonSearcher extends SearchObject_BaseSearcher{
 
 	public function getSort() {
 		$this->sortOptions = array(
-			'Relevance',
+			'relevance' => 'Relevance',
+			'date_desc' =>'Newest First',
+			'asc_date' => 'Oldest First',
 		);
+	}
+
+	protected function applySortOptions(array &$options) {
+		switch ($this->sort) {
+			case 'date_desc':
+				$options['s.sort'] = 'PublicationDate:desc';
+				unset($options['s.cmd']);
+				break;
+
+			case 'asc_date':
+				$options['s.sort'] = 'PublicationDate:asc';
+				unset($options['s.cmd']);
+				break;
+
+			case 'relevance':
+			default:
+				unset($options['s.sort']);
+				break;
+		}
 	}
 
 	//Build an array of options that will be passed into the final query string that will be sent to the Summon API
 	public function getOptions () {
 		//Search terms in an array with the index of your search and your search terms. We must add the index to the query and then add the 'look for' terms.
-		$searchQuery = $this->searchTerms[0]['index'].':('.implode('&', array_slice($this->searchTerms[0],1)).')';
+		$terms = $this->searchTerms[0];
+		$index = $terms['index'] ?? '';
+		unset($terms['index']);
+		$searchQuery = $index . ':(' . implode('&', $terms) . ')';
+
+
+
 		$options = array(
 			's.q' => $searchQuery,
 			//Results per page
@@ -252,8 +281,6 @@ class SearchObject_SummonSearcher extends SearchObject_BaseSearcher{
 			's.rff' => $this->rangeFacets,
 			//Filters
 			's.rf' => $this->rangeFilters,
-			//Order results
-			's.sort' => $this->getSort(),
 			//False by default
 			's.exp' => $this->expand ? 'true' : 'false',
 			//False by default
@@ -271,6 +298,7 @@ class SearchObject_SummonSearcher extends SearchObject_BaseSearcher{
 			//allows access to records
 			's.role' =>  'authenticated',
 		);
+		$this->applySortOptions($options);
 		return $options;
 	}
 

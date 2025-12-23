@@ -128,6 +128,7 @@
 		<field name="library_scopes" type="unchanged_string" indexed="true" stored="false" multiValued="true"/>
 
 		<field name="private" type="unchanged_string" indexed="true" stored="true" multiValued="true" default="public"/>
+		<field name="hidden_timestamps" type="unchanged_string" indexed="true" stored="true" multiValued="false" default="false"/>
 
 		<!-- Field to get random titles -->
 		<dynamicField name="random*" type="random" indexed="true" stored="true"/>

@@ -21,11 +21,16 @@ class WebBuilder_Images extends ObjectEditor {
 
 	function getAllObjects(int $page, int $recordsPerPage): array {
 		$object = new ImageUpload();
-		$object->type = 'web_builder_image';
+
+		// Only filter by type if explicitly requested (don't filter by default in list view).
+		if (isset($_REQUEST['type'])) {
+			$object->type = $_REQUEST['type'];
+		}
+
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
-		if (!UserAccount::userHasPermission('Administer All Web Content') && (UserAccount::userHasPermission('Administer Web Content for Home Library'))) {
+		if (!UserAccount::userHasPermission('Administer All Web Content') && !UserAccount::userHasPermission('Administer All Hero Sliders')) {
 			$libraryList = Library::getLibraryList(true);
 			$object->whereAddIn("owningLibrary", array_keys($libraryList), false, "OR");
 			$object->whereAdd("owningLibrary = -1", "OR");
@@ -47,14 +52,14 @@ class WebBuilder_Images extends ObjectEditor {
 	}
 
 	function updateFromUI($object, $structure, $fieldLocks): array {
-		$object->type = 'web_builder_image';
+		if (empty($object->type)) {
+			$object->type = $_REQUEST['type'] ?? 'web_builder_image';
+		}
 		return parent::updateFromUI($object, $structure, $fieldLocks);
 	}
 
 	function getObjectStructure($context = ''): array {
-		$objectStructure = ImageUpload::getObjectStructure($context);
-		unset($objectStructure['type']);
-		return $objectStructure;
+		return ImageUpload::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -89,7 +94,12 @@ class WebBuilder_Images extends ObjectEditor {
 	}
 
 	function canView(): bool {
-		return UserAccount::userHasPermission(['Administer All Web Content', 'Administer Web Content for Home Library']);
+		return UserAccount::userHasPermission([
+			'Administer All Web Content',
+			'Administer Web Content for Home Library',
+			'Administer All Hero Sliders',
+			'Administer Library Hero Sliders',
+		]);
 	}
 
 	function getActiveAdminSection(): string {
@@ -97,7 +107,7 @@ class WebBuilder_Images extends ObjectEditor {
 	}
 
 	function getInitializationJs(): string {
-		return 'AspenDiscovery.Admin.toggleLibrarySharingOptions();';
+		return 'AspenDiscovery.Admin.toggleLibrarySharingOptions(); AspenDiscovery.Admin.toggleHeroSliderFields();';
 	}
 
 	public function hasRecordLocking() : bool {

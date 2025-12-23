@@ -4142,11 +4142,7 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 
 		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
+			'success' => false
 		];
 
 		global $offlineMode;
@@ -4158,7 +4154,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$this->setShowCovers();
 
 			$user = UserAccount::getActiveUserObj();
-			if (UserAccount::isLoggedIn() == false || empty($user)) {
+			if (!UserAccount::isLoggedIn() || empty($user)) {
 				$result['message'] = translate([
 					'text' => "Your login has timed out. Please login again.",
 					'isPublicFacing' => true,
@@ -4302,6 +4298,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('showNotInterested', false);
 
 				global $offlineMode;
+				$allHolds = null;
 				if (!$offlineMode) {
 					if ($user) {
 						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
@@ -4326,6 +4323,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$readerName = $readerName->getReaderName();
 				$interface->assign('readerName', $readerName);
 				$interface->assign('showCancelled', $showCancelled);
+
+				if ($source == 'ils') {
+					$showAvailableHoldsSection = $library->showHoldsReadyForPickupSection == 1 || ($allHolds != null && count($allHolds['available']) > 0);
+					$interface->assign('showAvailableHoldsSection', $showAvailableHoldsSection);
+				}else{
+					$interface->assign('showAvailableHoldsSection', true);
+				}
 
 				$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 			}
@@ -6291,6 +6295,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$donation->paymentId = $payment->id;
 				if (!$donation->find(true)) {
 					header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+					die();
 				} else {
 					$stripeSettings = new StripeSetting();
 					$stripeSettings->id = $paymentLibrary->stripeSettingId;

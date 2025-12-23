@@ -1,7 +1,6 @@
 networks:
   net-aspen:
-  kohadev_kohanet:
-    external: true
+
 volumes:
   solr:
 

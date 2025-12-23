@@ -280,6 +280,7 @@ class Library extends DataObject {
 	public $allowPickupLocationUpdates;
 	public $hidePickupLocationPrompt;
 	public $showAlternateLibraryOptionsInProfile;
+	public $showHoldsReadyForPickupSection;
 	public $additionalCss;
 	public $maxRequestsPerYear;
 	public $yearlyRequestLimitType;
@@ -2178,6 +2179,18 @@ class Library extends DataObject {
 								'hideInLists' => true,
 								'default' => -1,
 								'permissions' => ['Library ILS Connection'],
+							],
+							'showHoldsReadyForPickupSection' => [
+								'property' => 'showHoldsReadyForPickupSection',
+								'type' => 'enum',
+								'label' => 'Show Holds Ready For Pickup Section For Physical Materials',
+								'description' => 'Whether or the Holds Ready for Pickup section should be displayed within the user account.',
+								'values' => [
+									1 => 'Always',
+									2 => 'Only when holds are ready'
+								],
+								'hideInLists' => true,
+								'default' => 1,
 							],
 							'showHoldPosition' => [
 								'property' => 'showHoldPosition',

@@ -82,7 +82,7 @@ class Events_CalendarDisplaySettings extends ObjectEditor {
 	}
 
 	function canView(): bool {
-		return UserAccount::userHasPermission('Print Calendars with Header Images');
+		return UserAccount::userHasPermission('Print Calendars with Header Images and Footer');
 	}
 
 	function getActiveAdminSection(): string {

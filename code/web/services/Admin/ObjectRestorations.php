@@ -39,6 +39,8 @@ class Admin_ObjectRestorations extends ObjectEditor {
 		'FileUpload'            => ['titleColumn' => 'title', 'classFile' => '/sys/File/FileUpload.php'],
 		'Placard'               => ['titleColumn' => 'title', 'classFile' => '/sys/LocalEnrichment/Placard.php'],
 		'Theme'                 => ['titleColumn' => 'displayName', 'classFile' => '/sys/Theming/Theme.php'],
+		'HeroSliderPlaylist'    => ['titleColumn' => 'name',  'classFile' => '/sys/HeroSlider/HeroSliderPlaylist.php'],
+		'HeroSliderLocation'    => ['titleColumn' => 'name',  'classFile' => '/sys/HeroSlider/HeroSliderLocation.php'],
 	];
 	private array $cachedRows;
 
