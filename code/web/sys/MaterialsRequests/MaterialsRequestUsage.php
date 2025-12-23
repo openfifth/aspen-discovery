@@ -6,6 +6,7 @@ class MaterialsRequestUsage extends DataObject {
 	public $libraryId;
 	public $year;
 	public $month;
+	public $day;
 	public $statusId;
 	public $numUsed;
 
@@ -14,6 +15,7 @@ class MaterialsRequestUsage extends DataObject {
 			'locationId',
 			'year',
 			'month',
+			'day',
 			'statusId',
 		];
 	}
@@ -24,6 +26,7 @@ class MaterialsRequestUsage extends DataObject {
 			$materialsRequestUsage = new MaterialsRequestUsage();
 			$materialsRequestUsage->year = date('Y');
 			$materialsRequestUsage->month = date('n');
+			$materialsRequestUsage->day = date('d');
 			$materialsRequestUsage->libraryId = $homeLocation;
 			$materialsRequestUsage->statusId = $status;
 			if ($materialsRequestUsage->find(true)) {
