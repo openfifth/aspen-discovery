@@ -9,8 +9,10 @@
 				<option {if $timeframe == 'custom'}selected{/if} value='custom'>{translate text='Custom period' isAdminFacing=true}</option>
 			</select>
 			<div id='custom-usage-period-wrapper' hidden>
-				<label for='custom-usage-period-field'>{translate text='Customer period duration (days)' isAdminFacing=true}</label>
-				<input type='number' name='custom-usage-period' id='custom-usage-period-field' min='1' class='form-control duration-input' hidden>
+				<label for='custom-usage-period-duration-field'>{translate text='Custom period duration (days)' isAdminFacing=true}</label>
+				<input type='number' name='custom-usage-period-duration' id='custom-usage-period-duration-field' min='1' class='form-control duration-input' hidden>
+				<label for='custom-usage-period-start-field'>{translate text='Custom period start (date)' isAdminFacing=true}</label>
+				<input type='number' name='custom-usage-period-start' id='custom-usage-period-start-field' min='1' class='form-control duration-input' hidden>
 			</div>
 			<input type="hidden" value="{$stat}" name="stat"/>
 		</div>
