@@ -229,7 +229,6 @@ class Pay360_Client  {
 	}
 
 	// services
-	private function handleTimeout() {}
 	private function _getMultiLineItemParameters(): array|null {
 		if (!$this->catalogDriver) {
 			return null;
