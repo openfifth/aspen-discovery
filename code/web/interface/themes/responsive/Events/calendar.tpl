@@ -5,7 +5,7 @@
 		<img src="{$headerImage}" {if !empty($headerAlt)}alt="{translate text=$headerAlt inAttribute=true isPublicFacing=true}" title="{translate text=$headerAlt inAttribute=true isPublicFacing=true}"{/if} id="calendar-header">
 	</div>
 {/if}
-<h1 class="calendar-event-h1">{translate text='Events Calendar' isPublicFacing=true}</h1>
+<h1 class="calendar-event-h1">{translate text=($calendarTitle) isPublicFacing=true}</h1>
 	<div class="row">
 		<div class="col-tn-2 col-sm-1 calendar-nav-cell"><a class="btn btn-default" href="" onclick='return AspenDiscovery.Events.getPrintListOptions({if !empty($weekNumber)}{$weekNumber}{else}""{/if}, {if !empty($monthNumber)}{$monthNumber}{else}""{/if}, {$yearNumber})'>{translate text="Print Options" isPublicFacing=true} </a></div>
 	</div>

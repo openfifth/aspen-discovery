@@ -78,7 +78,8 @@ class Events_Calendar extends Action {
 			$monthFilter = $year . '-' . $paddedMonth;
 			$calendarStart = "$paddedMonth/1/$year";
 			$calendarStartDay = new DateTime($calendarStart);
-			$formattedMonthYear = $calendarStartDay->format("M Y");
+			$monthDisplay = $this->getMonthDisplaySetting($calendarDisplaySettingId);
+			$formattedMonthYear = $monthDisplay ? $calendarStartDay->format("F Y") : $calendarStartDay->format("M Y");
 			$week = (int)$calendarStartDay->format("W") + 1;
 			$interface->assign('calendarMonth', $formattedMonthYear);
 			$weekLink = "/Events/Calendar?week=$week&year=$year";
@@ -314,6 +315,9 @@ class Events_Calendar extends Action {
 		$interface->assign('headerImage', $headerImage['image'] ?? '');
 		$interface->assign('headerAlt', $headerImage['altText'] ?? '');
 
+		$calendarTitle = $this->getCalendarTitle($calendarDisplaySettingId);
+		$interface->assign('calendarTitle', $calendarTitle);
+
 		if ($useWeek) {
 			$this->display('calendar.tpl', 'Events Calendar ' . $formattedWeekYear, '');
 		} else {
@@ -339,6 +343,17 @@ class Events_Calendar extends Action {
 			$headerImage["altText"] =  $setting->altText ?? '';
 		}
 		return $headerImage;
+	}
+
+	function getCalendarTitle(int $calendarDisplaySettingId = 0) {
+		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
+		$setting = new CalendarDisplaySetting();
+		$setting->id = $calendarDisplaySettingId;
+		$calendarTitle = "";
+		if ($setting->find(true)) {
+			$calendarTitle =  $setting->calendarTitle;
+		}
+		return $calendarTitle;
 	}
 
 	function getCalendarDisplaySettingId() : int {
@@ -370,6 +385,16 @@ class Events_Calendar extends Action {
 			}
 		}
 		return $allEventFieldOptions;
+	}
+
+	function getMonthDisplaySetting($calendarDisplaySettingId) : bool {
+		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
+		$setting = new CalendarDisplaySetting();
+		$setting->id = $calendarDisplaySettingId;
+		if ($setting->find(true)) {
+			return $setting->fullMonthName;
+		}
+		return 0;
 	}
 
 }
