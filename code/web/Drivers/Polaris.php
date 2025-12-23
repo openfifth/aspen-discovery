@@ -140,7 +140,7 @@ class Polaris extends AbstractIlsDriver {
 	 * @return stdClass|null
 	 */
 	private function getBasicDataResponse(string $patronBarcode, ?string $password, bool $fromMasquerade = false) {
-		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patronBarcode}/basicdata?addresses=1";
+		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patronBarcode}/basicdata?addresses";
 		$response = $this->getWebServiceResponse($polarisUrl, 'GET', $this->getAccessToken($patronBarcode, $password, $fromMasquerade), false, $fromMasquerade);
 		ExternalRequestLogEntry::logRequest('polaris.getBasicDataResponse', 'GET', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		if ($response && $this->lastResponseCode == 200) {
@@ -861,7 +861,7 @@ class Polaris extends AbstractIlsDriver {
 		}
 
 		//Need to set the Workstation
-		$body->WorkstationID = "1";
+		$body->WorkstationID = $this->getWorkstationID($patron);
 		//Get the ID of the staff user
 		$staffUserInfo = $this->getStaffUserInfo();
 		$body->UserID = (int)$staffUserInfo['polarisId'];
@@ -1027,12 +1027,12 @@ class Polaris extends AbstractIlsDriver {
 	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
 		if (!$isIll) {
 			$staffInfo = $this->getStaffUserInfo();
-			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$cancelId/cancelled?wsid=1&userid={$staffInfo['polarisId']}";
+			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$cancelId/cancelled?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}";
 			$response = $this->getWebServiceResponse($polarisUrl, 'PUT', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.cancelHold', 'PUT', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		} else {
 			$staffInfo = $this->getStaffUserInfo();
-			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/illrequests/$cancelId/cancelled?wsid=1&userid={$staffInfo['polarisId']}";
+			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/illrequests/$cancelId/cancelled?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}";
 			$response = $this->getWebServiceResponse($polarisUrl, 'PUT', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.cancelIllHold', 'PUT', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		}
