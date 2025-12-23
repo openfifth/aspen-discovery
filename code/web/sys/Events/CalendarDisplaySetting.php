@@ -7,9 +7,11 @@ class CalendarDisplaySetting extends DataObject {
 	public $__table = 'calendar_display_settings';
 	public $id;
 	public $name;
+	public $calendarTitle;
 	public $cover;
 	public $altText;
 	public $footer;
+	public $fullMonthName;
 
 	private $_libraries;
 	/** @var EventFieldCalendarOptions[] */
@@ -37,6 +39,13 @@ class CalendarDisplaySetting extends DataObject {
 				'label' => 'Name',
 				'description' => 'A name for the settings',
 			],
+			'calendarTitle' => [
+				'property' => 'calendarTitle',
+				'type' => 'text',
+				'label' => 'Calendar Title',
+				'description' => 'A title for the calendar displayed',
+				'default' => 'Events Calendar',
+			],
 			'cover' => [
 				'property' => 'cover',
 				'type' => 'image',
@@ -52,6 +61,12 @@ class CalendarDisplaySetting extends DataObject {
 				'type' => 'text',
 				'label' => 'Header image description',
 				'description' => 'A header image description to use for alt-text',
+			],
+			'fullMonthName' => [
+				'property' => 'fullMonthName',
+				'type' => 'checkbox',
+				'label' => 'Show Full Month Names',
+				'description' => 'Show full names of months on calendar',
 			],
 			'eventFields' => [
 				'property' => 'eventFields',

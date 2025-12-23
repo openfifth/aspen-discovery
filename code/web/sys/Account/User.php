@@ -4508,6 +4508,15 @@ class User extends DataObject {
 			'Administer All Collection Spotlights',
 			'Administer Library Collection Spotlights',
 		]);
+		$heroSliderAction = new AdminAction('Hero Sliders', 'Define hero sliders that can be used on websites or digital signage.', '/Admin/HeroSliderLocations');
+		$sections['local_enrichment']->addAction($heroSliderAction, [
+			'Administer All Hero Sliders',
+			'Administer Library Hero Sliders',
+		]);
+		$heroSliderAction->addSubAction(new AdminAction('Hero Slider Playlists', 'Define playlists of images for hero sliders.', '/Admin/HeroSliderPlaylists'), [
+			'Administer All Hero Sliders',
+			'Administer Library Hero Sliders',
+		]);
 		$sections['local_enrichment']->addAction(new AdminAction('JavaScript Snippets', 'JavaScript Snippets to be added to the site when pages are rendered.', '/Admin/JavaScriptSnippets'), [
 			'Administer All JavaScript Snippets',
 			'Administer Library JavaScript Snippets',

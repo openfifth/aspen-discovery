@@ -5,7 +5,7 @@
 		<img src="{$headerImage}" {if !empty($headerAlt)}alt="{translate text=$headerAlt inAttribute=true isPublicFacing=true}" title="{translate text=$headerAlt inAttribute=true isPublicFacing=true}"{/if} id="calendar-header">
 	</div>
 {/if}
-<h1 class="calendar-event-h1">{translate text='Events Calendar' isPublicFacing=true}</h1>
+<h1 class="calendar-event-h1">{translate text=($calendarTitle) isPublicFacing=true}</h1>
 	<div class="row">
 		<div class="col-tn-2 col-sm-1 calendar-nav-cell"><a class="btn btn-default" href="" onclick='return AspenDiscovery.Events.getPrintListOptions({if !empty($weekNumber)}{$weekNumber}{else}""{/if}, {if !empty($monthNumber)}{$monthNumber}{else}""{/if}, {$yearNumber})'>{translate text="Print Options" isPublicFacing=true} </a></div>
 	</div>
@@ -57,9 +57,11 @@
 									<div class="calendar-event-title">
 										<a href="{$event.link}" target="_blank" aria-label="{translate text=$event.title isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})">{$event.title}</a>
 									</div>
-									<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
-										{$event.formattedTime}
-									</div>
+									{if !$event.hiddenTimestamps}
+										<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
+											{$event.formattedTime}
+										</div>
+									{/if}
 									{if !empty($event.eventFields)}
 										{foreach from=$event.eventFields key=eventFieldName item=eventField}
 											{if $eventFieldName == 'description'}

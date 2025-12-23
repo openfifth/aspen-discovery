@@ -12135,6 +12135,179 @@ input[type="radio"][name="colorScheme"]:checked + label::after {
 .webResourceRow {
   margin-bottom: 4px;
 }
+.hero-slider-actions {
+  margin-bottom: 15px;
+}
+.heroSliderLocationDetails {
+  margin-top: 20px;
+}
+.hero-slider-config dt {
+  text-align: left;
+  font-weight: bold;
+}
+.hero-slider-config dd {
+  margin-bottom: 10px;
+}
+body.hero-slider-website,
+html.hero-slider-website {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.hero-slider-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+.hero-slider {
+  width: 100%;
+  height: 100%;
+}
+.hero-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #000;
+}
+.hero-slide img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+.hero-slide a {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-slider .swiper-button-next,
+.hero-slider .swiper-button-prev {
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(1) translateY(-50%);
+  transform-origin: center;
+}
+.hero-slider .swiper-button-next:after,
+.hero-slider .swiper-button-prev:after {
+  font-size: 20px;
+  font-weight: bold;
+}
+.hero-slider .swiper-button-next:hover,
+.hero-slider .swiper-button-prev:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1) translateY(-50%);
+}
+.hero-slider:hover .swiper-button-next,
+.hero-slider.nav-visible .swiper-button-next,
+.hero-slider:focus-within .swiper-button-next,
+.hero-slider:hover .swiper-button-prev,
+.hero-slider.nav-visible .swiper-button-prev,
+.hero-slider:focus-within .swiper-button-prev {
+  opacity: 1;
+  visibility: visible;
+}
+.hero-slider:hover .swiper-button-pause,
+.hero-slider.nav-visible .swiper-button-pause,
+.hero-slider:focus-within .swiper-button-pause {
+  opacity: 1;
+  visibility: visible;
+}
+.hero-slider .swiper-pagination {
+  bottom: 20px;
+}
+.hero-slider .swiper-pagination-bullet {
+  width: 12px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(0, 0, 0, 0.5);
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+.hero-slider .swiper-pagination-bullet.swiper-pagination-bullet-active {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.3);
+}
+.hero-slider .swiper-button-pause {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  z-index: 10;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.5);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+}
+.hero-slider .swiper-button-pause i {
+  font-size: 16px;
+}
+.hero-slider .swiper-button-pause:hover {
+  background: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+.hero-slider .swiper-button-pause:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+}
+body.hero-slider-signage,
+html.hero-slider-signage {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #000;
+}
+.digital-signage-container {
+  width: 100%;
+  height: 100vh;
+  position: relative;
+}
+.signage-slide {
+  width: 100%;
+  height: 100vh;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+.signage-slide.active {
+  display: flex;
+}
+.signage-slide a {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.signage-slide img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
 .toast-notification {
   display: flex;
   align-items: center;

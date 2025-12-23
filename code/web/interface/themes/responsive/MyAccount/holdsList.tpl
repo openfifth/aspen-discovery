@@ -1,5 +1,8 @@
 {assign var="hideCoversFormDisplayed" value=false}
 {foreach from=$recordList item=sectionData key=sectionKey}
+	{if $sectionKey == 'available' && !$showAvailableHoldsSection}
+		{continue}
+	{/if}
 	<h2>{if $sectionKey == 'available'}{translate text="Holds Ready For Pickup" isPublicFacing=true}{else}{if $source=='interlibrary_loan'}{translate text="Pending Requests" isPublicFacing=true}{else}{translate text="Pending Holds" isPublicFacing=true}{/if}{/if}</h2>
 	<p class="alert alert-info">
 		{if $sectionKey == 'available'}

@@ -31,6 +31,7 @@ class AspenEvent {
 	private final long sublocationId;
 	private final Boolean status;
 	private final Boolean nonPublic;
+	private final Boolean hideTimestamps;
 	private final ArrayList<EventField> fields = new ArrayList<EventField>();
 
 	AspenEvent(ResultSet existingEventsRS) throws SQLException{
@@ -50,6 +51,7 @@ class AspenEvent {
 		this.sublocationId = existingEventsRS.getLong("sublocationId");
 		this.status = existingEventsRS.getBoolean("status");
 		this.nonPublic = existingEventsRS.getBoolean("private");
+		this.hideTimestamps = existingEventsRS.getBoolean("hideTimestamps");
 	}
 
 	void addField(String name, String value, String[] allowableValues, int type, int facet) {
@@ -137,6 +139,21 @@ class AspenEvent {
 			return "private";
 		} else {
 			return "public";
+		}
+	}
+
+	public Boolean getHideTimestamps() {
+		return hideTimestamps;
+	}
+
+	public Date getHideTimestampsStart(EventsIndexerLogEntry logEntry) {
+		try {
+			LocalDateTime date = LocalDateTime.parse(startDate + " " + "00:00:00", dtf);
+			ZoneOffset eventZoneOffset = zoneId.getRules().getOffset(date);
+			return Date.from(date.toInstant(eventZoneOffset));
+		} catch (DateTimeParseException e) {
+			logEntry.incErrors("Error parsing date with hidden timestamp from " + startDate, e);
+			return null;
 		}
 	}
 
@@ -230,7 +247,7 @@ class AspenEvent {
 		}
 
 		public String getValue() {
-			if (allowableValues.length > 0 && StringUtils.isNumeric(value)) {
+			if (allowableValues.length > 0 && StringUtils.isNumeric(value) && !value.isEmpty()) {
 				try {
 					return allowableValues[Integer.parseInt(value)].trim();
 				}catch (ArrayIndexOutOfBoundsException e) {
