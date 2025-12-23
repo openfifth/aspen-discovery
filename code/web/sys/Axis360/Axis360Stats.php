@@ -7,6 +7,7 @@ class Axis360Stats extends DataObject {
 	public $instance;
 	public $year;
 	public $month;
+	public $day;
 
 	public $numCheckouts;
 	public $numRenewals;
