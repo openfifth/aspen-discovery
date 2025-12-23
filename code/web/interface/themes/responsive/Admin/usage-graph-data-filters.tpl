@@ -10,9 +10,9 @@
 			</select>
 			<div id='custom-usage-period-wrapper' hidden>
 				<label for='custom-usage-period-duration-field'>{translate text='Custom period duration (days)' isAdminFacing=true}</label>
-				<input type='number' name='custom-usage-period-duration' id='custom-usage-period-duration-field' min='1' class='form-control duration-input' hidden>
+				<input type='number' name='custom-usage-period-duration' id='custom-usage-period-duration-field' min='1' class='form-control' hidden>
 				<label for='custom-usage-period-start-field'>{translate text='Custom period start (date)' isAdminFacing=true}</label>
-				<input type='number' name='custom-usage-period-start' id='custom-usage-period-start-field' min='1' class='form-control duration-input' hidden>
+				<input type='number' name='custom-usage-period-start' id='custom-usage-period-start-field' min='1' class='form-control' hidden>
 			</div>
 			<input type="hidden" value="{$stat}" name="stat"/>
 		</div>
