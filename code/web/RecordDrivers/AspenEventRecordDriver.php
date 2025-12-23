@@ -111,6 +111,8 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('isEventFull', $this->isEventFull());
 	$interface->assign('waitingList', $this->isWaitingListEnabled());
 	$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
+	$interface->assign('userOnWaitingList', $this->isUserOnWaitingList());
+	$interface->assign('userWaitingListPosition', $this->getUserWaitingListPosition());
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -477,6 +479,53 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			return (bool)$eventObject->waitingListNumberOfSeats !== null ? (int)$eventObject->waitingListNumberOfSeats : null;
 		}
 		return null;
+	}
+
+	public function isUserOnWaitingList(): bool {
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return false;
+		}
+
+		$eventObject = $this->getEventObject();
+		if ($eventObject) {
+			$eventInstanceId = $eventObject->id;
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+
+			$waitingList = new UserAspenEventInstanceWaitingList();
+			$waitingList->eventId = $eventInstanceId;
+			$waitingList->userId = $user->id;
+			$waitingList->status = 'waiting';
+
+			return $waitingList->find(true);
+		}
+		return false;
+	}
+
+	public function getUserWaitingListPosition(): ?int{
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return null;
+		}
+
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return null;
+		}
+		$eventInstanceId = $eventObject->id;
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+
+		$waitingList = new UserAspenEventInstanceWaitingList();
+		$waitingList->eventId = $eventInstanceId;
+		$waitingList->userId = $user->id;
+		$waitingList->status = 'waiting';
+
+		if ($waitingList->find(true)) {
+			return $waitingList->position;
+		} else {
+			return null;
+		}
 	}
 
 	/**
