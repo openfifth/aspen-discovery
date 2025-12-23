@@ -54,7 +54,7 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $thisStatus->fetch()->description;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
 		global $interface;
 
 		$status = $_REQUEST['stat'];
