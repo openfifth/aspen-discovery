@@ -7,6 +7,7 @@ class UserSummonUsage extends DataObject {
 	public $userId;
 	public $year;
 	public $month;
+	public $day;
 	public $usageCount;
 
 	public function getUniquenessFields(): array {
@@ -15,6 +16,7 @@ class UserSummonUsage extends DataObject {
 			'userId',
 			'year',
 			'month',
+			'day',
 		];
 	}
 
