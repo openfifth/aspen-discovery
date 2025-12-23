@@ -31,7 +31,7 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $breadcrumbs;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];

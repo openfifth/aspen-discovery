@@ -31,7 +31,7 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 		]);
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];

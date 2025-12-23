@@ -45,7 +45,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $sideload->fetch()->id;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
 		global $interface;
 
 		$dataSeries = [];
