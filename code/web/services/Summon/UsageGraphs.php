@@ -35,18 +35,20 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
+		$groupByTimeframe = implode(',', $timeframes);
 
 		// gets data from from user_summon_usage
 		if ($stat == 'activeUsers') {
 			$userSummonUsage = new UserSummonUsage();
-			$userSummonUsage->groupBy('year, month');
+			$userSummonUsage->groupBy($groupByTimeframe);
 			if (!empty($instanceName)) {
 				$userSummonUsage->instance = $instanceName;
 			}
 			$userSummonUsage->selectAdd();
-			$userSummonUsage->selectAdd('year');
-			$userSummonUsage->selectAdd('month');
-			$userSummonUsage->orderBy('year, month');
+			foreach ($timeframes as $timeframe) {
+				$userSummonUsage->selectAdd($timeframe);
+			}
+			$userSummonUsage->orderBy($groupByTimeframe);
 
 			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userSummonUsage->selectAdd('COUNT(DISTINCT userId) as activeUsers');
@@ -68,14 +70,15 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'totalClicks'
 		){
 			$summonRecordUsage = new SummonRecordUsage();
-			$summonRecordUsage->groupBy('year, month');
+			$summonRecordUsage->groupBy($groupByTimeframe);
 			if (!empty($instanceName)) {
 				$summonRecordUsage->instance = $instanceName;
 			}
 			$summonRecordUsage->selectAdd();
-			$summonRecordUsage->selectAdd('year');
-			$summonRecordUsage->selectAdd('month');
-			$summonRecordUsage->orderBy('year, month');
+			foreach ($timeframes as $timeframe) {
+				$summonRecordUsage->selectAdd($timeframe);
+			}
+			$summonRecordUsage->orderBy($groupByTimeframe);
 		
 			if ($stat == 'numRecordsViewed') {
 				$dataSeries['Number of Records Viewed'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
