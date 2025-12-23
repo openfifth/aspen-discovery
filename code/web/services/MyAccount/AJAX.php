@@ -8054,6 +8054,28 @@ class MyAccount_AJAX extends JSON_Action {
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
 	}
 
+	function handlePay360OrderNotAttempted():void {
+		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+		
+		$paymentId = $_REQUEST['paymentId'];
+		$pay360SettingsId = $_REQUEST['settingsId'];
+
+		if (!$paymentId || !$pay360SettingsId) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $paymentId);
+		$client->getOrderStatus(true);
+		$client->handleOutcome([], false);
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+	}
+
 	/** @noinspection PhpUnused */
 	function dismissBrowseCategory() {
 		$patronId = UserAccount::getActiveUserId();
