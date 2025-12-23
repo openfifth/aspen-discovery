@@ -70,7 +70,7 @@
 									{translate text="Manage Campaign" isPublicFacing=true}
 								</button>
 								<div class="action-buttons" id="actions-{$resultIndex}" style="display:none;" role="group" aria-labelledby="toggle-actions-{$resultIndex}">
-										{if $campaignLeaderboardDisplay == 'displayUser'}
+										{if $useCampaignLeaderboards && $campaignLeaderboardDisplay == 'displayUser'}
 											{if $campaign->optInToCampaignLeaderboard == 0}
 												<button class="btn btn-primary btn-sm" aria-label="{$smarty.capture.joinLeaderboard|strip_tags|escape:'html'}" onclick="AspenDiscovery.CommunityEngagement.optInToCampaignLeaderboard({$campaign->id}, {$userId});">{translate text=" Join Leaderboard" isPublicFacing=true}</button>
 											{else}

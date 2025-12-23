@@ -7,6 +7,7 @@ class CalendarDisplaySetting extends DataObject {
 	public $__table = 'calendar_display_settings';
 	public $id;
 	public $name;
+	public $calendarTitle;
 	public $cover;
 	public $altText;
 	public $fullMonthName;
@@ -36,6 +37,13 @@ class CalendarDisplaySetting extends DataObject {
 				'type' => 'text',
 				'label' => 'Name',
 				'description' => 'A name for the settings',
+			],
+			'calendarTitle' => [
+				'property' => 'calendarTitle',
+				'type' => 'text',
+				'label' => 'Calendar Title',
+				'description' => 'A title for the calendar displayed',
+				'default' => 'Events Calendar',
 			],
 			'cover' => [
 				'property' => 'cover',
