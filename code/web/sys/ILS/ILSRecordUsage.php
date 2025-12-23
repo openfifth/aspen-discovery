@@ -1,7 +1,7 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
+require_once ROOT_DIR . '/sys/AbstractUsage.php';
 
-
-class ILSRecordUsage extends DataObject {
+class ILSRecordUsage extends AbstractUsage {
 	public $__table = 'ils_record_usage';
 	public $id;
 	public $instance;
