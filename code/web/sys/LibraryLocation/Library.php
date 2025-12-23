@@ -236,6 +236,7 @@ class Library extends DataObject {
 		$eContentLinkRules;
 	public $novelistSettingId;
 	public $syndeticsSettingId;
+	public $loralSettingId;
 	public $allowAutomaticSearchReplacements;
 	public $enableSearchInterpreter;
 
@@ -278,6 +279,7 @@ class Library extends DataObject {
 	public $allowPickupLocationUpdates;
 	public $hidePickupLocationPrompt;
 	public $showAlternateLibraryOptionsInProfile;
+	public $showHoldsReadyForPickupSection;
 	public $additionalCss;
 	public $maxRequestsPerYear;
 	public $yearlyRequestLimitType;
@@ -656,6 +658,13 @@ class Library extends DataObject {
 		while ($syndetics->fetch()) {
 			$availableSyndeticsSettings[$syndetics->id] = $syndetics->name;
 		}
+
+		require_once ROOT_DIR . '/sys/Enrichment/LoralSetting.php';
+		$loral = new LoralSetting();
+		$availableLoralSettings = [
+			'-1' => 'None',
+		];
+		$loral->orderBy('name');
 
 		$materialsRequestOptions = [
 			0 => 'None',
@@ -2170,6 +2179,18 @@ class Library extends DataObject {
 								'default' => -1,
 								'permissions' => ['Library ILS Connection'],
 							],
+							'showHoldsReadyForPickupSection' => [
+								'property' => 'showHoldsReadyForPickupSection',
+								'type' => 'enum',
+								'label' => 'Show Holds Ready For Pickup Section For Physical Materials',
+								'description' => 'Whether or the Holds Ready for Pickup section should be displayed within the user account.',
+								'values' => [
+									1 => 'Always',
+									2 => 'Only when holds are ready'
+								],
+								'hideInLists' => true,
+								'default' => 1,
+							],
 							'showHoldPosition' => [
 								'property' => 'showHoldPosition',
 								'type' => 'checkbox',
@@ -2581,8 +2602,8 @@ class Library extends DataObject {
 								'property' => 'messageBeeSettingId',
 								'type' => 'enum',
 								'values' => $messageBeeSettings,
-								'label' => 'Message Bee Setting',
-								'descrption' => 'The Message Bee Settings to apply to this library',
+								'label' => 'MessageBee Setting',
+								'descrption' => 'The MessageBee Settings to apply to this library',
 								'hideInLists' => true
 							],
 							'selfRegistrationLocationRestrictions' => [
@@ -3182,7 +3203,7 @@ class Library extends DataObject {
 					'showPaymentHistory' => [
 						'property' => 'showPaymentHistory',
 						'type' => 'checkbox',
-						'label' => 'Show Payment History for fines paid in Aspen',
+						'label' => 'Show Payment History for Fines Paid in Aspen',
 						'default' => 0,
 						'hideInLists' => true,
 					],
@@ -3311,8 +3332,8 @@ class Library extends DataObject {
 								'property' => 'showWebsiteSearch',
 								'type' => 'checkbox',
 								'label' => 'Show Website Search',
-								'description' => 'Turn on to enable the "Library Websites" search when data exists.',
-								'note' => '"Library Websites" search will appear when on, if Web Builder or Indexed Websites Exist',
+								'description' => 'Enable the &quot;Library Websites&quot; search when data exists.',
+								'note' => 'When enabled, "Library Websites" search will only appear if Web Builder or Indexed Websites also exist.',
 								'hideInLists' => true,
 								'default' => 1,
 							],
@@ -3557,6 +3578,15 @@ class Library extends DataObject {
 						'default' => '-1',
 						'hideInLists' => true,
 					],
+					'loralSettingId' => [
+						'property' => 'loralSettingId',
+						'type' => 'enum',
+						'values' => $availableLoralSettings,
+						'label' => 'Loral Setting',
+						'description' => 'The Loral Settings to use',
+						'default' => '-1',
+						'hideInLists' => true,
+					]
 				],
 			],
 

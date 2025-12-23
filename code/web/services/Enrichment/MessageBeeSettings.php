@@ -18,7 +18,7 @@ class Enrichment_MessageBeeSettings extends ObjectEditor {
 	}
 
 	function getPageTitle(): string {
-		return 'Quipu Settings';
+		return 'MessageBee Settings';
 	}
 
 	function getAllObjects(int $page, int $recordsPerPage): array {

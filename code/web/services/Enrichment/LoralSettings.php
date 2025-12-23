@@ -2,15 +2,15 @@
 
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/Enrichment/GoogleApiSetting.php';
+require_once ROOT_DIR . '/sys/Enrichment/LoralSetting.php';
 
-class Enrichment_GoogleApiSettings extends ObjectEditor {
+class Enrichment_LoralSettings extends ObjectEditor {
 	function getObjectType(): string {
-		return 'GoogleApiSetting';
+		return 'LoralSetting';
 	}
 
 	function getToolName(): string {
-		return 'GoogleApiSettings';
+		return 'LoralSettings';
 	}
 
 	function getModule(): string {
@@ -18,11 +18,11 @@ class Enrichment_GoogleApiSettings extends ObjectEditor {
 	}
 
 	function getPageTitle(): string {
-		return 'Google API Settings';
+		return 'Loral Settings';
 	}
 
-	function getAllObjects(int $page, int $recordsPerPage): array {
-		$object = new GoogleApiSetting();
+	function getAllObjects($page, $recordsPerPage): array {
+		$object = new LoralSetting();
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
 		$this->applyFilters($object);
 		$object->orderBy($this->getSort());
@@ -39,7 +39,7 @@ class Enrichment_GoogleApiSettings extends ObjectEditor {
 	}
 
 	function getObjectStructure($context = ''): array {
-		return GoogleApiSetting::getObjectStructure($context);
+		return LoralSetting::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -50,7 +50,7 @@ class Enrichment_GoogleApiSettings extends ObjectEditor {
 		return 'id';
 	}
 
-	function getAdditionalObjectActions(?DataObject $existingObject): array {
+	function getAdditionalObjectActions($existingObject): array {
 		return [];
 	}
 
@@ -62,7 +62,7 @@ class Enrichment_GoogleApiSettings extends ObjectEditor {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#third_party_enrichment', 'Third Party Enrichment');
-		$breadcrumbs[] = new Breadcrumb('/Enrichment/GoogleApiSettings', 'Google API Settings');
+		$breadcrumbs[] = new Breadcrumb('/Enrichment/LoralSettings', 'Content Cafe Settings');
 		return $breadcrumbs;
 	}
 

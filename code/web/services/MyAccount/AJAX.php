@@ -4042,11 +4042,7 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 
 		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
+			'success' => false
 		];
 
 		global $offlineMode;
@@ -4058,7 +4054,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$this->setShowCovers();
 
 			$user = UserAccount::getActiveUserObj();
-			if (UserAccount::isLoggedIn() == false || empty($user)) {
+			if (!UserAccount::isLoggedIn() || empty($user)) {
 				$result['message'] = translate([
 					'text' => "Your login has timed out. Please login again.",
 					'isPublicFacing' => true,
@@ -4182,11 +4178,10 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('showNotInterested', false);
 
 				global $offlineMode;
+				$allHolds = null;
 				if (!$offlineMode) {
-					if ($user) {
-						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUser);
-						$interface->assign('recordList', $allHolds);
-					}
+					$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUser);
+					$interface->assign('recordList', $allHolds);
 				}
 
 				$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
@@ -4200,6 +4195,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$readerName = new OverDriveDriver();
 				$readerName = $readerName->getReaderName();
 				$interface->assign('readerName', $readerName);
+
+				if ($source == 'ils') {
+					$showAvailableHoldsSection = $library->showHoldsReadyForPickupSection == 1 || ($allHolds != null && count($allHolds['available']) > 0);
+					$interface->assign('showAvailableHoldsSection', $showAvailableHoldsSection);
+				}else{
+					$interface->assign('showAvailableHoldsSection', true);
+				}
 
 				$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 			}
@@ -4757,10 +4759,10 @@ class MyAccount_AJAX extends JSON_Action {
 							'text' => 'Successfully Deleted Reading History Entry',
 							'isPublicFacing' => true,
 						]);
-						$entryText = $numDeleted === 1 ? 'entry' : 'entries';
+						//Based on user testing, this was confusing to users since they only clicked
+						// on a button to delete the group. Simplify to just indicate it was deleted.
 						$result['message'] = translate([
-							'text' => "Deleted %1% $entryText from your reading history.",
-							1 => $numDeleted,
+							'text' => "Deleted entry from your reading history.",
 							'isPublicFacing' => true,
 						]);
 					} else {
@@ -4824,8 +4826,8 @@ class MyAccount_AJAX extends JSON_Action {
 							while ($deleteQuery->fetch()) {
 								$deleteQuery->deleted = 1;
 								$deleteQuery->update();
-								$totalDeleted++;
 							}
+							$totalDeleted++;
 						} else {
 							$numFailed++;
 						}
@@ -6138,7 +6140,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function completeStripeOrder() {
+	function completeStripeOrder() : array {
 		global $configArray;
 
 		$patronId = $_REQUEST['patronId'];
@@ -6153,10 +6155,10 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/Donations/Donation.php';
 		require_once ROOT_DIR . '/sys/ECommerce/StripeSetting.php';
 
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
 		if ($transactionType == 'donation') {
 			//Get the order information
-			$payment = new UserPayment();
-			$payment->id = $paymentId;
 			$payment->transactionType = 'donation';
 			if ($payment->find(true)) {
 				$paymentId = $payment->id;
@@ -6165,24 +6167,32 @@ class MyAccount_AJAX extends JSON_Action {
 				$donation->paymentId = $payment->id;
 				if (!$donation->find(true)) {
 					header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+					die();
 				} else {
 					$stripeSettings = new StripeSetting();
 					$stripeSettings->id = $paymentLibrary->stripeSettingId;
 					if ($stripeSettings->find(true)) {
 						//header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCompleted?id=' . $payment->id);
-						return $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+						$result = $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+						$result['submitPaymentText'] = translate(['text' => 'Submit Payment', 'isPublicFacing'=>true]);
+						return $result;
 					} else {
 						return [
 							'success' => false,
-							'message' => 'Could not complete donation. Stripe is not setup for this library.'
+							'message' => 'Could not complete donation. Stripe is not setup for this library.',
+							'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
 						];
 					}
 				}
+			}else{
+				return [
+					'success' => false,
+					'message' => 'Payment settings were not properly configured.',
+					'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
+				];
 			}
 		} else {
 			//Get the order information
-			$payment = new UserPayment();
-			$payment->id = $paymentId;
 			$payment->userId = $patronId;
 			if ($payment->find(true)) {
 
@@ -6201,17 +6211,21 @@ class MyAccount_AJAX extends JSON_Action {
 				$stripeSettings = new StripeSetting();
 				$stripeSettings->id = $paymentLibrary->stripeSettingId;
 				if ($stripeSettings->find(true)) {
-					return $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+					$result = $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
+					$result['submitPaymentText'] = translate(['text' => 'Submit Payment', 'isPublicFacing'=>true]);
+					return $result;
 				} else {
 					return [
 						'success' => false,
-						'message' => 'Could not complete payment. Stripe is not setup for this library.'
+						'message' => 'Could not complete payment. Stripe is not setup for this library.',
+						'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
 					];
 				}
 			} else {
 				return [
 					'success' => false,
-					'message' => 'Unable to find payment in system to complete.'
+					'message' => 'Unable to find payment in system to complete.',
+					'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
 				];
 			}
 		}
@@ -7951,7 +7965,7 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($patronId != UserAccount::getActiveUserId()) {
 			$result['message'] = 'Incorrect user information, please login again.';
 		} else {
-			if (strpos($browseCategoryId, "system_saved_searches") !== false) {
+			if ($browseCategoryId != "system_saved_searches" && strpos($browseCategoryId, "system_saved_searches") !== false) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				$searchEntry = new SearchEntry();
@@ -7983,7 +7997,7 @@ class MyAccount_AJAX extends JSON_Action {
 						];
 					}
 				}
-			} elseif (strpos($browseCategoryId, "system_user_lists") !== false) {
+			} elseif ($browseCategoryId != "system_user_lists" && str_starts_with($browseCategoryId, "system_user_lists")) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
@@ -8062,7 +8076,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($browseCategoryDismissals->count() > 0) {
 				$categories = [];
 				foreach ($hiddenCategories as $hiddenCategory) {
-					if (strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
+					if ($hiddenCategory->browseCategoryId != 'system_saved_searches' && strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$savedSearchesBrowseCategory = new BrowseCategory();
@@ -8084,7 +8098,7 @@ class MyAccount_AJAX extends JSON_Action {
 							$category['description'] = "";
 							$categories[] = $category;
 						}
-					} elseif (strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
+					} elseif ($hiddenCategory->browseCategoryId != 'system_user_lists' && strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$userListsBrowseCategory = new BrowseCategory();
@@ -8174,7 +8188,7 @@ class MyAccount_AJAX extends JSON_Action {
 		if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
 			$categoriesToShow = $_REQUEST['selected'];
 			foreach ($categoriesToShow as $showThisCategory => $selected) {
-				if (strpos($showThisCategory, "system_saved_searches") !== false) {
+				if ($showThisCategory != "system_saved_searches" && strpos($showThisCategory, "system_saved_searches") !== false) {
 					$label = explode('_', $showThisCategory);
 					$id = $label[3];
 					$searchEntry = new SearchEntry();
@@ -8196,7 +8210,7 @@ class MyAccount_AJAX extends JSON_Action {
 							$result['message'] = "User already had this category visible.";
 						}
 					}
-				} elseif (strpos($showThisCategory, "system_user_lists") !== false) {
+				} elseif ($showThisCategory != "system_user_lists" && strpos($showThisCategory, "system_user_lists") !== false) {
 					$label = explode('_', $showThisCategory);
 					$id = $label[3];
 					require_once ROOT_DIR . '/sys/UserLists/UserList.php';

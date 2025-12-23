@@ -106,6 +106,7 @@ class SummonRecordDriver extends RecordInterface {
 		$interface->assign('summAuthor', $this->getAuthor());
 		$interface->assign('summSourceDatabase', $this->getSourceDatabase());
 		$interface->assign('summHasFullText', $this->hasFullText());
+		$interface->assign('summPublicationDates', $this->getPublicationDate());
 
 		//Check to see if there are lists the record is on
 		if ($showListsAppearingOn) {
@@ -186,6 +187,8 @@ class SummonRecordDriver extends RecordInterface {
 		$interface->assign('summDescription', $this->getDescription());
 		$interface->assign('bookCoverUrl', $this->getBookcoverUrl('small'));
 		$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('medium'));
+		$interface->assign('summPublicationDates', $this->getPublicationDate());
+
 
 		return 'RecordDrivers/Summon/combinedResult.tpl';
 	}
@@ -255,6 +258,10 @@ class SummonRecordDriver extends RecordInterface {
 			$title='Unknown Title';
 		}
 		return $title;
+	}
+
+	public function getPublicationDate() {
+		return $this->record['PublicationYear'][0] ?? null;
 	}
 
 	/**
