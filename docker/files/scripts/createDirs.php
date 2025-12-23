@@ -120,7 +120,6 @@ try {
 	
 	//Conf directory
 	DockerLogger::setPermissions("$configDir/conf", $newOwner, '755');
-	DockerLogger::setPermissions("$configDir/conf/config*", $newOwner, '755');
 	DockerLogger::setPermissions("$configDir/conf/php-fpm.conf", $newOwner, '755');
 	DockerLogger::setPermissions("$configDir/httpd-$siteName.conf", 'root', '644');
 	DockerLogger::setPermissions("$configDir/conf/crontab_settings.txt", 'root', '644');
