@@ -9,6 +9,7 @@ class UserAxis360Usage extends DataObject {
 	public $recordId;
 	public $year;
 	public $month;
+	public $day;
 	public $usageCount; //Number of holds/clicks
 
 	public function getUniquenessFields(): array {
@@ -17,6 +18,7 @@ class UserAxis360Usage extends DataObject {
 			'userId',
 			'recordId',
 			'year',
+			'day',
 			'month',
 		];
 	}

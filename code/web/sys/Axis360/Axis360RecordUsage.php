@@ -8,6 +8,7 @@ class Axis360RecordUsage extends DataObject {
 	public $axis360Id;
 	public $year;
 	public $month;
+	public $day;
 	public $timesHeld;
 	public $timesCheckedOut;
 
@@ -16,6 +17,7 @@ class Axis360RecordUsage extends DataObject {
 			'instance',
 			'axis360Id',
 			'year',
+			'day',
 			'month',
 		];
 	}
