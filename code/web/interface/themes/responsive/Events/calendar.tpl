@@ -1,6 +1,6 @@
 {strip}
 <div class="calendar-page">
-{if !empty($headerImage) && !empty($loggedIn) && in_array('Print Calendars with Header Images', $userPermissions)}
+{if !empty($headerImage) && !empty($loggedIn) && in_array('Print Calendars with Header Images and Footer', $userPermissions)}
 	<div class="calendar-header-image">
 		<img src="{$headerImage}" {if !empty($headerAlt)}alt="{translate text=$headerAlt inAttribute=true isPublicFacing=true}" title="{translate text=$headerAlt inAttribute=true isPublicFacing=true}"{/if} id="calendar-header">
 	</div>
@@ -89,6 +89,12 @@
 				{/foreach}
 			</div>
 		{/foreach}
+
+		{if !empty($footer) && !empty($loggedIn) && in_array('Print Calendars with Header Images and Footer', $userPermissions)}
+			<div class="calendar-footer">
+				{$footer}
+			</div>
+		{/if}
 	</div>
 </div>
 {/strip}

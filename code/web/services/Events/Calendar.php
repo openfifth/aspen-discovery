@@ -314,6 +314,7 @@ class Events_Calendar extends Action {
 		$headerImage = $this->getHeaderImage($calendarDisplaySettingId);
 		$interface->assign('headerImage', $headerImage['image'] ?? '');
 		$interface->assign('headerAlt', $headerImage['altText'] ?? '');
+		$interface->assign('footer', $this->getFooter($calendarDisplaySettingId));
 
 		$calendarTitle = $this->getCalendarTitle($calendarDisplaySettingId);
 		$interface->assign('calendarTitle', $calendarTitle);
@@ -345,6 +346,17 @@ class Events_Calendar extends Action {
 		return $headerImage;
 	}
 
+	function getFooter(int $calendarDisplaySettingId = 0) {
+		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
+		$setting = new CalendarDisplaySetting();
+		$setting->id = $calendarDisplaySettingId;
+		$footer = null;
+		if ($setting->find(true)) {
+			$footer = $setting->footer;
+		}
+		return $footer;
+  }
+  
 	function getCalendarTitle(int $calendarDisplaySettingId = 0) {
 		require_once ROOT_DIR . '/sys/Events/CalendarDisplaySetting.php';
 		$setting = new CalendarDisplaySetting();

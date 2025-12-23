@@ -10,6 +10,7 @@ class CalendarDisplaySetting extends DataObject {
 	public $calendarTitle;
 	public $cover;
 	public $altText;
+	public $footer;
 	public $fullMonthName;
 
 	private $_libraries;
@@ -82,6 +83,12 @@ class CalendarDisplaySetting extends DataObject {
 				'canEdit' => false,
 				'canAddNew' => true,
 				'canDelete' => true,
+			],
+			'footer' => [
+				'property' => 'footer',
+				'type' => 'html',
+				'label' => 'Footer',
+				'description' => 'The footer for the calendar',
 			],
 			'libraries' => [
 				'property' => 'libraries',
