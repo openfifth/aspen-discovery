@@ -46,6 +46,7 @@ class Summon_JSON extends JSON_Action {
 				$userSummonUsage->userId = $userId;
 				$userSummonUsage->year = date('Y');
 				$userSummonUsage->month = date('n');
+				$userSummonUsage->day = date('d');
 	
 				if ($userSummonUsage->find(true)) {
 					$userSummonUsage->usageCount++;
