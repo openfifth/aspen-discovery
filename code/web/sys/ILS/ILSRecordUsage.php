@@ -9,6 +9,7 @@ class ILSRecordUsage extends DataObject {
 	public $recordId;
 	public $year;
 	public $month;
+	public $day;
 	public $timesUsed; //This is number of holds
 	public $pdfDownloadCount;
 	public $supplementalFileDownloadCount;
@@ -21,6 +22,7 @@ class ILSRecordUsage extends DataObject {
 			'recordId',
 			'year',
 			'month',
+			'day',
 		];
 	}
 

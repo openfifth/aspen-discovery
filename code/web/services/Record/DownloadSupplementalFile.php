@@ -60,6 +60,7 @@ class Record_DownloadSupplementalFile {
 							$recordUsage->recordId = $this->recordDriver->getUniqueID();
 							$recordUsage->year = date('Y');
 							$recordUsage->month = date('n');
+							$recordUsage->day = date('d');
 							if ($recordUsage->find(true)) {
 								$recordUsage->supplementalFileDownloadCount++;
 								$recordUsage->update();
