@@ -114,9 +114,9 @@
 											<span class="btn btn-sm btn-default btn-wrap disabled" style="width:100%">{translate text="Event Full" isPublicFacing=true}</span>
 											{if $waitingList == true}
 												{if $userOnWaitingList}
-													<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap">{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true}</a>
+													<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" aria-label="{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true inAttribute=true}">{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true}</a>
 												{else}
-													<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
+													<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
 													</a>
 												{/if}
 											{/if}
