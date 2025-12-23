@@ -106,34 +106,49 @@
 						{/if}
 
 						<div id="userOption" class="form-group"{if empty($multipleUsers)} style="display: none"{/if}>{* display if there are multiple accounts *}
-							<label for="user" class="control-label">{translate text="Place hold for the chosen location using account" isPublicFacing=true}</label>
+							<label for="user" class="control-label">
+								{if $hidePickupLocationPrompt}
+									{translate text="Place hold using account" isPublicFacing=true}
+								{else}
+									{translate text="Place hold for the chosen location using account" isPublicFacing=true}
+								{/if}
+							</label>
 							<div class="controls">
 								<select name="user" id="user" class="form-control">
-									{* Built by jQuery below *}
+									{if $hidePickupLocationPrompt}
+										<option value="{$activeUserId}">{$userDisplayName}</option>
+										{foreach from=$linkedUsers item=linkedUser}
+											<option value="{$linkedUser->id}">{$linkedUser->displayName}</option>
+										{/foreach}
+									{else}
+										{* Built by jQuery below *}
+									{/if}
 								</select>
 							</div>
 						</div>
 
-						<script type="text/javascript">
-							$(function(){ldelim}
-								var userNames = {ldelim}
-								{$activeUserId}: "{$userDisplayName|escape|escape:javascript} - {$user->getHomeLibrarySystemName()|escape|escape:javascript}",
-								{foreach from=$linkedUsers item=linkedUser}
-								{$linkedUser->id}: "{$linkedUser->displayName|escape|escape:javascript} - {$linkedUser->getHomeLibrarySystemName()|escape|escape:javascript}",
-								{/foreach}
-								{rdelim};
-								$('#pickupBranch').on('change', function(){ldelim}
-									var users = $('option:selected', this).data('users');
-									var options = '';
-									if (typeof(users) !== "undefined") {ldelim}
-										$.each(users, function (indexIgnored, userId) {ldelim}
-											options += '<option value="' + userId + '">' + userNames[userId] + '</option>';
-										{rdelim});
-									{rdelim}
-									$('#userOption select').html(options);
-								{rdelim}).trigger('change'); /* trigger on initial load */
-							{rdelim});
-						</script>
+						{if !$hidePickupLocationPrompt}
+							<script type="text/javascript">
+								$(function(){ldelim}
+									var userNames = {ldelim}
+									{$activeUserId}: "{$userDisplayName|escape|escape:javascript} - {$user->getHomeLibrarySystemName()|escape|escape:javascript}",
+									{foreach from=$linkedUsers item=linkedUser}
+									{$linkedUser->id}: "{$linkedUser->displayName|escape|escape:javascript} - {$linkedUser->getHomeLibrarySystemName()|escape|escape:javascript}",
+									{/foreach}
+									{rdelim};
+									$('#pickupBranch').on('change', function(){ldelim}
+										var users = $('option:selected', this).data('users');
+										var options = '';
+										if (typeof(users) !== "undefined") {ldelim}
+											$.each(users, function (indexIgnored, userId) {ldelim}
+												options += '<option value="' + userId + '">' + userNames[userId] + '</option>';
+											{rdelim});
+										{rdelim}
+										$('#userOption select').html(options);
+									{rdelim}).trigger('change'); /* trigger on initial load */
+								{rdelim});
+							</script>
+						{/if}
 					{/if}
 
 					{if $holdType == 'either' || $holdType == 'item'}

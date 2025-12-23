@@ -4508,6 +4508,15 @@ class User extends DataObject {
 			'Administer All Collection Spotlights',
 			'Administer Library Collection Spotlights',
 		]);
+		$heroSliderAction = new AdminAction('Hero Sliders', 'Define hero sliders that can be used on websites or digital signage.', '/Admin/HeroSliderLocations');
+		$sections['local_enrichment']->addAction($heroSliderAction, [
+			'Administer All Hero Sliders',
+			'Administer Library Hero Sliders',
+		]);
+		$heroSliderAction->addSubAction(new AdminAction('Hero Slider Playlists', 'Define playlists of images for hero sliders.', '/Admin/HeroSliderPlaylists'), [
+			'Administer All Hero Sliders',
+			'Administer Library Hero Sliders',
+		]);
 		$sections['local_enrichment']->addAction(new AdminAction('JavaScript Snippets', 'JavaScript Snippets to be added to the site when pages are rendered.', '/Admin/JavaScriptSnippets'), [
 			'Administer All JavaScript Snippets',
 			'Administer Library JavaScript Snippets',
@@ -4872,7 +4881,7 @@ class User extends DataObject {
 			$sections['events']->addAction(new AdminAction('Communico - Attend Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/CommunicoSettings'), 'Administer Communico Settings');
 			$sections['events']->addAction(new AdminAction('Library Market - Calendar Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LMLibraryCalendarSettings'), 'Administer LibraryMarket LibraryCalendar Settings');
 			$sections['events']->addAction(new AdminAction('Springshare - LibCal Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/SpringshareLibCalSettings'), 'Administer Springshare LibCal Settings');
-			$sections['events']->addAction(new AdminAction('Calendar Display Settings', 'Define display settings for event calendar.', '/Events/CalendarDisplaySettings'), 'Print Calendars with Header Images');
+			$sections['events']->addAction(new AdminAction('Calendar Display Settings', 'Define display settings for event calendar.', '/Events/CalendarDisplaySettings'), 'Print Calendars with Header Images and Footer');
 			$sections['events']->addAction(new AdminAction('Event Facet Settings', 'Define facets for event searches.', '/Events/EventsFacets'), 'Administer Events Facet Settings');
 			$sections['events']->addAction(new AdminAction('Indexing Log', 'View the indexing log for Events.', '/Events/IndexingLog'), [
 				'View System Reports',

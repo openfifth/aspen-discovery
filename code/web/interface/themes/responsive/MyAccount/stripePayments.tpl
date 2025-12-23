@@ -33,11 +33,12 @@
 					if (paymentId === false) {
 						cardButton.disabled = false;
 						cardButton.innerHTML = "{/literal}{if !empty($payFinesLinkText)}{$payFinesLinkText}{else}{translate text = 'Submit Payment' isPublicFacing=true}{/if}{literal}";
+						return;
 					}
 
 					stripe.createPaymentMethod({
 						type: 'card',
-						card: card,
+						card: card
 					})
 					.then(function(result) {
 						// Handle result.error or result.paymentMethod
@@ -50,7 +51,7 @@
 							AspenDiscovery.Account.completeStripeOrder({/literal}{$userId}{literal}, 'fine', paymentId, result.paymentMethod.id);
 						}
 					});
-				});
+				})
 			</script>
 		{/literal}
 	</div>

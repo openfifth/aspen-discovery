@@ -78,6 +78,7 @@ class PortalCell extends DataObject {
 			'basic_page' => 'Basic Page',
 			'basic_page_teaser' => 'Basic Page Teaser',
 			'collection_spotlight' => 'Collection Spotlight',
+			'hero_slider' => 'Hero Slider',
 			'custom_form' => 'Form',
 			'image' => 'Image',
 			'pdf' => 'PDF',
@@ -359,6 +360,14 @@ class PortalCell extends DataObject {
 			if ($collectionSpotlight->find(true)) {
 				$interface->assign('collectionSpotlight', $collectionSpotlight);
 				$contents .= $interface->fetch('CollectionSpotlight/collectionSpotlightTabs.tpl');
+			}
+		} elseif ($this->sourceType == 'hero_slider') {
+			require_once ROOT_DIR . '/sys/HeroSlider/HeroSliderLocation.php';
+			$heroSliderLocation = new HeroSliderLocation();
+			$heroSliderLocation->id = $this->sourceId;
+			if ($heroSliderLocation->find(true)) {
+				$embedUrl = $heroSliderLocation->getEmbedUrl();
+				$contents .= "<iframe src='$embedUrl' style='width:100%; height:600px; border:none;' title='" . htmlspecialchars($heroSliderLocation->name) . "'></iframe>";
 			}
 		} elseif ($this->sourceType == 'basic_page') {
 			require_once ROOT_DIR . '/sys/WebBuilder/BasicPage.php';

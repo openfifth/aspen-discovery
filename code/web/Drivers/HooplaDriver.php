@@ -1159,14 +1159,13 @@ class HooplaDriver extends AbstractEContentDriver {
 	}
 
 	/**
-	 * @param $user
+	 * @param User $user
 	 */
-	public function trackUserUsageOfHoopla($user): void {
+	public function trackUserUsageOfHoopla(User $user): void {
 		require_once ROOT_DIR . '/sys/Hoopla/UserHooplaUsage.php';
-		global $library;
 		$userUsage = new UserHooplaUsage();
 
-		$userHooplaTracking = $user->userCookiePreferenceLocalAnalytics;
+		$userHooplaTracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;;
 		global $aspenUsage;
 		$userUsage->instance = $aspenUsage->getInstance();
 		$userUsage->userId = $user->id;

@@ -43,7 +43,8 @@ class SearchAPI extends AbstractAPI {
 					'getBrowseCategoryListForUser',
 					'searchAvailableFacets',
 					'getSearchSources',
-					'getSearchIndexes'
+					'getSearchIndexes',
+					'getBrowseCategories'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -834,7 +835,8 @@ class SearchAPI extends AbstractAPI {
 	}
 
 	/**
-	 * Do a basic search and return results as a JSON array
+	 * Do a basic search and return results as a JSON array. <br><br>
+	 * <b>Note: LiDA uses searchLite() when performing searches.</b>
 	 */
 	function search() : array {
 		global $interface;
@@ -1175,6 +1177,7 @@ class SearchAPI extends AbstractAPI {
 		return $jsonResults;
 	}
 
+	/** @deprecated as of 26.01. Use getBrowseCategories(). */
 	function getActiveBrowseCategories() : array {
 		//Figure out which library or location we are looking at
 		global $library;
@@ -1301,7 +1304,9 @@ class SearchAPI extends AbstractAPI {
 	}
 
 	function getSubCategories($textId = null, $loadFirstResults = false) : array {
+		$isLiDA = $this->checkIfLiDA();
 		$textId = $this->getTextId($textId);
+		$key = $isLiDA ? 'records' : 'initialResults';
 		$curCount = 1;
 		if (!empty($textId)) {
 			$activeBrowseCategory = $this->getBrowseCategory($textId);
@@ -1316,7 +1321,7 @@ class SearchAPI extends AbstractAPI {
 						$temp = new SearchEntry();
 						$temp->id = $id;
 						if ($temp->find(true)) {
-							if($curCount == 1 && $loadFirstResults) {
+							if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 								$pageToLoad = 1;
 								require_once ROOT_DIR . '/services/Search/History.php';
 								$savedSearch = History::getSavedSearchObject($temp->id);
@@ -1336,14 +1341,20 @@ class SearchAPI extends AbstractAPI {
 								$searchObject->setPage($pageToLoad + 1);
 								$searchObject->close();
 
-								$records = $searchObject->getBrowseRecordHTML();
+								if ($isLiDA) {
+									$records = $searchObject->getResultRecordSet();
+								} else {
+									$records = $searchObject->getBrowseRecordHTML();
+								}
 								$firstSubCategoryResults = $records;
 							}
 							$subCategories[] = [
+								'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
+									'sbc_' . bin2hex(random_bytes(5)),
 								'label' => $subCategory->label,
 								'textId' => $temp->id,
 								'source' => "savedSearch",
-								'initialResults' => $firstSubCategoryResults,
+								$key => $firstSubCategoryResults,
 							];
 							$curCount++;
 						}
@@ -1355,15 +1366,17 @@ class SearchAPI extends AbstractAPI {
 						$numListItems = $temp->numValidListItems();
 						if ($temp->find(true)) {
 							if ($numListItems > 0) {
-								if($curCount == 1 && $loadFirstResults) {
+								if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 									$pageToLoad = 1;
 									$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
 								}
 								$subCategories[] = [
+									'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
+										'sbc_' . bin2hex(random_bytes(5)),
 									'label' => $temp->title,
 									'textId' => $temp->id,
 									'source' => "userList",
-									'initialResults' => $firstSubCategoryResults,
+									$key => $firstSubCategoryResults,
 								];
 								$curCount++;
 							}
@@ -1373,16 +1386,22 @@ class SearchAPI extends AbstractAPI {
 						$temp->id = $subCategory->subCategoryId;
 						if ($temp->find(true)) {
 							if ($temp->isValidForDisplay()) {
-								if($curCount == 1 && $loadFirstResults) {
-									require_once ROOT_DIR . '/services/Browse/AJAX.php';
-									$browseAJAX = new Browse_AJAX();
-									$browseAJAX->setTextId($temp->textId);
-									$firstSubCategoryResults = $browseAJAX->getBrowseCategoryResults();
+								$results = [];
+								if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
+									if ($isLiDA) {
+										$results = $this->getAppBrowseCategoryResults($temp->textId);
+										$results = $results['items'];
+									} else {
+										$this->getBrowseCategoryResults($temp, $results);
+									}
 								}
 								$subCategories[] = [
+									'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
+										'sbc_' . bin2hex(random_bytes(5)),
 									'label' => $temp->label,
 									'textId' => $temp->textId,
-									'initialResults' => $firstSubCategoryResults,
+									'source' => $temp->source,
+									$key => $results,
 								];
 								$curCount++;
 							}
@@ -1413,7 +1432,7 @@ class SearchAPI extends AbstractAPI {
 		}
 	}
 
-	/** @noinspection PhpUnused */
+	/** @deprecated No longer actively used */
 	function getBrowseCategoryInfo() : array {
 		$textId = $this->getTextId();
 		if ($textId == null) {
@@ -1503,6 +1522,8 @@ class SearchAPI extends AbstractAPI {
 	const ITEMS_PER_PAGE = 24;
 
 	public function getBrowseCategoryResults($browseCategory, &$response) : void {
+		$isLiDA = $this->checkIfLiDA();
+		global $configArray;
 		if (isset($_REQUEST['pageToLoad']) && is_numeric($_REQUEST['pageToLoad'])) {
 			$pageToLoad = (int)$_REQUEST['pageToLoad'];
 		} else {
@@ -1525,7 +1546,9 @@ class SearchAPI extends AbstractAPI {
 				} else {
 					$records = [];
 				}
-				$response['searchUrl'] = '/MyAccount/MyList/' . $browseCategory->sourceListId;
+				if (!$isLiDA) {
+					$response['searchUrl'] = '/MyAccount/MyList/' . $browseCategory->sourceListId;
+				}
 				$response['label'] = $sourceList->title;
 
 				// Search Browse Category //
@@ -1538,7 +1561,9 @@ class SearchAPI extends AbstractAPI {
 				} else {
 					$records = [];
 				}
-				$response['searchUrl'] = '/CourseReserves/' . $browseCategory->sourceCourseReserveId;
+				if (!$isLiDA) {
+					$response['searchUrl'] = '/CourseReserves/' . $browseCategory->sourceCourseReserveId;
+				}
 				$response['label'] = $sourceList->getTitle();
 				// Search Browse Category //
 			} else {
@@ -1576,15 +1601,101 @@ class SearchAPI extends AbstractAPI {
 					$records[$recordKey] = $record;
 				}
 
-				$response['searchUrl'] = $searchObject->renderSearchUrl();
-				$response['label'] = $browseCategory->label;
+				if (!$isLiDA) {
+					$response['searchUrl'] = $searchObject->renderSearchUrl();
+					$response['label'] = $browseCategory->label;
+				}
 
 				// Shutdown the search object
 				$searchObject->close();
 			}
-			$response['records'] = $records;
-			$response['numRecords'] = count($records);
+			if (!$isLiDA) {
+				$response['records'] = $records;
+				$response['numRecords'] = count($records);
+			} else {
+				$response = $records;
+			}
 		}
+	}
+
+	/**
+	 * Returns a list of browse categories (and subcategories, if applicable) with initial results for the active library/location.
+	 * <b>This is the primary API endpoint for fetching browse categories as of 26.01.</b>
+	 * @noinspection PhpUnused
+	 */
+	public function getBrowseCategories(): array {
+		global $library;
+		global $locationSingleton;
+
+		$maxCategories = null;
+		if (isset($_REQUEST['maxCategories'])) {
+			$maxCategories = $_REQUEST['maxCategories'];
+		}
+
+		$isLiDA = $this->checkIfLiDA();
+
+		$activeLocation = $locationSingleton->getActiveLocation();
+
+		/** @var BrowseCategory[] $browseCategories */
+		$browseCategories = [];
+		if ($activeLocation != null) {
+			if ($activeLocation->getBrowseCategoryGroup()) {
+				$browseCategories = $this->getInitialBrowseCategoryFeed($activeLocation->getBrowseCategoryGroup()->getBrowseCategories(), $isLiDA);
+			}
+		} else {
+			if ($library->getBrowseCategoryGroup()) {
+				$browseCategories = $this->getInitialBrowseCategoryFeed($library->getBrowseCategoryGroup()->getBrowseCategories(), $isLiDA);
+			}
+		}
+
+		$numBrowseCategories = count($browseCategories);
+		if ($maxCategories != null && is_numeric($maxCategories) && $numBrowseCategories > $maxCategories) {
+			$browseCategories = array_slice($browseCategories, 0, (int)$maxCategories);
+		}
+
+		return $browseCategories;
+	}
+
+	/**
+	 * Returns the browse categories and results for the library/location.
+	 * @param BrowseCategory[]|null $localBrowseCategories
+	 * @param bool $isLiDA
+	 * @return array
+	 */
+	private function getInitialBrowseCategoryFeed(array $localBrowseCategories = null, bool $isLiDA = false): array {
+		$appUser = $this->getUserForApiCall();
+		require_once ROOT_DIR . '/services/API/SearchAPI.php';
+		$searchAPI = new SearchAPI();
+		$browseCategories = [];
+		if ($localBrowseCategories) {
+			foreach ($localBrowseCategories as $localBrowseCategory) {
+				require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
+				$browseCategory = new BrowseCategory();
+				$browseCategory->id = $localBrowseCategory->browseCategoryId;
+				$browseCategory->find(true);
+				if ($isLiDA ? $browseCategory->isValidForDisplayInApp($appUser, true) : $browseCategory->isValidForDisplay($appUser)) {
+					$textId = $browseCategory->textId;
+					$subCatResult = $searchAPI->getSubCategories($textId, true);
+					$hasSubcategories = !empty($subCatResult['subCategories']);
+					$subCategoryCount = count($subCatResult['subCategories']);
+					$results = [];
+					if (!$hasSubcategories && $subCategoryCount === 0) {
+						$results = $this->getAppBrowseCategoryResults($browseCategory->textId, $appUser);
+						$results = $results['items'];
+					}
+					$browseCategories[] = [
+						'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
+							'bc_' . bin2hex(random_bytes(5)),
+						'textId' => $textId,
+						'label' => $browseCategory->label,
+						'source' => $hasSubcategories ? null : $browseCategory->source,
+						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
+						'records' => $results,
+					];
+				}
+			}
+		}
+		return $browseCategories;
 	}
 
 	function getBreadcrumbs(): array {
@@ -1926,7 +2037,9 @@ class SearchAPI extends AbstractAPI {
 		return $formattedCategories;
 	}
 
-	/** @noinspection PhpUnused */
+	/** @noinspection PhpUnused
+	 * @deprecated To be removed in a later release. Use getBrowseCategories as of 26.01.
+	 */
 	function getAppActiveBrowseCategories() : array {
 		//Figure out which library or location we are looking at
 		global $library;
@@ -2735,7 +2848,7 @@ class SearchAPI extends AbstractAPI {
 		return $response;
 	}
 
-	/** @noinspection PhpUnused */
+	/** @deprecated use searchLite() instead */
 	function getAppSearchResults(): array {
 		global $configArray;
 		global $library;

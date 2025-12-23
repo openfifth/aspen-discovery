@@ -86,6 +86,32 @@ class WebBuilder_AJAX extends JSON_Action {
 					'values' => $list,
 				];
 				break;
+			case 'hero_slider':
+				require_once ROOT_DIR . '/sys/HeroSlider/HeroSliderLocation.php';
+				$list = [];
+				$list['-1'] = 'Select a hero slider';
+
+				$heroSliderLocation = new HeroSliderLocation();
+				$heroSliderLocation->orderBy('name ASC, id ASC');
+				if (!UserAccount::userHasPermission('Administer All Hero Sliders')) {
+					$accessibleLibraries = Library::getLibraryList(true);
+					if (count($accessibleLibraries) > 0) {
+						$heroSliderLocation->whereAddIn('libraryId', array_keys($accessibleLibraries), false);
+						$heroSliderLocation->whereAdd('libraryId = -1', 'OR');
+					} else {
+						$heroSliderLocation->whereAdd('libraryId = -1');
+					}
+				}
+				$heroSliderLocation->find();
+				while ($heroSliderLocation->fetch()) {
+					$list[$heroSliderLocation->id] = $heroSliderLocation->name;
+				}
+
+				$result = [
+					'success' => true,
+					'values' => $list,
+				];
+				break;
 			case 'custom_form':
 				require_once ROOT_DIR . '/sys/WebBuilder/CustomForm.php';
 				$list = [];

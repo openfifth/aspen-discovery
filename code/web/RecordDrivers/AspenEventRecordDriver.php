@@ -105,6 +105,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 
 	$interface->assign('upcomingInstanceCount', $this->getEventObject()->getUpcomingInstanceCount() ?? 0);
 	$interface->assign('private', $this->isPrivate() ? 'private' : '');
+	$interface->assign('hiddenTimestamps', $this->hiddenTimestamps());
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -169,6 +170,15 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}else{
 			return false;
 		}
+	}
+
+	public function hiddenTimestamps() {
+		if (isset($this->fields['hidden_timestamps'])) {
+			if ($this->fields['hidden_timestamps'] == "true") {
+				return true;
+			};
+		}
+		return false;
 	}
 
 	public function getFullDescription() {

@@ -1,9 +1,27 @@
 #!/bin/bash
 set -e
 
+# Colors for log output
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m' # No Color
+
 log() {
-    echo "$(date '+%Y-%m-%d %H:%M:%S') [ENTRYPOINT] $1"
+    local level="${1:-INFO}"
+    local message="$2"
+    local color=""
+
+    case "$level" in
+        ERROR) color="$RED" ;;
+        WARN)  color="$YELLOW" ;;
+    esac
+
+    echo -e "[$(date '+%Y-%m-%d %H:%M:%S')] [ENTRYPOINT] [${color}${level}${NC}] ${message}"
 }
+
+log_info()  { log "INFO" "$1"; }
+log_warn()  { log "WARN" "$1"; }
+log_error() { log "ERROR" "$1"; }
 
 USER_NAME="www-data"
 SOURCE_DIR="/usr/local/aspen-discovery"
@@ -11,7 +29,7 @@ APACHE_LOG_DIR="/var/log/apache2"
 
 # Adjust user ID if needed
 if [[ -n "${LOCAL_USER_ID}" && "${LOCAL_USER_ID}" != "33" ]]; then
-	log "Setting UID for ${USER_NAME} to ${LOCAL_USER_ID}"
+	log_info "Setting UID for ${USER_NAME} to ${LOCAL_USER_ID}"
 	usermod -o -u "$LOCAL_USER_ID" "$USER_NAME"
 fi
 
