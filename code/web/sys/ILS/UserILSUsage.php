@@ -9,6 +9,7 @@ class UserILSUsage extends DataObject {
 	public $indexingProfileId;
 	public $year;
 	public $month;
+	public $day;
 	public $usageCount; //Number of holds/clicks to online for sideloads
 	public $selfRegistrationCount;
 	public $pdfDownloadCount;
@@ -22,6 +23,7 @@ class UserILSUsage extends DataObject {
 			'indexingProfileId',
 			'year',
 			'month',
+			'day',
 		];
 	}
 
