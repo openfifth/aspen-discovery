@@ -108,7 +108,14 @@ class Pay360_Client  {
 		return true;
 	}
 
-	public function handleOutcome(array $transactionStatus = []): bool|null {
+	public function handleOutcome(array $transactionStatus = [], $attempted = true): bool|null {
+		if (!$attempted) {
+			$this->payment->cancelled = true;
+			$this->payment->message = 'Patron did not attempt the payment and back out of the process.';
+			$this->payment->pay360TransactionStateMessage = 'This payment was not attempted.';
+			$this->payment->update();
+			return false;
+		}
 		
 		if (empty($transactionStatus)) {
     	    $transactionStatus = [
@@ -271,6 +278,7 @@ class Pay360_Client  {
 		$amountInMinorUnits = $this->getMinorUnitsAmount($this->payment->totalPaid);
 
 		$returnUrl = $configArray['Site']['url'] . "/MyAccount/AJAX?method=completePay360Order&paymentId=" . $this->payment->id ."&settingsId=" . $this->_pay360Settings->id;
+		$backUrl = $configArray['Site']['url'] . "/MyAccount/AJAX?method=handlePay360OrderNotAttempted&paymentId=" . $this->payment->id ."&settingsId=" . $this->_pay360Settings->id;
 
 		$parameters = [
 			'credentials' => $this->_getCredentialParams(),
@@ -278,7 +286,7 @@ class Pay360_Client  {
 			'requestId' => 'TEST',
 			'routing' => [
 				'returnUrl' => new SoapVar($returnUrl, XSD_STRING),
-				'backUrl' => new SoapVar($returnUrl, XSD_STRING),
+				'backUrl' => new SoapVar($backUrl, XSD_STRING),
 				'siteId' => $this->_pay360Settings->siteId,
 				'scpId' => $this->_pay360Settings->scpId,
 			],
