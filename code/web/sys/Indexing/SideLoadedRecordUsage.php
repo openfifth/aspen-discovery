@@ -9,6 +9,7 @@ class SideLoadedRecordUsage extends DataObject {
 	public $recordId;
 	public $year;
 	public $month;
+	public $day;
 	public $timesUsed;
 
 	public function getUniquenessFields(): array {
@@ -18,6 +19,7 @@ class SideLoadedRecordUsage extends DataObject {
 			'recordId',
 			'year',
 			'month',
+			'day',
 		];
 	}
 
