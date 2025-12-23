@@ -8,6 +8,7 @@ class SummonRecordUsage extends DataObject {
 	public $summonId;
 	public $year;
 	public $month;
+	public $day;
 	public $timesViewedInSearch;
 	public $timesUsed;
 
@@ -17,6 +18,7 @@ class SummonRecordUsage extends DataObject {
 			'summonId',
 			'year',
 			'month',
+			'day',
 		];
 	}
 
