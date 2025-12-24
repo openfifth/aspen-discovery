@@ -14,6 +14,7 @@ class EventInstance extends DataObject {
 	public $numberOfSeats;
 	public $waitingList;
 	public $waitingListNumberOfSeats;
+	public $availableNumberOfWaitingListSeats;
 
 	public $dateUpdated;
 	public $deleted;
@@ -137,6 +138,9 @@ class EventInstance extends DataObject {
 		if ($this->waitingListNumberOfSeats === null) {
 			$event = $this->getParentEvent();
 			$this->waitingListNumberOfSeats = $event->waitingListNumberOfSeats;
+		}
+		if ($this->availableNumberOfWaitingListSeats === null) {
+			$this->availableNumberOfWaitingListSeats = $this->waitingListNumberOfSeats;
 		}
 		return parent::insert();
 	}
