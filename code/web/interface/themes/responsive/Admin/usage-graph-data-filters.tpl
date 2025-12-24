@@ -26,9 +26,13 @@
 	function toggleCustomPeriodInputFieldDisplay() {
 		const selectedTimeFrame = document.getElementById('timeframe').value;
 		const customPeriodInputWrapper = document.getElementById('custom-usage-period-wrapper');
+		const customUsagePeriodStart = document.getElementById('custom-usage-period-start');
+		const customUsagePeriodDuration = document.getElementById('custom-usage-period-duration');
 
 		if (selectedTimeFrame === 'custom') {
 			customPeriodInputWrapper.removeAttribute('hidden');
+			customUsagePeriodStart.setAttribute('required', true);
+			customUsagePeriodDuration.setAttribute('required', true);
 			return;
 		}
 
@@ -37,6 +41,8 @@
 		}
 
 		customPeriodInputWrapper.setAttribute('hidden', true);
+		customUsagePeriodStart.removeAttribute('required');
+		customUsagePeriodDuration.removeAttribute('required');
 	}
 </script>
 {/literal}
