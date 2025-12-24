@@ -142,6 +142,13 @@ class EventInstance extends DataObject {
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
 		if (!$useWhere) {
+
+			//Remove all waiting list entries for this event instance
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+			$waitingListEntry = new UserAspenEventInstanceWaitingList();
+			$waitingListEntry->eventInstanceId = $this->id;
+			$waitingListEntry->delete(true);
+
 			$this->deleted = 1;
 			$this->dateUpdated = time();
 			return parent::update();
