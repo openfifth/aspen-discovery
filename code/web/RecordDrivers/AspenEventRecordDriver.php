@@ -493,7 +493,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 
 			$waitingList = new UserAspenEventInstanceWaitingList();
-			$waitingList->eventId = $eventInstanceId;
+			$waitingList->eventInstanceId = $eventInstanceId;
 			$waitingList->userId = $user->id;
 			$waitingList->status = 'waiting';
 
@@ -517,7 +517,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 
 		$waitingList = new UserAspenEventInstanceWaitingList();
-		$waitingList->eventId = $eventInstanceId;
+		$waitingList->eventInstanceId = $eventInstanceId;
 		$waitingList->userId = $user->id;
 		$waitingList->status = 'waiting';
 
