@@ -35,17 +35,20 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
+		$groupByTimeframe = implode(',', $timeframes);
 
 		// Get data from user_axis360_usage
 		if ($stat == 'activeUsers' || $stat == 'general') {
 			$userUsage = new UserAxis360Usage();
-			$userUsage->groupBy('year, month');
+			$userUsage->groupBy($groupByTimeframe);
 			if (!empty($instanceName)) {
 				$userUsage->instance = $instanceName;
 			}
 			$userUsage->selectAdd();
-			$userUsage->selectAdd('year');
-			$userUsage->selectAdd('month');
+			foreach ($timeframes as $timeframe) {
+				$userUsage->selectAdd($timeframe);
+			}
+			$userUsage->orderBy($groupByTimeframe);
 
 			if ($stat == 'activeUsers' || $stat == 'general') {
 				$dataSeries['Unique Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
@@ -73,14 +76,15 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'holds' ||
 			$stat == 'general') {
 			$recordUsage = new Axis360RecordUsage();
-			$recordUsage->groupBy('year, month');
+			$recordUsage->groupBy($groupByTimeframe);
 			if (!empty($instanceName)) {
 				$recordUsage->instance = $instanceName;
 			}
 			$recordUsage->selectAdd();
-			$recordUsage->selectAdd('year');
-			$recordUsage->selectAdd('month');
-			$recordUsage->orderBy('year, month');
+			foreach ($timeframes as $timeframe) {
+				$recordUsage->selectAdd($timeframe);
+			}
+			$recordUsage->orderBy($groupByTimeframe);
 
 			if ($stat == 'recordsWithUsage' || $stat == 'general') {
 				$dataSeries['Records With Usage'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
@@ -95,7 +99,6 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 				$recordUsage->selectAdd('SUM(timesHeld) as totalHolds');
 			}
 
-			$recordUsage->orderBy('year, month');
 			$recordUsage->find();
 			while ($recordUsage->fetch()) {
 				$curPeriod = $recordUsage->getCurPeriod($timeframes);
@@ -129,14 +132,15 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'general') {
 
 			$stats = new Axis360Stats();
-			$stats->groupBy('year, month');
+			$stats->groupBy($groupByTimeframe);
 			if (!empty($instanceName)) {
 				$stats->instance = $instanceName;
 			}
 			$stats->selectAdd();
-			$stats->selectAdd('year');
-			$stats->selectAdd('month');
-			$stats->orderBy('year, month');
+			foreach ($timeframes as $timeframe) {
+				$stats->selectAdd($timeframe);
+			}
+			$stats->orderBy($groupByTimeframe);
 
 			if ($stat == 'renewals' || $stat == 'general') {
 				$dataSeries['Total Renewals'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
