@@ -51,42 +51,32 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$dataSeries = [];
 		$columnLabels = [];
 		$usage = [];
+		$groupByTimeframe = implode(',', $timeframes);
 
 		$profileName= $_REQUEST['profileName'];
 		$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
 
-		// for the graph displaying data retrieved from the user_sideload_usage table
 		if ($stat == 'activeUsers') {
 			$usage = new UserSideLoadUsage();
-			$usage->groupBy('year, month');
-			if (!empty($instanceName)) {
-				$usage->instance = $instanceName;
-			}
-			$usage->whereAdd("sideloadId = $sideloadId");
-			$usage->selectAdd();
-			$usage->selectAdd('year');
-			$usage->selectAdd('month');
-			$usage->orderBy('year, month');
+		} elseif ($stat == 'recordsAccessedOnline') {
+			$usage = new SideLoadedRecordUsage();
+		}
+		
+		$usage->groupBy($groupByTimeframe);
+		if (!empty($instanceName)) {
+			$usage->instance = $instanceName;
+		}
+		$usage->selectAdd();
+		foreach ($timeframes as $timeframe) {
+			$usage->selectAdd($timeframe);
+		}
+		$usage->orderBy($groupByTimeframe);
+		$usage->whereAdd("sideloadId = $sideloadId");
 
+		if ($stat == 'activeUsers') {
 			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$usage->selectAdd('COUNT(id) as numUsers');
-		}
-
-		// for the graph displaying data retrieved from the sideload_record_usage table
-		if ($stat == 'recordsAccessedOnline' ) {
-			$usage = new SideLoadedRecordUsage();
-			$usage->groupBy('year, month');
-			if (!empty($instanceName)) {
-				$usage->instance = $instanceName;
-			}
-
-			$usage->whereAdd("sideloadId = $sideloadId");
-			$usage->selectAdd(null);
-			$usage->selectAdd();
-			$usage->selectAdd('year');
-			$usage->selectAdd('month');
-			$usage->orderBy('year, month');
-
+		} elseif ($stat == 'recordsAccessedOnline') {
 			$dataSeries['Records Accessed Online'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$usage->selectAdd('SUM(IF(timesUsed>0,1,0)) as numRecordsUsed');
 		}
