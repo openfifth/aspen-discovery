@@ -56,7 +56,7 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 			// Collects results
 			$userSummonUsage->find();
 			while($userSummonUsage->fetch()) {
-				$curPeriod = "{$userSummonUsage->month}-{$userSummonUsage->year}";
+				$curPeriod = $userSummonUsage->getCurPeriod($timeframes);
 				$columnLabels[] = $curPeriod;
 				/** @noinspection PhpUndefinedFieldInspection */
 				$dataSeries['Active Users']['data'][$curPeriod] = $userSummonUsage->activeUsers;
@@ -95,7 +95,7 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 			// Collect results
 			$summonRecordUsage->find();
 			while ($summonRecordUsage->fetch()) {
-				$curPeriod = "{$summonRecordUsage->month}-{$summonRecordUsage->year}";
+				$curPeriod = $summonRecordUsage->getCurPeriod($timeframes);
 				$columnLabels[] = $curPeriod;
 				if ($stat == 'numRecordsViewed') {
 					/** @noinspection PhpUndefinedFieldInspection */
