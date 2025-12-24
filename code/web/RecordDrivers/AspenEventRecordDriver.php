@@ -112,6 +112,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
 	$interface->assign('userOnWaitingList', $this->isUserOnWaitingList());
 	$interface->assign('userWaitingListPosition', $this->getUserWaitingListPosition());
+	$interface->assign('availableNumberOfWaitingListSeats', $this->getAvailableNumberOfWaitingListSeats());
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -516,6 +517,15 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		} else {
 			return null;
 		}
+	}
+
+	public function getAvailableNumberOfWaitingListSeats(): ?int {
+
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return null;
+		}
+		return $eventObject->availableNumberOfWaitingListSeats;
 	}
 
 	/**
