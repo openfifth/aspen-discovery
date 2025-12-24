@@ -11200,7 +11200,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$user = UserAccount::getLoggedInUser();
 		$userId = $user->id;
-		$eventInstanceId = $_REQUEST['eventId'] ?? null;
+		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 
 		if (empty($eventInstanceId)) {
 			$result['message'] = translate([
@@ -11287,7 +11287,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		// Create new waiting list entry
 		$newEntry = new UserAspenEventInstanceWaitingList();
-		$newEntry->eventId = $eventInstanceId;
+		$newEntry->eventInstanceId = $eventInstanceId;
 		$newEntry->userId = $userId;
 		$newEntry->position = $nextPosition;
 		$newEntry->status = 'waiting';

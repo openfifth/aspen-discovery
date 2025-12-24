@@ -3281,10 +3281,10 @@ AspenDiscovery.Account = (function () {
 				console.error('AJAX Error: ', textStatus, errorThrown);
 			})
 		},
-		joinEventWaitingList: function (eventId) {
+		joinEventWaitingList: function (eventInstanceId) {
 			var url = Globals.path + "/MyAccount/AJAX?method=joinEventWaitingList";
 			var params = {
-				eventId: eventId
+				eventInstanceId: eventInstanceId
 			}
 
 			$.getJSON(url, params, function(data) {
