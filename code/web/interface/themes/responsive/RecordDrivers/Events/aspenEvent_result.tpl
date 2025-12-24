@@ -76,7 +76,7 @@
 						<div class="clearfix"></div>
 						<div class="result-label col-tn-2">{translate text="Available Seats on Waiting List" isPublicFacing=true} </div>
 						<div class="result-value col-tn-6 notranslate">
-							{$waitingListNumberOfSeats}
+							{$availableNumberOfWaitingListSeats} / {$waitingListNumberOfSeats}
 						</div>
 					{/if}
 					{if $private}
