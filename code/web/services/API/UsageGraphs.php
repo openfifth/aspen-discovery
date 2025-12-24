@@ -37,7 +37,6 @@ class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$usage->whereAdd("method = '$stat'");
 		$usage->selectAdd();
 
-		$curPeriod = "";
 		foreach ($timeframes as $timeframe) {
 			$usage->selectAdd($timeframe);
 		}
@@ -48,7 +47,7 @@ class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$usage->find();
 
 		while ($usage->fetch()) {
-			$curPeriod = $usage->getCurPeriod($timeframe);
+			$curPeriod = $usage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			/** @noinspection PhpUndefinedFieldInspection */
 			$dataSeries[$stat]['data'][$curPeriod] = $usage->numCalls;
