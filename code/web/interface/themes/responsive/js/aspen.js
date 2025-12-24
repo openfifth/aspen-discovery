@@ -5316,10 +5316,10 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
-		joinEventWaitingList: function (eventId) {
+		joinEventWaitingList: function (eventInstanceId) {
 			var url = Globals.path + "/MyAccount/AJAX?method=joinEventWaitingList";
 			var params = {
-				eventId: eventId
+				eventInstanceId: eventInstanceId
 			}
 
 			$.getJSON(url, params, function(data) {
