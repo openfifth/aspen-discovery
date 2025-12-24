@@ -12231,6 +12231,12 @@ class MyAccount_AJAX extends JSON_Action {
 		$newEntry->joinedAt = date('Y-m-d H:i:s');
 
 		if ($newEntry->insert()) {
+
+			if ($eventInstance->availableNumberOfWaitingListSeats !== null) {
+				$eventInstance->availableNumberOfWaitingListSeats--;
+				$eventInstance->update();
+			}
+			
 			$result['success'] = true;
 			$result['title'] = translate([
 				'text' => 'Added to Waiting List',

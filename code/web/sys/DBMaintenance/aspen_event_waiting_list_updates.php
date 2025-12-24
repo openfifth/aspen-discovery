@@ -23,5 +23,12 @@ function getAspenEventWaitingListUpdates() {
 				) ENGINE=InnoDB'
 			],
 		], // create_aspen_event_waiting_list_table
+		'add_available_number_of_waiting_list_seats_to_event' => [
+			'title' => 'Add Available Number of Waiting List Seats to Event',
+			'description' => 'Add a column to store the available number of seats on an event waiting list',
+			'sql' => [
+				'ALTER TABLE event_instance ADD COLUMN availableNumberOfWaitingListSeats INT DEFAULT NULL',
+			],
+		], // add_available_number_of_waiting_list_seats_to_event
 	];
 }
