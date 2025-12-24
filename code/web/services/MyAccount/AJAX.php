@@ -12190,19 +12190,12 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// Check available waiting list spaces
-		if ($eventInstance->waitingListNumberOfSeats !== null) {
-			$waitingList = new UserAspenEventInstanceWaitingList();
-			$waitingList->eventInstanceId = $eventInstanceId;
-			$waitingList->whereAdd("status IN ('waiting', 'notified')");
-			$currentCount = $waitingList->count();
-
-			if ($currentCount >= $eventInstance->waitingListNumberOfSeats) {
-				$result['message'] = translate([
+		if ($eventInstance->availableNumberOfWaitingListSeats !== null && $eventInstance->availableNumberOfWaitingListSeats <=0) {
+			$result['message'] = translate([
 				'text' => 'The waiting list for this event is full.',
 				'isPublicFacing' => true,
 			]);
-				return $result;
-			}
+			return $result;
 		}
 
 		// Get next position
