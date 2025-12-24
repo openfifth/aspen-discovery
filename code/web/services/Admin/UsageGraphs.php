@@ -146,7 +146,7 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$userUsage->find();
 
 		while ($userUsage->fetch()) {
-			$curPeriod = "{$userUsage->month}-{$userUsage->year}";
+			$curPeriod = $userUsage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			if ($stat == 'pageViews' || $stat == 'generalUsage') {
 				/** @noinspection PhpUndefinedFieldInspection */
