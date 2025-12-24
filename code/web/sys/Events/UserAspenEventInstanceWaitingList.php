@@ -9,5 +9,5 @@ class UserAspenEventInstanceWaitingList extends DataObject {
 	public $joinedAt;
 	public $notifiedAt;
 	public $expiresAt;
-	public $eventId;
+	public $eventInstanceId;
 }
