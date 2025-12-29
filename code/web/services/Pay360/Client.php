@@ -249,27 +249,30 @@ class Pay360_Client  {
 		}
 		$items = [];
 		foreach( $this->selectedFines as $fine) {	
-			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : [];
-			$vatCode = 'test';
-			$fundCode = 'test';
-			$reference = 'test';
+			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : $fine;
 			$amountInMinorUnits = $this->getMinorUnitsAmount($fineDetails['amountVal']);
 			$item = [
-			'itemSummary' =>[
-						'description' => $fineDetails['reason'],
-						'amountInMinorUnits' => $amountInMinorUnits,
-						'reference' => $reference,
-						'displayableReference' => $fineDetails['reason'], 
+				'itemSummary' =>[
+					'description' => $fineDetails['reason'],
+					'amountInMinorUnits' => $amountInMinorUnits,
+					'displayableReference' => $fineDetails['reason'], 
 				],
-				'tax' => $vatCode,
 				'IgItemDetails' => [
-					'fundCode' => $fundCode,
 					'additionalReference' => $fineDetails['reason'],
 					'narrative' => $fineDetails['reason'],
 					'customerInfo' => $fineDetails['message'],
 				],
 				'lineId' => $fineDetails['fineId']
 			];
+			if (isset($fineDetails['vatCode'])) {
+				$item['tax'] = $fineDetails['vatCode'];
+			}
+			if (isset($fineDetails['fundCode'])) {
+				$item['IgItemDetails']['fundCode'] = $fineDetails['fundCode'];
+			}
+			if (isset($fineDetails['reference'])) {
+				$item['itemSummary']['reference'] = $fineDetails['reference'];
+			}
 			array_push($items, $item);
 		}
 		return $items;
