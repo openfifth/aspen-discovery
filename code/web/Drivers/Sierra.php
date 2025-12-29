@@ -603,14 +603,20 @@ class Sierra extends AbstractIlsDriver {
 		};
 	}
 
-	public function getReadingHistory(User $patron): array {
-		$readingHistoryEnabled = false;
+	public function isOptedIntoReadingHistoryInILS(User $patron) : bool {
 		$patronId = $patron->unique_ils_id;
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patronId . "/checkouts/history/activationStatus";
 		$readingHistoryEnabledResponse = $this->_callUrl('sierra.getReadingHistoryStatus', $sierraUrl);
+		$readingHistoryEnabled = false;
 		if (!empty($readingHistoryEnabledResponse)) {
 			$readingHistoryEnabled = $readingHistoryEnabledResponse->readingHistoryActivation;
 		}
+		return $readingHistoryEnabled;
+	}
+
+	public function getReadingHistory(User $patron): array {
+		$patronId = $patron->unique_ils_id;
+		$readingHistoryEnabled = $this->isOptedIntoReadingHistoryInILS($patron);
 		// To preserve reading history for existing accounts in Aspen,
 		// and if the user's reading history is already enabled in Aspen,
 		// then enable it in the Sierra ILS.
@@ -649,7 +655,12 @@ class Sierra extends AbstractIlsDriver {
 							$checkoutTimestamp = null;
 						}
 						$curTitle['checkout'] = $checkoutTimestamp;
-						$checkinDate = strtotime($historyEntry->returnDate) ?: null;
+						if (!empty($historyEntry->returnDate)) {
+							$checkinDate = strtotime($historyEntry->returnDate);
+						}else{
+							$checkinDate = null;
+						}
+
 						if ($checkinDate === null) {
 							// Sierra history entries often omit returnDate; try to recover from DNA using the patron/item identifiers.
 							$checkinDate = $this->getCheckinDateFromSierraDNA((int)$patronId, $itemRecordId, $checkoutTimestamp);
@@ -1473,6 +1484,10 @@ class Sierra extends AbstractIlsDriver {
 		if ($userExistsInDB) {
 			$user->update();
 		} else {
+			if ($this->isOptedIntoReadingHistoryInILS($user)) {
+				$user->trackReadingHistory = 1;
+				$user->forceReadingHistoryLoad = 1;
+			}
 			$user->created = date('Y-m-d');
 			if (!$user->insert()) {
 				return null;
@@ -1655,6 +1670,10 @@ class Sierra extends AbstractIlsDriver {
 		if ($userExistsInDB) {
 			$user->update();
 		} else {
+			if ($this->isOptedIntoReadingHistoryInILS($user)) {
+				$user->trackReadingHistory = 1;
+				$user->forceReadingHistoryLoad = 1;
+			}
 			$user->created = date('Y-m-d');
 			if (!$user->insert()) {
 				return false;
