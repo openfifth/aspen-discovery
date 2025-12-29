@@ -6,12 +6,19 @@
 		{if !empty($filterList)}
 			<h3 id="remove-search-label" class="sidebar-label">{translate text='Applied Filters' isPublicFacing=true}</h3>
 			<div class="applied-filters">
-			{foreach from=$filterList item=filters key=field }
-				{foreach from=$filters item=filter}
-					<div class="facetValue">{translate text=$field isPublicFacing=true}: {$filter.display} <a href="{$filter.removalUrl|escape}" aria-label="{translate text="Remove Filter" inAttribute=true isPublicFacing=true}"><i class="fas fa-minus-circle fa-lg text-danger" style="display:inline; vertical-align: middle"></i></a></div>
+				{foreach from=$filterList item=filters key=field }
+					{foreach from=$filters item=filter}
+						<a class="btn btn-default btn-sm facetValueBadge" href="{$filter.removalUrl|escape}" aria-label="{translate text="Remove Filter" inAttribute=true isPublicFacing=true}">
+							<i class="fas fa-xmark text-danger remove-filter-icon" style="display:inline; vertical-align: middle"></i> {$filter.display}
+						</a>
+					{/foreach}
 				{/foreach}
-			{/foreach}
 			</div>
+			{if !empty($removeAllFiltersUrl)}
+				<div class="removeAllFilters">
+					<a class="btn btn-default btn-sm removeAllFiltersBtn" href="{$removeAllFiltersUrl}">{translate text="Clear All" isPublicFacing=true}</a>
+				</div>
+			{/if}
 		{/if}
 
 		{* Available filters *}
