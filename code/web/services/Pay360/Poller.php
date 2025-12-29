@@ -4,8 +4,8 @@ require_once ROOT_DIR . '/services/Pay360/Client.php';
 
 class Pay360_Poller {
 	private $_client;
-	private $_maxAttempts = 5;
-	private $_intervalSeconds = 5;
+	private $_maxAttempts = 6; // check for half an hour in total 
+	private $_intervalSeconds = 300; // check every 5 minutes
 	private $_priorStatus;
 	private $_transactionInfo;
 
@@ -13,9 +13,8 @@ class Pay360_Poller {
 		$this->_client = $_client;
 	}
 
-	// FIXME: implement ExternalRequestLogEntry::logRequest(); 
 	public function poll() {
-		sleep(30);
+		sleep(600); // wait 10 minutes for the patron to have likely attempted the payment
 		$counter = 1;
 		
 		$this->_transactionInfo = $this->_client->getOrderStatus(true);
