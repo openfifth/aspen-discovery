@@ -8518,18 +8518,6 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->userId = $userId;
-		$registration->eventInstanceId = $eventInstanceId;
-		if($registration->isUserRegisteredForEvent()) {
-			$result['message'] = translate([
-				'text' => 'You are already registered for this event.',
-				'isPublicFacing' => true
-			]);
-			return $result;
-		}
-
 		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 		$sourceId = 'aspenEvent_1_' . $eventInstanceId;
 		$recordDriver = new AspenEventRecordDriver($sourceId);
