@@ -8433,7 +8433,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-
+		// I think this is a bug as it is to early and prevents being able to unregister. 
 		if (!$eventInstance->hasAvailableSeats(1)) {
 			$result['message'] = translate([
 				'text' => 'This event is full. No seats available.',
@@ -8463,7 +8463,8 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->cancelled = 1;
 			$registration->update();
-
+			//::TODO :: Next when soemone unregisters the number of seats should increment and then the waitign list shoul dbe checked to see who is at th top and en email sent to them. 
+			
 			$result['success'] = true;
 			$result['title'] = translate([
 				'text' => 'Registration Information',
