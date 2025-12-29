@@ -2040,7 +2040,6 @@ AspenDiscovery.Account = (function () {
 			}
 		},
 
-		// FIXME: select appropriate property
 		createPay360Order: function (finesFormId, transactionType) {
 			const url = this.createGenericOrder(finesFormId, 'Pay360', transactionType, null);
 			if (!url) {

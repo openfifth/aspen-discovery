@@ -1,7 +1,5 @@
 <?php
 
-// DRAFT !!!
-
 define('ROOT_DIR', str_replace('/scripts', '', __DIR__));
 
 spl_autoload_register('aspen_autoloader', true, false);
@@ -40,7 +38,7 @@ $poller = new Pay360_Poller($apiClient);
 
 $poller->poll();
 
-// TEMPORARY - Copied from /code/web/bootstrap_aspen.php 
+// Copied from /code/web/bootstrap_aspen.php 
 function aspen_autoloader($class) {
 	if (substr($class, 0, 4) == 'CAS_') {
 		if (CAS_autoload($class)) {
