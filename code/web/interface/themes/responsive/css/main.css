@@ -10787,8 +10787,23 @@ td[data-entry-id]:has(.date-edit:focus)::after {
     display: none;
   }
 }
+.applied-filters {
+  margin-bottom: 3px;
+}
 .applied-filters .facetValue {
   padding-left: 0;
+}
+.applied-filters .facetValueBadge {
+  margin: 3px 3px 3px 3px;
+  padding: 2px 7px 2px 5px;
+  border: 1px solid #999999;
+  border-radius: 15px;
+  font-size: smaller;
+  display: inline-block;
+  white-space: nowrap;
+}
+.applied-filters .facetValueBadge i {
+  vertical-align: baseline !important;
 }
 .result-head {
   font-size: smaller;

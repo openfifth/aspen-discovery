@@ -2804,6 +2804,23 @@ abstract class SearchObject_BaseSearcher {
 	public function hasSearchableFacets() : bool {
 		return false;
 	}
+
+	public function getRemoveAllFiltersUrl() : string {
+		// Stash our old data for a minute
+		$oldFilterList = $this->filterList;
+		$oldPage = $this->page;
+		// Remove all applied filters
+		$this->filterList = [];
+		// Remove page number
+		$this->page = 1;
+		// Get the new url
+		$url = $this->renderSearchUrl();
+		// Restore the old data
+		$this->filterList = $oldFilterList;
+		$this->page = $oldPage;
+		// Return the URL
+		return $url;
+	}
 }//End of SearchObject_Base
 
 /**
