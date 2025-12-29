@@ -250,7 +250,6 @@ class Pay360_Client  {
 		$items = [];
 		foreach( $this->selectedFines as $fine) {	
 			$fineDetails = $this->catalogDriver->hasAdditionalFineFields() ? $this->catalogDriver->getFineById($fine['id'], true) : [];
-			//BLOCKED - TODO: vatCode, fundCode and reference
 			$vatCode = 'test';
 			$fundCode = 'test';
 			$reference = 'test';
