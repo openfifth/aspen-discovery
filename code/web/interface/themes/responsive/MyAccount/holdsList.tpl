@@ -4,7 +4,7 @@
 		{continue}
 	{/if}
 	<h2>{if $sectionKey == 'available'}{translate text="Holds Ready For Pickup" isPublicFacing=true}{else}{if $source=='interlibrary_loan'}{translate text="Pending Requests" isPublicFacing=true}{else}{translate text="Pending Holds" isPublicFacing=true}{/if}{/if}</h2>
-	{if !empty($showHoldHelpMessages)}
+	{if !empty($showHoldHelpMessages) && count($recordList.$sectionKey) > 0}
 		<div class="holdHelpMessage alert alert-info">
 			<i class="fas fa-info-circle"></i>
 			{if $sectionKey == 'available'}
