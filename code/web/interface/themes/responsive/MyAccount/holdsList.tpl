@@ -4,22 +4,26 @@
 		{continue}
 	{/if}
 	<h2>{if $sectionKey == 'available'}{translate text="Holds Ready For Pickup" isPublicFacing=true}{else}{if $source=='interlibrary_loan'}{translate text="Pending Requests" isPublicFacing=true}{else}{translate text="Pending Holds" isPublicFacing=true}{/if}{/if}</h2>
-	<p class="alert alert-info">
-		{if $sectionKey == 'available'}
-			{translate text="These titles have arrived at the library or are available online for you to use." isPublicFacing=true}
-			{*These titles have arrived at the library or are available online for you to use.*}
-		{else}
-			{if $source == 'interlibrary_loan'}
-				{translate text="These requests will be filled by another library and sent to your library. We will notify you when a title is available." isPublicFacing=true}
+	{if !empty($showHoldHelpMessages)}
+		<div class="holdHelpMessage alert alert-info">
+			<i class="fas fa-info-circle"></i>
+			{if $sectionKey == 'available'}
+				{translate text="These titles have arrived at the library or are available online for you to use." isPublicFacing=true}
+				{*These titles have arrived at the library or are available online for you to use.*}
 			{else}
-				{if not $notification_method or $notification_method eq 'Unknown'}
-					{translate text="These titles are currently checked out to other patrons. We will notify you when a title is available." isPublicFacing=true}
+				{if $source == 'interlibrary_loan'}
+					{translate text="These requests will be filled by another library and sent to your library. We will notify you when a title is available." isPublicFacing=true}
 				{else}
-					{translate text="These titles are currently checked out to other patrons. We will notify you via %1% when a title is available." 1=$notification_method isPublicFacing=true}
+					{if not $notification_method or $notification_method eq 'Unknown'}
+						{translate text="These titles are currently checked out to other patrons. We will notify you when a title is available." isPublicFacing=true}
+					{else}
+						{translate text="These titles are currently checked out to other patrons. We will notify you via %1% when a title is available." 1=$notification_method isPublicFacing=true}
+					{/if}
 				{/if}
 			{/if}
-		{/if}
-	</p>
+			<button type="button" class="close" data-dismiss="holdHelpMessage" aria-label="{translate text="Close" isPublicFacing=true inAttribute=true}" onclick="AspenDiscovery.Account.dismissHoldHelpMessages()"><i class="fas fa-times" role="presentation"></i></button>
+		</div>
+	{/if}
 	{if is_array($recordList.$sectionKey) && count($recordList.$sectionKey) > 0}
 		{if $source == 'ils' && $sectionKey == 'available' && $showCurbsidePickups}
 			<div id="curbsidePickupButton" style="margin-bottom: 1em">

@@ -22,6 +22,13 @@ function getUpdates26_01_00(): array {
 				'ALTER TABLE library ADD COLUMN showHoldsReadyForPickupSection TINYINT DEFAULT 1'
 			]
 		], //library_control_holds_ready_for_pickup
+		'show_hold_help_messages' => [
+			'title' => 'Show Hold Help Messages to User',
+			'description' => 'Add showHoldHelpMessages to user object',
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN showHoldHelpMessages TINYINT DEFAULT 1'
+			]
+		], //show_hold_help_messages
 
 		//kirstien
 
