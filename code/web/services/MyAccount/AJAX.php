@@ -9236,6 +9236,7 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+
 		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 		$sourceId = 'aspenEvent_1_' . $eventInstanceId;
 		$recordDriver = new AspenEventRecordDriver($sourceId);
@@ -9256,7 +9257,7 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->cancelled = 1;
 			$registration->update();
-
+			
 			$result['success'] = true;
 			$result['title'] = translate([
 				'text' => 'Registration Information',
@@ -9264,6 +9265,14 @@ class MyAccount_AJAX extends JSON_Action {
 			]);
 			$result['message'] = translate([
 				'text' => 'Your registration to this event was cancelled successfully.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		if (!$eventInstance->hasAvailableSeats(1)) {
+			$result['message'] = translate([
+				'text' => 'This event is full. No seats available.',
 				'isPublicFacing' => true
 			]);
 			return $result;
