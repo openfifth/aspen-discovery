@@ -48,6 +48,13 @@ class Pay360_Client  {
 		$this->_pay360Settings->find(true);
 	}
 
+	public function isPay360PollingEnabled(): bool {
+		if (empty($this->_pay360Settings)) {
+			return false;
+		}
+		return $this->_pay360Settings->pollingEnabled;
+	}
+
 	public function setPayment($paymentId): void {
 		$this->payment = new UserPayment();
 		$this->payment->id = $paymentId;
