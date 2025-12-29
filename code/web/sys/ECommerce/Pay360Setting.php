@@ -13,6 +13,7 @@ class Pay360Setting extends DataObject {
 	public $algorithm;
 	public $subjectType;
 	public $systemCode;
+	public $pollingEnabled;
 
 	private $_libraries;
 	private $_locations;
@@ -103,6 +104,14 @@ class Pay360Setting extends DataObject {
 				'label' => 'Pay360 System Code',
 				'description' => 'The Pay360 System Code',
 				'maxLength' => 50,
+			],
+			'pollingEnabled' => [
+				'property' => 'pollingEnabled',
+				'type' => 'checkbox',
+				'label' => 'Enable Polling',
+				'description' => 'Whenever a user accesses uses the Click to pay online button, start a polling process to check Pay360 for status updates. This will start 10 minutes after the patron first accessed the link, and run every 5 minutes for ',
+				'hideInLists' => true,
+				'default' => true,
 			],
 			// RESERVED FOR FUTURE USE
 			// 'errorUrl' => [
