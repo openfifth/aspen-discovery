@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/JSON_Action.php';
 class MyAccount_AJAX extends JSON_Action {
 	const SORT_LAST_ALPHA = 'zzzzz';
 
-	function launch($method = null) {
+	function launch($method = null) : void {
 		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
 		switch ($method) {
 			case 'renewItem':
@@ -4202,6 +4202,7 @@ class MyAccount_AJAX extends JSON_Action {
 				}else{
 					$interface->assign('showAvailableHoldsSection', true);
 				}
+				$interface->assign('showHoldHelpMessages', $user->showHoldHelpMessages);
 
 				$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 			}
@@ -4878,7 +4879,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissMessage() {
+	function dismissMessage() : array {
 		require_once ROOT_DIR . '/sys/Account/UserMessage.php';
 		if (!isset($_REQUEST['messageId'])) {
 			return [
@@ -4886,7 +4887,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'message' => 'Message Id not provided',
 			];
 		} else {
-			if (UserAccount::getActiveUserId() == false) {
+			if (UserAccount::getActiveUserId() === false) {
 				return [
 					'success' => false,
 					'message' => 'User is not logged in',
@@ -4919,7 +4920,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissSystemMessage() {
+	function dismissSystemMessage() : array {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/SystemMessage.php';
 		if (!isset($_REQUEST['messageId'])) {
 			return [
@@ -4927,7 +4928,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'message' => 'Message Id not provided',
 			];
 		} else {
-			if (UserAccount::getActiveUserId() == false) {
+			if (UserAccount::getActiveUserId() === false) {
 				return [
 					'success' => false,
 					'message' => 'User is not logged in',
@@ -4959,6 +4960,24 @@ class MyAccount_AJAX extends JSON_Action {
 					];
 				}
 			}
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function dismissHoldHelpMessages() : array {
+		if (UserAccount::getActiveUserId() === false) {
+			return [
+				'success' => false,
+				'message' => 'User is not logged in',
+			];
+		} else {
+			$user = UserAccount::getLoggedInUser();
+			$user->showHoldHelpMessages = 0;
+			$user->update();
+			return [
+				'success' => true,
+				'message' => 'The help messages will no longer be shown',
+			];
 		}
 	}
 

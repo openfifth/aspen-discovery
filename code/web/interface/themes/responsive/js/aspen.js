@@ -3844,6 +3844,17 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		dismissHoldHelpMessages: function () {
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				method: "dismissHoldHelpMessages"
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params).fail(AspenDiscovery.ajaxFail);
+			$('.holdHelpMessage').hide();
+			return false;
+		},
+
 		createGenericOrder: function (finesFormId, paymentType, transactionType, token) {
 			var url = Globals.path + "/MyAccount/AJAX";
 
