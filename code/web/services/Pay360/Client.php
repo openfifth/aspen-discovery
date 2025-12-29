@@ -18,9 +18,9 @@ class Pay360_Client  {
 	public $invokeResponse;
 	public $queryResponse;
 
-	public function __construct($settingsId, $paymentId, $selectedFines = [], $catalogDriver = null, $setTimestamp = false) {
+	public function __construct($settingsId, $paymentId, $selectedFines = [], $catalogDriver = null, $setTimestamp = false, $payment = null) {
 		$this->setSettings($settingsId);
-		$this->setPayment($paymentId);
+		$this->setPayment($paymentId, $payment);
 
 		$this->catalogDriver = $catalogDriver;
 		$this->selectedFines = $selectedFines;
@@ -55,7 +55,11 @@ class Pay360_Client  {
 		return $this->_pay360Settings->pollingEnabled;
 	}
 
-	public function setPayment($paymentId): void {
+	public function setPayment($paymentId, $payment = null): void {
+		if ($payment) {
+			$this->payment = $payment;
+			return;
+		}
 		$this->payment = new UserPayment();
 		$this->payment->id = $paymentId;
 		$this->payment->find(true);
