@@ -8012,11 +8012,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$client = new Pay360_Client($pay360SettingsId, $payment->id, $selectedFines, $patron->getCatalogDriver(), true);
 		$success = $client->createOrder();
 
-		// start the polling process for status updates (no webhooks available) 
-		global $configArray;
-		$serverName = $_SERVER['aspen_server'];
-		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
-		exec("php " . ROOT_DIR . "/scripts/pay360-poll.php $serverName $pay360SettingsId $payment->id >> $logFilePath . 2>&1 &");
 
 		if (!$success) {
 			return [
@@ -8025,11 +8020,23 @@ class MyAccount_AJAX extends JSON_Action {
 			];
 		}
 
-		return [
+		$result = [
 			'success' => true,
 			'message' => 'Redirecting to payment processor',
 			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl, 
 		];
+
+		if (!$client->isPay360PollingEnabled()) {
+			return $result;
+		}
+
+		// start the polling process for status updates (no webhooks available) 
+		global $configArray;
+		$serverName = $_SERVER['aspen_server'];
+		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
+		exec("php " . ROOT_DIR . "/scripts/pay360-poll.php $serverName $pay360SettingsId $payment->id >> $logFilePath . 2>&1 &");
+
+		return $result;
 	}
 
 	function completePay360Order(): void {
