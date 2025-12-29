@@ -1,5 +1,4 @@
 <?php
-// DRAFT
 require_once ROOT_DIR . '/services/Pay360/Client.php';
 
 class Pay360_Poller {
