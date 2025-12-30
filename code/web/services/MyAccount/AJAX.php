@@ -8727,6 +8727,8 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->cancelled = 1;
 			$registration->update();
+
+			$this->processEventWaitingListSeats($eventInstanceId);
 			
 			$result['success'] = true;
 			$result['title'] = translate([
@@ -11723,4 +11725,91 @@ class MyAccount_AJAX extends JSON_Action {
 
 		return $result;
 	}
-}
+
+	// private function releaseEventWaitingListSeat($eventInstanceId): void {
+	// 	global $logger;
+	// 	$logger->log("Called releaseEventWaitingList", Logger::LOG_ERROR);
+	// 	// $this->incrementAvailableWaitingListSeats($eventInstanceId);
+	// 	$this->processEventWaitingListSeats($eventInstanceId);
+	// }
+
+	private function incrementAvailableWaitingListSeats($eventInstanceId): void {
+		//TODOD:: Should only be called when the first person in the waiting list either books through their link
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		global $logger;
+
+		$logger->log("Called increment available waiting list seat", Logger::LOG_ERROR);
+
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if ($eventInstance->find(true)) {
+			//TODO:: THIS should only add until available seats is in line with max seats.
+			$eventInstance->availableNumberOfWaitingListSeats++;
+			$logger->log("updated number of waiting list seats", Logger::LOG_ERROR);
+			$eventInstance->update();
+		}
+	}
+
+	private function processEventWaitingListSeats($eventInstanceId): void {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		$waitingList = new UserAspenEventInstanceWaitingList();
+		$waitingList->eventInstanceId = $eventInstanceId;
+		$waitingList->status = 'waiting';
+		$waitingList->orderBy('position ASC');
+
+		if ($waitingList->find(true)) {
+			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId);
+
+			if ($notificationSent) {
+				$waitingList->status = 'notified';
+				$waitingList->notifiedAt = date('Y-m-d H:i:s');
+				$waitingList->expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+				$waitingList->update();
+				//TODO:; DO NOT REORDER UNTIL USER HAS RESPNDED OR RUN OUT OF TIME
+				// $this->reorderWaitingListPositions($eventInstance, $waitingList->position);
+			}
+		}
+	}
+
+	// private function reorderWaitingListPositions($eventInstanceId, $removedPosition): void {
+	// 	require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+	// 	global $logger;
+
+	// 	$logger->log("Called reorderWaitingListPositions", Logger::LOG_ERROR);
+
+
+	// 	$waitingList = new UserAspenEventInstanceWaitingList();
+	// 	$waitingList->eventInstanceId = $eventInstanceId;
+	// 	$waitingList->whereAdd('position > ' . $removedPosition);
+	// 	$waitingList->find();
+
+	// 	while ($waitingList->fetch()) {
+	// 		$updateEntry = new UserAspenEventInstanceWaitingList();
+	// 		$updateEntry->id = $waitingList->id;
+	// 		if ($updateEntry->find(True)) {
+	// 			$updateEntry->position = $waitingList->position -1;
+	// 			$updateEntry->update();
+	// 		}
+	// 	}
+	// }
+
+	private function sendWaitingListNotification($userId, $eventInstanceId): bool {
+		require_once ROOT_DIR . '/sys/Email/Mailer.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+
+		$user = new User();
+		$user->id = $userId;
+		if (!$user->find(true)) {
+			return false;
+		}
+
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return false;
+		}
+
+		return true;
+	}
+ }
