@@ -40,13 +40,13 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$interface->assign('timeframe', $timeframe);
 
 		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), $this->setSelectAdd($timeframe));
+		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), false);
 		
 		$graphTitle = $interface->getVariable('graphTitle');
 		$this->display('../Admin/usage-graph.tpl', $graphTitle);
 	}
 
-	private function setGroupBy(string $timeframe, string $startDate = null, string $periodLength = null): array {
+	private function setGroupBy(string $timeframe): array {
 		if ($timeframe == 'day') {
 			return ['year', 'month', 'day'];
 		}
@@ -61,23 +61,6 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		}
 		// if ($timeframe == 'custom') {}
 		return ['year', 'month']; // monthly is the default
-	}
-
-	private function setSelectAdd(string $timeframe, string $startDate = null, string $periodLength = null): string {
-		if ($timeframe == 'day') {
-			return "DAY(date) AS day, MONTH(date) AS month, YEAR(date) AS year";
-		}
-		if ($timeframe == 'month') {
-			return "MONTH(date) AS month, YEAR(date) AS year";
-		}
-		if ($timeframe == 'week') {
-			return "WEEK(date) AS week, YEAR(date) AS year";
-		}
-		if ($timeframe == 'year') {
-			return "YEAR(date) AS year";
-		}
-		// if ($timeframe == 'custom') {}
-		return "MONTH(date) AS month, YEAR(date) AS year"; // monthly is the default
 	}
 
 	public function canView(): bool {
@@ -97,7 +80,7 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		} else {
 			$instanceName = '';
 		}
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), $this->setSelectAdd($timeframe));
+		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), false);
 		$dataSeries = $interface->getVariable('dataSeries');
 
 		// ensures csv filename contains dashboard subsection name if relevant
