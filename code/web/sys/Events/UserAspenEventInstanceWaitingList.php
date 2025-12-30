@@ -10,4 +10,6 @@ class UserAspenEventInstanceWaitingList extends DataObject {
 	public $notifiedAt;
 	public $expiresAt;
 	public $eventInstanceId;
+	public $canRegister;
+	public $canRegisterUntil;
 }
