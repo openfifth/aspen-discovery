@@ -22,7 +22,7 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return 'system_reports';
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 		global $enabledModules;
 		global $library;
@@ -32,15 +32,32 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$groupByTimeframe = implode(',', $timeframes);
 
 		$userUsage = new AspenUsage();
-		$userUsage->groupBy($groupByTimeframe);
+		$userUsage->selectAdd();
 		if (!empty($instanceName)) {
 			$userUsage->instance = $instanceName;
 		}
-		$userUsage->selectAdd();
-		foreach ($timeframes as $timeframe) {
-			$userUsage->selectAdd($timeframe);
+	
+		if ($custom) {
+			$escapedPeriodDuration = $userUsage->escape($custom['customUsagePeriodDuration']);
+			$escapedPeriodStart = $userUsage->escape($custom['customUsagePeriodStart']);
+    		$selectPeriod ="CONCAT(DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration DAY), '%d/%m/%y'),' - ',DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL (FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration + ($escapedPeriodDuration - 1)) DAY), '%d/%m/%y')) AS period";
+			$customPeriodStartYear = date('Y', strtotime($custom['customUsagePeriodStart']));
+			$customPeriodStartMonth = date('m', strtotime($custom['customUsagePeriodStart']));
+			$customPeriodStartDay = date('d', strtotime($custom['customUsagePeriodStart']));
+
+			$userUsage->selectAdd($selectPeriod);
+			$userUsage->whereAdd('year > ' . $customPeriodStartYear);
+			$userUsage->whereAdd('year = ' . $customPeriodStartYear . ' AND month >= ' . $customPeriodStartMonth, 'OR');
+			$userUsage->whereAdd('year = ' . $customPeriodStartYear . ' AND month = ' . $customPeriodStartMonth . ' AND day >= ' . $customPeriodStartDay, 'OR');
+			$userUsage->groupBy('period');
+			$userUsage->orderBy(['year', 'month', 'day']);
+		} else {
+			$userUsage->groupBy($groupByTimeframe);
+			foreach ($timeframes as $timeframe) {
+				$userUsage->selectAdd($timeframe);
+			}
+			$userUsage->orderBy($groupByTimeframe);
 		}
-		$userUsage->orderBy($groupByTimeframe);
 
 		//General Usage Stats
 		if ($stat == 'pageViews' || $stat == 'generalUsage') {
@@ -138,9 +155,8 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		//Collect results
 		$userUsage->find();
-
 		while ($userUsage->fetch()) {
-			$curPeriod = $userUsage->getCurPeriod($timeframes);
+			$curPeriod = $custom ? $userUsage->period : $userUsage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			if ($stat == 'pageViews' || $stat == 'generalUsage') {
 				/** @noinspection PhpUndefinedFieldInspection */
