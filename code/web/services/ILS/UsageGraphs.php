@@ -31,7 +31,7 @@ class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
 		]);
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
@@ -47,15 +47,20 @@ class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'usersWithHolds'
 		) {
 			$userILSUsage = new UserILSUsage();
-			$userILSUsage->groupBy($groupByTimeframe);
+			$userILSUsage->selectAdd();
 			if (!empty($instanceName)) {
 				$userILSUsage->instance = $instanceName;
 			}
-			$userILSUsage->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$userILSUsage->selectAdd($timeframe);
+		
+			if (is_array($custom)) {
+				$userILSUsage->buildCustomPeriodQuery($custom);
+			} else {
+				$userILSUsage->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$userILSUsage->selectAdd($timeframe);
+				}
+				$userILSUsage->orderBy($groupByTimeframe);
 			}
-			$userILSUsage->orderBy($groupByTimeframe);
 			
 			if ($stat == 'userLogins') {
 				$dataSeries['User Logins'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
@@ -124,15 +129,21 @@ class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'totalHolds'
 		) {
 			$recordILSUsage = new ILSRecordUsage();
-			$recordILSUsage->groupBy($groupByTimeframe);
+			$recordILSUsage->selectAdd();
 			if (!empty($instanceName)) {
 				$recordILSUsage->instance = $instanceName;
 			}
-			$recordILSUsage->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$recordILSUsage->selectAdd($timeframe);
+			$recordILSUsage->whereAdd("method = '$stat'");
+		
+			if (is_array($custom)) {
+				$recordILSUsage->buildCustomPeriodQuery($custom);
+			} else {
+				$recordILSUsage->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$recordILSUsage->selectAdd($timeframe);
+				}
+				$recordILSUsage->orderBy($groupByTimeframe);
 			}
-			$recordILSUsage->orderBy($groupByTimeframe);
 
 			if ($stat == 'pdfsDownloaded') {
 				$dataSeries['PDFs Downloaded'] =  GraphingUtils::getDataSeriesArray(count($dataSeries));
