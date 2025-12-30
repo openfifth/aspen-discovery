@@ -9,10 +9,10 @@
 				<option {if $timeframe == 'custom'}selected{/if} value='custom'>{translate text='Custom period' isAdminFacing=true}</option>
 			</select>
 			<div id='custom-usage-period-wrapper' hidden>
-				<label for='custom-usage-period-start'>{translate text='Custom period start (date)' isAdminFacing=true}</label>
-				<input type='date' name='custom-usage-period-start' id='custom-usage-period-start' min='1' class='form-control' hidden>			
-				<label for='custom-usage-period-duration'>{translate text='Custom period duration (days)' isAdminFacing=true}</label>
-				<input type='number' name='custom-usage-period-duration' id='custom-usage-period-duration' min='1' class='form-control' hidden>
+				<label for='customUsagePeriodStart'>{translate text='Custom period start (date)' isAdminFacing=true}</label>
+				<input type='date' name='customUsagePeriodStart' id='customUsagePeriodStart' min='1' class='form-control' hidden>			
+				<label for='customUsagePeriodDuration'>{translate text='Custom period duration (days)' isAdminFacing=true}</label>
+				<input type='number' name='customUsagePeriodDuration' id='customUsagePeriodDuration' min='1' class='form-control' hidden>
 			</div>
 			<input type="hidden" value="{$stat}" name="stat"/>
 		</div>
@@ -26,8 +26,8 @@
 	function toggleCustomPeriodInputFieldDisplay() {
 		const selectedTimeFrame = document.getElementById('timeframe').value;
 		const customPeriodInputWrapper = document.getElementById('custom-usage-period-wrapper');
-		const customUsagePeriodStart = document.getElementById('custom-usage-period-start');
-		const customUsagePeriodDuration = document.getElementById('custom-usage-period-duration');
+		const customUsagePeriodStart = document.getElementById('customUsagePeriodStart');
+		const customUsagePeriodDuration = document.getElementById('customUsagePeriodDuration');
 
 		if (selectedTimeFrame === 'custom') {
 			customPeriodInputWrapper.removeAttribute('hidden');
