@@ -30,5 +30,13 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE event_instance ADD COLUMN availableNumberOfWaitingListSeats INT DEFAULT NULL',
 			],
 		], // add_available_number_of_waiting_list_seats_to_event
+		'add_can_register_information_to_event_waiting_lists' => [
+			'title' => 'Add Can Register Information to Event Waiting Lists',
+			'description' => 'Add informtaion about whether a user can register to an event to the event waiting list table',
+			'sql' => [
+				'ALTER TABLE user_aspen_event_instance_waiting_list ADD COLUMN canRegister TINYINT(1) DEFAULT 0',
+				'ALTER TABLE user_aspen_event_instance_waiting_list ADD COLUMN canRegisterUntil DATETIME DEFAULT NULL',
+			],
+		], // add_can_register_information_to_event_waiting_lists
 	];
 }
