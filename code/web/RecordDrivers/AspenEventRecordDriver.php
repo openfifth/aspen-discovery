@@ -513,7 +513,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			$waitingList = new UserAspenEventInstanceWaitingList();
 			$waitingList->eventInstanceId = $eventInstanceId;
 			$waitingList->userId = $user->id;
-			$waitingList->status = 'waiting';
+			$waitingList->whereAdd('status IN ("waiting", "notified")');
 
 			return $waitingList->find(true);
 		}
@@ -537,7 +537,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		$waitingList = new UserAspenEventInstanceWaitingList();
 		$waitingList->eventInstanceId = $eventInstanceId;
 		$waitingList->userId = $user->id;
-		$waitingList->status = 'waiting';
+		$waitingList->whereAdd('status IN ("waiting", "notified")');
 
 		if ($waitingList->find(true)) {
 			return $waitingList->position;
