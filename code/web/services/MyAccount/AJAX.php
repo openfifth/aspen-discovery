@@ -4294,6 +4294,13 @@ class MyAccount_AJAX extends JSON_Action {
 					$waitingList = $eventInstance->waitingList;
 					$waitingListNumberOfSeats = $eventInstance->waitingListNumberOfSeats;
 				}
+
+				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+				$userWaitingList = new UserAspenEventInstanceWaitingList();
+				$userWaitingList->eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+				$userWaitingList->userId = UserAccount::getActiveuserId();
+				$userWaitingList->whereAdd('status IN ("waiting", "notified")');
+				$userOnWaitingList = $userWaitingList->find(true);
 			}
 
 			if (array_key_exists($curEventId, $eventRecords)) {
@@ -4333,6 +4340,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
 				$events[$entry->sourceId]['waitingList'] = $waitingList;
 				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
+				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
 			}
 		}
 
