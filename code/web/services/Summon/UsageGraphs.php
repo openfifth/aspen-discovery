@@ -31,7 +31,7 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $breadcrumbs;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
@@ -40,15 +40,18 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 		// gets data from from user_summon_usage
 		if ($stat == 'activeUsers') {
 			$userSummonUsage = new UserSummonUsage();
-			$userSummonUsage->groupBy($groupByTimeframe);
 			if (!empty($instanceName)) {
 				$userSummonUsage->instance = $instanceName;
 			}
-			$userSummonUsage->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$userSummonUsage->selectAdd($timeframe);
+			if (is_array($custom)) {
+				$userSummonUsage->buildCustomPeriodQuery($custom);
+			} else {
+				$userSummonUsage->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$userSummonUsage->selectAdd($timeframe);
+				}
+				$userSummonUsage->orderBy($groupByTimeframe);
 			}
-			$userSummonUsage->orderBy($groupByTimeframe);
 
 			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 			$userSummonUsage->selectAdd('COUNT(DISTINCT userId) as activeUsers');
@@ -74,11 +77,15 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 			if (!empty($instanceName)) {
 				$summonRecordUsage->instance = $instanceName;
 			}
-			$summonRecordUsage->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$summonRecordUsage->selectAdd($timeframe);
+			if (is_array($custom)) {
+				$userSummonUsage->buildCustomPeriodQuery($custom);
+			} else {
+				$userSummonUsage->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$userSummonUsage->selectAdd($timeframe);
+				}
+				$userSummonUsage->orderBy($groupByTimeframe);
 			}
-			$summonRecordUsage->orderBy($groupByTimeframe);
 		
 			if ($stat == 'numRecordsViewed') {
 				$dataSeries['Number of Records Viewed'] = GraphingUtils::getDataSeriesArray(count($dataSeries));

@@ -31,7 +31,7 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 		]);
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 		$dataSeries = [];
 		$columnLabels = [];
@@ -40,15 +40,20 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 		// Get data from user_axis360_usage
 		if ($stat == 'activeUsers' || $stat == 'general') {
 			$userUsage = new UserAxis360Usage();
-			$userUsage->groupBy($groupByTimeframe);
+			$userUsage->selectAdd();
 			if (!empty($instanceName)) {
 				$userUsage->instance = $instanceName;
 			}
-			$userUsage->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$userUsage->selectAdd($timeframe);
+		
+			if (is_array($custom)) {
+				$userUsage->buildCustomPeriodQuery($custom);
+			} else {
+				$userUsage->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$userUsage->selectAdd($timeframe);
+				}
+				$userUsage->orderBy($groupByTimeframe);
 			}
-			$userUsage->orderBy($groupByTimeframe);
 
 			if ($stat == 'activeUsers' || $stat == 'general') {
 				$dataSeries['Unique Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
@@ -76,15 +81,20 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'holds' ||
 			$stat == 'general') {
 			$recordUsage = new Axis360RecordUsage();
-			$recordUsage->groupBy($groupByTimeframe);
+			$recordUsage->selectAdd();
 			if (!empty($instanceName)) {
 				$recordUsage->instance = $instanceName;
 			}
-			$recordUsage->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$recordUsage->selectAdd($timeframe);
+		
+			if (is_array($custom)) {
+				$recordUsage->buildCustomPeriodQuery($custom);
+			} else {
+				$recordUsage->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$recordUsage->selectAdd($timeframe);
+				}
+				$recordUsage->orderBy($groupByTimeframe);
 			}
-			$recordUsage->orderBy($groupByTimeframe);
 
 			if ($stat == 'recordsWithUsage' || $stat == 'general') {
 				$dataSeries['Records With Usage'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
@@ -132,15 +142,20 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$stat == 'general') {
 
 			$stats = new Axis360Stats();
-			$stats->groupBy($groupByTimeframe);
+			$stats->selectAdd();
 			if (!empty($instanceName)) {
 				$stats->instance = $instanceName;
 			}
-			$stats->selectAdd();
-			foreach ($timeframes as $timeframe) {
-				$stats->selectAdd($timeframe);
+		
+			if (is_array($custom)) {
+				$stats->buildCustomPeriodQuery($custom);
+			} else {
+				$stats->groupBy($groupByTimeframe);
+				foreach ($timeframes as $timeframe) {
+					$stats->selectAdd($timeframe);
+				}
+				$stats->orderBy($groupByTimeframe);
 			}
-			$stats->orderBy($groupByTimeframe);
 
 			if ($stat == 'renewals' || $stat == 'general') {
 				$dataSeries['Total Renewals'] = GraphingUtils::getDataSeriesArray(count($dataSeries));

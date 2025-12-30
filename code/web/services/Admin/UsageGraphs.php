@@ -39,20 +39,8 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$userUsage->instance = $instanceName;
 		}
 	
-		if ($custom) {
-			$escapedPeriodDuration = $userUsage->escape($custom['customUsagePeriodDuration']);
-			$escapedPeriodStart = $userUsage->escape($custom['customUsagePeriodStart']);
-    		$selectPeriod ="CONCAT(DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration DAY), '%d/%m/%y'),' - ',DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL (FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration + ($escapedPeriodDuration - 1)) DAY), '%d/%m/%y')) AS period";
-			$customPeriodStartYear = date('Y', strtotime($custom['customUsagePeriodStart']));
-			$customPeriodStartMonth = date('m', strtotime($custom['customUsagePeriodStart']));
-			$customPeriodStartDay = date('d', strtotime($custom['customUsagePeriodStart']));
-
-			$userUsage->selectAdd($selectPeriod);
-			$userUsage->whereAdd('year > ' . $customPeriodStartYear);
-			$userUsage->whereAdd('year = ' . $customPeriodStartYear . ' AND month >= ' . $customPeriodStartMonth, 'OR');
-			$userUsage->whereAdd('year = ' . $customPeriodStartYear . ' AND month = ' . $customPeriodStartMonth . ' AND day >= ' . $customPeriodStartDay, 'OR');
-			$userUsage->groupBy('period');
-			$userUsage->orderBy(['year', 'month', 'day']);
+		if (is_array($custom)) {
+			$userUsage->buildCustomPeriodQuery($custom);
 		} else {
 			$userUsage->groupBy($groupByTimeframe);
 			foreach ($timeframes as $timeframe) {

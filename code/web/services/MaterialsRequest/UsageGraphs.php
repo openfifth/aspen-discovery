@@ -54,12 +54,13 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $thisStatus->fetch()->description;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 
 		$status = $_REQUEST['stat'];
 		$interface->assign('curStatus', $status);
 		$dataSeries = [];
+		$groupByTimeframe = implode(',', $timeframes);
 
 		$userHomeLibrary = Library::getPatronHomeLibrary();
 		if (is_null($userHomeLibrary)) {
@@ -72,13 +73,22 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		$title = 'Materials Request Usage Graph - ' . $statusDescription;
 		$materialsRequestUsage = new MaterialsRequestUsage();
-		$materialsRequestUsage->groupBy('year, month');
-		$materialsRequestUsage->selectAdd();
 		$materialsRequestUsage->statusId = $status;
-		$materialsRequestUsage->selectAdd('year');
-		$materialsRequestUsage->selectAdd('month');
-		$materialsRequestUsage->selectAdd('SUM(numUsed) as numUsed');
-		$materialsRequestUsage->orderBy('year, month');
+		$materialsRequestUsage->selectAdd();
+		if (!empty($instanceName)) {
+			$materialsRequestUsage->instance = $instanceName;
+		}
+		$materialsRequestUsage->whereAdd("method = '$stat'");
+	
+		if (is_array($custom)) {
+			$materialsRequestUsage->buildCustomPeriodQuery($custom);
+		} else {
+			$materialsRequestUsage->groupBy($groupByTimeframe);
+			foreach ($timeframes as $timeframe) {
+				$materialsRequestUsage->selectAdd($timeframe);
+			}
+			$materialsRequestUsage->orderBy($groupByTimeframe);
+		}
 
 		$dataSeries[$statusDescription] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 
