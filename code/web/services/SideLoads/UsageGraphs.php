@@ -45,7 +45,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $sideload->fetch()->id;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month']): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 
 		$dataSeries = [];
@@ -62,15 +62,15 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$usage = new SideLoadedRecordUsage();
 		}
 		
-		$usage->groupBy($groupByTimeframe);
-		if (!empty($instanceName)) {
-			$usage->instance = $instanceName;
+		if (is_array($custom)) {
+			$usage->buildCustomPeriodQuery($custom);
+		} else {
+			$usage->groupBy($groupByTimeframe);
+			foreach ($timeframes as $timeframe) {
+				$usage->selectAdd($timeframe);
+			}
+			$usage->orderBy($groupByTimeframe);
 		}
-		$usage->selectAdd();
-		foreach ($timeframes as $timeframe) {
-			$usage->selectAdd($timeframe);
-		}
-		$usage->orderBy($groupByTimeframe);
 		$usage->whereAdd("sideloadId = $sideloadId");
 
 		if ($stat == 'activeUsers') {
