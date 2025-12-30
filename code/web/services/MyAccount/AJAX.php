@@ -7712,13 +7712,18 @@ class MyAccount_AJAX extends JSON_Action {
 			return;
 		}
 		
-		$paymentId = $_REQUEST['paymentId'];
-		$pay360SettingsId = $_REQUEST['settingsId'];
-
-		if (!$paymentId || !$pay360SettingsId) {
+		if (
+			!isset($_REQUEST['paymentId']) ||
+			!isset($_REQUEST['settingsId']) ||
+			!is_numeric($_REQUEST['paymentId']) || 
+			!is_numeric($_REQUEST['settingsId'])
+		) {
 			header("Location: " . $configArray['Site']['url']);
 			return;
 		}
+
+		$paymentId = intval($_REQUEST['paymentId']);
+		$pay360SettingsId = intval($_REQUEST['settingsId']);
 
 		$payment = new UserPayment();
 		$payment->id = $paymentId;
@@ -7741,9 +7746,19 @@ class MyAccount_AJAX extends JSON_Action {
 			header("Location: " . $configArray['Site']['url']);
 			return;
 		}
-		
-		$paymentId = $_REQUEST['paymentId'];
-		$pay360SettingsId = $_REQUEST['settingsId'];
+
+		if (
+			!isset($_REQUEST['settingsId']) ||
+			!isset($_REQUEST['paymentId']) ||
+			!is_numeric($_REQUEST['paymentId']) || 
+			!is_numeric($_REQUEST['settingsId'])
+		) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		$paymentId = intval($_REQUEST['paymentId']);
+		$pay360SettingsId = intval($_REQUEST['settingsId']);
 
 		$payment = new UserPayment();
 		$payment->id = $paymentId;
