@@ -6,7 +6,7 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 	abstract function getBreadcrumbs(): array;
 	abstract function getActiveAdminSection(): string;
 	abstract protected function assignGraphSpecificTitle(string $stat): void;
-	abstract protected function getAndSetInterfaceDataSeries(string $stat, string $instanceName, array $timeframes): void;
+	abstract protected function getAndSetInterfaceDataSeries(string $stat, string $instanceName, array $timeframes, bool|array $customMode): void;
 
 	// methods shared amongst all usagegraph classes
 	protected function launchGraph(string $sectionName): void {
@@ -14,6 +14,16 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 
 		$stat = $_REQUEST['stat'];
 		$timeframe = $_REQUEST['timeframe'] ?? 'month';
+
+		if ($timeframe === 'custom') {
+			$customUsagePeriodStart = $_REQUEST['custom-usage-period-start'] ?? null;
+			$customUsagePeriodDuration = $_REQUEST['custom-usage-period-duration'] ?? null;
+			$custom = [
+				'customUsagePeriodStart' => $customUsagePeriodStart,
+				'customUsagePeriodDuration' => $customUsagePeriodDuration,
+			];
+		}
+
 		if (!empty($_REQUEST['instance'])) {
 			$instanceName = $_REQUEST['instance'];
 		} else {
@@ -40,7 +50,7 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$interface->assign('timeframe', $timeframe);
 
 		$this->assignGraphSpecificTitle($stat);
-		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), false);
+		$this->getAndSetInterfaceDataSeries($stat, $instanceName, $this->setGroupBy($timeframe), $timeframe === 'custom' ? $custom : false);
 		
 		$graphTitle = $interface->getVariable('graphTitle');
 		$this->display('../Admin/usage-graph.tpl', $graphTitle);
@@ -59,7 +69,9 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		if ($timeframe == 'year') {
 			return ['year'];
 		}
-		// if ($timeframe == 'custom') {}
+		if ($timeframe == 'custom') {
+			return ['year', 'month', 'day'];
+		}
 		return ['year', 'month']; // monthly is the default
 	}
 
