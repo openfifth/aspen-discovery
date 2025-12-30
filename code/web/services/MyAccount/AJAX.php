@@ -12258,6 +12258,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true,
 			]);
 		}
+		$this->saveUserEventEntry($sourceId, $userId, $recordDriver);
 
 		return $result;
 	}
