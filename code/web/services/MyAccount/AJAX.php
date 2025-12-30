@@ -4309,6 +4309,11 @@ class MyAccount_AJAX extends JSON_Action {
 				$userWaitingList->userId = UserAccount::getActiveuserId();
 				$userWaitingList->whereAdd('status IN ("waiting", "notified")');
 				$userOnWaitingList = $userWaitingList->find(true);
+				$userWaitingListPosition = null;
+
+				if ($userOnWaitingList) {
+					$userWaitingListPosition = $userWaitingList->position;
+				}
 			}
 
 			if (array_key_exists($curEventId, $eventRecords)) {
@@ -4349,6 +4354,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['waitingList'] = $waitingList;
 				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
 				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
+				$events[$entry->sourceId]['userWaitingListPosition'] = $userWaitingListPosition;
 			}
 		}
 
