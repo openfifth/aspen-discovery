@@ -53,8 +53,12 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$usage = [];
 		$groupByTimeframe = implode(',', $timeframes);
 
-		$profileName= $_REQUEST['profileName'];
-		$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
+		if ($_REQUEST['sideloadId']) {
+			$sideloadId = $_REQUEST['sideloadId'];
+		} else {
+			$profileName= $_REQUEST['profileName'];
+			$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
+		}
 
 		if ($stat == 'activeUsers') {
 			$usage = new UserSideLoadUsage();
@@ -100,6 +104,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$interface->assign('dataSeries', $dataSeries);
 		$interface->assign('translateDataSeries', true);
 		$interface->assign('translateColumnLabels', false);
+		$interface->assign('sideloadId', $sideloadId);
 	}
 
 	protected function assignGraphSpecificTitle($stat): void {

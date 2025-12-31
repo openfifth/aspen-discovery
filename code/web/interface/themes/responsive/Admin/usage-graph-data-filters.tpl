@@ -15,6 +15,9 @@
 				<input type='number' name='customUsagePeriodDuration' id='customUsagePeriodDuration' min='1' class='form-control' hidden>
 			</div>
 			<input type="hidden" value="{$stat}" name="stat"/>
+			{if isset($sideloadId)}
+				<input type="hidden" value="{$sideloadId}" name="sideloadId"/>
+			{/if}
 		</div>
 		<div class="form-group">
 			<input type="submit" value="{translate text="Update Report" isAdminFacing=true inAttribute=true}" class="form-control btn btn-primary"/>
