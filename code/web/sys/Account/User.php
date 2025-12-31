@@ -4821,7 +4821,7 @@ class User extends DataObject {
 				'View Dashboards',
 				'View System Reports',
 			]);
-			$sections['palace_project']->addAction(new AdminAction('CollectionReport', 'View collection report for Palace Project.', '/PalaceProject/CollectionReport'), [
+			$sections['palace_project']->addAction(new AdminAction('Collection Report', 'View collection report for Palace Project.', '/PalaceProject/CollectionReport'), [
 				'Administer Palace Project',
 				'View System Reports',
 			]);
