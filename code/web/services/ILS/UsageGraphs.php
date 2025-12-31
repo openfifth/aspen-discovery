@@ -91,7 +91,7 @@ class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$userILSUsage->find();
 			
 			while ($userILSUsage->fetch()) {
-				$curPeriod = $userILSUsage->getCurPeriod($timeframes);
+				$curPeriod = $custom ? $userILSUsage->period : $userILSUsage->getCurPeriod($timeframes);
 				$columnLabels[] = $curPeriod;
 				if ($stat == 'userLogins' ) {
 					/** @noinspection PhpUndefinedFieldInspection */
@@ -168,7 +168,7 @@ class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
 			//Collect results
 			$recordILSUsage->find();
 			while ($recordILSUsage->fetch()) {
-				$curPeriod = $recordILSUsage->getCurPeriod($timeframes);
+				$curPeriod = $custom ? $recordILSUsage->period : $recordILSUsage->getCurPeriod($timeframes);
 				$columnLabels[] = $curPeriod;
 				if ($stat == 'pdfsDownloaded' ) {
 					/** @noinspection PhpUndefinedFieldInspection */
