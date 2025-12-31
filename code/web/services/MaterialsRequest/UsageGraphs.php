@@ -2,7 +2,8 @@
 
 require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
-require_once ROOT_DIR . '/sys/MaterialsRequestUsage.php';
+require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestUsage.php';
+require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
 require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
@@ -73,12 +74,11 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		$title = 'Materials Request Usage Graph - ' . $statusDescription;
 		$materialsRequestUsage = new MaterialsRequestUsage();
-		$materialsRequestUsage->statusId = $status;
 		$materialsRequestUsage->selectAdd();
+		$materialsRequestUsage->selectAdd('SUM(numUsed) as numUsed');
 		if (!empty($instanceName)) {
 			$materialsRequestUsage->instance = $instanceName;
 		}
-		$materialsRequestUsage->whereAdd("method = '$stat'");
 	
 		if (is_array($custom)) {
 			$materialsRequestUsage->buildCustomPeriodQuery($custom);
@@ -89,6 +89,8 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 			}
 			$materialsRequestUsage->orderBy($groupByTimeframe);
 		}
+
+		$materialsRequestUsage->whereAdd("statusId = " . $materialsRequestUsage->escape($status));
 
 		$dataSeries[$statusDescription] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 
