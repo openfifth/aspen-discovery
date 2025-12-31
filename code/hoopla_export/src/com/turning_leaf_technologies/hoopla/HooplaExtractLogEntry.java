@@ -1,37 +1,27 @@
 package com.turning_leaf_technologies.hoopla;
 
 import com.turning_leaf_technologies.logging.BaseIndexingLogEntry;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
-public class HooplaExtractLogEntry implements BaseIndexingLogEntry {
+public class HooplaExtractLogEntry extends BaseIndexingLogEntry {
 	private Long logEntryId = null;
-	private final Date startTime;
-	private Date endTime;
 	private int numRegrouped = 0;
 	private int numChangedAfterGrouping = 0;
-	private final ArrayList<String> notes = new ArrayList<>();
 	private int numProducts = 0;
-	private int numErrors = 0;
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
 	private int numSkipped = 0;
-	private int numInvalidRecords = 0;
 	private int numAvailabilityChanges = 0;
-	private final Logger logger;
 
 	HooplaExtractLogEntry(Connection dbConn, Logger logger) {
-		this.logger = logger;
-		this.startTime = new Date();
+		super(logger);
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into hoopla_export_log (startTime) VALUES (?)", PreparedStatement.RETURN_GENERATED_KEYS);
 			updateLogEntry = dbConn.prepareStatement("UPDATE hoopla_export_log SET lastUpdate = ?, endTime = ?, notes = ?, numProducts = ?, numErrors = ?, numAdded = ?, numUpdated = ?, numDeleted = ?, numSkipped = ?, numRegrouped =?, numChangedAfterGrouping = ?, numInvalidRecords = ?, numAvailabilityChanges = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -39,35 +29,6 @@ public class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 			logger.error("Error creating prepared statements to update log", e);
 		}
 		saveResults();
-	}
-
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		Date date = new Date();
-		this.notes.add(dateFormat.format(date) + " - " + note);
-		saveResults();
-	}
-
-	private String getNotesHtml() {
-		StringBuilder notesText = new StringBuilder("<ol class='cronNotes'>");
-		for (String curNote : notes) {
-			String cleanedNote = curNote;
-			cleanedNote = StringUtils.replace(cleanedNote,"<pre>", "<code>");
-			cleanedNote = StringUtils.replace(cleanedNote,"</pre>", "</code>");
-			//Replace multiple line breaks
-			cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-			cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-			cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-			notesText.append("<li>").append(cleanedNote).append("</li>");
-		}
-		notesText.append("</ol>");
-		String returnText = notesText.toString();
-		if (returnText.length() > 25000) {
-			returnText = returnText.substring(0, 25000) + " more data was truncated";
-		}
-		return returnText;
 	}
 
 	private static PreparedStatement insertLogEntry;
@@ -83,6 +44,7 @@ public class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 					logEntryId = generatedKeys.getLong(1);
 				}
 			} else {
+				//noinspection DuplicatedCode
 				int curCol = 0;
 				updateLogEntry.setLong(++curCol, new Date().getTime() / 1000);
 				if (endTime == null) {
@@ -117,20 +79,6 @@ public class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 		this.saveResults();
 	}
 
-	public void incErrors(String note) {
-		this.addNote("ERROR: " + note);
-		numErrors++;
-		this.saveResults();
-		logger.error(note);
-	}
-
-	public void incErrors(String note, Exception e) {
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
-	}
-
 	void incAdded() {
 		numAdded++;
 	}
@@ -145,10 +93,6 @@ public class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 
 	void incNumProducts(int size) {
 		numProducts += size;
-	}
-
-	boolean hasErrors() {
-		return numErrors > 0;
 	}
 
 	void incSkipped() {
@@ -175,11 +119,6 @@ public class HooplaExtractLogEntry implements BaseIndexingLogEntry {
 
 	public int getNumChangedAfterGrouping() {
 		return numChangedAfterGrouping;
-	}
-
-	public void incInvalidRecords(String invalidRecordId){
-		this.numInvalidRecords++;
-		this.addNote("Invalid Record found: " + invalidRecordId);
 	}
 
 	public long getLogEntryId() {

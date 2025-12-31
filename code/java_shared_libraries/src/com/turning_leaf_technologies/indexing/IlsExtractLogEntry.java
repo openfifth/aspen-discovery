@@ -8,30 +8,25 @@ import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-public class IlsExtractLogEntry implements BaseIndexingLogEntry {
+public class IlsExtractLogEntry extends BaseIndexingLogEntry {
 	private Long logEntryId = null;
 	private final String indexingProfile;
-	private final Date startTime;
-	private Date endTime;
 	private int numRegrouped = 0;
 	private int numChangedAfterGrouping = 0;
 	private int numProducts = 0;
 	private String currentId;
 	private boolean isFullUpdate;
-	private int numErrors = 0;
 	private int numRecordsWithInvalidMarc = 0;
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
 	private long numSkipped = 0;
 	private int numInvalidRecords = 0;
-	private final Logger logger;
 	private final StringBuilder notesText = new StringBuilder();
 	private boolean maxNoteTextLengthReached = false;
 
 	public IlsExtractLogEntry(Connection dbConn, String indexingProfile, Logger logger){
-		this.logger = logger;
-		this.startTime = new Date();
+		super(logger);
 		this.indexingProfile = indexingProfile;
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into ils_extract_log (startTime, indexingProfile) VALUES (?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -42,36 +37,7 @@ public class IlsExtractLogEntry implements BaseIndexingLogEntry {
 		notesText.append("<ol class='cronNotes'>");
 		this.saveResults();
 	}
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	@Override
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		logger.info(note);
-		if (maxNoteTextLengthReached){
-			return;
-		}
-		Date date = new Date();
-		String cleanedNote = note;
-		cleanedNote = StringUtils.replace(cleanedNote, "<pre>", "<code>");
-		cleanedNote = StringUtils.replace(cleanedNote, "</pre>", "</code>");
-		//Replace multiple line breaks
-		cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-		cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-		cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-		cleanedNote = "<li>" + dateFormat.format(date) + " - " + cleanedNote + "</li>";
-		if (notesText.length() + cleanedNote.length() < 25000){
-			notesText.append(cleanedNote);
-		}else{
-			cleanedNote = "<li>Additional Notes truncated</li>";
-			notesText.append(cleanedNote);
-			maxNoteTextLengthReached = true;
-		}
-	}
 
-	private String getNotesHtml() {
-		return notesText + "</ol>";
-	}
-	
 	private static PreparedStatement insertLogEntry;
 	private static PreparedStatement updateLogEntry;
 	@Override
@@ -115,19 +81,6 @@ public class IlsExtractLogEntry implements BaseIndexingLogEntry {
 			return false;
 		}
 	}
-	@Override
-	public void setFinished() {
-		this.endTime = new Date();
-		this.addNote("Finished ILS extraction");
-		this.saveResults();
-	}
-
-	public void incErrors(String note) {
-		this.addNote("ERROR: " + note);
-		numErrors++;
-		this.saveResults();
-		logger.error(note);
-	}
 
 	public void incRecordsWithInvalidMarc(String note) {
 		this.numRecordsWithInvalidMarc++;
@@ -135,12 +88,6 @@ public class IlsExtractLogEntry implements BaseIndexingLogEntry {
 		this.saveResults();
 	}
 
-	public void incErrors(String note, Exception e){
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
-	}
 	public void incAdded(){
 		numAdded++;
 	}
@@ -180,9 +127,6 @@ public class IlsExtractLogEntry implements BaseIndexingLogEntry {
 	public void incChangedAfterGrouping(){
 		numChangedAfterGrouping++;
 	}
-	public boolean hasErrors() {
-		return numErrors > 0;
-	}
 
 	public int getNumDeleted() {
 		return numDeleted;
@@ -202,10 +146,5 @@ public class IlsExtractLogEntry implements BaseIndexingLogEntry {
 
 	public void setIsFullUpdate(boolean runFullUpdate) {
 		this.isFullUpdate = runFullUpdate;
-	}
-
-	public void incInvalidRecords(String invalidRecordId){
-		this.numInvalidRecords++;
-		this.addNote("Invalid Record found: " + invalidRecordId);
 	}
 }
