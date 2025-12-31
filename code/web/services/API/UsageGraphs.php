@@ -52,7 +52,7 @@ class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$usage->find();
 
 		while ($usage->fetch()) {
-			$curPeriod = $usage->getCurPeriod($timeframes);
+			$curPeriod = $custom ? $usage->period : $usage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			/** @noinspection PhpUndefinedFieldInspection */
 			$dataSeries[$stat]['data'][$curPeriod] = $usage->numCalls;
