@@ -91,6 +91,7 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 		}
 
 		$materialsRequestUsage->whereAdd("statusId = " . $materialsRequestUsage->escape($status));
+		$materialsRequestUsage->whereAdd("libraryId = " . $materialsRequestUsage->escape($libraryId));
 
 		$dataSeries[$statusDescription] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 
