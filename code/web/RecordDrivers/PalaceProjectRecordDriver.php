@@ -7,14 +7,14 @@ require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitle.php';
 require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitleAvailability.php';
 
 class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
-	/** @var PalaceProjectDriver */
-	private static $driver;
+	/** @var ?PalaceProjectDriver */
+	private static ?PalaceProjectDriver $driver;
 
-	protected $id;
-	/** @var PalaceProjectTitle */
-	private $palaceProjectTitle;
-	private $palaceProjectRawMetadata;
-	private $valid;
+	protected ?string $id;
+	/** @var ?PalaceProjectTitle */
+	private ?PalaceProjectTitle $palaceProjectTitle;
+	private ?stdClass $palaceProjectRawMetadata;
+	private bool $valid;
 
 	public function __construct($recordId, $groupedWork = null) {
 		if (PalaceProjectRecordDriver::$driver == null) {
@@ -40,14 +40,14 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
-	public function getIdWithSource() {
+	public function getIdWithSource() : string {
 		return 'palace_project:' . $this->id;
 	}
 
 	/**
 	 * Load the grouped work that this record is connected to.
 	 */
-	public function loadGroupedWork() {
+	public function loadGroupedWork() : void {
 		if ($this->groupedWork == null) {
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
@@ -113,7 +113,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 *
 	 * @return  string
 	 */
-	public function getTitle() {
+	public function getTitle() : string {
 		$title = $this->palaceProjectTitle->title;
 		$subtitle = $this->getSubtitle();
 		if (strlen($subtitle) > 0) {
@@ -125,7 +125,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	/**
 	 * @return  string
 	 */
-	public function getAuthor() {
+	public function getAuthor() : string {
 		return $this->palaceProjectRawMetadata->metadata->author->name;
 	}
 
@@ -136,7 +136,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 * @access  public
 	 * @return  array              Array of elements in the table of contents
 	 */
-	public function getTableOfContents() {
+	public function getTableOfContents() : array {
 		return [];
 	}
 
@@ -148,7 +148,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 * @access  public
 	 * @return  string              Unique identifier.
 	 */
-	public function getUniqueID() {
+	public function getUniqueID() : string {
 		return $this->id;
 	}
 
@@ -160,7 +160,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
-	public function getMoreDetailsOptions() {
+	public function getMoreDetailsOptions() : array {
 		global $interface;
 
 		$isbn = $this->getCleanISBN();
@@ -204,7 +204,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		if ($interface->getVariable('showStaffView')) {
 			$moreDetailsOptions['staff'] = [
 				'label' => 'Staff View',
-				'onShow' => "AspenDiscovery.PalaceProject.getStaffView('{$this->id}');",
+				'onShow' => "AspenDiscovery.PalaceProject.getStaffView('$this->id');",
 				'body' => '<div id="staffViewPlaceHolder">Loading Staff View.</div>',
 			];
 		}
@@ -212,15 +212,15 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		return $this->filterAndSortMoreDetailsOptions($moreDetailsOptions);
 	}
 
-	public function getISBNs() {
+	public function getISBNs() : array {
 		return [];
 	}
 
-	public function getOCLCNumber() {
+	public function getOCLCNumber() : string {
 		return '';
 	}
 
-	public function getISSNs() {
+	public function getISSNs() : array {
 		return [];
 	}
 
@@ -255,7 +255,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 								'text' => 'Check Out Palace Project',
 								'isPublicFacing' => true,
 							]),
-							'onclick' => "return AspenDiscovery.PalaceProject.checkOutTitle('{$this->id}', this);",
+							'onclick' => "return AspenDiscovery.PalaceProject.checkOutTitle('$this->id', this);",
 							'requireLogin' => false,
 							'type' => 'palace_project_checkout',
 						];
@@ -271,7 +271,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 								'text' => 'Place Hold Palace Project',
 								'isPublicFacing' => true,
 							]),
-							'onclick' => "return AspenDiscovery.PalaceProject.placeHold('{$this->id}', this);",
+							'onclick' => "return AspenDiscovery.PalaceProject.placeHold('$this->id', this);",
 							'requireLogin' => false,
 							'type' => 'palace_project_hold',
 						];
@@ -290,7 +290,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		return $this->_actions;
 	}
 
-	function getBorrowLink() {
+	function getBorrowLink() : ?string {
 		$titleAvailability = $this->getTitleAvailability();
 		if ($titleAvailability != null) {
 			return $titleAvailability->borrowLink;
@@ -318,7 +318,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		return null;
 	}
 
-	function getPreviewUrl() {
+	function getPreviewUrl() : ?string {
 		//Get the preview URL based on the title availability.
 		//To do that, we need to get the settings for the active user and/or library
 		//Then we can get a list of availability
@@ -329,7 +329,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		return null;
 	}
 
-	function getPreviewActions() {
+	function getPreviewActions() : array {
 		$actions = [];
 		if ($this->getPreviewUrl() != null) {
 			//eBook preview
@@ -351,8 +351,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 * Returns an array of contributors to the title, ideally with the role appended after a pipe symbol
 	 * @return array
 	 */
-	function getContributors() {
-		// TODO: Implement getContributors() method.
+	function getContributors() : array {
 		$contributors = [];
 		if (!empty($this->palaceProjectRawMetadata->metadata->author)) {
 			$author = $this->palaceProjectRawMetadata->metadata->author;
@@ -371,45 +370,36 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 * @access  protected
 	 * @return  array
 	 */
-	function getEditions() {
-		// No specific information provided by Boundless
+	function getEditions() : array {
+		// No specific information provided by Palace Project
 		return [];
 	}
 
-	function getType() {
+	function getType() : string {
 		$metadata = $this->palaceProjectRawMetadata->metadata;
-		$type = $metadata->{'@type'};
-		return $type;
+		return $metadata->{'@type'};
 	}
 	/**
 	 * @return array
 	 */
-	function getFormats() {
-		switch ($this->getType()) {
-			case 'http://schema.org/EBook':
-				return ['eBook'];
-			case 'http://bib.schema.org/Audiobook':
-				return ['eAudiobook'];
-			default:
-				return ['Unknown'];
-		}
+	function getFormats() : array {
+		return match ($this->getType()) {
+			'http://schema.org/EBook' => ['eBook'],
+			'http://bib.schema.org/Audiobook' => ['eAudiobook'],
+			default => ['Unknown'],
+		};
 
 	}
 
 	/**
 	 * Get an array of all the format categories associated with the record.
-	 *
-	 * @return  array
 	 */
 	function getFormatCategory() : string|array|null {
-		switch ($this->getType()) {
-			case 'http://schema.org/EBook':
-				return ['eBook'];
-			case 'http://bib.schema.org/Audiobook':
-				return ['Audio Books'];
-			default:
-				return ['Unknown'];
-		}
+		return match ($this->getType()) {
+			'http://schema.org/EBook' => ['eBook'],
+			'http://bib.schema.org/Audiobook' => ['Audio Books'],
+			default => ['Unknown'],
+		};
 	}
 
 	public function getLanguage() {
@@ -425,7 +415,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	/**
 	 * @return array
 	 */
-	function getPlacesOfPublication() {
+	function getPlacesOfPublication() : array {
 		//Not provided within the metadata
 		return [];
 	}
@@ -434,7 +424,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 * Returns the primary author of the work
 	 * @return String
 	 */
-	function getPrimaryAuthor() {
+	function getPrimaryAuthor() : string {
 		if (!empty($this->palaceProjectRawMetadata->metadata->author)) {
 			return $this->palaceProjectRawMetadata->metadata->author->name;
 		}else {
@@ -445,7 +435,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	/**
 	 * @return array
 	 */
-	function getPublishers() {
+	function getPublishers() : array {
 		$publishers = [];
 		if (!empty($this->palaceProjectRawMetadata->metadata->publisher)) {
 			$publishers[] = $this->palaceProjectRawMetadata->metadata->publisher->name;
@@ -456,7 +446,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	/**
 	 * @return array
 	 */
-	function getPublicationDates() {
+	function getPublicationDates() : array {
 		$publicationDates = [];
 		if (!empty($this->palaceProjectRawMetadata->metadata->published)) {
 			$publicationDates[] = date('Y', strtotime($this->palaceProjectRawMetadata->metadata->published));
@@ -464,16 +454,16 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		return $publicationDates;
 	}
 
-	public function getRecordType() {
+	public function getRecordType() : string {
 		return 'palace_project';
 	}
 
-	function getRelatedRecord() {
+	function getRelatedRecord() : ?Grouping_Record {
 		$id = 'palace_project:' . $this->id;
 		return $this->getGroupedWorkDriver()->getRelatedRecord($id);
 	}
 
-	public function getSemanticData() {
+	public function getSemanticData() : ?array {
 		// Schema.org
 		// Get information about the record
 		$relatedRecord = $this->getRelatedRecord();
@@ -508,7 +498,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 *
 	 * @return string
 	 */
-	function getShortTitle() {
+	function getShortTitle() : string {
 		return $this->palaceProjectTitle->title;
 	}
 
@@ -517,7 +507,7 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	 *
 	 * @return string
 	 */
-	function getSubtitle() {
+	function getSubtitle() : string {
 		if (!empty($this->palaceProjectRawMetadata->subtitle)) {
 			return $this->palaceProjectRawMetadata->subtitle;
 		} else {
@@ -525,11 +515,11 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
-	function isValid() {
+	function isValid() : bool {
 		return $this->valid;
 	}
 
-	function loadSubjects() {
+	function loadSubjects() : void {
 		$subjects = [];
 		if (!empty($this->palaceProjectRawMetadata->metadata->subject)) {
 			$rawSubjects = $this->palaceProjectRawMetadata->metadata->subject;
@@ -539,15 +529,6 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		}
 		global $interface;
 		$interface->assign('subjects', $subjects);
-	}
-
-	/**
-	 * @param User $patron
-	 * @return string mixed
-	 */
-	public function getAccessOnlineLinkUrl($patron) {
-		global $configArray;
-		return $configArray['Site']['url'] . '/PalaceProject/' . $this->id . '/AccessOnline?patronId=' . $patron->id;
 	}
 
 	function getStatusSummary() : array {
