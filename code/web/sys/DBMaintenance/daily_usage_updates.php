@@ -77,6 +77,16 @@ function getDailyUsageUpdates() {
 				'ALTER TABLE user_sideload_usage ADD KEY instance(instance, userId, sideloadId, year, month, day)',
 			]
 		], //add_day_to_user_sideload_usage
+		'add_day_to_sideload_record_usage' => [
+			'title' => 'Add Day to Sideload Record Usage',
+			'description' => 'Add Day to Sideload Record Usage',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE sideload_record_usage ADD COLUMN IF NOT EXISTS day int(11) NOT NULL',
+				'ALTER TABLE sideload_record_usage DROP KEY IF EXISTS instance',
+				'ALTER TABLE sideload_record_usage ADD KEY instance(instance, recordId, sideloadId, year, month, day)',
+			]
+		], //add_day_to_sideload_record_usage
 		'add_day_to_materials_request_usage' => [
 			'title' => 'Add Day to Materials Request Usage',
 			'description' => 'Add Day to Materials Request Usage',
