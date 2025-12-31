@@ -163,7 +163,7 @@ class Pay360_Client  {
 			$this->payment->error = true;
 			$this->payment->message = 'Transaction not found - invalid reference.';
 			$this->payment->pay360TransactionStateMessage = translate([
-				'text' => 'Transaction could not be retrieved..',
+				'text' => 'Transaction could not be retrieved.',
 				'isPublicFacing' => true
 			]);
 			$this->payment->update();
@@ -191,7 +191,7 @@ class Pay360_Client  {
 				$this->payment->cancelled = true;
 				$this->payment->message = 'cancelled by patron. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
 				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'Transaction could not be retrieved.',
+					'text' => 'Transaction attempt was cancelled.',
 					'isPublicFacing' => true
 				]);
 				$this->payment->update();
