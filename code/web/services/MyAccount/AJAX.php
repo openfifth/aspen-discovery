@@ -7968,6 +7968,148 @@ class MyAccount_AJAX extends JSON_Action {
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
 	}
 
+	function createPay360Order(){
+		$transactionType = $_REQUEST['type'];
+		if ($transactionType == 'donation') {
+			$result = $this->createGenericDonation('Pay360');
+		} else {
+			$result = $this->createGenericOrder('Pay360');
+		}
+
+		if (array_key_exists('success', $result) && $result['success'] === false) {
+			return $result;
+		}
+
+		if ($transactionType == 'donation') {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+				$tempDonation,
+			] = $result;
+		} else {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+			] = $result;
+		}
+
+		$homeLocationPay360SettingId = $patron->getHomeLocation()->pay360SettingId;
+		$pay360SettingsId = $homeLocationPay360SettingId != -1 ? $homeLocationPay360SettingId : $paymentLibrary->pay360SettingId;
+
+		$selectedFines = [];
+
+		foreach(explode(',', $payment->finesPaid) as $selectedFine) {
+			$selectedFines[] = ['id' => explode('|', $selectedFine)[0], 'amount' => explode('|', $selectedFine)[1]];
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $payment->id, $selectedFines, $patron->getCatalogDriver(), true);
+		$success = $client->createOrder();
+
+
+		if (!$success) {
+			return [
+				'success' => false,
+				'message' => 'Could not connect to Pay360.'
+			];
+		}
+
+		$result = [
+			'success' => true,
+			'message' => 'Redirecting to payment processor',
+			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl, 
+		];
+
+		if (!$client->isPay360PollingEnabled()) {
+			return $result;
+		}
+
+		// start the polling process for status updates (no webhooks available) 
+		global $configArray;
+		$serverName = $_SERVER['aspen_server'];
+		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
+		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($payment->id) . ' >> ' . escapeshellarg($logFilePath) . ' . 2>&1 &';
+		exec($pollCommand);
+
+		return $result;
+	}
+
+	function completePay360Order(): void {
+		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+		
+		if (
+			!isset($_REQUEST['paymentId']) ||
+			!isset($_REQUEST['settingsId']) ||
+			!is_numeric($_REQUEST['paymentId']) || 
+			!is_numeric($_REQUEST['settingsId'])
+		) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		$paymentId = intval($_REQUEST['paymentId']);
+		$pay360SettingsId = intval($_REQUEST['settingsId']);
+
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
+		$payment->find(true);
+		if ($payment->userId !== UserAccount::getActiveUserId()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
+		$client->getOrderStatus(true);
+		$client->handleOutcome();
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+	}
+
+	function handlePay360OrderNotAttempted():void {
+		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		if (
+			!isset($_REQUEST['settingsId']) ||
+			!isset($_REQUEST['paymentId']) ||
+			!is_numeric($_REQUEST['paymentId']) || 
+			!is_numeric($_REQUEST['settingsId'])
+		) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		$paymentId = intval($_REQUEST['paymentId']);
+		$pay360SettingsId = intval($_REQUEST['settingsId']);
+
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
+		$payment->find(true);
+		if ($payment->userId !== UserAccount::getActiveUserId()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
+		$client->getOrderStatus(true);
+		$client->handleOutcome([], false);
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+	}
+
 	/** @noinspection PhpUnused */
 	function dismissBrowseCategory() {
 		$patronId = UserAccount::getActiveUserId();

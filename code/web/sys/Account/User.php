@@ -3148,7 +3148,7 @@ class User extends DataObject {
 
 		$userPayment = new UserPayment();
 		$userPayment->userId = $this->id;
-		$userPayment->whereAdd('completed = 1 OR cancelled = 1 OR error = 1');
+		$userPayment->whereAdd('completed = 1 OR cancelled = 1 OR error = 1 OR pay360TransactionStateMessage IS NOT NULL');
 		$numPayments = $userPayment->count();
 		if ($recordsPerPage > 0) {
 			$firstIndex = ($page - 1) * $recordsPerPage;
@@ -4586,6 +4586,7 @@ class User extends DataObject {
 		$sections['ecommerce']->addAction(new AdminAction('Xpress-pay Settings', 'Define Settings for Xpress-pay.', '/Admin/XpressPaySettings'), 'Administer Xpress-pay');
 		$sections['ecommerce']->addAction(new AdminAction('ACI Speedpay Settings', 'Define Settings for ACI Speedpay.', '/Admin/ACISpeedpaySettings'), 'Administer ACI Speedpay');
 		$sections['ecommerce']->addAction(new AdminAction('HeyCentric Settings', 'Define Settings for HeyCentric.', '/Admin/HeyCentricSettings'), 'Administer HeyCentric');
+		$sections['ecommerce']->addAction(new AdminAction('Pay360 Settings', 'Define Settings for Pay360.', '/Admin/Pay360Settings'), 'Administer Pay360');
 		$sections['ecommerce']->addAction(new AdminAction('InvoiceCloud Settings', 'Define Settings for InvoiceCloud.', '/Admin/InvoiceCloudSettings'), 'Administer InvoiceCloud');
 		$sections['ecommerce']->addAction(new AdminAction('Certified Payments by Deluxe Settings', 'Define Settings for Certified Payments by Deluxe.', '/Admin/CertifiedPaymentsByDeluxeSettings'), 'Administer Certified Payments by Deluxe');
 		$sections['ecommerce']->addAction(new AdminAction('PayPal Payflow Settings', 'Define Settings for PayPal Payflow.', '/Admin/PayPalPayflowSettings'), 'Administer PayPal Payflow');
