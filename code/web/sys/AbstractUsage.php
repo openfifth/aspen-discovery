@@ -21,9 +21,21 @@ abstract class AbstractUsage extends DataObject {
 		$customPeriodStartMonth = date('m', strtotime($custom['customUsagePeriodStart']));
 		$customPeriodStartDay = date('d', strtotime($custom['customUsagePeriodStart']));
 		$this->selectAdd($selectPeriod);
-		$this->whereAdd('year > ' . $customPeriodStartYear);
-		$this->whereAdd('year = ' . $customPeriodStartYear . ' AND month >= ' . $customPeriodStartMonth, 'OR');
-		$this->whereAdd('year = ' . $customPeriodStartYear . ' AND month = ' . $customPeriodStartMonth . ' AND day >= ' . $customPeriodStartDay, 'OR');
+		$condition = 'year > ' .
+			$customPeriodStartYear .
+			' OR (year = ' .
+			$customPeriodStartYear .
+			' AND month >= ' .
+			$customPeriodStartMonth .
+			')' .
+			' OR (year = ' .
+			$customPeriodStartYear .
+			' AND month = ' .
+			$customPeriodStartMonth .
+			' AND day >= ' .
+			$customPeriodStartDay .
+			')';
+		$this->whereAdd($condition);
 		$this->groupBy('period');
 		$this->orderBy(['year', 'month', 'day']);
 	}
