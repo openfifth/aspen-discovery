@@ -246,7 +246,7 @@ public class ExtractOverDriveInfoMain {
 			logger.error("Error loading settings from the database", e);
 		}
 		if (settings.isEmpty()) {
-			logger.error("Unable to find settings for Boundless, please add settings to the database");
+			logger.error("Unable to find settings for OverDrive, please add settings to the database");
 		}
 		return settings;
 	}
