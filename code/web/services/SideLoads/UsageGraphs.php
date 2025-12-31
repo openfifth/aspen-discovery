@@ -39,7 +39,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 	*/
 	private function getSideloadIdBySideLoadName($name): int {
 		$sideload = new SideLoad();
-		$sideload->whereAdd('name = "' . $name .'"');
+		$sideload->whereAdd('name = ' . $sideload->escape($name));
 		$sideload->selectAdd();
 		$sideload->find();
 		return $sideload->fetch()->id;
@@ -52,7 +52,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		$columnLabels = [];
 		$usage = [];
 
-		$profileName= $_REQUEST['subSection'];
+		$profileName= $_REQUEST['profileName'];
 		$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
 
 		// for the graph displaying data retrieved from the user_sideload_usage table
