@@ -78,13 +78,13 @@ class Summon_UsageGraphs extends Admin_AbstractUsageGraphs {
 				$summonRecordUsage->instance = $instanceName;
 			}
 			if (is_array($custom)) {
-				$userSummonUsage->buildCustomPeriodQuery($custom);
+				$summonRecordUsage->buildCustomPeriodQuery($custom);
 			} else {
-				$userSummonUsage->groupBy($groupByTimeframe);
+				$summonRecordUsage->groupBy($groupByTimeframe);
 				foreach ($timeframes as $timeframe) {
-					$userSummonUsage->selectAdd($timeframe);
+					$summonRecordUsage->selectAdd($timeframe);
 				}
-				$userSummonUsage->orderBy($groupByTimeframe);
+				$summonRecordUsage->orderBy($groupByTimeframe);
 			}
 		
 			if ($stat == 'numRecordsViewed') {
