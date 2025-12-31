@@ -133,7 +133,6 @@ class ILS_UsageGraphs extends Admin_AbstractUsageGraphs {
 			if (!empty($instanceName)) {
 				$recordILSUsage->instance = $instanceName;
 			}
-			$recordILSUsage->whereAdd("method = '$stat'");
 		
 			if (is_array($custom)) {
 				$recordILSUsage->buildCustomPeriodQuery($custom);
