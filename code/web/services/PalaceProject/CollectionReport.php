@@ -6,10 +6,13 @@ require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectScope.php';
 require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitleAvailability.php';
 
 class PalaceProject_CollectionReport extends Admin_Admin {
-	function launch() {
+	function launch() : void {
 		global $interface;
 		$palaceProjectScope = new PalaceProjectScope();
+		/** @var PalaceProjectScope[] $palaceProjectScopes */
 		$palaceProjectScopes = $palaceProjectScope->fetchAll(null, null, false, true);
+
+		/** @var PalaceProjectSetting[] $palaceProjectScopes */
 		$palaceProjectSetting = new PalaceProjectSetting();
 		$palaceProjectSettings = $palaceProjectSetting->fetchAll(null, null, false, true);
 
@@ -17,17 +20,23 @@ class PalaceProject_CollectionReport extends Admin_Admin {
 		$library = new Library();
 		$library->whereAdd('palaceProjectScopeId > 0');
 		$library->orderBy('displayName');
+		$library->selectAdd(null);
+		$library->selectAdd('libraryId');
+		$library->selectAdd('displayName');
+		$library->selectAdd('palaceProjectScopeId');
 		$library->find();
+		$activePalaceProjectLibraries = $library->fetchAll();
 		$allLibraries = [];
-		while ($library->fetch()) {
+		foreach ($activePalaceProjectLibraries as $library) {
 			$libraryInfo = [
 				'libraryId' => $library->libraryId,
 				'displayName' => $library->displayName,
 				'palaceProjectScopeId' => $library->palaceProjectScopeId
 			];
 			$activeScope = $palaceProjectScopes[$library->palaceProjectScopeId];
+			/** @var PalaceProjectSetting $activeSetting */
 			$activeSetting = $palaceProjectSettings[$activeScope->settingId];
-			$allCollectionObjects = $activeSetting->collections;
+			$allCollectionObjects = $activeSetting->getCollections();
 			$allCollections = [];
 			foreach ($allCollectionObjects as $collectionObject) {
 				$titleAvailability = new PalaceProjectTitleAvailability();
@@ -36,11 +45,15 @@ class PalaceProject_CollectionReport extends Admin_Admin {
 				$numTitles = $titleAvailability->count();
 				$titleAvailability->deleted = 1;
 				$numDeletedTitles = $titleAvailability->count();
+				$titleAvailability->deleted = 0;
+				$titleAvailability->needsHold = 1;
+				$numNeedingHolds = $titleAvailability->count();
 				$allCollections[] = [
 					'palaceProjectName' => $collectionObject->palaceProjectName,
 					'displayName' => $collectionObject->displayName,
 					'numTitles' => $numTitles,
-					'numDeletedTitles' => $numDeletedTitles
+					'numDeletedTitles' => $numDeletedTitles,
+					'numNeedingHolds' => $numNeedingHolds,
 				];
 			}
 			$libraryInfo['collections'] = $allCollections;

@@ -1705,8 +1705,15 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 				debugInfo.append("<br/>");
 			}
 			debugInfo.append(debugMessage);
+			if (debugInfo.length() >= 4194303) {
+				break;
+			}
 		}
-		return debugInfo.toString();
+		if (debugInfo.length() >= 4194303) {
+			return debugInfo.substring(0, 4194303);
+		}else{
+			return debugInfo.toString();
+		}
 	}
 
 	public void removeSeries(String series, String seriesNameWithVolume) {

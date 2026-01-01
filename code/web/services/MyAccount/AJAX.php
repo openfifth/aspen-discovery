@@ -976,6 +976,99 @@ class MyAccount_AJAX extends JSON_Action {
 		return $tmpResult;
 	}
 
+	/** @noinspection PhpUnused */
+	function confirmReplaceHold(): array {
+		$patronId = $_REQUEST['patronId'];
+		$recordId = $_REQUEST['recordId'];
+		$pickupLocationId = $_REQUEST['pickupLocationId'];
+		$isIll = $_REQUEST['isIll'];
+		$cancelButtonLabel = translate([
+			'text' => 'Confirm Place Hold',
+			'isPublicFacing' => true,
+		]);
+		return [
+			'title' => translate([
+				'text' => 'Place Hold',
+				'isPublicFacing' => true,
+			]),
+			'body' => translate([
+				'text' => "Are you sure you want to re-place this hold?",
+				'isPublicFacing' => true,
+			]),
+			'buttons' => "<button type='button' class='tool btn btn-primary confirmCancelButton' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\")'>$cancelButtonLabel</button>",
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function replaceHold(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Cancelling hold failed',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Error cancelling hold.',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		if (!UserAccount::isLoggedIn()) {
+			$result['message'] = translate([
+				'text' => 'You must be logged in to cancel a hold.  Please close this dialog and login again.',
+				'isPublicFacing' => true,
+			]);;
+		} else {
+			//Determine which user the hold is on so we can cancel it.
+			$patronId = $_REQUEST['patronId'];
+			$user = UserAccount::getLoggedInUser();
+			$patronOwningHold = $user->getUserReferredTo($patronId);
+
+			if ($patronOwningHold == false) {
+				$result['message'] = translate([
+					'text' => 'Sorry, you do not have access to cancel holds for the supplied user.',
+					'isPublicFacing' => true,
+				]);;
+			} else {
+				//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
+				if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
+					$result['message'] = translate([
+						'text' => 'Information about the hold to be cancelled was not provided.',
+						'isPublicFacing' => true,
+					]);;
+				} else {
+					$pickupLocationId = $_REQUEST['pickupLocationId'];
+					$recordId = $_REQUEST['recordId'];
+					$isIll = $_REQUEST['isIll'] ?? false;
+					$result = $patronOwningHold->placeHold($recordId, $pickupLocationId, $isIll);
+				}
+			}
+		}
+
+		global $interface;
+		// if title come back a single item array, set as the title instead. likewise for message
+		if (isset($result['title'])) {
+			if (is_array($result['title']) && count($result['title']) == 1) {
+				$result['title'] = current($result['title']);
+			}
+		}
+		if (is_array($result['message']) && count($result['message']) == 1) {
+			$result['message'] = current($result['message']);
+		}
+
+		$interface->assign('placeHoldResults', $result);
+
+		return [
+			'title' => translate([
+				'text' => 'Place Hold',
+				'isPublicFacing' => true,
+			]),
+			'body' => $interface->fetch('MyAccount/replaceHold.tpl'),
+			'success' => $result['success'],
+		];
+	}
+
+	/** @noinspection PhpUnused */
 	function freezeHold(): array {
 		$user = UserAccount::getLoggedInUser();
 		$result = [
@@ -3968,6 +4061,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$filteredHolds = [
 			'available' => [],
 			'unavailable' => [],
+			'cancelled' => [],
 		];
 
 		// Check if we're filtering by a specific user
@@ -3982,6 +4076,12 @@ class MyAccount_AJAX extends JSON_Action {
 		foreach ($allHolds['unavailable'] as $key => $hold) {
 			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
 				$filteredHolds['unavailable'][$key] = $hold;
+			}
+		}
+
+		foreach ($allHolds['cancelled'] as $key => $hold) {
+			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+				$filteredHolds['cancelled'][$key] = $hold;
 			}
 		}
 
@@ -4121,6 +4221,13 @@ class MyAccount_AJAX extends JSON_Action {
 					$unavailableHoldSortOptions['reactivate'] = 'Reactivation Date';
 				}
 
+				/*$cancelledHoldSortOptions = [
+					'title' => 'Title',
+					'author' => 'Author',
+					'format' => 'Format',
+					'cancellationDate' => 'Cancellation Date',
+				];*/
+
 				$availableHoldSortOptions = [
 					'title' => 'Title',
 					'author' => 'Author',
@@ -4140,10 +4247,12 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('sortOptions', [
 					'available' => $availableHoldSortOptions,
 					'unavailable' => $unavailableHoldSortOptions,
+					/*'cancelled' => $cancelledHoldSortOptions,*/
 				]);
 
 				$selectedAvailableSortOption = $this->setSortByUserObj('availableHoldSort', 'availableHold', $user);
 				$selectedUnavailableSortOption = $this->setSortByUserObj('unavailableHoldSort', 'unavailableHold', $user);
+				/*$selectedCancelledSortOption = $this->setSortByUserObj('cancelledHoldSort', 'cancelledHold', $user);*/
 
 				if ($selectedAvailableSortOption == null) {
 					$selectedAvailableSortOption = 'expire';
@@ -4163,12 +4272,23 @@ class MyAccount_AJAX extends JSON_Action {
 						$selectedUnavailableSortOption = ($showPosition ? 'position' : 'title');
 					}
 				}
+/*				if ($selectedCancelledSortOption == null) {
+					$selectedAvailableSortOption = ($showPosition ? 'position' : 'title');
+				}elseif (!array_key_exists($selectedCancelledSortOption, $cancelledHoldSortOptions)) {
+					if (array_key_exists($selectedCancelledSortOption, User::$lidaToAspenUnavailableHoldSortMapping)) {
+						$selectedCancelledSortOption = User::$lidaToAspenUnavailableHoldSortMapping[$selectedCancelledSortOption];
+					}else{
+						$selectedCancelledSortOption = ($showPosition ? 'position' : 'title');
+					}
+				}*/
 
 				$user->updateSortPreferences();
 
+				$defaultCancelledSortOption = 'cancellationDate';
 				$interface->assign('defaultSortOption', [
 					'available' => $selectedAvailableSortOption,
 					'unavailable' => $selectedUnavailableSortOption,
+					/*'cancelled' => $defaultCancelledSortOption,*/
 				]);
 
 				$showDateWhenSuspending = $user->showDateWhenSuspending();
@@ -4180,8 +4300,10 @@ class MyAccount_AJAX extends JSON_Action {
 				global $offlineMode;
 				$allHolds = null;
 				if (!$offlineMode) {
-					$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUser);
-					$interface->assign('recordList', $allHolds);
+					if ($user) {
+						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
+						$interface->assign('recordList', $allHolds);
+					}
 				}
 
 				$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
@@ -4192,9 +4314,15 @@ class MyAccount_AJAX extends JSON_Action {
 				$result['message'] = "";
 				$result['holdInfoLastLoaded'] = $user->getFormattedHoldInfoLastLoaded();
 
+				$showCancelled = false;
+				if ($library->showCancelledHolds && $library->getAccountProfile()->ils == "polaris") {
+					$showCancelled = true;
+				}
+
 				$readerName = new OverDriveDriver();
 				$readerName = $readerName->getReaderName();
 				$interface->assign('readerName', $readerName);
+				$interface->assign('showCancelled', $showCancelled);
 
 				if ($source == 'ils') {
 					$showAvailableHoldsSection = $library->showHoldsReadyForPickupSection == 1 || ($allHolds != null && count($allHolds['available']) > 0);
@@ -7966,6 +8094,148 @@ class MyAccount_AJAX extends JSON_Action {
 			$patron->completeFinePayment($payment); // updated debt status in ILS
 		}
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
+	}
+
+	function createPay360Order(){
+		$transactionType = $_REQUEST['type'];
+		if ($transactionType == 'donation') {
+			$result = $this->createGenericDonation('Pay360');
+		} else {
+			$result = $this->createGenericOrder('Pay360');
+		}
+
+		if (array_key_exists('success', $result) && $result['success'] === false) {
+			return $result;
+		}
+
+		if ($transactionType == 'donation') {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+				$tempDonation,
+			] = $result;
+		} else {
+			[
+				$paymentLibrary,
+				$userLibrary,
+				$payment,
+				$purchaseUnits,
+				$patron,
+			] = $result;
+		}
+
+		$homeLocationPay360SettingId = $patron->getHomeLocation()->pay360SettingId;
+		$pay360SettingsId = $homeLocationPay360SettingId != -1 ? $homeLocationPay360SettingId : $paymentLibrary->pay360SettingId;
+
+		$selectedFines = [];
+
+		foreach(explode(',', $payment->finesPaid) as $selectedFine) {
+			$selectedFines[] = ['id' => explode('|', $selectedFine)[0], 'amount' => explode('|', $selectedFine)[1]];
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $payment->id, $selectedFines, $patron->getCatalogDriver(), true);
+		$success = $client->createOrder();
+
+
+		if (!$success) {
+			return [
+				'success' => false,
+				'message' => 'Could not connect to Pay360.'
+			];
+		}
+
+		$result = [
+			'success' => true,
+			'message' => 'Redirecting to payment processor',
+			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl, 
+		];
+
+		if (!$client->isPay360PollingEnabled()) {
+			return $result;
+		}
+
+		// start the polling process for status updates (no webhooks available) 
+		global $configArray;
+		$serverName = $_SERVER['aspen_server'];
+		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
+		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($payment->id) . ' >> ' . escapeshellarg($logFilePath) . ' . 2>&1 &';
+		exec($pollCommand);
+
+		return $result;
+	}
+
+	function completePay360Order(): void {
+		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+		
+		if (
+			!isset($_REQUEST['paymentId']) ||
+			!isset($_REQUEST['settingsId']) ||
+			!is_numeric($_REQUEST['paymentId']) || 
+			!is_numeric($_REQUEST['settingsId'])
+		) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		$paymentId = intval($_REQUEST['paymentId']);
+		$pay360SettingsId = intval($_REQUEST['settingsId']);
+
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
+		$payment->find(true);
+		if ($payment->userId !== UserAccount::getActiveUserId()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
+		$client->getOrderStatus(true);
+		$client->handleOutcome();
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+	}
+
+	function handlePay360OrderNotAttempted():void {
+		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		if (
+			!isset($_REQUEST['settingsId']) ||
+			!isset($_REQUEST['paymentId']) ||
+			!is_numeric($_REQUEST['paymentId']) || 
+			!is_numeric($_REQUEST['settingsId'])
+		) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		$paymentId = intval($_REQUEST['paymentId']);
+		$pay360SettingsId = intval($_REQUEST['settingsId']);
+
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
+		$payment->find(true);
+		if ($payment->userId !== UserAccount::getActiveUserId()) {
+			header("Location: " . $configArray['Site']['url']);
+			return;
+		}
+
+		require_once ROOT_DIR . '/services/Pay360/Client.php';
+		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
+		$client->getOrderStatus(true);
+		$client->handleOutcome([], false);
+		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
 	}
 
 	/** @noinspection PhpUnused */

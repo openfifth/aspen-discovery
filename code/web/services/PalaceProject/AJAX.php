@@ -2,7 +2,7 @@
 require_once ROOT_DIR . '/JSON_Action.php';
 
 class PalaceProject_AJAX extends JSON_Action {
-	function getStaffView() {
+	function getStaffView() : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -30,7 +30,7 @@ class PalaceProject_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getPreview() {
+	function getPreview() : array {
 		$result = [
 			'success' => false,
 			'message' => 'Unknown error loading preview',
@@ -52,7 +52,7 @@ class PalaceProject_AJAX extends JSON_Action {
 //				$palaceProjectDriver = new PalaceProjectDriver();
 //				$palaceProjectDriver->incrementStat('numPreviews');
 
-				$result['modalBody'] = "<iframe src='{$sampleUrl}' class='previewFrame'></iframe>";
+				$result['modalBody'] = "<iframe src='$sampleUrl' class='previewFrame'></iframe>";
 				$result['modalButtons'] = "<a class='tool btn btn-primary' id='viewPreviewFullSize' href='$sampleUrl' target='_blank' aria-label='".translate([
 						'text' => 'View Full Screen',
 						'isPublicFacing' => true,
@@ -72,7 +72,7 @@ class PalaceProject_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getLargeCover() {
+	function getLargeCover() : array {
 		global $interface;
 
 		$id = $_REQUEST['id'];
@@ -89,7 +89,7 @@ class PalaceProject_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getCheckOutPrompts() {
+	function getCheckOutPrompts() : array {
 		$user = UserAccount::getLoggedInUser();
 		global $interface;
 		$id = $_REQUEST['id'];
@@ -139,7 +139,7 @@ class PalaceProject_AJAX extends JSON_Action {
 	 * @param User $user
 	 * @return User[]
 	 */
-	private function getPalaceProjectUsers(User $user) {
+	private function getPalaceProjectUsers(User $user) : array {
 		global $interface;
 		$users = $user->getRelatedEcontentUsers('palace_project');
 		$usersWithPalaceProjectAccess = [];
@@ -150,7 +150,7 @@ class PalaceProject_AJAX extends JSON_Action {
 		return $usersWithPalaceProjectAccess;
 	}
 
-	function checkOutTitle() {
+	function checkOutTitle() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['id'];
 		if ($user) {
@@ -207,7 +207,7 @@ class PalaceProject_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function returnCheckout() {
+	function returnCheckout() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['recordId'];
 		if ($user) {
@@ -238,7 +238,7 @@ class PalaceProject_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getHoldPrompts() {
+	function getHoldPrompts() : array {
 		$user = UserAccount::getLoggedInUser();
 		global $interface;
 		$id = $_REQUEST['id'];
@@ -292,7 +292,7 @@ class PalaceProject_AJAX extends JSON_Action {
 		}
 	}
 
-	function placeHold() {
+	function placeHold() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['id'];
 		if ($user) {
@@ -378,12 +378,12 @@ class PalaceProject_AJAX extends JSON_Action {
 		}
 	}
 
-	function getUsageInstructions() {
-		global $activeLanguage;
+	/** @noinspection PhpUnused */
+	function getUsageInstructions() : array {
 		require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
 		$driver = new PalaceProjectDriver();
 		$usageInstructions = $driver->getUsageInstructions();
-		if ($usageInstructions == false) {
+		if ($usageInstructions === false) {
 			return [
 				'success' => false,
 				'title' => translate([

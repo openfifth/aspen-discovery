@@ -48,6 +48,8 @@ class SystemVariables extends DataObject {
 	/** @noinspection PhpUnused */
 	public $numBoundlessSettingsToProcessInParallel;
 	/** @noinspection PhpUnused */
+	public $numPalaceProjectIndexingThreads;
+	/** @noinspection PhpUnused */
 	public $removeTheWordSeriesFromEndOfSeries;
 	public $disable_user_agent_logging;
 	public $logFrequentCrons;
@@ -219,6 +221,13 @@ class SystemVariables extends DataObject {
 						'type' => 'integer',
 						'label' => 'Number of Boundless Settings to process in parallel',
 						'description' => 'Allows multiple Boundless Settings to be processed in parallel to improve the speed of indexing, but this must be balanced against the performance of your server.',
+						'default' => 1,
+					],
+					'numPalaceProjectIndexingThreads' => [
+						'property' => 'numPalaceProjectIndexingThreads',
+						'type' => 'integer',
+						'label' => 'Number of Palace Project Settings to process in parallel',
+						'description' => 'Allows multiple Palace Project Settings to be processed in parallel to improve the speed of indexing, but this must be balanced against the performance of your server.',
 						'default' => 1,
 					],
 					'removeTheWordSeriesFromEndOfSeries' => [

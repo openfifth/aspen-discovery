@@ -1,21 +1,14 @@
 package com.turning_leaf_technologies.events;
 
 import com.turning_leaf_technologies.logging.BaseLogEntry;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
-public class EventsIndexerLogEntry implements BaseLogEntry {
+public class EventsIndexerLogEntry extends BaseLogEntry {
 	private Long id;
-	private final Date startTime;
-	private Date endTime;
-	private final ArrayList<String> notes = new ArrayList<>();
 	private int numEvents = 0;
-	private int numErrors = 0;
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
@@ -23,13 +16,12 @@ public class EventsIndexerLogEntry implements BaseLogEntry {
 	private static PreparedStatement insertLogEntry;
 	private static PreparedStatement updateLogEntry;
 
-	private final Logger logger;
 	private final String name;
 
 	EventsIndexerLogEntry(String name, Connection dbConn, Logger logger) {
+		super(logger);
 		this.name = name;
-		this.logger = logger;
-		this.startTime = new Date();
+
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into events_indexing_log (name, startTime) VALUES (?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
 			updateLogEntry = dbConn.prepareStatement("UPDATE events_indexing_log SET lastUpdate = ?, endTime = ?, notes = ?, numEvents = ?, numErrors = ?, numAdded = ?, numUpdated = ?, numDeleted = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -37,34 +29,6 @@ public class EventsIndexerLogEntry implements BaseLogEntry {
 			logger.error("Error creating prepared statements to update log", e);
 		}
 		saveResults();
-	}
-
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		Date date = new Date();
-		this.notes.add(dateFormat.format(date) + " - " + note);
-		saveResults();
-	}
-
-	private String getNotesHtml() {
-		StringBuilder notesText = new StringBuilder("<ol class='cronNotes'>");
-		for (String curNote : notes) {
-			String cleanedNote = curNote;
-			cleanedNote = StringUtils.replace(cleanedNote, "<pre>", "<code>");
-			cleanedNote = StringUtils.replace(cleanedNote,"</pre>", "</code>");
-			//Replace multiple line breaks
-			cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-			cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-			cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-			notesText.append("<li>").append(cleanedNote).append("</li>");
-		}
-		notesText.append("</ol>");
-		String returnText = notesText.toString();
-		if (returnText.length() > 25000) {
-			returnText = returnText.substring(0, 25000) + " more data was truncated";
-		}
-		return returnText;
 	}
 
 	public boolean saveResults() {
@@ -101,26 +65,6 @@ public class EventsIndexerLogEntry implements BaseLogEntry {
 		}
 	}
 
-	public void setFinished() {
-		this.endTime = new Date();
-		this.addNote("Finished Events Indexing");
-		this.saveResults();
-	}
-
-	public void incErrors(String note) {
-		this.addNote("ERROR: " + note);
-		numErrors++;
-		this.saveResults();
-		logger.error(note);
-	}
-
-	public void incErrors(String note, Exception e){
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
-	}
-
 	void incAdded() {
 		numAdded++;
 		if (numAdded % 50 == 0){
@@ -141,11 +85,6 @@ public class EventsIndexerLogEntry implements BaseLogEntry {
 		if (numUpdated % 50 == 0){
 			this.saveResults();
 		}
-	}
-
-	@SuppressWarnings("unused")
-	boolean hasErrors() {
-		return numErrors > 0;
 	}
 
 	void incNumEvents(int numResults) {
