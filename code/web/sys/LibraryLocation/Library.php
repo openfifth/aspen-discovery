@@ -102,6 +102,7 @@ class Library extends DataObject {
 	public $showMessagingSettings;
 	public $allowChangingPickupLocationForUnavailableHolds;
 	public $allowChangingPickupLocationForAvailableHolds;
+	public $showCancelledHolds;
 	public $allowCancellingAvailableHolds;
 	public $allowCancellingInTransitHolds;
 	public $allowFreezeHolds;   //tinyint(4)
@@ -2253,6 +2254,17 @@ class Library extends DataObject {
 								'description' => 'Whether or not the user can change pickup locations for available holds.',
 								'hideInLists' => true,
 								'default' => 0,
+								'note' => 'Applies to Polaris Only',
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['polaris'],
+							],
+							'showCancelledHolds' => [
+								'property' => 'showCancelledHolds',
+								'type' => 'checkbox',
+								'label' => 'Show Cancelled Holds in My Account',
+								'description' => 'Whether or not cancelled holds are visible in My Account.',
+								'hideInLists' => true,
+								'default' => 1,
 								'note' => 'Applies to Polaris Only',
 								'permissions' => ['Library ILS Connection'],
 								'relatedIls' => ['polaris'],
