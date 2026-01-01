@@ -1252,8 +1252,10 @@ public class MarcRecordFormatClassifier {
 				return "XboxOne";
 			} else if ((value.contains("xbox series x") || value.contains("xbox x"))) {
 				return "XBoxSeriesX";
-			} else if (value.contains("xbox")) { //Make sure this is the last XBox listing
+			} else if (value.contains("xbox 360")) {
 				return "Xbox360";
+			} else if (value.contains("xbox")) { //Make sure this is the last XBox listing
+				return "Xbox";
 			} else if (playStation5Pattern.matcher(value).matches()) {
 				return "PlayStation5";
 			} else if (playStationVitaPattern.matcher(value).matches()) {
@@ -1509,7 +1511,7 @@ public class MarcRecordFormatClassifier {
 		if (printFormats.contains("NintendoSwitch2")) {
 			printFormats.remove("NintendoSwitch");
 		}
-		if (printFormats.contains("Kinect") || printFormats.contains("XBox360")  || printFormats.contains("Xbox360")
+		if (printFormats.contains("Kinect") || printFormats.contains("XBox360")  || printFormats.contains("Xbox")
 				|| printFormats.contains("XboxOne") || printFormats.contains("XBoxSeriesX") || printFormats.contains("PlayStation")
 				|| printFormats.contains("PlayStation2") || printFormats.contains("PlayStation3")
 				|| printFormats.contains("PlayStation4") || printFormats.contains("PlayStation5") || printFormats.contains("PlayStationVita")
