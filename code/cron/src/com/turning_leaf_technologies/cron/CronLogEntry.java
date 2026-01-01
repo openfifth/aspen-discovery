@@ -5,27 +5,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
 import com.turning_leaf_technologies.logging.BaseLogEntry;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
-public class CronLogEntry implements BaseLogEntry {
+public class CronLogEntry extends BaseLogEntry {
 	private Long logEntryId = null;
-	private final Date startTime;
-	private Date endTime;
-	private int numErrors;
-	private final ArrayList<String> notes = new ArrayList<>();
 
-	private final Logger logger;
 	private static PreparedStatement insertLogEntry;
 	private static PreparedStatement updateLogEntry;
 
 	public CronLogEntry(Connection dbConn, Logger logger){
-		this.logger = logger;
-		this.startTime = new Date();
+		super(logger);
 
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into cron_log (startTime) VALUES (?)", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -42,34 +34,6 @@ public class CronLogEntry implements BaseLogEntry {
 		return logEntryId;
 	}
 
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	@Override
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		Date date = new Date();
-		this.notes.add(dateFormat.format(date) + " - " + note);
-	}
-	
-	private String getNotesHtml() {
-		StringBuilder notesText = new StringBuilder("<ol class='cronNotes'>");
-		for (String curNote : notes){
-			String cleanedNote = curNote;
-			cleanedNote = StringUtils.replace(cleanedNote, "<pre>", "<code>");
-			cleanedNote = StringUtils.replace(cleanedNote,"</pre>", "</code>");
-			//Replace multiple line breaks
-			cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-			cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-			cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-			notesText.append("<li>").append(cleanedNote).append("</li>");
-		}
-		notesText.append("</ol>");
-		if (notesText.length() > 25000){
-			notesText = new StringBuilder(notesText.substring(0, 25000) + " more data was truncated");
-		}
-		return notesText.toString();
-	}
-
-
 	public boolean saveResults() {
 		try {
 			if (logEntryId == null){
@@ -80,6 +44,7 @@ public class CronLogEntry implements BaseLogEntry {
 					logEntryId = generatedKeys.getLong(1);
 				}
 			}else{
+				//noinspection DuplicatedCode
 				updateLogEntry.setLong(1, getLastUpdate().getTime() / 1000);
 				if (endTime == null){
 					updateLogEntry.setNull(2, java.sql.Types.INTEGER);
@@ -105,17 +70,4 @@ public class CronLogEntry implements BaseLogEntry {
 		numErrors++;
 		this.saveResults();
 	}
-	public void incErrors(String note){
-		numErrors++;
-		this.addNote("ERROR: " + note);
-		this.saveResults();
-		logger.error(note);
-	}
-	public void incErrors(String note, Exception e){
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
-	}
-	
 }

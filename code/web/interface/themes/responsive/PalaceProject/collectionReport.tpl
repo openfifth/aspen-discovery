@@ -5,10 +5,11 @@
 		<table class="table table-striped">
 			<thead>
 				<tr>
-					<th>Palace Project Name</th>
-					<th>Display Name</th>
-					<th>Active titles</th>
-					<th>Deleted titles</th>
+					<th>{translate text="Palace Project Name" isAdminFacing=true}</th>
+					<th>{translate text="Display Name" isAdminFacing=true}</th>
+					<th style="text-align: right">{translate text="Active titles" isAdminFacing=true}</th>
+					<th style="text-align: right">{translate text="Deleted titles" isAdminFacing=true}</th>
+					<th style="text-align: right">{translate text="Titles Needing Holds" isAdminFacing=true}</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -18,11 +19,12 @@
 						<td>{$collection.displayName}</td>
 						<td style="text-align: right">{$collection.numTitles|number_format}</td>
 						<td style="text-align: right">{$collection.numDeletedTitles|number_format}</td>
+						<td style="text-align: right">{$collection.numNeedingHolds|number_format}</td>
 					</tr>
 				{/foreach}
 			</tbody>
 		</table>
 	{foreachelse}
-		<h2>No libraries are active for Palace Project</h2>
+		<h2>{translate text="No libraries are active for Palace Project" isAdminFacing=true}</h2>
 	{/foreach}
 </div>

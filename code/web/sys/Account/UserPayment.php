@@ -24,6 +24,8 @@ class UserPayment extends DataObject {
 	public $deluxeRemittanceId;
 	public $deluxeSecurityId;
 	public $heyCentricPaymentReferenceNumber;
+	public $pay360TransactionStateMessage;
+	public $pay360Timestamp;
 	public $requestingUrl;
 	public $stripeReceiptUrl;
 

@@ -27,7 +27,7 @@ class PalaceProjectScope extends DataObject {
 		$palaceProjectSetting = new PalaceProjectSetting();
 		$palaceProjectSetting->find();
 		while ($palaceProjectSetting->fetch()) {
-			$palaceProjectSettings[$palaceProjectSetting->id] = (string)$palaceProjectSetting;
+			$palaceProjectSettings[$palaceProjectSetting->id] = $palaceProjectSetting->name;
 		}
 
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Libraries'));
@@ -52,6 +52,7 @@ class PalaceProjectScope extends DataObject {
 				'label' => 'Name',
 				'description' => 'The Name of the scope',
 				'maxLength' => 50,
+				'required' => true,
 			],
 			'includeAdult' => [
 				'property' => 'includeAdult',
@@ -85,7 +86,6 @@ class PalaceProjectScope extends DataObject {
 				'label' => 'Libraries',
 				'description' => 'Define libraries that use this scope',
 				'values' => $libraryList,
-				'hideInLists' => true,
 				'forcesReindex' => true,
 			],
 
@@ -96,7 +96,6 @@ class PalaceProjectScope extends DataObject {
 				'label' => 'Locations',
 				'description' => 'Define locations that use this scope',
 				'values' => $locationList,
-				'hideInLists' => true,
 				'forcesReindex' => true,
 			],
 		];

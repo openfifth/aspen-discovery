@@ -1,18 +1,22 @@
 {assign var="hideCoversFormDisplayed" value=false}
 {foreach from=$recordList item=sectionData key=sectionKey}
+	{if $sectionKey == 'available' && !$showAvailableHoldsSection}
+		{continue}
+	{/if}
 	<h2>{if $sectionKey == 'available'}{translate text="Holds Ready For Pickup" isPublicFacing=true}
 		{elseif $source=='interlibrary_loan'}{translate text="Pending Requests" isPublicFacing=true}
 		{elseif $sectionKey == 'cancelled' && $showCancelled}{translate text="Cancelled Holds"}
 		{elseif $sectionKey != 'cancelled' && $sectionKey != 'available'}{translate text="Pending Holds" isPublicFacing=true}
 		{/if}
 	</h2>
-	{if $sectionKey != 'cancelled'}
-		<p class="alert alert-info">
+	{if !empty($showHoldHelpMessages) && count($recordList.$sectionKey) > 0}
+		<div class="holdHelpMessage alert alert-info">
+			<i class="fas fa-info-circle"></i>
 			{if $sectionKey == 'available'}
 				{translate text="These titles have arrived at the library or are available online for you to use." isPublicFacing=true}
 				{*These titles have arrived at the library or are available online for you to use.*}
 			{elseif $sectionKey == 'cancelled' && $showCancelled}
-				{translate text="These are you cancelled requests." isPublicFacing=true}
+				{translate text="These are your cancelled requests." isPublicFacing=true}
 			{elseif $source == 'interlibrary_loan'}
 				{translate text="These requests will be filled by another library and sent to your library. We will notify you when a title is available." isPublicFacing=true}
 			{elseif $sectionKey != 'cancelled' && $sectionKey != 'available'}
@@ -23,13 +27,8 @@
 
 					{/if}
 			{/if}
-		</p>
-	{else}
-		{if $sectionKey == 'cancelled' && $showCancelled}
-			<p class="alert alert-info">
-				{translate text="These are you cancelled requests." isPublicFacing=true}
-			</p>
-		{/if}
+			<button type="button" class="close" data-dismiss="holdHelpMessage" aria-label="{translate text="Close" isPublicFacing=true inAttribute=true}" onclick="AspenDiscovery.Account.dismissHoldHelpMessages()"><i class="fas fa-times" role="presentation"></i></button>
+		</div>
 	{/if}
 	{if is_array($recordList.$sectionKey) && count($recordList.$sectionKey) > 0}
 		{if $source == 'ils' && $sectionKey == 'available' && $showCurbsidePickups}

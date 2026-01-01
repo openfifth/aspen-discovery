@@ -3,10 +3,10 @@
 require_once ROOT_DIR . '/Drivers/AbstractEContentDriver.php';
 
 class PalaceProjectDriver extends AbstractEContentDriver {
-	/** @var CurlWrapper */
-	private $curlWrapper;
+	/** @var ?CurlWrapper */
+	private ?CurlWrapper $curlWrapper;
 
-	public function initCurlWrapper() {
+	public function initCurlWrapper() : void {
 		$this->curlWrapper = new CurlWrapper();
 		$this->curlWrapper->timeout = 20;
 	}
@@ -15,7 +15,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		return false;
 	}
 
-	private $checkouts = [];
+	private array $checkouts = [];
 
 	/**
 	 * Get Patron Checkouts
@@ -37,7 +37,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		return $this->checkouts[$patron->id];
 	}
 
-	public function loadCirculationInformation(User $patron) {
+	public function loadCirculationInformation(User $patron) : void {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		$checkouts = [];
@@ -47,7 +47,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		];
 
 		$settings = $this->getSettings($patron);
-		if ($settings == false) {
+		if (!$settings) {
 			$this->checkouts[$patron->id] = $checkouts;
 			$this->holds[$patron->id] = $holds;
 			return;
@@ -70,7 +70,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		$this->curlWrapper->addCustomHeaders($headers, true);
 		$response = $this->curlWrapper->curlGetPage($checkoutsUrl);
 		ExternalRequestLogEntry::logRequest('palaceProject.getCirculation', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-		if ($response != false) {
+		if ($response !== false) {
 			$jsonResponse = json_decode($response);
 			if (!empty($jsonResponse) && !empty($jsonResponse->publications)) {
 				foreach ($jsonResponse->publications as $publication) {
@@ -215,20 +215,13 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	 * Renew all titles currently checked out to the user
 	 *
 	 * @param $patron  User
-	 * @return mixed
+	 * @return bool|array
 	 */
-	public function renewAll(User $patron) {
+	public function renewAll(User $patron) : bool|array {
 		return false;
 	}
 
-	/**
-	 * Renew a single title currently checked out to the user
-	 *
-	 * @param $patron     User
-	 * @param $recordId   string
-	 * @return mixed
-	 */
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) : array {
 		return $this->checkOutTitle($patron, $recordId, true);
 	}
 
@@ -239,7 +232,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	 * @param $recordId   string
 	 * @return array
 	 */
-	public function returnCheckout($patron, $recordId) {
+	public function returnCheckout(User $patron, string $recordId) : array {
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -264,7 +257,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 				$this->curlWrapper->addCustomHeaders($headers, true);
 				$response = $this->curlWrapper->curlGetPage($returnUrl);
 				ExternalRequestLogEntry::logRequest('palaceProject.returnCheckout', 'POST', $returnUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-				if ($response != false) {
+				if ($response !== false) {
 					//This returns XML, but we don't really need it for anything, the response code is enough.
 					//$jsonResponse = json_decode($response);
 					if ($this->curlWrapper->getResponseCode() == 200) {
@@ -337,7 +330,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	private $holds = [];
+	private array $holds = [];
 
 	/**
 	 * Get Patron Holds
@@ -350,7 +343,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	 * @return array        Array of the patron's holds
 	 * @access public
 	 */
-	public function getHolds($patron, $forSummary = false): array {
+	public function getHolds(User $patron, bool $forSummary = false): array {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		if (isset($this->holds[$patron->id])) {
 			return $this->holds[$patron->id];
@@ -360,21 +353,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		return $this->holds[$patron->id];
 	}
 
-	/**
-	 * Place Hold
-	 *
-	 * This is responsible for both placing holds as well as placing recalls.
-	 *
-	 * @param User $patron The User to place a hold for
-	 * @param string $recordId The id of the bib record
-	 * @return  array                 An array with the following keys
-	 *                                result - true/false
-	 *                                message - the message to display (if item holds are required, this is a form to select the item).
-	 *                                needsItemLevelHold - An indicator that item level holds are required
-	 *                                title - the title of the record the user is placing a hold on
-	 * @access  public
-	 */
-	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -387,7 +366,6 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		$recordDriver = new PalaceProjectRecordDriver($recordId);
 		if ($recordDriver->isValid()) {
 			$borrowLink = $recordDriver->getBorrowLink();
-			$settings = $this->getActiveSettings();
 			$homeLibrary = $patron->getHomeLibrary();
 			if (!empty($homeLibrary)) {
 				$homePalaceProjectLibraryId = $homeLibrary->palaceProjectLibraryId;
@@ -404,11 +382,8 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 			$this->curlWrapper->addCustomHeaders($headers, true);
 			$response = $this->curlWrapper->curlGetPage($borrowLink);
 			ExternalRequestLogEntry::logRequest('palaceProject.placeHold', 'POST', $borrowLink, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-			if ($response != false) {
+			if ($response !== false) {
 				$jsonResponse = json_decode($response);
-				if ($jsonResponse == false) {
-					$xmlResponse = simplexml_load_string($response);
-				}
 				if ($this->curlWrapper->getResponseCode() == '200' || $this->curlWrapper->getResponseCode() == '201') {
 					$result['success'] = true;
 					$result['message'] = translate([
@@ -476,13 +451,6 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	/**
-	 * Cancels a hold for a patron
-	 *
-	 * @param User $patron The User to cancel the hold for
-	 * @param string $recordId The id of the bib record
-	 * @return  array
-	 */
 	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
 		$result = [
 			'success' => false,
@@ -494,6 +462,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 
 		$holds = $patron->getHolds(false,'palace_project');
 		$foundHold = false;
+		$hold = null;
 		foreach ($holds as $section) {
 			/** @var Hold $hold */
 			foreach ($section as $hold) {
@@ -517,7 +486,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 			$response = $this->curlWrapper->curlGetPage($cancelHoldUrl);
 			ExternalRequestLogEntry::logRequest('palaceProject.cancelHold', 'POST', $cancelHoldUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
 			$cancelWorked = false;
-			if ($response != false) {
+			if ($response !== false) {
 				if ($this->curlWrapper->getResponseCode() == 200) {
 					$result['success'] = true;
 					$result['message'] = translate([
@@ -576,7 +545,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 			$summary->userId = $user->id;
 			$summary->source = 'overdrive';
 			$summary->resetCounters();
-			$checkedOutItems = $this->getCheckouts($user, true);
+			$checkedOutItems = $this->getCheckouts($user);
 			$summary->numCheckedOut = count($checkedOutItems);
 
 			$holds = $this->getHolds($user, true);
@@ -610,7 +579,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	 * @param bool $fromRenew
 	 * @return array
 	 */
-	public function checkOutTitle($patron, $titleId, $fromRenew = false) {
+	public function checkOutTitle($patron, $titleId, ?bool $fromRenew = false) : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -623,7 +592,6 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		$recordDriver = new PalaceProjectRecordDriver($titleId);
 		if ($recordDriver->isValid()) {
 			$borrowLink = $recordDriver->getBorrowLink();
-			$settings = $this->getActiveSettings();
 			$homeLibrary = $patron->getHomeLibrary();
 			if (!empty($homeLibrary)) {
 				$homePalaceProjectLibraryId = $homeLibrary->palaceProjectLibraryId;
@@ -641,11 +609,8 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 			$this->curlWrapper->addCustomHeaders($headers, true);
 			$response = $this->curlWrapper->curlGetPage($borrowLink);
 			ExternalRequestLogEntry::logRequest('palaceProject.checkoutTitle', 'POST', $borrowLink, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-			if ($response != false) {
+			if ($response !== false) {
 				$jsonResponse = json_decode($response);
-				if ($jsonResponse == false) {
-					$xmlResponse = simplexml_load_string($response);
-				}
 				if ($this->curlWrapper->getResponseCode() == '200' || $this->curlWrapper->getResponseCode() == '201') {
 					$result['success'] = true;
 					$result['message'] = translate([
@@ -717,24 +682,24 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	private $_activeSettings = false;
+	private null|PalaceProjectSetting|false $_activeSettings = null;
 	public function getActiveSettings() : PalaceProjectSetting|false {
-		if ($this->_activeSettings !== null && !is_object($this->_activeSettings)) {
+		if ($this->_activeSettings == null) {
 			if (UserAccount::isLoggedIn()) {
 				$this->_activeSettings = $this->getSettings(UserAccount::getActiveUserObj());
 			} else {
-				$this->_activeSettings = $this->getSettings(null);
+				$this->_activeSettings = $this->getSettings();
 			}
 		}
 		return $this->_activeSettings;
 	}
 
-	private $_activeCollections = null;
+	private array|null $_activeCollections = null;
 	function getActiveCollectionIds() : array {
 		if ($this->_activeCollections === null) {
 			$settings = $this->getActiveSettings();
-			if ($settings != false) {
-				$collectionsForSettings = $settings->collections;
+			if ($settings !== false) {
+				$collectionsForSettings = $settings->getCollections();
 				$this->_activeCollections = array_keys($collectionsForSettings);
 			}else{
 				$this->_activeCollections = [];
@@ -747,7 +712,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	 * @param User|null $user
 	 * @return false|PalaceProjectSetting
 	 */
-	private function getSettings(User $user = null) {
+	private function getSettings(User $user = null) : false|PalaceProjectSetting {
 		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectScope.php';
 		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectSetting.php';
 		$activeLibrary = null;
@@ -784,12 +749,11 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		require_once ROOT_DIR . '/sys/PalaceProject/UserPalaceProjectUsage.php';
 		$userUsage = new UserPalaceProjectUsage();
 
-		$userPalaceProjectTracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;;
+		$userPalaceProjectTracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;
 		$userUsage->userId = $user->id;
 		$userUsage->year = date('Y');
 		$userUsage->month = date('n');
 		global $aspenUsage;
-		global $library;
 		$userUsage->instance = $aspenUsage->getInstance();
 
 		if ($userPalaceProjectTracking) {
@@ -863,7 +827,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		}
 	}
 
-	private function incrementStat(string $fieldName) {
+	private function incrementStat(string $fieldName) : void {
 		require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectStats.php';
 		$palaceProjectStats = new PalaceProjectStats();
 		global $aspenUsage;
@@ -879,11 +843,11 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		}
 	}
 
-	private function getPalaceProjectHeaders(User $patron) {
+	private function getPalaceProjectHeaders(User $patron) : array {
 		global $interface;
 		if ($interface != null) {
 			$aspenVersion = $interface->getVariable('aspenVersion');
-			if (substr($aspenVersion, -1) == "\n") {
+			if (str_ends_with($aspenVersion, "\n")) {
 				$aspenVersion = substr($aspenVersion, 0, -1);
 			}
 		} else {
@@ -896,13 +860,13 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		];
 	}
 
-	public function getUsageInstructions() {
+	public function getUsageInstructions() : false|string {
 		$settings = $this->getSettings();
-		if ($settings == false) {
+		if ($settings === false) {
 			return false;
 		}else{
 			global $activeLanguage;
-			return $settings->getTextBlockTranslation('instructionsForUsage', $activeLanguage->code, true);
+			return $settings->getTextBlockTranslation('instructionsForUsage', $activeLanguage->code);
 		}
 	}
 }

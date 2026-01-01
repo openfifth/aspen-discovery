@@ -97,6 +97,8 @@ class User extends DataObject {
 
 	public $isLocalTestUser;
 
+	public $showHoldHelpMessages;
+
 	/** @var User $parentUser */
 	private $parentUser;
 	/** @var User[] $linkedUsers */
@@ -1653,6 +1655,7 @@ class User extends DataObject {
 		$this->__set('noPromptForUserReviews', (isset($_POST['noPromptForUserReviews']) && $_POST['noPromptForUserReviews'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPickupLocation', (isset($_POST['rememberHoldPickupLocation']) && $_POST['rememberHoldPickupLocation'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPromptForEdition', (isset($_POST['rememberHoldPromptForEdition']) && $_POST['rememberHoldPromptForEdition'] == 'on') ? 1 : 0);
+		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
@@ -3164,7 +3167,7 @@ class User extends DataObject {
 
 		$userPayment = new UserPayment();
 		$userPayment->userId = $this->id;
-		$userPayment->whereAdd('completed = 1 OR cancelled = 1 OR error = 1');
+		$userPayment->whereAdd('completed = 1 OR cancelled = 1 OR error = 1 OR pay360TransactionStateMessage IS NOT NULL');
 		$numPayments = $userPayment->count();
 		if ($recordsPerPage > 0) {
 			$firstIndex = ($page - 1) * $recordsPerPage;
@@ -4602,6 +4605,7 @@ class User extends DataObject {
 		$sections['ecommerce']->addAction(new AdminAction('Xpress-pay Settings', 'Define Settings for Xpress-pay.', '/Admin/XpressPaySettings'), 'Administer Xpress-pay');
 		$sections['ecommerce']->addAction(new AdminAction('ACI Speedpay Settings', 'Define Settings for ACI Speedpay.', '/Admin/ACISpeedpaySettings'), 'Administer ACI Speedpay');
 		$sections['ecommerce']->addAction(new AdminAction('HeyCentric Settings', 'Define Settings for HeyCentric.', '/Admin/HeyCentricSettings'), 'Administer HeyCentric');
+		$sections['ecommerce']->addAction(new AdminAction('Pay360 Settings', 'Define Settings for Pay360.', '/Admin/Pay360Settings'), 'Administer Pay360');
 		$sections['ecommerce']->addAction(new AdminAction('InvoiceCloud Settings', 'Define Settings for InvoiceCloud.', '/Admin/InvoiceCloudSettings'), 'Administer InvoiceCloud');
 		$sections['ecommerce']->addAction(new AdminAction('Certified Payments by Deluxe Settings', 'Define Settings for Certified Payments by Deluxe.', '/Admin/CertifiedPaymentsByDeluxeSettings'), 'Administer Certified Payments by Deluxe');
 		$sections['ecommerce']->addAction(new AdminAction('PayPal Payflow Settings', 'Define Settings for PayPal Payflow.', '/Admin/PayPalPayflowSettings'), 'Administer PayPal Payflow');
@@ -4837,7 +4841,7 @@ class User extends DataObject {
 				'View Dashboards',
 				'View System Reports',
 			]);
-			$sections['palace_project']->addAction(new AdminAction('CollectionReport', 'View collection report for Palace Project.', '/PalaceProject/CollectionReport'), [
+			$sections['palace_project']->addAction(new AdminAction('Collection Report', 'View collection report for Palace Project.', '/PalaceProject/CollectionReport'), [
 				'Administer Palace Project',
 				'View System Reports',
 			]);

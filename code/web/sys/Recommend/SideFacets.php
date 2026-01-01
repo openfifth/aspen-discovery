@@ -9,10 +9,9 @@ require_once ROOT_DIR . '/sys/Recommend/Interface.php';
  */
 class SideFacets implements RecommendationInterface {
 	/** @var  SearchObject_SolrSearcher $searchObject */
-	private $searchObject;
-	private $facetSettings;
-	private $mainFacets;
-	private $facets = [];
+	private SearchObject_BaseSearcher $searchObject;
+	private array $facetSettings;
+	private array $mainFacets;
 
 	/* Constructor
 	 *
@@ -26,17 +25,12 @@ class SideFacets implements RecommendationInterface {
 		// Save the passed-in SearchObject:
 		$this->searchObject = $searchObject;
 
-		// Parse the additional settings:
-		$params = explode(':', $params);
-		$mainSection = empty($params[0]) ? 'Results' : $params[0];
-
 		$this->facetSettings = $searchObject->getFacetConfig();
 		$this->mainFacets = [];
 		if (!empty($this->facetSettings)) {
 			foreach ($this->facetSettings as $facetName => $facet) {
 				if (!$facet->showAboveResults) {
 					$this->mainFacets[$facetName] = $facet->displayName;
-					$this->facets[$facet->facetName] = $facet;
 				}
 			}
 		}
@@ -51,10 +45,6 @@ class SideFacets implements RecommendationInterface {
 	 * @access  public
 	 */
 	public function init() {
-		// Turn on side facets in the search results:
-//		foreach($this->mainFacets as $name => $desc) {
-//			$this->searchObject->addFacet($name, $this->facetSettings[$name]);
-//		}
 	}
 
 	/* process
@@ -65,17 +55,18 @@ class SideFacets implements RecommendationInterface {
 	 *
 	 * @access  public
 	 */
-	public function process() {
+	public function process() : void {
 		global $interface;
 		global $library;
 
 		$interface->assign('hasSearchableFacets', $this->searchObject->hasSearchableFacets());
+		$interface->assign('removeAllFiltersUrl', $this->searchObject->getRemoveAllFiltersUrl());
 
 		//Get applied facets
 		$filterList = $this->searchObject->getFilterList();
 		foreach ($filterList as $facetKey => $facet) {
 			//Remove any top facets since the removal links are displayed above results
-			if (strpos($facet[0]['field'], 'availability_toggle') === 0) {
+			if (str_starts_with($facet[0]['field'], 'availability_toggle')) {
 				unset($filterList[$facetKey]);
 			}
 		}
@@ -89,13 +80,14 @@ class SideFacets implements RecommendationInterface {
 			$user = UserAccount::getActiveUserObj();
 			$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
 		} else {
-			$lockedFacets = isset($_SESSION['lockedFilters']) ? $_SESSION['lockedFilters'] : [];
+			$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 		}
-		$lockedFacets = isset($lockedFacets[$lockSection]) ? $lockedFacets[$lockSection] : [];
+		$lockedFacets = $lockedFacets[$lockSection] ?? [];
 
 		//Figure out which counts to show.
 		$searchSource = $_REQUEST['searchSource'];
 		if ($searchSource == 'events') {
+			/** @var LibraryEventsFacetSetting|null $facetSettings */
 			$facetSettings = $library->getEventFacetSettings();
 			if ($facetSettings) {
 				$interface->assign('facetCountsToShow', $facetSettings->getFacetGroup()->eventFacetCountsToShow);
@@ -175,9 +167,6 @@ class SideFacets implements RecommendationInterface {
 			}
 		} elseif ($this->searchObject instanceof SearchObject_ListsSearcher) {
 			foreach ($sideFacets as $facetKey => $facet) {
-				/** @var FacetSetting $facetSetting */
-				$facetSetting = $this->facetSettings[$facetKey];
-
 				//Do special processing of facets
 				if (preg_match('/local_time_since_(added|updated)/i', $facetKey)) {
 					$timeSinceAddedFacet = $this->updateTimeSinceAddedFacet($facet);
@@ -200,7 +189,7 @@ class SideFacets implements RecommendationInterface {
 		//See if there is a value selected
 		$valueSelected = false;
 		foreach ($timeSinceAddedFacet['list'] as $facetValue) {
-			if (isset($facetValue['isApplied']) && $facetValue['isApplied'] == true) {
+			if (isset($facetValue['isApplied']) && $facetValue['isApplied']) {
 				$valueSelected = true;
 			}
 		}
@@ -208,7 +197,7 @@ class SideFacets implements RecommendationInterface {
 			//Get rid of all values except the selected value which will allow the value to be removed
 			//We remove the other values because it is confusing to have results both longer and shorter than the current value.
 			foreach ($timeSinceAddedFacet['list'] as $facetKey => $facetValue) {
-				if (!isset($facetValue['isApplied']) || $facetValue['isApplied'] == false) {
+				if (!isset($facetValue['isApplied']) || !$facetValue['isApplied']) {
 					unset($timeSinceAddedFacet['list'][$facetKey]);
 				}
 			}
@@ -285,7 +274,7 @@ class SideFacets implements RecommendationInterface {
 		$filters = $_REQUEST['filter'];
 		if (!empty($filters) && is_array($filters)) {
 			foreach ($filters as $filter) {
-				if (strpos($filter, 'start_date') === 0) {
+				if (str_starts_with($filter, 'start_date')) {
 					$filterValue = substr($filter, strpos($filter, '[') + 1);
 					$filterValue = substr($filterValue, 0, -2);
 					$range = explode(' TO ', $filterValue);
@@ -317,17 +306,11 @@ class SideFacets implements RecommendationInterface {
 	 * @access  public
 	 * @return  string      The template to use to display the recommendations.
 	 */
-	public function getTemplate() {
+	public function getTemplate() : string {
 		return 'Search/Recommend/SideFacets.tpl';
 	}
 
-	/**
-	 * @param $facetKey
-	 * @param array $sideFacets
-	 * @param FacetSetting $facetSetting
-	 * @return array
-	 */
-	private function applyFacetSettings($facetKey, array $sideFacets, FacetSetting $facetSetting, $lockedFacets): array {
+	private function applyFacetSettings(string $facetKey, array $sideFacets, FacetSetting $facetSetting, array $lockedFacets): array {
 		//Do additional handling of the display
 		if ($facetSetting->sortMode == 'alphabetically') {
 			asort($sideFacets[$facetKey]['list']);
