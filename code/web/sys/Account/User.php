@@ -2056,18 +2056,21 @@ class User extends DataObject {
 					global $logger;
 					$logger->log('Could not save unavailable hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
 				}
-			}foreach ($allHolds['cancelled'] as $holdToSave) {
-				if (is_null($holdToSave->sourceId)) {
-					$holdToSave->sourceId = '';
-				}
-				if (is_null($holdToSave->recordId)) {
-					$holdToSave->recordId = '';
-				}
-				if (!$holdToSave->insert()) {
-					global $logger;
-					$logger->log('Could not save cancelled hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
-				}
+			}
+			if (isset($allHolds['cancelled'])) {
+				foreach ($allHolds['cancelled'] as $holdToSave) {
+					if (is_null($holdToSave->sourceId)) {
+						$holdToSave->sourceId = '';
+					}
+					if (is_null($holdToSave->recordId)) {
+						$holdToSave->recordId = '';
+					}
+					if (!$holdToSave->insert()) {
+						global $logger;
+						$logger->log('Could not save cancelled hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
+					}
 
+				}
 			}
 			$this->__set('holdInfoLastLoaded', time());
 			$this->update();
