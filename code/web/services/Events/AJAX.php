@@ -108,6 +108,39 @@ class Events_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
+	public function getFieldSetFields(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => "Error",
+				'isAdminFacing' => true,
+			]),
+			'message' =>  translate([
+				'text' => 'You must log in first.',
+				'isAdminFacing' => true,
+			])
+		];
+		if (!UserAccount::isLoggedIn()) {
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventFieldSet.php';
+		$fieldSet = new EventFieldSet();
+		$fieldSet->id = $_REQUEST['fieldSetId'];
+
+		$selectedFields = [];
+
+		foreach ($fieldSet->getEventFields() as $field) {
+			array_push($selectedFields, $field->eventFieldId);
+		}
+
+		return [
+			'success' => true,
+			'selectedFields' => $selectedFields,
+		];
+	}
+
+	/** @noinspection PhpUnused */
 	public function getFieldsByUse() {
 		$result = [
 			'success' => false,
