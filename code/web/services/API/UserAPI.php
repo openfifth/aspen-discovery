@@ -989,11 +989,10 @@ class UserAPI extends AbstractAPI {
 			$numSavedSearchesNew = 0;
 
 			// get list count
-			$userLists = new ListAPI();
-			$lists = $userLists->getUserLists();
-			if (!empty($lists['count'])) {
-				$numLists = $lists['count'];
-			}
+			$list = new UserList();
+			$list->user_id = $user->id;
+			$list->deleted = 0;
+			$numLists = $list->count();
 
 			// get saved search count
 			$savedSearches = new ListAPI(true);

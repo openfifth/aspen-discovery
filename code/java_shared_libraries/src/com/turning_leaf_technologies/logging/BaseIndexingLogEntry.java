@@ -1,15 +1,20 @@
 package com.turning_leaf_technologies.logging;
 
-public interface BaseIndexingLogEntry {
-	void addNote(String note);
+import org.apache.logging.log4j.Logger;
 
-	boolean saveResults();
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
-	void setFinished();
+public abstract class BaseIndexingLogEntry extends BaseLogEntry{
+	protected int numInvalidRecords = 0;
 
-	void incErrors(String note);
+	protected BaseIndexingLogEntry(Logger logger){
+		super(logger);
+	}
 
-	void incErrors(String note, Exception e);
-
-	void incInvalidRecords(String invalidRecordId);
+	public void incInvalidRecords(String invalidRecordId){
+		this.numInvalidRecords++;
+		this.addNote("Invalid Record found: " + invalidRecordId);
+	}
 }
