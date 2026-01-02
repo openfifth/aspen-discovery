@@ -1795,4 +1795,54 @@ class Admin_AJAX extends JSON_Action {
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
+	function searchReleaseNotes() {
+		$resultsHTML = [];
+		$resultsHTML['html'] = '';
+		$results = [];
+		if (isset($_REQUEST['searchTerm'])) {
+			$searchTerm = $_REQUEST['searchTerm'];
+			$releaseNotesPath = ROOT_DIR . '/release_notes';
+			$releaseNoteFiles = scandir($releaseNotesPath);
+
+			if ($releaseNoteFiles) {
+				foreach ($releaseNoteFiles as $releaseNoteFile) {
+					if ($releaseNoteFile != '.' && $releaseNoteFile != '..' && $releaseNoteFile != 'images') {
+						$fileContents = file_get_contents($releaseNotesPath . '/' . $releaseNoteFile);
+						// Check if the file contains the search term (case-insensitive)
+						if ($fileContents !== false && stripos($fileContents, $searchTerm) !== false) {
+							if (preg_match('/\d{2}\.\d{2}\.\d{2}\.MD/', $releaseNoteFile)) {
+								$releaseNoteFile = str_replace('.MD', '', $releaseNoteFile);
+								$results[$releaseNoteFile] = $releaseNoteFile;
+							} elseif (preg_match('/^\d{2}\.Q\d(?:\.\d{2}(?:\.\d{2})?)?\.MD$/i', $releaseNoteFile)) {
+								$releaseNoteFile = preg_replace('/\.MD$/i', '', $releaseNoteFile);
+								$results[$releaseNoteFile] = $releaseNoteFile;
+							} elseif (strcasecmp('Supplemental.MD', $releaseNoteFile) === 0) {
+								if (filesize($releaseNotesPath . '/' . $releaseNoteFile) > 0) {
+									$releaseNoteFile = str_replace('.MD', '', $releaseNoteFile);
+									$results[$releaseNoteFile] = $releaseNoteFile;
+								}
+							}
+						}
+					}
+				}
+				arsort($results);
+
+				$resultsHTML['html'] .= '<h4>Results Found: </h4><ul>';
+
+				foreach ($results as $releaseNote) {
+					$resultsHTML['html'] .= "<li><a href='/Admin/ReleaseNotes?release={$releaseNote}'" . '>' . $releaseNote . '</a></li>';
+				}
+
+				$resultsHTML['html'] .= '</ul>';
+
+			}
+			if (empty($results)) {
+				$resultsHTML['html'] .= '<h2>No results found for search term: ' . $searchTerm . '</h2>';
+			}
+		}
+
+		return $resultsHTML;
+	}
+
 }

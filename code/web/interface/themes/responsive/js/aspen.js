@@ -7666,6 +7666,26 @@ AspenDiscovery.Admin = (function () {
 			});
 		},
 
+		searchReleaseNotes: function () {
+			var url = Globals.path + '/Admin/AJAX';
+			var searchTermString = $("#releaseSearchTerm").val();
+			var params = {
+				'method': 'searchReleaseNotes',
+				'searchTerm': searchTermString,
+				'includeHtml': true
+			}
+
+			if (searchTermString !== '') {
+				$.getJSON(url, params, function (data) {
+					$("#noSearchTerm").hide();
+					$("#releaseNotesSearchResults").html(data.html);
+				});
+			} else {
+				$("#noSearchTerm").show();
+				$("#releaseNotesSearchResults").html('');
+			}
+		},
+
 		showBatchScheduleUpdateForm: function (implementationStatus, siteType, version, timezone) {
 			var url = Globals.path + '/Greenhouse/AJAX';
 			var params = {
