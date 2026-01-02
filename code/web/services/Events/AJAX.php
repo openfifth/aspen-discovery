@@ -108,6 +108,45 @@ class Events_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
+	public function getFieldsByUse() {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => "Error",
+				'isAdminFacing' => true,
+			]),
+			'message' =>  translate([
+				'text' => 'You must log in first.',
+				'isAdminFacing' => true,
+			])
+		];
+		if (!UserAccount::isLoggedIn()) {
+			return $result;
+		}
+
+		$fieldUse = $_REQUEST['fieldUse'];
+
+		if (is_null($fieldUse) || $fieldUse == "0") {
+			$result['message'] = 'You must select a valid field use.';
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventField.php';
+
+		if ($fieldUse == '1'){
+			$fieldList = EventField::getEventInformationFieldList();
+		}
+		if ($fieldUse == '2'){
+			$fieldList = EventField::getEventRegistrationFieldList();
+		}
+		
+		return [
+			'success' => true,
+			'useFields' => $fieldList,
+		];
+	}
+
+	/** @noinspection PhpUnused */
 	public function exportUsageData() : void {
 		$this->requireLoggedInUser();
 		$this->checkRequiredPermission([
