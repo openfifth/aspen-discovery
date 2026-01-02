@@ -4,34 +4,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import com.turning_leaf_technologies.logging.BaseLogEntry;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
-public class CronProcessLogEntry implements BaseLogEntry {
-	private final Logger logger;
+public class CronProcessLogEntry extends BaseLogEntry {
 	private final CronLogEntry cronLogEntry;
 	private Long logProcessId;
 	private final String processName;
-	private final Date startTime;
-	private Date endTime;
-	private int numErrors;
 	private int numSkipped;
 	private int numUpdates;
-	private final StringBuilder notesText = new StringBuilder();
-	private boolean maxNoteTextLengthReached = false;
 
 	private static PreparedStatement insertLogEntry;
 	private static PreparedStatement updateLogEntry;
 
 	public CronProcessLogEntry(CronLogEntry cronLogEntry, String processName, Connection dbConn, Logger logger){
+		super(logger);
 		this.cronLogEntry = cronLogEntry;
 		this.processName = processName;
-		this.startTime = new Date();
-		this.logger = logger;
 
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into cron_process_log (cronId, processName, startTime) VALUES (?, ?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -47,19 +38,13 @@ public class CronProcessLogEntry implements BaseLogEntry {
 	}
 
 	public synchronized void incErrors(String note){
-		this.numErrors++;
-		this.addNote("ERROR: " + note);
+		super.incErrors(note);
 		cronLogEntry.incErrors();
-		this.saveResults();
-		logger.error(note);
 	}
 
 	public synchronized void incErrors(String note, Exception e){
-		this.addNote("ERROR: " + note + " " + e.toString());
-		this.numErrors++;
+		super.incErrors(note, e);
 		cronLogEntry.incErrors();
-		this.saveResults();
-		logger.error(note, e);
 	}
 
 	public synchronized void incUpdated() {
@@ -80,36 +65,6 @@ public class CronProcessLogEntry implements BaseLogEntry {
 		numUpdates += updates;
 	}
 
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	@Override
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		logger.info(note);
-		if (maxNoteTextLengthReached){
-			return;
-		}
-		Date date = new Date();
-		String cleanedNote = note;
-		cleanedNote = StringUtils.replace(cleanedNote,"<pre>", "<code>");
-		cleanedNote = StringUtils.replace(cleanedNote,"</pre>", "</code>");
-		//Replace multiple line breaks
-		cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-		cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-		cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-		cleanedNote = "<li>" + dateFormat.format(date) + " - " + cleanedNote + "</li>";
-		if (notesText.length() + cleanedNote.length() < 25000){
-			notesText.append(cleanedNote);
-		}else{
-			cleanedNote = "<li>Additional Notes truncated</li>";
-			notesText.append(cleanedNote);
-			maxNoteTextLengthReached = true;
-		}
-	}
-
-	private String getNotesHtml() {
-		return notesText + "</ol>";
-	}
-
 	public synchronized boolean saveResults() {
 		try{
 			if (logProcessId == null){
@@ -122,6 +77,7 @@ public class CronProcessLogEntry implements BaseLogEntry {
 					logProcessId = generatedKeys.getLong(1);
 				}
 			}else{
+				//noinspection DuplicatedCode
 				updateLogEntry.setLong(1, getLastUpdate().getTime() / 1000);
 				if (endTime == null){
 					updateLogEntry.setNull(2, java.sql.Types.INTEGER);

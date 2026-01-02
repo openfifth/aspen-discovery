@@ -11,6 +11,7 @@ class Hold extends CircEntry {
 	public $available;
 	public $cancelable;
 	public $cancelId;
+	public $cancelled;
 	public $locationUpdateable;
 	public $pickupLocationId;
 	public $pickupLocationName;
@@ -44,6 +45,7 @@ class Hold extends CircEntry {
 			'userId',
 			'available',
 			'cancelable',
+			'cancelled',
 			'locationUpdateable',
 			'position',
 			'holdQueueLength',
@@ -104,6 +106,7 @@ class Hold extends CircEntry {
 		$hold['expire'] = $hold['expirationDate'];
 		$hold['frozen'] = (boolean)$hold['frozen'];
 		$hold['cancelable'] = (boolean)$hold['cancelable'];
+		$hold['cancelled'] = (boolean)$hold['cancelled'];
 		if ($hold['automaticCancellationDate'] == 0 || empty($hold['automaticCancellationDate'])) {
 			$hold['automaticCancellation'] = null;
 			$hold['automaticCancellationDate'] = null;

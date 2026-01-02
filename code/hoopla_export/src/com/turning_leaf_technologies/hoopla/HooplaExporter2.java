@@ -1,16 +1,10 @@
 package com.turning_leaf_technologies.hoopla;
 
-import com.turning_leaf_technologies.config.ConfigUtil;
-import com.turning_leaf_technologies.file.JarUtil;
 import org.aspen_discovery.grouping.RecordGroupingProcessor;
 import org.aspen_discovery.grouping.RemoveRecordFromWorkResult;
-import com.turning_leaf_technologies.indexing.IndexingUtils;
-import com.turning_leaf_technologies.logging.LoggingUtil;
 import com.turning_leaf_technologies.net.NetworkUtils;
 import com.turning_leaf_technologies.net.WebServiceResponse;
 import org.aspen_discovery.reindexer.GroupedWorkIndexer;
-import com.turning_leaf_technologies.strings.AspenStringUtils;
-import com.turning_leaf_technologies.util.SystemUtils;
 import org.apache.logging.log4j.Logger;
 import org.ini4j.Ini;
 import org.json.JSONArray;
@@ -26,52 +20,52 @@ import java.util.*;
 import java.util.Date;
 import java.util.zip.CRC32;
 
+@SuppressWarnings("SqlResolve")
 public class HooplaExporter2 {
-	private static Logger logger;
-	private static String serverName;
+	private final Logger logger;
+	private final String serverName;
 
-	private static Ini configIni;
+	private final Ini configIni;
 
-	private static Long startTimeForLogging;
-	private static HooplaExtractLogEntry2 logEntry;
+	private final Long startTimeForLogging;
+	private final HooplaExtractLogEntry2 logEntry;
 
-	private static Connection aspenConn;
-	private static PreparedStatement getAllExistingHooplaItemsStmt;
-	private static PreparedStatement addHooplaTitleToDB = null;
-	private static PreparedStatement updateHooplaTitleInDB = null;
-	private static PreparedStatement deleteHooplaItemStmt;
-	private static PreparedStatement updateLastRecordProcessedStmt;
-	private static PreparedStatement getLibraryHooplaSettingsStmt;
-	private static PreparedStatement updateFullUpdateForLibraryStmt;
-	private static PreparedStatement getHooplaEntitlementIdStmt;
-	private static PreparedStatement addHooplaEntitlementStmt;
-	private static PreparedStatement getHooplaEntitlementScopeStmt;
-	private static PreparedStatement addHooplaEntitlementScopeStmt;
-	private static PreparedStatement deleteHooplaEntitlementScopeStmt;
-	private static PreparedStatement entitlementHasScopesStmt;
-	private static PreparedStatement deleteHooplaEntitlementByIdStmt;
-	private static PreparedStatement getExistingEntitlementsForLibraryStmt;
-	private static PreparedStatement getFlexEntitlementsForLibraryStmt;
-	private static PreparedStatement upsertFlexAvailabilityStmt;
-	private static PreparedStatement getExistingFlexAvailabilityStmt;
-	private static PreparedStatement deleteFlexAvailabilityForLibraryStmt;
+	private final Connection aspenConn;
+	private PreparedStatement getAllExistingHooplaItemsStmt;
+	private PreparedStatement addHooplaTitleToDB = null;
+	private PreparedStatement updateHooplaTitleInDB = null;
+	private PreparedStatement deleteHooplaItemStmt;
+	private PreparedStatement getLibraryHooplaSettingsStmt;
+	private PreparedStatement updateFullUpdateForLibraryStmt;
+	private PreparedStatement getHooplaEntitlementIdStmt;
+	private PreparedStatement addHooplaEntitlementStmt;
+	private PreparedStatement getHooplaEntitlementScopeStmt;
+	private PreparedStatement addHooplaEntitlementScopeStmt;
+	private PreparedStatement deleteHooplaEntitlementScopeStmt;
+	private PreparedStatement entitlementHasScopesStmt;
+	private PreparedStatement deleteHooplaEntitlementByIdStmt;
+	private PreparedStatement getExistingEntitlementsForLibraryStmt;
+	private PreparedStatement getFlexEntitlementsForLibraryStmt;
+	private PreparedStatement upsertFlexAvailabilityStmt;
+	private PreparedStatement getExistingFlexAvailabilityStmt;
+	private PreparedStatement deleteFlexAvailabilityForLibraryStmt;
 
 	//Record grouper
-	private static GroupedWorkIndexer groupedWorkIndexer;
-	private static RecordGroupingProcessor recordGroupingProcessorSingleton = null;
+	private GroupedWorkIndexer groupedWorkIndexer;
+	private RecordGroupingProcessor recordGroupingProcessorSingleton = null;
 
 	//Existing records
-	private static HashMap<Long, HooplaTitle2> existingRecords = new HashMap<>();
-	private static final HashSet<Long> titlesNeedingReindex = new HashSet<>();
+	private HashMap<Long, HooplaTitle2> existingRecords = new HashMap<>();
+	private final HashSet<Long> titlesNeedingReindex = new HashSet<>();
 
-	private static final String HOOPLA_TYPE_INSTANT = "Instant";
+	private final String HOOPLA_TYPE_INSTANT = "Instant";
 	private static final String HOOPLA_TYPE_FLEX = "Flex";
 
 	//For Checksums
-	private static final CRC32 checksumCalculator = new CRC32();
+	private final CRC32 checksumCalculator = new CRC32();
 
 	//For 32 hours catch up
-	private static int numRetries32HoursAfter = 0;
+	private int numRetries32HoursAfter = 0;
 
 	public HooplaExporter2(String serverName, Connection aspenConn, Ini configIni, HooplaExtractLogEntry2 logEntry, Logger logger) throws SQLException {
 		this.serverName = serverName;
@@ -112,15 +106,13 @@ public class HooplaExporter2 {
 		processRecordsToReload(logEntry);
 	}
 
-	private static void processRecordsToReload(HooplaExtractLogEntry2 logEntry) {
+	private void processRecordsToReload(HooplaExtractLogEntry2 logEntry) {
 		try {
 			PreparedStatement getRecordsToReloadStmt = aspenConn.prepareStatement("SELECT * from record_identifiers_to_reload WHERE processed = 0 and type='hoopla'", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			PreparedStatement markRecordToReloadAsProcessedStmt = aspenConn.prepareStatement("UPDATE record_identifiers_to_reload SET processed = 1 where id = ?");
 			PreparedStatement getItemDetailsForRecordStmt = aspenConn.prepareStatement("SELECT UNCOMPRESS(rawResponse) as rawResponse FROM hoopla_export where hooplaId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			ResultSet getRecordsToReloadRS = getRecordsToReloadStmt.executeQuery();
 			int numRecordsToReloadProcessed = 0;
-			int numInstantRecords = 0;
-			int numFlexRecords = 0;
 			while (getRecordsToReloadRS.next()){
 				long recordToReloadId = getRecordsToReloadRS.getLong("id");
 				String recordId = getRecordsToReloadRS.getString("identifier");
@@ -160,12 +152,13 @@ public class HooplaExporter2 {
 		}
 	}
 
-	private static boolean cleanOrphanRecords() {
+	private boolean cleanOrphanRecords() {
 		int numDeleted = 0;
 		logEntry.addNote("Starting to clean orphan records");
 		logEntry.saveResults();
 		PreparedStatement getOrphanEntitlementsStmt = null;
 		ResultSet orphanEntitlementsRS = null;
+		//noinspection TryFinallyCanBeTryWithResources
 		try {
 			getOrphanEntitlementsStmt = aspenConn.prepareStatement("SELECT id, hooplaId from hoopla_entitlements where id not in (SELECT entitlementId from hoopla_entitlement_scopes)");
 			orphanEntitlementsRS = getOrphanEntitlementsStmt.executeQuery();
@@ -210,7 +203,7 @@ public class HooplaExporter2 {
 		return numDeleted > 0;
 	}
 
-	private static boolean cleanupLibraryEntitlements(HooplaLibrarySettings librarySetting) {
+	private boolean cleanupLibraryEntitlements(HooplaLibrarySettings librarySetting) {
 		boolean cleanUpRan = false;
 		if (librarySetting.isCleanUpInstant()) {
 			logEntry.addNote("Cleaning up Instant entitlements for " + librarySetting.getLibraryDisplayName() + " (Hoopla Library ID: " + librarySetting.getHooplaLibraryId() + ")");
@@ -278,7 +271,7 @@ public class HooplaExporter2 {
 		return cleanUpRan;
 	}
 
-	private static boolean flushRecordsToReindex() {
+	private boolean flushRecordsToReindex() {
 		logEntry.addNote("Starting to flush records to reindex");
 		logEntry.saveResults();
 		if (titlesNeedingReindex.isEmpty()) {
@@ -351,7 +344,7 @@ public class HooplaExporter2 {
 		return true;
 	}
 
-	private static void loadExistingTitles() {
+	private void loadExistingTitles() {
 		try {
 			if (existingRecords == null) existingRecords = new HashMap<>();
 			ResultSet allRecordsRS = getAllExistingHooplaItemsStmt.executeQuery();
@@ -438,7 +431,7 @@ public class HooplaExporter2 {
 	}
 
 
-	private static boolean exportHooplaContent(HooplaSettings2 settings) {
+	private boolean exportHooplaContent(HooplaSettings2 settings) {
 		boolean updatedContent = false;
 		boolean doFullReload = settings.isRunFullUpdate();
 		long settingsId = settings.getSettingsId();
@@ -514,7 +507,7 @@ public class HooplaExporter2 {
 				}
 			}
 
-			updatedContent = true;
+			updatedContent = false;
 
 			//Formulate the first call depending on if we are doing a full reload or not
 			String startToken = lastRecordProcessed;
@@ -537,7 +530,7 @@ public class HooplaExporter2 {
 
 			PreparedStatement updateLastRecordProcessedStmt = aspenConn.prepareStatement("UPDATE hoopla_settings set lastRecordProcessed = ? where id = ?");
 			int numTries = 0;
-			WebServiceResponse response = null;
+			WebServiceResponse response;
 
 			while (startToken != null) {
 				String paginationUrl = url + "&startToken=" + startToken;
@@ -606,7 +599,7 @@ public class HooplaExporter2 {
 		return updatedContent;
 	}
 
-	private static boolean exportLibraryEntitlements(HooplaSettings2 settings, boolean globalContentUpdated, ArrayList<HooplaLibrarySettings> librarySettings) {
+	private boolean exportLibraryEntitlements(HooplaSettings2 settings, boolean globalContentUpdated, ArrayList<HooplaLibrarySettings> librarySettings) {
 		logEntry.addNote("Starting library entitlements extraction");
 		logEntry.saveResults();
 
@@ -618,9 +611,9 @@ public class HooplaExporter2 {
 		for (HooplaLibrarySettings librarySetting : librarySettings) {
 			boolean libraryUpdates = false;
 			boolean cleanUpRan = false;
-			// Check if we need to do the clean up
+			// Check if we need to do the clean-up of entitlements
 			if (librarySetting.isCleanUpInstant() || librarySetting.isCleanUpFlex()) {
-				cleanUpRan |= cleanupLibraryEntitlements(librarySetting);
+				cleanUpRan = cleanupLibraryEntitlements(librarySetting);
 			}
 			// Skip if the library doesn't have a Hoopla library ID
 			if (!librarySetting.hasHooplaLibraryId()) {
@@ -694,7 +687,7 @@ public class HooplaExporter2 {
 		return hasUpdates;
 	}
 
-	private static boolean exportLibraryEntitlementsForType(HooplaSettings2 settings, HooplaLibrarySettings librarySetting, String hooplaType, boolean runFullUpdateForLibrary) {
+	private boolean exportLibraryEntitlementsForType(HooplaSettings2 settings, HooplaLibrarySettings librarySetting, String hooplaType, boolean runFullUpdateForLibrary) {
 		boolean updateEntitlements = false;
 		String hooplaLibraryId = librarySetting.getHooplaLibraryId();
 		if (hooplaLibraryId == null || hooplaLibraryId.isEmpty()) {
@@ -722,11 +715,11 @@ public class HooplaExporter2 {
 		if (!runFullUpdateForLibrary && lastUpdate > 0) {
 			url += "&startTime=" + lastUpdate;
 		} else {
-			// Full update for library, only get active entitlements
+			// Full update for the library, only get active entitlements
 			url += "&status=active";
 		}
 
-		// Load existing entitlements for library when running a full update
+		// Load existing entitlements for the library when running a full update
 		HashMap<Long, Long> existingEntitlements = runFullUpdateForLibrary ? loadExistingEntitlementsForLibrary(librarySetting.getLibraryId(), hooplaType) : null;
 
 		HashMap<String, String> headers = new HashMap<>();
@@ -767,7 +760,7 @@ public class HooplaExporter2 {
 						try {
 							Thread.sleep(1000 * 60 * 2); //Wait for 2 minutes before trying again
 						} catch (InterruptedException e) {
-							logEntry.incErrors("Error sleeping for 2 minutes for entitlments", e);
+							logEntry.incErrors("Error sleeping for 2 minutes for entitlements", e);
 						}
 						accessToken = getAccessToken(settings);
 						headers.put("Authorization", "Bearer " + accessToken);
@@ -781,7 +774,7 @@ public class HooplaExporter2 {
 		}
 		// Clean up the entitlements that are no longer in the API response
 		// If Flex, also clean up the availability
-		if (runFullUpdateForLibrary && existingEntitlements != null && !existingEntitlements.isEmpty()) {
+		if (runFullUpdateForLibrary && !existingEntitlements.isEmpty()) {
 			int numRemainingEntitlements = 0;
 			for (Map.Entry<Long, Long> remainingEntitlement : existingEntitlements.entrySet()) {
 				Long hooplaId = remainingEntitlement.getKey();
@@ -815,7 +808,7 @@ public class HooplaExporter2 {
 		return updateEntitlements;
 	}
 
-	private static ArrayList<HooplaLibrarySettings> loadLibraryHooplaSettings(long settingsId) {
+	private ArrayList<HooplaLibrarySettings> loadLibraryHooplaSettings(long settingsId) {
 		ArrayList<HooplaLibrarySettings> librarySettings = new ArrayList<>();
 		try {
 			getLibraryHooplaSettingsStmt.setLong(1, settingsId);
@@ -830,7 +823,7 @@ public class HooplaExporter2 {
 		return librarySettings;
 	}
 
-	private static HashMap<Long, Long> loadExistingEntitlementsForLibrary(long scopeLibraryId, String hooplaType) {
+	private HashMap<Long, Long> loadExistingEntitlementsForLibrary(long scopeLibraryId, String hooplaType) {
 		HashMap<Long, Long> existingEntitlements = new HashMap<>();
 		try {
 			getExistingEntitlementsForLibraryStmt.setLong(1, scopeLibraryId);
@@ -849,7 +842,7 @@ public class HooplaExporter2 {
 		return existingEntitlements;
 	}
 
-	private static ArrayList<Long> loadFlexEntitlementsForLibrary(long scopeLibraryId) {
+	private ArrayList<Long> loadFlexEntitlementsForLibrary(long scopeLibraryId) {
 		ArrayList<Long> flexEntitlements = new ArrayList<>();
 		try {
 			getFlexEntitlementsForLibraryStmt.setLong(1, scopeLibraryId);
@@ -865,7 +858,7 @@ public class HooplaExporter2 {
 		return flexEntitlements;
 	}
 
-	private static void updateFlexAvailabilityInDB(JSONArray availabilityArray, long scopeLibraryId) {
+	private void updateFlexAvailabilityInDB(JSONArray availabilityArray, long scopeLibraryId) {
 		for (int i = 0; i < availabilityArray.length(); i++) {
 			try {
 				JSONObject availabilityInfo = availabilityArray.getJSONObject(i);
@@ -878,7 +871,7 @@ public class HooplaExporter2 {
 					continue;
 				}
 				JSONObject availability = availabilityInfo.getJSONObject("availability");
-				if (availability.length() > 0) {
+				if (!availability.isEmpty()) {
 					String status = availability.getString("status");
 					int holdsQueueSize = status.equals("BORROW") ? 0 : availability.getInt("holdsQueueSize");
 					int availableCopies = availability.getInt("availableCopies");
@@ -923,7 +916,7 @@ public class HooplaExporter2 {
 		}
 	}
 
-	private static void updateEntitlementsInDB(JSONArray entitlements, HashMap<Long, Long> existingEntitlements, boolean runFullUpdateForLibrary, String hooplaType, long scopeLibraryId) {
+	private void updateEntitlementsInDB(JSONArray entitlements, HashMap<Long, Long> existingEntitlements, boolean runFullUpdateForLibrary, String hooplaType, long scopeLibraryId) {
 		for (int i = 0; i < entitlements.length(); i++) {
 			try {
 				JSONObject entitlement = entitlements.getJSONObject(i);
@@ -1027,7 +1020,7 @@ public class HooplaExporter2 {
 		}
 	}
 
-	private static boolean getFlexAvailability(HooplaSettings2 settings, ArrayList<HooplaLibrarySettings> librarySettings) {
+	private boolean getFlexAvailability(HooplaSettings2 settings, ArrayList<HooplaLibrarySettings> librarySettings) {
 		logEntry.addNote("Starting Flex availability update");
 		logEntry.saveResults();
 
@@ -1096,7 +1089,7 @@ public class HooplaExporter2 {
 							logEntry.incErrors("Error getting Flex availability after 3 attempts from " + url + " " + response.getResponseCode() + " " + response.getMessage());
 						} else {
 							try {
-								Thread.sleep(1000 * 60 * 1); //Wait for 1 minutes before trying again
+								Thread.sleep(1000 * 60); //Wait for 1 minute before trying again
 							} catch (InterruptedException e) {
 								logEntry.incErrors("Error sleeping for 1 minutes for Flex availability", e);
 							}
@@ -1165,13 +1158,17 @@ public class HooplaExporter2 {
 					}
 				}
 
-				// Loop through each librayr and get the entitlemen for the given hoopla id
+				// Loop through each library and get the entitlement for the given hoopla id
 				for (HooplaLibrarySettings librarySetting : librarySettings) {
 					// Skip if the library doesn't have instant or flex enabled
-					if (!librarySetting.isInstantEnabled() || !librarySetting.isFlexEnabled()) {
+					if (!librarySetting.isInstantEnabled() && !librarySetting.isFlexEnabled()) {
 						continue;
 					}
-					// We don't know if this title is instant or flex for current library, se we try instant first
+					if (librarySetting.getHooplaLibraryId() == null) {
+						logEntry.incErrors("Hoopla Library ID for library setting " + librarySetting.getLibraryDisplayName() + " is null, skipping");
+						continue;
+					}
+					// We don't know if this title is instant or flex for the current library, so we try instant first
 					if (librarySetting.isInstantEnabled()) {
 						String entitlementUrl = hooplaAPIBaseURL + "/api/v1/libraries/" + librarySetting.getHooplaLibraryId() + "/entitlements?purchaseModel=Instant&limit=1&status=active&startToken=" + (numericSingleWorkId - 1);
 						WebServiceResponse entitlementResponse = NetworkUtils.getURL(entitlementUrl, logger, headers);
@@ -1181,7 +1178,7 @@ public class HooplaExporter2 {
 							JSONObject responseJSON = new JSONObject(entitlementResponse.getMessage());
 							if (responseJSON.has("entitlements")) {
 								JSONArray responseEntitlements = responseJSON.getJSONArray("entitlements");
-								if (responseEntitlements != null && responseEntitlements.length() > 0) {
+								if (responseEntitlements != null && !responseEntitlements.isEmpty()) {
 									JSONObject entitlement = responseEntitlements.getJSONObject(0);
 
 									// Verify contentId is the same as the given hoopla Id
@@ -1212,7 +1209,7 @@ public class HooplaExporter2 {
 							JSONObject responseJSON = new JSONObject(entitlementResponse.getMessage());
 							if (responseJSON.has("entitlements")) {
 								JSONArray responseEntitlements = responseJSON.getJSONArray("entitlements");
-								if (responseEntitlements != null && responseEntitlements.length() > 0) {
+								if (responseEntitlements != null && !responseEntitlements.isEmpty()) {
 									JSONObject entitlement = responseEntitlements.getJSONObject(0);
 
 									// Verify contentId is the same as the given hoopla Id
@@ -1247,17 +1244,16 @@ public class HooplaExporter2 {
 				}
 				// Flush the records to reindex
 				if (updatesRun) {
-					// Add the title to the list regardlss
+					// Add the title to the list regardless
 					titlesNeedingReindex.add(numericSingleWorkId);
 					flushRecordsToReindex();
 				}
-				logEntry.addNote("Completed extract of single work " + singleWorkId);
+				logEntry.addNote("Completed extract of single work " + singleWorkId + " for setting " + settings.getSettingsId());
 				logEntry.saveResults();
-				logger.warn("Completed extract of single work " + singleWorkId);
-				return updatesRun;
+				logger.warn("Completed extract of single work " + singleWorkId + " for setting " + settings.getSettingsId());
 			}
 			if (numSettings == 0){
-				logger.error("Unable to find settings for Hoopla when processing single title, please add settings to the database");
+				logEntry.incErrors("Unable to find settings for Hoopla when processing single title, please add settings to the database");
 			}
 		}catch (Exception e){
 			logEntry.incErrors("Error exporting hoopla data", e);
@@ -1265,7 +1261,7 @@ public class HooplaExporter2 {
 		return updatesRun;
 	}
 
-	private static void updateTitlesInDB(JSONArray responseTitles, boolean forceRegrouping, boolean doFullReload) {
+	private void updateTitlesInDB(JSONArray responseTitles, boolean forceRegrouping, boolean doFullReload) {
 		for (int i = 0; i < responseTitles.length(); i++){
 			try {
 				JSONObject curTitle = responseTitles.getJSONObject(i);
@@ -1299,7 +1295,7 @@ public class HooplaExporter2 {
 					addHooplaTitleToDB.setBoolean(6, curTitle.getBoolean("containsProfanity"));
 					if (curTitle.has("ratings")) {
 						JSONArray ratingsArray = curTitle.getJSONArray("ratings");
-						if (ratingsArray.length() > 0) {
+						if (!ratingsArray.isEmpty()) {
 							addHooplaTitleToDB.setString(7, ratingsArray.getJSONObject(0).getString("ratingValue"));
 						} else {
 							addHooplaTitleToDB.setString(7, "");
@@ -1311,7 +1307,7 @@ public class HooplaExporter2 {
 					addHooplaTitleToDB.setBoolean(9, curTitle.getBoolean("isForChildren"));
 					if (curTitle.has("ppuPrices")) {
 						JSONArray ppuPricesArray = curTitle.getJSONArray("ppuPrices");
-						if (ppuPricesArray.length() > 0) {
+						if (!ppuPricesArray.isEmpty()) {
 							addHooplaTitleToDB.setDouble(10, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
 						} else {
 							addHooplaTitleToDB.setDouble(10, 0.0);
@@ -1337,7 +1333,7 @@ public class HooplaExporter2 {
 					updateHooplaTitleInDB.setBoolean(5, curTitle.getBoolean("containsProfanity"));
 					if (curTitle.has("ratings")) {
 						JSONArray ratingsArray = curTitle.getJSONArray("ratings");
-						if (ratingsArray.length() > 0) {
+						if (!ratingsArray.isEmpty()) {
 							updateHooplaTitleInDB.setString(6, ratingsArray.getJSONObject(0).getString("ratingValue"));
 						} else {
 							updateHooplaTitleInDB.setString(6, "");
@@ -1349,7 +1345,7 @@ public class HooplaExporter2 {
 					updateHooplaTitleInDB.setBoolean(8, curTitle.getBoolean("isForChildren"));
 					if (curTitle.has("ppuPrices")) {
 						JSONArray ppuPricesArray = curTitle.getJSONArray("ppuPrices");
-						if (ppuPricesArray.length() > 0) {
+						if (!ppuPricesArray.isEmpty()) {
 							updateHooplaTitleInDB.setDouble(9, ppuPricesArray.getJSONObject(0).getDouble("ppuPrice"));
 						} else {
 							updateHooplaTitleInDB.setDouble(9, 0.0);
@@ -1375,11 +1371,11 @@ public class HooplaExporter2 {
 		}
 	}
 
-	private static void indexRecord(String groupedWorkId) {
+	private void indexRecord(String groupedWorkId) {
 		getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
 	}
 
-	private static String getAccessToken(HooplaSettings2 settings) {
+	private String getAccessToken(HooplaSettings2 settings) {
 		String username = settings.getApiUsername();
 		String password = settings.getApiPassword();
 		if (username == null || password == null){
@@ -1480,21 +1476,21 @@ public class HooplaExporter2 {
 		}
 	}
 
-	private static GroupedWorkIndexer getGroupedWorkIndexer() {
+	private GroupedWorkIndexer getGroupedWorkIndexer() {
 		if (groupedWorkIndexer == null) {
 			groupedWorkIndexer = new GroupedWorkIndexer(serverName, aspenConn, configIni, false, false, logEntry, logger);
 		}
 		return groupedWorkIndexer;
 	}
 
-	private static RecordGroupingProcessor getRecordGroupingProcessor(){
+	private RecordGroupingProcessor getRecordGroupingProcessor(){
 		if (recordGroupingProcessorSingleton == null) {
 			recordGroupingProcessorSingleton = new RecordGroupingProcessor(aspenConn, serverName, logEntry, logger);
 		}
 		return recordGroupingProcessorSingleton;
 	}
 
-	private static void regroupAllRecords(Connection dbConn, long settingsId, GroupedWorkIndexer indexer, HooplaExtractLogEntry2 logEntry)  throws SQLException {
+	private void regroupAllRecords(Connection dbConn, long settingsId, GroupedWorkIndexer indexer, HooplaExtractLogEntry2 logEntry)  throws SQLException {
 		logEntry.addNote("Starting to regroup all records");
 		PreparedStatement getAllRecordsToRegroupStmt = dbConn.prepareStatement("SELECT hooplaId, UNCOMPRESS(rawResponse) as rawResponse from hoopla_export where active = 1", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		//It turns out to be quite slow to look this up repeatedly, grab the existing values for all and store in memory

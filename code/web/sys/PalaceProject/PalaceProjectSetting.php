@@ -5,6 +5,7 @@ require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectCollection.php';
 class PalaceProjectSetting extends DataObject {
 	public $__table = 'palace_project_settings';    // table name
 	public $id;
+	public $name;
 	public $apiUrl;
 	public $libraryId;
 	public $runFullUpdate;
@@ -37,17 +38,27 @@ class PalaceProjectSetting extends DataObject {
 				'label' => 'Id',
 				'description' => 'The unique id',
 			],
+			'name' => [
+				'property' => 'name',
+				'type' => 'text',
+				'label' => 'Name',
+				'description' => 'The name for the setting',
+				'maxLength' => 100,
+				'required' => true,
+			],
 			'apiUrl' => [
 				'property' => 'apiUrl',
 				'type' => 'url',
 				'label' => 'url',
 				'description' => 'The URL to the API',
+				'maxLength' => 255,
 			],
 			'libraryId' => [
 				'property' => 'libraryId',
 				'type' => 'text',
 				'label' => 'Library ID / Short name',
 				'description' => 'The Library Identifier or Short name ',
+				'maxLength' => 50,
 			],
 			'runFullUpdate' => [
 				'property' => 'runFullUpdate',
@@ -179,16 +190,7 @@ class PalaceProjectSetting extends DataObject {
 			}
 			return $this->_scopes;
 		} elseif ($name == "collections") {
-			if (!isset($this->_collections) && $this->id) {
-				$this->_collections = [];
-				$collection = new PalaceProjectCollection();
-				$collection->settingId = $this->id;
-				$collection->find();
-				while ($collection->fetch()) {
-					$this->_collections[$collection->id] = clone($collection);
-				}
-			}
-			return $this->_collections;
+			return $this->getCollections();
 		} else {
 			return parent::__get($name);
 		}
@@ -202,5 +204,23 @@ class PalaceProjectSetting extends DataObject {
 		} else {
 			parent::__set($name, $value);
 		}
+	}
+
+	/**
+	 * @return PalaceProjectCollection[]
+	 */
+	public function getCollections() : array {
+		if (!isset($this->_collections)) {
+			$this->_collections = [];
+			if ($this->id) {
+				$collection = new PalaceProjectCollection();
+				$collection->settingId = $this->id;
+				$collection->find();
+				while ($collection->fetch()) {
+					$this->_collections[$collection->id] = clone($collection);
+				}
+			}
+		}
+		return $this->_collections;
 	}
 }

@@ -16,7 +16,7 @@ class BookCoverProcessor {
 	private string $cacheName;
 	private string $cacheFile;
 	private string $defaultCoverCacheFile; //Includes servername so each member of a consortium can have different covers
-	public string $error;
+	public ?string $error = null;
 	private GroupedWorkDriver|null|false $groupedWork = null;
 	private bool $reload;
 	/** @var  Logger $logger */

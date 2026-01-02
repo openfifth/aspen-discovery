@@ -29,10 +29,56 @@ function getUpdates26_01_00(): array {
 				'ALTER TABLE user ADD COLUMN showHoldHelpMessages TINYINT DEFAULT 1'
 			]
 		], //show_hold_help_messages
+		'palace_project_setting_name' => [
+			'title' => 'Palace Project Setting Name',
+			'description' => 'Add Palace Project Setting Name',
+			'sql' => [
+				"ALTER TABLE palace_project_settings ADD COLUMN name VARCHAR(100) NOT NULL default ''",
+				"UPDATE palace_project_settings set name = concat('Setting ', id)"
+			],
+		], //palace_project_setting_name
+		'palace_project_indexing_concurrency' => [
+			'title' => 'Setup indexing concurrency for Palace Project',
+			'description' => 'Define numPalaceProjectIndexingThreads in System variables',
+			'sql' => [
+				"ALTER TABLE system_variables add column numPalaceProjectIndexingThreads int DEFAULT 1",
+			]
+		], //palace_project_indexing_concurrency
+		'palace_project_add_setting_to_log' => [
+			'title' => 'Palace Project add Setting Id to Indexing Log',
+			'description' => 'Palace Project add Setting Id to Indexing Log',
+			'sql' => [
+				"ALTER TABLE palace_project_export_log add column settingId int(11) DEFAULT NULL",
+			]
+		], //palace_project_add_setting_to_log
+		'palace_project_collection_stats_index' => [
+			'title' => 'Add Index for collection stats to palace project title availability',
+			'description' => 'Add Index for collectionId, deleted, and needsHold to palace project title availability',
+			'sql' => [
+				'ALTER TABLE palace_project_title_availability ADD INDEX collectionStats(collectionId, deleted, needsHold)'
+			]
+		], //palace_project_collection_stats_index
+		'palace_project_store_raw_response_length' => [
+			'title' => 'Store Raw Response Length for Palace Project',
+			'description' => 'Store Raw Response Length for Palace Project and index for performance',
+			'sql' => [
+				'ALTER TABLE palace_project_title ADD COLUMN rawResponseLength INT(11)',
+				'UPDATE palace_project_title SET rawResponseLength = UNCOMPRESSED_LENGTH(rawResponse)',
+				'ALTER TABLE palace_project_title ADD INDEX responseIndex(palaceProjectId, rawChecksum, rawResponseLength)'
+			]
+		], //palace_project_store_uncompressed_length
 
 		//kirstien
 
 		//kodi
+		'polaris_cancelled_holds' => [
+			'title' => 'Polaris Cancelled Holds',
+			'description' => 'Add option to show users their cancelled holds for Polaris',
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN showCancelledHolds TINYINT(1) DEFAULT 1',
+				'ALTER TABLE user_hold ADD COLUMN cancelled TINYINT(1)'
+			]
+		], //polaris_cancelled_holds
 		'events_calendar_footer' => [
 			'title' => 'Events Calendar Footer',
 			'description' => 'Add column footer in calendar_display_settings and rename Print Calendars With Header Images permissions to include Footer.',
@@ -177,6 +223,18 @@ function getUpdates26_01_00(): array {
 		//mark j
 
 		//lucas
+		'indexing_profiles_add_default_values' => [
+			'title' => 'Indexing Profiles - Add Default Values',
+			'description' => 'Add default values to required columns in indexing_profiles table to support multi-step form creation via UI.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE indexing_profiles MODIFY COLUMN recordNumberTag char(3) NOT NULL DEFAULT ''",
+				"ALTER TABLE indexing_profiles MODIFY COLUMN recordNumberPrefix varchar(10) NOT NULL DEFAULT ''",
+				"ALTER TABLE indexing_profiles MODIFY COLUMN itemTag char(3) NOT NULL DEFAULT ''",
+				"ALTER TABLE indexing_profiles MODIFY COLUMN marcPath varchar(100) NOT NULL DEFAULT ''",
+				"ALTER TABLE indexing_profiles MODIFY COLUMN indexingClass varchar(50) NOT NULL DEFAULT ''",
+			]
+		], //indexing_profiles_add_default_values
 
 		//tomas
 

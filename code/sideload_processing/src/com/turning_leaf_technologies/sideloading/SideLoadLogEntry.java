@@ -11,25 +11,18 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-class SideLoadLogEntry implements BaseIndexingLogEntry {
+class SideLoadLogEntry extends BaseIndexingLogEntry {
 	private Long logEntryId = null;
-	private final Date startTime;
-	private Date endTime;
-	private final ArrayList<String> notes = new ArrayList<>();
 	private int numSideLoadsUpdated = 0;
 	private String sideLoadsUpdated = "";
 	private int numProducts = 0;
-	private int numErrors = 0;
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
 	private int numSkipped = 0;
-	private int numInvalidRecords = 0;
-	private final Logger logger;
 
 	SideLoadLogEntry(Connection dbConn, Logger logger) {
-		this.logger = logger;
-		this.startTime = new Date();
+		super(logger);
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into sideload_log (startTime) VALUES (?)", PreparedStatement.RETURN_GENERATED_KEYS);
 			updateLogEntry = dbConn.prepareStatement("UPDATE sideload_log SET lastUpdate = ?, endTime = ?, notes = ?, numSideLoadsUpdated = ?, sideLoadsUpdated = ?, numProducts = ?, numErrors = ?, numAdded = ?, numUpdated = ?, numDeleted = ?, numSkipped = ?, numInvalidRecords = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -37,35 +30,6 @@ class SideLoadLogEntry implements BaseIndexingLogEntry {
 			logger.error("Error creating prepared statements to update log", e);
 		}
 		saveResults();
-	}
-
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		Date date = new Date();
-		this.notes.add(dateFormat.format(date) + " - " + note);
-		saveResults();
-	}
-
-	private String getNotesHtml() {
-		StringBuilder notesText = new StringBuilder("<ol class='cronNotes'>");
-		for (String curNote : notes) {
-			String cleanedNote = curNote;
-			cleanedNote = cleanedNote.replaceAll("<pre>", "<code>");
-			cleanedNote = cleanedNote.replaceAll("</pre>", "</code>");
-			//Replace multiple line breaks
-			cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-			cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-			cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-			notesText.append("<li>").append(cleanedNote).append("</li>");
-		}
-		notesText.append("</ol>");
-		String returnText = notesText.toString();
-		if (returnText.length() > 25000) {
-			returnText = returnText.substring(0, 25000) + " more data was truncated";
-		}
-		return returnText;
 	}
 
 	private static PreparedStatement insertLogEntry;
@@ -114,20 +78,6 @@ class SideLoadLogEntry implements BaseIndexingLogEntry {
 		this.saveResults();
 	}
 
-	public void incErrors(String note) {
-		this.addNote("ERROR: " + note);
-		numErrors++;
-		this.saveResults();
-		logger.error(note);
-	}
-
-	public void incErrors(String note, Exception e) {
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
-	}
-
 	void incAdded() {
 		numAdded++;
 	}
@@ -147,16 +97,11 @@ class SideLoadLogEntry implements BaseIndexingLogEntry {
 
 	void addUpdatedSideLoad(String sideLoadName) {
 		numSideLoadsUpdated++;
-		if (sideLoadsUpdated.length() > 0) {
+		if (!sideLoadsUpdated.isEmpty()) {
 			sideLoadsUpdated += ",";
 		}
 		sideLoadsUpdated += sideLoadName;
 		this.saveResults();
-	}
-
-	@SuppressWarnings("unused")
-	public boolean hasErrors() {
-		return numErrors > 0;
 	}
 
 	void incSkipped() {
@@ -165,11 +110,6 @@ class SideLoadLogEntry implements BaseIndexingLogEntry {
 
 	int getNumProducts() {
 		return numProducts;
-	}
-
-	public void incInvalidRecords(String invalidRecordId){
-		this.numInvalidRecords++;
-		this.addNote("Invalid Record found: " + invalidRecordId);
 	}
 
 	public int getNumDeleted() {
