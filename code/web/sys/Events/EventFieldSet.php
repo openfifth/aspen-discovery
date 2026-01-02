@@ -15,7 +15,6 @@ class EventFieldSet extends DataObject {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
 		}
-		$eventFields = EventField::getEventFieldList();
 		$structure = [
 			'id' => [
 				'property' => 'id',
@@ -35,7 +34,7 @@ class EventFieldSet extends DataObject {
 				],
 				'default' => '0',
 				'required' => true,
-				'onchange' => 'return AspenDiscovery.Events.getFieldsByUse(this.value);'
+				'onchange' => 'return AspenDiscovery.Events.displayFieldOptionsForSelectedUse(this.value);'
 			], 
 			'name' => [
 				'property' => 'name',
@@ -51,8 +50,9 @@ class EventFieldSet extends DataObject {
 				'listStyle' => 'checkboxSimple',
 				'label' => 'Event Fields',
 				'description' => 'The event fields that make up the set',
-				'values' => $eventFields,
-			]
+				'values' => [],
+				'hiddenByDefault' => true,
+			],
 		];
 
 		self::$_objectStructure[$context] = $structure;
@@ -141,7 +141,15 @@ class EventFieldSet extends DataObject {
 		}
 	}
 
-	public static function getEventFieldSetList(): array {
+	public static function getEventInformationFieldSetList() {
+		return EventFieldSet::getEventFieldSetList(0);
+	}
+	
+	public static function getEventRegistrationFieldSetList() {
+		return EventFieldSet::getEventFieldSetList(1);
+	}
+
+	public static function getEventFieldSetList($fieldSetUse = null): array {
 		$setList = [];
 		$object = new EventFieldSet();
 		$object->orderBy('name');

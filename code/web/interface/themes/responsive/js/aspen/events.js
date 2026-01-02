@@ -17,6 +17,55 @@ AspenDiscovery.Events = (function(){
 		},
 
 		//For Aspen Events
+		getFieldsByUse: function(fieldUse) {
+			const url = Globals.path + '/Events/AJAX';
+			const params = {
+				method: 'getFieldsByUse',
+				fieldUse
+			};
+
+			$.getJSON(url, params, function (data) {
+					if (!data.success) {
+						AspenDiscovery.showMessage('An error occurred ', data.message);
+						return;
+					}
+					const propertyRoweventFields = $("#propertyRoweventFields");
+
+					const checkboxWrapper = $("#propertyRoweventFields > .controls > .checkbox:not(.form-group)");
+					checkboxWrapper.addClass('eventFieldWrapper');
+					checkboxWrapper.empty();
+
+					if (data.useFields && Object.keys(data.useFields).length > 0) {
+						propertyRoweventFields.show();
+					} else {
+						propertyRoweventFields.hide();
+					}
+		 
+					$.each(data.useFields, (index, fieldName) => {
+							const checkboxLabel = $('<label />', {
+								for: 'eventFields_' + index,
+							}).appendTo(checkboxWrapper);
+							$('<input />', {
+								type: 'checkbox',
+								id: 'eventFields_' + index, 
+								value: index,
+								class: 'eventFields',
+								name: 'eventFields[]'
+							}).appendTo(checkboxLabel);
+							$('<strong></strong>', {
+								text: ' ' + fieldName 
+							}).appendTo(checkboxLabel);
+							$('<br>').appendTo(checkboxLabel);
+						}
+					)
+				}
+			)
+
+			// Not enough data to allow filtering
+			// const eventsList = document.getElementById('propertyRoweventFields');
+			// Would need an AJAX here to grab the needed field list
+		},
+
 		getEventTypesForLocation: function(locationId) {
 			var url = Globals.path + '/Events/AJAX';
 			var params = {
