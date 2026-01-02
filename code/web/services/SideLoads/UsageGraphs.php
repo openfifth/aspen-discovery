@@ -75,7 +75,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 			}
 			$usage->orderBy($groupByTimeframe);
 		}
-		$usage->whereAdd("sideloadId = $sideloadId");
+		$usage->sideloadId = $sideloadId;
 
 		if ($stat == 'activeUsers') {
 			$dataSeries['Active Users'] = GraphingUtils::getDataSeriesArray(count($dataSeries));
