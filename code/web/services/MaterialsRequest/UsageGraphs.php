@@ -58,8 +58,8 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 
-		$status = $_REQUEST['stat'];
-		$interface->assign('curStatus', $status);
+		$statusId = $_REQUEST['stat'];
+		$interface->assign('curStatus', $statusId);
 		$dataSeries = [];
 		$groupByTimeframe = implode(',', $timeframes);
 
@@ -70,7 +70,7 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$userHomeLibrary = $library;
 		}
 		$libraryId = $userHomeLibrary->libraryId;
-		$statusDescription = $this->getMaterialsRequestStatusDescription($status, $libraryId);
+		$statusDescription = $this->getMaterialsRequestStatusDescription($statusId, $libraryId);
 
 		$title = 'Materials Request Usage Graph - ' . $statusDescription;
 		$materialsRequestUsage = new MaterialsRequestUsage();
@@ -90,8 +90,8 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$materialsRequestUsage->orderBy($groupByTimeframe);
 		}
 
-		$materialsRequestUsage->whereAdd("statusId = " . $materialsRequestUsage->escape($status));
-		$materialsRequestUsage->whereAdd("libraryId = " . $materialsRequestUsage->escape($libraryId));
+		$materialsRequestUsage->statusId = $statusId;
+		$materialsRequestUsage->libraryId = $libraryId;
 
 		$dataSeries[$statusDescription] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 
