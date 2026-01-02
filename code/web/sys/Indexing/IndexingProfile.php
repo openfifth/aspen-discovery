@@ -1858,6 +1858,21 @@ class IndexingProfile extends DataObject {
 	public function insert(string $context = '') : int|bool {
 		global $serverName;
 		$sanitizedName = strtolower(preg_replace('/\W/', ' ', $this->name));
+
+		// Set defaults for NOT NULL columns to prevent constraint violations
+		// These are common defaults that apply to all ILS types
+		$this->index856Links = 0;
+		$this->includePersonalAndCorporateNamesInTopics = 1;
+		$this->useItemBasedCallNumbers = 1;
+		$this->useICode2Suppression = 1;
+		$this->recordUrlComponent = 'Record';
+		$this->formatSource = 'bib';
+		$this->marcEncoding = 'MARC8';
+		// Set defaults for columns that Java indexer requires (even if DB allows NULL)
+		$this->treatItemsAsEcontent = 'ebook|ebk|eaudio|evideo|online|oneclick|eaudiobook|download|eresource|electronic resource';
+		$this->filenamesToInclude = '.*\\.ma?rc';
+		$this->doAutomaticEcontentSuppression = 1;
+
 		//Because we are doing this in 2 steps, first setting the indexing class and then setting everything else, we can set reasonable defaults
 		if ($this->indexingClass == 'CarlX' || $this->indexingClass == 'NashvilleCarlX') {
 			$this->marcPath = "/data/aspen-discovery/$serverName/$sanitizedName/marc";
@@ -1911,6 +1926,9 @@ class IndexingProfile extends DataObject {
 			$this->shelvingLocation = 'b';
 			$this->status = 'd';
 		}elseif ($this->indexingClass == 'ArlingtonKoha' || $this->indexingClass == 'Koha') {
+			$this->marcPath = "/data/aspen-discovery/$serverName/$sanitizedName/marc";
+			$this->marcEncoding = 'UTF8';
+			$this->catalogDriver = 'Koha';
 			$this->recordNumberTag = '999';
 			$this->recordNumberSubfield = 'c';
 			$this->formatSource = 'item';
