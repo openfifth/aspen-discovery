@@ -39,7 +39,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 	*/
 	private function getSideloadIdBySideLoadName($name): int {
 		$sideload = new SideLoad();
-		$sideload->whereAdd('name = ' . $sideload->escape($name));
+		$sideload->name = $name;
 		$sideload->selectAdd();
 		$sideload->find();
 		return $sideload->fetch()->id;
