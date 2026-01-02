@@ -4,6 +4,7 @@ require_once ROOT_DIR . '/sys/Events/EventFieldSetField.php';
 class EventField extends DataObject {
 	public $__table = 'event_field';
 	public $id;
+	public $fieldUse;
 	public $name;
 	public $description;
 	public $type;
@@ -23,6 +24,19 @@ class EventField extends DataObject {
 				'label' => 'Id',
 				'description' => 'The unique id',
 			],
+			'fieldUse' => [
+				'property' => 'fieldUse',
+				'type' => 'enum',
+				'label' => 'Field Use',
+				'description' => 'Defines what the field is to be used for (describing an event, taking in registration information, etc)',
+				'values' => [
+					'0' => 'Please select...',
+					'1' => 'Event description section (for staff use, viewable by the public)',
+					'2' => 'Event registration form (for public use)',
+				],
+				'default' => '0',
+				'required' => true,
+			], 
 			'name' => [
 				'property' => 'name',
 				'type' => 'text',
