@@ -1368,7 +1368,12 @@ class SearchAPI extends AbstractAPI {
 							if ($numListItems > 0) {
 								if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 									$pageToLoad = 1;
-									$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
+									if ($isLiDA) {
+										$firstSubCategoryResults = $temp->getListTitles();
+									} else {
+										$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
+									}
+
 								}
 								$subCategories[] = [
 									'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
@@ -1675,9 +1680,16 @@ class SearchAPI extends AbstractAPI {
 				$browseCategory->find(true);
 				if ($isLiDA ? $browseCategory->isValidForDisplayInApp($appUser, true) : $browseCategory->isValidForDisplay($appUser)) {
 					$textId = $browseCategory->textId;
+					$isSystemCategory = in_array($textId, [
+						'system_user_lists',
+						'system_saved_searches',
+						'system_recommended_for_you'
+					]);
+					$subCategoriesKey = $isSystemCategory ? 'records' : 'subCategories';
+					$recordsKey = $isSystemCategory ? 'subCategories' : 'records';
 					$subCatResult = $searchAPI->getSubCategories($textId, true);
 					$hasSubcategories = !empty($subCatResult['subCategories']);
-					$subCategoryCount = count($subCatResult['subCategories']);
+					$subCategoryCount = $hasSubcategories ? is_array($subCatResult['subCategories']) && count($subCatResult['subCategories']) : 0;
 					$results = [];
 					if (!$hasSubcategories && $subCategoryCount === 0) {
 						$results = $this->getAppBrowseCategoryResults($browseCategory->textId, $appUser);
@@ -1689,8 +1701,8 @@ class SearchAPI extends AbstractAPI {
 						'textId' => $textId,
 						'label' => $browseCategory->label,
 						'source' => $hasSubcategories ? null : $browseCategory->source,
-						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
-						'records' => $results,
+						$subCategoriesKey => $hasSubcategories ? $subCatResult['subCategories'] : [],
+						$recordsKey => $results,
 					];
 				}
 			}
