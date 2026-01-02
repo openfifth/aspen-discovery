@@ -33,7 +33,7 @@ class API_UsageGraphs extends Admin_AbstractUsageGraphs {
 		if (!empty($instanceName)) {
 			$usage->instance = $instanceName;
 		}
-		$usage->whereAdd("method = '$stat'");
+		$usage->method = $stat;
 
 		if (is_array($custom)) {
 			$usage->buildCustomPeriodQuery($custom);
