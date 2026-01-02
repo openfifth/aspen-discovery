@@ -27,6 +27,7 @@ class Event extends DataObject {
 	public $numberOfSeats;
 	public $waitingList;
 	public $waitingListNumberOfSeats;
+	public $staffNotes;
 	/** @noinspection PhpUnused */
 	public $recurrenceInterval;
 	public $recurrenceFrequency;
@@ -231,6 +232,13 @@ class Event extends DataObject {
 				'label' => 'Date Updated',
 				'type' => 'integer',
 				'hiddenByDefault' => true,
+				'hideInLists' => true,
+			],
+			'staffNotes' => [
+				'property' => 'staffNotes',
+				'label' => 'Staff notes',
+				'description' => 'Staff-only notes that are only visible on this page.',
+				'type' => 'textarea',
 				'hideInLists' => true,
 			]
 		];
