@@ -14249,7 +14249,32 @@ AspenDiscovery.Events = (function(){
 		},
 
 		//For Aspen Events
-		getFieldsByUse: function(fieldUse) {
+		displayFieldOptionsForSelectedUse: function(fieldUse) {
+			$(document).ready(
+				() => {
+					const fieldSetId = document.getElementById('id').value;
+					if (fieldSetId) {
+						const url = Globals.path + '/Events/AJAX';
+						const params = {
+							method: 'getFieldSetFields',
+							fieldSetId
+						};
+						$.getJSON(url, params, function (data) {
+							if (!data.success) {
+								AspenDiscovery.showMessage('An error occurred ', data.message);
+								return;
+							}
+							AspenDiscovery.Events.getFieldOptionsByUse(fieldUse, data.selectedFields)
+							return;
+						});	
+						return;
+					}
+					AspenDiscovery.Events.getFieldOptionsByUse(fieldUse)
+				}
+			)
+		},
+
+		getFieldOptionsByUse: function(fieldUse, selectedFields = null) {
 			const url = Globals.path + '/Events/AJAX';
 			const params = {
 				method: 'getFieldsByUse',
@@ -14257,45 +14282,41 @@ AspenDiscovery.Events = (function(){
 			};
 
 			$.getJSON(url, params, function (data) {
-					if (!data.success) {
-						AspenDiscovery.showMessage('An error occurred ', data.message);
-						return;
-					}
-					const propertyRoweventFields = $("#propertyRoweventFields");
-
-					const checkboxWrapper = $("#propertyRoweventFields > .controls > .checkbox:not(.form-group)");
-					checkboxWrapper.addClass('eventFieldWrapper');
-					checkboxWrapper.empty();
-
-					if (data.useFields && Object.keys(data.useFields).length > 0) {
-						propertyRoweventFields.show();
-					} else {
-						propertyRoweventFields.hide();
-					}
-		 
-					$.each(data.useFields, (index, fieldName) => {
-							const checkboxLabel = $('<label />', {
-								for: 'eventFields_' + index,
-							}).appendTo(checkboxWrapper);
-							$('<input />', {
-								type: 'checkbox',
-								id: 'eventFields_' + index, 
-								value: index,
-								class: 'eventFields',
-								name: 'eventFields[]'
-							}).appendTo(checkboxLabel);
-							$('<strong></strong>', {
-								text: ' ' + fieldName 
-							}).appendTo(checkboxLabel);
-							$('<br>').appendTo(checkboxLabel);
-						}
-					)
+				if (!data.success) {
+					AspenDiscovery.showMessage('An error occurred ', data.message);
+					return;
 				}
-			)
 
-			// Not enough data to allow filtering
-			// const eventsList = document.getElementById('propertyRoweventFields');
-			// Would need an AJAX here to grab the needed field list
+				const propertyRoweventFields = $("#propertyRoweventFields");
+				const checkboxWrapper = $("#propertyRoweventFields > .controls > .checkbox:not(.form-group)");
+				checkboxWrapper.addClass('eventFieldWrapper');
+				checkboxWrapper.empty();
+
+				if (data.useFields && Object.keys(data.useFields).length > 0) {
+					propertyRoweventFields.show();
+				} else {
+					propertyRoweventFields.hide();
+				}
+				
+				$.each(data.useFields, (index, fieldName) => {
+						const checkboxLabel = $('<label />', {
+							for: 'eventFields_' + index,
+						}).appendTo(checkboxWrapper);
+						$('<input />', {
+							type: 'checkbox',
+							id: 'eventFields_' + index, 
+							value: index,
+							class: 'eventFields',
+							name: 'eventFields[]',
+							checked: !!selectedFields?.includes(parseInt(index))
+						}).appendTo(checkboxLabel);
+						$('<strong></strong>', {
+							text: ' ' + fieldName 
+						}).appendTo(checkboxLabel);
+						$('<br>').appendTo(checkboxLabel);
+					}
+				)
+			})
 		},
 
 		getEventTypesForLocation: function(locationId) {
