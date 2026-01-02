@@ -336,6 +336,17 @@
 												{/if}
 											</div>
 										{/if}
+
+										{if !empty($isAssociatedWithILS)}
+											<div class="form-group propertyRow">
+												<label for="showHoldHelpMessages" class="control-label">{translate text='Show Hold Help Messages' isPublicFacing=true}</label>&nbsp;
+												{if $edit == true}
+													<input type="checkbox" class="form-control" name="showHoldHelpMessages" id="showHoldHelpMessages" {if $profile->showHoldHelpMessages==1}checked='checked'{/if} data-switch="">
+												{else}
+													{if $profile->showHoldHelpMessages==0}{translate text="No" isPublicFacing=true}{else}{translate text="Yes" isPublicFacing=true}{/if}
+												{/if}
+											</div>
+										{/if}
 									</div>
 								</div>
 							</div>

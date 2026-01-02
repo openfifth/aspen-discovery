@@ -405,7 +405,7 @@ exec("$mysqlConnectionCommand {$variables['databaseName']} < $installDir/install
 
 
 //Connect to the database
-$aspen_db = new PDO("mysql:dbname={$variables['databaseName']};host={$variables['databaseHost']}",$variables['databaseUser'],$variables['databasePassword']);
+$aspen_db = new PDO("mysql:dbname={$variables['databaseName']};port={$variables['databasePort']};host={$variables['databaseHost']}",$variables['databaseUser'],$variables['databasePassword']);
 $updateUserStmt = $aspen_db->prepare("UPDATE user set cat_password=" . $aspen_db->quote($variables['aspenAdminPassword']) . ", password=" . $aspen_db->quote($variables['aspenAdminPassword']) . " where username = 'aspen_admin'");
 $updateUserStmt->execute();
 
@@ -420,35 +420,31 @@ if ($variables['ils'] == 'Koha'){
 	echo("Loading Koha information to database\r\n");
 	copy("$installDir/install/koha_connection.sql", "$tmp_dir/koha_connection_$sitename.sql");
 	replaceVariables("$tmp_dir/koha_connection_$sitename.sql", $variables);
-	exec("mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h\"{$variables['databaseHost']}\" {$variables['databaseName']} < $tmp_dir/koha_connection_$sitename.sql");
+	exec("$mysqlConnectionCommand {$variables['databaseName']} < $tmp_dir/koha_connection_$sitename.sql");
 }elseif ($variables['ils'] == 'Symphony'){
 	$tmp_dir = rtrim(sys_get_temp_dir(), "/");
 	echo("Loading Symphony information to database\r\n");
 	copy("$installDir/install/symphony_connection.sql", "$tmp_dir/symphony_connection_$sitename.sql");
 	replaceVariables("$tmp_dir/symphony_connection_$sitename.sql", $variables);
-	exec("mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h\"{$variables['databaseHost']}\" {$variables['databaseName']} < $tmp_dir/symphony_connection_$sitename.sql");
+	exec("$mysqlConnectionCommand {$variables['databaseName']} < $tmp_dir/symphony_connection_$sitename.sql");
 }elseif ($variables['ils'] == 'Polaris'){
 	$tmp_dir = rtrim(sys_get_temp_dir(), "/");
 	echo("Loading Polaris information to database\r\n");
 	copy("$installDir/install/polaris_connection.sql", "$tmp_dir/polaris_connection_$sitename.sql");
 	replaceVariables("$tmp_dir/polaris_connection_$sitename.sql", $variables);
-	if ($runningOnWindows) {
-		exec("mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h\"{$variables['databaseHost']}\" {$variables['databaseName']} < $tmp_dir/polaris_connection_$sitename.sql");
-	} else {
-		exec("mariadb -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h\"{$variables['databaseHost']}\" {$variables['databaseName']} < $tmp_dir/polaris_connection_$sitename.sql");
-	}
+	exec("$mysqlConnectionCommand {$variables['databaseName']} < $tmp_dir/polaris_connection_$sitename.sql");
 }elseif ($variables['ils'] == 'Sierra'){
 	$tmp_dir = rtrim(sys_get_temp_dir(), "/");
 	echo("Loading Sierra information to database\r\n");
 	copy("$installDir/install/sierra_connection.sql", "$tmp_dir/sierra_connection_$sitename.sql");
 	replaceVariables("$tmp_dir/sierra_connection_$sitename.sql", $variables);
-	exec("mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h\"{$variables['databaseHost']}\" {$variables['databaseName']} < $tmp_dir/sierra_connection_$sitename.sql");
+	exec("$mysqlConnectionCommand {$variables['databaseName']} < $tmp_dir/sierra_connection_$sitename.sql");
 }elseif ($variables['ils'] == 'CarlX'){
 	$tmp_dir = rtrim(sys_get_temp_dir(), "/");
 	echo("Loading CarlX information to database\r\n");
 	copy("$installDir/install/carlx_connection.sql", "$tmp_dir/carlx_connection_$sitename.sql");
 	replaceVariables("$tmp_dir/carlx_connection_$sitename.sql", $variables);
-	exec("mysql -u{$variables['databaseUser']} -p\"{$variables['databasePassword']}\" -h\"{$variables['databaseHost']}\" {$variables['databaseName']} < $tmp_dir/carlx_connection_$sitename.sql");
+	exec("$mysqlConnectionCommand {$variables['databaseName']} < $tmp_dir/carlx_connection_$sitename.sql");
 }
 
 $aspen_db = null;

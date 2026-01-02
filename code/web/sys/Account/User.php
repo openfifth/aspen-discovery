@@ -97,6 +97,8 @@ class User extends DataObject {
 
 	public $isLocalTestUser;
 
+	public $showHoldHelpMessages;
+
 	/** @var User $parentUser */
 	private $parentUser;
 	/** @var User[] $linkedUsers */
@@ -1653,6 +1655,7 @@ class User extends DataObject {
 		$this->__set('noPromptForUserReviews', (isset($_POST['noPromptForUserReviews']) && $_POST['noPromptForUserReviews'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPickupLocation', (isset($_POST['rememberHoldPickupLocation']) && $_POST['rememberHoldPickupLocation'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPromptForEdition', (isset($_POST['rememberHoldPromptForEdition']) && $_POST['rememberHoldPromptForEdition'] == 'on') ? 1 : 0);
+		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
@@ -1936,7 +1939,7 @@ class User extends DataObject {
 		return $this->_isBlockedFromIllRequests;
 	}
 
-	public function getHolds($includeLinkedUsers = true, $unavailableSort = 'sortTitle', $availableSort = 'expire', $source = 'all'): array {
+	public function getHolds($includeLinkedUsers = true, $unavailableSort = 'sortTitle', $availableSort = 'expire', $source = 'all', $cancelledSort = 'expirationDate'): array {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		// Reload cached information if it was last fetched more than the cache timeout or if the refresh option is selected.
 		$reloadHoldInformation = false;
@@ -1947,11 +1950,13 @@ class User extends DataObject {
 		$holdsToReturn = [
 			'available' => [],
 			'unavailable' => [],
+			'cancelled' => [],
 		];
 		if ($reloadHoldInformation) {
 			$allHolds = [
 				'available' => [],
 				'unavailable' => [],
+				'cancelled' => [],
 			];
 			global $offlineMode;
 			if ($this->hasIlsConnection() && !$offlineMode) {
@@ -2040,8 +2045,7 @@ class User extends DataObject {
 					global $logger;
 					$logger->log('Could not save available hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
 				}
-			}
-			foreach ($allHolds['unavailable'] as $holdToSave) {
+			}foreach ($allHolds['unavailable'] as $holdToSave) {
 				if (is_null($holdToSave->sourceId)) {
 					$holdToSave->sourceId = '';
 				}
@@ -2051,6 +2055,21 @@ class User extends DataObject {
 				if (!$holdToSave->insert()) {
 					global $logger;
 					$logger->log('Could not save unavailable hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
+				}
+			}
+			if (isset($allHolds['cancelled'])) {
+				foreach ($allHolds['cancelled'] as $holdToSave) {
+					if (is_null($holdToSave->sourceId)) {
+						$holdToSave->sourceId = '';
+					}
+					if (is_null($holdToSave->recordId)) {
+						$holdToSave->recordId = '';
+					}
+					if (!$holdToSave->insert()) {
+						global $logger;
+						$logger->log('Could not save cancelled hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
+					}
+
 				}
 			}
 			$this->__set('holdInfoLastLoaded', time());
@@ -2072,6 +2091,8 @@ class User extends DataObject {
 				$key .= $hold->userId;
 				if ($hold->available) {
 					$holdsToReturn['available'][$key] = $hold;
+				} elseif ($hold->cancelled) {
+					$holdsToReturn['cancelled'][$key] = $hold;
 				} else {
 					$holdsToReturn['unavailable'][$key] = $hold;
 				}
@@ -2081,7 +2102,7 @@ class User extends DataObject {
 		if ($includeLinkedUsers) {
 			if ($this->getLinkedUsers() != null) {
 				foreach ($this->getLinkedUsers() as $user) {
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $user->getHolds(false, $unavailableSort, $availableSort, $source));
+					$holdsToReturn = array_merge_recursive($holdsToReturn, $user->getHolds(false, $unavailableSort, $availableSort, $source, $cancelledSort));
 				}
 			}
 		}
@@ -2152,6 +2173,10 @@ class User extends DataObject {
 					$indexToSortBy = 'expirationDate';
 			}
 			uasort($holdsToReturn['available'], $holdSort);
+		}
+		if (!empty($holdsToReturn['cancelled'])) {
+			uasort($holdsToReturn['cancelled'], $holdSort);
+			arsort($holdsToReturn['cancelled']);
 		}
 		if (!empty($holdsToReturn['unavailable'])) {
 			if ($unavailableSort === 'reactivate') {
@@ -3145,7 +3170,7 @@ class User extends DataObject {
 
 		$userPayment = new UserPayment();
 		$userPayment->userId = $this->id;
-		$userPayment->whereAdd('completed = 1 OR cancelled = 1 OR error = 1');
+		$userPayment->whereAdd('completed = 1 OR cancelled = 1 OR error = 1 OR pay360TransactionStateMessage IS NOT NULL');
 		$numPayments = $userPayment->count();
 		if ($recordsPerPage > 0) {
 			$firstIndex = ($page - 1) * $recordsPerPage;
@@ -4583,6 +4608,7 @@ class User extends DataObject {
 		$sections['ecommerce']->addAction(new AdminAction('Xpress-pay Settings', 'Define Settings for Xpress-pay.', '/Admin/XpressPaySettings'), 'Administer Xpress-pay');
 		$sections['ecommerce']->addAction(new AdminAction('ACI Speedpay Settings', 'Define Settings for ACI Speedpay.', '/Admin/ACISpeedpaySettings'), 'Administer ACI Speedpay');
 		$sections['ecommerce']->addAction(new AdminAction('HeyCentric Settings', 'Define Settings for HeyCentric.', '/Admin/HeyCentricSettings'), 'Administer HeyCentric');
+		$sections['ecommerce']->addAction(new AdminAction('Pay360 Settings', 'Define Settings for Pay360.', '/Admin/Pay360Settings'), 'Administer Pay360');
 		$sections['ecommerce']->addAction(new AdminAction('InvoiceCloud Settings', 'Define Settings for InvoiceCloud.', '/Admin/InvoiceCloudSettings'), 'Administer InvoiceCloud');
 		$sections['ecommerce']->addAction(new AdminAction('Certified Payments by Deluxe Settings', 'Define Settings for Certified Payments by Deluxe.', '/Admin/CertifiedPaymentsByDeluxeSettings'), 'Administer Certified Payments by Deluxe');
 		$sections['ecommerce']->addAction(new AdminAction('PayPal Payflow Settings', 'Define Settings for PayPal Payflow.', '/Admin/PayPalPayflowSettings'), 'Administer PayPal Payflow');
@@ -4818,7 +4844,7 @@ class User extends DataObject {
 				'View Dashboards',
 				'View System Reports',
 			]);
-			$sections['palace_project']->addAction(new AdminAction('CollectionReport', 'View collection report for Palace Project.', '/PalaceProject/CollectionReport'), [
+			$sections['palace_project']->addAction(new AdminAction('Collection Report', 'View collection report for Palace Project.', '/PalaceProject/CollectionReport'), [
 				'Administer Palace Project',
 				'View System Reports',
 			]);

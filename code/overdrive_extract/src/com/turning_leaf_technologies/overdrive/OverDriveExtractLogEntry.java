@@ -4,38 +4,27 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
-
-import org.apache.commons.lang3.StringUtils;
 
 import com.turning_leaf_technologies.logging.BaseIndexingLogEntry;
 import org.apache.logging.log4j.Logger;
 
-class OverDriveExtractLogEntry implements BaseIndexingLogEntry {
+class OverDriveExtractLogEntry extends BaseIndexingLogEntry {
 	private Long logEntryId = null;
 	private final long settingId;
-	private final Date startTime;
-	private Date endTime;
-	private final List<String> notes = Collections.synchronizedList(new ArrayList<>());
 	private int numProducts = 0;
-	private int numErrors = 0;
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
 	private int numSkipped = 0;
 	private int numAvailabilityChanges = 0;
 	private int numMetadataChanges = 0;
-	private int numInvalidRecords = 0;
-	private final Logger logger;
-	
+
+
 	OverDriveExtractLogEntry(Connection dbConn, OverDriveSetting setting, Logger logger){
-		this.logger = logger;
+		super(logger);
 		this.settingId = setting.getId();
-		this.startTime = new Date();
+
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into overdrive_extract_log (startTime, settingId) VALUES (?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
 			updateLogEntry = dbConn.prepareStatement("UPDATE overdrive_extract_log SET lastUpdate = ?, endTime = ?, notes = ?, numProducts = ?, numErrors = ?, numAdded = ?, numUpdated = ?, numSkipped = ?, numDeleted = ?, numAvailabilityChanges = ?, numMetadataChanges = ?, numInvalidRecords = ? WHERE id = ?", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -44,35 +33,7 @@ class OverDriveExtractLogEntry implements BaseIndexingLogEntry {
 		}
 		saveResults();
 	}
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	@Override
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		Date date = new Date();
-		this.notes.add(dateFormat.format(date) + " - " + note);
-		logger.info(note);
-	}
-	
-	private synchronized String getNotesHtml() {
-		StringBuilder notesText = new StringBuilder("<ol class='cronNotes'>");
-		for (String curNote : notes){
-			String cleanedNote = curNote;
-			cleanedNote = StringUtils.replace(cleanedNote,"<pre>", "<code>");
-			cleanedNote = StringUtils.replace(cleanedNote,"</pre>", "</code>");
-			//Replace multiple line breaks
-			cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-			cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-			cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-			notesText.append("<li>").append(cleanedNote).append("</li>");
-		}
-		notesText.append("</ol>");
-		String returnText = notesText.toString();
-		if (returnText.length() > 25000){
-			returnText = returnText.substring(0, 25000) + " more data was truncated";
-		}
-		return returnText;
-	}
-	
+
 	private PreparedStatement insertLogEntry;
 	private PreparedStatement updateLogEntry;
 	public synchronized boolean saveResults() {
@@ -122,19 +83,7 @@ class OverDriveExtractLogEntry implements BaseIndexingLogEntry {
 		this.addNote("Finished Libby extraction");
 		this.saveResults();
 	}
-	public void incErrors(String note) {
-		this.addNote("ERROR: " + note);
-		numErrors++;
-		this.saveResults();
-		logger.error(note);
-	}
 
-	public void incErrors(String note, Exception e){
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
-	}
 	void incAdded(){
 		numAdded++;
 	}
@@ -161,12 +110,4 @@ class OverDriveExtractLogEntry implements BaseIndexingLogEntry {
 		numProducts += size;
 	}
 
-	boolean hasErrors() {
-		return numErrors > 0;
-	}
-
-	public void incInvalidRecords(String invalidRecordId){
-		this.numInvalidRecords++;
-		this.addNote("Invalid Record found: " + invalidRecordId);
-	}
 }

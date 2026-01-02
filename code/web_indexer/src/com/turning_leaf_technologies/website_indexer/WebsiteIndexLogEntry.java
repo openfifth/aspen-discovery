@@ -1,31 +1,22 @@
 package com.turning_leaf_technologies.website_indexer;
 
 import com.turning_leaf_technologies.logging.BaseLogEntry;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
 
 import java.sql.*;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 
-class WebsiteIndexLogEntry implements BaseLogEntry {
+class WebsiteIndexLogEntry extends BaseLogEntry {
 	private Long logEntryId = null;
 	private final String websiteName;
-	private final Date startTime;
-	private Date endTime;
-	private final ArrayList<String> notes = new ArrayList<>();
 	private int numPages = 0;
 	private int numAdded = 0;
 	private int numDeleted = 0;
 	private int numUpdated = 0;
-	private int numErrors = 0;
 	private int numInvalidPages = 0;
-	private final Logger logger;
 
 	WebsiteIndexLogEntry(String websiteName, Connection dbConn, Logger logger){
-		this.logger = logger;
-		this.startTime = new Date();
+		super(logger);
 		this.websiteName = websiteName;
 		try {
 			insertLogEntry = dbConn.prepareStatement("INSERT into website_index_log (startTime, websiteName) VALUES (?, ?)", PreparedStatement.RETURN_GENERATED_KEYS);
@@ -34,34 +25,6 @@ class WebsiteIndexLogEntry implements BaseLogEntry {
 			logger.error("Error creating prepared statements to update log", e);
 		}
 		saveResults();
-	}
-
-	private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	//Synchronized to prevent concurrent modification of the notes ArrayList
-	public synchronized void addNote(String note) {
-		Date date = new Date();
-		this.notes.add(dateFormat.format(date) + " - " + note);
-		saveResults();
-	}
-
-	private String getNotesHtml() {
-		StringBuilder notesText = new StringBuilder("<ol class='cronNotes'>");
-		for (String curNote : notes){
-			String cleanedNote = curNote;
-			cleanedNote =  StringUtils.replace(cleanedNote, "<pre>", "<code>");
-			cleanedNote = StringUtils.replace(cleanedNote,"</pre>", "</code>");
-			//Replace multiple line breaks
-			cleanedNote = cleanedNote.replaceAll("(?:<br?>\\s*)+", "<br/>");
-			cleanedNote = cleanedNote.replaceAll("<meta.*?>", "");
-			cleanedNote = cleanedNote.replaceAll("<title>.*?</title>", "");
-			notesText.append("<li>").append(cleanedNote).append("</li>");
-		}
-		notesText.append("</ol>");
-		String returnText = notesText.toString();
-		if (returnText.length() > 25000){
-			returnText = returnText.substring(0, 25000) + " more data was truncated";
-		}
-		return returnText;
 	}
 
 	private static PreparedStatement insertLogEntry;
@@ -127,28 +90,9 @@ class WebsiteIndexLogEntry implements BaseLogEntry {
 		numPages++;
 	}
 
-	@SuppressWarnings("unused")
-	boolean hasErrors() {
-		return numErrors > 0;
-	}
-
-	public void incErrors(String note) {
-		this.addNote("ERROR: " + note);
-		numErrors++;
-		this.saveResults();
-		logger.error(note);
-	}
-
 	public void incInvalidPages(String note) {
 		this.addNote("Invalid Page: " + note);
 		numInvalidPages++;
 		this.saveResults();
-	}
-
-	public void incErrors(String note, Exception e){
-		this.addNote("ERROR: " + note + " " + e.toString());
-		numErrors++;
-		this.saveResults();
-		logger.error(note, e);
 	}
 }

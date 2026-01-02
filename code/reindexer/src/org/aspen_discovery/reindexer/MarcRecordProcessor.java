@@ -407,9 +407,9 @@ abstract class MarcRecordProcessor {
 		for (DataField seriesField : seriesFields){
 			String subfields;
 			if (seriesField.getNumericTag() == 800 || seriesField.getNumericTag() == 896) {
-				subfields = "pqt";
+				subfields = "npt";
 			}else{
-				subfields = "abcdfpqt";
+				subfields = "abcdfnpt";
 			}
 			String series = AspenStringUtils.trimTrailingPunctuation(MarcUtil.getSpecifiedSubfieldsAsString(seriesField, subfields," ")).toString();
 			String seriesLanguage = AspenStringUtils.trimTrailingPunctuation(MarcUtil.getSpecifiedSubfieldsAsString(seriesField, "l","")).toString();
@@ -417,7 +417,7 @@ abstract class MarcRecordProcessor {
 				series = series + " (" + seriesLanguage + ")";
 			}
 			//Remove anything in parentheses since it's normally just the format
-			//No longer remove parentheses to better differentiate series
+			//No longer remove parentheses to better differentiate series.
 			//series = series.replaceAll("\\s+\\(.*?\\)", "");
 			//Remove the word series at the end since this gets cataloged inconsistently
 			if (indexer.isRemoveTheWordSeriesFromEndOfSeries()) {

@@ -2185,7 +2185,11 @@ class Record_AJAX extends Action {
 		$subnet = IPAddress::getIPAddressForIP($activeIP);
 
 		if ($subnet !== false) {
-			$interface->assign('logMeOutDefault', $subnet->defaultLogMeOutAfterPlacingHoldOn);
+			$logMeOutDefault = $subnet->defaultLogMeOutAfterPlacingHoldOn;
+			if ($logMeOutDefault) {
+				$logMeOutDefault = !$user->bypassAutoLogout;
+			}
+			$interface->assign('logMeOutDefault', $logMeOutDefault);
 		} else {
 			$interface->assign('logMeOutDefault', 0);
 		}

@@ -3245,6 +3245,38 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		confirmReplaceHold: function (patronId, recordId, pickupLocationId, isIll) {
+			AspenDiscovery.loadingMessage();
+			// noinspection JSUnresolvedFunction
+			$.getJSON(Globals.path + "/MyAccount/AJAX?method=confirmReplaceHold&patronId=" + patronId + "&recordId=" + recordId + "&pickupLocationId=" + pickupLocationId + "&isIll=" + isIll, function (data) {
+				AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons); // automatically close when successful
+			}).fail(AspenDiscovery.ajaxFail);
+
+			return false
+		},
+
+		replaceHold: function (patronId, recordId, pickupLocationId, isIll) {
+			if (Globals.loggedIn) {
+				AspenDiscovery.loadingMessage();
+				// noinspection JSUnresolvedFunction
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=replaceHold&patronId=" + patronId + "&recordId=" + recordId + "&pickupLocationId=" + pickupLocationId + "&isIll=" + isIll, function (data) {
+					AspenDiscovery.showMessage(data.title, data.body, data.success);
+					if (data.success) {
+						AspenDiscovery.Account.reloadHolds();
+						AspenDiscovery.showMessage(data.title, data.body, data.success);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(AspenDiscovery.ajaxFail)
+			} else {
+				this.ajaxLogin(null, function () {
+					AspenDiscovery.Account.replaceHold(patronId, recordId, pickupLocationId, isIll)
+				}, false);
+			}
+
+			return false
+		},
+
 		cancelVdxRequest: function (patronId, requestId, cancelId) {
 			if (confirm("Are you sure you want to cancel this request?")) {
 				var ajaxUrl = Globals.path + "/MyAccount/AJAX?method=cancelVdxRequest&patronId=" + patronId + "&requestId=" + requestId + "&cancelId=" + cancelId;
@@ -3844,6 +3876,17 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		dismissHoldHelpMessages: function () {
+			var url = Globals.path + "/MyAccount/AJAX";
+			var params = {
+				method: "dismissHoldHelpMessages"
+			};
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params).fail(AspenDiscovery.ajaxFail);
+			$('.holdHelpMessage').hide();
+			return false;
+		},
+
 		createGenericOrder: function (finesFormId, paymentType, transactionType, token) {
 			var url = Globals.path + "/MyAccount/AJAX";
 
@@ -3950,6 +3993,8 @@ AspenDiscovery.Account = (function () {
 						} else if (paymentType === 'SnapPay') {
 							orderInfo = response;
 						} else if (paymentType === 'HeyCentric') {
+							orderInfo = response.paymentRequestUrl;
+						} else if (paymentType === 'Pay360') {
 							orderInfo = response.paymentRequestUrl;
 						}
 					}
@@ -4246,6 +4291,16 @@ AspenDiscovery.Account = (function () {
 
 		createHeyCentricOrder: function (finesFormId, transactionType) {
 			const url = this.createGenericOrder(finesFormId, 'HeyCentric', transactionType, null);
+			if (!url) {
+				// Do nothing; there was an error that should be displayed
+			} else {
+				window.location.href = url;
+			}
+		},
+
+		// FIXME: select appropriate property
+		createPay360Order: function (finesFormId, transactionType) {
+			const url = this.createGenericOrder(finesFormId, 'Pay360', transactionType, null);
 			if (!url) {
 				// Do nothing; there was an error that should be displayed
 			} else {

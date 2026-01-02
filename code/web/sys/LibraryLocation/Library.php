@@ -102,6 +102,7 @@ class Library extends DataObject {
 	public $showMessagingSettings;
 	public $allowChangingPickupLocationForUnavailableHolds;
 	public $allowChangingPickupLocationForAvailableHolds;
+	public $showCancelledHolds;
 	public $allowCancellingAvailableHolds;
 	public $allowCancellingInTransitHolds;
 	public $allowFreezeHolds;   //tinyint(4)
@@ -160,6 +161,7 @@ class Library extends DataObject {
 	public $deluxeCertifiedPaymentsSettingId;
 	public $paypalPayflowSettingId;
 	public $heyCentricSettingId;
+	public $pay360SettingId;
 	public $ncrSettingId;
 	public $usernameField;
 
@@ -558,7 +560,8 @@ class Library extends DataObject {
 			'paypalPayflowSettingId',
 			'squareSettingId',
 			'stripeSettingId',
-			'heyCentricSettingId'
+			'heyCentricSettingId',
+			'pay360SettingId'
 		];
 	}
 
@@ -835,6 +838,16 @@ class Library extends DataObject {
 		$heyCentricSettings[-1] = 'none';
 		while ($heyCentricSetting->fetch()) {
 			$heyCentricSettings[$heyCentricSetting->id] = $heyCentricSetting->name;
+		}
+
+		require_once ROOT_DIR . '/sys/ECommerce/Pay360Setting.php';
+		$pay360Setting = new Pay360Setting();
+		$pay360Setting->orderBy('name');
+		$pay360Settings = [];
+		$pay360Setting->find();
+		$pay360Settings[-1] = 'none';
+		while ($pay360Setting->fetch()) {
+			$pay360Settings[$pay360Setting->id] = $pay360Setting->name;
 		}
 
 		require_once ROOT_DIR . '/sys/Hoopla/HooplaScope.php';
@@ -2245,6 +2258,17 @@ class Library extends DataObject {
 								'permissions' => ['Library ILS Connection'],
 								'relatedIls' => ['polaris'],
 							],
+							'showCancelledHolds' => [
+								'property' => 'showCancelledHolds',
+								'type' => 'checkbox',
+								'label' => 'Show Cancelled Holds in My Account',
+								'description' => 'Whether or not cancelled holds are visible in My Account.',
+								'hideInLists' => true,
+								'default' => 1,
+								'note' => 'Applies to Polaris Only',
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['polaris'],
+							],
 							'allowCancellingAvailableHolds' => [
 								'property' => 'allowCancellingAvailableHolds',
 								'type' => 'checkbox',
@@ -2947,7 +2971,8 @@ class Library extends DataObject {
 							13 => 'Stripe',
 							14 => 'NCR',
 							15 => 'SnapPay',
-							16 => 'HeyCentric'
+							16 => 'HeyCentric',
+							17 => 'Pay360',
 						],
 						'description' => 'Whether or not users should be allowed to pay fines',
 						'hideInLists' => true,
@@ -3139,6 +3164,15 @@ class Library extends DataObject {
 						'values' => $heyCentricSettings,
 						'label' => 'HeyCentric Settings',
 						'description' => 'The HeyCentric settings to use',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+					'pay360SettingId' => [
+						'property' => 'pay360SettingId',
+						'type' => 'enum',
+						'values' => $pay360Settings,
+						'label' => 'Pay360 Settings',
+						'description' => 'The Pay360 settings to use',
 						'hideInLists' => true,
 						'default' => -1,
 					],
