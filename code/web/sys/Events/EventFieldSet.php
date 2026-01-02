@@ -7,6 +7,7 @@ class EventFieldSet extends DataObject {
 	public $__table = 'event_field_set';
 	public $id;
 	public $name;
+	public $fieldSetUse;
 	private $_eventFields;
 
 	static $_objectStructure = [];
@@ -22,6 +23,20 @@ class EventFieldSet extends DataObject {
 				'label' => 'Id',
 				'description' => 'The unique id',
 			],
+			'fieldSetUse' => [
+				'property' => 'fieldSetUse',
+				'type' => 'enum',
+				'label' => 'The intended use for the field set',
+				'description' => 'Defines where the field set is to be added to (eg. registration)',
+				'values' => [
+					'0' => 'Please select...',
+					'1' => 'Event description section (for staff use, viewable by the public)',
+					'2' => 'Event registration form (for public use)',
+				],
+				'default' => '0',
+				'required' => true,
+				'onchange' => 'return AspenDiscovery.Events.getFieldsByUse(this.value);'
+			], 
 			'name' => [
 				'property' => 'name',
 				'type' => 'text',
