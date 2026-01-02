@@ -14,6 +14,7 @@ class Grouping_Record {
 	public string $language;
 	public ?string $publisher;
 	public ?string $publicationDate;
+	private ?int $sortablePublicationDate = null;
 	public ?string $placeOfPublication;
 	public ?string $physical;
 	public bool|string $closedCaptioned;
@@ -26,7 +27,6 @@ class Grouping_Record {
 
 	protected ?GroupedWorkSubDriver $_driver;
 	protected string $_url;
-	protected string $_callNumber = '';
 
 	/** @var Grouping_StatusInformation */
 	protected Grouping_StatusInformation $_statusInformation;
@@ -43,7 +43,6 @@ class Grouping_Record {
 	public array $_itemDetails = [];
 
 	public string $source;
-	public string $_class = '';
 	public array $_actions = [];
 	/** @var Grouping_Item[] */
 	private array $_items = [];
@@ -288,31 +287,10 @@ class Grouping_Record {
 	}
 
 	/**
-	 * @param string $class
-	 */
-	public function setClass(string $class): void {
-		$this->_class = $class;
-	}
-
-	/**
-	 * @param int $localCopies
-	 */
-	public function addLocalCopies(int $localCopies): void {
-		$this->_statusInformation->addLocalCopies($localCopies);
-	}
-
-	/**
 	 * @return bool
 	 */
 	public function hasLocalItem(): bool {
 		return $this->_hasLocalItem;
-	}
-
-	/**
-	 * @param bool $hasLocalItem
-	 */
-	public function setHasLocalItem(bool $hasLocalItem): void {
-		$this->_hasLocalItem = $hasLocalItem;
 	}
 
 	/**
@@ -483,20 +461,6 @@ class Grouping_Record {
 		return $this->_shelfLocation;
 	}
 
-	/**
-	 * @param string $shelfLocation
-	 */
-	public function setShelfLocation(string $shelfLocation): void {
-		$this->_shelfLocation = $shelfLocation;
-	}
-
-	/**
-	 * @param string $callNumber
-	 */
-	public function setCallNumber(string $callNumber): void {
-		$this->_callNumber = $callNumber;
-	}
-
 	private array $_allActions = [];
 
 	/**
@@ -646,13 +610,6 @@ class Grouping_Record {
 	/**
 	 * @return IlsVolumeInfo[]
 	 */
-	public function getVolumeData() : array{
-		return $this->_volumeData;
-	}
-
-	/**
-	 * @return IlsVolumeInfo[]
-	 */
 	public function getUnsuppressedVolumeData(bool $excludeNonHoldableItems = false) : array {
 		if (is_null($this->_unsuppressedVolumeData)) {
 			$this->_unsuppressedVolumeData = [];
@@ -755,5 +712,16 @@ class Grouping_Record {
 			$bookcoverUrl = $recordDriver->getBookcoverUrl($size);
 		}
 		return $bookcoverUrl;
+	}
+
+	public function getSortablePublicationDate() : int {
+		if ($this->sortablePublicationDate === null) {
+			if ($this->publicationDate == null) {
+				$this->sortablePublicationDate = 0;
+			}else{
+				$this->sortablePublicationDate = preg_replace('/[^0-9]/', '', $this->publicationDate);
+			}
+		}
+		return $this->sortablePublicationDate;
 	}
 }
