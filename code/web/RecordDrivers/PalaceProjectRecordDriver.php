@@ -8,12 +8,12 @@ require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitleAvailability.php';
 
 class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 	/** @var ?PalaceProjectDriver */
-	private static ?PalaceProjectDriver $driver;
+	private static ?PalaceProjectDriver $driver = null;
 
-	protected ?string $id;
+	protected ?string $id = null;
 	/** @var ?PalaceProjectTitle */
 	private ?PalaceProjectTitle $palaceProjectTitle;
-	private ?stdClass $palaceProjectRawMetadata;
+	private ?stdClass $palaceProjectRawMetadata = null;
 	private bool $valid;
 
 	public function __construct($recordId, $groupedWork = null) {
