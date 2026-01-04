@@ -1353,37 +1353,78 @@ class SearchAPI extends AbstractAPI {
 									'sbc_' . bin2hex(random_bytes(5)),
 								'label' => $subCategory->label,
 								'textId' => $temp->id,
-								'source' => "savedSearch",
+								'source' => $isLiDA ? "SavedSearch" : "savedSearch",
 								$key => $firstSubCategoryResults,
 							];
 							$curCount++;
 						}
 					} elseif ($textId == "system_user_lists") {
 						$label = explode('_', $subCategory->id);
-						$id = $label[3];
-						$temp = new UserList();
-						$temp->id = $id;
-						$numListItems = $temp->numValidListItems();
-						if ($temp->find(true)) {
-							if ($numListItems > 0) {
-								if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
-									$pageToLoad = 1;
-									if ($isLiDA) {
-										$firstSubCategoryResults = $temp->getListTitles();
-									} else {
-										$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
-									}
+						// see if we were provided with a specific user list id prepended to the incoming subcategory id
+						if (isset($label[3]) && $label[3]) {
+							$id = $label[3];
+							$temp = new UserList();
+							$temp->id = $id;
+							$numListItems = $temp->numValidListItems();
+							if ($temp->find(true)) {
+								if ($numListItems > 0) {
+									if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
+										$pageToLoad = 1;
+										if ($isLiDA) {
+											$firstSubCategoryResults = $temp->getListTitles();
+										} else {
+											$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
+										}
 
+									}
+									$subCategories[] = [
+										'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
+											'sbc_' . bin2hex(random_bytes(5)),
+										'label' => $temp->title,
+										'textId' => $temp->id,
+										'source' => "userList",
+										$key => $firstSubCategoryResults,
+									];
+									$curCount++;
 								}
-								$subCategories[] = [
-									'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
-										'sbc_' . bin2hex(random_bytes(5)),
-									'label' => $temp->title,
-									'textId' => $temp->id,
-									'source' => "userList",
-									$key => $firstSubCategoryResults,
-								];
-								$curCount++;
+							}
+						} else {
+							// if we aren't provided with a specific user list, get all user lists
+							require_once ROOT_DIR . '/services/API/ListAPI.php';
+							$listApi = new ListAPI();
+							$lists = $listApi->getUserLists();
+							$userLists = $lists['lists'] ?? [];
+							if (!empty($userLists)) {
+								foreach ($userLists as $userList) {
+									if ($userList['id'] != "recommendations") {
+										require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+										$list = new UserList();
+										$list->id = $userList['id'];
+										$numListItems = $list->numValidListItems();
+										if ($list->find(true)) {
+											if ($numListItems > 0) {
+												if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
+													$pageToLoad = 1;
+													if ($isLiDA) {
+														$firstSubCategoryResults = $list->getListTitles();
+													} else {
+														$firstSubCategoryResults = $list->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
+													}
+
+												}
+												$subCategories[] = [
+													'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
+														'sbc_' . bin2hex(random_bytes(5)),
+													'label' => $list->title,
+													'textId' => $list->id,
+													'source' => $isLiDA ? "List" : "userList",
+													$key => $firstSubCategoryResults,
+												];
+												$curCount++;
+											}
+										}
+									}
+								}
 							}
 						}
 					} else {
@@ -1682,25 +1723,43 @@ class SearchAPI extends AbstractAPI {
 					$textId = $browseCategory->textId;
 					$isSystemCategory = in_array($textId, [
 						'system_user_lists',
+						'system_recommended_for_you',
 						'system_saved_searches',
-						'system_recommended_for_you'
 					]);
-					$subCategoriesKey = $isSystemCategory ? 'records' : 'subCategories';
-					$recordsKey = $isSystemCategory ? 'subCategories' : 'records';
+					$subCategoriesKey = $browseCategory->textId === "system_user_lists" ? 'records' : 'subCategories';
+					$recordsKey = $browseCategory->textId === "system_user_lists" ? 'subCategories' : 'records';
 					$subCatResult = $searchAPI->getSubCategories($textId, true);
 					$hasSubcategories = !empty($subCatResult['subCategories']);
 					$subCategoryCount = $hasSubcategories ? is_array($subCatResult['subCategories']) && count($subCatResult['subCategories']) : 0;
+					$source = null;
+					if ($isSystemCategory) {
+						if ($textId === 'system_user_lists') {
+							$source = 'List';
+						} elseif ($textId === 'system_saved_searches') {
+							$source = 'SavedSearch';
+						} elseif ($textId === 'system_recommended_for_you') {
+							$source = 'GroupedWork';
+						}
+					} else {
+						if (!$hasSubcategories) {
+							$source = $browseCategory->source;
+						}
+					}
 					$results = [];
 					if (!$hasSubcategories && $subCategoryCount === 0) {
 						$results = $this->getAppBrowseCategoryResults($browseCategory->textId, $appUser);
-						$results = $results['items'];
+						if ($browseCategory->textId === "system_recommended_for_you") {
+							$results = $results['records'];
+						} else {
+							$results = $results['items'];
+						}
 					}
 					$browseCategories[] = [
 						'id' => //generate random id to clean up FlatList keys if library uses browse categories in multiple groups
 							'bc_' . bin2hex(random_bytes(5)),
 						'textId' => $textId,
 						'label' => $browseCategory->label,
-						'source' => $hasSubcategories ? null : $browseCategory->source,
+						'source' => $source,
 						$subCategoriesKey => $hasSubcategories ? $subCatResult['subCategories'] : [],
 						$recordsKey => $results,
 					];
@@ -1798,6 +1857,8 @@ class SearchAPI extends AbstractAPI {
 			unset($record['title_auth']);
 			unset($record['marc_error']);
 			unset($record['shortId']);
+			unset($record['detailed_location']);
+			unset($record['display_description']);
 			$records[] = $record;
 		}
 
