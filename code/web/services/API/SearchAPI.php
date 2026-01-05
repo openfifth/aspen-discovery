@@ -1760,8 +1760,8 @@ class SearchAPI extends AbstractAPI {
 						'textId' => $textId,
 						'label' => $browseCategory->label,
 						'source' => $source,
-						$subCategoriesKey => $hasSubcategories ? $subCatResult['subCategories'] : [],
-						$recordsKey => $results,
+						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
+						'records' => $results,
 					];
 				}
 			}
@@ -1897,7 +1897,7 @@ class SearchAPI extends AbstractAPI {
 		} else {
 			$label = explode('_', $_REQUEST['id']);
 		}
-		$id = $label[3];
+		$id = isset($label[3]) && $label[3] ? $label[3] : $id;
 		require_once ROOT_DIR . '/services/API/ListAPI.php';
 		$listApi = new ListAPI();
 		$records = $listApi->getSavedSearchTitles($id, $pageSize);
@@ -1930,7 +1930,8 @@ class SearchAPI extends AbstractAPI {
 		} else {
 			$label = explode('_', $_REQUEST['id']);
 		}
-		$id = $label[3];
+
+		$id = isset($label[3]) && $label[3] ? $label[3] : $id;
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$sourceList = new UserList();
 		$sourceList->id = $id;
