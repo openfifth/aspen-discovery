@@ -196,6 +196,11 @@ class SystemAPI extends AbstractAPI {
 		$location->find();
 		while ($location->fetch()) {
 			$return['locations'][$location->locationId] = $location->getApiInfo();
+
+			if ($library && $library->lidaLongLatControl == 1) {
+				$return['locations'][$location->locationId]['longitude'] = null;
+				$return['locations'][$location->locationId]['latitude'] = null;
+			}
 		}
 
 		$userLatitude = $_GET['latitude'] ?? null;
