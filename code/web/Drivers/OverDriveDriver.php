@@ -713,111 +713,99 @@ class OverDriveDriver extends AbstractEContentDriver {
 		return $checkedOutTitles;
 	}
 
-	private array $holds = [];
-
 	/**
 	 * @param User $patron
 	 * @param bool $forSummary
 	 * @return array
 	 */
 	public function getHolds(User $patron, bool $forSummary = false): array {
-		require_once ROOT_DIR . '/sys/User/Hold.php';
-		//Cache holds for the user just for this call.
-		if (isset($this->holds[$patron->id])) {
-			return $this->holds[$patron->id];
-		}
-		$holds = [
-			'available' => [],
-			'unavailable' => [],
-		];
-		if (!empty($this->settings)) {
-			$settingsToCheck = [$this->settings->id => $this->settings];
-		}else{
-			$settingsToCheck = $this->getAvailableSettings();
-		}
-		foreach ($settingsToCheck as $setting) {
-			if (!$this->isUserValidForOverDrive($setting, $patron)) {
-				continue;
+		$accountSummary = $patron->getCachedAccountSummary('overdrive');
+		$cachedHolds = $patron->getCachedHoldsForSource('overdrive');
+		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+			require_once ROOT_DIR . '/sys/User/Hold.php';
+			$holds = [
+				'available' => [],
+				'unavailable' => [],
+			];
+			if (!empty($this->settings)) {
+				$settingsToCheck = [$this->settings->id => $this->settings];
+			}else{
+				$settingsToCheck = $this->getAvailableSettings();
 			}
-			$url = $setting->patronApiUrl . '/v1/patrons/me/holds';
-			$response = $this->_callPatronUrl($setting, $patron, $url, "getHolds");
-			if ($response === false) {
-				$this->incrementStat('numApiErrors');
-				continue;
-			}
-			if (isset($response->holds)) {
-				foreach ($response->holds as $curTitle) {
-					$hold = new Hold();
-					$hold->type = 'overdrive';
-					$hold->source = 'overdrive';
-					$hold->sourceId = $curTitle->reserveId . '_' . $setting->id;
-					$hold->recordId = $curTitle->reserveId;
-					$datePlaced = strtotime($curTitle->holdPlacedDate);
-					if ($datePlaced) {
-						$hold->createDate = $datePlaced;
-					}
-					$hold->holdQueueLength = $curTitle->numberOfHolds;
-					$hold->position = $curTitle->holdListPosition;  // this is so that overdrive holds can be sorted by hold position with the IlS holds
-					$hold->cancelable = true;
-					$hold->available = isset($curTitle->actions->checkout);
-					if ($hold->available) {
-						$hold->expirationDate = strtotime($curTitle->holdExpires);
-					} else {
-						$hold->canFreeze = true;
-						if (isset($curTitle->holdSuspension)) {
-							$hold->frozen = true;
-							$hold->status = "Frozen";
-							if ($curTitle->holdSuspension->numberOfDays > 0) {
-								$numDaysSuspended = $curTitle->holdSuspension->numberOfDays;
-								$reactivateDate = DateUtils::addDays(date('m/d/Y'), $numDaysSuspended, "M d,Y");
-								$hold->reactivateDate = strtotime($reactivateDate);
+			foreach ($settingsToCheck as $setting) {
+				if (!$this->isUserValidForOverDrive($setting, $patron)) {
+					continue;
+				}
+				$url = $setting->patronApiUrl . '/v1/patrons/me/holds';
+				$response = $this->_callPatronUrl($setting, $patron, $url, "getHolds");
+				if ($response === false) {
+					$this->incrementStat('numApiErrors');
+					continue;
+				}
+				if (isset($response->holds)) {
+					foreach ($response->holds as $curTitle) {
+						$hold = new Hold();
+						$hold->type = 'overdrive';
+						$hold->source = 'overdrive';
+						$hold->sourceId = $curTitle->reserveId . '_' . $setting->id;
+						$hold->recordId = $curTitle->reserveId;
+						$datePlaced = strtotime($curTitle->holdPlacedDate);
+						if ($datePlaced) {
+							$hold->createDate = $datePlaced;
+						}
+						$hold->holdQueueLength = $curTitle->numberOfHolds;
+						$hold->position = $curTitle->holdListPosition;  // this is so that overdrive holds can be sorted by hold position with the IlS holds
+						$hold->cancelable = true;
+						$hold->available = isset($curTitle->actions->checkout);
+						if ($hold->available) {
+							$hold->expirationDate = strtotime($curTitle->holdExpires);
+						} else {
+							$hold->canFreeze = true;
+							if (isset($curTitle->holdSuspension)) {
+								$hold->frozen = true;
+								$hold->status = "Frozen";
+								if ($curTitle->holdSuspension->numberOfDays > 0) {
+									$numDaysSuspended = $curTitle->holdSuspension->numberOfDays;
+									$reactivateDate = DateUtils::addDays(date('m/d/Y'), $numDaysSuspended, "M d,Y");
+									$hold->reactivateDate = strtotime($reactivateDate);
+								}
 							}
 						}
-					}
-					if (count($settingsToCheck) > 1) {
-						$hold->collectionName = $setting->name;
-					}
+						if (count($settingsToCheck) > 1) {
+							$hold->collectionName = $setting->name;
+						}
 
-					$hold->userId = $patron->id;
+						$hold->userId = $patron->id;
 
-					require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
-					$overDriveRecordDriver = new OverDriveRecordDriver($hold->recordId);
-					if ($overDriveRecordDriver->isValid()) {
-						$hold->updateFromRecordDriver($overDriveRecordDriver);
-					}
+						require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
+						$overDriveRecordDriver = new OverDriveRecordDriver($hold->recordId);
+						if ($overDriveRecordDriver->isValid()) {
+							$hold->updateFromRecordDriver($overDriveRecordDriver);
+						}
 
-					$key = $hold->type . $hold->sourceId . $hold->userId;
-					if ($hold->available) {
-						$holds['available'][$key] = $hold;
-					} else {
-						$holds['unavailable'][$key] = $hold;
+						$key = $hold->type . $hold->sourceId . $hold->userId;
+						if ($hold->available) {
+							$holds['available'][$key] = $hold;
+						} else {
+							$holds['unavailable'][$key] = $hold;
+						}
 					}
 				}
 			}
+			$cachedHolds = $this->updateCachedHoldsBasedOnActiveHolds($cachedHolds, $holds, $accountSummary);
 		}
 
-		if (!$forSummary) {
-			$this->holds[$patron->id] = $holds;
-		}
-		return $holds;
+		return $cachedHolds;
 	}
 
 	/**
 	 * Returns a summary of information about the user's account in OverDrive.
 	 */
 	public function getAccountSummary(User $user): AccountSummary {
-		[
-			$existingId,
-			$summary,
-		] = $user->getCachedAccountSummary('overdrive');
+		$summary = $user->getCachedAccountSummary('overdrive');
 
-		if ($summary === null || isset($_REQUEST['reload'])) {
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			//Get account information from api
-			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $user->id;
-			$summary->source = 'overdrive';
-			$summary->resetCounters();
 			$checkedOutItems = $this->getCheckouts($user, true);
 			$summary->numCheckedOut = count($checkedOutItems);
 
@@ -826,12 +814,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 			$summary->numUnavailableHolds = count($holds['unavailable']);
 
 			$summary->lastLoaded = time();
-			if ($existingId != null) {
-				$summary->id = $existingId;
-				$summary->update();
-			} else {
-				$summary->insert();
-			}
+			$summary->update();
 		}
 
 		return $summary;
@@ -843,7 +826,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 	 * If the library has multiple OverDrive collections available, the driver should have the active settings
 	 * set using a call to setSettings before calling this method.
 	 */
-	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
 		$recordDriver = new OverDriveRecordDriver($recordId);
 		if (!$recordDriver->isValid()) {
@@ -951,9 +934,9 @@ class OverDriveDriver extends AbstractEContentDriver {
 				}
 			}
 
-			$patron->clearCache();
-			$patron->clearCachedAccountSummaryForSource('overdrive');
-			$patron->forceReloadOfHolds();
+			$accountSummary = $patron->getCachedAccountSummary('overdrive');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
 		} else {
 			$holdResult['message'] = translate([
 				'text' => 'Sorry, but we could not place a hold for you on this Overdrive title.',
@@ -979,7 +962,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		return $holdResult;
 	}
 
-	function freezeHold(User $patron, $overDriveId): array {
+	function freezeHold(User $patron, string $overDriveId): array {
 		//Figure out which collection the title is on hold in.
 		if (str_contains($overDriveId, '_')){
 			list ($overDriveId, $settingId) = explode('_', $overDriveId);
@@ -987,6 +970,9 @@ class OverDriveDriver extends AbstractEContentDriver {
 		}else{
 			$settings = $this->getActiveSettings();
 		}
+
+		$holds = $this->getHolds($patron);
+		$holdToFreeze = $this->getHoldBySourceId($holds, $overDriveId);
 
 		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $overDriveId . '/suspension';
 		$params = [
@@ -1015,7 +1001,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 
-			$patron->forceReloadOfHolds();
+			$holdToFreeze->markFrozen();
 		} else {
 			$holdResult['message'] = translate([
 				'text' => 'Sorry, but we could not freeze the hold on this title.',
@@ -1040,12 +1026,11 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numApiErrors');
 		}
-		$patron->clearCache();
 
 		return $holdResult;
 	}
 
-	function thawHold(User $patron, $overDriveId): array {
+	function thawHold(User $patron, string $overDriveId): array {
 		//Figure out which collection the title is on hold in.
 		if (str_contains($overDriveId, '_')){
 			list ($overDriveId, $settingId) = explode('_', $overDriveId);
@@ -1053,6 +1038,9 @@ class OverDriveDriver extends AbstractEContentDriver {
 		}else{
 			$settings = $this->getActiveSettings();
 		}
+
+		$holds = $this->getHolds($patron);
+		$holdToThaw = $this->getHoldBySourceId($holds, $overDriveId);
 
 		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $overDriveId . '/suspension';
 		$response = $this->_callPatronDeleteUrl($settings, $patron, $url, "thawHold");
@@ -1081,7 +1069,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 			]);
 
 			$this->incrementStat('numHoldsThawed');
-			$patron->forceReloadOfHolds();
+			$holdToThaw->markThawed();
 		} else {
 			$holdResult['message'] = translate([
 				'text' => 'Sorry, but we could not thaw the hold on this title.',
@@ -1106,12 +1094,11 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numApiErrors');
 		}
-		$patron->clearCache();
 
 		return $holdResult;
 	}
 
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		//Figure out which collection the title is on hold in.
 		if (str_contains($recordId, '_')){
 			list ($overDriveId, $settingId) = explode('_', $recordId);
@@ -1120,6 +1107,9 @@ class OverDriveDriver extends AbstractEContentDriver {
 			$settings = $this->getActiveSettings();
 			$overDriveId = $recordId;
 		}
+
+		$holds = $this->getHolds($patron);
+		$holdToCancel = $this->getHoldByCancelId($holds, $recordId, $cancelId);
 
 		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $overDriveId;
 		$response = $this->_callPatronDeleteUrl($settings, $patron, $url, "cancelHold");
@@ -1148,8 +1138,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 			]);
 
 			$this->incrementStat('numHoldsCancelled');
-			$patron->clearCachedAccountSummaryForSource('overdrive');
-			$patron->forceReloadOfHolds();
+			$this->updateCachesForCancelledHold($patron, $holdToCancel);
 		} else {
 			$cancelHoldResult['message'] = translate([
 				'text' => 'There was an error cancelling your hold.',
@@ -1174,7 +1163,6 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numApiErrors');
 		}
-		$patron->clearCache();
 		return $cancelHoldResult;
 	}
 
@@ -1372,10 +1360,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 						'isPublicFacing' => true,
 					]);
 			}
-
 		}
-
-		$patron->clearCache();
 		return $result;
 	}
 
@@ -1462,8 +1447,6 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numApiErrors');
 		}
-
-		$patron->clearCache();
 		return $cancelHoldResult;
 	}
 
@@ -1684,7 +1667,6 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numApiErrors');
 		}
-		$patron->clearCache();
 
 		return $holdResult;
 	}

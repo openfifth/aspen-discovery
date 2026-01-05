@@ -198,17 +198,9 @@ class HooplaDriver extends AbstractEContentDriver {
 	 * @return AccountSummary
 	 */
 	public function getAccountSummary(User $user): AccountSummary {
-		[
-			$existingId,
-			$summary,
-		] = $user->getCachedAccountSummary('hoopla');
+		$summary = $user->getCachedAccountSummary('hoopla');
 
-		if ($summary === null || isset($_REQUEST['reload'])) {
-			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $user->id;
-			$summary->source = 'hoopla';
-			$summary->resetCounters();
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			$patronURL = $this->getHooplaBasePatronURL($user);
 			if (!empty($patronURL)) {
 				// Get Patron Status (only has checkouts in status call)
@@ -257,12 +249,7 @@ class HooplaDriver extends AbstractEContentDriver {
 			}
 
 			$summary->lastLoaded = time();
-			if ($existingId != null) {
-				$summary->id = $existingId;
-				$summary->update();
-			} else {
-				$summary->insert();
-			}
+			$summary->update();
 		}
 		return $summary;
 	}
@@ -447,7 +434,7 @@ class HooplaDriver extends AbstractEContentDriver {
 	 * @param string $titleId
 	 * @return array
 	 */
-	public function checkOutTitle($patron, $titleId) {
+	public function checkOutTitle(User $patron, string $titleId) : array {
 		if ($this->hooplaEnabled) {
 			$checkoutURL = $this->getHooplaBasePatronURL($patron);
 			if (!empty($checkoutURL)) {
@@ -813,48 +800,49 @@ class HooplaDriver extends AbstractEContentDriver {
 		return false;
 	}
 
-	private $holds = [];
 	/**
 	 * Get Patron Holds
 	 *
 	 * This is responsible for retrieving all holds for a specific patron.
 	 *
 	 * @param User $patron The user to load transactions for
-	 * @param bool $forSummary 
+	 * @param bool $forSummary
 	 *
 	 * @return array        Array of the patron's holds
 	 * @access public
 	 */
-	public function getHolds($patron, $forSummary = false): array
-	{
-		require_once ROOT_DIR . '/sys/User/Hold.php';
-		if (isset($this->holds[$patron->id])) {
-			return $this->holds[$patron->id];
-		}
-		$holds = [
-			'available' => [],
-			'unavailable' => [],
-		];
-		$patronHomeLibrary = $patron->getHomeLibrary();
-		$primaryHooplaSetting = $patronHomeLibrary->getPrimaryHooplaSetting();
-		if ($this->isHooplaVersion2() && $primaryHooplaSetting != null) {
-			$flexEnabled = $primaryHooplaSetting->hooplaFlexEnabled;
-		} else {
-			$flexEnabled = $this ->hooplaFlexEnabled;
-		}
-		if ($flexEnabled) {
-			$holdUrl = $this->getHooplaBasePatronURL($patron);
-			if (!empty($holdUrl)) {
-				$holdUrl .= '/holds/current';
-				$holdResponse = $this->getAPIResponse('hoopla.getHolds', $holdUrl);
-				if ($holdResponse['httpCode'] == 200 && !empty($holdResponse['body'])) {
-					foreach ($holdResponse['body'] as $holdInfo) {
-						$this->loadHoldInfo($holdInfo, $holds, $patron, $forSummary);
+	public function getHolds(User $patron, ?bool $forSummary = false): array {
+		$accountSummary = $patron->getCachedAccountSummary('hoopla');
+		$cachedHolds = $patron->getCachedHoldsForSource('hoopla');
+		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+			require_once ROOT_DIR . '/sys/User/Hold.php';
+			$holds = [
+				'available' => [],
+				'unavailable' => [],
+			];
+			$patronHomeLibrary = $patron->getHomeLibrary();
+			$primaryHooplaSetting = $patronHomeLibrary->getPrimaryHooplaSetting();
+			if ($this->isHooplaVersion2() && $primaryHooplaSetting != null) {
+				$flexEnabled = $primaryHooplaSetting->hooplaFlexEnabled;
+			} else {
+				$flexEnabled = $this ->hooplaFlexEnabled;
+			}
+			if ($flexEnabled) {
+				$holdUrl = $this->getHooplaBasePatronURL($patron);
+				if (!empty($holdUrl)) {
+					$holdUrl .= '/holds/current';
+					$holdResponse = $this->getAPIResponse('hoopla.getHolds', $holdUrl);
+					if ($holdResponse['httpCode'] == 200 && !empty($holdResponse['body'])) {
+						foreach ($holdResponse['body'] as $holdInfo) {
+							$this->loadHoldInfo($holdInfo, $holds, $patron, $forSummary);
+						}
 					}
 				}
 			}
+			$cachedHolds = $this->updateCachedHoldsBasedOnActiveHolds($cachedHolds, $holds, $accountSummary);
 		}
-		return $holds;
+
+		return $cachedHolds;
 	}
 
 	private function loadHoldInfo($rawHold, array &$holds, User $user, $forSummary): Hold
@@ -915,8 +903,7 @@ class HooplaDriver extends AbstractEContentDriver {
 	 *                                title - the title of the record the user is placing a hold on
 	 * @access  public
 	 */
-	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null)
-	{
+	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$result = [
 			'success' => false,
 			'message' => translate(['text' => 'Unknown error', 'isPublicFacing' => true])
@@ -956,8 +943,9 @@ class HooplaDriver extends AbstractEContentDriver {
 					if ($holdResponse['httpCode'] == 200 && !empty($holdResponse['body'])) {
 						$this->trackUserUsageOfHoopla($patron);
 						$this->trackRecordHold($titleId);
-						$patron->clearCachedAccountSummaryForSource('hoopla');
-						$patron->forceReloadOfHolds();
+						$accountSummary = $patron->getCachedAccountSummary('hoopla');
+						$accountSummary->incrementNumberOfUnavailableHolds();
+						$accountSummary->markHoldsStale();
 
 						return [
 							'success' => true,
@@ -1085,20 +1073,15 @@ class HooplaDriver extends AbstractEContentDriver {
 		}
 	}
 
-	/**
-	 * Cancels a hold for a patron
-	 *
-	 * @param User $patron The User to cancel the hold for
-	 * @param string $recordId The id of the bib record
-	 * @param null $cancelId ID to cancel for compatibility
-	 * @return false|array
-	 */
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array
 	{
 		$result = [
 			'success' => false,
 			'message' => 'Unknown error canceling hold'
 		];
+
+		$holds = $this->getHolds($patron);
+		$holdToCancel = $this->getHoldByCancelId($holds, $recordId, $cancelId);
 
 		$patronUrl = $this->getHooplaBasePatronURL($patron);
 		if (!empty($patronUrl)) {
@@ -1120,8 +1103,6 @@ class HooplaDriver extends AbstractEContentDriver {
 					'text' => 'Hold already cancelled or doesn\'t exist',
 					'isPublicFacing' => true,
 				]);
-				$patron->clearCachedAccountSummaryForSource('hoopla');
-				$patron->forceReloadOfHolds();
 			} else if ($cancelResponse['httpCode'] == 200) {
 				// Empty response means success (HTTP 200 with no content)
 				$result['success'] = true;
@@ -1137,8 +1118,7 @@ class HooplaDriver extends AbstractEContentDriver {
 					'text' => 'Your Hoopla hold was cancelled successfully',
 					'isPublicFacing' => true,
 				]);
-				$patron->clearCachedAccountSummaryForSource('hoopla');
-				$patron->forceReloadOfHolds();
+				$this->updateCachesForCancelledHold($patron, $holdToCancel);
 			} else {
 				$result['message'] = translate([
 					'text' => 'Could not cancel Hoopla hold.',

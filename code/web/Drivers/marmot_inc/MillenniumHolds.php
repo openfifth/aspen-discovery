@@ -228,10 +228,6 @@ class MillenniumHolds {
 		$hold_result['title'] = $title;
 		$hold_result['bid'] = $bib1;
 
-		if ($hold_result['success']) {
-			$patron->clearCachedAccountSummaryForSource($this->driver->getIndexingProfile()->name);
-			$patron->forceReloadOfHolds();
-		}
 		return $hold_result;
 	}
 }

@@ -6,7 +6,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	/** @var CurlWrapper */
 	private $curlWrapper;
 
-	public function initCurlWrapper() {
+	public function initCurlWrapper() : void {
 		$this->curlWrapper = new CurlWrapper();
 		$this->curlWrapper->timeout = 20;
 		$this->curlWrapper->connectTimeout = 4;
@@ -267,8 +267,6 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	private $holds = [];
-
 	/**
 	 * Get Patron Holds
 	 *
@@ -279,49 +277,47 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 * @return array        Array of the patron's holds
 	 * @access public
 	 */
-	public function getHolds($patron): array {
-		if (isset($this->holds[$patron->id])) {
-			return $this->holds[$patron->id];
-		}
-		require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
-		require_once ROOT_DIR . '/sys/User/Hold.php';
+	public function getHolds(User $patron): array {
+		$accountSummary = $patron->getCachedAccountSummary('cloud_library');
+		$cachedHolds = $patron->getCachedHoldsForSource('cloud_library');
+		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
+			require_once ROOT_DIR . '/sys/User/Hold.php';
 
-		$holds = [
-			'available' => [],
-			'unavailable' => [],
-		];
+			$holds = [
+				'available' => [],
+				'unavailable' => [],
+			];
 
-		$settings = $this->getSettings($patron);
-		if ($settings == false) {
-			return $holds;
-		}
-		$circulation = $this->getPatronCirculation($patron);
-
-		if (isset($circulation->Holds->Item)) {
-			$index = 0;
-			foreach ($circulation->Holds->Item as $holdFromCloudLibrary) {
-				$hold = $this->loadCloudLibraryHoldInfo($patron, $holdFromCloudLibrary);
-
-				$key = $hold->type . $hold->sourceId . $hold->userId;
-				$hold->position = (string)$holdFromCloudLibrary->Position;
-				$holds['unavailable'][$key] = $hold;
-				$index++;
+			$settings = $this->getSettings($patron);
+			if ($settings === false) {
+				return $holds;
 			}
-		}
+			$circulation = $this->getPatronCirculation($patron);
 
-		if (isset($circulation->Reserves->Item)) {
-			$index = 0;
-			foreach ($circulation->Reserves->Item as $holdFromCloudLibrary) {
-				$hold = $this->loadCloudLibraryHoldInfo($patron, $holdFromCloudLibrary);
-				$hold->available = true;
+			if (isset($circulation->Holds->Item)) {
+				foreach ($circulation->Holds->Item as $holdFromCloudLibrary) {
+					$hold = $this->loadCloudLibraryHoldInfo($patron, $holdFromCloudLibrary);
 
-				$key = $hold->type . $hold->sourceId . $hold->userId;
-				$holds['available'][$key] = $hold;
-				$index++;
+					$key = $hold->type . $hold->sourceId . $hold->userId;
+					$hold->position = (string)$holdFromCloudLibrary->Position;
+					$holds['unavailable'][$key] = $hold;
+				}
 			}
+
+			if (isset($circulation->Reserves->Item)) {
+				foreach ($circulation->Reserves->Item as $holdFromCloudLibrary) {
+					$hold = $this->loadCloudLibraryHoldInfo($patron, $holdFromCloudLibrary);
+					$hold->available = true;
+
+					$key = $hold->type . $hold->sourceId . $hold->userId;
+					$holds['available'][$key] = $hold;
+				}
+			}
+			$cachedHolds = $this->updateCachedHoldsBasedOnActiveHolds($cachedHolds, $holds, $accountSummary);
 		}
 
-		return $holds;
+		return $cachedHolds;
 	}
 
 	/**
@@ -338,7 +334,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 *                                title - the title of the record the user is placing a hold on
 	 * @access  public
 	 */
-	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -426,8 +422,9 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				}
 			}
 
-			$patron->clearCachedAccountSummaryForSource('cloud_library');
-			$patron->forceReloadOfHolds();
+			$accountSummary = $patron->getCachedAccountSummary('cloud_library');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
 		} elseif ($responseCode == '405') {
 			$result['message'] = translate([
 				'text' => "Bad Request placing hold.",
@@ -499,14 +496,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	/**
-	 * Cancels a hold for a patron
-	 *
-	 * @param User $patron The User to cancel the hold for
-	 * @param string $recordId The id of the bib record
-	 * @return  array
-	 */
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -514,12 +504,15 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]),
 		];
+		$holds = $this->getHolds($patron);
+		$holdToCancel = $this->getHoldByCancelId($holds, $recordId, $cancelId);
+
 		$settings = $this->getSettings($patron);
 		$patronId = $this->getPatronId($patron);
-		$apiPath = "/cirrus/library/{$settings->libraryId}/cancelhold";
+		$apiPath = "/cirrus/library/$settings->libraryId/cancelhold";
 		$requestBody = "<CancelHoldRequest>
-				<ItemId>{$recordId}</ItemId>
-				<PatronId>{$patronId}</PatronId>
+				<ItemId>$recordId</ItemId>
+				<PatronId>$patronId</PatronId>
 			</CancelHoldRequest>";
 		$response = $this->callCloudLibraryUrl($settings, $apiPath, 'POST', $requestBody);
 		ExternalRequestLogEntry::logRequest('cloudLibrary.cancelHold', 'POST', $settings->apiUrl . $apiPath, $this->curlWrapper->getHeaders(), $requestBody, $this->curlWrapper->getResponseCode(), $response, []);
@@ -541,8 +534,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 
-			$patron->clearCachedAccountSummaryForSource('cloud_library');
-			$patron->forceReloadOfHolds();
+			$this->updateCachesForCancelledHold($patron, $holdToCancel);
 		} elseif ($responseCode == '400') {
 			$result['message'] = translate([
 				'text' => "Bad Request cancelling hold.",
@@ -599,18 +591,9 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	}
 
 	public function getAccountSummary(User $user): AccountSummary {
-		[
-			$existingId,
-			$summary,
-		] = $user->getCachedAccountSummary('cloud_library');
+		$summary = $user->getCachedAccountSummary('cloud_library');
 
-		if ($summary === null || isset($_REQUEST['reload'])) {
-			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $user->id;
-			$summary->source = 'cloud_library';
-			$summary->resetCounters();
-
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			//Get account information from api
 			$circulation = $this->getPatronCirculation($user);
 
@@ -620,12 +603,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 			$summary->numUnavailableHolds = empty($circulation->Holds->Item) ? 0 : count($circulation->Holds->Item);
 
 			$summary->lastLoaded = time();
-			if ($existingId != null) {
-				$summary->id = $existingId;
-				$summary->update();
-			} else {
-				$summary->insert();
-			}
+			$summary->update();
 		}
 		return $summary;
 	}
@@ -637,7 +615,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 * @param bool $fromRenew
 	 * @return array
 	 */
-	public function checkOutTitle($patron, $titleId, $fromRenew = false) {
+	public function checkOutTitle(User $patron, string $titleId, bool $fromRenew = false) : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -677,10 +655,10 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 			return $result;
 		}
 
-		$apiPath = "/cirrus/library/{$settings->libraryId}/checkout?password=$password";
+		$apiPath = "/cirrus/library/$settings->libraryId/checkout?password=$password";
 		$requestBody = "<CheckoutRequest>
-			<ItemId>{$titleId}</ItemId>
-			<PatronId>{$patronId}</PatronId>
+			<ItemId>$titleId</ItemId>
+			<PatronId>$patronId</PatronId>
 		</CheckoutRequest>";
 		$checkoutResponse = $this->callCloudLibraryUrl($settings, $apiPath, 'POST', $requestBody);
 		ExternalRequestLogEntry::logRequest('cloudLibrary.checkoutTitle', 'POST', $settings->apiUrl . $apiPath, $this->curlWrapper->getHeaders(), $requestBody, $this->curlWrapper->getResponseCode(), $checkoutResponse, ['password' => $password]);
@@ -755,7 +733,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 
 	private function getPatronCirculation(User $user) {
 		$settings = $this->getSettings($user);
-		if ($settings != false) {
+		if ($settings !== false) {
 			$patronId = $this->getPatronId($user);
 			$password = $this->getCloudLibraryPasswordOrPin($user);
 			$apiPath = "/cirrus/library/{$settings->libraryId}/circulation/patron/$patronId?password=$password";
@@ -771,7 +749,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 * @param User|null $user
 	 * @return CloudLibrarySetting|false
 	 */
-	public function getSettings(User $user = null) {
+	public function getSettings(User $user = null) : CloudLibrarySetting|false {
 		require_once ROOT_DIR . '/sys/CloudLibrary/CloudLibraryScope.php';
 		require_once ROOT_DIR . '/sys/CloudLibrary/CloudLibrarySetting.php';
 		$activeLibrary = null;

@@ -31,12 +31,18 @@ class MockILS extends AbstractIlsDriver{
 		];
 	}
 
-	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) {
-		// TODO: Implement placeHold() method.
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Place Hold not implemented for MockILS'
+		];
 	}
 
-	function cancelHold(User $patron, $recordId, $cancelId = null, $isIll = false): array {
-		// TODO: Implement cancelHold() method.
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
+		return [
+			'success' => 'false',
+			'message' => 'Cancel Hold not implemented for MockILS'
+		];
 	}
 
 	public function patronLogin($username, $password, $validatedViaSSO) {
@@ -50,27 +56,45 @@ class MockILS extends AbstractIlsDriver{
 		return null;
 	}
 
-	function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) {
-		// TODO: Implement placeItemHold() method.
+	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Place Item Hold not implemented for MockILS'
+		];
 	}
 
-	function freezeHold(User $patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
-		// TODO: Implement freezeHold() method.
+	function freezeHold(User $patron, string $recordId, ?string $itemToFreezeId, ?string $dateToReactivate): array {
+		return [
+			'success' => 'false',
+			'message' => 'Freeze Hold not implemented for MockILS'
+		];
 	}
 
-	function thawHold(User $patron, $recordId, $itemToThawId): array {
-		// TODO: Implement thawHold() method.
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
+		return [
+			'success' => 'false',
+			'message' => 'Thaw Hold not implemented for MockILS'
+		];
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array {
-		// TODO: Implement changeHoldPickupLocation() method.
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
+		return [
+			'success' => 'false',
+			'message' => 'Change Hold not Pickup Location not implemented for MockILS'
+		];
 	}
 
 	function updatePatronInfo(User $patron, $canUpdateContactInfo, $fromMasquerade) {
-		// TODO: Implement updatePatronInfo() method.
+		return [
+			'success' => 'false',
+			'message' => 'Update Patron Info not implemented for MockILS'
+		];
 	}
 
 	public function getFines(User $patron, $includeMessages = false): array {
-		// TODO: Implement getFines() method.
+		return [
+			'success' => 'false',
+			'message' => 'Get Fines not implemented for MockILS'
+		];
 	}
 }

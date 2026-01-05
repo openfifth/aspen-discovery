@@ -12,5 +12,5 @@ abstract class AbstractEContentDriver extends AbstractDriver {
 	 *
 	 * @return array
 	 */
-	public abstract function checkOutTitle($patron, $titleId);
+	public abstract function checkOutTitle(User $patron, string $titleId) : array;
 }
