@@ -533,6 +533,8 @@ class Library extends DataObject {
 	/** @var MaterialsRequestFormat[] */
 	private $_materialsRequestFormats;
 
+	// Gale Settings
+	public $galeSettingsId;
 
 	/** @var Holiday[] */
 	private $_holidays;
@@ -1043,6 +1045,16 @@ class Library extends DataObject {
 		$cloudLibraryScope->find();
 		while ($cloudLibraryScope->fetch()) {
 			$cloudLibraryScopes[$cloudLibraryScope->id] = $cloudLibraryScope->name;
+		}
+
+		require_once ROOT_DIR . '/sys/Gale/GaleSetting.php';
+		$galeSettings = new GaleSetting();
+		$galeSettings->orderBy('name');
+		$galeSettings->find();
+		$galeSettingsList = [];
+		$galeSettingsList[-1] = 'none';
+		while ($galeSettings->fetch()) {
+			$galeSettingsList[$galeSettings->id] = $galeSettings->name;
 		}
 
 		$barcodeTypes = [
@@ -4691,6 +4703,22 @@ class Library extends DataObject {
 					],
 				],
 			],
+			'galeSection' => [
+				'property' => 'galeSection',
+				'type' => 'section',
+				'label' => 'Gale',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'permissions' => ['Library Gale Options'],
+				'properties' => [
+					'galeSettingsId' => [
+						'property' => 'galeSettingsId',
+						'type' => 'enum',
+						'values' => $galeSettingsList,
+						'label' => 'Gale Settings',
+					],
+				],
+			],
 
 			'holidaysSection' => [
 				'property' => 'holidaysSection',
@@ -4907,6 +4935,9 @@ class Library extends DataObject {
 				unset($structure['ebscoSection']['properties']['ebscohostSearchSettingId']);
 				unset($structure['exploreMoreBarSection']['properties']['displayExploreMoreBarInEbscoHost']);
 			}
+		}
+		if (!array_key_exists('Gale', $enabledModules)) {
+			unset($structure['galeSection']);
 		}
 		if (!array_key_exists('Summon', $enabledModules)) {
 			unset($structure['summonSection']);

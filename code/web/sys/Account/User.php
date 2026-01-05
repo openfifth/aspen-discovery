@@ -4611,6 +4611,15 @@ class User extends DataObject {
 			]);
 		}
 
+		if (array_key_exists('Gale', $enabledModules)) {
+			$sections['gale'] = new AdminSection('Gale');
+			$sections['gale']->addAction(new AdminAction('Settings', 'Define connection information between Gale and Aspen Discovery.', '/Gale/GaleSettings'), ['Administer Gale']);
+			$sections['gale']->addAction(new AdminAction('Dashboard', 'View the usage dashboard for Gale integration.', '/Gale/GaleDashboard'), [
+				'View Dashboards',
+				'View System Reports',
+			]);
+		}
+
 		if (array_key_exists('Hoopla', $enabledModules)) {
 			$sections['hoopla'] = new AdminSection('Hoopla');
 			$hooplaSettingsAction = new AdminAction('Settings', 'Define connection information between Hoopla and Aspen Discovery.', '/Hoopla/Settings');

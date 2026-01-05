@@ -396,8 +396,10 @@ class SystemAPI extends AbstractAPI {
 		$hooplaVersion2Updates = getHooplaVersion2Updates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/pay360_updates.php';
 		$pay360Updates = getPay360Updates();
-		
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates);
+				require_once ROOT_DIR . '/sys/DBMaintenance/gale_updates.php';
+		$galeUpdates = getGaleUpdates();
+
+		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates, $galeUpdates);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
