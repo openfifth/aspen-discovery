@@ -146,14 +146,14 @@ class WorldPaySetting extends DataObject {
 				if (in_array($libraryId, $this->_libraries)) {
 					//We want to apply the scope to this library
 					if ($library->worldPaySettingId != $this->id) {
-						$library->finePaymentType = 6;
+						$library->finePaymentType = 7;
 						$library->worldPaySettingId = $this->id;
 						$library->update();
 					}
 				} else {
 					//It should not be applied to this scope. Only change if it was applied to the scope
 					if ($library->worldPaySettingId == $this->id) {
-						if ($library->finePaymentType == 6) {
+						if ($library->finePaymentType == 7) {
 							$library->finePaymentType = 0;
 						}
 						$library->worldPaySettingId = -1;
