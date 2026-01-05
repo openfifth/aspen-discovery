@@ -167,6 +167,14 @@ function getHooplaVersion2Updates(): array {
 						)"
 				]
 			], //migrate_hoopla_data_to_new_structure
+			'cleanup_bad_data_in_hoopla_flex_availability' => [
+				'title' => 'Cleanup hoopla_flex_availability rows without scope',
+				'description' => 'Remove hoopla_flex_availability rows that are still missing a scopeLibraryId before enforcing NOT NULL',
+				'continueOnError' => false,
+				'sql' => [
+					'DELETE FROM hoopla_flex_availability WHERE scopeLibraryId IS NULL OR scopeLibraryId = 0'
+				]
+			], //cleanup_bad_data_in_hoopla_flex_availability
 			'reset_scopeLibraryId_to_not_null' => [
 				'title' => 'Reset scopeLibraryId to not null',
 				'description' => 'Reset scopeLibraryId to not null',
