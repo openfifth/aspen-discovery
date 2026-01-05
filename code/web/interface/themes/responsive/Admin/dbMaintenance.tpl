@@ -32,7 +32,18 @@
 					{elseif strpos($update.status, 'fail') !== false || strpos($update.status, 'error') !== false} danger
 					{/if}"
 					{if !empty($update.alreadyRun) && empty($update.status)} style="display:none"{/if}>
-						<td><input type="checkbox" name="selected[{$updateKey}]"{if empty($update.alreadyRun)} checked="checked"{/if} class="selectedUpdate" id="{$updateKey}"></td>
+						<td><input type="checkbox" name="selected[{$updateKey}]"
+								{if !empty($update.hooplaVersion2)}
+									disabled="disabled"
+								{elseif empty($update.alreadyRun)}
+									checked="checked"
+								{/if}
+								class="selectedUpdate"
+								id="{$updateKey}">
+							{if !empty($update.hooplaVersion2)}
+								<div class="text-muted small">{translate text="Run via Hoopla Version 2 background process above" isAdminFacing=true}</div>
+							{/if}
+						</td>
 						<td><label for="{$updateKey}">{$update.title}</label></td>
 						<td>{$update.description}</td>
 						<td>{if !empty($update.alreadyRun)}{translate text="Yes" isAdminFacing=true}{else}{translate text="No" isAdminFacing=true}{/if}</td>
