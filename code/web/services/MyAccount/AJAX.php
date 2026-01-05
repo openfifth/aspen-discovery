@@ -6301,9 +6301,6 @@ class MyAccount_AJAX extends JSON_Action {
 				$currencyCode = $variables->currencyCode;
 			}
 
-			$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
-			$currencyFormatter->setSymbol(NumberFormatter::CURRENCY_SYMBOL, '');
-
 			/** @var Library $userLibrary */ /** @var UserPayment $payment */
 			/** @var User $patron */
 			if ($transactionType == 'donation') {
@@ -6343,7 +6340,7 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 				$paymentRequestUrl .= '&UserName=' . urlencode($compriseSettings->username);
 				$paymentRequestUrl .= '&Password=' . urlencode($compriseSettings->password);
-				$paymentRequestUrl .= '&Amount=' . $currencyFormatter->format($payment->totalPaid);
+				$paymentRequestUrl .= '&Amount=' . number_format($payment->totalPaid, 2, '.', '');
 				if ($transactionType == 'donation') {
 					$paymentRequestUrl .= "&URLPostBack=" . urlencode($configArray['Site']['url'] . '/Comprise/Complete');
 					$paymentRequestUrl .= "&URLReturn=" . urlencode($configArray['Site']['url'] . '/Donations/DonationCompleted?id=' . $payment->id);
