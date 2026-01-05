@@ -267,5 +267,15 @@ function getUpdates26_01_00(): array {
 		]
 	], //user_payments_stripe_receipt_url
 
+	//tomas
+	'overdrive_configurable_deletion_check_hour' => [
+		'title' => 'OverDrive - Add Configurable Deletion Check Hour',
+		'description' => 'Add deletionCheckHour column to overdrive_settings to allow configuring when deletion checks run',
+		'continueOnError' => false,
+		'sql' => [
+			'ALTER TABLE overdrive_settings ADD COLUMN deletionCheckHour INT DEFAULT 8 AFTER name'
+		]
+	], //overdrive_configurable_deletion_check_hour
+
 	];
 }
