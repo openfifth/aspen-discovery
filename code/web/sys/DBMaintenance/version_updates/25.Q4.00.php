@@ -39,5 +39,13 @@ function getUpdates25_Q4_00(): array {
 				"ALTER TABLE library ADD COLUMN eventsDefaultCalendarView TINYINT(1) NOT NULL DEFAULT 0",
 			],
 		], //add_default_event_calendar_display_dropdown
+		'lida_long_lat_control' => [
+			'title' => 'Lida Long and Lat Control',
+			'description' => 'Add control tp revent Lida from pulling th elong and lat from Aspen',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN lidaLongLatControl TINYINT(1) NOT NULL DEFAULT 1",
+			],
+		], //lida_long_lat_control
 	];
 }
