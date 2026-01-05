@@ -107,8 +107,8 @@ class ListCoverBuilder {
 
 					if ($isListOfLists) {
 						// For lists of lists, use a different placement strategy: make covers larger and more spaced out.
-						$coverLeft = 10 + (45 * (2 - $i));
-						$coverTop = 10 + (20 * (2 - $i));
+						$coverLeft = 10 + (45 * ($maxIndex - $i));
+						$coverTop = 10 + (20 * ($maxIndex - $i));
 
 						$newWidth = $listEntryWidth * 1.2;
 						$newHeight = $listEntryHeight * 1.2;
@@ -124,8 +124,8 @@ class ListCoverBuilder {
 							), Logger::LOG_ERROR);
 						}
 					} else {
-						$coverLeft = 10 + (40 * (3 - $i));
-						$coverTop = 10 + (35 * (3 - $i));
+						$coverLeft = 10 + (40 * ($maxIndex - $i));
+						$coverTop = 10 + (35 * ($maxIndex - $i));
 						imagefilledrectangle($imageCanvas, $coverLeft, $coverTop, $listEntryWidth + $coverLeft, $listEntryHeight + $coverTop, $white);
 						imagecopyresampled($imageCanvas, $listEntryImageResource, $coverLeft, $coverTop, 0, 0, $listEntryWidth, $listEntryHeight, $listEntryWidth, $listEntryHeight);
 					}
