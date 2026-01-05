@@ -565,20 +565,19 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		} else {
 			$bookCoverUrl = '';
 		}
-		$bookCoverUrl .= "/bookcover.php?id={$this->getUniqueID()}&size={$size}&type=grouped_work";
+		$bookCoverUrl .= "/bookcover.php?id={$this->getUniqueID()}&size=$size&type=grouped_work";
 
 		if (isset($this->fields['format_category'])) {
-			$category = '';
 			if (is_array($this->fields['format_category'])) {
 				$category = reset($this->fields['format_category']);
 			} else {
 				$category = $this->fields['format_category'];
 			}
 			if (!empty($category)) {
-				if (strpos($category, '#') !== false) {
+				if (str_contains($category, '#')) {
 					$category = substr($category, strpos($category, '#') + 1);
 				}
-				$bookCoverUrl .= "&category=" . $category;
+				$bookCoverUrl .= "&category=" . urlencode($category);
 			}
 		}
 
