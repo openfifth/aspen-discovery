@@ -236,6 +236,7 @@ class OverDriveProcessor {
 
 						//Load the formats for the record.  For Libby, we will create a separate item for each format.
 						HashSet<String> validFormats = loadOverDriveFormats(productId, identifier);
+						HashSet<String> scopeSuppressingKindleFormats = new HashSet<>();
 						if (validFormats.contains("Kindle Book")){
 							hasKindle = true;
 						}
@@ -428,6 +429,10 @@ class OverDriveProcessor {
 											groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
 										}
 									} // End checking if we have availability
+									// Add scope to the list of scopes that ignore kindle
+									if (hasKindle && overDriveScope.isSuppressKindleFormat()) {
+										scopeSuppressingKindleFormats.add(scope.getScopeName());
+									}
 								} //End loop through all overdrive scopes for the scope
 							} // End looping through scopes
 							overDriveRecord.addItem(itemInfo);
@@ -439,10 +444,22 @@ class OverDriveProcessor {
 						if (hasKindle){
 							RecordInfo kindleRecord = groupedWork.addRelatedRecord("overdrive", "kindle", identifier);
 							kindleRecord.copyFrom(overDriveRecord);
+							boolean hasKindleInScope = false;
 							for (ItemInfo tmpItemInfo: kindleRecord.getRelatedItems()){
 								tmpItemInfo.setItemIdentifier(tmpItemInfo.getItemIdentifier() + ":kindle");
 								tmpItemInfo.setFormat("Kindle");
 								tmpItemInfo.setSubFormats("");
+
+								// Remove scopes that doesn't want kindle
+								HashMap<String, ScopingInfo> scopeInfo = tmpItemInfo.getScopingInfo();
+								scopeInfo.keySet().removeIf(scopeName -> scopeSuppressingKindleFormats.contains(scopeName));
+								if (!scopeInfo.isEmpty()) {
+									hasKindleInScope = true;
+								}
+							}
+							// If no kindle in scope, remove the record
+							if (!hasKindleInScope) {
+								groupedWork.removeRelatedRecord(kindleRecord);
 							}
 						}
 					}
