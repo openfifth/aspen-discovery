@@ -140,7 +140,7 @@ public class AspenStringUtils {
 		return sortTitle;
 	}
 
-	private static final Pattern trimPunctuationPattern = Pattern.compile("^(.*?)[-\\s/,.;:|]+$");
+	private static final Pattern trimPunctuationPattern = Pattern.compile("^(.*?)[\\s/,.;:|]+$");
 
 	public static String trimTrailingPunctuation(String format) {
 		if (format == null) {
