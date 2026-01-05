@@ -502,6 +502,9 @@ class Library extends DataObject {
 
 	private $_cloudLibraryScope;
 
+	/**Temporary turn off for Lida Long / Lat */
+	public $lidaLongLatControl;
+
 	/** @var MaterialsRequestFormFields[] */
 	private $_materialsRequestFormFields;
 	/** @var MaterialsRequestFieldsToDisplay[] */
@@ -4510,6 +4513,13 @@ class Library extends DataObject {
 						'hideInLists' => true,
 					],
 				],
+			],
+			'lidaLongLatControl' => [
+				'property' => 'lidaLongLatControl',
+				'type' => 'checkbox',
+				'label' => 'Turn off long and lat for Lida',
+				'hideInLists' => true,
+				'default' => 1
 			],
 		];
 
