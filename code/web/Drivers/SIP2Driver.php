@@ -221,26 +221,24 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
+		$summary = $patron->getCachedAccountSummary('ils');
 
-		$patronInfoResponse = $this->getPatronInformationResponse($patron, 'none');
-		if ($patronInfoResponse != null) {
-			if (!empty($patronInfoResponse['variable']['PA'][0])) {
-				$expireTime = $patronInfoResponse['variable']['PA'][0];
-				$expireTime = DateTime::createFromFormat('Ymd', $expireTime)->getTimestamp();
-				$summary->expirationDate = $expireTime;
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			$patronInfoResponse = $this->getPatronInformationResponse($patron, 'none');
+			if ($patronInfoResponse != null) {
+				if (!empty($patronInfoResponse['variable']['PA'][0])) {
+					$expireTime = $patronInfoResponse['variable']['PA'][0];
+					$expireTime = DateTime::createFromFormat('Ymd', $expireTime)->getTimestamp();
+					$summary->expirationDate = $expireTime;
+				}
+				if (!empty($patronInfoResponse['variable']['BV'][0])) {
+					$summary->totalFines = (float)$patronInfoResponse['variable']['BV'][0];
+				}
+				$summary->numUnavailableHolds = $patronInfoResponse['fixed']['UnavailableCount'];
+				$summary->numAvailableHolds = $patronInfoResponse['fixed']['HoldCount'] - $patronInfoResponse['fixed']['UnavailableCount'];
+				$summary->numCheckedOut = $patronInfoResponse['fixed']['ChargedCount'];
+				$summary->numOverdue = $patronInfoResponse['fixed']['OverdueCount'];
 			}
-			if (!empty($patronInfoResponse['variable']['BV'][0])) {
-				$summary->totalFines = (float)$patronInfoResponse['variable']['BV'][0];
-			}
-			$summary->numUnavailableHolds = $patronInfoResponse['fixed']['UnavailableCount'];
-			$summary->numAvailableHolds = $patronInfoResponse['fixed']['HoldCount'] - $patronInfoResponse['fixed']['UnavailableCount'];
-			$summary->numCheckedOut = $patronInfoResponse['fixed']['ChargedCount'];
-			$summary->numOverdue = $patronInfoResponse['fixed']['OverdueCount'];
 		}
 
 		return $summary;
@@ -348,8 +346,8 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) {
-		if (strpos($recordId, ':') !== false) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
+		if (str_contains($recordId, ':')) {
 			[
 				,
 				$shortId,
@@ -366,7 +364,6 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 			$title = $record->getTitle();
 		}
 
-		$hold_result = [];
 		$success = false;
 		$title = '';
 		$message = 'Failed to connect to complete requested action.';
@@ -412,7 +409,7 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 				$msg_result = $mySip->get_message($in);
 
 				// Make sure the response is 24 as expected
-				if (preg_match("/^16/", $msg_result)) {
+				if (str_starts_with($msg_result, "16")) {
 					$result = $mySip->parseHoldResponse($msg_result);
 					$success = ($result['fixed']['Ok'] == 1);
 					$message = $result['variable']['AF'][0];
@@ -429,8 +426,6 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 							'text' => 'Go to Holds',
 							'isPublicFacing' => true,
 						]);
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfHolds();
 					}
 				} else {
 					$message = $msg_result;

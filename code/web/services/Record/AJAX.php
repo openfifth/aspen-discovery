@@ -1921,7 +1921,7 @@ class Record_AJAX extends Action {
 			$maxHolds = $ptype->maxHolds;
 		}
 		$interface->assign('maxHolds', $maxHolds);
-		$ilsSummary = $user->getCatalogDriver()->getAccountSummary($user);
+		$ilsSummary = $user->getAccountSummary();
 		$currentHolds = $ilsSummary->getNumHolds();
 		$interface->assign('currentHolds', $currentHolds);
 		//TODO: this check will need to account for linked accounts now

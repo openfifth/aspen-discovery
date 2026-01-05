@@ -23,7 +23,7 @@ class LibraryCard extends MyAccount {
 
 		$interface->assign('showRenewalLink', false);
 		if ($user->hasIlsConnection()) {
-			$ilsSummary = $user->getCatalogDriver()->getAccountSummary($user);
+			$ilsSummary = $user->getAccountSummary();
 			$showRenewalLink = $user->showRenewalLink($ilsSummary);
 			$interface->assign('showRenewalLink', $showRenewalLink);
 			if ($showRenewalLink) {

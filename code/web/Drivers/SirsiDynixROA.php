@@ -497,46 +497,44 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
+		$summary = $patron->getCachedAccountSummary('ils');
 
-		$webServiceURL = $this->getWebServiceURL();
-		$includeFields = urlencode("privilegeExpiresDate,circRecordList{overdue},blockList{owed},holdRecordList{status}");
-		$accountInfoLookupURL = $webServiceURL . '/user/patron/key/' . $patron->unique_ils_id . '?includeFields=' . $includeFields;
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			$webServiceURL = $this->getWebServiceURL();
+			$includeFields = urlencode("privilegeExpiresDate,circRecordList{overdue},blockList{owed},holdRecordList{status}");
+			$accountInfoLookupURL = $webServiceURL . '/user/patron/key/' . $patron->unique_ils_id . '?includeFields=' . $includeFields;
 
-		$sessionToken = $this->getSessionToken($patron);
-		$lookupMyAccountInfoResponse = $this->getWebServiceResponse('accountSummary', $accountInfoLookupURL, null, $sessionToken);
+			$sessionToken = $this->getSessionToken($patron);
+			$lookupMyAccountInfoResponse = $this->getWebServiceResponse('accountSummary', $accountInfoLookupURL, null, $sessionToken);
 
-		if ($lookupMyAccountInfoResponse && !isset($lookupMyAccountInfoResponse->messageList)) {
-			$checkouts = $this->getCheckouts($patron);
-			$summary->numCheckedOut = count($checkouts);
-			foreach ($checkouts as $checkout) {
-				if ($checkout->isOverdue()) {
-					$summary->numOverdue++;
+			if ($lookupMyAccountInfoResponse && !isset($lookupMyAccountInfoResponse->messageList)) {
+				$checkouts = $this->getCheckouts($patron);
+				$summary->numCheckedOut = count($checkouts);
+				foreach ($checkouts as $checkout) {
+					if ($checkout->isOverdue()) {
+						$summary->numOverdue++;
+					}
 				}
-			}
 
-			$holds = $this->getHolds($patron);
-			$summary->numAvailableHolds = count($holds['available']);
-			$summary->numUnavailableHolds = count($holds['unavailable']);
+				$holds = $this->getHolds($patron);
+				$summary->numAvailableHolds = count($holds['available']);
+				$summary->numUnavailableHolds = count($holds['unavailable']);
 
-			$finesVal = 0;
-			if (isset($lookupMyAccountInfoResponse->fields->blockList)) {
-				foreach ($lookupMyAccountInfoResponse->fields->blockList as $block) {
-					$fineAmount = (float)$block->fields->owed->amount;
-					$finesVal += $fineAmount;
+				$finesVal = 0;
+				if (isset($lookupMyAccountInfoResponse->fields->blockList)) {
+					foreach ($lookupMyAccountInfoResponse->fields->blockList as $block) {
+						$fineAmount = (float)$block->fields->owed->amount;
+						$finesVal += $fineAmount;
+					}
 				}
-			}
-			$summary->totalFines = $finesVal;
+				$summary->totalFines = $finesVal;
 
-			//Don't call getExpirationInformation since we already have the data available.
-			if ($lookupMyAccountInfoResponse->fields->privilegeExpiresDate == null) {
-				$summary->expirationDate = 0;
-			} else {
-				$summary->expirationDate = strtotime($lookupMyAccountInfoResponse->fields->privilegeExpiresDate);
+				//Don't call getExpirationInformation since we already have the data available.
+				if ($lookupMyAccountInfoResponse->fields->privilegeExpiresDate == null) {
+					$summary->expirationDate = 0;
+				} else {
+					$summary->expirationDate = strtotime($lookupMyAccountInfoResponse->fields->privilegeExpiresDate);
+				}
 			}
 		}
 
@@ -1384,20 +1382,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		return $holds;
 	}
 
-	/**
-	 * Place Hold
-	 *
-	 * This is responsible for both placing holds and placing recalls.
-	 *
-	 * @param User $patron The User to place a hold for
-	 * @param string $recordId The id of the bib record
-	 * @param string $pickupBranch The branch where the user wants to pick up the item when available
-	 * @param null|string $cancelDate The date the hold should be automatically cancelled
-	 * @return  mixed                 True if successful, false if unsuccessful
-	 *                                If an error occurs, return an AspenError
-	 * @access  public
-	 */
-	public function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	public function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		return $this->placeItemHold($patron, $recordId, null, $pickupBranch, $cancelDate);
 	}
 
@@ -1416,7 +1401,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 *                              If an error occurs, return an AspenError
 	 * @access  public
 	 */
-	function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) : array {
+	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		return $this->placeSirsiHold($patron, $recordId, $itemId, false, $pickupBranch, $cancelDate);
 	}
 
@@ -1770,7 +1755,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		}
 	}
 
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		$result = [];
 		$sessionToken = $this->getSessionToken($patron);
 		if (!$sessionToken) {
@@ -1801,9 +1786,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		$cancelHoldResponse = $this->getWebServiceResponse('cancelHold', $webServiceURL . "/circulation/holdRecord/key/$cancelId", null, $sessionToken, 'DELETE');
 
 		if (empty($cancelHoldResponse)) {
-			$patron->forceReloadOfHolds();
-			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-
 			$result['success'] = true;
 			$result['message'] = translate([
 				'text' => 'The hold was successfully canceled.',
@@ -1849,7 +1831,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $holdId, $newPickupLocation, $newPickupSublocation = null): array {
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
 		$staffSessionToken = $this->getStaffSessionToken();
 		if (!$staffSessionToken) {
 			$result = [
@@ -1889,7 +1871,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 		$updateHoldResponse = $this->getWebServiceResponse('changePickupLibrary', $webServiceURL . "/circulation/holdRecord/changePickupLibrary", $params, $this->getSessionToken($patron), 'POST');
 		if (isset($updateHoldResponse->holdRecord->key)) {
-			$patron->forceReloadOfHolds();
 			$result['message'] = translate([
 				'text' => 'The pickup location has been updated.',
 				'isPublicFacing' => true,
@@ -1935,7 +1916,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function freezeHold(User $patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array {
 		$sessionToken = $this->getStaffSessionToken();
 		if (!$sessionToken) {
 			$result = [
@@ -1979,7 +1960,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		if (isset($updateHoldResponse->holdRecord->key)) {
 			$getHoldResponse = $this->getWebServiceResponse('getHold', $webServiceURL . "/circulation/holdRecord/key/$itemToFreezeId", null, $this->getSessionToken($patron));
 			if (isset($getHoldResponse->fields->status) && $getHoldResponse->fields->status == 'SUSPENDED') {
-				$patron->forceReloadOfHolds();
 				$result = [
 					'success' => true,
 					'message' => translate([
@@ -2055,7 +2035,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		}
 	}
 
-	function thawHold($patron, $recordId, $itemToThawId): array {
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
 		$sessionToken = $this->getStaffSessionToken();
 		if (!$sessionToken) {
 			$result = [
@@ -2092,7 +2072,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		$updateHoldResponse = $this->getWebServiceResponse('unsuspendHold', $webServiceURL . "/circulation/holdRecord/unsuspendHold", $params, $sessionToken, 'POST');
 
 		if (isset($updateHoldResponse->holdRecord->key)) {
-			$patron->forceReloadOfHolds();
 			$result = [
 				'success' => true,
 				'message' => translate([
@@ -2111,7 +2090,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 				'isPublicFacing' => true,
 			]);
 
-			return $result;
 		} else {
 			$messages = [];
 			if (isset($updateHoldResponse->messageList)) {
@@ -2142,8 +2120,8 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			]);
 			$result['api']['message'] .= ' ' . implode('; ', $messages);
 
-			return $result;
 		}
+		return $result;
 	}
 
 	/**
