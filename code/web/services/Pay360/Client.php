@@ -248,8 +248,15 @@ class Pay360_Client  {
 			return;
 		}
 
+		require_once ROOT_DIR . '/sys/SystemVariables.php';
+		$currencyCode = '';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+
 		$parameters = [
-			'paymentAmount' => $this->payment->totalPaid,  
+			'paymentAmount' => $currencyCode . ' ' . $this->getConsistentDecimals($this->payment->totalPaid),  
 			'outcome' => $this->payment->pay360TransactionStateMessage,
 			'orderId' => $this->payment->orderId,
 		];
@@ -415,6 +422,20 @@ class Pay360_Client  {
 		$credentialsStr = $this->_pay360Settings->subjectType . "!" . $this->_pay360Settings->scpId . "!" . $this->payment->id . "!" . $this->payment->pay360Timestamp . "!" . $this->_pay360Settings->algorithm . "!" . $this->_pay360Settings->hmacKeyId;
 		$hash = hash_hmac('sha256', $credentialsStr, base64_decode($this->_pay360Settings->privateKey), true);
 		$this->_digest = base64_encode($hash);
+	}
+
+	private function getConsistentDecimals(string $totalAmount) {
+		$numDec = strlen($totalAmount) - strpos($totalAmount, '.') - 1;
+
+		if ($numDec == 1) {
+			return $totalAmount .= "0";
+		}
+		
+		if ( $numDec == 0 ) {
+			return $totalAmount .= ".00";
+		}
+
+		return $totalAmount;
 	}
 
 	private function getMinorUnitsAmount(string $totalAmount): string {
