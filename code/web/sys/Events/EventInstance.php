@@ -118,6 +118,7 @@ class EventInstance extends DataObject {
 			'dateUpdated',
 			'numberOfSeats',
 			'waitingListNumberOfSeats',
+			'availableNumberOfWaitingListSeats',
 		];
 	}
 
@@ -131,15 +132,7 @@ class EventInstance extends DataObject {
 
 	public function insert(string $context = '') : int|bool {
 		$this->dateUpdated = time();
-		if ($this->waitingList === null) {
-			$event = $this->getParentEvent();
-			$this->waitingList = $event->waitingList;
-		}
-		if ($this->waitingListNumberOfSeats === null) {
-			$event = $this->getParentEvent();
-			$this->waitingListNumberOfSeats = $event->waitingListNumberOfSeats;
-		}
-		if ($this->availableNumberOfWaitingListSeats === null) {
+		if ($this->availableNumberOfWatingListSeats == null) {
 			$this->availableNumberOfWaitingListSeats = $this->waitingListNumberOfSeats;
 		}
 		return parent::insert();
@@ -168,10 +161,6 @@ class EventInstance extends DataObject {
 			if (empty($this->sublocationId)) {
 				$event = $this->getParentEvent();
 				$this->sublocationId = $event->sublocationId;
-			}
-			if ($this->waitingListNumberOfSeats === null) {
-				$event = $this->getParentEvent();
-				$this->waitingListNumberOfSeats = $event->waitingListNumberOfSeats;
 			}
 		}
 		return $return;
