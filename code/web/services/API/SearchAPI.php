@@ -1728,16 +1728,7 @@ class SearchAPI extends AbstractAPI {
 					]);
 					$subCatResult = $searchAPI->getSubCategories($textId, true);
 					$hasSubcategories = !empty($subCatResult['subCategories']);
-					$uniqueSubCategories = [];
-					if ($hasSubcategories) {
-						// Make sure only unique subcategories are returned based on textId,
-						// while we can have the same subcategory in multiple browse categories,
-						// we should only have it once per browse category (system_user_lists is the main offender here)
-						foreach ($subCatResult['subCategories'] as $subCategory) {
-							$uniqueSubCategories[$subCategory['textId']] = $subCategory;
-						}
-					}
-					$subCategoryCount = $hasSubcategories ? is_array($uniqueSubCategories) && count($uniqueSubCategories) : 0;
+					$subCategoryCount = $hasSubcategories ? is_array($subCatResult['subCategories']) && count($subCatResult['subCategories']) : 0;
 					$source = null;
 					if ($isSystemCategory) {
 						if ($textId === 'system_user_lists') {
@@ -1767,7 +1758,7 @@ class SearchAPI extends AbstractAPI {
 						'textId' => $textId,
 						'label' => $browseCategory->label,
 						'source' => $source,
-						'subCategories' => $hasSubcategories ? $uniqueSubCategories : [],
+						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
 						'records' => $results,
 					];
 				}
