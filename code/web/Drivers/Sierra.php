@@ -581,6 +581,10 @@ class Sierra extends AbstractIlsDriver {
 	public function optOutOfReadingHistoryILS(User $user): array {
 		$result = ['success' => false];
 
+		//First delete checkout hisotry
+		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $user->unique_ils_id . "/checkouts/history";
+		$this->_sendPage('sierra.deleteReadingHistory', 'DELETE', $sierraUrl, []);
+
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $user->unique_ils_id . "/checkouts/history/activationStatus";
 		$requestBody = json_encode(['readingHistoryActivation' => false]);
 		$this->_postPage('sierra.optOutOfReadingHistory', $sierraUrl, $requestBody);
