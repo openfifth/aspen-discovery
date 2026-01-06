@@ -13,12 +13,16 @@ require_once ROOT_DIR . '/sys/IP/IPAddress.php';
 require_once ROOT_DIR . '/sys/Smarty/Autoloader.php';
 require_once ROOT_DIR . '/sys/Utils/EncryptionUtils.php';
 require_once ROOT_DIR . '/sys/Timer.php';
+require_once ROOT_DIR . '/sys/Logger.php';
 
 global $timer;
 $timer = new Timer();
 
 global $configArray;
 $configArray = readConfig();
+
+global $logger;
+$logger = new Logger();
 
 initDatabase();
 
