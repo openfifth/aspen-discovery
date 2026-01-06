@@ -1726,8 +1726,6 @@ class SearchAPI extends AbstractAPI {
 						'system_recommended_for_you',
 						'system_saved_searches',
 					]);
-					$subCategoriesKey = $browseCategory->textId === "system_user_lists" ? 'records' : 'subCategories';
-					$recordsKey = $browseCategory->textId === "system_user_lists" ? 'subCategories' : 'records';
 					$subCatResult = $searchAPI->getSubCategories($textId, true);
 					$hasSubcategories = !empty($subCatResult['subCategories']);
 					$subCategoryCount = $hasSubcategories ? is_array($subCatResult['subCategories']) && count($subCatResult['subCategories']) : 0;

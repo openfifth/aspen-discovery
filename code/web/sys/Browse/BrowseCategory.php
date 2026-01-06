@@ -76,7 +76,7 @@ class BrowseCategory extends BaseBrowsable {
 					$lists->find();
 					$count = 0;
 					do {
-						if ($lists->isValidForDisplay()) {
+						if ($lists->isValidForDisplay() && $lists->id) {
 							$count++;
 							$id = $lists->id;
 							$this->_subBrowseCategories[$id] = clone($lists);
