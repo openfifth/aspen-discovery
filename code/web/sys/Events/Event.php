@@ -731,6 +731,8 @@ class Event extends DataObject {
 				$instance->date = $this->startDate;
 				$instance->time = $this->startTime;
 				$instance->length = $this->eventLength;
+				$instance->waitingList = $this->waitingList;
+				$instance->waitingListNumberOfSeats = $this->waitingListNumberOfSeats;
 				$instance->update();
 			} else { // If event does repeat and there are preview dates
 				if ($this->_dates && is_array($this->_dates)) {
@@ -744,6 +746,8 @@ class Event extends DataObject {
 							$instance->date = $date;
 							$instance->time = $this->startTime;
 							$instance->length = $this->eventLength;
+							$instance->waitingList = $this->waitingList;
+							$instance->waitingListNumberOfSeats = $this->waitingListNumberOfSeats;
 							$instance->update();
 						}
 					} else if (in_array('startTime', $this->_changedFields) || in_array('eventLength', $this->_changedFields)) { // If only the time or length has changed, we can just update existing events
@@ -756,6 +760,8 @@ class Event extends DataObject {
 							if ($instance->fetch()) {
 								$instance->time = $this->startTime;
 								$instance->length = $this->eventLength;
+								$instance->waitingList = $this->waitingList;
+								$instance->waitingListNumberOfSeats = $this->waitingListNumberOfSeats;
 								$instance->update();
 							}
 						}
