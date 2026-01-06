@@ -27,37 +27,34 @@ class Polaris extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
+		$summary = $patron->getCachedAccountSummary('ils');
 
-		//Can't use the quick response since it includes eContent.
-		$checkouts = $this->getCheckouts($patron);
-		$summary->numCheckedOut = count($checkouts);
-		$numOverdue = 0;
-		foreach ($checkouts as $checkout) {
-			if ($checkout->isOverdue()) {
-				$numOverdue++;
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			//Can't use the quick response since it includes eContent.
+			$checkouts = $this->getCheckouts($patron);
+			$summary->numCheckedOut = count($checkouts);
+			$numOverdue = 0;
+			foreach ($checkouts as $checkout) {
+				if ($checkout->isOverdue()) {
+					$numOverdue++;
+				}
 			}
+			$summary->numOverdue = $numOverdue;
+
+			$holds = $this->getHolds($patron);
+			$summary->numAvailableHolds = count($holds['available']);
+			$summary->numUnavailableHolds = count($holds['unavailable']);
+
+			//Get additional information
+			$basicDataResponse = $this->getBasicDataResponse($patron->getBarcode(), $patron->getPasswordOrPin(), UserAccount::isUserMasquerading());
+			if ($basicDataResponse != null) {
+				$summary->totalFines = $basicDataResponse->ChargeBalance;
+			}
+
+			//Get expiration information
+			$expirationInformation = $this->getExpirationInformation($patron);
+			$summary->expirationDate = $expirationInformation->expirationDate;
 		}
-		$summary->numOverdue = $numOverdue;
-
-		$holds = $this->getHolds($patron);
-		$summary->numAvailableHolds = count($holds['available']);
-		$summary->numUnavailableHolds = count($holds['unavailable']);
-
-		//Get additional information
-		$basicDataResponse = $this->getBasicDataResponse($patron->getBarcode(), $patron->getPasswordOrPin(), UserAccount::isUserMasquerading());
-		if ($basicDataResponse != null) {
-			$summary->totalFines = $basicDataResponse->ChargeBalance;
-		}
-
-		//Get expiration information
-		$expirationInformation = $this->getExpirationInformation($patron);
-		$summary->expirationDate = $expirationInformation->expirationDate;
-
 		return $summary;
 	}
 
@@ -764,11 +761,11 @@ class Polaris extends AbstractIlsDriver {
 		return $holds;
 	}
 
-	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null, $pickupSublocation = null) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null, $pickupSublocation = null) : array {
 		return $this->placeItemHold($patron, $recordId, null, $pickupBranch, $cancelDate, $pickupSublocation);
 	}
 
-	function placeItemHold($patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) {
+	function placeItemHold(User $patron, string $recordId, ?string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		if (str_contains($recordId, ':')) {
 			[
 				,
@@ -871,7 +868,7 @@ class Polaris extends AbstractIlsDriver {
 		ExternalRequestLogEntry::logRequest('polaris.placeHold', 'POST', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), $encodedBody, $this->lastResponseCode, $response, []);
 		$hold_result = $this->processHoldRequestResponse($response, $patron);
 		if ($hold_result['success']) {
-			//Force the title to be re-indexed when a hold is placed to ensure the
+			//Force the title to be re-indexed when a hold is placed to ensure the status updates
 			require_once ROOT_DIR . '/sys/Indexing/RecordIdentifiersToReload.php';
 			$recordIdentifierToReload = new RecordIdentifiersToReload();
 			$recordIdentifierToReload->type = $this->getIndexingProfile()->name;
@@ -918,8 +915,8 @@ class Polaris extends AbstractIlsDriver {
 		return false; // Details not found.
 	}
 
-	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) {
-		if (strpos($recordId, ':') !== false) {
+	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) : array {
+		if (str_contains($recordId, ':')) {
 			[
 				,
 				$shortId,
@@ -966,8 +963,8 @@ class Polaris extends AbstractIlsDriver {
 		return $hold_result;
 	}
 
-	public function confirmHold(User $patron, $recordId, $confirmationId) {
-		if (strpos($recordId, ':') !== false) {
+	public function confirmHold(User $patron, string $recordId, string $confirmationId) : array {
+		if (str_contains($recordId, ':')) {
 			[
 				,
 				$shortId,
@@ -1024,14 +1021,13 @@ class Polaris extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
+		$staffInfo = $this->getStaffUserInfo();
 		if (!$isIll) {
-			$staffInfo = $this->getStaffUserInfo();
 			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$cancelId/cancelled?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}";
 			$response = $this->getWebServiceResponse($polarisUrl, 'PUT', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.cancelHold', 'PUT', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
 		} else {
-			$staffInfo = $this->getStaffUserInfo();
 			$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/illrequests/$cancelId/cancelled?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}";
 			$response = $this->getWebServiceResponse($polarisUrl, 'PUT', $this->getAccessToken($patron->getBarcode(), $patron->getPasswordOrPin()), false, UserAccount::isUserMasquerading());
 			ExternalRequestLogEntry::logRequest('polaris.cancelIllHold', 'PUT', $this->getWebServiceURL() . $polarisUrl, $this->apiCurlWrapper->getHeaders(), false, $this->lastResponseCode, $response, []);
@@ -1039,8 +1035,6 @@ class Polaris extends AbstractIlsDriver {
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResponse = json_decode($response);
 			if ($jsonResponse->PAPIErrorCode == 0) {
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfHolds();
 				$result['success'] = true;
 				$result['message'] = translate([
 					'text' => 'The hold has been cancelled.',
@@ -1057,7 +1051,6 @@ class Polaris extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 
-				return $result;
 			} else {
 				$message = "The hold could not be cancelled. {$jsonResponse->ErrorMessage}";
 				$result['success'] = false;
@@ -1070,12 +1063,12 @@ class Polaris extends AbstractIlsDriver {
 				]);
 				$result['api']['message'] = $jsonResponse->ErrorMessage;
 
-				return $result;
 			}
+			return $result;
 		} else {
 			$message = "The hold could not be cancelled.";
 			if (IPAddress::showDebuggingInformation()) {
-				$message .= " (HTTP Code: {$this->lastResponseCode})";
+				$message .= " (HTTP Code: $this->lastResponseCode)";
 			}
 			$result['success'] = false;
 			$result['message'] = $message;
@@ -1386,7 +1379,7 @@ class Polaris extends AbstractIlsDriver {
 		}
 	}
 
-	function freezeHold(User $patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array {
 		$staffInfo = $this->getStaffUserInfo();
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$itemToFreezeId/inactive";
 		$body = new stdClass();
@@ -1407,7 +1400,6 @@ class Polaris extends AbstractIlsDriver {
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResponse = json_decode($response);
 			if ($jsonResponse->PAPIErrorCode == 0) {
-				$patron->forceReloadOfHolds();
 				$result['success'] = true;
 				$result['message'] = translate([
 					'text' => 'The hold has been frozen.',
@@ -1424,7 +1416,6 @@ class Polaris extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 
-				return $result;
 			} else {
 				$message = "The hold could not be frozen. {$jsonResponse->ErrorMessage}";
 				$result['success'] = false;
@@ -1437,8 +1428,8 @@ class Polaris extends AbstractIlsDriver {
 				]);
 				$result['api']['message'] = $jsonResponse->ErrorMessage;
 
-				return $result;
 			}
+			return $result;
 		} else {
 			$message = "The hold could not be frozen.";
 			if (IPAddress::showDebuggingInformation()) {
@@ -1461,7 +1452,7 @@ class Polaris extends AbstractIlsDriver {
 		}
 	}
 
-	function thawHold(User $patron, $recordId, $itemToThawId): array {
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
 		$staffInfo = $this->getStaffUserInfo();
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$itemToThawId/active";
 		$body = new stdClass();
@@ -1472,7 +1463,6 @@ class Polaris extends AbstractIlsDriver {
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResponse = json_decode($response);
 			if ($jsonResponse->PAPIErrorCode == 0) {
-				$patron->forceReloadOfHolds();
 				$result['success'] = true;
 				$result['message'] = translate([
 					'text' => 'The hold has been thawed.',
@@ -1488,7 +1478,6 @@ class Polaris extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 
-				return $result;
 			} else {
 				$message = "The hold could not be thawed. {$jsonResponse->ErrorMessage}";
 				$result['success'] = false;
@@ -1500,8 +1489,8 @@ class Polaris extends AbstractIlsDriver {
 				]);
 				$result['api']['message'] = $jsonResponse->ErrorMessage;
 
-				return $result;
 			}
+			return $result;
 		} else {
 			$message = "The hold could not be thawed.";
 			if (IPAddress::showDebuggingInformation()) {
@@ -1524,7 +1513,7 @@ class Polaris extends AbstractIlsDriver {
 		}
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array {
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
 		//Polaris is currently unable to change a pickup area unless the pickup location does as well.
 		// we will return a good message if this is the case.
 		$existingHolds = $this->getHolds($patron);
@@ -1536,7 +1525,7 @@ class Polaris extends AbstractIlsDriver {
 		if ($location->find(true)) {
 			/** @var Hold $hold */
 			foreach ($allHolds as $hold) {
-				if ($hold->sourceId == $itemToUpdateId) {
+				if ($hold->sourceId == $holdId) {
 					if ($hold->pickupLocationId == $location->locationId && !empty($newPickupSublocation)) {
 						$message = translate([
 							'text' => 'To change pickup area within the branch, please contact the library.',
@@ -1559,7 +1548,7 @@ class Polaris extends AbstractIlsDriver {
 		}
 
 		$staffInfo = $this->getStaffUserInfo();
-		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$itemToUpdateId/pickupbranch?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}&pickupbranchid=$newPickupLocation";
+		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/holdrequests/$holdId/pickupbranch?wsid={$this->getWorkstationID($patron)}&userid={$staffInfo['polarisId']}&pickupbranchid=$newPickupLocation";
 		if (!empty($newPickupSublocation)) {
 			$polarisUrl .= "&holdpickupareaid=$newPickupSublocation";
 		}
@@ -1570,7 +1559,6 @@ class Polaris extends AbstractIlsDriver {
 		if ($response && $this->lastResponseCode == 200) {
 			$jsonResponse = json_decode($response);
 			if ($jsonResponse->PAPIErrorCode == 0) {
-				$patron->forceReloadOfHolds();
 				$result['success'] = true;
 				$result['message'] = translate([
 					'text' => 'The pickup location of your hold was changed successfully.',
@@ -1587,7 +1575,6 @@ class Polaris extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 
-				return $result;
 			} else {
 				$message = translate([
 						'text' => 'Sorry, the pickup location of your hold could not be changed.',
@@ -1603,15 +1590,15 @@ class Polaris extends AbstractIlsDriver {
 				]);
 				$result['api']['message'] = $jsonResponse->ErrorMessage;
 
-				return $result;
 			}
+			return $result;
 		} else {
 			$message = translate([
 				'text' => 'Sorry, the pickup location of your hold could not be changed.',
 				'isPublicFacing' => true,
 			]);
 			if (IPAddress::showDebuggingInformation()) {
-				$message .= " (HTTP Code: {$this->lastResponseCode})";
+				$message .= " (HTTP Code: $this->lastResponseCode)";
 			}
 			$result['success'] = false;
 			$result['message'] = $message;
@@ -2186,9 +2173,7 @@ class Polaris extends AbstractIlsDriver {
 					$hold_result['api']['action'] = translate([
 						'text' => 'Go to Holds',
 						'isPublicFacing' => true,
-					]);;
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
+					]);
 				} elseif ($jsonResult->StatusType == 3) {
 					$hold_result['success'] = false;
 					$hold_result['confirmationNeeded'] = true;

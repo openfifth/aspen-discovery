@@ -206,21 +206,16 @@ class VdxDriver {
 	}
 
 	public function getAccountSummary(User $user): AccountSummary {
-		[
-			$existingId,
-			$summary,
-		] = $user->getCachedAccountSummary('vdx');
+		$summary = $user->getCachedAccountSummary('vdx');
 
-		if ($summary === null || isset($_REQUEST['reload'])) {
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			//Get account information from api
 			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $user->id;
-			$summary->source = 'vdx';
 			$summary->resetCounters();
 
 			$requests = $this->getRequests($user);
 			$summary->numUnavailableHolds = count($requests['unavailable']);
+			$summary->update();
 		}
 
 		return $summary;
@@ -420,8 +415,8 @@ class VdxDriver {
 				]),
 				'success' => true,
 			];
-			$patron->clearCachedAccountSummaryForSource('vdx');
-			$patron->forceReloadOfHolds();
+			$accountSummary = $patron->getCachedAccountSummary('vdx');
+			$accountSummary->markHoldsStale();
 		} else {
 			$results = [
 				'title' => translate([
@@ -483,8 +478,8 @@ class VdxDriver {
 							'isPublicFacing' => true,
 						]),
 					];
-					$patron->clearCachedAccountSummaryForSource('vdx');
-					$patron->forceReloadOfHolds();
+					$accountSummary = $patron->getCachedAccountSummary('vdx');
+					$accountSummary->markHoldsStale();
 				} else {
 					$result['message'] = translate([
 						'text' => 'Failed to cancel the request, please try again in a few minutes. If this problem persists, please contact the library.',

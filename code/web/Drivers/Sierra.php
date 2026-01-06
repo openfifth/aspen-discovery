@@ -581,6 +581,10 @@ class Sierra extends AbstractIlsDriver {
 	public function optOutOfReadingHistoryILS(User $user): array {
 		$result = ['success' => false];
 
+		//First delete checkout hisotry
+		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $user->unique_ils_id . "/checkouts/history";
+		$this->_sendPage('sierra.deleteReadingHistory', 'DELETE', $sierraUrl, []);
+
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $user->unique_ils_id . "/checkouts/history/activationStatus";
 		$requestBody = json_encode(['readingHistoryActivation' => false]);
 		$this->_postPage('sierra.optOutOfReadingHistory', $sierraUrl, $requestBody);
@@ -1040,14 +1044,13 @@ class Sierra extends AbstractIlsDriver {
 		return $id;
 	}
 
-	function freezeHold($patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array {
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/holds/$itemToFreezeId";
 		$params = [
 			'freeze' => true,
 		];
 		$freezeResponse = $this->_sendPage('sierra.freezeHold', 'PUT', $sierraUrl, $params);
 		if (!$freezeResponse) {
-			$patron->forceReloadOfHolds();
 			return [
 				'success' => true,
 				'message' => translate([
@@ -1095,14 +1098,13 @@ class Sierra extends AbstractIlsDriver {
 		}
 	}
 
-	function thawHold($patron, $recordId, $itemToThawId): array {
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/holds/$itemToThawId";
 		$params = [
 			'freeze' => false,
 		];
 		$thawResponse = $this->_sendPage('sierra.thawHold', 'PUT', $sierraUrl, json_encode($params));
 		if (!$thawResponse) {
-			$patron->forceReloadOfHolds();
 			return [
 				'success' => true,
 				'message' => translate([
@@ -1150,14 +1152,13 @@ class Sierra extends AbstractIlsDriver {
 		}
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $holdId, $newPickupLocation, $newPickupSublocation = null): array {
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/holds/$holdId";
 		$params = [
 			'pickupLocation' => $newPickupLocation,
 		];
 		$changePickupResponse = $this->_sendPage('sierra.changePickupLocation', 'PUT', $sierraUrl, json_encode($params));
 		if (!$changePickupResponse) {
-			$patron->forceReloadOfHolds();
 			$result['success'] = true;
 			$result['message'] = translate([
 				'text' => 'The pickup location of your hold was changed successfully.',
@@ -1193,11 +1194,10 @@ class Sierra extends AbstractIlsDriver {
 		return $result;
 	}
 
-	public function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	public function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/holds/$cancelId";
 		$cancelHoldResponse = $this->_sendPage('sierra.cancelHold', 'DELETE', $sierraUrl, '');
 		if (!$cancelHoldResponse) {
-			$patron->forceReloadOfHolds();
 			return [
 				'success' => true,
 				'message' => translate([
@@ -1245,7 +1245,7 @@ class Sierra extends AbstractIlsDriver {
 		}
 	}
 
-	public function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	public function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		/** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
 		$hold_result = [
 			'success' => false,
@@ -1313,8 +1313,6 @@ class Sierra extends AbstractIlsDriver {
 				'isPublicFacing' => true,
 			]);
 			//Do not show go to holds for Sierra since it may take 30 seconds or so for the hold to be available in the patron account
-			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			$patron->forceReloadOfHolds();
 		} else {
 			//Get the hold form
 			$message = $placeHoldResponse->description ?? $placeHoldResponse->name;
@@ -1363,7 +1361,7 @@ class Sierra extends AbstractIlsDriver {
 		return $hold_result;
 	}
 
-	public function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) : array {
+	public function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		return $this->placeHold($patron, $itemId, $pickupBranch, $cancelDate);
 	}
 
@@ -1688,108 +1686,107 @@ class Sierra extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
-		$patronInfo = $this->getPatronInfoByBarcode($patron->getBarcode());
-		if ($patronInfo) {
-			//To save time, we don't want to load full details on the checkouts. Instead, we can call the APIs just to get counts
-			$numCheckoutsProcessed = 0;
-			$numOverdue = 0;
-			$totalCheckouts = -1;
+		$summary = $patron->getCachedAccountSummary('ils');
 
-			while ($numCheckoutsProcessed < $totalCheckouts || $totalCheckouts == -1) {
-				$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patron->unique_ils_id . "/checkouts?fields=default&limit=100&offset=$numCheckoutsProcessed";
-				$checkouts = $this->_callUrl('sierra.getCheckouts', $sierraUrl);
-				if ($totalCheckouts == -1) {
-					$totalCheckouts = $checkouts->total;
-				}
-				foreach ($checkouts->entries as $entry) {
-					$checkoutDueDate = strtotime($entry->dueDate);
-					$dueDate = strtotime('midnight', $checkoutDueDate);
-					$today = strtotime('midnight');
-					$daysUntilDue = ceil(($dueDate - $today) / (24 * 60 * 60));
-					$overdue = $daysUntilDue < 0;
-					if ($overdue) {
-						$numOverdue++;
-					}
-				}
-				$numCheckoutsProcessed += count($checkouts->entries);
-			}
-			$summary->numCheckedOut = $totalCheckouts;
-			$summary->numOverdue = $numOverdue;
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			$patronInfo = $this->getPatronInfoByBarcode($patron->getBarcode());
+			if ($patronInfo) {
+				//To save time, we don't want to load full details on the checkouts. Instead, we can call the APIs just to get counts
+				$numCheckoutsProcessed = 0;
+				$numOverdue = 0;
+				$totalCheckouts = -1;
 
-			$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patron->unique_ils_id . "/holds?fields=default&limit=1000";
-			$holds = $this->_callUrl('sierra.getHolds', $sierraUrl);
-			$numAvailableHolds = 0;
-			$numUnavailableHolds = 0;
-			if ($holds->total > 0) {
-				foreach ($holds->entries as $sierraHold) {
-					$available = false;
-					$isInnReach = false;
-					$recordStatus = $sierraHold->status->code;
-					// check item record status
-					if (preg_match($this->urlIdRegExp, $sierraHold->record, $m)) {
-						$recordId = $m[1];
-					} else {
-						$recordId = substr($sierraHold->record, strrpos($sierraHold->record, '/') + 1);
+				while ($numCheckoutsProcessed < $totalCheckouts || $totalCheckouts == -1) {
+					$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patron->unique_ils_id . "/checkouts?fields=default&limit=100&offset=$numCheckoutsProcessed";
+					$checkouts = $this->_callUrl('sierra.getCheckouts', $sierraUrl);
+					if ($totalCheckouts == -1) {
+						$totalCheckouts = $checkouts->total;
 					}
-					if ($sierraHold->recordType == 'i') {
-						$recordItemStatus = $sierraHold->status->code;
-						// If this is an inn-reach exclude from check -- this comes later
-						if (!str_contains($recordId, "@")) {
-							// if the item status is "on hold shelf" (!) but the hold record status is "on hold" (0) use "on hold" status
-							// the "on hold shelf" status is for another patron.
-							if ($recordItemStatus != "!" && $recordStatus != '0') {
-								// check for in transit status see
-								if ($recordItemStatus == 't') {
-									if (isset($sierraHold->priority) && (int)$sierraHold->priority == 1) {
-										$recordStatus = 't';
-									}
-								}
-							}
-						} else {
-							// inn-reach status
-							$isInnReach = true;
-							$recordStatus = $recordItemStatus;
+					foreach ($checkouts->entries as $entry) {
+						$checkoutDueDate = strtotime($entry->dueDate);
+						$dueDate = strtotime('midnight', $checkoutDueDate);
+						$today = strtotime('midnight');
+						$daysUntilDue = ceil(($dueDate - $today) / (24 * 60 * 60));
+						$overdue = $daysUntilDue < 0;
+						if ($overdue) {
+							$numOverdue++;
 						}
 					}
-					switch ((string)$recordStatus) {
-						case '0':
-						case '-':
-							if ($isInnReach) {
-								if (!empty($sierraHold->pickupByDate)) {
-									$available = true;
+					$numCheckoutsProcessed += count($checkouts->entries);
+				}
+				$summary->numCheckedOut = $totalCheckouts;
+				$summary->numOverdue = $numOverdue;
+
+				$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/" . $patron->unique_ils_id . "/holds?fields=default&limit=1000";
+				$holds = $this->_callUrl('sierra.getHolds', $sierraUrl);
+				$numAvailableHolds = 0;
+				$numUnavailableHolds = 0;
+				if ($holds->total > 0) {
+					foreach ($holds->entries as $sierraHold) {
+						$available = false;
+						$isInnReach = false;
+						$recordStatus = $sierraHold->status->code;
+						// check item record status
+						if (preg_match($this->urlIdRegExp, $sierraHold->record, $m)) {
+							$recordId = $m[1];
+						} else {
+							$recordId = substr($sierraHold->record, strrpos($sierraHold->record, '/') + 1);
+						}
+						if ($sierraHold->recordType == 'i') {
+							$recordItemStatus = $sierraHold->status->code;
+							// If this is an inn-reach exclude from check -- this comes later
+							if (!str_contains($recordId, "@")) {
+								// if the item status is "on hold shelf" (!) but the hold record status is "on hold" (0) use "on hold" status
+								// the "on hold shelf" status is for another patron.
+								if ($recordItemStatus != "!" && $recordStatus != '0') {
+									// check for in transit status see
+									if ($recordItemStatus == 't') {
+										if (isset($sierraHold->priority) && (int)$sierraHold->priority == 1) {
+											$recordStatus = 't';
+										}
+									}
 								}
+							} else {
+								// inn-reach status
+								$isInnReach = true;
+								$recordStatus = $recordItemStatus;
 							}
-							break;
-						case 'b':
-						case 'j':
-						case 'i':
-						case '!':
-						case "#": // inn-reach status
-							$available = true;
-							break;
-						default:
-							//$available = false
-					}
-					if ($available) {
-						$numAvailableHolds++;
-					} else {
-						$numUnavailableHolds++;
+						}
+						switch ((string)$recordStatus) {
+							case '0':
+							case '-':
+								if ($isInnReach) {
+									if (!empty($sierraHold->pickupByDate)) {
+										$available = true;
+									}
+								}
+								break;
+							case 'b':
+							case 'j':
+							case 'i':
+							case '!':
+							case "#": // inn-reach status
+								$available = true;
+								break;
+							default:
+								//$available = false
+						}
+						if ($available) {
+							$numAvailableHolds++;
+						} else {
+							$numUnavailableHolds++;
+						}
 					}
 				}
+				$summary->numAvailableHolds = $numAvailableHolds;
+				$summary->numUnavailableHolds = $numUnavailableHolds;
+
+				$summary->totalFines = $patronInfo->moneyOwed;
+
+				//Get expiration information
+				$expirationInformation = $this->getExpirationInformation($patron);
+				$summary->expirationDate = $expirationInformation->expirationDate;
 			}
-			$summary->numAvailableHolds = $numAvailableHolds;
-			$summary->numUnavailableHolds = $numUnavailableHolds;
-
-			$summary->totalFines = $patronInfo->moneyOwed;
-
-			//Get expiration information
-			$expirationInformation = $this->getExpirationInformation($patron);
-			$summary->expirationDate = $expirationInformation->expirationDate;
 		}
 
 		return $summary;
@@ -4197,12 +4194,23 @@ class Sierra extends AbstractIlsDriver {
 		global $logger;
 		$loginResult = false;
 
-		$curlUrl = $this->getVendorOpacUrl() . "/patroninfo/";
+		$headers = [
+			"Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+			"Accept-Language: en-US,en;q=0.5",
+			"Accept-Encoding: gzip, deflate, br, zstd",
+			"Content-Type: application/x-www-form-urlencoded",
+			"Origin:{$this->getVendorOpacUrl()}"
+		];
+		$this->curlWrapper->addCustomHeaders($headers, true);
+		$curlUrl = $this->getVendorOpacUrl() . "/patroninfo/%2Fpatroninfo%2F";
 		$post_data = $this->_getLoginFormValues($patron);
 
-		$logger->log('Loading page ' . $curlUrl, Logger::LOG_NOTICE);
+		$logger->log('Posting Login Credentials to ' . $curlUrl, Logger::LOG_NOTICE);
 
 		$loginResponse = $this->curlWrapper->curlPostPage($curlUrl, $post_data);
+		if (str_contains($loginResponse, 'Access Denied')) {
+			return false;
+		}
 		$curlInfo = curl_getinfo($this->curlWrapper->curl_connection);
 		$redirectUrl = $curlInfo['url'];
 

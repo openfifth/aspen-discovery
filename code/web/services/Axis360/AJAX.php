@@ -2,7 +2,7 @@
 require_once ROOT_DIR . '/JSON_Action.php';
 
 class Axis360_AJAX extends JSON_Action {
-	function placeHold() {
+	function placeHold() : array {
 		$user = UserAccount::getLoggedInUser();
 
 		$id = $_REQUEST['id'];

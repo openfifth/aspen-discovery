@@ -38,8 +38,7 @@ class ListAPI extends AbstractAPI {
 					'createListGroup',
 					'deleteListGroup',
 					'editListGroup',
-					'editListGroupParent',
-					'getListGroupDetails'
+					'editListGroupParent'
 				])) {
 					$result = ['result' => $this->$method()];
 					$output = json_encode($result);

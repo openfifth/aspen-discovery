@@ -66,7 +66,7 @@ class StringUtils {
 	static function removeTrailingPunctuation($str) : string {
 		// We couldn't find the file, return an empty value:
 		$str = trim($str);
-		$str = preg_replace("~([-/:,]+)$~", "", $str);
+		$str = preg_replace("~([/:,]+)$~", "", $str);
 		return trim($str);
 	}
 

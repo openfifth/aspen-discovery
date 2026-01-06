@@ -36,6 +36,7 @@ class ShareIt {
 
 			//Process the search in SHAREit
 			$searchRequestWrapper = new CurlWrapper();
+			$searchRequestWrapper->setConnectTimeout(50);
 			$searchRequestWrapper->addCustomHeaders([
 				'Accept: application/json',
 				'Content-Type: application/json',

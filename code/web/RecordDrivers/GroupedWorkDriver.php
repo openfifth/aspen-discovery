@@ -181,8 +181,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	static function compareEditionsForRecords($literaryForm, $a, $b) {
-		//We only want to compare editions if the work is non-fiction
+	static function compareEditionsForRecords(string $literaryForm, Grouping_Record $a, Grouping_Record $b) : int {
+		//We only want to compare editions if the work is non-fiction or an eMagazine
 		if ($a->format == 'eMagazine' && $b->format == 'eMagazine') {
 			if ($a->getShelfLocation() == $b->getShelfLocation()) {
 				return 0;
@@ -192,15 +192,15 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				return 1;
 			}
 		} elseif ($literaryForm == 'Non Fiction') {
-			$editionA = GroupedWorkDriver::normalizeEdition($a->edition);
-			$editionB = GroupedWorkDriver::normalizeEdition($b->edition);
-			if ($editionA == $editionB) {
+			//Comparing by edition has proven non-reliable based on the actual data.
+			//Compare by publication date instead.
+			$pubDateA = $a->getSortablePublicationDate();
+			$pubDateB = $b->getSortablePublicationDate();
+			if ($pubDateA == 0 || $pubDateB == 0) {
+				//Don't compare based on pub date
 				return 0;
-			} elseif ($editionA > $editionB) {
-				return -1;
-			} else {
-				return 1;
 			}
+			return $pubDateB <=> $pubDateA;
 		}
 		return 0;
 	}
@@ -210,7 +210,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	static function compareHoldability($a, $b) {
+	static function compareHoldability(Grouping_Record $a, Grouping_Record $b) : int {
 		if ($a->isHoldable() == $b->isHoldable()) {
 			return 0;
 		} elseif ($a->isHoldable()) {
@@ -225,7 +225,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	static function compareLanguagesForRecords($a, $b) {
+	static function compareLanguagesForRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		$aHasEnglish = false;
 		if (is_array($a->language)) {
 			$languageA = strtolower(reset($a->language));
@@ -318,7 +318,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	function compareRelatedRecords($a, $b) {
+	function compareRelatedRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		//Get literary form to determine if we should compare editions
 		$literaryForm = '';
 		if (isset($this->fields['literary_form'])) {
@@ -565,20 +565,19 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		} else {
 			$bookCoverUrl = '';
 		}
-		$bookCoverUrl .= "/bookcover.php?id={$this->getUniqueID()}&size={$size}&type=grouped_work";
+		$bookCoverUrl .= "/bookcover.php?id={$this->getUniqueID()}&size=$size&type=grouped_work";
 
 		if (isset($this->fields['format_category'])) {
-			$category = '';
 			if (is_array($this->fields['format_category'])) {
 				$category = reset($this->fields['format_category']);
 			} else {
 				$category = $this->fields['format_category'];
 			}
 			if (!empty($category)) {
-				if (strpos($category, '#') !== false) {
+				if (str_contains($category, '#')) {
 					$category = substr($category, strpos($category, '#') + 1);
 				}
-				$bookCoverUrl .= "&category=" . $category;
+				$bookCoverUrl .= "&category=" . urlencode($category);
 			}
 		}
 
@@ -3538,27 +3537,6 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			$results->closeCursor();
 		}
 		return $scopedItems;
-	}
-
-	private static function normalizeEdition($edition) {
-		$edition = strtolower($edition);
-		$edition = str_replace('first', '1', $edition);
-		$edition = str_replace('second', '2', $edition);
-		$edition = str_replace('third', '3', $edition);
-		$edition = str_replace('fourth', '4', $edition);
-		$edition = str_replace('fifth', '5', $edition);
-		$edition = str_replace('sixth', '6', $edition);
-		$edition = str_replace('seventh', '7', $edition);
-		$edition = str_replace('eighth', '8', $edition);
-		$edition = str_replace('ninth', '9', $edition);
-		$edition = str_replace('tenth', '10', $edition);
-		$edition = str_replace('eleventh', '11', $edition);
-		$edition = str_replace('twelfth', '12', $edition);
-		$edition = str_replace('thirteenth', '13', $edition);
-		$edition = str_replace('fourteenth', '14', $edition);
-		$edition = str_replace('fifteenth', '15', $edition);
-		$edition = preg_replace('/\D/', '', $edition);
-		return $edition;
 	}
 
 	/**
