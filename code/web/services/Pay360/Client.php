@@ -249,8 +249,7 @@ class Pay360_Client  {
 		}
 
 		$parameters = [
-			'paymentAmount' => $this->payment->amount,  
-			'paymentStatus' => $this->payment->status,
+			'paymentAmount' => $this->payment->totalPaid,  
 			'outcome' => $this->payment->pay360TransactionStateMessage,
 			'orderId' => $this->payment->orderId,
 		];

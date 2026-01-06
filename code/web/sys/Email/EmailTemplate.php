@@ -312,8 +312,7 @@ class EmailTemplate extends DataObject {
 
 		if ($this->templateType == 'paymentFailure') {
 			$text = str_replace('%payment.amount%', $parameters['paymentAmount'] ?? '', $text);  
-			$text = str_replace('%payment.status%', $parameters['paymentStatus'] ?? '', $text);
-			$text = str_replace('%payment.reason%', $parameters['reason'] ?? '', $text);
+			$text = str_replace('%payment.outcome%', $parameters['outcome'] ?? '', $text);
 			$text = str_replace('%payment.orderId%', $parameters['orderId'] ?? '', $text);
 			return $text;
 		}
