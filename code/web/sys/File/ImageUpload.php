@@ -25,7 +25,9 @@ class ImageUpload extends DataObject {
 	// Hero slider specific fields.
 	public $aspectRatioWidth;
 	public $aspectRatioHeight;
+	/** @noinspection PhpUnused */
 	public $altText;
+	/** @noinspection PhpUnused */
 	public $pageLink;
 	public $startDate;
 	public $endDate;
@@ -233,14 +235,14 @@ class ImageUpload extends DataObject {
 			],
 			'startDate' => [
 				'property' => 'startDate',
-				'type' => 'date',
+				'type' => 'timestamp',
 				'label' => 'Start Date',
 				'description' => 'Date when this image should start displaying.',
 				'hideInLists' => true,
 			],
 			'endDate' => [
 				'property' => 'endDate',
-				'type' => 'date',
+				'type' => 'timestamp',
 				'label' => 'End Date',
 				'description' => 'Date when this image should stop displaying.',
 				'hideInLists' => true,

@@ -89,7 +89,10 @@ class SeriesCoverBuilder {
 				break;
 			}
 		}
-		for ($i = min(count($validListEntries) - 1, 3); $i >= 0; $i--) {
+		//global $logger;
+		$maxIndex = min(count($validListEntries) - 1, 3);
+		for ($i = $maxIndex; $i >= 0; $i--) {
+			/** @var GroupedWorkDriver $recordDriver */
 			$recordDriver = $validListEntries[$i];
 			$bookcoverUrl = $recordDriver->getBookcoverUrl('medium', true);
 			//Load the cover
@@ -100,13 +103,17 @@ class SeriesCoverBuilder {
 				$listEntryHeight = imagesy($listEntryImageResource);
 
 				//Put a white background beneath the cover
-				$coverLeft = 10 + (40 * (3 - $i));
-				$coverTop = 10 + (35 * (3 - $i));
+				$coverLeft = 10 + (40 * ($maxIndex - $i));
+				$coverTop = 10 + (35 * ($maxIndex - $i));
 				imagefilledrectangle($imageCanvas, $coverLeft, $coverTop, $listEntryWidth + $coverLeft, $listEntryHeight + $coverTop, $white);
 				if (imagecopyresampled($imageCanvas, $listEntryImageResource, $coverLeft, $coverTop, 0, 0, $listEntryWidth, $listEntryHeight, $listEntryWidth, $listEntryHeight)) {
 					$numCoversLoaded++;
+				}else{
+					//$logger->log("Could not load copy cover onto image", Logger::LOG_DEBUG);
 				}
 				imagedestroy($listEntryImageResource);
+			}else{
+				//$logger->log("Could not load bookcover", Logger::LOG_DEBUG);
 			}
 		}
 
