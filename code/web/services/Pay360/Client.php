@@ -232,7 +232,7 @@ class Pay360_Client  {
 
 	function sendEmail() : void {
 		global $logger;
-
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
 		$emailTemplate = EmailTemplate::getActiveTemplate('paymentFailure');
 		if (empty($emailTemplate)) {
 			$logger->log("Could not send email: no active template found", Logger::LOG_ERROR);
