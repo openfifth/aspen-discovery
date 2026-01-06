@@ -11730,13 +11730,18 @@ class MyAccount_AJAX extends JSON_Action {
 			]);
 			$result['message'] = str_replace(['%1%', '%2%'], [$event->title, $nextPosition], $message);
 			$result['position'] = $nextPosition;
+
+			$sourceId = 'aspenEvent_1_' . $eventInstance->id;
+			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+			$recordDriver = new AspenEventRecordDriver($sourceId);
+			$this->saveUserEventEntry($sourceId, $userId, $recordDriver);
+			
 		} else {
 			$result['message'] = translate([
 				'text' => 'Failed to add you to the waiting list. Please try again.',
 				'isPublicFacing' => true,
 			]);
 		}
-		$this->saveUserEventEntry($sourceId, $userId, $recordDriver);
 
 		return $result;
 	}
