@@ -4201,6 +4201,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
 				$events[$entry->sourceId]['userWaitingListPosition'] = $userWaitingListPosition;
 				$events[$entry->sourceId]['userCanRegister'] = $userCanRegister;
+				$events[$entry->sourceId]['waitingListFull'] = $eventInstance->isWaitingListFull();
 			}
 		}
 
