@@ -2282,9 +2282,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			}
 
 			$accountSummary = $patron->getAccountSummary();
-			if ($accountSummary->totalFines != $totalFinesOwed) {
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			}
 		}
 		return $fines;
 	}

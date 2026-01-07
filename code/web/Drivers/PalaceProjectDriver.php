@@ -28,10 +28,6 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 	 * @access public
 	 */
 	public function getCheckouts(User $patron): array {
-		if (isset($this->checkouts[$patron->id])) {
-			return $this->checkouts[$patron->id];
-		}
-
 		$this->loadCirculationInformation($patron);
 
 		return $this->checkouts[$patron->id];
@@ -39,7 +35,8 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 
 	public function loadCirculationInformation(User $patron) : void {
 		$accountSummary = $patron->getCachedAccountSummary('palace_project');
-		$cachedHolds = $patron->getCachedHoldsForSource('axis360');
+		$cachedHolds = $patron->getCachedHoldsForSource('palace_project');
+		$cachedCheckouts = $patron->getCachedCheckoutsForSource('palace_project');
 
 		if ($accountSummary->holdsAreStale || $accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds']) || isset($_REQUEST['refreshCheckouts'])) {
 			require_once ROOT_DIR . '/sys/User/Checkout.php';
@@ -51,162 +48,162 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 			];
 
 			$settings = $this->getSettings($patron);
-			if (!$settings) {
-				$this->checkouts[$patron->id] = $checkouts;
-				$this->holds[$patron->id] = $holds;
-				return;
-			}
-
-			$headers = $this->getPalaceProjectHeaders($patron);
-			$homeLibrary = $patron->getHomeLibrary();
-			if (!empty($homeLibrary)) {
-				$homePalaceProjectLibraryId = $homeLibrary->palaceProjectLibraryId;
-				if (!empty($homePalaceProjectLibraryId)) {
-					$checkoutsUrl = $settings->apiUrl . "/" . $homePalaceProjectLibraryId . "/loans?refresh=false";
+			if ($settings !== false) {
+				$headers = $this->getPalaceProjectHeaders($patron);
+				$homeLibrary = $patron->getHomeLibrary();
+				if (!empty($homeLibrary)) {
+					$homePalaceProjectLibraryId = $homeLibrary->palaceProjectLibraryId;
+					if (!empty($homePalaceProjectLibraryId)) {
+						$checkoutsUrl = $settings->apiUrl . "/" . $homePalaceProjectLibraryId . "/loans?refresh=false";
+					} else {
+						$checkoutsUrl = $settings->apiUrl . "/" . $settings->libraryId . "/loans?refresh=false";
+					}
 				} else {
 					$checkoutsUrl = $settings->apiUrl . "/" . $settings->libraryId . "/loans?refresh=false";
 				}
-			} else {
-				$checkoutsUrl = $settings->apiUrl . "/" . $settings->libraryId . "/loans?refresh=false";
-			}
 
-			$this->initCurlWrapper();
-			$this->curlWrapper->addCustomHeaders($headers, true);
-			$response = $this->curlWrapper->curlGetPage($checkoutsUrl);
-			ExternalRequestLogEntry::logRequest('palaceProject.getCirculation', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-			if ($response !== false) {
-				$jsonResponse = json_decode($response);
-				if (!empty($jsonResponse) && !empty($jsonResponse->publications)) {
-					foreach ($jsonResponse->publications as $publication) {
-						//Figure out if this is a hold or a checkout
-						$links = $publication->links;
-						$circulationType = 'checkout';
-						$holdAvailable = false;
-						foreach ($links as $link) {
-							if ($link->rel == 'http://opds-spec.org/acquisition/borrow') {
-								if ($link->properties->availability->state == 'reserved') {
-									$circulationType = 'hold';
-									$holdAvailable = false;
-								}else if ($link->properties->availability->state == 'ready') {
-									$circulationType = 'hold';
-									$holdAvailable = true;
-								}
-							}
-						}
-
-						require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitle.php';
-						require_once ROOT_DIR . '/RecordDrivers/PalaceProjectRecordDriver.php';
-						if ($circulationType == 'checkout') {
-							$checkout = new Checkout();
-							$checkout->type = 'palace_project';
-							$checkout->source = 'palace_project';
-							$checkout->userId = $patron->id;
-							$checkout->sourceId = $publication->metadata->identifier;
-							$checkout->recordId = $publication->metadata->identifier;
-							$checkout->canRenew = false;
-							$palaceProjectTitle = new PalaceProjectTitle();
-							$palaceProjectTitle->palaceProjectId = $publication->metadata->identifier;
-							if ($palaceProjectTitle->find(true)) {
-								$checkout->sourceId = $palaceProjectTitle->id;
-								$checkout->recordId = $palaceProjectTitle->id;
-								$palaceProjectRecord = new PalaceProjectRecordDriver($checkout->sourceId);
-								if ($palaceProjectRecord->isValid()) {
-									$checkout->updateFromRecordDriver($palaceProjectRecord);
-									$checkout->format = $palaceProjectRecord->getPrimaryFormat();
-								}
-							}else{
-								//We can't find this title locally, it is either from another eContent vendor or no longer exists,
-								// don't show it
-								continue;
-//							$checkout->title = $publication->metadata->title;
-//							if (!empty($publication->metadata->author)) {
-//								$checkout->author = $publication->metadata->author->name;
-//							}
-							}
-
-							foreach ($links as $link) {
-								if ($link->rel == 'http://librarysimplified.org/terms/rel/revoke') {
-									$checkout->canReturnEarly = true;
-									$checkout->earlyReturnUrl = $link->href;
-								}else if ($link->rel == 'http://opds-spec.org/acquisition') {
-									if (!empty($link->properties) && !empty($link->properties->availability)) {
-										if (!empty($link->properties->availability->since)) {
-											$checkout->checkoutDate = strtotime($link->properties->availability->since);
-										}
-										if (!empty($link->properties->availability->until)) {
-											$checkout->dueDate = strtotime($link->properties->availability->until);
-										}
-									}
-								}
-							}
-
-							$key = $checkout->source . $checkout->sourceId . $checkout->userId;
-							$checkouts[$key] = $checkout;
-						}else{
-							$hold = new Hold();
-							$hold->type = 'palace_project';
-							$hold->source = 'palace_project';
-							$hold->userId = $patron->id;
-							$hold->sourceId = $publication->metadata->identifier;
-							$hold->recordId = $publication->metadata->identifier;
-							$hold->cancelable = true;
-
-							$palaceProjectTitle = new PalaceProjectTitle();
-							$palaceProjectTitle->palaceProjectId = $publication->metadata->identifier;
-							if ($palaceProjectTitle->find(true)) {
-								$hold->sourceId = $palaceProjectTitle->id;
-								$hold->recordId = $palaceProjectTitle->id;
-								$palaceProjectRecord = new PalaceProjectRecordDriver($hold->sourceId);
-								if ($palaceProjectRecord->isValid()) {
-									$hold->updateFromRecordDriver($palaceProjectRecord);
-									$hold->format = $palaceProjectRecord->getPrimaryFormat();
-								}
-							}else{
-								//We can't find this title locally, it is either from another eContent vendor or no longer exists,
-								// don't show it
-								continue;
-							}
-
-							$hold->userId = $patron->id;
-							$key = $hold->source . $hold->sourceId . $hold->userId;
-
-							$hold->available = $holdAvailable;
-
+				$this->initCurlWrapper();
+				$this->curlWrapper->addCustomHeaders($headers, true);
+				$response = $this->curlWrapper->curlGetPage($checkoutsUrl);
+				ExternalRequestLogEntry::logRequest('palaceProject.getCirculation', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
+				if ($response !== false) {
+					$jsonResponse = json_decode($response);
+					if (!empty($jsonResponse) && !empty($jsonResponse->publications)) {
+						foreach ($jsonResponse->publications as $publication) {
+							//Figure out if this is a hold or a checkout
+							$links = $publication->links;
+							$circulationType = 'checkout';
+							$holdAvailable = false;
 							foreach ($links as $link) {
 								if ($link->rel == 'http://opds-spec.org/acquisition/borrow') {
-									if (!empty($link->properties->availability->since)) {
-										$hold->createDate = strtotime($link->properties->availability->since);
+									if ($link->properties->availability->state == 'reserved') {
+										$circulationType = 'hold';
+										$holdAvailable = false;
+									} else if ($link->properties->availability->state == 'ready') {
+										$circulationType = 'hold';
+										$holdAvailable = true;
 									}
-									if (!empty($link->properties->availability->until)) {
-										$hold->expirationDate = strtotime($link->properties->availability->until);
-									}
-								}elseif ($link->rel == 'http://librarysimplified.org/terms/rel/revoke') {
-									$hold->cancellationUrl = $link->href;
 								}
 							}
 
-							if ($holdAvailable) {
-								$holds['available'][$key] = $hold;
+							require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectTitle.php';
+							require_once ROOT_DIR . '/RecordDrivers/PalaceProjectRecordDriver.php';
+							if ($circulationType == 'checkout') {
+								$checkout = new Checkout();
+								$checkout->type = 'palace_project';
+								$checkout->source = 'palace_project';
+								$checkout->userId = $patron->id;
+								$checkout->sourceId = $publication->metadata->identifier;
+								$checkout->recordId = $publication->metadata->identifier;
+								$checkout->canRenew = false;
+								$palaceProjectTitle = new PalaceProjectTitle();
+								$palaceProjectTitle->palaceProjectId = $publication->metadata->identifier;
+								if ($palaceProjectTitle->find(true)) {
+									$checkout->sourceId = $palaceProjectTitle->id;
+									$checkout->recordId = $palaceProjectTitle->id;
+									$palaceProjectRecord = new PalaceProjectRecordDriver($checkout->sourceId);
+									if ($palaceProjectRecord->isValid()) {
+										$checkout->updateFromRecordDriver($palaceProjectRecord);
+										$checkout->format = $palaceProjectRecord->getPrimaryFormat();
+									}
+								} else {
+									//We can't find this title locally, it is either from another eContent vendor or no longer exists,
+									// don't show it
+									continue;
+									//							$checkout->title = $publication->metadata->title;
+									//							if (!empty($publication->metadata->author)) {
+									//								$checkout->author = $publication->metadata->author->name;
+									//							}
+								}
+
+								foreach ($links as $link) {
+									if ($link->rel == 'http://librarysimplified.org/terms/rel/revoke') {
+										$checkout->canReturnEarly = true;
+										$checkout->earlyReturnUrl = $link->href;
+									} else if ($link->rel == 'http://opds-spec.org/acquisition') {
+										if (!empty($link->properties) && !empty($link->properties->availability)) {
+											if (!empty($link->properties->availability->since)) {
+												$checkout->checkoutDate = strtotime($link->properties->availability->since);
+											}
+											if (!empty($link->properties->availability->until)) {
+												$checkout->dueDate = strtotime($link->properties->availability->until);
+											}
+										}
+									}
+								}
+
+								$key = $checkout->source . $checkout->sourceId . $checkout->userId;
+								$checkouts[$key] = $checkout;
 							} else {
-								$holds['unavailable'][$key] = $hold;
+								$hold = new Hold();
+								$hold->type = 'palace_project';
+								$hold->source = 'palace_project';
+								$hold->userId = $patron->id;
+								$hold->sourceId = $publication->metadata->identifier;
+								$hold->recordId = $publication->metadata->identifier;
+								$hold->cancelable = true;
+
+								$palaceProjectTitle = new PalaceProjectTitle();
+								$palaceProjectTitle->palaceProjectId = $publication->metadata->identifier;
+								if ($palaceProjectTitle->find(true)) {
+									$hold->sourceId = $palaceProjectTitle->id;
+									$hold->recordId = $palaceProjectTitle->id;
+									$palaceProjectRecord = new PalaceProjectRecordDriver($hold->sourceId);
+									if ($palaceProjectRecord->isValid()) {
+										$hold->updateFromRecordDriver($palaceProjectRecord);
+										$hold->format = $palaceProjectRecord->getPrimaryFormat();
+									}
+								} else {
+									//We can't find this title locally, it is either from another eContent vendor or no longer exists,
+									// don't show it
+									continue;
+								}
+
+								$hold->userId = $patron->id;
+								$key = $hold->source . $hold->sourceId . $hold->userId;
+
+								$hold->available = $holdAvailable;
+
+								foreach ($links as $link) {
+									if ($link->rel == 'http://opds-spec.org/acquisition/borrow') {
+										if (!empty($link->properties->availability->since)) {
+											$hold->createDate = strtotime($link->properties->availability->since);
+										}
+										if (!empty($link->properties->availability->until)) {
+											$hold->expirationDate = strtotime($link->properties->availability->until);
+										}
+									} elseif ($link->rel == 'http://librarysimplified.org/terms/rel/revoke') {
+										$hold->cancellationUrl = $link->href;
+									}
+								}
+
+								if ($holdAvailable) {
+									$holds['available'][$key] = $hold;
+								} else {
+									$holds['unavailable'][$key] = $hold;
+								}
 							}
 						}
+					} else {
+						global $logger;
+						$logger->log('Error loading circulation information, bad response from Palace Project', Logger::LOG_ERROR);
+						$this->incrementStat('numApiErrors');
 					}
-				}else {
+				} else {
 					global $logger;
-					$logger->log('Error loading circulation information, bad response from Palace Project', Logger::LOG_ERROR);
+					$logger->log('Error loading circulation information, no response from Palace Project', Logger::LOG_ERROR);
 					$this->incrementStat('numApiErrors');
 				}
-			} else {
-				global $logger;
-				$logger->log('Error loading circulation information, no response from Palace Project', Logger::LOG_ERROR);
-				$this->incrementStat('numApiErrors');
 			}
 
 			$this->checkouts[$patron->id] = $checkouts;
 			$this->holds[$patron->id] = $holds;
 
 			$this->updateCachedHoldsBasedOnActiveHolds($cachedHolds, $holds, $accountSummary);
+			$this->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
+		}else{
+			$this->checkouts[$patron->id] = $cachedCheckouts;
+			$this->holds[$patron->id] = $cachedHolds;
 		}
 	}
 
@@ -219,15 +216,15 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 
 	/**
 	 * Renew all titles currently checked out to the user
-	 *
-	 * @param $patron  User
-	 * @return bool|array
 	 */
-	public function renewAll(User $patron) : bool|array {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for PalaceProjectDriver, renew one at a time'
+		];
 	}
 
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) : array {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		return $this->checkOutTitle($patron, $recordId, true);
 	}
 
@@ -287,8 +284,9 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 							'isPublicFacing' => true,
 						]);
 						$this->incrementStat('numEarlyReturns');
-						$patron->clearCachedAccountSummaryForSource('palace_project');
-						$patron->forceReloadOfCheckouts();
+						$accountSummary = $patron->getCachedAccountSummary('palace_project');
+						$accountSummary->incrementNumberOfCheckouts();
+						$accountSummary->markCheckoutsStale();
 					} else {
 						$result['message'] = translate([
 							'text' => "Could not return Palace Project title",
@@ -611,8 +609,9 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 					$patron->lastReadingHistoryUpdate = 0;
 					$patron->update();
 
-					$patron->clearCachedAccountSummaryForSource('palace_project');
-					$patron->forceReloadOfCheckouts();
+					$accountSummary = $patron->getCachedAccountSummary('palace_project');
+					$accountSummary->incrementNumberOfCheckouts();
+					$accountSummary->markCheckoutsStale();
 				}else{
 					$result['message'] = translate([
 						'text' => 'Sorry, we could not checkout this Palace Project title to you.',

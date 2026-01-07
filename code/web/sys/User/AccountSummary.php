@@ -217,4 +217,9 @@ class AccountSummary extends DataObject {
 		$this->__set('checkoutsAreStale', 1);
 		$this->update();
 	}
+
+	public function clearCheckoutsStale() : void {
+		$this->__set('checkoutsAreStale', 0);
+		$this->update();
+	}
 }

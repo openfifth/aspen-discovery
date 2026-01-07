@@ -895,7 +895,7 @@ class Sierra extends AbstractIlsDriver {
 		return $checkedOutTitles;
 	}
 
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/checkouts/$itemId/renewal";
 		$renewResponse = $this->_postPage('sierra.renewCheckout', $sierraUrl, '');
 
@@ -930,9 +930,6 @@ class Sierra extends AbstractIlsDriver {
 				'text' => 'Checkout renewed successfully',
 				'isPublicFacing' => true,
 			]);
-
-			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			$patron->forceReloadOfCheckouts();
 		} else {
 			$message = translate([
 				'text' => "Unable to renew your checkout",
@@ -1378,8 +1375,11 @@ class Sierra extends AbstractIlsDriver {
 		return false;
 	}
 
-	public function renewAll(User $patron) : bool|array {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Sierra, renew one at a time'
+		];
 	}
 
 	public function patronLogin($username, $password, $validatedViaSSO) : User|AspenError|null {
@@ -2795,8 +2795,6 @@ class Sierra extends AbstractIlsDriver {
 				$result['message'] = 'Could not record fine payment.';
 			}
 		}
-
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $result;
 	}
 

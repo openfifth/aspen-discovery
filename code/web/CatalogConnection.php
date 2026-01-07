@@ -577,7 +577,14 @@ class CatalogConnection {
 	 * @access public
 	 */
 	public function getCheckouts(User $user): array {
-		return $this->driver->getCheckouts($user);
+		$accountSummary = $user->getCachedAccountSummary('ils');
+		$cachedCheckouts = $user->getCachedCheckoutsForSource('ils');
+		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			$checkouts = $this->driver->getCheckouts($user);
+
+			$cachedCheckouts = $this->driver->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
+		}
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -1432,13 +1439,23 @@ class CatalogConnection {
 		return $this->driver->changeHoldPickupLocation($patron, $holdId, $newPickupLocation, $newPickupSublocation);
 	}
 
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
-		return $this->driver->renewCheckout($patron, $recordId, $itemId, $itemIndex);
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		$result = $this->driver->renewCheckout($patron, $recordId, $itemId, $itemIndex);
+		if ($result['success']) {
+			$accountSummary = $patron->getCachedAccountSummary('ils');
+			$accountSummary->markCheckoutsStale();
+		}
+		return $result;
 	}
 
 	public function renewAll(User $patron): array {
 		if ($this->driver->hasFastRenewAll()) {
-			return $this->driver->renewAll($patron);
+			$result = $this->driver->renewAll($patron);
+			if ($result['success']) {
+				$accountSummary = $patron->getCachedAccountSummary('ils');
+				$accountSummary->markCheckoutsStale();
+			}
+			return $result;
 		} else {
 			//Get all list of all transactions
 			$currentTransactions = $this->driver->getCheckouts($patron);
