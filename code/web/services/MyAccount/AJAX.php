@@ -4305,6 +4305,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 				if ($userOnWaitingList) {
 					$userWaitingListPosition = $userWaitingList->position;
+					$userCanRegister = $userWaitingList->canRegister;
 				}
 			}
 
@@ -4347,6 +4348,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
 				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
 				$events[$entry->sourceId]['userWaitingListPosition'] = $userWaitingListPosition;
+				$events[$entry->sourceId]['userCanRegister'] = $userCanRegister;
 			}
 		}
 
@@ -8482,7 +8484,18 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		if (!$eventInstance->hasAvailableSeats(1)) {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		$userWaitingList = new UserAspenEventInstanceWaitingList();
+		$userWaitingList->eventInstanceId = $eventInstanceId;
+		$userWaitingList->userId = $userId;
+		$userWaitingList->whereAdd('status IN ("waiting", "notified")');
+
+		$canRegister = false;
+		if ($userWaitingList->find(true)) {
+			$canRegister = ($userWaitingList->canRegister == 1);
+		}
+
+		if (!$eventInstance->hasAvailableSeats(1) && !$canRegister) {
 			$result['message'] = translate([
 				'text' => 'This event is full. No seats available.',
 				'isPublicFacing' => true
@@ -11447,10 +11460,13 @@ class MyAccount_AJAX extends JSON_Action {
 		$waitingList = new UserAspenEventInstanceWaitingList();
 		$waitingList->eventInstanceId = $eventInstanceId;
 		$waitingList->status = 'waiting';
+		$waitingList->whereAdd('canRegister = 0');
 		$waitingList->orderBy('position ASC');
 
 		if ($waitingList->find(true)) {
 			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId);
+			$waitingList->canRegister = 1;
+			$waitingList->canRegisterUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
 			if ($notificationSent) {
 				$waitingList->status = 'notified';
