@@ -4298,7 +4298,7 @@ class MyAccount_AJAX extends JSON_Action {
 				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 				$userWaitingList = new UserAspenEventInstanceWaitingList();
 				$userWaitingList->eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
-				$userWaitingList->userId = UserAccount::getActiveuserId();
+				$userWaitingList->userId = UserAccount::getActiveUserId();
 				$userWaitingList->whereAdd('status IN ("waiting", "notified")');
 				$userOnWaitingList = $userWaitingList->find(true);
 				$userWaitingListPosition = null;
