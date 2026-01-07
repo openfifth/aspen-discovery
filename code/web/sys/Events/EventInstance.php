@@ -242,7 +242,10 @@ class EventInstance extends DataObject {
 		}
 
 		$waitingListCount = $this->getWaitingListCount();
+		global $logger;
+		$logger->log("WAITING LIST COUNT: " . $waitingListCount, Logger::LOG_ERROR);
 		if ($waitingListCount > 0) {
+			$logger->log("waiting list count more than 0", Logger::LOG_ERROR);
 			return 0;
 		}
 
@@ -262,7 +265,7 @@ class EventInstance extends DataObject {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 		$waitingList = new UserAspenEventInstanceWaitingList();
 		$waitingList->eventInstanceId = $this->id;
-		$waitingList->whereAdd('status IN ("active", "notified")');
+		$waitingList->whereAdd('status IN ("waiting", "notified")');
 		return $waitingList->count();
 	}
 
