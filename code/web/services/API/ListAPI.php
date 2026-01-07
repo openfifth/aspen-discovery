@@ -1492,6 +1492,9 @@ class ListAPI extends AbstractAPI {
 						$list->displayListAuthor = 1;
 					}
 				}
+				if (isset($_REQUEST['listGroupId'])) {
+					$list->listGroupId = $_REQUEST['listGroupId'];
+				}
 				$list->update();
 				if ($user->lastListUsed != $list->id) {
 					$user->lastListUsed = $list->id;
