@@ -118,11 +118,22 @@ class OverDriveDriver extends AbstractEContentDriver {
 		if ($this->_availableSettings == null) {
 			$this->_availableSettings = [];
 
+			global $library;
+			$activeLibrary = $library;
 			if (UserAccount::isLoggedIn()) {
-				$activeLibrary = UserAccount::getLoggedInUser()->getHomeLibrary();
-			}else{
-				global $library;
-				$activeLibrary = $library;
+				$activeLocationId = UserAccount::getUserHomeLocationId();
+				if ($activeLocationId > 0) {
+					$location = new Location();
+					$location->locationId = $activeLocationId;
+					if ($location->find(true)) {
+						$activeLibrary = new Library();
+						$activeLibrary->libraryId = $location->libraryId;
+						if (!$activeLibrary->find(true)) {
+							$activeLibrary = $library;
+						}
+					}
+				}
+
 			}
 
 			if ($activeLibrary != null) {
