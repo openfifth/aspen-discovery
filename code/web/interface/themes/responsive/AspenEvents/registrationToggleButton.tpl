@@ -4,7 +4,15 @@
 			{if $isRegistered}
 				{translate text="Unregister" isPublicFacing=true}
 			{else}
-				{translate text="Register" isPublicFacing=true}
+				{if $isEventFull}
+					{if $userCanRegister}
+						{translate text="Register" isPublicFacing=true}
+					{else}
+						{translate text="Cannot Register - Event Full" isPublicFacing=true}
+					{/if}
+				{else}
+					{translate text="Register" isPublicFacing=true}
+				{/if}
 			{/if}
 		</button>
 	{else}
