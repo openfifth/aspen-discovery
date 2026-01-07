@@ -1401,7 +1401,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 *                              If an error occurs, return an AspenError
 	 * @access  public
 	 */
-	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
+	function placeItemHold(User $patron, string $recordId, ?string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		return $this->placeSirsiHold($patron, $recordId, $itemId, false, $pickupBranch, $cancelDate);
 	}
 
@@ -2131,7 +2131,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 * @param string $itemIndex
 	 * @return array
 	 */
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$sessionToken = $this->getSessionToken($patron);
 		if (!$sessionToken) {
 			$result = [
@@ -2169,7 +2169,8 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 		if (isset($circRenewResponse->circRecord->key)) {
 			// Success
-			$patron->forceReloadOfCheckouts();
+			$accountSummary = $patron->getCachedAccountSummary('ils');
+			$accountSummary->markCheckoutsStale();
 			$result = [
 				'success' => true,
 				'itemId' => $circRenewResponse->circRecord->key,
@@ -4316,10 +4317,10 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		return false;
 	}
 
-	public function renewAll(User $patron) : bool|array{
+	public function renewAll(User $patron) : array{
 		return [
-			'success' => false,
-			'message' => 'Renew All not supported directly, call through Catalog Connection',
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Symphony, renew one at a time'
 		];
 	}
 

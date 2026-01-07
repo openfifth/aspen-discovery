@@ -196,4 +196,25 @@ class AccountSummary extends DataObject {
 		$this->__set('numUnavailableHolds', --$this->numUnavailableHolds);
 		$this->update();
 	}
+
+	public function incrementNumberOfCheckouts() : void {
+		$this->__set('numCheckedOut', ++$this->numCheckedOut);
+		if ($this->numCheckoutsRemaining > 0) {
+			$this->__set('numCheckoutsRemaining', --$this->numCheckoutsRemaining);
+		}
+		$this->update();
+	}
+
+	public function decrementNumberOfCheckouts() : void {
+		$this->__set('numCheckedOut', --$this->numCheckedOut);
+		if ($this->numCheckoutsRemaining > 0) {
+			$this->__set('numCheckoutsRemaining', ++$this->numCheckoutsRemaining);
+		}
+		$this->update();
+	}
+
+	public function markCheckoutsStale() : void {
+		$this->__set('checkoutsAreStale', 1);
+		$this->update();
+	}
 }
