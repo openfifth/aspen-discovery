@@ -11506,6 +11506,7 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/Email/Mailer.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		require_once ROOT_DIR . '/sys/Events/Event.php';
 
 		$user = new User();
 		$user->id = $userId;
@@ -11519,6 +11520,27 @@ class MyAccount_AJAX extends JSON_Action {
 			return false;
 		}
 
+		$event = new Event();
+		$event->id = $eventInstance->eventId;
+		if (!$event->find(true)) {
+			return false;
+		}
+
+		$emailTemplate = EmailTemplate::getActiveTemplate('registerForEventFromWaitingList');
+		if (!$emailTemplate) {
+			global $logger;
+			$logger->log("Unable to find email template", Logger::LOG_ERROR);
+			return false;
+		}
+
+		$parameters = [
+			'eventTitle' => $event->title,
+			'eventDate' => $eventInstance->date,
+			'eventTime' => $eventInstance->time,
+			'user' => $user,
+		];
+		
+		$emailTemplate->sendEmail($user->email, $parameters);
 		return true;
 	}
  }
