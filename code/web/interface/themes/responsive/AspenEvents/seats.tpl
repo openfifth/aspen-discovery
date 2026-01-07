@@ -1,5 +1,5 @@
 {strip}
-	{if $numberOfSeats !== null && !$userIsRegistered}
+	{if $numberOfSeats !== null && !$userIsRegistered && !$userCanRegister}
 		<div class="alert {if $availableSeats > 0}alert-info{else}alert-danger{/if}" style="margin-bottom: 10px;">
 			{if $availableSeats > 0}
 				{translate text="Available Seats" isPublicFacing=true}: {$availableSeats} / {$numberOfSeats}
