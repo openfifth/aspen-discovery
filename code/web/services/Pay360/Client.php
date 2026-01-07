@@ -259,6 +259,8 @@ class Pay360_Client  {
 			'paymentAmount' => $currencyCode . ' ' . $this->getConsistentDecimals($this->payment->totalPaid),  
 			'outcome' => $this->payment->pay360TransactionStateMessage,
 			'orderId' => $this->payment->orderId,
+			'user' => $user,
+			'library' => $user->getHomeLibrary(),
 		];
 
 		try {
