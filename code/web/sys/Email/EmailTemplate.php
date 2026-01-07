@@ -323,6 +323,7 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%event.title%', $parameters['eventTitle'] ?? '', $text);
 			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
 			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
+			$text = str_replace('%canRegisterUntil%', $parameters['canRegisterUntil'] ?? '', $text);
 		}
 		return $text;
 	}
