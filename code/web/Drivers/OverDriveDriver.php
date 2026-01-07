@@ -619,7 +619,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 						if (array_key_exists($curTitle->reserveId, $supplementalMaterialIds)) {
 							$parentCheckoutId = $supplementalMaterialIds[$curTitle->reserveId];
 							/** @var Checkout $parentCheckout */
-							$parentCheckout = $checkedOutTitles['overdrive' . $parentCheckoutId . $patron->id];
+							$parentCheckout = $checkouts['overdrive' . $parentCheckoutId . $patron->id];
 							if (!isset($parentCheckout->supplementalMaterials)) {
 								$parentCheckout->supplementalMaterials = [];
 							}
