@@ -11468,6 +11468,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
 			$waitingList->canRegister = 1;
 			$waitingList->canRegisterUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
+			$waitingList->update();
 
 			if ($notificationSent) {
 				$waitingList->status = 'notified';
