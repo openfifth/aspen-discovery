@@ -451,16 +451,9 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 
 	public function isWaitingListFull(): bool {
 		$eventObject = $this->getEventObject();
-		if (!$eventObject) {
-			return false;
-		}
 
-		if ($eventObject->availableNumberOfWaitingListSeats !== null) {
-			if ($eventObject->availableNumberOfWaitingListSeats <= 0) {
-				return true;
-			} else{
-				return false;
-			}
+		if ($eventObject) {
+			return $eventObject->isWaitingListFull();
 		}
 		return false;
 	}
