@@ -11851,6 +11851,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	private function sendWaitingListNotification($userId, $eventInstanceId, $canRegisterUntil): bool {
 		require_once ROOT_DIR . '/sys/Email/Mailer.php';
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 		require_once ROOT_DIR . '/sys/Events/Event.php';
@@ -11878,7 +11879,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$waitingList = new UserAspenEventInstanceWaitingList();
 		$waitingList->userId = $userId;
 		$waitingList->eventInstanceId = $eventInstanceId;
-		$waitingList->whereAdd('status = "waiting');
+		$waitingList->whereAdd('status = "waiting"');
 
 		if (!$waitingList->find(true)) {
 			return false;
