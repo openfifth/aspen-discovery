@@ -12329,7 +12329,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$waitingList->orderBy('position ASC');
 
 		if ($waitingList->find(true)) {
-			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId);
+			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
 			$waitingList->canRegister = 1;
 			$waitingList->canRegisterUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
@@ -12366,11 +12366,13 @@ class MyAccount_AJAX extends JSON_Action {
 	// 	}
 	// }
 
-	private function sendWaitingListNotification($userId, $eventInstanceId): bool {
+	private function sendWaitingListNotification($userId, $eventInstanceId, $canRegisterUntil): bool {
 		require_once ROOT_DIR . '/sys/Email/Mailer.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 		require_once ROOT_DIR . '/sys/Events/Event.php';
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+
 
 		$user = new User();
 		$user->id = $userId;
@@ -12390,6 +12392,15 @@ class MyAccount_AJAX extends JSON_Action {
 			return false;
 		}
 
+		$waitingList = new UserAspenEventInstanceWaitingList();
+		$waitingList->userId = $userId;
+		$waitingList->eventInstanceId = $eventInstanceId;
+		$waitingList->whereAdd('status = "waiting');
+
+		if (!$waitingList->find(true)) {
+			return false;
+		}
+
 		$emailTemplate = EmailTemplate::getActiveTemplate('registerForEventFromWaitingList');
 		if (!$emailTemplate) {
 			global $logger;
@@ -12402,8 +12413,9 @@ class MyAccount_AJAX extends JSON_Action {
 			'eventDate' => $eventInstance->date,
 			'eventTime' => $eventInstance->time,
 			'user' => $user,
+			'canRegisterUntil' => $canRegisterUntil,
 		];
-		
+
 		$emailTemplate->sendEmail($user->email, $parameters);
 		return true;
 	}
