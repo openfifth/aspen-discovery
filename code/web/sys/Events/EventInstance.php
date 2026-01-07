@@ -243,9 +243,7 @@ class EventInstance extends DataObject {
 
 		$waitingListCount = $this->getWaitingListCount();
 		global $logger;
-		$logger->log("WAITING LIST COUNT: " . $waitingListCount, Logger::LOG_ERROR);
 		if ($waitingListCount > 0) {
-			$logger->log("waiting list count more than 0", Logger::LOG_ERROR);
 			return 0;
 		}
 
