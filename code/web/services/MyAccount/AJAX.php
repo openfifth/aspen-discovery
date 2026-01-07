@@ -8440,9 +8440,27 @@ class MyAccount_AJAX extends JSON_Action {
 			global $interface;
 			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
 			$available = $eventInstance->getAvailableSeats();
+
+				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+				$userWaitingList = new UserAspenEventInstanceWaitingList();
+				$userWaitingList->eventInstanceId = $eventInstanceId;
+				$userWaitingList->userId = UserAccount::getActiveUserId();
+				$userWaitingList->whereAdd('status IN ("waiting", "notified")');
+				$userOnWaitingList = $userWaitingList->find(true);
+				$userWaitingListPosition = null;
+
+
+				if ($userOnWaitingList) {
+					$userOnWaitingList = true;
+					$userCanRegister = (bool)$userWaitingList->canRegister;
+					$userWaitingListPosition = $userWaitingList->position;
+				}
 			$interface->assign('numberOfSeats', $numberOfSeats);
 			$interface->assign('availableSeats', $available);
 			$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+				$interface->assign('userCanRegister', $userCanRegister);
+				$interface->assign('userOnWaitingList', $userOnWaitingList);
+				$interface->assign('userWaitingListPosition', $userWaitingListPosition);
 
 			$user = UserAccount::getLoggedInUser();
 			if (empty($user)) {

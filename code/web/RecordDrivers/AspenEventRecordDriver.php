@@ -114,6 +114,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('userWaitingListPosition', $this->getUserWaitingListPosition());
 	$interface->assign('availableNumberOfWaitingListSeats', $this->getAvailableNumberOfWaitingListSeats());
 	$interface->assign('isWaitingListFull', $this->isWaitingListFull());
+	$interface->assign('userCanRegister', $this->getUserCanRegister());
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -536,6 +537,29 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			return null;
 		}
 		return $eventObject->availableNumberOfWaitingListSeats;
+	}
+
+	public function getUserCanRegister(): bool {
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return false;
+		}
+
+		$eventObject = $this->getEventObject();
+		if ($eventObject) {
+			$eventInstanceId = $eventObject->id;
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+
+			$waitingList = new UserAspenEventInstanceWaitingList();
+			$waitingList->eventInstanceId = $eventInstanceId;
+			$waitingList->userId = $user->id;
+			$waitingList->whereAdd('status IN ("waiting", "notified")');
+
+			if ($waitingList->find(true)) {
+				return (bool)$waitingList->canRegister;
+			}
+		}
+		return false;
 	}
 
 	/**
