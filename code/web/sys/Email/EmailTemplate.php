@@ -42,7 +42,6 @@ class EmailTemplate extends DataObject {
 				'campaignComplete' => 'Campaign Complete',
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
-				'paymentSuccess' => 'Payment Success',
 				'paymentFailure' => 'Payment Failure',
 			];
 		}
