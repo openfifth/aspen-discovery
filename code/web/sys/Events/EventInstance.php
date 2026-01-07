@@ -131,7 +131,7 @@ class EventInstance extends DataObject {
 
 	public function insert(string $context = '') : int|bool {
 		$this->dateUpdated = time();
-		if ($this->availableNumberOfWatingListSeats == null) {
+		if ($this->availableNumberOfWaitingListSeats == null) {
 			$this->availableNumberOfWaitingListSeats = $this->waitingListNumberOfSeats;
 		}
 		return parent::insert();
