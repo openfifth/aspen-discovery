@@ -103,6 +103,9 @@
 												{if (!$isWaitingListFull)}
 													<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
 													</a>
+												{else}
+													<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:100%">{translate text="Registration Information" isPublicFacing=true}
+													</a>
 												{/if}
 											{/if}
 										{else}
