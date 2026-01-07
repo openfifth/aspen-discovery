@@ -45,7 +45,23 @@
 									{else if $event.isRegistered}
 										<span>{translate text="There are registrations to view" isPublicFacing=true}</span>
 									{else if $event.regRequired}
-										<span>{translate text="Registration available" isPublicFacing=true}</span>
+										{if !$event.waitingList}
+											<span>{translate text="Registration available" isPublicFacing=true}</span>
+										{else}
+											{if $event.userOnWaitingList}
+												{if $event.userCanRegister}
+													<span>{translate text="Registration available" isPublicFacing=true}</span>
+												{else}
+													<span>{translate text="On waiting list" isPublicFacing=true}</span>
+												{/if}
+											{else}
+												{if !$event.waitingListFull}
+													<span>{translate text="Waiting List available" isPublicFacing=true}</span>
+												{else}
+													<span>{translate text="Registration unavailable" isPublicFacing=true}</span>
+												{/if}
+											{/if}
+										{/if}
 									{else}
 										<span>{translate text="Registration unavailable" isPublicFacing=true}</span>
 									{/if}
