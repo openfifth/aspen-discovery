@@ -266,4 +266,24 @@ class EventInstance extends DataObject {
 		$waitingList->whereAdd('status IN ("active", "notified")');
 		return $waitingList->count();
 	}
+
+	public function isWaitingListFull(): bool {
+
+		if ($this->waitingListNumberOfSeats !== null) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+			$waitingList = new UserAspenEventInstanceWaitingList();
+			$waitingList->eventInstanceId = $this->id;
+			$waitingList->whereAdd('status IN ("waiting", "notified")');
+			return $waitingList->count() >= $this->waitingListNumberOfSeats;
+		}
+
+		if ($this->availableNumberOfWaitingListSeats !== null) {
+			if ($this->availableNumberOfWaitingListSeats <= 0) {
+				return true;
+			} else{
+				return false;
+			}
+		}
+		return false;
+	}
 }
