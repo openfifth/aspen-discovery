@@ -266,7 +266,7 @@ class Polaris extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function renewAll(User $patron) {
+	public function renewAll(User $patron) : array {
 		$staffInfo = $this->getStaffUserInfo();
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/itemsout/0";
 		$body = new stdClass();
@@ -309,7 +309,6 @@ class Polaris extends AbstractIlsDriver {
 						$renewResult['message'][] = $title . ':' . $blockRow->ErrorDesc;
 					}
 				} else {
-					$renewResult['success'] = true;
 					$renewResult['message'] = translate([
 						'text' => 'All titles renewed successfully',
 						'isPublicFacing' => true,
@@ -319,8 +318,6 @@ class Polaris extends AbstractIlsDriver {
 						'isPublicFacing' => true,
 					]);
 				}
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfCheckouts();
 				$renewResult['success'] = true;
 			} else if ($jsonResponse->PAPIErrorCode == -2) {
 				$itemRenewResult = $jsonResponse->ItemRenewResult;
@@ -374,7 +371,7 @@ class Polaris extends AbstractIlsDriver {
 		return $renewResult;
 	}
 
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$staffInfo = $this->getStaffUserInfo();
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/itemsout/$itemId";
 		$body = new stdClass();
@@ -392,9 +389,6 @@ class Polaris extends AbstractIlsDriver {
 			if ($jsonResponse->PAPIErrorCode == 0) {
 				$itemRenewResult = $jsonResponse->ItemRenewResult;
 				if (isset($itemRenewResult->DueDateRows) && (count($itemRenewResult->DueDateRows) > 0)) {
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfCheckouts();
-
 					$result['itemId'] = $itemId;
 					$result['success'] = true;
 					$result['message'] = translate([

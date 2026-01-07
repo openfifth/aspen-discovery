@@ -2505,7 +2505,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	function renewCheckout() {
+	function renewCheckout() : array {
 		if (isset($_REQUEST['patronId']) && isset($_REQUEST['recordId']) && isset($_REQUEST['renewIndicator'])) {
 			if (strpos($_REQUEST['renewIndicator'], '|') > 0) {
 				[
@@ -2655,7 +2655,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function renewAll() {
+	function renewAll() : array {
 		$renewResults = [
 			'success' => false,
 			'message' => ['Unable to renew all titles'],
