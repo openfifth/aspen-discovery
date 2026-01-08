@@ -8786,6 +8786,19 @@ class MyAccount_AJAX extends JSON_Action {
 		$canRegister = false;
 		if ($userWaitingList->find(true)) {
 			$canRegister = ($userWaitingList->canRegister == 1);
+			if ($userWaitingList->status === 'notified') {
+				$now = new DateTimeImmutable();
+				$inviteExpires = DateTimeImmutable::createFromFormat(
+					'Y-m-d H:i:s',
+					$userWaitingList->expiresAt
+				);
+
+				if($now > $inviteExpires) {
+					$canRegister = false;
+					$userWaitingList->canRegister = 0;
+					$userWaitingList->update();
+				}
+			}
 		}
 
 		if (!$eventInstance->hasAvailableSeats(1) && !$canRegister) {
