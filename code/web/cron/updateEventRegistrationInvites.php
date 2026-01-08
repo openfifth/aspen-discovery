@@ -14,59 +14,72 @@ $cronLogEntry->insert();
 $now = date('Y-m-d H:i:s');
 
 $expiredCount = 0;
-$waitingList = new UserAspenEventInstanceWaitingList();
-$waitingList->status = 'notified';
-$waitingList->whereAdd("expiresAt < '$now'");
 
-$waitingList->find();
-
+// Find all expired notified users
 $expiredUsers = [];
-while ($waitingList->fetch()) {
-    $expiredUsers[] = [
-        'id' => $waitingList->id,
-        'eventInstanceId' => $waitingList->eventInstanceId,
-        'position' => $waitingList->position,
-    ];
+$wl = new UserAspenEventInstanceWaitingList();
+$wl->status = 'notified';
+$wl->whereAdd("expiresAt < '$now'");
+$wl->find();
 
-    $waitingList->canRegister = 0;
-    $waitingList->status = 'waiting';
-    $waitingList->update();
+while ($wl->fetch()) {
+    $expiredUsers[] = [
+        'id' => $wl->id,
+        'eventInstanceId' => $wl->eventInstanceId,
+        'position' => $wl->position,
+    ];
     $expiredCount++;
 }
 
-foreach ($expiredUsers as $expiredUser) {
-    $eventInstanceId = $expiredUser['eventInstanceId'];
-    $removedPosition = $expiredUser['position'];
-    $expiredUserId = $expiredUser['id'];
+// Group expired users by event
+$expiredByEvent = [];
+foreach ($expiredUsers as $user) {
+    $expiredByEvent[$user['eventInstanceId']][] = $user;
+}
 
+// Process each event separately
+foreach ($expiredByEvent as $eventInstanceId => $users) {
+
+    // Sort expired users by original position ascending
+    usort($users, fn($a, $b) => $a['position'] <=> $b['position']);
+
+    // Number of expired users for this event
+    $numExpired = count($users);
+
+    // Shift all users who are below the first expired user up
+    $firstExpiredPos = $users[0]['position'];
     $wlShift = new UserAspenEventInstanceWaitingList();
     $wlShift->eventInstanceId = $eventInstanceId;
-    $wlShift->whereAdd("position >  $removedPosition");
+    $wlShift->whereAdd("position > $firstExpiredPos");
     $wlShift->find();
 
     while ($wlShift->fetch()) {
-        $wlShift->position = $wlShift->position -1;
+        $wlShift->position -= $numExpired; // shift up by number of expired users
         $wlShift->update();
     }
 
-    $wlExpired = new UserAspenEventInstanceWaitingList();
-    $wlExpired->id = $expiredUserId;
-    if ($wlExpired->find(true)) {
-        $wlMax = new UserAspenEventInstanceWaitingList();
-        $wlMax->eventInstanceId = $eventInstanceId;
-        $wlMax->selectAdd();
-        $wlMax->selectAdd('MAX(position) AS maxPos');
-        $wlMax->find(true);
+    // Move expired users to bottom positions
+    // Get current max position after shifting
+    $wlMax = new UserAspenEventInstanceWaitingList();
+    $wlMax->eventInstanceId = $eventInstanceId;
+    $wlMax->selectAdd();
+    $wlMax->selectAdd('MAX(position) AS maxPos');
+    $wlMax->find(true);
+    $maxPosition = (int)$wlMax->maxPos;
 
-        $maxPosition = (int) $wlMax->maxPos;
-        $wlExpired->position = $maxPosition + 1;
-        $wlExpired->update();
+    foreach ($users as $expiredUser) {
+        $wlExpired = new UserAspenEventInstanceWaitingList();
+        $wlExpired->id = $expiredUser['id'];
+        if ($wlExpired->find(true)) {
+            $wlExpired->status = 'waiting';
+            $wlExpired->canRegister = 0;
+            $maxPosition++;
+            $wlExpired->position = $maxPosition;
+            $wlExpired->update();
+        }
     }
 }
 
 $cronLogEntry->notes = "Updated $expiredCount waiting list entires";
 $cronLogEntry->endTime = time();
 $cronLogEntry->update();
-
-//will also need to reorder waiting list
-
