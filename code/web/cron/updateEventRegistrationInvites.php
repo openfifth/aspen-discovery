@@ -5,6 +5,7 @@ require_once __DIR__ . '/../bootstrap_aspen.php';
 require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
 require_once ROOT_DIR . '/sys/CronLogEntry.php';
 require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
 
 $cronLogEntry = new CronLogEntry();
 $cronLogEntry->startTime = time();
@@ -14,6 +15,8 @@ $cronLogEntry->insert();
 $now = date('Y-m-d H:i:s');
 
 $expiredCount = 0;
+
+$ajaxHandler = new MyAccount_AJAX();
 
 // Find all expired notified users
 $expiredUsers = [];
@@ -78,6 +81,9 @@ foreach ($expiredByEvent as $eventInstanceId => $users) {
 			$wlExpired->update();
 		}
 	}
+
+	//Notify the new first user in the queue
+	$ajaxHandler->processEventWaitingListSeats($eventInstanceId);
 }
 
 $cronLogEntry->notes = "Updated $expiredCount waiting list entires";
