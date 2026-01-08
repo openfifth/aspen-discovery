@@ -20,11 +20,48 @@ $waitingList->whereAdd("expiresAt < '$now'");
 
 $waitingList->find();
 
+$expiredUsers = [];
 while ($waitingList->fetch()) {
+    $expiredUsers[] = [
+        'id' => $waitingList->id,
+        'eventInstanceId' => $waitingList->eventInstanceId,
+        'position' => $waitingList->position,
+    ];
+
     $waitingList->canRegister = 0;
     $waitingList->status = 'waiting';
     $waitingList->update();
     $expiredCount++;
+}
+
+foreach ($expiredUsers as $expiredUser) {
+    $eventInstanceId = $expiredUser['eventInstanceId'];
+    $removedPosition = $expiredUser['position'];
+    $expiredUserId = $expiredUser['id'];
+
+    $wlShift = new UserAspenEventInstanceWaitingList();
+    $wlShift->eventInstanceId = $eventInstanceId;
+    $wlShift->whereAdd("position >  $removedPosition");
+    $wlShift->find();
+
+    while ($wlShift->fetch()) {
+        $wlShift->position = $wlShift->position -1;
+        $wlShift->update();
+    }
+
+    $wlExpired = new UserAspenEventInstanceWaitingList();
+    $wlExpired->id = $expiredUserId;
+    if ($wlExpired->find(true)) {
+        $wlMax = new UserAspenEventInstanceWaitingList();
+        $wlMax->eventInstanceId = $eventInstanceId;
+        $wlMax->selectAdd();
+        $wlMax->selectAdd('MAX(position) AS maxPos');
+        $wlMax->find(true);
+
+        $maxPosition = (int) $wlMax->maxPos;
+        $wlExpired->position = $maxPosition + 1;
+        $wlExpired->update();
+    }
 }
 
 $cronLogEntry->notes = "Updated $expiredCount waiting list entires";
