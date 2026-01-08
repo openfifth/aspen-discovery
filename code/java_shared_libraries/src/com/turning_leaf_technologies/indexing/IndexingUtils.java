@@ -176,6 +176,7 @@ public class IndexingUtils {
 				overDriveScope.setIncludeAdult(overDriveScopesRS.getBoolean("includeAdult"));
 				overDriveScope.setIncludeTeen(overDriveScopesRS.getBoolean("includeTeen"));
 				overDriveScope.setIncludeKids(overDriveScopesRS.getBoolean("includeKids"));
+				overDriveScope.setSuppressKindleFormat(overDriveScopesRS.getBoolean("suppressKindleFormat"));
 				//Add the reading name for convience later. It is based on the OverDrive setting.
 				overDriveScope.setReaderName(overDriveScopesRS.getString("readerNameSetting"));
 

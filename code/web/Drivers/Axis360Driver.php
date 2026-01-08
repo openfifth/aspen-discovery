@@ -69,46 +69,47 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @access public
 	 */
 	public function getCheckouts(User $patron): array {
-		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		if (isset($this->checkouts[$patron->id])) {
-			return $this->checkouts[$patron->id];
-		}
-		$checkouts = [];
-		$settings = $this->getSettings($patron);
-		if ($settings == false) {
-			return $checkouts;
-		}
-		if ($this->getAxis360AccessToken($patron)) {
-			$checkoutsUrl = $settings->apiUrl . "/Services/VendorAPI/availability/v3_1";
-			$params = [
-				'statusFilter' => 'CHECKOUT',
-				'patronId' => $patron->getBarcode(),
-			];
-			$headers = [
-				'Authorization: ' . $this->accessToken,
-				'Library: ' . $settings->libraryPrefix,
-			];
-			$this->initCurlWrapper();
-			$this->curlWrapper->addCustomHeaders($headers, false);
-			$response = $this->curlWrapper->curlPostPage($checkoutsUrl, $params);
-			ExternalRequestLogEntry::logRequest('axis360.getCheckouts', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-			/** @var stdClass $xmlResults */
-			$xmlResults = simplexml_load_string($response);
-			$status = $xmlResults->status;
-			if ($status->code == '0000') {
-				foreach ($xmlResults->title as $title) {
-					$this->loadCheckoutInfo($title, $checkouts, $patron);
-				}
-			} else {
-				global $logger;
-				$logger->log('Error loading checkouts ' . $status->statusMessage, Logger::LOG_ERROR);
-				$this->incrementStat('numApiErrors');
+		$accountSummary = $patron->getCachedAccountSummary('axis360');
+		$cachedCheckouts = $patron->getCachedCheckoutsForSource('axis360');
+		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			require_once ROOT_DIR . '/sys/User/Checkout.php';
+			if (isset($this->checkouts[$patron->id])) {
+				return $this->checkouts[$patron->id];
 			}
-
-			return $checkouts;
-		} else {
-			return $checkouts;
+			$checkouts = [];
+			$settings = $this->getSettings($patron);
+			if ($settings !== false) {
+				if ($this->getAxis360AccessToken($patron)) {
+					$checkoutsUrl = $settings->apiUrl . "/Services/VendorAPI/availability/v3_1";
+					$params = [
+						'statusFilter' => 'CHECKOUT',
+						'patronId' => $patron->getBarcode(),
+					];
+					$headers = [
+						'Authorization: ' . $this->accessToken,
+						'Library: ' . $settings->libraryPrefix,
+					];
+					$this->initCurlWrapper();
+					$this->curlWrapper->addCustomHeaders($headers, false);
+					$response = $this->curlWrapper->curlPostPage($checkoutsUrl, $params);
+					ExternalRequestLogEntry::logRequest('axis360.getCheckouts', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
+					/** @var stdClass $xmlResults */
+					$xmlResults = simplexml_load_string($response);
+					$status = $xmlResults->status;
+					if ($status->code == '0000') {
+						foreach ($xmlResults->title as $title) {
+							$this->loadCheckoutInfo($title, $checkouts, $patron);
+						}
+					} else {
+						global $logger;
+						$logger->log('Error loading checkouts ' . $status->statusMessage, Logger::LOG_ERROR);
+						$this->incrementStat('numApiErrors');
+					}
+				}
+			}
+			$cachedCheckouts = $this->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -124,18 +125,14 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @param $patron  User
 	 * @return mixed
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Axis360Driver, renew one at a time'
+		];
 	}
 
-	/**
-	 * Renew a single title currently checked out to the user
-	 *
-	 * @param $patron     User
-	 * @param $recordId   string
-	 * @return mixed
-	 */
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		return $this->checkOutTitle($patron, $recordId, true);
 	}
 
@@ -146,13 +143,9 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @param $transactionId   string
 	 * @return array
 	 */
-	public function returnCheckout($patron, $transactionId) {
+	public function returnCheckout(User $patron,string $transactionId) : array {
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown error',
-				'isPublicFacing' => true,
-			]),
 		];
 		if ($this->getAxis360AccessToken()) {
 			$settings = $this->getSettings();
@@ -206,8 +199,9 @@ class Axis360Driver extends AbstractEContentDriver {
 				]);
 
 				$this->incrementStat('numEarlyReturns');
-				$patron->clearCachedAccountSummaryForSource('axis360');
-				$patron->forceReloadOfCheckouts();
+				$accountSummary = $patron->getCachedAccountSummary('axis360');
+				$accountSummary->decrementNumberOfCheckouts();
+				$accountSummary->markCheckoutsStale();
 			}
 		} else {
 			$result['message'] = translate([
@@ -228,8 +222,6 @@ class Axis360Driver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	private $holds = [];
-
 	/**
 	 * Get Patron Holds
 	 *
@@ -241,59 +233,45 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @return array        Array of the patron's holds
 	 * @access public
 	 */
-	public function getHolds($patron, $forSummary = false): array {
-		require_once ROOT_DIR . '/sys/User/Hold.php';
-		if (isset($this->holds[$patron->id])) {
-			return $this->holds[$patron->id];
-		}
-		$holds = [
-			'available' => [],
-			'unavailable' => [],
-		];
-		$settings = $this->getSettings($patron);
-		if ($settings == false) {
-			return $holds;
-		}
-
-		if ($this->getAxis360AccessToken($patron)) {
-			$holdUrl = $settings->apiUrl . "/Services/VendorAPI/GetHolds/{$patron->getBarcode()}";
-			$headers = [
-				'Authorization: ' . $this->accessToken,
-				'Library: ' . $settings->libraryPrefix,
+	public function getHolds(User $patron, ?bool $forSummary = false): array {
+		$accountSummary = $patron->getCachedAccountSummary('axis360');
+		$cachedHolds = $patron->getCachedHoldsForSource('axis360');
+		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+			require_once ROOT_DIR . '/sys/User/Hold.php';
+			$holds = [
+				'available' => [],
+				'unavailable' => [],
 			];
-			$this->initCurlWrapper();
-			$this->curlWrapper->addCustomHeaders($headers, false);
-			$response = $this->curlWrapper->curlSendPage($holdUrl, 'GET');
-			ExternalRequestLogEntry::logRequest('axis360.getHolds', 'GET', $holdUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-			/** @var stdClass $xmlResults */
-			$xmlResults = simplexml_load_string($response);
-			$holdsResult = $xmlResults->getHoldsResult;
-			if (!empty($holdsResult->holds)) {
-				foreach ($holdsResult->holds->hold as $hold) {
-					$this->loadHoldInfo($hold, $holds, $patron, $forSummary);
+			$settings = $this->getSettings($patron);
+			if ($settings !== false) {
+				if ($this->getAxis360AccessToken($patron)) {
+					$holdUrl = $settings->apiUrl . "/Services/VendorAPI/GetHolds/{$patron->getBarcode()}";
+					$headers = [
+						'Authorization: ' . $this->accessToken,
+						'Library: ' . $settings->libraryPrefix,
+					];
+					$this->initCurlWrapper();
+					$this->curlWrapper->addCustomHeaders($headers, false);
+					$response = $this->curlWrapper->curlSendPage($holdUrl, 'GET');
+					ExternalRequestLogEntry::logRequest('axis360.getHolds', 'GET', $holdUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
+					/** @var stdClass $xmlResults */
+					$xmlResults = simplexml_load_string($response);
+					$holdsResult = $xmlResults->getHoldsResult;
+					if (!empty($holdsResult->holds)) {
+						foreach ($holdsResult->holds->hold as $hold) {
+							$this->loadHoldInfo($hold, $holds, $patron);
+						}
+					}
+
 				}
 			}
 
+			$cachedHolds = $this->updateCachedHoldsBasedOnActiveHolds($cachedHolds, $holds, $accountSummary);
 		}
-
-		return $holds;
+		return $cachedHolds;
 	}
 
-	/**
-	 * Place Hold
-	 *
-	 * This is responsible for both placing holds as well as placing recalls.
-	 *
-	 * @param User $patron The User to place a hold for
-	 * @param string $recordId The id of the bib record
-	 * @return  array                 An array with the following keys
-	 *                                result - true/false
-	 *                                message - the message to display (if item holds are required, this is a form to select the item).
-	 *                                needsItemLevelHold - An indicator that item level holds are required
-	 *                                title - the title of the record the user is placing a hold on
-	 * @access  public
-	 */
-	function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -362,8 +340,10 @@ class Axis360Driver extends AbstractEContentDriver {
 				$this->incrementStat('numHoldsPlaced');
 				$this->trackUserUsageOfAxis360($patron);
 				$this->trackRecordHold($recordId);
-				$patron->clearCachedAccountSummaryForSource('axis360');
-				$patron->forceReloadOfHolds();
+
+				$accountSummary = $patron->getCachedAccountSummary('axis360');
+				$accountSummary->incrementNumberOfUnavailableHolds();
+				$accountSummary->markHoldsStale();
 			}
 
 		} else {
@@ -385,22 +365,21 @@ class Axis360Driver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	/**
-	 * Cancels a hold for a patron
-	 *
-	 * @param User $patron The User to cancel the hold for
-	 * @param string $recordId The id of the bib record
-	 * @return  array
-	 */
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown error',
-				'isPublicFacing' => true,
-			]),
 		];
 		if ($this->getAxis360AccessToken($patron)) {
+			$holds = $this->getHolds($patron);
+			$holdToCancel = $this->getHoldByCancelId($holds, $recordId, $cancelId);
+			if ($holdToCancel == null) {
+				$result['message'] = translate([
+					'text' => 'Could not find hold to cancel',
+					'isPublicFacing' => true,
+				]);
+				return  $result;
+			}
+
 			$settings = $this->getSettings($patron);
 			$cancelHoldUrl = $settings->apiUrl . "/Services/VendorAPI/removeHold/v2/$recordId/{$patron->getBarcode()}/";
 			$headers = [
@@ -450,8 +429,7 @@ class Axis360Driver extends AbstractEContentDriver {
 				]);
 
 				$this->incrementStat('numHoldsCancelled');
-				$patron->clearCachedAccountSummaryForSource('axis360');
-				$patron->forceReloadOfHolds();
+				$this->updateCachesForCancelledHold($patron, $holdToCancel);
 			}
 		} else {
 			$result['message'] = translate([
@@ -473,19 +451,10 @@ class Axis360Driver extends AbstractEContentDriver {
 	}
 
 	public function getAccountSummary(User $user): AccountSummary {
-		[
-			$existingId,
-			$summary,
-		] = $user->getCachedAccountSummary('axis360');
+		$summary = $user->getCachedAccountSummary('axis360');
 
-		if ($summary === null || isset($_REQUEST['reload'])) {
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			//Get account information from api
-			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $user->id;
-			$summary->source = 'axis360';
-			$summary->resetCounters();
-
 			if ($this->getAxis360AccessToken($user)) {
 				require_once ROOT_DIR . '/RecordDrivers/Axis360RecordDriver.php';
 				$settings = $this->getSettings($user);
@@ -523,12 +492,7 @@ class Axis360Driver extends AbstractEContentDriver {
 			}
 
 			$summary->lastLoaded = time();
-			if ($existingId != null) {
-				$summary->id = $existingId;
-				$summary->update();
-			} else {
-				$summary->insert();
-			}
+			$summary->update();
 		}
 
 		return $summary;
@@ -541,13 +505,9 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @param bool $fromRenew
 	 * @return array
 	 */
-	public function checkOutTitle($patron, $titleId, $fromRenew = false) {
+	public function checkOutTitle(User $patron, string $titleId, bool $fromRenew = false) : array {
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown error',
-				'isPublicFacing' => true,
-			]),
 		];
 
 		if ($this->getAxis360AccessToken($patron)) {
@@ -641,8 +601,9 @@ class Axis360Driver extends AbstractEContentDriver {
 					$patron->lastReadingHistoryUpdate = 0;
 					$patron->update();
 				}
-				$patron->clearCachedAccountSummaryForSource('axis360');
-				$patron->forceReloadOfCheckouts();
+				$accountSummary = $patron->getCachedAccountSummary('axis360');
+				$accountSummary->incrementNumberOfCheckouts();
+				$accountSummary->markCheckoutsStale();
 			}
 		} else {
 			$result['message'] = translate([
@@ -663,7 +624,7 @@ class Axis360Driver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	private function getSettings(User $user = null) {
+	private function getSettings(User $user = null) : Axis360Setting|false {
 		require_once ROOT_DIR . '/sys/Axis360/Axis360Scope.php';
 		require_once ROOT_DIR . '/sys/Axis360/Axis360Setting.php';
 		$activeLibrary = null;
@@ -770,8 +731,7 @@ class Axis360Driver extends AbstractEContentDriver {
 		}
 	}
 
-	/** @noinspection PhpUndefinedFieldInspection */
-	private function loadHoldInfo(SimpleXMLElement $rawHold, array &$holds, User $user, $forSummary): Hold {
+	private function loadHoldInfo(SimpleXMLElement $rawHold, array &$holds, User $user) : void {
 		$hold = new Hold();
 		$hold->type = 'axis360';
 		$hold->source = 'axis360';
@@ -808,11 +768,9 @@ class Axis360Driver extends AbstractEContentDriver {
 		} else {
 			$holds['unavailable'][$key] = $hold;
 		}
-		return $hold;
 	}
 
-	/** @noinspection PhpUndefinedFieldInspection */
-	private function loadCheckoutInfo(SimpleXMLElement $title, &$checkouts, User $user) {
+	private function loadCheckoutInfo(SimpleXMLElement $title, &$checkouts, User $user) : void {
 		$checkout = new Checkout();
 		$checkout->type = 'axis360';
 		$checkout->source = 'axis360';
@@ -840,15 +798,14 @@ class Axis360Driver extends AbstractEContentDriver {
 		$checkouts[$key] = $checkout;
 	}
 
-	function freezeHold(User $patron, $recordId): array {
+	function freezeHold(User $patron, string $recordId): array {
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown error',
-				'isPublicFacing' => true,
-			]),
 		];
 		if ($this->getAxis360AccessToken($patron)) {
+			$holds = $this->getHolds($patron);
+			$holdToFreeze = $this->getHoldBySourceId($holds, $recordId);
+
 			$settings = $this->getSettings($patron);
 			$freezeHoldUrl = $settings->apiUrl . "/Services/VendorAPI/suspendHold/v2/$recordId/{$patron->getBarcode()}";
 			$headers = [
@@ -900,7 +857,7 @@ class Axis360Driver extends AbstractEContentDriver {
 				]);
 
 				$this->incrementStat('numHoldsFrozen');
-				$patron->forceReloadOfHolds();
+				$holdToFreeze->markFrozen();
 			}
 		} else {
 			$result['message'] = translate([
@@ -921,15 +878,14 @@ class Axis360Driver extends AbstractEContentDriver {
 		return $result;
 	}
 
-	function thawHold(User $patron, $recordId): array {
+	function thawHold(User $patron, string $recordId): array {
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown error',
-				'isPublicFacing' => true,
-			]),
 		];
 		if ($this->getAxis360AccessToken($patron)) {
+			$holds = $this->getHolds($patron);
+			$holdToThaw = $this->getHoldBySourceId($holds, $recordId);
+
 			$settings = $this->getSettings($patron);
 			$freezeHoldUrl = $settings->apiUrl . "/Services/VendorAPI/activateHold/v2/$recordId/{$patron->getBarcode()}";
 			$headers = [
@@ -981,7 +937,7 @@ class Axis360Driver extends AbstractEContentDriver {
 				]);
 
 				$this->incrementStat('numHoldsThawed');
-				$patron->forceReloadOfHolds();
+				$holdToThaw->markThawed();
 			}
 		} else {
 			$result['message'] = translate([

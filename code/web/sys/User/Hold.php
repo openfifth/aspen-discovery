@@ -16,6 +16,7 @@ class Hold extends CircEntry {
 	public $pickupLocationId;
 	public $pickupLocationName;
 	public $pickupSublocationId;
+	/** @noinspection PhpUnused */
 	public $pickupSublocationName;
 	public $status;
 	public $position;
@@ -36,9 +37,6 @@ class Hold extends CircEntry {
 
 	//For Palace Project
 	public $cancellationUrl;
-
-	//Try to get rid of
-	public $_freezeError;
 
 	public function getNumericColumnNames(): array {
 		return [
@@ -64,14 +62,14 @@ class Hold extends CircEntry {
 	/** @noinspection PhpUnused */
 	public function getPreviewActions() {
 		$recordDriver = $this->getRecordDriver();
-		if ($recordDriver != false) {
+		if ($recordDriver instanceof OverDriveRecordDriver || $recordDriver instanceof PalaceProjectRecordDriver) {
 			return $recordDriver->getPreviewActions();
 		} else {
 			return null;
 		}
 	}
 
-	public function getArrayForAPIs() {
+	public function getArrayForAPIs() : array {
 		$hold = $this->toArray();
 		if ($hold['type'] == 'ils') {
 			$hold['holdSource'] = 'ILS';
@@ -87,8 +85,9 @@ class Hold extends CircEntry {
 			$hold['overDriveId'] = $hold['sourceId'];
 			$hold['holdQueuePosition'] = (int)$hold['position'];
 			$hold['recordUrl'] = $configArray['Site']['url'] . $this->getLinkUrl();
-			if ($this->getRecordDriver()) {
-				$hold['previewActions'] = $this->getRecordDriver()->getPreviewActions();
+			$recordDriver = $this->getRecordDriver();
+			if ($recordDriver instanceof OverDriveRecordDriver || $recordDriver instanceof PalaceProjectRecordDriver) {
+				$hold['previewActions'] = $recordDriver->getPreviewActions();
 			}
 		} elseif ($hold['type'] == 'hoopla') {
 			$hold['holdSource'] = 'Hoopla';
@@ -147,10 +146,10 @@ class Hold extends CircEntry {
 		return $hold;
 	}
 
-	public function getFormats() {
+	public function getFormats() : array {
 		if ($this->format == null) {
 			$recordDriver = $this->getRecordDriver();
-			if ($recordDriver != false) {
+			if ($recordDriver !== false) {
 				return $recordDriver->getFormats();
 			} else {
 				return [];
@@ -160,7 +159,7 @@ class Hold extends CircEntry {
 		}
 	}
 
-	private function performPreSaveChecks() {
+	private function performPreSaveChecks() : void {
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		if (strlen($this->title) > 500) {
 			$this->title = StringUtils::trimStringToLengthAtWordBoundary($this->title, 500, true);
@@ -181,5 +180,18 @@ class Hold extends CircEntry {
 	public function update(string $context = '') : int|bool {
 		$this->performPreSaveChecks();
 		return parent::update();
+	}
+
+	public function markFrozen(?string $dateToReactivate = null) : void {
+		$this->frozen = true;
+		if ($dateToReactivate != null) {
+			$this->reactivateDate = strtotime($dateToReactivate);
+		}
+		$this->update();
+	}
+
+	public function markThawed() : void {
+		$this->frozen = false;
+		$this->update();
 	}
 }

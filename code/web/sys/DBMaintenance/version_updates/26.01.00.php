@@ -67,6 +67,16 @@ function getUpdates26_01_00(): array {
 				'ALTER TABLE palace_project_title ADD INDEX responseIndex(palaceProjectId, rawChecksum, rawResponseLength)'
 			]
 		], //palace_project_store_uncompressed_length
+		'account_summary_data_stale' => [
+			'title' => 'Add whether the account summary data is stale',
+			'description' => 'Add whether the account summary data is stale',
+			'continueOnError' => true,
+			'sql' => [
+				'ALTER TABLE user_account_summary ADD COLUMN dataIsStale TINYINT(1) DEFAULT 1',
+				'ALTER TABLE user_account_summary ADD COLUMN holdsAreStale TINYINT(1) DEFAULT 1',
+				'ALTER TABLE user_account_summary ADD COLUMN checkoutsAreStale TINYINT(1) DEFAULT 1'
+			],
+		], //account_summary_data_stale
 
 		//kirstien
 
@@ -211,6 +221,14 @@ function getUpdates26_01_00(): array {
 		], //hero_slider_role_permissions
 
 		//yanjun
+		'overdrive_suppress_kindle_format' => [
+			'title' => 'OverDrive Suppress Kindle Format',
+			'description' => 'Allow OverDrive scopes to suppress Kindle format in the grouped work',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE overdrive_scopes ADD COLUMN suppressKindleFormat TINYINT(1) DEFAULT 0",
+			]
+		],
 
 		//imani
 
@@ -248,6 +266,16 @@ function getUpdates26_01_00(): array {
 			'ALTER TABLE user_payments ADD COLUMN IF NOT EXISTS stripeReceiptUrl VARCHAR(255) DEFAULT NULL'
 		]
 	], //user_payments_stripe_receipt_url
+
+	//tomas
+	'overdrive_configurable_deletion_check_hour' => [
+		'title' => 'OverDrive - Add Configurable Deletion Check Hour',
+		'description' => 'Add deletionCheckHour column to overdrive_settings to allow configuring when deletion checks run',
+		'continueOnError' => false,
+		'sql' => [
+			'ALTER TABLE overdrive_settings ADD COLUMN deletionCheckHour INT DEFAULT 8 AFTER name'
+		]
+	], //overdrive_configurable_deletion_check_hour
 
 	];
 }

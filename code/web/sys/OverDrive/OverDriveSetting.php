@@ -30,6 +30,8 @@ class OverDriveSetting extends DataObject {
 	public $lastUpdateOfAllRecords;
 	/** @noinspection PhpUnused */
 	public $enableRequestLogging;
+	/** @noinspection PhpUnused */
+	public $deletionCheckHour;
 
 	public $_scopes;
 	public $_librarySettings;
@@ -195,6 +197,15 @@ class OverDriveSetting extends DataObject {
 				'label' => 'Enable Request Logging',
 				'description' => 'Whether or not request logging is done while extracting from Aspen.',
 				'default' => 0,
+			],
+			'deletionCheckHour' => [
+				'property' => 'deletionCheckHour',
+				'type' => 'integer',
+				'label' => 'Deletion Check Hour',
+				'description' => 'Hour of day (0-23) when deletion check runs. Set to -1 to disable deletion checks.',
+				'default' => 8,
+				'min' => -1,
+				'max' => 23,
 			],
 			'librarySettingsSection' => [
 				'property' => 'librarySettingsSection',

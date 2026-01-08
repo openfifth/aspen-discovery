@@ -758,9 +758,9 @@ class UserAPI extends AbstractAPI {
 
 			$accountSummary = $user->getAccountSummary();
 			$userData->numCheckedOutIls = (int)$accountSummary->numCheckedOut;
-			$userData->numHoldsIls = (int)$accountSummary->getNumHolds();
-			$userData->numHoldsAvailableIls = (int)($accountSummary->numAvailableHolds == null ? 0 : $accountSummary->numAvailableHolds);
-			$userData->numHoldsRequestedIls = (int)($accountSummary->numUnavailableHolds == null ? 0 : $accountSummary->numUnavailableHolds);
+			$userData->numHoldsIls = $accountSummary->getNumHolds();
+			$userData->numHoldsAvailableIls = ($accountSummary->numAvailableHolds == null ? 0 : $accountSummary->numAvailableHolds);
+			$userData->numHoldsRequestedIls = ($accountSummary->numUnavailableHolds == null ? 0 : $accountSummary->numUnavailableHolds);
 			$userData->numOverdue = (int)$accountSummary->numOverdue;
 			$userData->finesVal = (float)$accountSummary->totalFines;
 			$numCheckedOut += $userData->numCheckedOutIls;
@@ -792,13 +792,13 @@ class UserAPI extends AbstractAPI {
 				foreach ($linkedAccounts as $linkedUser) {
 					$linkedUserSummary = $linkedUser->getAccountSummary();
 					$userData->finesVal += (int)$linkedUserSummary->totalFines;
-					$userData->numHoldsIls = (int)$linkedUserSummary->getNumHolds();
+					$userData->numHoldsIls = $linkedUserSummary->getNumHolds();
 					$userData->numCheckedOutIls += (int)$linkedUserSummary->numCheckedOut;
 					$userData->numOverdue += (int)$linkedUserSummary->numOverdue;
-					$userData->numHoldsAvailableIls += (int)($linkedUserSummary->numAvailableHolds == null ? 0 : $linkedUserSummary->numAvailableHolds);
-					$userData->numHoldsRequestedIls += (int)($linkedUserSummary->numUnavailableHolds == null ? 0 : $linkedUserSummary->numUnavailableHolds);
+					$userData->numHoldsAvailableIls += ($linkedUserSummary->numAvailableHolds == null ? 0 : $linkedUserSummary->numAvailableHolds);
+					$userData->numHoldsRequestedIls += ($linkedUserSummary->numUnavailableHolds == null ? 0 : $linkedUserSummary->numUnavailableHolds);
 					$numCheckedOut += (int)$linkedUserSummary->numCheckedOut;
-					$numHolds += (int)$linkedUserSummary->getNumHolds();
+					$numHolds += $linkedUserSummary->getNumHolds();
 					$numHoldsAvailable += ($linkedUserSummary->numAvailableHolds == null ? 0 : $linkedUserSummary->numAvailableHolds);
 					$numOverdue += (int)$linkedUserSummary->numOverdue;
 				}
@@ -833,7 +833,7 @@ class UserAPI extends AbstractAPI {
 				$driver = new OverDriveDriver();
 				$overDriveSummary = $driver->getAccountSummary($user);
 				$userData->numCheckedOutOverDrive = (int)$overDriveSummary->numCheckedOut;
-				$userData->numHoldsOverDrive = (int)$overDriveSummary->getNumHolds();
+				$userData->numHoldsOverDrive = $overDriveSummary->getNumHolds();
 				$userData->numHoldsAvailableOverDrive = (int)$overDriveSummary->numAvailableHolds;
 				$numCheckedOut += (int)$overDriveSummary->numCheckedOut;
 				$numHolds += (int)$overDriveSummary->getNumHolds();
@@ -1952,11 +1952,7 @@ class UserAPI extends AbstractAPI {
 			$bibId = $_REQUEST['itemId'];
 		}
 
-		if (isset($_REQUEST['itemSource'])) {
-			$source = $_REQUEST['itemSource'];
-		} else {
-			$source = null;
-		}
+		$source = $_REQUEST['itemSource'] ?? null;
 
 		$shortId = null;
 		if($bibId) {
@@ -2534,7 +2530,7 @@ class UserAPI extends AbstractAPI {
 			if ($user && !($user instanceof AspenError)) {
 				require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 				$driver = new OverDriveDriver();
-				$result = $driver->freezeHold($user, $overDriveId, $reactivationDate);
+				$result = $driver->freezeHold($user, $overDriveId, null, $reactivationDate);
 				return [
 					'success' => $result['success'],
 					'title' => $result['api']['title'],
@@ -3691,8 +3687,8 @@ class UserAPI extends AbstractAPI {
 						'message' => 'recordId and holdId must be provided',
 					];
 				}
-				$recordId = $_REQUEST['recordId'] ?? null;
-				$holdId = $_REQUEST['holdId'] ?? null;
+				$recordId = $_REQUEST['recordId'];
+				$holdId = $_REQUEST['holdId'];
 				return $user->freezeHold($recordId, $holdId, $reactivationDate);
 			} elseif ($source == 'overdrive') {
 				return $this->freezeOverDriveHold();

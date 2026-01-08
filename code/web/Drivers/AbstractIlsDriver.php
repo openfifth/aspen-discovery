@@ -32,24 +32,34 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	/**
 	 * Place Item Hold
 	 *
-	 * This is responsible for both placing item level holds.
+	 * This is responsible for placing item level holds. Should be called from the User Object
 	 *
 	 * @param User $patron The User to place a hold for
 	 * @param string $recordId The id of the bib record
 	 * @param string $itemId The id of the item to hold
-	 * @param string $pickupBranch The branch where the user wants to pickup the item when available
+	 * @param string $pickupBranch The branch where the user wants to pick up the item when available
 	 * @param null|string $cancelDate The date to automatically cancel the hold if not filled
 	 * @return  mixed               True if successful, false if unsuccessful
 	 *                              If an error occurs, return a AspenError
 	 * @access  public
 	 */
-	abstract function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null);
+	abstract function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array;
 
-	abstract function freezeHold(User $patron, $recordId, $itemToFreezeId, $dateToReactivate): array;
 
-	abstract function thawHold(User $patron, $recordId, $itemToThawId): array;
+	/**
+	 * Freezes the hold. Should be called from User which delegates to Catalog Connection to update caches properly
+	 *
+	 * @param User $patron
+	 * @param string $recordId
+	 * @param string $itemToFreezeId
+	 * @param string|null $dateToReactivate
+	 * @return array
+	 */
+	abstract function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array;
 
-	abstract function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array;
+	abstract function thawHold(User $patron, string $recordId, string $itemToThawId): array;
+
+	abstract function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array;
 
 	abstract function updatePatronInfo(User $patron, $canUpdateContactInfo, $fromMasquerade);
 
@@ -228,12 +238,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
-		return $summary;
+		return $patron->getCachedAccountSummary('ils');
 	}
 
 	public function getExpirationInformation(User $patron) : ExpirationInformation {
@@ -266,7 +271,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 		];
 	}
 
-	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) {
+	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) : array {
 		return [
 			'success' => false,
 			'message' => 'Volume level holds have not been implemented for this ILS.',
@@ -280,7 +285,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 		];
 	}
 
-	public function patronEligibleForHolds(User $patron) {
+	public function patronEligibleForHolds(User $patron) : array {
 		return [
 			'isEligible' => true,
 			'message' => '',
@@ -391,7 +396,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	}
 
 
-	public function confirmHold(User $patron, $recordId, $confirmationId) {
+	public function confirmHold(User $patron, string $recordId, string $confirmationId) : array {
 		return [
 			'success' => false,
 			'message' => 'This functionality has not been implemented for this ILS',

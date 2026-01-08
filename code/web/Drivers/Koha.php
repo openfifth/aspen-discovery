@@ -1816,7 +1816,7 @@ class Koha extends AbstractIlsDriver {
 	 *                                If an error occurs, return a AspenError
 	 * @access  public
 	 */
-	public function placeHold($patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	public function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$hold_result = [
 			'success' => false,
 			'message' => translate([
@@ -1873,7 +1873,7 @@ class Koha extends AbstractIlsDriver {
 		}
 		//Just a regular bib level hold
 		$hold_result['title'] = $recordDriver->getTitle();
-		if (strpos($recordId, ':') !== false) {
+		if (str_contains($recordId, ':')) {
 			[
 				$source,
 				$recordId,
@@ -1950,8 +1950,6 @@ class Koha extends AbstractIlsDriver {
 					'text' => 'Go to Holds',
 					'isPublicFacing' => true,
 				]);
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfHolds();
 			} else {
 				if ($response['code'] == 403) {
 					$hold_result = [
@@ -2022,7 +2020,7 @@ class Koha extends AbstractIlsDriver {
 	 * @param string $pickupBranch
 	 * @return array
 	 */
-	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) {
+	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) : array {
 		// Store result for API or app use
 		$result['api'] = [];
 
@@ -2042,7 +2040,7 @@ class Koha extends AbstractIlsDriver {
 		]);
 
 		$oauthToken = $this->getOAuthToken();
-		if ($oauthToken == false) {
+		if ($oauthToken === false) {
 			$result['message'] = translate([
 				'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
 				'isPublicFacing' => true,
@@ -2112,9 +2110,6 @@ class Koha extends AbstractIlsDriver {
 					'text' => 'Go to Holds',
 					'isPublicFacing' => true,
 				]);
-
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfHolds();
 			} else {
 				$result = [
 					'success' => false,
@@ -2154,7 +2149,7 @@ class Koha extends AbstractIlsDriver {
 	 *                              If an error occurs, return a AspenError
 	 * @access  public
 	 */
-	function placeItemHold($patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) {
+	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		// Store result for API or app use
 		$hold_result['api'] = [];
 
@@ -2248,8 +2243,6 @@ class Koha extends AbstractIlsDriver {
 					'text' => 'Go to Holds',
 					'isPublicFacing' => true,
 				]);
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfHolds();
 			} else {
 				if ($response['code'] == 403) {
 					$hold_result = [
@@ -2304,21 +2297,7 @@ class Koha extends AbstractIlsDriver {
 		return $hold_result;
 	}
 
-	/**
-	 * Get Patron Holds
-	 *
-	 * This is responsible for retrieving all holds by a specific patron.
-	 *
-	 * @param array|User $patron The patron array from patronLogin
-	 * @param integer $page The current page of holds
-	 * @param integer $recordsPerPage The number of records to show per page
-	 * @param string $sortOption How the records should be sorted
-	 *
-	 * @return mixed        Array of the patron's holds on success, AspenError
-	 * otherwise.
-	 * @access public
-	 */
-	public function getHolds($patron, $page = 1, $recordsPerPage = -1, $sortOption = 'title'): array {
+	public function getHolds(User $patron): array {
 		global $library;
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		$availableHolds = [];
@@ -2658,7 +2637,7 @@ class Koha extends AbstractIlsDriver {
 	public function updateHoldDetailed($patron, $type, $xNum, $cancelId, $locationId, /** @noinspection PhpUnusedParameterInspection */ $freezeValue = 'off') {
 		$titles = [];
 
-		if (!isset($xNum) || empty($xNum)) {
+		if (empty($xNum)) {
 			if (is_array($cancelId)) {
 				$holdKeys = $cancelId;
 			} else {
@@ -2742,8 +2721,6 @@ class Koha extends AbstractIlsDriver {
 					}
 				}
 			}
-			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			$patron->forceReloadOfHolds();
 			$result['title'] = $titles;
 			if ($allCancelsSucceed) {
 				$result['success'] = true;
@@ -2822,10 +2799,10 @@ class Koha extends AbstractIlsDriver {
 		return false;
 	}
 
-	public function renewAll(User $patron) {
+	public function renewAll(User $patron) : array {
 		return [
-			'success' => false,
-			'message' => 'Renew All not supported directly, call through Catalog Connection',
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Koha, renew one at a time'
 		];
 	}
 
@@ -2847,7 +2824,7 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		/** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
 		$result = [
 			'success' => false,
@@ -2948,9 +2925,6 @@ class Koha extends AbstractIlsDriver {
 						'text' => 'Your checkout was renewed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfCheckouts();
 				} else {
 					$result['success'] = false;
 					if ($responseCode == 403) {
@@ -3068,9 +3042,6 @@ class Koha extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 				$result['api']['message'] = $renewsRemaining . ' of ' . $maxRenewals . ' renewals remaining.';
-
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfCheckouts();
 			} else {
 				$error = $renewResponse->error;
 				$success = false;
@@ -3433,6 +3404,7 @@ class Koha extends AbstractIlsDriver {
 				}
 			}
 		}
+		return 0;
 	}
 
 	private $oauthToken = null;
@@ -3474,11 +3446,11 @@ class Koha extends AbstractIlsDriver {
 		return $this->basicAuthToken;
 	}
 
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		return $this->updateHoldDetailed($patron, 'cancel', null, $cancelId, '', '');
 	}
 
-	function freezeHold($patron, $recordId, $itemToFreezeId, $dateToReactivate) : array {
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate) : array {
 		// Store result for API or app use
 		$result['api'] = [];
 
@@ -3550,14 +3522,12 @@ class Koha extends AbstractIlsDriver {
 					'text' => 'Your hold was frozen successfully.',
 					'isPublicFacing' => true,
 				]);
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfHolds();
 			}
 		}
 		return $result;
 	}
 
-	function thawHold($patron, $recordId, $itemToThawId): array {
+	function thawHold($patron, string $recordId, string $itemToThawId): array {
 		/** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
 		$result = [
 			'success' => false,
@@ -3598,15 +3568,13 @@ class Koha extends AbstractIlsDriver {
 				'text' => 'Your hold was thawed successfully.',
 				'isPublicFacing' => true,
 			]);
-			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			$patron->forceReloadOfHolds();
 		}
 	
 
 		return $result;
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array {
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
 		// Store result for API or app use
 		$result['api'] = [];
 
@@ -3626,7 +3594,7 @@ class Koha extends AbstractIlsDriver {
 		]);
 
 		$oauthToken = $this->getOAuthToken();
-		if ($oauthToken == false) {
+		if ($oauthToken === false) {
 			$result['message'] = translate([
 				'text' => 'Unable to authenticate with the ILS.  Please try again later or contact the library.',
 				'isPublicFacing' => true,
@@ -3650,7 +3618,7 @@ class Koha extends AbstractIlsDriver {
 			], true);
 
 			//Get the current hold so we can load priority
-			$apiUrl = $this->getWebServiceUrl() . "/api/v1/holds?hold_id=$itemToUpdateId";
+			$apiUrl = $this->getWebServiceUrl() . "/api/v1/holds?hold_id=$holdId";
 			$response = $this->apiCurlWrapper->curlGetPage($apiUrl);
 			ExternalRequestLogEntry::logRequest('koha.getHoldById', 'GET', $apiUrl, $this->apiCurlWrapper->getHeaders(), '', $this->apiCurlWrapper->getResponseCode(), $response, []);
 			if (!$response) {
@@ -3659,7 +3627,7 @@ class Koha extends AbstractIlsDriver {
 				$currentHolds = json_decode($response, false);
 				$currentHold = null;
 				foreach ($currentHolds as $currentHold) {
-					if ($currentHold->hold_id == $itemToUpdateId) {
+					if ($currentHold->hold_id == $holdId) {
 						break;
 					}
 				}
@@ -3667,11 +3635,11 @@ class Koha extends AbstractIlsDriver {
 				$postParams = [];
 
 				if($this->getKohaVersion() >= 22.11) {
-					$apiUrl = $this->getWebServiceUrl() . "/api/v1/holds/$itemToUpdateId/pickup_location";
+					$apiUrl = $this->getWebServiceUrl() . "/api/v1/holds/$holdId/pickup_location";
 					$postParams['pickup_library_id'] = $newPickupLocation;
 					$method = 'PUT';
 				} else {
-					$apiUrl = $this->getWebServiceUrl() . "/api/v1/holds/$itemToUpdateId";
+					$apiUrl = $this->getWebServiceUrl() . "/api/v1/holds/$holdId";
 					$postParams['pickup_library_id'] = $newPickupLocation;
 					$postParams['priority'] = $currentHold->priority;
 					if ($this->getKohaVersion() >= 21.05) {
@@ -3731,8 +3699,6 @@ class Koha extends AbstractIlsDriver {
 							'text' => 'The pickup location of your hold was changed successfully.',
 							'isPublicFacing' => true,
 						]);
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfHolds();
 					}
 				}
 			}
@@ -6201,109 +6167,106 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		global $timer;
-		global $library;
+		$summary = $patron->getCachedAccountSummary('ils');
 
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			global $timer;
+			global $library;
 
-		$this->initDatabaseConnection();
+			$this->initDatabaseConnection();
 
-		//Get number of items checked out
-		/** @noinspection SqlResolve */
-		$checkedOutItemsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numCheckouts FROM issues WHERE borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
-		if ($checkedOutItemsRS) {
-			$checkedOutItems = $checkedOutItemsRS->fetch_assoc();
-			$summary->numCheckedOut = (int)$checkedOutItems['numCheckouts'];
-			$checkedOutItemsRS->close();
-		}
-
-		$now = date('Y-m-d H:i:s');
-		/** @noinspection SqlResolve */
-		$overdueItemsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numOverdue FROM issues WHERE date_due < '" . $now . "' AND borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
-		if ($overdueItemsRS) {
-			$overdueItems = $overdueItemsRS->fetch_assoc();
-			$summary->numOverdue = (int)$overdueItems['numOverdue'];
-			$overdueItemsRS->close();
-		}
-		$timer->logTime("Loaded checkouts for Koha");
-
-		//Get number of available holds
-		if ($library->availableHoldDelay > 0) {
+			//Get number of items checked out
 			/** @noinspection SqlResolve */
-			$holdsRS = mysqli_query($this->dbConnection, "SELECT waitingdate, found FROM reserves WHERE borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
-			if ($holdsRS) {
-				while ($curRow = $holdsRS->fetch_assoc()) {
-					if ($curRow['found'] !== 'W') {
-						$summary->numUnavailableHolds++;
-					} else {
-						$holdAvailableOn = strtotime($curRow['waitingdate']);
-						if ((time() - $holdAvailableOn) < 60 * 60 * 24 * $library->availableHoldDelay) {
+			$checkedOutItemsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numCheckouts FROM issues WHERE borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
+			if ($checkedOutItemsRS) {
+				$checkedOutItems = $checkedOutItemsRS->fetch_assoc();
+				$summary->numCheckedOut = (int)$checkedOutItems['numCheckouts'];
+				$checkedOutItemsRS->close();
+			}
+
+			$now = date('Y-m-d H:i:s');
+			/** @noinspection SqlResolve */
+			$overdueItemsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numOverdue FROM issues WHERE date_due < '" . $now . "' AND borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
+			if ($overdueItemsRS) {
+				$overdueItems = $overdueItemsRS->fetch_assoc();
+				$summary->numOverdue = (int)$overdueItems['numOverdue'];
+				$overdueItemsRS->close();
+			}
+			$timer->logTime("Loaded checkouts for Koha");
+
+			//Get number of available holds
+			if ($library->availableHoldDelay > 0) {
+				/** @noinspection SqlResolve */
+				$holdsRS = mysqli_query($this->dbConnection, "SELECT waitingdate, found FROM reserves WHERE borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
+				if ($holdsRS) {
+					while ($curRow = $holdsRS->fetch_assoc()) {
+						if ($curRow['found'] !== 'W') {
 							$summary->numUnavailableHolds++;
 						} else {
-							$summary->numAvailableHolds++;
+							$holdAvailableOn = strtotime($curRow['waitingdate']);
+							if ((time() - $holdAvailableOn) < 60 * 60 * 24 * $library->availableHoldDelay) {
+								$summary->numUnavailableHolds++;
+							} else {
+								$summary->numAvailableHolds++;
+							}
 						}
 					}
+					$holdsRS->close();
 				}
-				$holdsRS->close();
-			}
-		} else {
-			/** @noinspection SqlResolve */
-			$availableHoldsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numHolds FROM reserves WHERE found = 'W' and borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
-			if ($availableHoldsRS) {
-				$availableHolds = $availableHoldsRS->fetch_assoc();
-				$summary->numAvailableHolds = (int)$availableHolds['numHolds'];
-				$availableHoldsRS->close();
-			}
-			$timer->logTime("Loaded available holds for Koha");
+			} else {
+				/** @noinspection SqlResolve */
+				$availableHoldsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numHolds FROM reserves WHERE found = 'W' and borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
+				if ($availableHoldsRS) {
+					$availableHolds = $availableHoldsRS->fetch_assoc();
+					$summary->numAvailableHolds = (int)$availableHolds['numHolds'];
+					$availableHoldsRS->close();
+				}
+				$timer->logTime("Loaded available holds for Koha");
 
-			//Get number of unavailable
-			/** @noinspection SqlResolve */
-			$waitingHoldsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numHolds FROM reserves WHERE (found <> 'W' or found is null) and borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
-			if ($waitingHoldsRS) {
-				$waitingHolds = $waitingHoldsRS->fetch_assoc();
-				$summary->numUnavailableHolds = (int)$waitingHolds['numHolds'];
-				$waitingHoldsRS->close();
-			}
-		}
-		$timer->logTime("Loaded total holds for Koha");
-
-		//Get ILL Hold counts as well
-		$oauthToken = $this->getOAuthToken();
-		if ($oauthToken !== false) {
-			$apiUrl = $this->getWebServiceUrl() . "/api/v1/ill/requests?q={%22status%22%3A%22B_ITEM_REQUESTED%22%2C%22patron_id%22%3A$patron->unique_ils_id}";
-			$this->apiCurlWrapper->addCustomHeaders([
-				'Authorization: Bearer ' . $oauthToken,
-				'User-Agent: Aspen Discovery',
-				'Accept: */*',
-				'Cache-Control: no-cache',
-				'Content-Type: application/json',
-				'x-koha-embed: +strings,extended_attributes',
-				'Host: ' . preg_replace('~http[s]?://~', '', $this->getWebServiceURL()),
-				'Accept-Encoding: gzip, deflate',
-				'x-koha-library: ' .  $patron->getHomeLocationCode(),
-			], true);
-			$illRequestResponse = $this->apiCurlWrapper->curlGetPage($apiUrl);
-			if ($this->apiCurlWrapper->getResponseCode() == 200) {
-				$jsonResponse = json_decode($illRequestResponse);
-				if(!empty($jsonResponse) && is_array($jsonResponse)) {
-					$summary->numUnavailableHolds+= count($jsonResponse);
+				//Get number of unavailable
+				/** @noinspection SqlResolve */
+				$waitingHoldsRS = mysqli_query($this->dbConnection, "SELECT count(*) as numHolds FROM reserves WHERE (found <> 'W' or found is null) and borrowernumber = '" . mysqli_escape_string($this->dbConnection, $patron->unique_ils_id) . "'", MYSQLI_USE_RESULT);
+				if ($waitingHoldsRS) {
+					$waitingHolds = $waitingHoldsRS->fetch_assoc();
+					$summary->numUnavailableHolds = (int)$waitingHolds['numHolds'];
+					$waitingHoldsRS->close();
 				}
 			}
+			$timer->logTime("Loaded total holds for Koha");
+
+			//Get ILL Hold counts as well
+			$oauthToken = $this->getOAuthToken();
+			if ($oauthToken !== false) {
+				$apiUrl = $this->getWebServiceUrl() . "/api/v1/ill/requests?q={%22status%22%3A%22B_ITEM_REQUESTED%22%2C%22patron_id%22%3A$patron->unique_ils_id}";
+				$this->apiCurlWrapper->addCustomHeaders([
+					'Authorization: Bearer ' . $oauthToken,
+					'User-Agent: Aspen Discovery',
+					'Accept: */*',
+					'Cache-Control: no-cache',
+					'Content-Type: application/json',
+					'x-koha-embed: +strings,extended_attributes',
+					'Host: ' . preg_replace('~http[s]?://~', '', $this->getWebServiceURL()),
+					'Accept-Encoding: gzip, deflate',
+					'x-koha-library: ' . $patron->getHomeLocationCode(),
+				], true);
+				$illRequestResponse = $this->apiCurlWrapper->curlGetPage($apiUrl);
+				if ($this->apiCurlWrapper->getResponseCode() == 200) {
+					$jsonResponse = json_decode($illRequestResponse);
+					if (!empty($jsonResponse) && is_array($jsonResponse)) {
+						$summary->numUnavailableHolds += count($jsonResponse);
+					}
+				}
+			}
+
+			//Get fines
+			//Load fines from the database
+			$outstandingFines = $this->getOutstandingFineTotal($patron);
+			$summary->totalFines = floatval($outstandingFines);
+
+			//Get expiration information
+			$expirationInformation = $this->getExpirationInformation($patron);
+			$summary->expirationDate = $expirationInformation->expirationDate;
 		}
-
-		//Get fines
-		//Load fines from the database
-		$outstandingFines = $this->getOutstandingFineTotal($patron);
-		$summary->totalFines = floatval($outstandingFines);
-
-		//Get expiration information
-		$expirationInformation = $this->getExpirationInformation($patron);
-		$summary->expirationDate = $expirationInformation->expirationDate;
-
 		return $summary;
 	}
 
@@ -6870,7 +6833,7 @@ class Koha extends AbstractIlsDriver {
 	 * @return array
 	 */
 	private function getHoldMessageForSuccessfulHold($patron, $recordId, array $hold_result): array {
-		$holds = $this->getHolds($patron, 1, -1, 'title');
+		$holds = $this->getHolds($patron);
 		$hold_result['success'] = true;
 		$hold_result['message'] = translate([
 			'text' => "Your hold was placed successfully.",
@@ -6942,7 +6905,6 @@ class Koha extends AbstractIlsDriver {
 				break;
 			}
 		}
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $hold_result;
 	}
 
@@ -7061,11 +7023,10 @@ class Koha extends AbstractIlsDriver {
 				]);
 			}
 		}
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $result;
 	}
 
-	public function patronEligibleForHolds(User $patron) {
+	public function patronEligibleForHolds(User $patron) : array {
 		$result = [
 			'isEligible' => true,
 			'message' => '',
@@ -8742,10 +8703,6 @@ class Koha extends AbstractIlsDriver {
 			$item = [];
 			$result = [
 				'success' => false,
-				'message' => translate([
-					'text' => 'There was an error checking out this title.',
-					'isPublicFacing' => true,
-				]),
 				'title' => translate([
 					'text' => 'Unable to checkout title',
 					'isPublicFacing' => true,
@@ -8849,9 +8806,6 @@ class Koha extends AbstractIlsDriver {
 							'owningLocationCode' => $holdingBranch,
 							'checkoutLocationCode' => $checkoutLocation
 						];
-
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfCheckouts();
 					} else {
 						$result['message'] = translate([
 							'text' => 'Error (%1%) checking out this title.',

@@ -57,11 +57,14 @@ class Admin_DBMaintenance extends Admin_Admin {
 		//Check to see which updates have already been performed.
 		$availableUpdates = $systemAPI->checkWhichUpdatesHaveRun($availableUpdates);
 
+		// Check for Hoopla V2 Updates
 		$showHooplaVersion2BackgroundButton = false;
 		foreach ($hooplaVersion2UpdateKeys as $hooplaUpdateKey) {
-			if (isset($availableUpdates[$hooplaUpdateKey]) && empty($availableUpdates[$hooplaUpdateKey]['alreadyRun'])) {
-				$showHooplaVersion2BackgroundButton = true;
-				break;
+			if (isset($availableUpdates[$hooplaUpdateKey])) {
+				$availableUpdates[$hooplaUpdateKey]['hooplaVersion2'] = true;
+				if (!$showHooplaVersion2BackgroundButton && empty($availableUpdates[$hooplaUpdateKey]['alreadyRun'])) {
+					$showHooplaVersion2BackgroundButton = true;
+				}
 			}
 		}
 		$interface->assign('showHooplaVersion2BackgroundButton', $showHooplaVersion2BackgroundButton);

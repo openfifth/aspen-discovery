@@ -272,14 +272,17 @@ class Evergreen extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) :array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Evergreen, renew one at a time'
+		];
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$result = [
 			'itemId' => $itemId,
 			'success' => false,
@@ -336,9 +339,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your title was renewed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfCheckouts();
 				} elseif (isset($apiResponse->payload[0]) && isset($apiResponse->payload[0]->desc)) {
 					$result['message'] = $apiResponse->payload[0]->desc;
 					$result['api']['message'] = $apiResponse->payload[0]->desc;
@@ -353,16 +353,7 @@ class Evergreen extends AbstractIlsDriver {
 		return $result;
 	}
 
-	/**
-	 * Cancels a hold for a patron
-	 *
-	 * @param User $patron The User to cancel the hold for
-	 * @param string $recordId The id of the bib record
-	 * @param string $cancelId Information about the hold to be cancelled
-	 * @param bool $isIll If the hold was from ILL
-	 * @return  array
-	 */
-	function cancelHold(User $patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -420,9 +411,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your hold has been cancelled,',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
 				}
 			}
 		} else {
@@ -434,14 +422,11 @@ class Evergreen extends AbstractIlsDriver {
 		return $result;
 	}
 
-	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) {
+	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) : array {
 		return $this->placeItemHold($patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation);
 	}
 
-	/**
-	 * @inheritDoc
-	 */
-	function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) {
+	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		$hold_result = [
 			'success' => false,
 			'message' => translate([
@@ -562,9 +547,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Go to Holds',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
 				}
 			}
 		}
@@ -585,7 +567,7 @@ class Evergreen extends AbstractIlsDriver {
 		return true;
 	}
 
-	function freezeHold(User $patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -652,9 +634,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your hold was frozen successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
 				}
 			}
 		}
@@ -669,7 +648,7 @@ class Evergreen extends AbstractIlsDriver {
 	 *
 	 * @return array
 	 */
-	function thawHold(User $patron, $recordId, $itemToThawId): array {
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -733,9 +712,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your hold was thawed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
 				}
 			}
 		}
@@ -743,7 +719,7 @@ class Evergreen extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array {
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -778,7 +754,7 @@ class Evergreen extends AbstractIlsDriver {
 			}
 
 			$namedParams = [
-				'id' => $itemToUpdateId,
+				'id' => $holdId,
 				'pickup_lib' => (int)$newPickupLocation,
 			];
 
@@ -813,9 +789,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'The pickup location for the hold was changed.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
 				}
 			}
 		}
@@ -1341,7 +1314,7 @@ class Evergreen extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$hold_result = [
 			'success' => false,
 			'message' => translate([
@@ -1360,7 +1333,7 @@ class Evergreen extends AbstractIlsDriver {
 			],
 		];
 
-		if (strpos($recordId, ':') !== false) {
+		if (str_contains($recordId, ':')) {
 			[
 				,
 				$recordId,
@@ -1518,9 +1491,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your hold was placed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfHolds();
 				}
 			}
 		}
@@ -1720,8 +1690,6 @@ class Evergreen extends AbstractIlsDriver {
 			]);
 			$logger->log('Unable to post the payment to the library ILS. The library has been notified and will manually reconcile the payment. Response code: ' . $this->apiCurlWrapper->getResponseCode(), Logger::LOG_ERROR);
 		}
-
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $result;
 	}
 
@@ -2246,50 +2214,54 @@ class Evergreen extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
+		$summary = $patron->getCachedAccountSummary('ils');
 
-		//Can't use the quick response since it includes eContent.
-		$checkouts = $this->getCheckouts($patron);
-		$summary->numCheckedOut = count($checkouts);
-		$numOverdue = 0;
-		foreach ($checkouts as $checkout) {
-			if ($checkout->isOverdue()) {
-				$numOverdue++;
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
+			$summary = new AccountSummary();
+			$summary->userId = $patron->id;
+			$summary->source = 'ils';
+			$summary->resetCounters();
+
+			//Can't use the quick response since it includes eContent.
+			$checkouts = $this->getCheckouts($patron);
+			$summary->numCheckedOut = count($checkouts);
+			$numOverdue = 0;
+			foreach ($checkouts as $checkout) {
+				if ($checkout->isOverdue()) {
+					$numOverdue++;
+				}
 			}
-		}
-		$summary->numOverdue = $numOverdue;
+			$summary->numOverdue = $numOverdue;
 
-		$holds = $this->getHolds($patron);
-		$summary->numAvailableHolds = count($holds['available']);
-		$summary->numUnavailableHolds = count($holds['unavailable']);
+			$holds = $this->getHolds($patron);
+			$summary->numAvailableHolds = count($holds['available']);
+			$summary->numUnavailableHolds = count($holds['unavailable']);
 
-		//Get additional information
-		$authToken = $this->getAPIAuthToken($patron, true);
-		if ($authToken != null) {
-			//Get expiration information
-			$expirationInformation = $this->getExpirationInformation($patron);
-			$summary->expirationDate = $expirationInformation->expirationDate;
+			//Get additional information
+			$authToken = $this->getAPIAuthToken($patron, true);
+			if ($authToken != null) {
+				//Get expiration information
+				$expirationInformation = $this->getExpirationInformation($patron);
+				$summary->expirationDate = $expirationInformation->expirationDate;
 
-			$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
-			$headers = [
-				'Content-Type: application/x-www-form-urlencoded',
-			];
-			$this->apiCurlWrapper->addCustomHeaders($headers, false);
-			$request = 'service=open-ils.actor&method=open-ils.actor.user.fines.summary';
-			$request .= '&param=' . json_encode($authToken);
-			$request .= '&param=' . $patron->unique_ils_id;
-			$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
+				$evergreenUrl = $this->accountProfile->patronApiUrl . '/osrf-gateway-v1';
+				$headers = [
+					'Content-Type: application/x-www-form-urlencoded',
+				];
+				$this->apiCurlWrapper->addCustomHeaders($headers, false);
+				$request = 'service=open-ils.actor&method=open-ils.actor.user.fines.summary';
+				$request .= '&param=' . json_encode($authToken);
+				$request .= '&param=' . $patron->unique_ils_id;
+				$apiResponse = $this->apiCurlWrapper->curlPostPage($evergreenUrl, $request);
 
-			if ($this->apiCurlWrapper->getResponseCode() == 200) {
-				$apiResponse = json_decode($apiResponse);
-				if (isset($apiResponse->payload) && isset($apiResponse->payload[0]->__p)) {
-					/** @noinspection SpellCheckingInspection */
-					$moneySummary = $this->mapEvergreenFields($apiResponse->payload[0]->__p, $this->fetchIdl('mous'));
-					$summary->totalFines = $moneySummary['balance_owed'];
+				if ($this->apiCurlWrapper->getResponseCode() == 200) {
+					$apiResponse = json_decode($apiResponse);
+					if (isset($apiResponse->payload) && isset($apiResponse->payload[0]->__p)) {
+						/** @noinspection SpellCheckingInspection */
+						$moneySummary = $this->mapEvergreenFields($apiResponse->payload[0]->__p, $this->fetchIdl('mous'));
+						$summary->totalFines = $moneySummary['balance_owed'];
+					}
 				}
 			}
 		}
