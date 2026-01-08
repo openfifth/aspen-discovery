@@ -22,7 +22,10 @@ class SystemAPI extends AbstractAPI {
 
 		if ($method === 'getLogoFile') {
 			return $this->$method();
-		}else if ($method === 'getTranslation' || $method === 'getTranslationWithValues' || $method === 'getBulkTranslations') {
+		}else if ($method === 'getTranslation' 
+			|| $method === 'getTranslationWithValues' 
+			|| $method === 'getBulkTranslations'
+			|| $method === 'getFirebaseSettings') {// TODO determine if firebase methods need authentication
 			//These methods don't need additional authentication, just return the data.
 			$result = [
 				'result' => $this->$method(),
@@ -49,7 +52,9 @@ class SystemAPI extends AbstractAPI {
 					'getLibraryLinks',
 					'getCatalogStatus',
 					'getLocations',
-					'getMaterialsRequestForm'
+					'getMaterialsRequestForm',
+					'getFirebaseSettings',
+					'saveFirebaseToken'
 				])) {
 					$result = [
 						'result' => $this->$method(),
@@ -391,12 +396,24 @@ class SystemAPI extends AbstractAPI {
 		$communityEngagementUpdates = getCommunityEngagementUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/talpa_updates.php';
 		$talpaUpdates = getTalpaUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_mobile_updates.php';
+		$aspenMobileUpdates = getAspenMobileUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/hoopla_version2_updates.php';
 		$hooplaVersion2Updates = getHooplaVersion2Updates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/pay360_updates.php';
 		$pay360Updates = getPay360Updates();
 		
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates);
+		$baseUpdates = array_merge($library_location_updates, 
+			$summonUpdates, 
+			$cloudLibraryUpdates, 
+			$grapesWebBuilderUpdates, 
+			$communityEngagementUpdates, 
+			$talpaUpdates, 
+			$heycentricUpdates,
+			$aspenMobileUpdates,
+			$hooplaVersion2Updates,
+			$pay360Updates
+		);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
@@ -1216,6 +1233,23 @@ class SystemAPI extends AbstractAPI {
 			'message' => 'Loaded materials request form',
 			'form' => $materialsRequest,
 		];
+	}
+
+	function getFirebaseSettings() {
+		require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+		$settings = new AspenMobileSetting();
+		if($settings->find(true))
+		{
+			return [
+				'success' => true,
+				'settings' => $settings->getFirebaseSettings()
+			];
+		} else {
+			return [
+				'success' => false,
+				'error' => 'no settings found'
+			];
+		}
 	}
 
 	function getBreadcrumbs(): array {

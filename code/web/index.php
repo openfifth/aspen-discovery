@@ -1269,6 +1269,33 @@ function loadModuleActionId() {
 	}catch (Exception $e) {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
+	try {
+		if (array_key_exists('Aspen Mobile', $enabledModules))
+		{
+			if($requestURI == "/manifest.json") {
+				$_GET['module'] = "AspenMobile";
+				$_GET['action'] = "Manifest";
+				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['action'] = "Manifest";
+			}
+			else if($requestURI == "/.well-known/assetlinks.json")
+			{
+				$_GET['module'] = "AspenMobile";
+				$_GET['action'] = "AssetLinks";
+				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['action'] = "AssetLinks";
+			}
+			else if($requestURI == "/firebase-messaging-sw.js")
+			{
+				$_GET['module'] = "AspenMobile";
+				$_GET['action'] = "Firebase";
+				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['action'] = "Firebase";
+			}
+		}
+	}catch (Exception $e) {
+		//TODO mirroring web builder here maybe we want to conditionally log something though?
+	}
 	//Correct some old actions
 	if (isset($_GET['action'])) {
 		if ($_GET['action'] == 'OverdriveHolds') {

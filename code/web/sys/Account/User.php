@@ -2361,12 +2361,12 @@ class User extends DataObject {
 			} else {
 				$accountProfileSource = '';
 			}
-//			$accountProfileForSource = new AccountProfile();
-//			$accountProfileForSource->recordSource = $recordSource;
-//			$accountProfileSource = '';
-//			if ($accountProfileForSource->find(true)) {
-//				$accountProfileSource = $accountProfileForSource->name;
-//			}
+			//$accountProfileForSource = new AccountProfile();
+			//$accountProfileForSource->recordSource = $recordSource;
+			//$accountProfileSource = '';
+			//if ($accountProfileForSource->find(true)) {
+			//	$accountProfileSource = $accountProfileForSource->name;
+			//}
 			foreach ($linkedUsers as $linkedUser) {
 				if ($accountProfileSource == $linkedUser->source) {
 					$linkedUserLocation = new Location();
@@ -2810,10 +2810,10 @@ class User extends DataObject {
 						}
 					} elseif ($holdType == 'cloud_library') {
 						//Cloud library holds cannot be frozen
-//						require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-//						$driver = new CloudLibraryDriver();
-//						$tmpResult = $driver->thawHold($user, $recordId);
-//						if($tmpResult['success']){$success++;}
+						// require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+						// $driver = new CloudLibraryDriver();
+						// $tmpResult = $driver->thawHold($user, $recordId);
+						// if($tmpResult['success']){$success++;}
 					} else {
 						$failed++;
 						//$tmpResult['message'] = '<div class="alert alert-warning">Hold not available</div>';
@@ -3721,21 +3721,14 @@ class User extends DataObject {
 			if ($systemVariables && !empty($systemVariables->appScheme)) {
 				$appScheme = $systemVariables->appScheme;
 			}
-			$notificationToken = new UserNotificationToken();
-			$notificationToken->userId = $this->id;
-			$notificationToken->find();
-			while ($notificationToken->fetch()) {
-				$body = [
-					'to' => $notificationToken->pushToken,
-					'title' => 'New account link',
-					'body' => 'Your account at ' . $this->getHomeLocation()->displayName . ' was just linked to by ' . $initiatingUser->displayName . ' - ' . $initiatingUser->getHomeLocation()->displayName . '. Review all linked accounts and learn more about account linking at your library.',
-					'categoryId' => 'accountAlert',
-					'channelId' => 'accountAlert',
-					'data' => ['url' => urlencode($appScheme . '://user/linked_accounts')],
-				];
-				$expoNotification = new ExpoNotification();
-				$expoNotification->sendExpoPushNotification($body, $notificationToken->pushToken, $this->id, 'linked_account');
-			}
+			$body = [
+				'title' => 'New account link',
+				'body' => 'Your account at ' . $this->getHomeLocation()->displayName . ' was just linked to by ' . $initiatingUser->displayName . ' - ' . $initiatingUser->getHomeLocation()->displayName . '. Review all linked accounts and learn more about account linking at your library.',
+				'categoryId' => 'accountAlert',
+				'channelId' => 'accountAlert',
+				'data' => ['url' => urlencode($appScheme . '://user/linked_accounts')],
+			];
+			$this->sendPushNotification($body, 'linked_account');
 		}
 	}
 
@@ -3775,21 +3768,14 @@ class User extends DataObject {
 			if ($systemVariables && !empty($systemVariables->appScheme)) {
 				$appScheme = $systemVariables->appScheme;
 			}
-			$notificationToken = new UserNotificationToken();
-			$notificationToken->userId = $this->id;
-			$notificationToken->find();
-			while ($notificationToken->fetch()) {
-				$body = [
-					'to' => $notificationToken->pushToken,
+			$body = [
 					'title' => 'Account link removed',
 					'body' => 'An account you were previously linked to, ' . $unlinkedUser->displayName . ', has removed the link to your account ' . $this->displayName . '. Learn more about account linking at your library.',
 					'categoryId' => 'accountAlert',
 					'channelId' => 'accountAlert',
 					'data' => ['url' => urlencode($appScheme . '://user/linked_accounts')],
 				];
-				$expoNotification = new ExpoNotification();
-				$expoNotification->sendExpoPushNotification($body, $notificationToken->pushToken, $this->id, 'linked_account');
-			}
+			$this->sendPushNotification($body, 'linked_account');
 		}
 	}
 
@@ -4833,7 +4819,11 @@ class User extends DataObject {
 		$sections['support']->addAction(new AdminAction('Help Center', 'View the Help Center for Aspen Discovery.', 'https://help.aspendiscovery.org'), true);
 		$sections['support']->addAction(new AdminAction('API Documentation', 'View available OpenAPI specifications for Aspen Discovery APIs.', '/API/Documentation'), true);
 		$sections['support']->addAction(new AdminAction('Release Notes', 'View release notes for Aspen Discovery which contain information about new functionality and fixes for each release.', '/Admin/ReleaseNotes'), true);
-
+		
+		if (array_key_exists('Aspen Mobile', $enabledModules)){
+			require_once ROOT_DIR . '/services/AspenMobile/Admin.php';
+			$sections['Aspen Mobile'] = AspenMobile_Admin::getAdminSection();
+		}
 		$sorter = function (AdminSection $a, AdminSection $b) {
 			return strcasecmp($a->getTranslatedLabel(), $b->getTranslatedLabel());
 		};
@@ -5646,13 +5636,14 @@ class User extends DataObject {
 		return false;
 	}
 
-	public function saveNotificationPushToken($token, $device): bool {
+	public function saveNotificationPushToken($token, $device, $tokenType="expo"): bool {
 		require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 		$pushToken = new UserNotificationToken();
 		$pushToken->userId = $this->id;
 		$pushToken->pushToken = $token;
 		$pushToken->deviceModel = $device;
 		$pushToken->onboardAppNotifications = 0;
+		$pushToken->tokenType = $tokenType;
 		if ($pushToken->find(true)) {
 			return true;
 		} else {
@@ -5681,6 +5672,7 @@ class User extends DataObject {
 		$tokens = [];
 		$obj = new UserNotificationToken();
 		$obj->userId = $this->id;
+		$obj->tokenType = $_REQUEST['tokenType'] ?? "expo";
 		$obj->find();
 		while ($obj->fetch()) {
 			$tokens[$obj->deviceModel] = $obj->pushToken;
@@ -6505,6 +6497,52 @@ class User extends DataObject {
 		}
 
 		$this->update();
+	}
+	/**
+	 * send a notification to all tokens for the user
+	 * returns the # of notifications we attempted to send
+	 */
+	public function sendPushNotification($body, $notificationType, $notifySavedSearch=null)
+	{
+		require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
+		global $logger;
+		$count = 0;
+		$notificationToken = new UserNotificationToken();
+		$notificationToken->userId = $this->id;
+		if($notificationType == "saved_search")
+		{
+			$notificationToken->notifySavedSearch = 1;
+		}
+		if($notificationType == "custom_notification")
+		{
+			$notificationToken->notifyCustom = 1;
+		}
+		$notificationToken->find();
+		while ($notificationToken->fetch()) {
+			$logger->log("Found notification push token for user " . $this->id, Logger::LOG_ERROR);
+			$body['to'] = $notificationToken->pushToken;
+			if(strcasecmp($notificationToken->tokenType, "expo") == 0)
+			{
+				require_once ROOT_DIR . '/sys/Notifications/ExpoNotification.php';
+				$expoNotification = new ExpoNotification();
+				$expoNotification->sendExpoPushNotification($body, $notificationToken->pushToken, $this->id, $notificationType);
+				$expoNotification = null;
+				$count++;
+			} else if (strcasecmp($notificationToken->tokenType, "firebase") == 0)
+			{
+				require_once ROOT_DIR . '/sys/Notifications/FirebaseNotification.php';
+				$fireBaseNotification = new FirebaseNotification();
+				$fireBaseNotification->sendPushNotification($body, $notificationToken->pushToken, $this->id, $notificationType);
+				$firebaseNotification = null;
+				$count++;
+			} else 
+			{
+				$logger->log('Error sending unsupported notification type: ' . $notificationType, Logger::LOG_ERROR);
+			}
+		}
+		$notificationToken->__destruct();
+		$notificationToken = null;
+		return $count;
 	}
 }
 

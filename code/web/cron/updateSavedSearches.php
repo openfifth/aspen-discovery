@@ -94,26 +94,16 @@ if ($search->getNumResults() > 0) {
 						if ($systemVariables && !empty($systemVariables->appScheme)) {
 							$appScheme = $systemVariables->appScheme;
 						}
-						$notificationToken = new UserNotificationToken();
-						$notificationToken->userId = $userForSearch->id;
-						$notificationToken->notifySavedSearch = 1;
-						$notificationToken->find();
-						while ($notificationToken->fetch()) {
-							$logger->log("Found notification push token for user " . $userForSearch->id, Logger::LOG_ERROR);
-							$body = [
-								'to' => $notificationToken->pushToken,
-								'title' => 'New Titles',
-								'body' => 'New titles have been added to your saved search "' . $searchEntry->title . '" at the library. Check them out!',
-								'categoryId' => 'savedSearch',
-								'channelId' => 'savedSearch',
-								'data' => ['url' => urlencode($appScheme . '://user/saved_search?search=' . $searchEntry->id . "&name=" . $searchEntry->title)],
-							];
-							$expoNotification = new ExpoNotification();
-							$expoNotification->sendExpoPushNotification($body, $notificationToken->pushToken, $searchEntry->user_id, "saved_search");
-							$expoNotification = null;
-						}
-						$notificationToken->__destruct();
-						$notificationToken = null;
+						//define body
+						$body = [
+							'title' => 'New Titles',
+							'body' => 'New titles have been added to your saved search "' . $searchEntry->title . '" at the library. Check them out!',
+							'categoryId' => 'savedSearch',
+							'channelId' => 'savedSearch',
+							'data' => ['url' => urlencode($appScheme . '://user/saved_search?search=' . $searchEntry->id . "&name=" . $searchEntry->title)],
+						];
+						//send message
+						$userForSearch->sendPushNotification($body, "saved_search");
 					}
 				}
 			} else {
