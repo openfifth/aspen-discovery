@@ -3453,9 +3453,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$hasLinkedUsers = count($user->getLinkedUsers()) > 0;
 		try {
-			for ($i = 0; $i < 2; $i++) {
+			for ($i = 0; $i < 3; $i++) {
 				if ($i == 0) {
 					$exportType = "available";
+				} elseif ($i == 1) {
+					$exportType = "cancelled";
 				} else {
 					$exportType = "unavailable";
 				}
@@ -3596,6 +3598,119 @@ class MyAccount_AJAX extends JSON_Action {
 							$availValues[] = $user;
 						}
 						fputcsv($fp, $availValues);
+					}
+				} elseif ($exportType == "cancelled") {
+					// Section header
+					$holdType = translate([
+						'text' => 'Holds - ' . ucfirst($exportType),
+						'isPublicFacing' => true,
+					]);
+					$header = array($holdType);
+					fputcsv($fp, $header);
+					// Col names
+					$titleCol = translate([
+						'text' => 'Title',
+						'isPublicFacing' => true,
+					]);
+					$authorCol = translate([
+						'text' => 'Author',
+						'isPublicFacing' => true,
+					]);
+					$formatCol = translate([
+						'text' => 'Format',
+						'isPublicFacing' => true,
+					]);
+					$cancelledCol = translate([
+						'text' => 'Cancellation Date',
+						'isPublicFacing' => true,
+					]);
+					$pickupCol = translate([
+						'text' => 'Pickup',
+						'isPublicFacing' => true,
+					]);
+					$statusCol = translate([
+						'text' => 'Status',
+						'isPublicFacing' => true,
+					]);
+					$userCol = translate([
+						'text' => 'User',
+						'isPublicFacing' => true,
+					]);
+
+					$cancelledFields = [
+						$titleCol,
+						$authorCol,
+						$formatCol,
+						$cancelledCol,
+						$pickupCol
+					];
+					$cancelledFields[] = $statusCol;
+					if ($hasLinkedUsers) {
+						$cancelledFields[] = $userCol;
+					}
+					fputcsv($fp, $cancelledFields);
+
+					foreach ($allHolds['cancelled'] as $row) {
+						$title = preg_replace("~([/:])$~", "", $row->title);
+						if (isset ($row->title2)) {
+							$title .= preg_replace("~([/:])$~", "", $row->title2);
+						}
+
+						if (isset ($row->author)) {
+							if (is_array($row->author)) {
+								$author = implode(', ', $row->author);
+							} else {
+								$author = $row->author;
+							}
+							$author = str_replace('&nbsp;', ' ', $author);
+						} else {
+							$author = '';
+						}
+						if (isset($row->format)) {
+							if (is_array($row->format)) {
+								$format = implode(', ', $row->format);
+							} else {
+								$format = $row->format;
+							}
+						} else {
+							$format = '';
+						}
+						if (empty($row->expirationDate)) {
+							$cancelDate = '';
+						} else {
+							if (is_array($row->expirationDate)) {
+								$cancelDate = new DateTime();
+								$cancelDate->setDate($row->expirationDate['year'], $row->expirationDate['month'], $row->expirationDate['day']);
+								$cancelDate = $cancelDate->format('M d, Y');
+							} else {
+								$cancelDate = $this->isValidTimeStamp($row->expirationDate) ? $row->expirationDate : strtotime($row->expirationDate);
+								$cancelDate = date('M d, Y', $cancelDate);
+							}
+						}
+
+						$pickup = $row->pickupLocationName ?? '';
+
+						$status = $row->status ?? '';
+
+						if (isset($row->frozen) && $row->frozen && $showDateWhenSuspending && !empty($row->reactivateDate)) {
+							$reactivateTime = $this->isValidTimeStamp($row->reactivateDate) ? $row->reactivateDate : strtotime($row->reactivateDate);
+							$status .= " until " . date('M d, Y', $reactivateTime);
+						}
+
+						$user = $row->getUserName();
+
+						$cancelledValues = [
+							$title,
+							$author,
+							$format,
+							$cancelDate,
+							$pickup
+						];
+						$cancelledValues[] = $status;
+						if ($hasLinkedUsers) {
+							$cancelledValues[] = $user;
+						}
+						fputcsv($fp, $cancelledValues);
 					}
 				} else {
 					// Section header

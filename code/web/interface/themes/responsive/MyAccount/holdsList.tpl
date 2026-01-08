@@ -5,7 +5,7 @@
 	{/if}
 	<h2>{if $sectionKey == 'available'}{translate text="Holds Ready For Pickup" isPublicFacing=true}
 		{elseif $source=='interlibrary_loan'}{translate text="Pending Requests" isPublicFacing=true}
-		{elseif $sectionKey == 'cancelled' && $showCancelled}{translate text="Cancelled Holds"}
+		{elseif $sectionKey == 'cancelled' && $showCancelled}{translate text="Cancelled Holds" isPublicFacing=true}
 		{elseif $sectionKey != 'cancelled' && $sectionKey != 'available'}{translate text="Pending Holds" isPublicFacing=true}
 		{/if}
 	</h2>

@@ -533,6 +533,10 @@ class Polaris extends AbstractIlsDriver {
 		$availableHolds = [];
 		$unavailableHolds = [];
 		$cancelledHolds = [];
+		$showCancelled = false;
+		if ($library->showCancelledHolds && $library->getAccountProfile()->ils == "polaris") {
+			$showCancelled = true;
+		}
 		$holds = [
 			'available' => $availableHolds,
 			'unavailable' => $unavailableHolds,
@@ -672,7 +676,9 @@ class Polaris extends AbstractIlsDriver {
 
 					$holds['available'][] = $curHold;
 				} else if ($curHold->cancelled) {
-					$holds['cancelled'][] = $curHold;
+					if ($showCancelled){
+						$holds['cancelled'][] = $curHold;
+					}
 				} else {
 					$holds['unavailable'][] = $curHold;
 				}
