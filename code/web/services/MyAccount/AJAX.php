@@ -12371,7 +12371,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	private function processEventWaitingListSeats($eventInstanceId): void {
+	public function processEventWaitingListSeats($eventInstanceId): void {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 		$waitingList = new UserAspenEventInstanceWaitingList();
 		$waitingList->eventInstanceId = $eventInstanceId;
