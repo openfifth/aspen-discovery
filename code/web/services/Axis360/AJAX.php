@@ -2,7 +2,7 @@
 require_once ROOT_DIR . '/JSON_Action.php';
 
 class Axis360_AJAX extends JSON_Action {
-	function placeHold() {
+	function placeHold() : array {
 		$user = UserAccount::getLoggedInUser();
 
 		$id = $_REQUEST['id'];
@@ -45,7 +45,7 @@ class Axis360_AJAX extends JSON_Action {
 		}
 	}
 
-	function checkOutTitle() {
+	function checkOutTitle() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['id'];
 		if ($user) {
@@ -272,7 +272,7 @@ class Axis360_AJAX extends JSON_Action {
 		}
 	}
 
-	function renewCheckout() {
+	function renewCheckout() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['recordId'];
 		if ($user) {
@@ -303,7 +303,7 @@ class Axis360_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function returnCheckout() {
+	function returnCheckout() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['recordId'];
 		if ($user) {

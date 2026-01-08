@@ -91,14 +91,17 @@ class Evolve extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Evolve, renew one at a time'
+		];
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$result = [
 			'itemId' => $itemId,
 			'success' => false,
@@ -178,15 +181,7 @@ class Evolve extends AbstractIlsDriver {
 		return $result;
 	}
 
-	/**
-	 * Cancels a hold for a patron
-	 *
-	 * @param User $patron The User to cancel the hold for
-	 * @param string $recordId The id of the bib record
-	 * @param string $cancelId Information about the hold to be cancelled
-	 * @return  array
-	 */
-	function cancelHold(User $patron, $recordId, $cancelId = null, $isIll = false): array {
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -229,8 +224,6 @@ class Evolve extends AbstractIlsDriver {
 				if (is_array($jsonData)) {
 					$jsonData = $jsonData[0];
 					if ($jsonData->Status == 'Success') {
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfHolds();
 						$result['success'] = true;
 						$result['message'] = translate([
 							'text' => 'The hold has been cancelled.',
@@ -268,7 +261,7 @@ class Evolve extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) {
+	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) : array {
 		return $this->placeItemHold($patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation);
 	}
 
@@ -276,8 +269,8 @@ class Evolve extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	function placeItemHold(User $patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) {
-		$hold_result = [
+	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
+		return [
 			'success' => false,
 			'message' => translate([
 				'text' => 'There was an error placing your hold.',
@@ -294,12 +287,10 @@ class Evolve extends AbstractIlsDriver {
 				]),
 			],
 		];
-
-		return $hold_result;
 	}
 
-	function freezeHold(User $patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
-		$result = [
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array {
+		return [
 			'success' => false,
 			'message' => translate([
 				'text' => "The hold could not be frozen.",
@@ -316,8 +307,6 @@ class Evolve extends AbstractIlsDriver {
 				]),
 			],
 		];
-
-		return $result;
 	}
 
 	/**
@@ -327,7 +316,7 @@ class Evolve extends AbstractIlsDriver {
 	 *
 	 * @return array
 	 */
-	function thawHold(User $patron, $recordId, $itemToThawId): array {
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -349,7 +338,7 @@ class Evolve extends AbstractIlsDriver {
 		return $result;
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array {
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -379,11 +368,11 @@ class Evolve extends AbstractIlsDriver {
 
 			$params = new stdClass();
 			$params->Token = $sessionInfo['accessToken'];
-			$params->CatalogItem = $itemToUpdateId;
+			$params->CatalogItem = $holdId;
 			$params->Location = $newPickupLocation;
 			$params->Action = "Change Location";
 			$postParams = json_encode($params);
-			//$postParams = 'Token=' .  $sessionInfo['accessToken'] . '|CatalogItem=' . $itemToUpdateId . '|Location=' . $newPickupLocation . '|Action=Change Location';
+			//$postParams = 'Token=' .  $sessionInfo['accessToken'] . '|CatalogItem=' . $holdId . '|Location=' . $newPickupLocation . '|Action=Change Location';
 
 			//$response = $this->apiCurlWrapper->curlPostPage($this->accountProfile->patronApiUrl . '/AccountReserve', $postParams);
 			$response = $this->apiCurlWrapper->curlPostBodyData($this->accountProfile->patronApiUrl . '/AccountReserve', $postParams, false);
@@ -393,8 +382,6 @@ class Evolve extends AbstractIlsDriver {
 				if (is_array($jsonData)) {
 					$jsonData = $jsonData[0];
 					if ($jsonData->Status == 'Success') {
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfHolds();
 						$result['success'] = true;
 						$result['message'] = translate([
 							'text' => 'The pickup location of your hold was changed successfully.',
@@ -523,7 +510,7 @@ class Evolve extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) {
+	function placeHold(User $patron, $recordId, $pickupBranch = null, $cancelDate = null) : array {
 		$hold_result = [
 			'success' => false,
 			'message' => translate([
@@ -838,35 +825,32 @@ class Evolve extends AbstractIlsDriver {
 	}
 
 	public function getAccountSummary(User $patron): AccountSummary {
-		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-		$summary = new AccountSummary();
-		$summary->userId = $patron->id;
-		$summary->source = 'ils';
-		$summary->resetCounters();
+		$summary = $patron->getCachedAccountSummary('ils');
 
-		//Can't use the quick response since it includes eContent.
-		$checkouts = $this->getCheckouts($patron);
-		$summary->numCheckedOut = count($checkouts);
-		$numOverdue = 0;
-		foreach ($checkouts as $checkout) {
-			if ($checkout->isOverdue()) {
-				$numOverdue++;
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			//Can't use the quick response since it includes eContent.
+			$checkouts = $this->getCheckouts($patron);
+			$summary->numCheckedOut = count($checkouts);
+			$numOverdue = 0;
+			foreach ($checkouts as $checkout) {
+				if ($checkout->isOverdue()) {
+					$numOverdue++;
+				}
 			}
+			$summary->numOverdue = $numOverdue;
+
+			$holds = $this->getHolds($patron);
+			$summary->numAvailableHolds = count($holds['available']);
+			$summary->numUnavailableHolds = count($holds['unavailable']);
+
+			//Get additional information
+			$fines = $this->getFines($patron);
+			$totalfines = 0;
+			foreach ($fines as $fine) {
+				$totalfines += $fine['amountOutstandingVal'];
+			}
+			$summary->totalFines = $totalfines;
 		}
-		$summary->numOverdue = $numOverdue;
-
-		$holds = $this->getHolds($patron);
-		$summary->numAvailableHolds = count($holds['available']);
-		$summary->numUnavailableHolds = count($holds['unavailable']);
-
-		//Get additional information
-		$fines = $this->getFines($patron);
-		$totalfines = 0;
-		foreach ($fines as $fine) {
-			$totalfines += $fine['amountOutstandingVal'];
-		}
-		$summary->totalFines = $totalfines;
-
 		return $summary;
 	}
 }

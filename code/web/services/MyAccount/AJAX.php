@@ -716,7 +716,8 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function cancelHoldSelectedItems() {
+	/** @noinspection PhpMissingReturnTypeInspection */
+	function cancelHoldSelectedItems() : array {
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -1210,7 +1211,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true,
 			]);
 		} else {
-			$reactivationDate = isset($_REQUEST['reactivationDate']) ? $_REQUEST['reactivationDate'] : false;
+			$reactivationDate = isset($_REQUEST['reactivationDate']) ? $_REQUEST['reactivationDate'] : null;
 			$user = UserAccount::getLoggedInUser();
 			$allHolds = $user->getHolds(true, 'sortTitle', 'expire', 'all');
 			$allUnavailableHolds = $allHolds['unavailable'];
@@ -2504,7 +2505,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	function renewCheckout() {
+	function renewCheckout() : array {
 		if (isset($_REQUEST['patronId']) && isset($_REQUEST['recordId']) && isset($_REQUEST['renewIndicator'])) {
 			if (strpos($_REQUEST['renewIndicator'], '|') > 0) {
 				[
@@ -2654,7 +2655,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function renewAll() {
+	function renewAll() : array {
 		$renewResults = [
 			'success' => false,
 			'message' => ['Unable to renew all titles'],
@@ -2741,7 +2742,7 @@ class MyAccount_AJAX extends JSON_Action {
 		if (UserAccount::isLoggedIn()) {
 			$user = UserAccount::getActiveUserObj();
 			if ($user->hasIlsConnection()) {
-				$ilsSummary = $user->getCatalogDriver()->getAccountSummary($user);
+				$ilsSummary = $user->getAccountSummary();
 				$ilsSummary->setMaterialsRequests($user->getNumMaterialsRequests());
 				if ($user->getLinkedUsers() != null) {
 					$selectedLinkedUser = $this->setFilterLinkedUser();
@@ -2750,14 +2751,14 @@ class MyAccount_AJAX extends JSON_Action {
 						$filterLinkedUser = new User();
 						$filterLinkedUser->id = $selectedLinkedUser;
 						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $filterLinkedUser->getCatalogDriver()->getAccountSummary($filterLinkedUser);
+							$filterLinkedUserSummary = $filterLinkedUser->getAccountSummary();
 							$ilsSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
 							$ilsSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
 						}
 					} else {
 						/** @var User $user */
 						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $linkedUser->getCatalogDriver()->getAccountSummary($linkedUser);
+							$linkedUserSummary = $linkedUser->getAccountSummary();
 							$ilsSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
 							$ilsSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
 
@@ -2767,19 +2768,19 @@ class MyAccount_AJAX extends JSON_Action {
 						$filterLinkedUserCheckouts = new User();
 						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
 						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $filterLinkedUserCheckouts->getCatalogDriver()->getAccountSummary($filterLinkedUserCheckouts);
+							$filterLinkedUserCheckoutsSummary = $filterLinkedUserCheckouts->getAccountSummary();
 							$ilsSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
 							$ilsSummary->numOverdue = $filterLinkedUserCheckoutsSummary->numOverdue;
 						}
 					} else {
 						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $linkedUser->getCatalogDriver()->getAccountSummary($linkedUser);
+							$linkedUserSummary = $linkedUser->getAccountSummary();
 							$ilsSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
 							$ilsSummary->numOverdue += $linkedUserSummary->numOverdue;
 						}
 					}
 					foreach ($user->getLinkedUsers() as $linkedUser) {
-						$linkedUserSummary = $linkedUser->getCatalogDriver()->getAccountSummary($linkedUser);
+						$linkedUserSummary = $linkedUser->getAccountSummary();
 						$ilsSummary->totalFines += $linkedUserSummary->totalFines;
 						$ilsSummary->setMaterialsRequests($ilsSummary->getMaterialsRequests() + $linkedUser->getNumMaterialsRequests());
 					}
@@ -3521,6 +3522,7 @@ class MyAccount_AJAX extends JSON_Action {
 					}
 					fputcsv($fp, $availFields);
 
+					/** @var Hold $row **/
 					foreach ($allHolds['available'] as $row) {
 						$title = preg_replace("~([/:])$~", "", $row->title);
 						if (isset ($row->title2)) {
@@ -4206,9 +4208,11 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		}
 
-		foreach ($allHolds['cancelled'] as $key => $hold) {
-			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
-				$filteredHolds['cancelled'][$key] = $hold;
+		if (isset($allHolds['cancelled'])) {
+			foreach ($allHolds['cancelled'] as $key => $hold) {
+				if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+					$filteredHolds['cancelled'][$key] = $hold;
+				}
 			}
 		}
 

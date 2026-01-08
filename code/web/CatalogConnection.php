@@ -488,6 +488,7 @@ class CatalogConnection {
 						]);
 					$body .= "\r\n\r\n" . $pinResetToken->token;
 
+					/** @noinspection HtmlRequiredLangAttribute */
 					$htmlBody = "<html><table><tr><td>" . translate([
 							'text' => 'Hi %1%,',
 							1 => $userToResetPin->firstname,
@@ -576,7 +577,14 @@ class CatalogConnection {
 	 * @access public
 	 */
 	public function getCheckouts(User $user): array {
-		return $this->driver->getCheckouts($user);
+		$accountSummary = $user->getCachedAccountSummary('ils');
+		$cachedCheckouts = $user->getCachedCheckoutsForSource('ils');
+		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			$checkouts = $this->driver->getCheckouts($user);
+
+			$cachedCheckouts = $this->driver->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
+		}
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -919,28 +927,36 @@ class CatalogConnection {
 	 * @access public
 	 */
 	public function getHolds(User $user): array {
-		$holds = $this->driver->getHolds($user);
-		$userLibrary = $user->getHomeLibrary();
-		foreach ($holds as $sectionName => $holdSection) {
-			//Check all unavailable holds to see if we can't update pickup location
-			//We will not do available here because the individual drivers check more specifically
-			//allowChangingPickupLocationForUnavailableHolds defaults to on
-			if ($sectionName == 'unavailable') {
-				if (!$userLibrary->allowChangingPickupLocationForUnavailableHolds) {
-					/** @var Hold $hold */
-					foreach ($holdSection as $hold) {
-						$hold->locationUpdateable = false;
+		$accountSummary = $user->getCachedAccountSummary('ils');
+		$cachedHolds = $user->getCachedHoldsForSource('ils');
+		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+			$holds = $this->driver->getHolds($user);
+
+			$userLibrary = $user->getHomeLibrary();
+			foreach ($holds as $sectionName => $holdSection) {
+				//Check all unavailable holds to see if we can't update pickup location
+				//We will not do available here because the individual drivers check more specifically
+				//allowChangingPickupLocationForUnavailableHolds defaults to on
+				if ($sectionName == 'unavailable') {
+					if (!$userLibrary->allowChangingPickupLocationForUnavailableHolds) {
+						/** @var Hold $hold */
+						foreach ($holdSection as $hold) {
+							$hold->locationUpdateable = false;
+						}
 					}
 				}
 			}
+
+			$cachedHolds = $this->driver->updateCachedHoldsBasedOnActiveHolds($cachedHolds, $holds, $accountSummary);
 		}
-		return $holds;
+		return $cachedHolds;
 	}
 
 	/**
 	 * Place Hold
 	 *
-	 * This is responsible for both placing holds as well as placing recalls.
+	 * This is responsible for both placing holds.  This should be called from the user object rather than calling directly.
+	 * The user object takes care of updating account summary etc.
 	 *
 	 * @param User $patron The User to place a hold for
 	 * @param string $recordId The id of the bib record
@@ -953,7 +969,7 @@ class CatalogConnection {
 	 */
 	function placeHold(User $patron, string $recordId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		$result = $this->driver->placeHold($patron, $recordId, $pickupBranch, $cancelDate, $pickupSublocation);
-		if ($result['success'] == true) {
+		if ($result['success']) {
 			$indexingProfileId = $this->driver->getIndexingProfile()->id;
 			//Track usage by the user
 			require_once ROOT_DIR . '/sys/ILS/UserILSUsage.php';
@@ -1001,13 +1017,13 @@ class CatalogConnection {
 	 * @param User $patron The User to place a hold for
 	 * @param string $recordId The id of the bib record
 	 * @param string $itemId The id of the item to hold
-	 * @param string $pickupBranch The branch where the user wants to pickup the item when available
+	 * @param string $pickupBranch The branch where the user wants to pick up the item when available
 	 * @param null|string $cancelDate The date to automatically cancel the hold if not filled
 	 * @return  mixed               True if successful, false if unsuccessful
 	 *                              If an error occurs, return a AspenError
 	 * @access  public
 	 */
-	function placeItemHold($patron, $recordId, $itemId, $pickupBranch, $cancelDate = null, $pickupSublocation = null) {
+	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		return $this->driver->placeItemHold($patron, $recordId, $itemId, $pickupBranch, $cancelDate, $pickupSublocation);
 	}
 
@@ -1374,51 +1390,20 @@ class CatalogConnection {
 		}
 	}
 
-	function cancelHold($patron, $recordId, $cancelId = null, $isIll = false): array {
-
-		$holdToCancel = //Make sure the hold should be cancelable
+	function cancelHold(User $patron, string $recordId, ?string $cancelId = null, ?bool $isIll = false): array {
+		//Make sure the hold should be cancelable
 		$holds = $this->getHolds($patron);
+		$holdToCancel = $this->driver->getHoldByCancelId($holds, $recordId, $cancelId);
 		$okToCancel = false;
-		$foundHold = false;
-		/** @var Hold $hold */
-		foreach ($holds['available'] as $hold) {
-			if (is_null($cancelId)) {
-				if ($hold->recordId == $recordId) {
-					$foundHold = true;
-				}
-			} else {
-				if ($hold->cancelId == $cancelId) {
-					$foundHold = true;
-				}
-			}
-			if ($foundHold) {
-				if ($hold->cancelable) {
-					$okToCancel = true;
-				}
-				break;
-			}
-		}
-		if (!$foundHold) {
-			foreach ($holds['unavailable'] as $hold) {
-				if (is_null($cancelId)) {
-					if ($hold->recordId == $recordId) {
-						$foundHold = true;
-					}
-				} else {
-					if ($hold->cancelId == $cancelId) {
-						$foundHold = true;
-					}
-				}
-				if ($foundHold) {
-					if ($hold->cancelable) {
-						$okToCancel = true;
-					}
-					break;
-				}
-			}
+		if ($holdToCancel != null && $holdToCancel->cancelable) {
+			$okToCancel = true;
 		}
 		if ($okToCancel) {
-			return $this->driver->cancelHold($patron, $recordId, $cancelId, $isIll);
+			$result = $this->driver->cancelHold($patron, $recordId, $cancelId, $isIll);
+			if ($result['success']) {
+				$this->driver->updateCachesForCancelledHold($patron, $holdToCancel);
+			}
+			return $result;
 		} else {
 			return [
 				'success' => false,
@@ -1430,25 +1415,47 @@ class CatalogConnection {
 		}
 	}
 
-	function freezeHold($patron, $recordId, $itemToFreezeId, $dateToReactivate): array {
-		return $this->driver->freezeHold($patron, $recordId, $itemToFreezeId, $dateToReactivate);
+	function freezeHold(User $patron, string $recordId, string $itemToFreezeId, ?string $dateToReactivate): array {
+		$holds = $this->getHolds($patron);
+		$holdToFreeze = $this->driver->getHoldByCancelId($holds, $recordId, $itemToFreezeId);
+		$result = $this->driver->freezeHold($patron, $recordId, $itemToFreezeId, $dateToReactivate);
+		if ($result['success']) {
+			$holdToFreeze->markFrozen($dateToReactivate);
+		}
+		return $result;
 	}
 
-	function thawHold($patron, $recordId, $itemToThawId): array {
-		return $this->driver->thawHold($patron, $recordId, $itemToThawId);
+	function thawHold(User $patron, string $recordId, string $itemToThawId): array {
+		$holds = $this->getHolds($patron);
+		$holdToThaw = $this->driver->getHoldByCancelId($holds, $recordId, $itemToThawId);
+		$result = $this->driver->thawHold($patron, $recordId, $itemToThawId);
+		if ($result['success']) {
+			$holdToThaw->markThawed();
+		}
+		return $result;
 	}
 
-	function changeHoldPickupLocation(User $patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation = null): array {
-		return $this->driver->changeHoldPickupLocation($patron, $recordId, $itemToUpdateId, $newPickupLocation, $newPickupSublocation);
+	function changeHoldPickupLocation(User $patron, string $holdId, string $newPickupLocation, ?string $newPickupSublocation = null): array {
+		return $this->driver->changeHoldPickupLocation($patron, $holdId, $newPickupLocation, $newPickupSublocation);
 	}
 
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
-		return $this->driver->renewCheckout($patron, $recordId, $itemId, $itemIndex);
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		$result = $this->driver->renewCheckout($patron, $recordId, $itemId, $itemIndex);
+		if ($result['success']) {
+			$accountSummary = $patron->getCachedAccountSummary('ils');
+			$accountSummary->markCheckoutsStale();
+		}
+		return $result;
 	}
 
 	public function renewAll(User $patron): array {
 		if ($this->driver->hasFastRenewAll()) {
-			return $this->driver->renewAll($patron);
+			$result = $this->driver->renewAll($patron);
+			if ($result['success']) {
+				$accountSummary = $patron->getCachedAccountSummary('ils');
+				$accountSummary->markCheckoutsStale();
+			}
+			return $result;
 		} else {
 			//Get all list of all transactions
 			$currentTransactions = $this->driver->getCheckouts($patron);
@@ -1485,7 +1492,7 @@ class CatalogConnection {
 		}
 	}
 
-	public function placeVolumeHold(User $patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation = null) {
+	public function placeVolumeHold(User $patron, string $recordId, string $volumeId, string $pickupBranch, ?string $pickupSublocation = null) : array {
 		return $this->driver->placeVolumeHold($patron, $recordId, $volumeId, $pickupBranch, $pickupSublocation);
 	}
 
@@ -1636,16 +1643,13 @@ class CatalogConnection {
 		return $this->driver->getPatronUpdateForm($user);
 	}
 
-	public function getAccountSummary(User $user) {
-		[
-			$existingId,
-			$summary,
-		] = $user->getCachedAccountSummary('ils');
+	public function getAccountSummary(User $user) : AccountSummary {
+		$summary = $user->getCachedAccountSummary('ils');
 
-		if ($summary === null || isset($_REQUEST['reload'])) {
+		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			$summary = $this->driver->getAccountSummary($user);
 			$summary->lastLoaded = time();
-			$summary->id = $existingId;
+			$summary->dataIsStale = false;
 			$summary->update();
 		}
 		return $summary;
@@ -1681,22 +1685,35 @@ class CatalogConnection {
 		return $this->driver->processMessagingSettingsForm($user);
 	}
 
-	public function completeFinePayment(User $patron, UserPayment $payment) {
+	public function completeFinePayment(User $patron, UserPayment $payment) : array {
 		$result = $this->driver->completeFinePayment($patron, $payment);
-		$patron->clearCachedAccountSummaryForSource($this->driver->getIndexingProfile()->name);
+		//Ensure that fine amount gets reloaded
+		$patron->clearCachedAccountSummaryForSource('ils');
 		return $result;
 	}
 
-	public function patronEligibleForHolds(User $patron) {
+	public function patronEligibleForHolds(User $patron) : array {
 		if (empty($this->driver)) {
-			return false;
+			return [
+				'isEligible' => false,
+				'message' => '',
+				'fineLimitReached' => false,
+				'maxPhysicalCheckoutsReached' => false,
+				'expiredPatronWhoCannotPlaceHolds' => false,
+			];
 		}
 		return $this->driver->patronEligibleForHolds($patron);
 	}
 
-	public function patronEligibleForRenewals($patron){
+	public function patronEligibleForRenewals($patron) : array {
 		if( empty($this->driver)){
-			return false;
+			return [
+				'isEligible' => false,
+				'message' => '',
+				'fineLimitReached' => false,
+				'maxPhysicalCheckoutsReached' => false,
+				'expiredPatronWhoCannotPlaceHolds' => false,
+			];
 		}
 		return $this->driver->patronEligibleForHolds($patron);
 	}
@@ -1838,7 +1855,7 @@ class CatalogConnection {
 		return $this->driver->getILSMessages($user);
 	}
 
-	public function confirmHold(User $user, $recordId, $confirmationId) {
+	public function confirmHold(User $user, string $recordId, string $confirmationId) : array {
 		return $this->driver->confirmHold($user, $recordId, $confirmationId);
 	}
 

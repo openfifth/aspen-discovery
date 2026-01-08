@@ -1198,7 +1198,6 @@ class User extends DataObject {
 		$this->fixFieldLengths();
 		$result = parent::update();
 		$this->saveRoles();
-		$this->clearCache(); // Every update to object requires clearing the Memcached version of the object
 		return $result;
 	}
 
@@ -1253,7 +1252,6 @@ class User extends DataObject {
 		}
 		$this->saveAdditionalAdministrationLocations();
 
-		$this->clearCache();
 		return $ret;
 	}
 
@@ -1692,7 +1690,6 @@ class User extends DataObject {
 			}
 		}
 
-		$this->clearCache();
 		$saveResult = $this->update();
 		if ($saveResult === false) {
 			return [
@@ -1705,15 +1702,6 @@ class User extends DataObject {
 				'message' => 'Your preferences were updated successfully',
 			];
 		}
-	}
-
-	/**
-	 * Clear out the cached version of the patron profile.
-	 */
-	function clearCache() {
-		global $memCache;
-		global $serverName;
-		$memCache->delete("user_{$serverName}_" . $this->id); // now stored by User object id column
 	}
 
 	/**
@@ -1786,6 +1774,21 @@ class User extends DataObject {
 		return $totalFines;
 	}
 
+	public function getCachedCheckoutsForSource(string $source) : array {
+		require_once ROOT_DIR . '/sys/User/Checkout.php';
+		$checkout = new Checkout();
+		$checkout->userId = $this->id;
+		if ($source != 'all') {
+			$checkout->type = $source;
+		}
+		$checkout->find();
+		$checkoutsToReturn = [];
+		while ($checkout->fetch()) {
+			$checkoutsToReturn[] = clone $checkout;
+		}
+		return $checkoutsToReturn;
+	}
+
 	/**
 	 * Return all titles that are currently checked out by the user.
 	 *
@@ -1802,115 +1805,68 @@ class User extends DataObject {
 	 */
 	public function getCheckouts(bool $includeLinkedUsers = true, string $source = 'all'): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		// Reload cached information if it was last fetched more than the cache timeout or if the refresh option is selected.
-		$reloadCheckoutInformation = false;
-		if (($this->checkoutInfoLastLoaded < (time() - self::$CIRCULATION_CACHE_TIMEOUT)) || isset($_REQUEST['refreshCheckouts'])) {
-			$reloadCheckoutInformation = true;
-		}
 
 		$checkoutsToReturn = [];
-		if ($reloadCheckoutInformation) {
-			global $timer;
-			$allCheckedOut = [];
-			global $offlineMode;
-			if ($this->hasIlsConnection() && !$offlineMode) {
-				$ilsCheckouts = $this->getCatalogDriver()->getCheckouts($this);
-				$allCheckedOut = $ilsCheckouts;
-				$timer->logTime("Loaded transactions from catalog. {$this->id}");
-				if ($source == 'all' || $source == 'ils') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $ilsCheckouts);
-				}
-			}
 
-			// Do not load OverDrive titles if the parent barcode (if any) is the same as the current barcode.
+		global $timer;
+		global $offlineMode;
+		if ($this->hasIlsConnection() && !$offlineMode) {
+			if ($source == 'all' || $source == 'ils') {
+				$ilsCheckouts = $this->getCatalogDriver()->getCheckouts($this);
+				$checkoutsToReturn = $ilsCheckouts;
+				$timer->logTime("Loaded transactions from catalog. $this->id");
+			}
+		}
+
+		// Do not load OverDrive titles if the parent barcode (if any) is the same as the current barcode.
+		if ($source == 'all' || $source == 'overdrive') {
 			if ($this->isValidForEContentSource('overdrive')) {
 				require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 				$driver = new OverDriveDriver();
 				$overDriveCheckedOutItems = $driver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $overDriveCheckedOutItems);
-				$timer->logTime("Loaded transactions from overdrive. {$this->id}");
-				if ($source == 'all' || $source == 'overdrive') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $overDriveCheckedOutItems);
-				}
+				$timer->logTime("Loaded transactions from overdrive. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $overDriveCheckedOutItems);
 			}
+		}
 
-			// Do not load Hoopla titles if the parent barcode (if any) is the same as the current barcode.
+		// Do not load Hoopla titles if the parent barcode (if any) is the same as the current barcode.
+		if ($source == 'all' || $source == 'hoopla') {
 			if ($this->isValidForEContentSource('hoopla')) {
 				require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 				$hooplaDriver = new HooplaDriver();
 				$hooplaCheckedOutItems = $hooplaDriver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $hooplaCheckedOutItems);
-				$timer->logTime("Loaded transactions from hoopla. {$this->id}");
-				if ($source == 'all' || $source == 'hoopla') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $hooplaCheckedOutItems);
-				}
+				$timer->logTime("Loaded transactions from hoopla. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $hooplaCheckedOutItems);
 			}
+		}
 
-			if ($this->isValidForEContentSource('cloud_library')) {
-				require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-				$cloudLibraryDriver = new CloudLibraryDriver();
-				$cloudLibraryCheckedOutItems = $cloudLibraryDriver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $cloudLibraryCheckedOutItems);
-				$timer->logTime("Loaded transactions from cloud_library. {$this->id}");
-				if ($source == 'all' || $source == 'cloud_library') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $cloudLibraryCheckedOutItems);
-				}
+		if ($this->isValidForEContentSource('cloud_library')) {
+			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+			$cloudLibraryDriver = new CloudLibraryDriver();
+			$cloudLibraryCheckedOutItems = $cloudLibraryDriver->getCheckouts($this);
+			$timer->logTime("Loaded transactions from cloud_library. $this->id");
+			if ($source == 'all' || $source == 'cloud_library') {
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $cloudLibraryCheckedOutItems);
 			}
+		}
 
+		if ($source == 'all' || $source == 'axis360') {
 			if ($this->isValidForEContentSource('axis360')) {
 				require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 				$axis360Driver = new Axis360Driver();
 				$axis360CheckedOutItems = $axis360Driver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $axis360CheckedOutItems);
-				$timer->logTime("Loaded transactions from Boundless. {$this->id}");
-				if ($source == 'all' || $source == 'axis360') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $axis360CheckedOutItems);
-				}
+				$timer->logTime("Loaded transactions from Boundless. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $axis360CheckedOutItems);
 			}
+		}
 
+		if ($source == 'all' || $source == 'palace_project') {
 			if ($this->isValidForEContentSource('palace_project')) {
 				require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
 				$palaceProjectDriver = new PalaceProjectDriver();
 				$palaceProjectCheckedOutItems = $palaceProjectDriver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $palaceProjectCheckedOutItems);
-				$timer->logTime("Loaded transactions from Palace Project. {$this->id}");
-				if ($source == 'all' || $source == 'palace_project') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $palaceProjectCheckedOutItems);
-				}
-			}
-
-			$checkout = new Checkout();
-			$checkout->userId = $this->id;
-			$checkout->delete(true);
-
-			$this->invalidateCirculationCache();
-
-			foreach ($allCheckedOut as $checkout) {
-				if (is_null($checkout->sourceId)) {
-					$checkout->sourceId = '';
-				}
-				if (is_null($checkout->recordId)) {
-					$checkout->recordId = '';
-				}
-				if ($checkout->insert() == 0) {
-					if (IPAddress::showDebuggingInformation()) {
-						global $logger;
-						$logger->log(Logger::LOG_ERROR, "Could not save checkout to database");
-					}
-				}
-			}
-
-			$this->__set('checkoutInfoLastLoaded', time());
-			$this->update();
-		} else {
-			$checkout = new Checkout();
-			$checkout->userId = $this->id;
-			if ($source != 'all') {
-				$checkout->type = $source;
-			}
-			$checkout->find();
-			while ($checkout->fetch()) {
-				$checkoutsToReturn[] = clone $checkout;
+				$timer->logTime("Loaded transactions from Palace Project. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $palaceProjectCheckedOutItems);
 			}
 		}
 
@@ -1941,161 +1897,74 @@ class User extends DataObject {
 
 	public function getHolds($includeLinkedUsers = true, $unavailableSort = 'sortTitle', $availableSort = 'expire', $source = 'all', $cancelledSort = 'expirationDate'): array {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
-		// Reload cached information if it was last fetched more than the cache timeout or if the refresh option is selected.
-		$reloadHoldInformation = false;
-		if (($this->holdInfoLastLoaded < time() - self::$CIRCULATION_CACHE_TIMEOUT) || isset($_REQUEST['refreshHolds'])) {
-			$reloadHoldInformation = true;
-		}
 
 		$holdsToReturn = [
 			'available' => [],
 			'unavailable' => [],
 			'cancelled' => [],
 		];
-		if ($reloadHoldInformation) {
-			$allHolds = [
-				'available' => [],
-				'unavailable' => [],
-				'cancelled' => [],
-			];
-			global $offlineMode;
-			if ($this->hasIlsConnection() && !$offlineMode) {
+
+		//Check to see if anything needs to be updated
+		global $offlineMode;
+		if ($this->hasIlsConnection() && !$offlineMode) {
+			if ($source == 'all' || $source == 'ils') {
 				$ilsHolds = $this->getCatalogDriver()->getHolds($this);
-				$allHolds = $ilsHolds;
-				if ($source == 'all' || $source == 'ils') {
-					$holdsToReturn = $ilsHolds;
-				}
+				$holdsToReturn = $ilsHolds;
 			}
+		}
 
-			if ($source == 'all' || $source == 'overdrive') {
-				if ($this->isValidForEContentSource('overdrive')) {
-					require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
-					$driver = new OverDriveDriver();
-					$overDriveHolds = $driver->getHolds($this);
-					$allHolds = array_merge_recursive($allHolds, $overDriveHolds);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $overDriveHolds);
-				}
+		if ($source == 'all' || $source == 'overdrive') {
+			if ($this->isValidForEContentSource('overdrive')) {
+				require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
+				$driver = new OverDriveDriver();
+				$overDriveHolds = $driver->getHolds($this);
+				$holdsToReturn = array_merge_recursive($holdsToReturn, $overDriveHolds);
 			}
+		}
 
-			if ($source == 'all' || $source == 'cloud_library') {
-				if ($this->isValidForEContentSource('cloud_library')) {
-					require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-					$driver = new CloudLibraryDriver();
-					$cloudLibraryHolds = $driver->getHolds($this);
-					$allHolds = array_merge_recursive($allHolds, $cloudLibraryHolds);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $cloudLibraryHolds);
-				}
+		if ($source == 'all' || $source == 'cloud_library') {
+			if ($this->isValidForEContentSource('cloud_library')) {
+				require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+				$driver = new CloudLibraryDriver();
+				$cloudLibraryHolds = $driver->getHolds($this);
+				$holdsToReturn = array_merge_recursive($holdsToReturn, $cloudLibraryHolds);
 			}
+		}
 
-			if ($source == 'all' || $source == 'axis360') {
-				if ($this->isValidForEContentSource('axis360')) {
-					require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
-					$driver = new Axis360Driver();
-					$axis360Holds = $driver->getHolds($this);
-					$allHolds = array_merge_recursive($allHolds, $axis360Holds);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $axis360Holds);
-				}
+		if ($source == 'all' || $source == 'axis360') {
+			if ($this->isValidForEContentSource('axis360')) {
+				require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
+				$driver = new Axis360Driver();
+				$axis360Holds = $driver->getHolds($this);
+				$holdsToReturn = array_merge_recursive($holdsToReturn, $axis360Holds);
 			}
+		}
 
-			if ($source == 'all' || $source == 'palace_project') {
-				if ($this->isValidForEContentSource('palace_project')) {
-					require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
-					$driver = new PalaceProjectDriver();
-					$palaceProjectHolds = $driver->getHolds($this);
-					$allHolds = array_merge_recursive($allHolds, $palaceProjectHolds);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $palaceProjectHolds);
-				}
+		if ($source == 'all' || $source == 'palace_project') {
+			if ($this->isValidForEContentSource('palace_project')) {
+				require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
+				$driver = new PalaceProjectDriver();
+				$palaceProjectHolds = $driver->getHolds($this);
+				$holdsToReturn = array_merge_recursive($holdsToReturn, $palaceProjectHolds);
 			}
+		}
 
-			if ($source == 'all' || $source == 'interlibrary_loan') {
-				if ($this->hasInterlibraryLoan()) {
-					// For now, this is just VDX.
-					require_once ROOT_DIR . '/Drivers/VdxDriver.php';
-					$driver = new VdxDriver();
-					$vdxRequests = $driver->getRequests($this);
-					$allHolds = array_merge_recursive($allHolds, $vdxRequests);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
-				}
+		if ($source == 'all' || $source == 'interlibrary_loan') {
+			if ($this->hasInterlibraryLoan()) {
+				// For now, this is just VDX.
+				require_once ROOT_DIR . '/Drivers/VdxDriver.php';
+				$driver = new VdxDriver();
+				$vdxRequests = $driver->getRequests($this);
+				$holdsToReturn = array_merge_recursive($holdsToReturn, $vdxRequests);
 			}
+		}
 
-			if ($source == 'all' || $source == 'hoopla') {
-				if ($this->isValidForEContentSource('hoopla_flex')) {
-					require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
-					$driver = new HooplaDriver();
-					$hooplaHolds = $driver->getHolds($this);
-					$allHolds = array_merge_recursive($allHolds, $hooplaHolds);
-					$holdsToReturn = array_merge_recursive($holdsToReturn, $hooplaHolds);
-				}
-			}
-
-			$hold = new Hold();
-			$hold->userId = $this->id;
-			$hold->delete(true);
-
-			$this->invalidateCirculationCache();
-
-			foreach ($allHolds['available'] as $holdToSave) {
-				if (is_null($holdToSave->sourceId)) {
-					$holdToSave->sourceId = '';
-				}
-				if (is_null($holdToSave->recordId)) {
-					$holdToSave->recordId = '';
-				}
-				if (!$holdToSave->insert()) {
-					global $logger;
-					$logger->log('Could not save available hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
-				}
-			}foreach ($allHolds['unavailable'] as $holdToSave) {
-				if (is_null($holdToSave->sourceId)) {
-					$holdToSave->sourceId = '';
-				}
-				if (is_null($holdToSave->recordId)) {
-					$holdToSave->recordId = '';
-				}
-				if (!$holdToSave->insert()) {
-					global $logger;
-					$logger->log('Could not save unavailable hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
-				}
-			}
-			if (isset($allHolds['cancelled'])) {
-				foreach ($allHolds['cancelled'] as $holdToSave) {
-					if (is_null($holdToSave->sourceId)) {
-						$holdToSave->sourceId = '';
-					}
-					if (is_null($holdToSave->recordId)) {
-						$holdToSave->recordId = '';
-					}
-					if (!$holdToSave->insert()) {
-						global $logger;
-						$logger->log('Could not save cancelled hold ' . $holdToSave->getLastError(), Logger::LOG_ERROR);
-					}
-
-				}
-			}
-			$this->__set('holdInfoLastLoaded', time());
-			$this->update();
-		} else {
-			$hold = new Hold();
-			$hold->userId = $this->id;
-			if ($source != 'all') {
-				$hold->type = $source;
-			}
-			$allHolds = $hold->fetchAll();
-			foreach ($allHolds as $hold) {
-				$key = $hold->source;
-				if (!empty($hold->cancelId)) {
-					$key .= $hold->cancelId;
-				} else {
-					$key .= $hold->sourceId;
-				}
-				$key .= $hold->userId;
-				if ($hold->available) {
-					$holdsToReturn['available'][$key] = $hold;
-				} elseif ($hold->cancelled) {
-					$holdsToReturn['cancelled'][$key] = $hold;
-				} else {
-					$holdsToReturn['unavailable'][$key] = $hold;
-				}
+		if ($source == 'all' || $source == 'hoopla') {
+			if ($this->isValidForEContentSource('hoopla_flex')) {
+				require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
+				$driver = new HooplaDriver();
+				$hooplaHolds = $driver->getHolds($this);
+				$holdsToReturn = array_merge_recursive($holdsToReturn, $hooplaHolds);
 			}
 		}
 
@@ -2107,124 +1976,44 @@ class User extends DataObject {
 			}
 		}
 
-		$indexToSortBy = 'sortTitle';
-		$holdSort = function (Hold $a, Hold $b) use (&$indexToSortBy) {
-			$titleA = $a->getSortTitle();
-			$titleB = $b->getSortTitle();
-			if ($indexToSortBy == 'sortTitle') {
-				$a = $titleA;
-				$b = $titleB;
-			} elseif ($indexToSortBy == 'user') {
-				$a = $a->getUserName();
-				$b = $b->getUserName();
-			} else {
-				$a = isset($a->$indexToSortBy) ? $a->$indexToSortBy : null;
-				$b = isset($b->$indexToSortBy) ? $b->$indexToSortBy : null;
-			}
-
-			// Put empty values (except for specified values of zero) at the bottom of the sort.
-			if (modifiedEmpty($a) && modifiedEmpty($b)) {
-				if ($indexToSortBy != 'sortTitle') {
-					return strnatcasecmp($titleA, $titleB);
-				} else {
-					return 0;
-				}
-			} elseif (!modifiedEmpty($a) && modifiedEmpty($b)) {
-				return -1;
-			} elseif (modifiedEmpty($a) && !modifiedEmpty($b)) {
-				return 1;
-			}
-
-			if ($indexToSortBy == 'format') {
-				if (is_array($a)) {
-					$a = implode(',', $a);
-				}
-				if (is_array($b)) {
-					$b = implode(',', $b);
-				}
-			}
-
-			$ret = strnatcasecmp($a, $b);
-			if ($ret == 0 && $indexToSortBy != 'sortTitle') {
-				return strnatcasecmp($titleA, $titleB);
-			} else {
-				return $ret;
-			}
-		};
-
-		if (!empty($holdsToReturn['available'])) {
-			switch ($availableSort) {
-				case 'author' :
-				case 'format' :
-					//This is used in the sort function
-					$indexToSortBy = $availableSort;
-					break;
-				case 'title' :
-					$indexToSortBy = 'sortTitle';
-					break;
-				case 'libraryAccount' :
-					$indexToSortBy = 'user';
-					break;
-				case 'location' :
-					$indexToSortBy = 'pickupLocationName';
-					break;
-				case 'expire' :
-				default :
-					$indexToSortBy = 'expirationDate';
-			}
-			uasort($holdsToReturn['available'], $holdSort);
-		}
-		if (!empty($holdsToReturn['cancelled'])) {
-			uasort($holdsToReturn['cancelled'], $holdSort);
-			arsort($holdsToReturn['cancelled']);
-		}
-		if (!empty($holdsToReturn['unavailable'])) {
-			if ($unavailableSort === 'reactivate') {
-				$reactivateDateSort = function (Hold $a, Hold $b) {
-					$titleA = $a->getSortTitle();
-					$titleB = $b->getSortTitle();
-
-					// Get reactivation dates, treating null/0 as "no date set" (i.e., indefinitely frozen or not frozen).
-					$dateA = (!empty($a->reactivateDate) && $a->reactivateDate > 0) ? $a->reactivateDate : null;
-					$dateB = (!empty($b->reactivateDate) && $b->reactivateDate > 0) ? $b->reactivateDate : null;
-
-					// Both have reactivation dates, so sort by date (earliest first).
-					if ($dateA !== null && $dateB !== null) {
-						if ($dateA == $dateB) {
-							return strnatcasecmp($titleA, $titleB);
-						}
-						return $dateA <=> $dateB;
-					}
-
-					// Sort those with reactivation date first.
-					if ($dateA !== null && $dateB === null) {
-						return -1;
-					}
-					if ($dateA === null && $dateB !== null) {
-						return 1;
-					}
-
-					// Neither has a reactivation date, so sort by title.
-					return strnatcasecmp($titleA, $titleB);
-				};
-				uasort($holdsToReturn['unavailable'], $reactivateDateSort);
-			} else {
-				$indexToSortBy = match ($unavailableSort) {
-					'author', 'position', 'status', 'format' => $unavailableSort,
-					'placed' => 'createDate',
-					'cancelDate' => 'automaticCancellationDate',
-					'libraryAccount' => 'user',
-					'location' => 'pickupLocationName',
-					default => 'sortTitle',
-				};
-				uasort($holdsToReturn['unavailable'], $holdSort);
-			}
-		}
+		$holdsToReturn = $this->sortHolds($holdsToReturn, $availableSort, $unavailableSort);
 
 		if ($source == 'interlibrary_loan') {
 			unset($holdsToReturn['available']);
 		}
 
+		return $holdsToReturn;
+	}
+
+	public function getCachedHoldsForSource(string $source) : array {
+		require_once ROOT_DIR . '/sys/User/Hold.php';
+		$hold = new Hold();
+		$hold->userId = $this->id;
+		if ($source != 'all') {
+			$hold->type = $source;
+		}
+		$cachedHolds = $hold->fetchAll();
+		$holdsToReturn = [
+			'available' => [],
+			'unavailable' => [],
+			'cancelled' => [],
+		];
+		foreach ($cachedHolds as $hold) {
+			$key = $hold->source;
+			if (!empty($hold->cancelId)) {
+				$key .= $hold->cancelId;
+			} else {
+				$key .= $hold->sourceId;
+			}
+			$key .= $hold->userId;
+			if ($hold->available) {
+				$holdsToReturn['available'][$key] = $hold;
+			} elseif ($hold->cancelled) {
+				$holdsToReturn['cancelled'][$key] = $hold;
+			} else {
+				$holdsToReturn['unavailable'][$key] = $hold;
+			}
+		}
 		return $holdsToReturn;
 	}
 
@@ -2274,24 +2063,17 @@ class User extends DataObject {
 		}
 	}
 
-	/**
-	 * Invalidate circulation cache when circulation data changes.
-	 */
-	private function invalidateCirculationCache(): void {
-		$this->_circulationStatusCache = [];
-	}
-
 	public function isRecordCheckedOut($source, $recordId): bool {
 		$this->ensureCirculationDataLoaded();
 
-		$cacheKey = "{$source}:{$recordId}";
+		$cacheKey = "$source:$recordId";
 		return isset($this->_circulationStatusCache['checkouts'][$cacheKey]);
 	}
 
 	public function isRecordOnHold($source, $recordId): bool {
 		$this->ensureCirculationDataLoaded();
 
-		$cacheKey = "{$source}:{$recordId}";
+		$cacheKey = "$source:$recordId";
 		return isset($this->_circulationStatusCache['holds'][$cacheKey]);
 	}
 
@@ -2650,9 +2432,10 @@ class User extends DataObject {
 
 			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
 
-			$this->clearCache();
-
-			$this->forceReloadOfHolds();
+			//If we have a cached account summary, add one to the number of unavailable holds (no ILSs move a hold to active immediately)
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
 		}
 		return $result;
 	}
@@ -2677,20 +2460,25 @@ class User extends DataObject {
 
 			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
 
-			$this->clearCache();
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
 		}
 		return $result;
 	}
 
-	function confirmHold($recordId, $confirmationId) {
+	function confirmHold(string $recordId, string $confirmationId) : array {
 		$result = $this->getCatalogDriver()->confirmHold($this, $recordId, $confirmationId);
 		if ($result['success']) {
-			$this->clearCache();
+			//If we have a cached account summary, add one to the number of unavailable holds (no ILSs move a hold to active immediately)
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
 		}
 		return $result;
 	}
 
-	function updateAltLocationForHold($pickupBranch) {
+	function updateAltLocationForHold($pickupBranch)  : void {
 		if ($this->_homeLocationCode != $pickupBranch) {
 			//global $logger;
 			//$logger->log("The selected pickup branch is not the user's home location, checking to see if we need to set an alternate branch", Logger::LOG_NOTICE);
@@ -2745,7 +2533,10 @@ class User extends DataObject {
 
 			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='{$viewHoldsText}'>{$viewHoldsText}</a>";
 
-			$this->clearCache();
+			//Update account summary and ensure holds reload
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
 		}
 		return $result;
 	}
@@ -2777,18 +2568,13 @@ class User extends DataObject {
 	 * Cancels a hold for the user in their ILS
 	 *
 	 * @param $recordId string The Id of the record being cancelled
-	 * @param $cancelId string The Id of the hold to be cancelled. Structure varies by ILS
-	 * @param $isIll boolean If the hold is from the ILL system
+	 * @param $cancelId ?string The Id of the hold to be cancelled. Structure varies by ILS
+	 * @param $isIll ?boolean If the hold is from the ILL system
 	 *
 	 * @return array Information about the result of the cancellation process
 	 */
-	function cancelHold($recordId, $cancelId, $isIll): array {
-		$result = $this->getCatalogDriver()->cancelHold($this, $recordId, $cancelId, $isIll);
-		if ($result['success']) {
-			$this->forceReloadOfHolds();
-		}
-		$this->clearCache();
-		return $result;
+	function cancelHold(string $recordId, ?string $cancelId, ?bool $isIll): array {
+		return $this->getCatalogDriver()->cancelHold($this, $recordId, $cancelId, $isIll);
 	}
 
 	function cancelVdxRequest($requestId, $cancelId) {
@@ -2797,23 +2583,23 @@ class User extends DataObject {
 		$driver = new VdxDriver();
 		$result = $driver->cancelRequest($this, $requestId, $cancelId);
 
-		$this->clearCache();
 		return $result;
 	}
 
-	function changeHoldPickUpLocation($itemToUpdateId, $newPickupLocation, $newPickupSublocation): array {
-		$result = $this->getCatalogDriver()->changeHoldPickupLocation($this, null, $itemToUpdateId, $newPickupLocation, $newPickupSublocation);
-		$this->clearCache();
+	function changeHoldPickUpLocation(string $holdId, string $newPickupLocation, ?string $newPickupSublocation): array {
+		$result = $this->getCatalogDriver()->changeHoldPickupLocation($this, $holdId, $newPickupLocation, $newPickupSublocation);
+		if ($result['success']) {
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->markHoldsStale();
+		}
 		return $result;
 	}
 
-	function freezeHold($recordId, $holdId, $reactivationDate) {
-		$result = $this->getCatalogDriver()->freezeHold($this, $recordId, $holdId, $reactivationDate);
-		$this->clearCache();
-		return $result;
+	function freezeHold(string $recordId, string $holdId, ?string $reactivationDate) : array {
+		return $this->getCatalogDriver()->freezeHold($this, $recordId, $holdId, $reactivationDate);
 	}
 
-	function freezeAllHolds($reactivationDate = false) {
+	function freezeAllHolds($reactivationDate = false) : array {
 		$user = UserAccount::getLoggedInUser();
 		$result = [ // set default response
 			'success' => false,
@@ -2861,7 +2647,7 @@ class User extends DataObject {
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->freezeHold($user, $recordId, $reactivationDate);
+						$tmpResult = $driver->freezeHold($user, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2932,7 +2718,7 @@ class User extends DataObject {
 		return $result;
 	}
 
-	function thawAllHolds() {
+	function thawAllHolds() : array {
 		$user = UserAccount::getLoggedInUser();
 		$tmpResult = [ // set default response
 			'success' => false,
@@ -3037,10 +2823,8 @@ class User extends DataObject {
 		return $tmpResult;
 	}
 
-	function thawHold($recordId, $holdId): array {
-		$result = $this->getCatalogDriver()->thawHold($this, $recordId, $holdId);
-		$this->clearCache();
-		return $result;
+	function thawHold(string $recordId, string $holdId): array {
+		return $this->getCatalogDriver()->thawHold($this, $recordId, $holdId);
 	}
 
 	function freezeOverDriveHold($overDriveId): array {
@@ -3067,13 +2851,11 @@ class User extends DataObject {
 		return $axis360Driver->thawHold($this, $recordId);
 	}
 
-	function renewCheckout($recordId, $itemId = null, $itemIndex = null) {
-		$result = $this->getCatalogDriver()->renewCheckout($this, $recordId, $itemId, $itemIndex);
-		$this->clearCache();
-		return $result;
+	function renewCheckout(string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		return $this->getCatalogDriver()->renewCheckout($this, $recordId, $itemId, $itemIndex);
 	}
 
-	function renewAll($renewLinkedUsers = false) {
+	function renewAll(?bool $renewLinkedUsers = false) : array {
 		$renewAllResults = $this->getCatalogDriver()->renewAll($this);
 		//Also renew linked Users if needed
 		if ($renewLinkedUsers) {
@@ -3095,7 +2877,7 @@ class User extends DataObject {
 				}
 			}
 		}
-		$this->clearCache();
+		//TODO: Update that the checkout in the cache if applicable and/or force checkouts to renew
 
 		$renewAllResults['title'] = translate([
 			'text' => 'Renewing all titles',
@@ -3252,7 +3034,6 @@ class User extends DataObject {
 		if ($this->isReadingHistoryEnabled()) {
 			$catalogDriver = $this->getCatalogDriver();
 			$results = $catalogDriver->doReadingHistoryAction($this, $readingHistoryAction, $selectedTitles);
-			$this->clearCache();
 			return $results;
 		} else {
 			return [
@@ -3336,7 +3117,6 @@ class User extends DataObject {
 
 	public function updatePatronInfo($canUpdateContactInfo, $fromMasquerade = false) {
 		$result = $this->getCatalogDriver()->updatePatronInfo($this, $canUpdateContactInfo, $fromMasquerade);
-		$this->clearCache();
 		return $result;
 	}
 
@@ -3349,7 +3129,6 @@ class User extends DataObject {
 			];
 		}
 		$result = $catalogDriver->updateHomeLibrary($this, $newHomeLocationCode);
-		$this->clearCache();
 		return $result;
 	}
 
@@ -3429,7 +3208,6 @@ class User extends DataObject {
 			}
 			$this->__set('password', $newPin);
 			$this->update();
-			$this->clearCache();
 		}
 
 		return $result;
@@ -4009,9 +3787,15 @@ class User extends DataObject {
 		}
 	}
 
-	function eligibleForHolds() {
+	function eligibleForHolds() : array {
 		if (empty($this->getCatalogDriver())) {
-			return false;
+			return [
+				'isEligible' => false,
+				'message' => '',
+				'fineLimitReached' => false,
+				'maxPhysicalCheckoutsReached' => false,
+				'expiredPatronWhoCannotPlaceHolds' => false,
+			];
 		}
 		return $this->getCatalogDriver()->patronEligibleForHolds($this);
 	}
@@ -5088,11 +4872,17 @@ class User extends DataObject {
 		return false;
 	}
 
-	public function getAccountSummary() {
+	/**
+	 * Returns the Account Summary for the patron for their ILS. The data may be stale.
+	 * Will return null if the user is not connected to an ILS.
+	 *
+	 * @return AccountSummary|null
+	 */
+	public function getAccountSummary() : ?AccountSummary {
 		if ($this->hasIlsConnection()) {
 			return $this->getCatalogDriver()->getAccountSummary($this);
 		} else {
-			return [];
+			return null;
 		}
 	}
 
@@ -5108,50 +4898,47 @@ class User extends DataObject {
 		return $this->_expirationInformation;
 	}
 
-	public function getCachedAccountSummary(string $source) {
+	/**
+	 * Get the account summary for the source. If no account summary exists we will create a new one.
+	 *
+	 * @param string $source
+	 * @return AccountSummary
+	 */
+	public function getCachedAccountSummary(string $source) : AccountSummary {
 		//Check to see if we have cached summary information
 		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
 		$summary = new AccountSummary();
 		$summary->userId = $this->id;
 		$summary->source = $source;
-		$existingId = null;
 		if ($summary->find(true)) {
-			$existingId = $summary->id;
 			if (($summary->lastLoaded < (time() - 5 * 60)) || isset($_REQUEST['refreshCheckouts']) || isset($_REQUEST['refreshHolds']) || isset($_REQUEST['refreshSummary'])) {
-				$summary = null;
+				$summary->dataIsStale = true;
 			}
 		} else {
+			$summary->resetCounters();
+			$summary->dataIsStale = true;
 			$summary->insert();
-			$existingId = $summary->id;
-			$summary = null;
 		}
-		return [
-			$existingId,
-			$summary,
-		];
+		return $summary;
 	}
 
-	public function clearCachedAccountSummaryForSource(string $source) {
+	/**
+	 * Mark that the account summary is stale. For performance reasons we don't clear
+	 * the underlying data so we can display previous data while we load new.
+	 *
+	 * @param string $source
+	 * @return void
+	 */
+	public function clearCachedAccountSummaryForSource(string $source) : void {
 		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
 		$summary = new AccountSummary();
 		$summary->userId = $this->id;
 		$summary->source = $source;
-		$summary->delete(true);
+		$summary->dataIsStale = true;
+		$summary->update();
 	}
 
-	public function forceReloadOfCheckouts(): void {
-		$this->__set('checkoutInfoLastLoaded', 0);
-		$this->invalidateCirculationCache();
-		$this->update();
-	}
-
-	public function forceReloadOfHolds(): void {
-		$this->__set('holdInfoLastLoaded', 0);
-		$this->invalidateCirculationCache();
-		$this->update();
-	}
-
-	public function clearActiveSessions() {
+	public function clearActiveSessions() : void {
 		//Delete any sessions for the patron to ensure they are logged out
 		$session = new Session();
 		$session->whereAdd("data like '%activeUserId|s:" . strlen($this->id) . ":\"$this->id\"%'");
@@ -5281,6 +5068,7 @@ class User extends DataObject {
 			}
 			$location = new Location();
 			$location->locationId = $pickupBranchId;
+			$pickupBranch = '';
 			if ($location->find(true)) {
 				$pickupBranch = $location->code;
 				$locationValid = $this->validatePickupBranch($pickupBranch);
@@ -5506,6 +5294,119 @@ class User extends DataObject {
 		return true;
 	}
 
+	/**
+	 * Sorts hold arrays by desired criteria for the user.
+	 *
+	 * @param array $holdsToReturn
+	 * @param string $availableSort
+	 * @param string $unavailableSort
+	 * @return array
+	 */
+	public function sortHolds(array $holdsToReturn, string $availableSort, string $unavailableSort): array {
+		$indexToSortBy = 'sortTitle';
+		$holdSort = function (Hold $a, Hold $b) use (&$indexToSortBy) {
+			$titleA = $a->getSortTitle();
+			$titleB = $b->getSortTitle();
+			if ($indexToSortBy == 'sortTitle') {
+				$a = $titleA;
+				$b = $titleB;
+			} elseif ($indexToSortBy == 'user') {
+				$a = $a->getUserName();
+				$b = $b->getUserName();
+			} else {
+				$a = isset($a->$indexToSortBy) ? $a->$indexToSortBy : null;
+				$b = isset($b->$indexToSortBy) ? $b->$indexToSortBy : null;
+			}
+
+			// Put empty values (except for specified values of zero) at the bottom of the sort.
+			if (modifiedEmpty($a) && modifiedEmpty($b)) {
+				if ($indexToSortBy != 'sortTitle') {
+					return strnatcasecmp($titleA, $titleB);
+				} else {
+					return 0;
+				}
+			} elseif (!modifiedEmpty($a) && modifiedEmpty($b)) {
+				return -1;
+			} elseif (modifiedEmpty($a) && !modifiedEmpty($b)) {
+				return 1;
+			}
+
+			if ($indexToSortBy == 'format') {
+				if (is_array($a)) {
+					$a = implode(',', $a);
+				}
+				if (is_array($b)) {
+					$b = implode(',', $b);
+				}
+			}
+
+			$ret = strnatcasecmp($a, $b);
+			if ($ret == 0 && $indexToSortBy != 'sortTitle') {
+				return strnatcasecmp($titleA, $titleB);
+			} else {
+				return $ret;
+			}
+		};
+
+		if (!empty($holdsToReturn['available'])) {
+			$indexToSortBy = match ($availableSort) {
+				'author', 'format' => $availableSort,
+				'title' => 'sortTitle',
+				'libraryAccount' => 'user',
+				'location' => 'pickupLocationName',
+				default => 'expirationDate',
+			};
+			uasort($holdsToReturn['available'], $holdSort);
+		}
+		if (!empty($holdsToReturn['cancelled'])) {
+			uasort($holdsToReturn['cancelled'], $holdSort);
+			arsort($holdsToReturn['cancelled']);
+		}
+		if (!empty($holdsToReturn['unavailable'])) {
+			if ($unavailableSort === 'reactivate') {
+				$reactivateDateSort = function (Hold $a, Hold $b) {
+					$titleA = $a->getSortTitle();
+					$titleB = $b->getSortTitle();
+
+					// Get reactivation dates, treating null/0 as "no date set" (i.e., indefinitely frozen or not frozen).
+					$dateA = (!empty($a->reactivateDate) && $a->reactivateDate > 0) ? $a->reactivateDate : null;
+					$dateB = (!empty($b->reactivateDate) && $b->reactivateDate > 0) ? $b->reactivateDate : null;
+
+					// Both have reactivation dates, so sort by date (earliest first).
+					if ($dateA !== null && $dateB !== null) {
+						if ($dateA == $dateB) {
+							return strnatcasecmp($titleA, $titleB);
+						}
+						return $dateA <=> $dateB;
+					}
+
+					// Sort those with reactivation date first.
+					if ($dateA !== null && $dateB === null) {
+						return -1;
+					}
+					if ($dateA === null && $dateB !== null) {
+						return 1;
+					}
+
+					// Neither has a reactivation date, so sort by title.
+					return strnatcasecmp($titleA, $titleB);
+				};
+				uasort($holdsToReturn['unavailable'], $reactivateDateSort);
+			} else {
+				$indexToSortBy = match ($unavailableSort) {
+					'author', 'position', 'status', 'format' => $unavailableSort,
+					'placed' => 'createDate',
+					'cancelDate' => 'automaticCancellationDate',
+					'libraryAccount' => 'user',
+					'location' => 'pickupLocationName',
+					default => 'sortTitle',
+				};
+				uasort($holdsToReturn['unavailable'], $holdSort);
+			}
+		}
+		return $holdsToReturn;
+	}
+
 	protected function clearRuntimeDataVariables() : void {
 		if ($this->_accountProfile != null) {
 			$this->_accountProfile->__destruct();
@@ -5585,7 +5486,6 @@ class User extends DataObject {
 
 	function newCurbsidePickup($pickupLocation, $pickupTime, $pickupNote): array {
 		$result = $this->getCatalogDriver()->newCurbsidePickup($this, $pickupLocation, $pickupTime, $pickupNote);
-		$this->clearCache();
 		return $result;
 	}
 
@@ -6037,14 +5937,11 @@ class User extends DataObject {
 				$result['completionMessage'] = $selfCheckCompletionMessage->getTextBlockTranslation('completionMessage', $this->interfaceLanguage);
 			}
 
-			$this->forceReloadOfCheckouts();
+			$accountSummary = $this->getCachedAccountSummary('hoopla');
+			$accountSummary->incrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		}
-		$this->clearCache();
 		return $result;
-	}
-
-	public function hasAPICheckIn(): bool {
-		return $this->driver->hasAPICheckIin();
 	}
 
 	function checkInItem($barcode, Location $currentLocation): array {
@@ -6055,9 +5952,10 @@ class User extends DataObject {
 		}
 
 		if ($result['success']) {
-			$this->forceReloadOfCheckouts();
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->decrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		}
-		$this->clearCache();
 		return $result;
 	}
 
@@ -6257,9 +6155,10 @@ class User extends DataObject {
 						$recordId = $_REQUEST['catalogKey'] ?? '';
 						$results['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
 
-						$this->clearCache();
-
-						$this->forceReloadOfHolds();
+						//If we have a cached account summary, add one to the number of unavailable holds (no ILSs move a hold to active immediately)
+						$accountSummary = $this->getCachedAccountSummary('ils');
+						$accountSummary->incrementNumberOfUnavailableHolds();
+						$accountSummary->markHoldsStale();
 					}
 				} else {
 					$results = [

@@ -69,7 +69,7 @@
 				document.getElementById("{$userId}LineItems").value = lineItems;
 				{/if}
 
-				var paymentId = AspenDiscovery.Account.createWorldPayOrder('#fines{$userId}', '#formattedTotal{$userId}', 'fine');
+				var paymentId = AspenDiscovery.Account.createWorldPayOrder('#fines{$userId}', 'fine');
 				var returnUrl = document.getElementById("{$userId}ReturnUrl").value;
 				var cancelUrl = document.getElementById("{$userId}CancelUrl").value;
 
@@ -113,7 +113,7 @@
 			{/if}
 
 
-			var paymentId = AspenDiscovery.Account.createWorldPayOrder('#fines{$userId}', '#formattedTotal{$userId}', 'fine');
+			var paymentId = AspenDiscovery.Account.createWorldPayOrder('#fines{$userId}', 'fine');
 			var returnUrl = document.getElementById("{$userId}ReturnUrl").value;
 			var cancelUrl = document.getElementById("{$userId}CancelUrl").value;
 
@@ -128,5 +128,4 @@
 	</script>
 	{/if}
 {/strip}
-
 

@@ -15,6 +15,10 @@ class AccountSummary extends DataObject {
 	public $expirationDate;
 	public $lastLoaded;
 	public $hasUpdatedSavedSearches;
+	//This determines if the data stored with account summary is stale so we can force a reload
+	public $dataIsStale;
+	public $holdsAreStale;
+	public $checkoutsAreStale;
 
 	protected $_materialsRequests;
 	protected $_readingHistory;
@@ -32,6 +36,9 @@ class AccountSummary extends DataObject {
 			'expirationDate',
 			'lastLoaded',
 			'hasUpdatedSavedSearches',
+			'dataIsStale',
+			'holdsAreStale',
+			'checkoutsAreStale',
 		];
 	}
 
@@ -42,43 +49,43 @@ class AccountSummary extends DataObject {
 	/**
 	 * @return int
 	 */
-	public function getMaterialsRequests() {
+	public function getMaterialsRequests() : int {
 		return $this->_materialsRequests;
 	}
 
 	/**
 	 * @param int $materialsRequests
 	 */
-	public function setMaterialsRequests($materialsRequests): void {
+	public function setMaterialsRequests(int $materialsRequests): void {
 		$this->_materialsRequests = $materialsRequests;
 	}
 
-	public function getNumHolds() {
+	public function getNumHolds() : int {
 		return $this->numAvailableHolds + $this->numUnavailableHolds;
 	}
 
 	/**
 	 * @return int
 	 */
-	public function getReadingHistory() {
+	public function getReadingHistory() : int {
 		return $this->_readingHistory;
 	}
 
 	/**
 	 * @param int $readingHistory
 	 */
-	public function setReadingHistory($readingHistory): void {
+	public function setReadingHistory(int $readingHistory): void {
 		$this->_readingHistory = $readingHistory;
 	}
 
-	public function setNumUpdatedSearches($numUpdatedSearches): void {
+	public function setNumUpdatedSearches(int $numUpdatedSearches): void {
 		$this->_numUpdatedSearches = $numUpdatedSearches;
 	}
 
 	private $_expired = null;
 	private $_expireClose = null;
 
-	private function loadExpirationInfo() {
+	private function loadExpirationInfo() : void {
 		if ($this->expirationDate > 0) {
 			$timeNow = time();
 			$this->_expired = 0;
@@ -97,53 +104,34 @@ class AccountSummary extends DataObject {
 		}
 	}
 
-	public function isExpired() {
+	public function isExpired() : bool {
 		if ($this->_expired === null) {
 			$this->loadExpirationInfo();
 		}
 		return $this->_expired;
 	}
 
-	public function isExpirationClose() {
+	public function isExpirationClose() : bool {
 		if ($this->_expireClose === null) {
 			$this->loadExpirationInfo();
 		}
 		return $this->_expireClose;
 	}
 
-	public function expiresOn() {
+	public function expiresOn() : string {
 		return date('M j, Y', $this->expirationDate);
 	}
 
-	private $_expirationFinesNotice = '';
-
-	public function setExpirationFinesNotice(string $notice) {
-		$this->_expirationFinesNotice = $notice;
-	}
-
+	//This is set and then returned as part of the toArray method
 	private $_expirationNotice = '';
 
-	public function setExpirationNotice(string $notice) {
+	public function setExpirationNotice(string $notice) : void {
 		$this->_expirationNotice = $notice;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getExpirationNotice(): string {
-		return $this->_expirationNotice;
-	}
-
-	/**
-	 * @return string
-	 */
-	public function getExpirationFinesNotice(): string {
-		return $this->_expirationFinesNotice;
 	}
 
 	private $_finesBadge = '';
 
-	public function setFinesBadge(string $notice) {
+	public function setFinesBadge(string $notice) : void {
 		$this->_finesBadge = $notice;
 	}
 
@@ -152,7 +140,6 @@ class AccountSummary extends DataObject {
 		$return['expires'] = date('M j, Y', $this->expirationDate);
 		$return['expired'] = $this->isExpired();
 		$return['expireClose'] = $this->isExpirationClose();
-		$return['expirationFinesNotice'] = $this->_expirationFinesNotice;
 		$return['expirationNotice'] = $this->_expirationNotice;
 		$return['numHolds'] = $this->getNumHolds();
 		if ($this->_numUpdatedSearches > 0) {
@@ -168,7 +155,10 @@ class AccountSummary extends DataObject {
 		return $return;
 	}
 
-	public function resetCounters() {
+	/**
+	 * @return void
+	 */
+	public function resetCounters() : void {
 		$this->numCheckedOut = 0;
 		$this->numCheckoutsRemaining = 0;
 		$this->numOverdue = 0;
@@ -176,5 +166,60 @@ class AccountSummary extends DataObject {
 		$this->numUnavailableHolds = 0;
 		$this->totalFines = 0;
 		$this->expirationDate = 0;
+	}
+
+	/**
+	 * Increments the number of unavailable holds after a hold is placed.
+	 * @return void
+	 */
+	public function incrementNumberOfUnavailableHolds() : void {
+		$this->__set('numUnavailableHolds', ++$this->numUnavailableHolds);
+		$this->update();
+	}
+
+	public function markHoldsStale() : void {
+		$this->__set('holdsAreStale', 1);
+		$this->update();
+	}
+
+	public function clearHoldsStale() : void {
+		$this->__set('holdsAreStale', 0);
+		$this->update();
+	}
+
+	public function decrementAvailableHolds() : void {
+		$this->__set('numAvailableHolds', --$this->numAvailableHolds);
+		$this->update();
+	}
+
+	public function decrementUnavailableHolds() : void {
+		$this->__set('numUnavailableHolds', --$this->numUnavailableHolds);
+		$this->update();
+	}
+
+	public function incrementNumberOfCheckouts() : void {
+		$this->__set('numCheckedOut', ++$this->numCheckedOut);
+		if ($this->numCheckoutsRemaining > 0) {
+			$this->__set('numCheckoutsRemaining', --$this->numCheckoutsRemaining);
+		}
+		$this->update();
+	}
+
+	public function decrementNumberOfCheckouts() : void {
+		$this->__set('numCheckedOut', --$this->numCheckedOut);
+		if ($this->numCheckoutsRemaining > 0) {
+			$this->__set('numCheckoutsRemaining', ++$this->numCheckoutsRemaining);
+		}
+		$this->update();
+	}
+
+	public function markCheckoutsStale() : void {
+		$this->__set('checkoutsAreStale', 1);
+		$this->update();
+	}
+
+	public function clearCheckoutsStale() : void {
+		$this->__set('checkoutsAreStale', 0);
+		$this->update();
 	}
 }

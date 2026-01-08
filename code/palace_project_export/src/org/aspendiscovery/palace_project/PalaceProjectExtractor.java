@@ -66,7 +66,7 @@ public class PalaceProjectExtractor {
 	public boolean exportPalaceProjectData() {
 		boolean updatesRun = false;
 		try{
-			addPalaceProjectTitleToDbStmt = aspenConn.prepareStatement("INSERT INTO palace_project_title (palaceProjectId, title, rawChecksum, rawResponseLength, rawResponse, dateFirstDetected) VALUES (?, ?, ?, COMPRESS(?), ?)", PreparedStatement.RETURN_GENERATED_KEYS);
+			addPalaceProjectTitleToDbStmt = aspenConn.prepareStatement("INSERT INTO palace_project_title (palaceProjectId, title, rawChecksum, rawResponseLength, rawResponse, dateFirstDetected) VALUES (?, ?, ?, ?, COMPRESS(?), ?)", PreparedStatement.RETURN_GENERATED_KEYS);
 			getExistingPalaceProjectTitleStmt = aspenConn.prepareStatement("SELECT id, rawChecksum, rawResponseLength from palace_project_title where palaceProjectId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			updatePalaceProjectTitleInDbStmt = aspenConn.prepareStatement("UPDATE palace_project_title set title = ?, rawChecksum = ?, rawResponseLength = ?, rawResponse = COMPRESS(?) WHERE id = ?");
 			addPalaceProjectAvailabilityStmt = aspenConn.prepareStatement("INSERT INTO palace_project_title_availability (titleId, collectionId, lastSeen, borrowLink, needsHold, previewLink, deleted) VALUES (?, ?, ?, ?, ?, ?, 0)");
