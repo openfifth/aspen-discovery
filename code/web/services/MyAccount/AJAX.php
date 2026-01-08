@@ -11811,10 +11811,10 @@ class MyAccount_AJAX extends JSON_Action {
 		$waitingList->orderBy('position ASC');
 
 		if ($waitingList->find(true)) {
-			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
 			$waitingList->canRegister = 1;
 			$waitingList->canRegisterUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
 			$waitingList->update();
+			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
 
 			if ($notificationSent) {
 				$waitingList->status = 'notified';
