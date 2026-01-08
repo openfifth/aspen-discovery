@@ -84,6 +84,7 @@ class Library extends DataObject {
 	public $_themes;
 	public $layoutSettingId;  //Link to LayoutSetting
 	public $groupedWorkDisplaySettingId; //Link to GroupedWorkDisplaySettings
+	public $enableAsyncFacetLoading; //Enable async loading of collapsed facets
 
 	public $browseCategoryGroupId;
 
@@ -557,7 +558,8 @@ class Library extends DataObject {
 			'paypalPayflowSettingId',
 			'squareSettingId',
 			'stripeSettingId',
-			'heyCentricSettingId'
+			'heyCentricSettingId',
+			'enableAsyncFacetLoading'
 		];
 	}
 
@@ -3223,6 +3225,16 @@ class Library extends DataObject {
 				'default' => $defaultSettingId,
 				'permissions' => ['Library Catalog Options'],
 				'forcesReindex' => true,
+			],
+
+			'enableAsyncFacetLoading' => [
+				'property' => 'enableAsyncFacetLoading',
+				'type' => 'checkbox',
+				'label' => 'Enable Async Facet Loading',
+				'description' => 'Load facet values asynchronously when users expand collapsed facets to improve initial search performance',
+				'hideInLists' => true,
+				'default' => 1,
+				'permissions' => ['Library Catalog Options'],
 			],
 
 			// Searching //
