@@ -27,8 +27,8 @@
  * @access      public
  */
 class ISBN {
-	private $raw;
-	private $valid = null;
+	private string $raw;
+	private ?bool $valid = null;
 
 	/**
 	 * Constructor
@@ -36,7 +36,7 @@ class ISBN {
 	 * @access  public
 	 * @param string $raw Raw ISBN string to convert/validate.
 	 */
-	public function __construct($raw) {
+	public function __construct(string $raw) {
 		// Strip out irrelevant characters:
 		$this->raw = self::normalizeISBN($raw);
 	}
@@ -45,9 +45,9 @@ class ISBN {
 	 * Get the ISBN in ISBN-10 format:
 	 *
 	 * @access  public
-	 * @return  mixed                   ISBN, or false if invalid/incompatible.
+	 * @return  string|false                   ISBN, or false if invalid/incompatible.
 	 */
-	public function get10() {
+	public function get10() : string|false {
 		// Is it valid?
 		if ($this->isValid()) {
 			// Is it already an ISBN-10?  If so, return as-is.
@@ -55,7 +55,7 @@ class ISBN {
 				return $this->raw;
 				// Is it a Bookland EAN?  If so, we can convert to ISBN-10.
 			} else {
-				if (strlen($this->raw) == 13 && substr($this->raw, 0, 3) == '978') {
+				if (strlen($this->raw) == 13 && str_starts_with($this->raw, '978')) {
 					$start = substr($this->raw, 3, 9);
 					return $start . self::getISBN10CheckDigit($start);
 				}
@@ -70,9 +70,9 @@ class ISBN {
 	 * Get the ISBN in ISBN-13 format:
 	 *
 	 * @access  public
-	 * @return  mixed                   ISBN, or false if invalid/incompatible.
+	 * @return  string|false                   ISBN, or false if invalid/incompatible.
 	 */
-	public function get13() {
+	public function get13() : string|false {
 		// Is it valid?
 		if ($this->isValid()) {
 			// Is it already an ISBN-13?  If so, return as-is.
@@ -92,12 +92,12 @@ class ISBN {
 	}
 
 	/**
-	 * Is the current ISBN valid in some format?  (May be 10 or 13 digit).
+	 * Is the current ISBN valid in some format?  (Either 10 or 13 digit).
 	 *
 	 * @access  public
 	 * @return  boolean
 	 */
-	public function isValid() {
+	public function isValid() : bool {
 		// If we haven't already checked validity, do so now and store the result:
 		if (is_null($this->valid)) {
 			if (self::isValidISBN10($this->raw) || self::isValidISBN13($this->raw)) {
@@ -116,7 +116,10 @@ class ISBN {
 	 * @param   $raw    string          ISBN to clean up.
 	 * @return  string                  Normalized ISBN.
 	 */
-	public static function normalizeISBN($raw) {
+	public static function normalizeISBN(string $raw) : string {
+		if (strlen($raw) > 13 && str_starts_with($raw, '978')) {
+			$raw = substr($raw, 0, 13);
+		}
 		return preg_replace('/[^0-9X]/', '', strtoupper($raw));
 	}
 
@@ -127,7 +130,7 @@ class ISBN {
 	 * @param   $isbn   string          The first 9 digits of an ISBN-10.
 	 * @return  string                  The check digit.
 	 */
-	public static function getISBN10CheckDigit($isbn) {
+	public static function getISBN10CheckDigit(string $isbn) : string {
 		$sum = 0;
 		for ($x = 0; $x < strlen($isbn); $x++) {
 			$sum += intval(substr($isbn, $x, 1)) * (1 + $x);
@@ -143,7 +146,7 @@ class ISBN {
 	 * @param   $isbn   string          The ISBN-10 to test.
 	 * @return  boolean
 	 */
-	public static function isValidISBN10($isbn) {
+	public static function isValidISBN10(string $isbn) : bool {
 		$isbn = self::normalizeISBN($isbn);
 		if (strlen($isbn) != 10) {
 			return false;
@@ -158,7 +161,7 @@ class ISBN {
 	 * @param   $isbn   string          The first 12 digits of an ISBN-13.
 	 * @return  string                  The check digit.
 	 */
-	public static function getISBN13CheckDigit($isbn) {
+	public static function getISBN13CheckDigit(string $isbn) : string {
 		$sum = 0;
 		$weight = 1;
 		for ($x = 0; $x < strlen($isbn); $x++) {
@@ -176,7 +179,7 @@ class ISBN {
 	 * @param   $isbn   string          The ISBN-13 to test.
 	 * @return  boolean
 	 */
-	public static function isValidISBN13($isbn) {
+	public static function isValidISBN13(string $isbn) : bool {
 		$isbn = self::normalizeISBN($isbn);
 		if (strlen($isbn) != 13) {
 			return false;
@@ -185,5 +188,3 @@ class ISBN {
 		return (substr($isbn, 12) == self::getISBN13CheckDigit(substr($isbn, 0, 12)));
 	}
 }
-
-?>
