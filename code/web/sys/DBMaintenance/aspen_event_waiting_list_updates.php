@@ -38,5 +38,12 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE user_aspen_event_instance_waiting_list ADD COLUMN canRegisterUntil DATETIME DEFAULT NULL',
 			],
 		], // add_can_register_information_to_event_waiting_lists
+		'add_event_email_notification_preferences_to_user_db_table' =>[
+			'title' => 'Add Event Email Notification Preferences to User DB Table',
+			'description' => 'Add a column to store user preference about events notification emails',
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN eventRegistrationNotificationsByEmail TINYINT DEFAULT 0',
+			],
+		], //add_event_email_notification_preferences_to_user_db_table
 	];
 }
