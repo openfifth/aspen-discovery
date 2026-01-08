@@ -686,7 +686,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	}
 
 	void addIsbn(String isbn, String format) {
-		isbn = isbn.replaceAll("\\D", "");
+		if (isbn.contains(" ")) {
+			isbn = isbn.substring(0, isbn.indexOf(" "));
+		}
+		isbn = isbn.replaceAll("[^0-9X]", "");
 		if (isbn.length() == 10) {
 			isbn = Util.convertISBN10to13(isbn);
 		}
