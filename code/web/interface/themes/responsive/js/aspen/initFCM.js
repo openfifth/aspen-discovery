@@ -34,7 +34,7 @@ function initialize() {
 							// how do we get the device?
 							let parser = new UAParser(window.navigator.userAgent);
 							let result = parser.getResult();
-							let modelName = result.device.model || "unknown";
+							let modelName = result.device.model || "Unknown";
 							const postData = {
 								"pushToken": currentToken,
 								"deviceModel": modelName,

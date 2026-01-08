@@ -53,8 +53,7 @@ class SystemAPI extends AbstractAPI {
 					'getCatalogStatus',
 					'getLocations',
 					'getMaterialsRequestForm',
-					'getFirebaseSettings',
-					'saveFirebaseToken'
+					'getFirebaseSettings'
 				])) {
 					$result = [
 						'result' => $this->$method(),

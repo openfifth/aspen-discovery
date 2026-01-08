@@ -1,3 +1,4 @@
+// TODO currently not accessed but leaving for reference for next phase
 //not bundled because we only want to include this if Aspen Mobile is turned on
 //importScripts("https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging-sw.js");
 importScripts('https://www.gstatic.com/firebasejs/12.1.0/firebase-app-compat.js');
