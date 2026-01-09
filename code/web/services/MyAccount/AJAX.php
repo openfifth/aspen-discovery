@@ -12380,6 +12380,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	public function processEventWaitingListSeats($eventInstanceId): void {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+
 		$waitingList = new UserAspenEventInstanceWaitingList();
 		$waitingList->eventInstanceId = $eventInstanceId;
 		$waitingList->status = 'waiting';
@@ -12390,16 +12392,23 @@ class MyAccount_AJAX extends JSON_Action {
 			$waitingList->canRegister = 1;
 			$waitingList->canRegisterUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
 			$waitingList->update();
-			$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
 
-			if ($notificationSent) {
+			$user = new user();
+			$user->id = $waitingList->userId;
+
+			$sendEmail = false;
+			if ($user->find($true)) {
+				$sendEmail = ($user->eventRegistrationNoificationsByEmail == 1);
+			}
+
+			if ($sendEmail) {
+				$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
+			}
+
 				$waitingList->status = 'notified';
 				$waitingList->notifiedAt = date('Y-m-d H:i:s');
 				$waitingList->expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
 				$waitingList->update();
-				//TODO:; DO NOT REORDER UNTIL USER HAS RESPNDED OR RUN OUT OF TIME
-				// $this->reorderWaitingListPositions($eventInstance, $waitingList->position);
-			}
 		}
 	}
 
