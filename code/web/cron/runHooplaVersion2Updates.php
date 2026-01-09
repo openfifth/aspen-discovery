@@ -8,6 +8,8 @@ require_once ROOT_DIR . '/sys/Administration/BackgroundProcess.php';
 require_once ROOT_DIR . '/sys/SystemVariables.php';
 require_once ROOT_DIR . '/sys/DBMaintenance/hoopla_version2_updates.php';
 
+set_time_limit(0);
+
 $backgroundProcess = null;
 if ($argc > 2) {
 	$backgroundProcessId = $argv[2];
