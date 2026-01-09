@@ -77,6 +77,14 @@ function getUpdates26_01_00(): array {
 				'ALTER TABLE user_account_summary ADD COLUMN checkoutsAreStale TINYINT(1) DEFAULT 1'
 			],
 		], //account_summary_data_stale
+		'sierra_phone_fields' => [
+			'title' => 'Sierra Phone Fields',
+			'description' => 'Add configurable phone fields for Sierra Phone and Work Phone',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN phoneField CHAR(1) DEFAULT 't'",
+				"ALTER TABLE library ADD COLUMN workPhoneField CHAR(1) DEFAULT 'p'"
+			]
+		], //sierra_phone_fields
 
 		//kirstien
 
