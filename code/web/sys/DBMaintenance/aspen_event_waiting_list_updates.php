@@ -52,5 +52,12 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE library ADD COLUMN displayEventNotificationsInAccount TINYINT DEFAULT 0',
 			],
 		], //display_event_notifications_in_account
+		'add_column_to_track_if_toast_has_been_displayed' => [
+			'title' => 'Add Column to Track if Toast Has Been Displayed',
+			'description' => 'Add a column to track whether the toat for the event has been displayed',
+			'sql' => [
+				'ALTER TABLE user_aspen_event_instance_waiting_list ADD COLUMN toastShown TINYINT(1) DEFAULT 0',
+			],
+		], //add_column_to_track_if_toast_notification_has_been_displayed
 	];
 }
