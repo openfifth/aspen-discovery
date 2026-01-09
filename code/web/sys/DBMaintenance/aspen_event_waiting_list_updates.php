@@ -45,5 +45,12 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE user ADD COLUMN eventRegistrationNotificationsByEmail TINYINT DEFAULT 0',
 			],
 		], //add_event_email_notification_preferences_to_user_db_table
+		'display_event_notifications_in_account' => [
+			'title' => 'Display Event Notifications in Account',
+			'description' => 'Add a column to track whether to allow event notifications in user accounts',
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN displayEventNotificationsInAccount TINYINT DEFAULT 0',
+			],
+		], //display_event_notifications_in_account
 	];
 }
