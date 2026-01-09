@@ -12496,4 +12496,105 @@ class MyAccount_AJAX extends JSON_Action {
 		$emailTemplate->sendEmail($user->email, $parameters);
 		return true;
 	}
+
+	public function AspenEventRegistrationNotificationsSSE() {
+		$debug = false;
+		if (!UserAccount::isLoggedIn()) {
+			return;
+		}
+
+		$patron = UserAccount::getActiveUserObj();
+		global $logger;
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+
+
+		header("X-Accel-Buffering: no");
+		header("Content-Type: text/event-stream");
+		header("Cache-Control: no-cache");
+
+		echo "event: established\n";
+		echo "data: connection established\n\n";
+
+		ob_end_flush();
+
+		$interval = 10;
+		$logger->log("running", Logger::LOG_ERROR);
+
+		while (true) {
+			if (connection_status() != CONNECTION_NORMAL || connection_aborted()) {
+				exit();
+			}
+
+			$waitingList = new UserAspenEventInstanceWaitingList();
+			$waitingList->userId = $patron->id;
+			$waitingList->canRegister = 1;
+			$waitingList->toastShown = 0;
+			$waitingList->whereAdd("expiresAt >= NOW()");
+			$waitingList->orderBy('expiresAt ASC');
+
+			if ($waitingList->find()) {
+				$logger->log("waiting list found", Logger::LOG_ERROR);
+				while($waitingList->fetch()) {
+					$registration = new UserAspenEventInstanceRegistration();
+					$registration->userId = $patron->id;
+					$registration->eventInstanceId = $waitingList->eventInstanceId;
+					if ($registration->find(true) && !$registration->cancelled) {
+						continue;
+					}
+
+					$eventInstance = new EventInstance();
+					$eventInstance->id = $waitingList->eventInstanceId;
+					if (!$eventInstance->find(true)) {
+						continue;
+					}
+
+					$event = new Event();
+					$event->id = $eventInstance->eventId;
+					if (!$event->find(true)) {
+						continue;
+					}
+
+					//Send toast
+					echo "event: aspen_event_registration_notification\n";
+					echo "data: " . json_encode([
+						'id' => 'event_waiting_list_' . $waitingList->id, 
+						'type' => 'event_waiting_list',
+						'title' => translate([
+							'text' => 'You can now register for an event you were on the waiting list for',
+							'isPublicFacing' => true
+						]),
+						'body' => $event->title,
+						'icon'=> 'fa-calendar-check',
+						'link' => [
+							'href' => '/MyAccount/MyEvents',
+							'text' => translate([
+								'text' => 'Register now',
+								'isPublicFacing' => true,
+							])
+						]
+					]) . "\n\n";
+
+					$waitingList->toastShown = 1;
+					$waitingList->update();
+					flush();
+				}
+			} else {
+				echo "event: heart_beat\n";
+				echo "data: No event notifications\n\n";
+				flush();
+			}
+
+			if (ob_get_contents()) {
+				ob_end_flush();
+			}
+			flush();
+
+			sleep($interval);
+		}
+	}
+
  }
