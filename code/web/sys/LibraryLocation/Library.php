@@ -264,11 +264,13 @@ class Library extends DataObject {
 	/** @noinspection PhpUnused */
 	public $cityStateField;
 	public $allowPatronPhoneNumberUpdates;
+	public $phoneField;
 	public $useAllCapsWhenUpdatingProfile;
 	public $requireNumericPhoneNumbersWhenUpdatingProfile;
 	public $bypassReviewQueueWhenUpdatingProfile;
 	public $allowPatronWorkPhoneNumberUpdates;
 	public $showWorkPhoneInProfile;
+	public $workPhoneField;
 	public $showCellphoneInProfile;
 	public $showNoticeTypeInProfile;
 	public $symphonyDefaultPhoneField;
@@ -1863,6 +1865,17 @@ class Library extends DataObject {
 								'readOnly' => false,
 								'permissions' => ['Library ILS Connection'],
 							],
+							'phoneField' => [
+								'property' => 'phoneField',
+								'type' => 'text',
+								'label' => 'Phone Field',
+								'description' => 'The field that corresponds to the phone number in the ILS. (Sierra Only)',
+								'hideInLists' => true,
+								'default' => 't',
+								'readonly' => false,
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['sierra'],
+							],
 							'allowHomeLibraryUpdates' => [
 								'property' => 'allowHomeLibraryUpdates',
 								'type' => 'checkbox',
@@ -1918,6 +1931,17 @@ class Library extends DataObject {
 								'default' => 0,
 								'permissions' => ['Library ILS Connection'],
 								'relatedIls' => ['carlx', 'sierra', 'symphony'],
+							],
+							'workPhoneField' => [
+								'property' => 'workPhoneField',
+								'type' => 'text',
+								'label' => 'Work Phone Field',
+								'description' => 'The field that corresponds to the work phone in the ILS. (Sierra Only)',
+								'hideInLists' => true,
+								'default' => 'p',
+								'readonly' => false,
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['sierra'],
 							],
 							'allowPatronWorkPhoneNumberUpdates' => [
 								'property' => 'allowPatronWorkPhoneNumberUpdates',
