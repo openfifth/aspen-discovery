@@ -1823,6 +1823,7 @@ class Sierra extends AbstractIlsDriver {
 			global $library;
 			$params = [];
 
+			$userHomeLibrary = $patron->getHomeLibrary();
 			if (isset($_REQUEST['email'])) {
 				$patron->email = $_REQUEST['email'];
 				$params['emails'] = [$_REQUEST['email']];
@@ -1832,7 +1833,7 @@ class Sierra extends AbstractIlsDriver {
 				if (isset($_REQUEST['phone'])) {
 					$patron->phone = $_REQUEST['phone'];
 					$tmpPhone = new stdClass();
-					$tmpPhone->type = 't';
+					$tmpPhone->type = $userHomeLibrary->phoneField;
 					$tmpPhone->number = $_REQUEST['phone'];
 					$params['phones'][] = $tmpPhone;
 				}
@@ -1844,7 +1845,7 @@ class Sierra extends AbstractIlsDriver {
 				if (isset($_REQUEST['workPhone'])) {
 					$patron->_workPhone = $_REQUEST['workPhone'];
 					$tmpPhone = new stdClass();
-					$tmpPhone->type = 'p';
+					$tmpPhone->type = $userHomeLibrary->workPhoneField;
 					$tmpPhone->number = $_REQUEST['workPhone'];
 					$params['phones'][] = $tmpPhone;
 				}
@@ -3000,10 +3001,11 @@ class Sierra extends AbstractIlsDriver {
 			}
 		}
 		if (!empty($patronInfo->phones)) {
+			$userHomeLibrary = $user->getHomeLibrary();
 			foreach ($patronInfo->phones as $phoneInfo) {
-				if ($phoneInfo->type == 'p') {
+				if ($phoneInfo->type == $userHomeLibrary->phoneNumber) {
 					$user->phone = $phoneInfo->number;
-				}elseif ($phoneInfo->type == 't') {
+				}elseif ($phoneInfo->type == $userHomeLibrary->workPhoneField) {
 					$user->_workPhone = $phoneInfo->number;
 				}
 			}
