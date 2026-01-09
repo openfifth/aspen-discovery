@@ -36,6 +36,9 @@
 					{if array_key_exists('Community Engagement', $enabledModules) && $highlightCommunityEngagement}
 						{include file='campaign-highlight.tpl'}
 					{/if}
+					{if array_key_exists('Events', $enabledModules) && $displayEventNotificationsInAccount && $userHasEventsToRegister}
+						{include file='events-notifications.tpl'}
+					{/if}
 					{if !empty($offline)}
 						<div>
 							<div class="alert alert-warning"><strong>{translate text=$offlineMessage isPublicFacing=true}</strong></div>
