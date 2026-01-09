@@ -631,7 +631,7 @@ abstract class ObjectEditor extends Admin_Admin {
 					}
 					$this->activeObject = $existingObject;
 
-					$interface->assign('canDelete', $existingObject->canActiveUserDelete());
+					$interface->assign('canDelete', $this->canDelete() && $existingObject->canActiveUserDelete());
 				} else {
 					$interface->setTemplate('../Admin/noPermission.tpl');
 					return;
