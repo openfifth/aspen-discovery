@@ -2318,7 +2318,6 @@ class Library extends DataObject {
 								'hideInLists' => true,
 								'default' => 0,
 								'permissions' => ['Library ILS Connection'],
-
 							],
 							'inSystemPickupsOnly' => [
 								'property' => 'inSystemPickupsOnly',
@@ -6378,6 +6377,7 @@ class Library extends DataObject {
 			'promptForBirthDateInSelfReg' => $this->promptForBirthDateInSelfReg,
 			'allowRememberPickupLocation' => $this->allowRememberPickupLocation,
 			'allowPickupLocationUpdates' => $this->allowPickupLocationUpdates,
+			'offerImmediateHoldFreeze' => $this->offerImmediateHoldFreeze,
 		];
 		if (empty($this->baseUrl)) {
 			$apiInfo['baseUrl'] = $configArray['Site']['url'];
