@@ -12,4 +12,5 @@ class UserAspenEventInstanceWaitingList extends DataObject {
 	public $eventInstanceId;
 	public $canRegister;
 	public $canRegisterUntil;
+	public $toastShown;
 }
