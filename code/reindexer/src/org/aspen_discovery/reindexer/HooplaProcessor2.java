@@ -415,6 +415,7 @@ class HooplaProcessor2 {
 				baseItemInfo.setDateAdded(dateAdded);
 
 				ItemInfo instantItemInfo = null;
+				boolean instantItemHasScopes = false;
 				ItemInfo itemInfo;
 				for (Long scopeLibraryId : entitlementsByScope.keySet()) {
 					String hooplaType = entitlementsByScope.get(scopeLibraryId);
@@ -473,6 +474,7 @@ class HooplaProcessor2 {
 						itemInfo = instantItemInfo;
 					}
 
+					boolean scopeAddedForLibrary = false;
 					for (Scope scope : indexer.getScopes()) {
 						boolean okToAdd;
 						Long curScopeLibraryId = scope.getLibraryId();
@@ -490,10 +492,21 @@ class HooplaProcessor2 {
 							groupedWork.addScopingInfo(scope.getScopeName(), scopingInfo);
 							scopingInfo.setLibraryOwned(true);
 							scopingInfo.setLocallyOwned(true);
+							scopeAddedForLibrary = true;
 						}
 					}
-					hooplaRecord.addItem(itemInfo);
-
+					if (hooplaType.equalsIgnoreCase("Flex")) {
+						if (scopeAddedForLibrary) {
+							hooplaRecord.addItem(itemInfo);
+						}
+					}else{
+						if (scopeAddedForLibrary) {
+							instantItemHasScopes = true;
+						}
+					}
+				}
+				if (instantItemInfo != null && instantItemHasScopes) {
+					hooplaRecord.addItem(instantItemInfo);
 				}
 			}
 			productRS.close();

@@ -91,14 +91,17 @@ class Evolve extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Evolve, renew one at a time'
+		];
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$result = [
 			'itemId' => $itemId,
 			'success' => false,
