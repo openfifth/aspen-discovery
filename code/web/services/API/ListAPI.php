@@ -1725,12 +1725,14 @@ class ListAPI extends AbstractAPI {
 				if ($listGroup->insert()) {
 					return [
 						'success' => true,
-						'message' => "List group $listGroup->title created successfully"
+						'message' => "List group $listGroup->title created successfully",
+						'groupId' => $listGroup->id
 					];
 				} else {
 					return [
 						'success' => false,
 						'message' => 'Could not create list group',
+						'groupId' => null
 					];
 				}
 			}
