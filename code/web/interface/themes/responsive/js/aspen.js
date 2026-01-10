@@ -4298,7 +4298,6 @@ AspenDiscovery.Account = (function () {
 			}
 		},
 
-		// FIXME: select appropriate property
 		createPay360Order: function (finesFormId, transactionType) {
 			const url = this.createGenericOrder(finesFormId, 'Pay360', transactionType, null);
 			if (!url) {
@@ -10833,6 +10832,10 @@ AspenDiscovery.HeroSlider = (function(){
 				return;
 			}
 
+			if (slides.length === 1) {
+				return;
+			}
+
 			const heroSliderEl = document.querySelector('.hero-slider');
 			let navHideTimer = null;
 			let lastPointerType = 'mouse';
@@ -10889,15 +10892,20 @@ AspenDiscovery.HeroSlider = (function(){
 				speed: 1000,
 				navigation: {
 					nextEl: '.swiper-button-next',
-					prevEl: '.swiper-button-prev',
+					prevEl: '.swiper-button-prev'
 				},
 				keyboard: {
-					enabled: true,
+					enabled: true
 				},
 				a11y: {
 					enabled: true
 				},
 				effect: 'slide'
+			};
+
+			swiperOptions.pagination = {
+				el: '.swiper-pagination',
+				clickable: true
 			};
 
 			if (options.autoRotate) {
@@ -10910,12 +10918,7 @@ AspenDiscovery.HeroSlider = (function(){
 
 				swiperOptions.autoplay = {
 					delay: delays[0] || options.defaultInterval,
-					disableOnInteraction: false,
-				};
-
-				swiperOptions.pagination = {
-					el: '.swiper-pagination',
-					clickable: true,
+					disableOnInteraction: false
 				};
 
 				// Update delay on slide change to use per-slide duration.
@@ -10953,7 +10956,7 @@ AspenDiscovery.HeroSlider = (function(){
 				$(".hero-slider .swiper-slide-visible a, .hero-slider .swiper-slide-visible img").removeAttr("tabindex");
 			});
 
-			// Pause/play button for auto-rotation.
+			// Pause/play button for autorotation.
 			if (options.autoRotate) {
 				const pauseButton = document.querySelector('.swiper-button-pause');
 				if (pauseButton) {
