@@ -12080,8 +12080,8 @@ class MyAccount_AJAX extends JSON_Action {
 			$user->id = $waitingList->userId;
 
 			$sendEmail = false;
-			if ($user->find($true)) {
-				$sendEmail = ($user->eventRegistrationNoificationsByEmail == 1);
+			if ($user->find(true)) {
+				$sendEmail = ($user->eventRegistrationNotificationsByEmail == 1);
 			}
 
 			if ($sendEmail) {
