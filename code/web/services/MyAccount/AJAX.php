@@ -11999,7 +11999,7 @@ class MyAccount_AJAX extends JSON_Action {
 				exit();
 			}
 
-			if ($homeLibrary->allowEventToastNotification != 1){
+			if ($homeLibrary->allowEventToastNotification != 1 || $patron->eventRegistrationNotificationsByToast != 1){
 				echo "event: heart_beat\n";
 				echo "data: Event toast notifications disabled\n\n";
 				flush();
