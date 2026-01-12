@@ -2372,7 +2372,7 @@ class CarlX extends AbstractIlsDriver {
 			$patronSummaryResponse = $this->doSoapRequest('getPatronTransactions', $patronSummaryRequest, $this->patronWsdl);
 
 			if (!empty($patronSummaryResponse) && is_object($patronSummaryResponse)) {
-				$summary->numCheckedOut += $patronSummaryResponse->ChargedItemsCount;
+				$summary->numCheckedOut = $patronSummaryResponse->ChargedItemsCount;
 				$summary->numCheckedOut += $patronSummaryResponse->OverdueItemsCount;
 				$summary->numCheckedOut += $patronSummaryResponse->LostItemsCount;
 				$summary->numOverdue = $patronSummaryResponse->OverdueItemsCount;
