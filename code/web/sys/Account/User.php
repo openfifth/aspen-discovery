@@ -1774,6 +1774,21 @@ class User extends DataObject {
 		return $totalFines;
 	}
 
+	public function getCachedCheckoutsForSource(string $source) : array {
+		require_once ROOT_DIR . '/sys/User/Checkout.php';
+		$checkout = new Checkout();
+		$checkout->userId = $this->id;
+		if ($source != 'all') {
+			$checkout->type = $source;
+		}
+		$checkout->find();
+		$checkoutsToReturn = [];
+		while ($checkout->fetch()) {
+			$checkoutsToReturn[] = clone $checkout;
+		}
+		return $checkoutsToReturn;
+	}
+
 	/**
 	 * Return all titles that are currently checked out by the user.
 	 *
@@ -1790,115 +1805,68 @@ class User extends DataObject {
 	 */
 	public function getCheckouts(bool $includeLinkedUsers = true, string $source = 'all'): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		// Reload cached information if it was last fetched more than the cache timeout or if the refresh option is selected.
-		$reloadCheckoutInformation = false;
-		if (($this->checkoutInfoLastLoaded < (time() - self::$CIRCULATION_CACHE_TIMEOUT)) || isset($_REQUEST['refreshCheckouts'])) {
-			$reloadCheckoutInformation = true;
-		}
 
 		$checkoutsToReturn = [];
-		if ($reloadCheckoutInformation) {
-			global $timer;
-			$allCheckedOut = [];
-			global $offlineMode;
-			if ($this->hasIlsConnection() && !$offlineMode) {
-				$ilsCheckouts = $this->getCatalogDriver()->getCheckouts($this);
-				$allCheckedOut = $ilsCheckouts;
-				$timer->logTime("Loaded transactions from catalog. {$this->id}");
-				if ($source == 'all' || $source == 'ils') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $ilsCheckouts);
-				}
-			}
 
-			// Do not load OverDrive titles if the parent barcode (if any) is the same as the current barcode.
+		global $timer;
+		global $offlineMode;
+		if ($this->hasIlsConnection() && !$offlineMode) {
+			if ($source == 'all' || $source == 'ils') {
+				$ilsCheckouts = $this->getCatalogDriver()->getCheckouts($this);
+				$checkoutsToReturn = $ilsCheckouts;
+				$timer->logTime("Loaded transactions from catalog. $this->id");
+			}
+		}
+
+		// Do not load OverDrive titles if the parent barcode (if any) is the same as the current barcode.
+		if ($source == 'all' || $source == 'overdrive') {
 			if ($this->isValidForEContentSource('overdrive')) {
 				require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 				$driver = new OverDriveDriver();
 				$overDriveCheckedOutItems = $driver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $overDriveCheckedOutItems);
-				$timer->logTime("Loaded transactions from overdrive. {$this->id}");
-				if ($source == 'all' || $source == 'overdrive') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $overDriveCheckedOutItems);
-				}
+				$timer->logTime("Loaded transactions from overdrive. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $overDriveCheckedOutItems);
 			}
+		}
 
-			// Do not load Hoopla titles if the parent barcode (if any) is the same as the current barcode.
+		// Do not load Hoopla titles if the parent barcode (if any) is the same as the current barcode.
+		if ($source == 'all' || $source == 'hoopla') {
 			if ($this->isValidForEContentSource('hoopla')) {
 				require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 				$hooplaDriver = new HooplaDriver();
 				$hooplaCheckedOutItems = $hooplaDriver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $hooplaCheckedOutItems);
-				$timer->logTime("Loaded transactions from hoopla. {$this->id}");
-				if ($source == 'all' || $source == 'hoopla') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $hooplaCheckedOutItems);
-				}
+				$timer->logTime("Loaded transactions from hoopla. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $hooplaCheckedOutItems);
 			}
+		}
 
-			if ($this->isValidForEContentSource('cloud_library')) {
-				require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-				$cloudLibraryDriver = new CloudLibraryDriver();
-				$cloudLibraryCheckedOutItems = $cloudLibraryDriver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $cloudLibraryCheckedOutItems);
-				$timer->logTime("Loaded transactions from cloud_library. {$this->id}");
-				if ($source == 'all' || $source == 'cloud_library') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $cloudLibraryCheckedOutItems);
-				}
+		if ($this->isValidForEContentSource('cloud_library')) {
+			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+			$cloudLibraryDriver = new CloudLibraryDriver();
+			$cloudLibraryCheckedOutItems = $cloudLibraryDriver->getCheckouts($this);
+			$timer->logTime("Loaded transactions from cloud_library. $this->id");
+			if ($source == 'all' || $source == 'cloud_library') {
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $cloudLibraryCheckedOutItems);
 			}
+		}
 
+		if ($source == 'all' || $source == 'axis360') {
 			if ($this->isValidForEContentSource('axis360')) {
 				require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 				$axis360Driver = new Axis360Driver();
 				$axis360CheckedOutItems = $axis360Driver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $axis360CheckedOutItems);
-				$timer->logTime("Loaded transactions from Boundless. {$this->id}");
-				if ($source == 'all' || $source == 'axis360') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $axis360CheckedOutItems);
-				}
+				$timer->logTime("Loaded transactions from Boundless. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $axis360CheckedOutItems);
 			}
+		}
 
+		if ($source == 'all' || $source == 'palace_project') {
 			if ($this->isValidForEContentSource('palace_project')) {
 				require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
 				$palaceProjectDriver = new PalaceProjectDriver();
 				$palaceProjectCheckedOutItems = $palaceProjectDriver->getCheckouts($this);
-				$allCheckedOut = array_merge($allCheckedOut, $palaceProjectCheckedOutItems);
-				$timer->logTime("Loaded transactions from Palace Project. {$this->id}");
-				if ($source == 'all' || $source == 'palace_project') {
-					$checkoutsToReturn = array_merge($checkoutsToReturn, $palaceProjectCheckedOutItems);
-				}
-			}
-
-			$checkout = new Checkout();
-			$checkout->userId = $this->id;
-			$checkout->delete(true);
-
-			$this->invalidateCirculationCache();
-
-			foreach ($allCheckedOut as $checkout) {
-				if (is_null($checkout->sourceId)) {
-					$checkout->sourceId = '';
-				}
-				if (is_null($checkout->recordId)) {
-					$checkout->recordId = '';
-				}
-				if ($checkout->insert() == 0) {
-					if (IPAddress::showDebuggingInformation()) {
-						global $logger;
-						$logger->log(Logger::LOG_ERROR, "Could not save checkout to database");
-					}
-				}
-			}
-
-			$this->__set('checkoutInfoLastLoaded', time());
-			$this->update();
-		} else {
-			$checkout = new Checkout();
-			$checkout->userId = $this->id;
-			if ($source != 'all') {
-				$checkout->type = $source;
-			}
-			$checkout->find();
-			while ($checkout->fetch()) {
-				$checkoutsToReturn[] = clone $checkout;
+				$timer->logTime("Loaded transactions from Palace Project. $this->id");
+				$checkoutsToReturn = array_merge($checkoutsToReturn, $palaceProjectCheckedOutItems);
 			}
 		}
 
@@ -1929,11 +1897,6 @@ class User extends DataObject {
 
 	public function getHolds($includeLinkedUsers = true, $unavailableSort = 'sortTitle', $availableSort = 'expire', $source = 'all', $cancelledSort = 'expirationDate'): array {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
-		// Reload cached information if it was last fetched more than the cache timeout or if the refresh option is selected.
-		$reloadHoldInformation = false;
-		if (($this->holdInfoLastLoaded < time() - self::$CIRCULATION_CACHE_TIMEOUT) || isset($_REQUEST['refreshHolds'])) {
-			$reloadHoldInformation = true;
-		}
 
 		$holdsToReturn = [
 			'available' => [],
@@ -2026,7 +1989,9 @@ class User extends DataObject {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		$hold = new Hold();
 		$hold->userId = $this->id;
-		$hold->type = $source;
+		if ($source != 'all') {
+			$hold->type = $source;
+		}
 		$cachedHolds = $hold->fetchAll();
 		$holdsToReturn = [
 			'available' => [],
@@ -2096,13 +2061,6 @@ class User extends DataObject {
 			$cacheKey = "$hold->source:$hold->recordId";
 			$this->_circulationStatusCache['holds'][$cacheKey] = true;
 		}
-	}
-
-	/**
-	 * Invalidate circulation cache when circulation data changes.
-	 */
-	private function invalidateCirculationCache(): void {
-		$this->_circulationStatusCache = [];
 	}
 
 	public function isRecordCheckedOut($source, $recordId): bool {
@@ -2893,13 +2851,11 @@ class User extends DataObject {
 		return $axis360Driver->thawHold($this, $recordId);
 	}
 
-	function renewCheckout($recordId, $itemId = null, $itemIndex = null) {
-		$result = $this->getCatalogDriver()->renewCheckout($this, $recordId, $itemId, $itemIndex);
-		//TODO: Update that the checkout in the cache if applicable and/or force checkouts to renew
-		return $result;
+	function renewCheckout(string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		return $this->getCatalogDriver()->renewCheckout($this, $recordId, $itemId, $itemIndex);
 	}
 
-	function renewAll($renewLinkedUsers = false) {
+	function renewAll(?bool $renewLinkedUsers = false) : array {
 		$renewAllResults = $this->getCatalogDriver()->renewAll($this);
 		//Also renew linked Users if needed
 		if ($renewLinkedUsers) {
@@ -4982,12 +4938,6 @@ class User extends DataObject {
 		$summary->update();
 	}
 
-	public function forceReloadOfCheckouts(): void {
-		$this->__set('checkoutInfoLastLoaded', 0);
-		$this->invalidateCirculationCache();
-		$this->update();
-	}
-
 	public function clearActiveSessions() : void {
 		//Delete any sessions for the patron to ensure they are logged out
 		$session = new Session();
@@ -5987,14 +5937,11 @@ class User extends DataObject {
 				$result['completionMessage'] = $selfCheckCompletionMessage->getTextBlockTranslation('completionMessage', $this->interfaceLanguage);
 			}
 
-			//TODO: Update account summary for checkouts if cached
-			$this->forceReloadOfCheckouts();
+			$accountSummary = $this->getCachedAccountSummary('hoopla');
+			$accountSummary->incrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		}
 		return $result;
-	}
-
-	public function hasAPICheckIn(): bool {
-		return $this->driver->hasAPICheckIin();
 	}
 
 	function checkInItem($barcode, Location $currentLocation): array {
@@ -6005,8 +5952,9 @@ class User extends DataObject {
 		}
 
 		if ($result['success']) {
-			//TODO: Update number of checkouts for account summary if cached
-			$this->forceReloadOfCheckouts();
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->decrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		}
 		return $result;
 	}

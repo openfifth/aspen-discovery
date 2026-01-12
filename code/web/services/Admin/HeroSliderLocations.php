@@ -4,8 +4,10 @@ require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/Admin/Admin.php';
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
 require_once ROOT_DIR . '/sys/HeroSlider/HeroSliderLocation.php';
+require_once ROOT_DIR . '/sys/HeroSlider/HeroSliderPlaylist.php';
 
 class Admin_HeroSliderLocations extends ObjectEditor {
+
 	function getObjectType(): string {
 		return 'HeroSliderLocation';
 	}
@@ -65,6 +67,20 @@ class Admin_HeroSliderLocations extends ObjectEditor {
 
 	function launch(): void {
 		global $interface;
+
+		//Get a list of all Playlists that are available
+		require_once ROOT_DIR . '/sys/File/ImageUpload.php';
+		$playlist = new HeroSliderPlaylist();
+		$playlist->orderBy('name ASC');
+		if (!UserAccount::userHasPermission('Administer All Hero Sliders')) {
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$playlist->whereAdd("libraryId = {$homeLibrary->libraryId} OR libraryId = -1");
+		}
+		$numAvailablePlaylists = $playlist->count();
+		if ($numAvailablePlaylists == 0) {
+			$warningMessage = translate(['text' => '<strong>Warning:</strong> No Hero Slider Playlists have been created. You should <a href="/Admin/HeroSliderPlaylists?objectAction=addNew">create playlists</a> first.', 'isAdminFacing' => true]);
+			$interface->assign('propertiesListWarningMessage', $warningMessage);
+		}
 
 		$interface->assign('canAddNew', $this->canAddNew());
 		$interface->assign('canDelete', $this->canDelete());
