@@ -500,6 +500,7 @@ class Library extends DataObject {
 	/** @noinspection PhpUnused */
 	public $aspenEventsToInclude;
 	public $displayEventNotificationsInAccount;
+	public $allowEventToastNotification;
 
 	/** @noinspection PhpUnused */
 	public $allowUpdatingHolidaysFromILS;
@@ -3408,6 +3409,14 @@ class Library extends DataObject {
 						'description' => 'Whether or not to display a notification banner in the user\' account when they are eligible to register for an event for which they were on the waiting list',
 						'hideInLists' => true,
 						'default' => 1,
+					],
+					'allowEventToastNotification' => [
+						'property' => 'allowEventToastNotification',
+						'type' => 'checkbox',
+						'label' => 'Allow Event Toast Notifications', 
+						'description' => 'Whether or not to allow toast notifications for events',
+						'hideInLists' => true,
+						'default' =>0,
 					],
 				]
 			],
