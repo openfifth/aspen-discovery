@@ -12505,6 +12505,12 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	public function AspenEventRegistrationNotificationsSSE() {
+		$homeLibrary = Library::getPatronHomeLibrary();
+		if (is_null($homeLibrary)) {
+			global $library;
+			$homeLibrary = $library;
+		}
+
 		$debug = false;
 		if (!UserAccount::isLoggedIn()) {
 			return;
@@ -12536,6 +12542,14 @@ class MyAccount_AJAX extends JSON_Action {
 				exit();
 			}
 
+			if ($homeLibrary->allowEventToastNotification != 1){
+				echo "event: heart_beat\n";
+				echo "data: Event toast notifications disabled\n\n";
+				flush();
+				sleep($interval);
+				continue;
+			}
+			
 			$waitingList = new UserAspenEventInstanceWaitingList();
 			$waitingList->userId = $patron->id;
 			$waitingList->canRegister = 1;
