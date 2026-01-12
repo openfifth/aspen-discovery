@@ -59,6 +59,7 @@ class User extends DataObject {
 	public $campaignNotificationsByEmail;
 	public $notifySavedSearches;
 	public $eventRegistrationNotificationsByEmail;
+	public $eventRegistrationNotificationsByToast;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
@@ -1782,6 +1783,7 @@ class User extends DataObject {
 		$this->__set('optInToAllCampaignLeaderboards', (isset($_POST['optInToAllCampaignLeaderboards']) && $_POST['optInToAllCampaignLeaderboards'] == 'on') ? 1 : 0);
 		$this->__set('campaignNotificationsByEmail', (isset($_POST['campaignNotificationsByEmail']) && $_POST['campaignNotificationsByEmail'] == 'on') ? 1 : 0);
 		$this->__set('eventRegistrationNotificationsByEmail', (isset($_POST['eventRegistrationNotificationsByEmail']) && $_POST['eventRegistrationNotificationsByEmail'] == 'on') ? 1 : 0);
+		$this->__set('eventRegistrationNotificationsByToast', (isset($_POST['eventRegistrationNotificationsByToast']) && $_POST['eventRegistrationNotificationsByToast'] == 'on') ? 1 : 0);
 
 		if ($library->holdPromptForEditions > 0) {
 			if (isset($_POST['rememberHoldPromptForEdition'])) {
