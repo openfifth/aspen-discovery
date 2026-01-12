@@ -12510,7 +12510,6 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		$patron = UserAccount::getActiveUserObj();
-		global $logger;
 
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
@@ -12528,7 +12527,6 @@ class MyAccount_AJAX extends JSON_Action {
 		ob_end_flush();
 
 		$interval = 10;
-		$logger->log("running", Logger::LOG_ERROR);
 
 		while (true) {
 			if (connection_status() != CONNECTION_NORMAL || connection_aborted()) {
@@ -12551,7 +12549,6 @@ class MyAccount_AJAX extends JSON_Action {
 			$waitingList->orderBy('expiresAt ASC');
 
 			if ($waitingList->find()) {
-				$logger->log("waiting list found", Logger::LOG_ERROR);
 				while($waitingList->fetch()) {
 					$registration = new UserAspenEventInstanceRegistration();
 					$registration->userId = $patron->id;
