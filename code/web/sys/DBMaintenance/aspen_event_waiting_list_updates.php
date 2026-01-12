@@ -66,5 +66,12 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE library ADD COLUMN allowEventToastNotification TINYINT DEFAULT 0',
 			],
 		], //add_column_to_track_if_toast_notifications_should_show_for_events
+		'add_event_toast_notification_preferences_to_user_db_table' =>[
+			'title' => 'Add Event Toast Notification Preferences to User DB Table',
+			'description' => 'Add a column to store user preference about events notification toasts',
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN eventRegistrationNotificationsByToast TINYINT DEFAULT 0',
+			],
+		], //add_event_toast_notification_preferences_to_user_db_table
 	];
 }
