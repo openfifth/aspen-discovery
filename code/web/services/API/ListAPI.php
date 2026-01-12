@@ -312,6 +312,7 @@ class ListAPI extends AbstractAPI {
 
 	function getUserListGroups(): array {
 		$user = $this->getUserForApiCall();
+		global $configArray;
 
 		if ($user === false) {
 			return [
@@ -325,10 +326,26 @@ class ListAPI extends AbstractAPI {
 		$listGroups = $listGroup->getListGroups($user);
 		$unassignedLists = $user->getUnassignedListsForListGroups();
 
+		$lists = [];
+		foreach ($unassignedLists as $userList) {
+			$lists[] = [
+				'id' => $userList->id,
+				'title' => $userList->title,
+				'description' => $userList->description,
+				'displayListAuthor' => $userList->displayListAuthor == 1,
+				'numTitles' => $userList->numValidListItems(),
+				'public' => $userList->public == 1,
+				'created' => $userList->created,
+				'dateUpdated' => $userList->dateUpdated,
+				'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+				'listGroupId' => $userList->listGroupId,
+			];
+		}
+
 		return [
 			'success' => true,
 			'groups' => $listGroups,
-			'unassigned' => $unassignedLists,
+			'unassigned' => $lists,
 		];
 	}
 
@@ -1708,12 +1725,14 @@ class ListAPI extends AbstractAPI {
 				if ($listGroup->insert()) {
 					return [
 						'success' => true,
-						'message' => "List group $listGroup->title created successfully"
+						'message' => "List group $listGroup->title created successfully",
+						'groupId' => $listGroup->id
 					];
 				} else {
 					return [
 						'success' => false,
 						'message' => 'Could not create list group',
+						'groupId' => null
 					];
 				}
 			}
@@ -1987,6 +2006,7 @@ class ListAPI extends AbstractAPI {
 	public function getListGroupDetails() {
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
+			global $configArray;
 			if (isset($_REQUEST['groupId'])) {
 				$groupId = $_REQUEST['groupId'];
 				$user->lastListGroupViewed = $groupId;
@@ -1998,11 +2018,26 @@ class ListAPI extends AbstractAPI {
 					$activeListGroupDetails = new UserListGroup();
 					$activeListGroupDetails->title = 'Unassigned Lists';
 					$activeListGroupDetails->id = -1;
+					$lists = [];
+					foreach ($activeListGroup as $userList) {
+						$lists[] = [
+							'id' => $userList->id,
+							'title' => $userList->title,
+							'description' => $userList->description,
+							'displayListAuthor' => $userList->displayListAuthor == 1,
+							'numTitles' => $userList->numValidListItems(),
+							'public' => $userList->public == 1,
+							'created' => $userList->created,
+							'dateUpdated' => $userList->dateUpdated,
+							'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+							'listGroupId' => $userList->listGroupId,
+						];
+					}
 
 					return [
 						'success' => true,
 						'listGroupDetails' => $activeListGroupDetails,
-						'listsInGroup' => $activeListGroup,
+						'listsInGroup' => $lists,
 					];
 				} else {
 					require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
@@ -2016,7 +2051,18 @@ class ListAPI extends AbstractAPI {
 						$userList->listGroupId = $listGroup->id;
 						$userList->find();
 						while ($userList->fetch()) {
-							$activeListGroup[] = clone $userList;
+							$activeListGroup[] = [
+								'id' => $userList->id,
+								'title' => $userList->title,
+								'description' => $userList->description,
+								'displayListAuthor' => $userList->displayListAuthor == 1,
+								'numTitles' => $userList->numValidListItems(),
+								'public' => $userList->public == 1,
+								'created' => $userList->created,
+								'dateUpdated' => $userList->dateUpdated,
+								'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+								'listGroupId' => $userList->listGroupId,
+							];
 						}
 					} else {
 						$activeListGroup = UserListGroup::getLastViewedGroupForUser($user);
