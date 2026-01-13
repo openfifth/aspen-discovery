@@ -3931,45 +3931,71 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			$checkOutResponse = $this->getWebServiceResponse('checkOutItem', $webServiceURL . '/circulation/circRecord/checkOut', $checkOutParams, $sessionToken, 'POST', $additionalHeaders, [], $currentLocation->code);
 
 			if (!empty($checkOutResponse)) {
-				$checkOutMessage = '';
-				if (!empty($checkOutResponse->messageList)){
-					foreach ($checkOutResponse->messageList as $message) {
-						if (!empty($checkOutMessage)) {
-							$checkOutMessage .= '<br/>';
-						}else{
-							$checkOutMessage .= translate([
-								'text' => $message->message,
-								'isPublicFacing' => true,
-							]);
+				$processCheckoutResponse = true;
+				//Check for things that we cannot look for proactively.
+				$retryCheckout = false;
+				if (!empty($checkOutResponse->dataMap)) {
+					if (!empty($checkOutResponse->dataMap->promptType) && ($checkOutResponse->dataMap->promptType == 'CKOBLOCKS')) {
+						if (!empty($checkOutResponse->dataMap->claimsReturned)) {
+							$retryCheckout = true;
+						}
+					}
+					if (!empty($checkOutResponse->dataMap->userStatus->key)) {
+						if ($checkOutResponse->dataMap->userStatus->key == 'OK' || $checkOutResponse->dataMap->userStatus->key == 'DELINQUENT') {
+							$retryCheckout = true;
 						}
 					}
 				}
 
-				$result['message'] = $checkOutMessage;
-				if ($this->lastWebServiceResponseCode == 200) {
-					$result['success'] = true;
-					$result['api']['title'] = translate([
-						'text' => 'Check Out successful',
-						'isPublicFacing' => true,
-					]);
-
-					$checkouts = $this->getCheckouts($patron);
-					foreach ($checkouts as $checkout) {
-						if ($checkout->barcode == $barcode) {
-							$result['itemData'] = [
-								'title' => $checkout->getTitle(),
-								'due' => date('M j Y', $checkout->dueDate),
-								'barcode' => $barcode,
-								'itemId' => $itemKey,
-								'owningLocationCode' => $owningLocationCode,
-								'checkoutLocationCode' => $checkoutLocationCode
-							];
-							break;
-						}
+				if ($retryCheckout && !empty($this->accountProfile->overrideCode)) {
+					$additionalHeaders[] = 'SD-Prompt-Return: CKOBLOCKS/' . $this->accountProfile->overrideCode;
+					$checkOutResponse = $this->getWebServiceResponse('checkOutItem', $webServiceURL . '/circulation/circRecord/checkOut', $checkOutParams, $sessionToken, 'POST', $additionalHeaders, [], $currentLocation->code);
+					if (empty($checkOutResponse)) {
+						$processCheckoutResponse = false;
 					}
 				}
 
-				$result['api']['message'] = $checkOutMessage;
+				if ($processCheckoutResponse) {
+					$checkOutMessage = '';
+					if (!empty($checkOutResponse->messageList)) {
+						foreach ($checkOutResponse->messageList as $message) {
+							if (!empty($checkOutMessage)) {
+								$checkOutMessage .= '<br/>';
+							} else {
+								$checkOutMessage .= translate([
+									'text' => $message->message,
+									'isPublicFacing' => true,
+								]);
+							}
+						}
+					}
+
+					$result['message'] = $checkOutMessage;
+					if ($this->lastWebServiceResponseCode == 200) {
+						$result['success'] = true;
+						$result['api']['title'] = translate([
+							'text' => 'Check Out successful',
+							'isPublicFacing' => true,
+						]);
+
+						$checkouts = $this->getCheckouts($patron);
+						foreach ($checkouts as $checkout) {
+							if ($checkout->barcode == $barcode) {
+								$result['itemData'] = [
+									'title' => $checkout->getTitle(),
+									'due' => date('M j Y', $checkout->dueDate),
+									'barcode' => $barcode,
+									'itemId' => $itemKey,
+									'owningLocationCode' => $owningLocationCode,
+									'checkoutLocationCode' => $checkoutLocationCode
+								];
+								break;
+							}
+						}
+					}
+
+					$result['api']['message'] = $checkOutMessage;
+				}
 			}
 		}
 
