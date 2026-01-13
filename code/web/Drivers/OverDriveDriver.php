@@ -1124,7 +1124,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		}
 
 		$holds = $this->getHolds($patron);
-		$holdToCancel = $this->getHoldByCancelId($holds, $recordId, $cancelId);
+		$holdToCancel = $this->getHoldBySourceId($holds, $recordId);
 
 		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $overDriveId;
 		$response = $this->_callPatronDeleteUrl($settings, $patron, $url, "cancelHold");
