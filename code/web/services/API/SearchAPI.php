@@ -1447,6 +1447,8 @@ class SearchAPI extends AbstractAPI {
 									'label' => $temp->label,
 									'textId' => $temp->textId,
 									'source' => $temp->source,
+									'sourceListId' => $temp->sourceListId,
+									'internalId' => $temp->id,
 									$key => $results,
 								];
 								$curCount++;
@@ -2586,7 +2588,7 @@ class SearchAPI extends AbstractAPI {
 				$response['key'] = $thisId;
 			}
 			$response['success'] = true;
-			$response['records'] = $result['items'];
+			$response['records'] = $result['items'] ?? [];
 		} else {
 			require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 			$browseCategory = new BrowseCategory();
