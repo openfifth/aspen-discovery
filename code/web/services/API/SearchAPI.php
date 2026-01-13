@@ -217,11 +217,13 @@ class SearchAPI extends AbstractAPI {
 			while ($line = fgets($fh)) {
 				$pieces = [];
 				if (preg_match('/^MemTotal:\s+(\d+)\skB$/', $line, $pieces)) {
-					$totalMem = $pieces[1] * 1024;
-				} else {
-					if (preg_match('/^MemAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
-						$freeMem = $pieces[1] * 1024;
-					}
+					$totalMem += $pieces[1] * 1024;
+				} else if (preg_match('/^MemAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
+					$freeMem += $pieces[1] * 1024;
+				} else if (preg_match('/^SwapTotal:\s+(\d+)\skB$/', $line, $pieces)) {
+					$totalMem += $pieces[1] * 1024;
+				} else if (preg_match('/^SwapAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
+					$freeMem += $pieces[1] * 1024;
 				}
 			}
 			$this->addServerStat($serverStats, 'Total Memory', StringUtils::formatBytes($totalMem));
