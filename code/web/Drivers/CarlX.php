@@ -367,9 +367,6 @@ class CarlX extends AbstractIlsDriver {
 					if ($renew_result['NotRenewed'] > 0) {
 						$renew_result['message'] = array_merge($renew_result['message'], $result['variable']['BN']);
 					}
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfCheckouts();
 				} else {
 					$logger->log("Invalid message returned from SIP server '$msg_result''", Logger::LOG_ERROR);
 					$renew_result['message'] = ["Invalid message returned from SIP server"];
@@ -425,16 +422,7 @@ class CarlX extends AbstractIlsDriver {
 		}
 	}
 
-	/**
-	 * Renew a single title currently checked out to the user
-	 *
-	 * @param $patron     User
-	 * @param $recordId   string
-	 * @param $itemId     string
-	 * @param $itemIndex  string
-	 * @return mixed
-	 */
-	public function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) {
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		// Renew Via SIP
 		return $result = $this->renewCheckoutViaSIP($patron, $itemId);
 	}
@@ -2261,7 +2249,7 @@ class CarlX extends AbstractIlsDriver {
 	}
 
 
-	public function renewCheckoutViaSIP(User $patron, $itemId) {
+	public function renewCheckoutViaSIP(User $patron, string $itemId) : array {
 		//renew the item via SIP 2
 		$mySip = new sip2();
 		$mySip->hostname = $this->accountProfile->sipHost;
@@ -2321,11 +2309,7 @@ class CarlX extends AbstractIlsDriver {
 							'text' => 'Title renewed successfully',
 							'isPublicFacing' => true,
 						]);
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfCheckouts();
 					}
-
-
 				}
 			}
 		} else {
@@ -2388,7 +2372,7 @@ class CarlX extends AbstractIlsDriver {
 			$patronSummaryResponse = $this->doSoapRequest('getPatronTransactions', $patronSummaryRequest, $this->patronWsdl);
 
 			if (!empty($patronSummaryResponse) && is_object($patronSummaryResponse)) {
-				$summary->numCheckedOut += $patronSummaryResponse->ChargedItemsCount;
+				$summary->numCheckedOut = $patronSummaryResponse->ChargedItemsCount;
 				$summary->numCheckedOut += $patronSummaryResponse->OverdueItemsCount;
 				$summary->numCheckedOut += $patronSummaryResponse->LostItemsCount;
 				$summary->numOverdue = $patronSummaryResponse->OverdueItemsCount;

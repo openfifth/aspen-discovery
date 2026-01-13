@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/Drivers/AbstractIlsDriver.php';
 class MockILS extends AbstractIlsDriver{
 
 	public function hasNativeReadingHistory(): bool {
-		// TODO: Implement hasNativeReadingHistory() method.
+		return false;
 	}
 
 	public function getCheckouts(User $patron): array {
@@ -13,15 +13,21 @@ class MockILS extends AbstractIlsDriver{
 	}
 
 	public function hasFastRenewAll(): bool {
-		// TODO: Implement hasFastRenewAll() method.
+		return false;
 	}
 
-	public function renewAll(User $patron) {
-		// TODO: Implement renewAll() method.
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for MockILS'
+		];
 	}
 
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) {
-		// TODO: Implement renewCheckout() method.
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew Checkout not implemented for MockILS'
+		];
 	}
 
 	public function getHolds(User $patron): array {

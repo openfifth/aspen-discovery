@@ -8,4 +8,14 @@ class UserYearInReview extends DataObject {
 	public $wrappedActive;
 	public $wrappedViewed;
 	public $wrappedResults;
+
+	public function getNumericColumnNames(): array {
+		return [
+			'id',
+			'userId',
+			'settingId',
+			'wrappedActive',
+			'wrappedViewed',
+		];
+	}
 }

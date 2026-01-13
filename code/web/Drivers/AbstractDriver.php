@@ -47,18 +47,18 @@ abstract class AbstractDriver {
 	 * @param $patron  User
 	 * @return mixed
 	 */
-	public abstract function renewAll(User $patron);
+	public abstract function renewAll(User $patron) : array ;
 
 	/**
 	 * Renew a single title currently checked out to the user
 	 *
 	 * @param $patron     User
 	 * @param $recordId   string
-	 * @param $itemId     string
-	 * @param $itemIndex  string
+	 * @param $itemId     ?string
+	 * @param $itemIndex  ?string
 	 * @return mixed
 	 */
-	abstract function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null);
+	abstract function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array ;
 
 	public function isBlockedFromIllRequests(User $user) {
 		return false;
@@ -166,6 +166,7 @@ abstract class AbstractDriver {
 		/** @var Hold $activeHold */
 		foreach ($allActiveHoldsWithoutSections as $activeHold) {
 			$matchingHold = null;
+			$index = -1;
 			/** @var Hold $cachedHold */
 			foreach ($allCachedHoldsWithoutSections as $index => $cachedHold) {
 				if (!empty($cachedHold->cancelId) && !empty($activeHold->cancelId)) {
@@ -204,5 +205,40 @@ abstract class AbstractDriver {
 
 		$accountSummary->clearHoldsStale();
 		return $activeHolds;
+	}
+
+	public function updateCachedCheckoutsBasedOnActiveCheckouts(array $cachedCheckouts, array $activeCheckouts, AccountSummary $accountSummary) : array {
+		/** @var Checkout $activeCheckout */
+		foreach ($activeCheckouts as $activeCheckout) {
+			$matchingCheckout = null;
+			$index = -1;
+			/** @var Checkout $cachedCheckout */
+			foreach ($cachedCheckouts as $index => $cachedCheckout) {
+				if ($cachedCheckout->sourceId == $activeCheckout->sourceId) {
+					$matchingCheckout = $cachedCheckout;
+					break;
+				}
+			}
+
+			if ($matchingCheckout != null) {
+				//The checkout is already in the cache, update the database
+				$activeCheckout->id = $matchingCheckout->id;
+				$activeCheckout->update();
+				unset($cachedCheckouts[$index]);
+			}else{
+				//The checkout is not in the cache, save it
+				if (is_null($activeCheckout->sourceId)) {
+					$activeCheckout->sourceId = '';
+				}
+				$activeCheckout->insert();
+			}
+		}
+		//Delete any cached checkout that no longer exist
+		foreach ($cachedCheckouts as $cachedCheckout) {
+			$cachedCheckout->delete();
+		}
+
+		$accountSummary->clearCheckoutsStale();
+		return $activeCheckouts;
 	}
 }
