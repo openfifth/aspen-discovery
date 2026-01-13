@@ -203,7 +203,7 @@
 											<input type="checkbox" class="form-control" name="eventRegistrationNotificationsByEmail" id="eventRegistrationNotificationsByEmail" {if $profile->eventRegistrationNotificationsByEmail==1}checked='checked'{/if} data-switch="">
 										</div>
 										<div class="form-group propertyRow">
-											<label for="eventRegistrationNotificationsByToast" class="control-label">{translate text="Get Event Toast Notifications" isPublicFacing=true}</label>&nbsp;
+											<label for="eventRegistrationNotificationsByToast" class="control-label">{translate text="Get Event Notification Pop Ups" isPublicFacing=true}</label>&nbsp;
 											<input type="checkbox" class="form-control" name="eventRegistrationNotificationsByToast" id="eventRegistrationNotificationsByToast" {if $profile->eventRegistrationNotificationsByToast==1}checked='checked'{/if} data-switch="">
 										</div>
 									</div>
