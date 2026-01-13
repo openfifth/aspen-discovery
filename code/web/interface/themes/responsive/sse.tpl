@@ -11,12 +11,15 @@
 	{/if}
 	{if array_key_exists('Events', $enabledModules)}
 		<script type="text/javascript">
+			let toastDataArray = JSON.parse(sessionStorage.getItem('toastDataArray')) || [];
+			toastDataArray = toastDataArray.filter(notification => !notification.id.startsWith('event_waiting_list_'));
+			sessionStorage.setItem('toastDataArray', JSON.stringify(toastDataArray));
 			AspenDiscovery.ToastNotifications.listenToSSE(
 				{
 					eventSource: '/MyAccount/AJAX?method=AspenEventRegistrationNotificationsSSE',
 					eventName: 'aspen_event_registration_notification'
 				}
-			)
+			);
 		</script>
 	{/if}
 {/if}
