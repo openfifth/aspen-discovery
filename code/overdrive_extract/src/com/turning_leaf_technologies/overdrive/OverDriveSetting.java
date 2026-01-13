@@ -18,6 +18,7 @@ public class OverDriveSetting {
 	private final boolean allowLargeDeletes;
 	private final boolean enableRequestLogging;
 	private final int numRetriesOnError;
+	private final int deletionCheckHour;
 	private final HashSet<String> productsToUpdate = new HashSet<>();
 	private final HashSet<String> productsToUpdateNextTime = new HashSet<>();
 
@@ -38,6 +39,7 @@ public class OverDriveSetting {
 		lastUpdateOfChangedRecords = settingRS.getLong("lastUpdateOfChangedRecords");
 		enableRequestLogging = settingRS.getBoolean("enableRequestLogging");
 		numRetriesOnError = Math.max(1, settingRS.getInt("numRetriesOnError"));
+		deletionCheckHour = settingRS.getInt("deletionCheckHour");
 		String productsToUpdateStr = settingRS.getString("productsToUpdate");
 		if (productsToUpdateStr == null){
 			productsToUpdateStr = "";
@@ -107,6 +109,10 @@ public class OverDriveSetting {
 
 	public String getReaderName() {
 		return readerName;
+	}
+
+	public int getDeletionCheckHour() {
+		return deletionCheckHour;
 	}
 
 }

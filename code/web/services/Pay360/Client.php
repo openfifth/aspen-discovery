@@ -127,10 +127,7 @@ class Pay360_Client  {
 		if (!$attempted) {
 			$this->payment->cancelled = true;
 			$this->payment->message = 'Patron did not attempt the payment and back out of the process.';
-			$this->payment->pay360TransactionStateMessage = translate([
-				'text' => 'This payment was not attempted.',
-				'isPublicFacing' => true
-			]);
+			$this->payment->pay360TransactionStateMessage = 'This payment was not attempted.';
 			$this->payment->update();
 			return false;
 		}
@@ -150,10 +147,7 @@ class Pay360_Client  {
 			$this->payment->cancelled = true;
 			$this->payment->error = true;
 			$this->payment->message = 'Transaction not found - could not fetch from Pay360.';
-			$this->payment->pay360TransactionStateMessage = translate([
-				'text' => 'Transaction could not be retrieved.',
-				'isPublicFacing' => true
-			]);
+			$this->payment->pay360TransactionStateMessage = 'Transaction could not be retrieved.';
 			$this->payment->update();
 			return false;
 		}
@@ -162,10 +156,7 @@ class Pay360_Client  {
 			$this->payment->cancelled = true;
 			$this->payment->error = true;
 			$this->payment->message = 'Transaction not found - invalid reference.';
-			$this->payment->pay360TransactionStateMessage = translate([
-				'text' => 'Transaction could not be retrieved.',
-				'isPublicFacing' => true
-			]);
+			$this->payment->pay360TransactionStateMessage = 'Transaction could not be retrieved.';
 			$this->payment->update();
 			return false;
 		}
@@ -179,10 +170,7 @@ class Pay360_Client  {
 			
 			if ($transactionStatus['status'] === 'SUCCESS') {
 				$this->payment->message = 'This payment was successful.';
-				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'Payment successful.',
-					'isPublicFacing' => true
-				]);
+				$this->payment->pay360TransactionStateMessage = 'Payment successful.';
 				$this->completeFineInIls();
 				return false;
 			}
@@ -190,10 +178,7 @@ class Pay360_Client  {
 			if ($transactionStatus['status'] === 'CANCELLED') {
 				$this->payment->cancelled = true;
 				$this->payment->message = 'cancelled by patron. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
-				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'Transaction attempt was cancelled.',
-					'isPublicFacing' => true
-				]);
+				$this->payment->pay360TransactionStateMessage = 'Transaction attempt was cancelled.';
 				$this->payment->update();
 				return false;
 			}
@@ -201,10 +186,7 @@ class Pay360_Client  {
 			if ($transactionStatus['status'] === 'CARD_DETAILS_REJECTED') {
 				$this->payment->cancelled = true;
 				$this->payment->message = 'card details rejected. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
-				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'This payment failed - card details were rejected.',
-					'isPublicFacing' => true
-				]);
+				$this->payment->pay360TransactionStateMessage = 'This payment failed - card details were rejected.';
 				$this->payment->update();
 				return false;
 			}
@@ -212,10 +194,7 @@ class Pay360_Client  {
 			if ($transactionStatus['status'] === 'LOGGED_OUT') {
 				$this->payment->cancelled = true;
 				$this->payment->message = 'patron logged out. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
-				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'This payment failed - user logged out.',
-					'isPublicFacing' => true
-				]);
+				$this->payment->pay360TransactionStateMessage ='This payment failed - user logged out.';
 				$this->payment->update();
 				return false;
 			}
@@ -223,10 +202,7 @@ class Pay360_Client  {
 			if ($transactionStatus['status'] === 'NOT_ATTEMPTED') {
 				$this->payment->cancelled = true;
 				$this->payment->message = 'patron did not attempt payment. error id: '  . $this->queryResponse->paymentResult->errorDetails->errorId . ', error message: ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
-				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'This payment was interrupted by the user.',
-					'isPublicFacing' => true
-				]);
+				$this->payment->pay360TransactionStateMessage = 'This payment was interrupted by the user.';
 				$this->payment->update();
 				return false;
 			}
@@ -235,10 +211,7 @@ class Pay360_Client  {
 				$this->payment->error = true;
 				$this->payment->cancelled = true;
 				$this->payment->message = 'error: ' . $this->queryResponse->paymentResult->errorDetails->errorId . ': ' . $this->queryResponse->paymentResult->errorDetails->errorMessage;
-				$this->payment->pay360TransactionStateMessage = translate([
-					'text' => 'This payment failed.',
-					'isPublicFacing' => true
-				]);
+				$this->payment->pay360TransactionStateMessage = 'This payment failed due to a third party error. Contact your library.';
 				$this->payment->update();
 				return false;
 			}

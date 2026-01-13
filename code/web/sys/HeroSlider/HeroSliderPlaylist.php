@@ -69,7 +69,8 @@ class HeroSliderPlaylist extends DataObject {
 				'label' => 'Images',
 				'description' => 'Images in this playlist.',
 				'noteBullets' => ['For images to display, they must match the Aspect Ratio chosen for this playlist\'s Hero Slider Location(s).',
-								 'Images with a Duration of "0" are not displayed.'],
+								 'Images with a Duration of "0" are not displayed.',
+								 '<a href="/WebBuilder/Images?objectAction=addNew">Add Image</a>'],
 				'sortable' => true,
 				'storeDb' => true,
 				'allowEdit' => true,
@@ -85,17 +86,7 @@ class HeroSliderPlaylist extends DataObject {
 
 	public function __get($name) {
 		if ($name == "images") {
-			if ($this->playlistImages == null && $this->id) {
-				$this->playlistImages = [];
-				$playlistImage = new HeroSliderPlaylistImage();
-				$playlistImage->playlistId = $this->id;
-				$playlistImage->orderBy('weight ASC');
-				$playlistImage->find();
-				while ($playlistImage->fetch()) {
-					$this->playlistImages[$playlistImage->id] = clone($playlistImage);
-				}
-			}
-			return $this->playlistImages;
+			return $this->getImages();
 		}
 		return parent::__get($name);
 	}
@@ -227,5 +218,24 @@ class HeroSliderPlaylist extends DataObject {
 
 	public function supportsSoftDelete(): bool {
 		return true;
+	}
+
+	/**
+	 * @return HeroSliderPlaylistImage[]
+	 */
+	public function getImages() : array{
+		if ($this->playlistImages == null) {
+			$this->playlistImages = [];
+			if ($this->id) {
+				$playlistImage = new HeroSliderPlaylistImage();
+				$playlistImage->playlistId = $this->id;
+				$playlistImage->orderBy('weight ASC');
+				$playlistImage->find();
+				while ($playlistImage->fetch()) {
+					$this->playlistImages[$playlistImage->id] = clone($playlistImage);
+				}
+			}
+		}
+		return $this->playlistImages;
 	}
 }

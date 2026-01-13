@@ -217,11 +217,13 @@ class SearchAPI extends AbstractAPI {
 			while ($line = fgets($fh)) {
 				$pieces = [];
 				if (preg_match('/^MemTotal:\s+(\d+)\skB$/', $line, $pieces)) {
-					$totalMem = $pieces[1] * 1024;
-				} else {
-					if (preg_match('/^MemAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
-						$freeMem = $pieces[1] * 1024;
-					}
+					$totalMem += $pieces[1] * 1024;
+				} else if (preg_match('/^MemAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
+					$freeMem += $pieces[1] * 1024;
+				} else if (preg_match('/^SwapTotal:\s+(\d+)\skB$/', $line, $pieces)) {
+					$totalMem += $pieces[1] * 1024;
+				} else if (preg_match('/^SwapAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
+					$freeMem += $pieces[1] * 1024;
 				}
 			}
 			$this->addServerStat($serverStats, 'Total Memory', StringUtils::formatBytes($totalMem));
@@ -1447,6 +1449,8 @@ class SearchAPI extends AbstractAPI {
 									'label' => $temp->label,
 									'textId' => $temp->textId,
 									'source' => $temp->source,
+									'sourceListId' => $temp->sourceListId,
+									'internalId' => $temp->id,
 									$key => $results,
 								];
 								$curCount++;
@@ -1726,8 +1730,6 @@ class SearchAPI extends AbstractAPI {
 						'system_recommended_for_you',
 						'system_saved_searches',
 					]);
-					$subCategoriesKey = $browseCategory->textId === "system_user_lists" ? 'records' : 'subCategories';
-					$recordsKey = $browseCategory->textId === "system_user_lists" ? 'subCategories' : 'records';
 					$subCatResult = $searchAPI->getSubCategories($textId, true);
 					$hasSubcategories = !empty($subCatResult['subCategories']);
 					$subCategoryCount = $hasSubcategories ? is_array($subCatResult['subCategories']) && count($subCatResult['subCategories']) : 0;
@@ -2588,7 +2590,7 @@ class SearchAPI extends AbstractAPI {
 				$response['key'] = $thisId;
 			}
 			$response['success'] = true;
-			$response['records'] = $result['items'];
+			$response['records'] = $result['items'] ?? [];
 		} else {
 			require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 			$browseCategory = new BrowseCategory();

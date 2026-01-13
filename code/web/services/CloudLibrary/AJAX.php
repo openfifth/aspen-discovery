@@ -250,7 +250,7 @@ class CloudLibrary_AJAX extends JSON_Action {
 		}
 	}
 
-	function renewCheckout() {
+	function renewCheckout() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['recordId'];
 		if ($user) {
@@ -281,7 +281,7 @@ class CloudLibrary_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function returnCheckout() {
+	function returnCheckout() : array {
 		$user = UserAccount::getLoggedInUser();
 		$id = $_REQUEST['recordId'];
 		if ($user) {
