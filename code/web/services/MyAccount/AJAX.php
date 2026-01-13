@@ -12198,49 +12198,61 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	public function AspenEventRegistrationNotificationsSSE() {
+		if (!UserAccount::isLoggedIn()) {
+			return;
+		}
+
+		$patron = UserAccount::getActiveUserObj();
 		$homeLibrary = Library::getPatronHomeLibrary();
 		if (is_null($homeLibrary)) {
 			global $library;
 			$homeLibrary = $library;
 		}
 
-		$debug = false;
-		if (!UserAccount::isLoggedIn()) {
-			return;
-		}
-
-		$patron = UserAccount::getActiveUserObj();
-
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 		require_once ROOT_DIR . '/sys/Events/Event.php';
 
+		global $logger;
 
+		// SSE headers
 		header("X-Accel-Buffering: no");
 		header("Content-Type: text/event-stream");
 		header("Cache-Control: no-cache");
 
+		ignore_user_abort(true);
+		set_time_limit(0);
+		@ini_set('zlib.output_compression', 0);
+		@ini_set('implicit_flush', 1);
+		while (ob_get_level() > 0) { ob_end_flush(); }
+
+		$logger->log("SSE Connection established for user: " . $patron->id, Logger::LOG_ERROR);
+		
 		echo "event: established\n";
 		echo "data: connection established\n\n";
-
-		ob_end_flush();
+		flush();
 
 		$interval = 10;
+		$sentThisSession = [];
 
 		while (true) {
+
+			// Stop if client disconnects
 			if (connection_status() != CONNECTION_NORMAL || connection_aborted()) {
+				$logger->log("SSE Connection aborted for user: " . $patron->id, Logger::LOG_ERROR);
 				exit();
 			}
 
-			if ($homeLibrary->allowEventToastNotification != 1 || $patron->eventRegistrationNotificationsByToast != 1){
+			if ($homeLibrary->allowEventToastNotification != 1 ||
+				(isset($patron->eventRegistrationNotificationsByToast) && $patron->eventRegistrationNotificationsByToast != 1)) {
 				echo "event: heart_beat\n";
 				echo "data: Event toast notifications disabled\n\n";
 				flush();
 				sleep($interval);
 				continue;
 			}
-			
+
 			$waitingList = new UserAspenEventInstanceWaitingList();
 			$waitingList->userId = $patron->id;
 			$waitingList->canRegister = 1;
@@ -12249,30 +12261,31 @@ class MyAccount_AJAX extends JSON_Action {
 			$waitingList->orderBy('expiresAt ASC');
 
 			if ($waitingList->find()) {
-				while($waitingList->fetch()) {
+				while ($waitingList->fetch()) {
+
+					// Skip if we already sent this one in this session
+					if (in_array($waitingList->id, $sentThisSession)) {
+						continue;
+					}
+
+					// Skip if already registered
 					$registration = new UserAspenEventInstanceRegistration();
 					$registration->userId = $patron->id;
 					$registration->eventInstanceId = $waitingList->eventInstanceId;
-					if ($registration->find(true) && !$registration->cancelled) {
-						continue;
-					}
+					if ($registration->find(true) && !$registration->cancelled) continue;
 
 					$eventInstance = new EventInstance();
 					$eventInstance->id = $waitingList->eventInstanceId;
-					if (!$eventInstance->find(true)) {
-						continue;
-					}
+					if (!$eventInstance->find(true)) continue;
 
 					$event = new Event();
 					$event->id = $eventInstance->eventId;
-					if (!$event->find(true)) {
-						continue;
-					}
+					if (!$event->find(true)) continue;
 
-					//Send toast
-					echo "event: aspen_event_registration_notification\n";
-					echo "data: " . json_encode([
-						'id' => 'event_waiting_list_' . $waitingList->id, 
+					// SEND toast
+					$data = [
+						'id' => 'event_waiting_list_' . $waitingList->id,
+						'waitingListId' => $waitingList->id,
 						'type' => 'event_waiting_list',
 						'title' => translate([
 							'text' => 'You can now register for an event you were on the waiting list for',
@@ -12287,11 +12300,13 @@ class MyAccount_AJAX extends JSON_Action {
 								'isPublicFacing' => true,
 							])
 						]
-					]) . "\n\n";
+					];
 
-					$waitingList->toastShown = 1;
-					$waitingList->update();
+					echo "event: aspen_event_registration_notification\n";
+					echo "data: " . json_encode($data) . "\n\n";
 					flush();
+
+					$sentThisSession[] = $waitingList->id;
 				}
 			} else {
 				echo "event: heart_beat\n";
@@ -12299,12 +12314,42 @@ class MyAccount_AJAX extends JSON_Action {
 				flush();
 			}
 
-			if (ob_get_contents()) {
-				ob_end_flush();
-			}
-			flush();
-
 			sleep($interval);
+		}
+	}
+
+	public function markEventToastSeen() {
+		if (!UserAccount::isLoggedIn()) {
+			return [
+				'success' => false,
+			];
+		}
+
+		$patron = UserAccount::getActiveUserObj();
+		$waitingListId = $_REQUEST['waitingListId'] ?? null;
+		
+		if (!$waitingListId) {
+			return [
+				'success' => false,
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+
+		$waitingList = new UserAspenEventInstanceWaitingList();
+		$waitingList->id = $waitingListId;
+		$waitingList->userId = $patron->id;
+
+		if ($waitingList->find(true)) {
+			$waitingList->toastShown = 1;
+			$waitingList->update();
+			return [
+				'success' => true,
+			];
+		} else {
+			return [
+				'success' => false,
+			];
 		}
 	}
 
