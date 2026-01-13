@@ -2098,6 +2098,21 @@ AspenDiscovery.ToastNotifications = function() {
 				window.removeEventListener('beforeunload', closeEventSource);
 			};
 		},
+		markEventToastSeen: function(SSEData) {
+			if (!SSEData.waitingListId) {
+				return;
+			}
+
+			var url = Globals.path + '/MyAccount/AJAX';
+			var params = {
+				method: 'markEventToastSeen',
+				waitingListId: SSEData.waitingListId,
+			};
+
+			$.getJSON(url, params, function(data) {
+
+			});
+		},
 
 		/**
 		 * Show the toast notification
@@ -2169,16 +2184,19 @@ AspenDiscovery.ToastNotifications = function() {
 				setTimeout(() => {
 				toast.remove();
 				}, 300);
+				if(SSEData.type === 'event_waiting_list') {
+					AspenDiscovery.ToastNotifications.markEventToastSeen(SSEData);
+				}
 			});
 			setTimeout(() => {
 				toast.style.opacity = 1;
 			}, 10);
-			setTimeout(() => {
-				toast.style.opacity = 0;
-				setTimeout(() => {
-				toast.remove();
-				}, 300);
-			}, 9000);
+			// setTimeout(() => {
+			// 	toast.style.opacity = 0;
+			// 	setTimeout(() => {
+			// 	toast.remove();
+			// 	}, 300);
+			// }, 9000);
 		},
 	}
 	
