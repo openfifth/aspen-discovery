@@ -9376,7 +9376,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$registration->update();
 
 		if ($wasInvited && $waitingListId !== null) {
-			$removeEntry = new userAspenEventInstanceWaitingList();
+			$removeEntry = new UserAspenEventInstanceWaitingList();
 			$removeEntry->id = $waitingListId;
 
 			if ($removeEntry->find(true)) {
@@ -9384,6 +9384,11 @@ class MyAccount_AJAX extends JSON_Action {
 				$removeEntry->delete();
 
 				$this->reorderWaitingListPositions($eventInstanceId, $removedPosition);
+				$eventInstance->availableNumberOfWaitingListSeats++;
+				if ($eventInstance->availableNumberOfWaitingListSeats > $eventInstance->waitingListNumberOfSeats) {
+					$eventInstance->availableNumberOfWaitingListSeats = $eventInstance->waitingListNumberOfSeats;
+				}
+				$eventInstance->update();
 			}
 		}
 
@@ -12378,7 +12383,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	public function processEventWaitingListSeats($eventInstanceId): void {
+	public function processEventWaitingListSeats($eventInstanceId) {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
 
@@ -12391,24 +12396,29 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($waitingList->find(true)) {
 			$waitingList->canRegister = 1;
 			$waitingList->canRegisterUntil = date('Y-m-d H:i:s', strtotime('+24 hours'));
-			$waitingList->update();
+			// $waitingList->update();
+			$waitingList->status = 'notified';
+			$waitingList->notifiedAt = date('Y-m-d H:i:s');
+			$waitingList->expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
 
 			$user = new user();
 			$user->id = $waitingList->userId;
 
 			$sendEmail = false;
 			if ($user->find(true)) {
-				$sendEmail = ($user->eventRegistrationNotificationsByEmail == 1);
+				if (isset($user->eventRegistrationNotificationsByEmail)) {
+					$sendEmail = ($user->eventRegistrationNotificationsByEmail == 1);
+				}
 			}
 
 			if ($sendEmail) {
 				$notificationSent = $this->sendWaitingListNotification($waitingList->userId, $eventInstanceId, $waitingList->canRegisterUntil);
 			}
 
-				$waitingList->status = 'notified';
-				$waitingList->notifiedAt = date('Y-m-d H:i:s');
-				$waitingList->expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
-				$waitingList->update();
+				// $waitingList->status = 'notified';
+				// $waitingList->notifiedAt = date('Y-m-d H:i:s');
+				// $waitingList->expiresAt = date('Y-m-d H:i:s', strtotime('+24 hours'));
+			$waitingList->update();
 		}
 	}
 
