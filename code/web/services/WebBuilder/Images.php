@@ -67,7 +67,7 @@ class WebBuilder_Images extends ObjectEditor {
 
 	function getAdditionalObjectActions(?DataObject $existingObject): array {
 		$objectActions = [];
-		if ($existingObject instanceof FileUpload && !empty($existingObject->id)) {
+		if ($existingObject instanceof ImageUpload && !empty($existingObject->id)) {
 			$objectActions[] = [
 				'text' => 'View Image',
 				'url' => '/WebBuilder/ViewImage?id=' . $existingObject->id,
