@@ -222,7 +222,7 @@ class SearchAPI extends AbstractAPI {
 					$freeMem += $pieces[1] * 1024;
 				} else if (preg_match('/^SwapTotal:\s+(\d+)\skB$/', $line, $pieces)) {
 					$totalMem += $pieces[1] * 1024;
-				} else if (preg_match('/^SwapAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
+				} else if (preg_match('/^SwapFree:\s+(\d+)\skB$/', $line, $pieces)) {
 					$freeMem += $pieces[1] * 1024;
 				}
 			}
