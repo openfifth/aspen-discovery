@@ -68,7 +68,7 @@ class Events_AJAX extends JSON_Action {
 			$eventType = new EventType();
 			$eventType->id = $_REQUEST['eventTypeId'];
 			if ($eventType->find(true)) {
-				$fieldStructure = $eventType->getFieldSetFields();
+				$fieldStructure = $eventType->getInformationFieldSetFields();
 				global $interface;
 				$fieldHTML = [];
 				foreach ($fieldStructure as $property) {
