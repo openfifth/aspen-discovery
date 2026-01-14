@@ -142,16 +142,19 @@ class EventFieldSet extends DataObject {
 	}
 
 	public static function getEventInformationFieldSetList() {
-		return EventFieldSet::getEventFieldSetList(0);
+		return EventFieldSet::getEventFieldSetList(1);
 	}
 	
 	public static function getEventRegistrationFieldSetList() {
-		return EventFieldSet::getEventFieldSetList(1);
+		return EventFieldSet::getEventFieldSetList(2);
 	}
 
 	public static function getEventFieldSetList($fieldSetUse = null): array {
 		$setList = [];
 		$object = new EventFieldSet();
+		if (!is_null($fieldSetUse)) {
+			$object->fieldSetUse = $fieldSetUse;
+		}
 		$object->orderBy('name');
 		$object->find();
 		while ($object->fetch()) {
