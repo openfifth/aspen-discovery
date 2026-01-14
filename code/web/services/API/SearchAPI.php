@@ -1762,6 +1762,8 @@ class SearchAPI extends AbstractAPI {
 						'textId' => $textId,
 						'label' => $browseCategory->label,
 						'source' => $source,
+						'sourceListId' => $browseCategory->sourceListId,
+						'internalId' => $browseCategory->id,
 						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
 						'records' => $results,
 					];
