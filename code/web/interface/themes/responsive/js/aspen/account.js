@@ -1070,9 +1070,9 @@ AspenDiscovery.Account = (function () {
 		},
 
 		replaceHold: function (patronId, recordId, pickupLocationId, isIll) {
-            if (!pickupLocationId) {
-                pickupLocationId = $('#newPickupLocation').val()
-            }
+			if (!pickupLocationId) {
+				pickupLocationId = $('#newPickupLocation').val()
+			}
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();
 				// noinspection JSUnresolvedFunction
