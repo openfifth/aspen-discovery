@@ -6172,6 +6172,7 @@ class Koha extends AbstractIlsDriver {
 		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			global $timer;
 			global $library;
+			$summary->resetCounters();
 
 			$this->initDatabaseConnection();
 
