@@ -1063,13 +1063,16 @@ AspenDiscovery.Account = (function () {
 			AspenDiscovery.loadingMessage();
 			// noinspection JSUnresolvedFunction
 			$.getJSON(Globals.path + "/MyAccount/AJAX?method=confirmReplaceHold&patronId=" + patronId + "&recordId=" + recordId + "&pickupLocationId=" + pickupLocationId + "&isIll=" + isIll, function (data) {
-				AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons); // automatically close when successful
+				AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons); // automatically close when successful
 			}).fail(AspenDiscovery.ajaxFail);
 
 			return false
 		},
 
 		replaceHold: function (patronId, recordId, pickupLocationId, isIll) {
+            if (!pickupLocationId) {
+                pickupLocationId = $('#newPickupLocation').val()
+            }
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();
 				// noinspection JSUnresolvedFunction

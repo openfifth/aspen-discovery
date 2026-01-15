@@ -979,6 +979,9 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmReplaceHold(): array {
+		global $library;
+		$user = UserAccount::getLoggedInUser();
+		$bypassPickupChoice = false;
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
 		$pickupLocationId = $_REQUEST['pickupLocationId'];
@@ -987,16 +990,120 @@ class MyAccount_AJAX extends JSON_Action {
 			'text' => 'Confirm Place Hold',
 			'isPublicFacing' => true,
 		]);
+
+		if ($user->rememberHoldPickupLocation) {
+			$pickupLocation = $user->getPickupLocation();
+			// If the pickup location defaults to the user's home location, its validity must still be checked.
+			if ($pickupLocation != null && $pickupLocation->validHoldPickupBranch != 2) {
+				$bypassPickupChoice = true;
+				$pickupLocationId = $pickupLocation;
+			}
+		}
+		if ($library->hidePickupLocationPrompt) {
+			$numLocationsToSelectFrom = 0;
+			$firstLocationCode = '';
+			$locations = $user->getValidPickupBranches('ils');
+			foreach ($locations as $location) {
+				if (is_object($location)) {
+					$numLocationsToSelectFrom++;
+					if (empty($firstLocationCode)) {
+						$firstLocationCode = $location->code;
+					}
+				}
+			}
+			if ($numLocationsToSelectFrom == 1) {
+				$pickupLocationId = $firstLocationCode;
+				$bypassPickupChoice = true;
+			}
+		}
+
+		if (!$bypassPickupChoice) {
+			global $interface;
+			/** @var $interface UInterface
+			 * @var $user User
+			 */
+			if (UserAccount::isLoggedIn()) {
+				$patronOwningHold = $user->getUserReferredTo($patronId);
+				$defaultPickupLocation = $user->pickupLocationId;
+				$sourceId = 'ils:' . $_REQUEST['recordId'];
+
+				$location = new Location();
+				$pickupBranches = $location->getPickupBranches($patronOwningHold);
+				$pickupSublocations = [];
+
+				$pickupAt = 0;
+				require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
+				$marcRecord = new MarcRecordDriver($sourceId);
+				if ($marcRecord->isValid()) {
+					$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
+					$pickupAt = $relatedRecord->getHoldPickupSetting();
+					if ($pickupAt > 0) {
+						$itemLocations = $marcRecord->getValidPickupLocations($pickupAt);
+						foreach ($pickupBranches as $locationKey => $location) {
+							if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
+								unset($pickupBranches[$locationKey]);
+							}
+						}
+					}
+
+					foreach ($pickupBranches as $locationKey => $location) {
+						if (is_object($location)) {
+							$pickupSublocations[$locationKey] = $user->getValidSublocations($location->locationId);
+						}
+					}
+
+					$catalogDriver = $user->getCatalogDriver();
+					if (!empty($catalogDriver) && $catalogDriver->restrictValidPickupLocationsForRecordByILS()) {
+						$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
+						if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
+							$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
+							$pickupBranches = array_filter($pickupBranches, function ($location) use ($validLocationCodesFromILS) {
+								if (!is_object($location)) {
+									return true;
+								}
+								foreach ($validLocationCodesFromILS as $validCode) {
+									if (str_starts_with($validCode, $location->code)) {
+										return true;
+									}
+								}
+								return false;
+							});
+						} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
+							$pickupBranches = [];
+						}
+					}
+				}
+
+				$interface->assign('patronId', $patronId);
+				$interface->assign('defaultPickupLocation', $defaultPickupLocation);
+				$interface->assign('pickupAt', $pickupAt);
+				$interface->assign('pickupLocations', $pickupBranches);
+				$interface->assign('pickupSublocations', $pickupSublocations);
+				$pickupLocationId = null;
+
+				return [
+					'title' => translate([
+						'text' => 'Place Hold',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => $interface->fetch("MyAccount/replaceHoldForm.tpl"),
+					'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\");'>" . translate([
+							'text' => 'Confirm Pickup Location',
+							'isPublicFacing' => true,
+						]) . '</button>',
+				];
+			}
+		}
 		return [
 			'title' => translate([
 				'text' => 'Place Hold',
 				'isPublicFacing' => true,
 			]),
-			'body' => translate([
+			'modalBody' => translate([
 				'text' => "Are you sure you want to re-place this hold?",
 				'isPublicFacing' => true,
 			]),
-			'buttons' => "<button type='button' class='tool btn btn-primary confirmCancelButton' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\")'>$cancelButtonLabel</button>",
+			'modalButtons' => "<button type='button' class='tool btn btn-primary confirmCancelButton' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\")'>$cancelButtonLabel</button>",
 		];
 	}
 
