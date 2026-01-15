@@ -449,6 +449,7 @@ AspenDiscovery.Account = (function () {
 		loadMenuData: function () {
 			var totalCheckouts = 0;
 			var totalHolds = 0;
+			var totalAvailableHolds = 0;
 			var totalFines = 0;
 			var totalEnrolledCampaigns = 0;
 			if (Globals.hasILSConnection) {
@@ -472,9 +473,11 @@ AspenDiscovery.Account = (function () {
 						if (summary.numAvailableHolds > 0) {
 							$(".ils-available-holds-placeholder").html(summary.numAvailableHolds);
 							$(".ils-available-holds").show();
+							totalAvailableHolds += parseInt(summary.numAvailableHolds);
 						} else {
 							$(".ils-available-holds-placeholder").html("0");
 						}
+						$(".available-holds-placeholder").html(totalAvailableHolds);
 						$(".readingHistory-placeholder").html(summary.readingHistory);
 						if (summary.hasUpdatedSavedSearches) {
 							$(".saved-searches-placeholder").html(summary.savedSearches);
@@ -502,7 +505,9 @@ AspenDiscovery.Account = (function () {
 						if (data.summary.numAvailableHolds > 0) {
 							$(".cloud_library-available-holds-placeholder").html(data.summary.numAvailableHolds);
 							$(".cloud_library-available-holds").show();
+							totalAvailableHolds += parseInt(data.summary.numAvailableHolds);
 						}
+						$(".available-holds-placeholder").html(totalAvailableHolds);
 					}
 				});
 			}
@@ -519,7 +524,9 @@ AspenDiscovery.Account = (function () {
 						if (data.summary.numAvailableHolds > 0) {
 							$(".axis360-available-holds-placeholder").html(data.summary.numAvailableHolds);
 							$(".axis360-available-holds").show();
+							totalAvailableHolds += parseInt(data.summary.numAvailableHolds);
 						}
+						$(".available-holds-placeholder").html(totalAvailableHolds);
 					}
 				});
 			}
@@ -536,7 +543,9 @@ AspenDiscovery.Account = (function () {
 						if (data.summary.numAvailableHolds > 0) {
 							$(".hoopla-available-holds-placeholder").html(data.summary.numAvailableHolds);
 							$(".hoopla-available-holds").show();
+							totalAvailableHolds += parseInt(data.summary.numAvailableHolds);
 						}
+						$(".available-holds-placeholder").html(totalAvailableHolds);
 					}
 				});
 			}
@@ -553,7 +562,9 @@ AspenDiscovery.Account = (function () {
 						if (data.summary.numAvailableHolds > 0) {
 							$(".overdrive-available-holds-placeholder").html(data.summary.numAvailableHolds);
 							$(".overdrive-available-holds").show();
+							totalAvailableHolds += parseInt(data.summary.numAvailableHolds);
 						}
+						$(".available-holds-placeholder").html(totalAvailableHolds);
 					}
 				});
 			}
@@ -570,7 +581,9 @@ AspenDiscovery.Account = (function () {
 						if (data.summary.numAvailableHolds > 0) {
 							$(".palace_project-available-holds-placeholder").html(data.summary.numAvailableHolds);
 							$(".palace_project-available-holds").show();
+							totalAvailableHolds += parseInt(data.summary.numAvailableHolds);
 						}
+						$(".available-holds-placeholder").html(totalAvailableHolds);
 					}
 				});
 			}
