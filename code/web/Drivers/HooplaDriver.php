@@ -233,7 +233,6 @@ class HooplaDriver extends AbstractEContentDriver {
 							}
 						}
 
-						$summary->numHolds = $availableHolds + $unavailableHolds;
 						$summary->numAvailableHolds = $availableHolds;
 						$summary->numUnavailableHolds = $unavailableHolds;
 					} else {
@@ -242,7 +241,6 @@ class HooplaDriver extends AbstractEContentDriver {
 						$logger->log('Error retrieving holds from Hoopla. User ID: ' . $user->id . $errorMessage, Logger::LOG_NOTICE);
 					}
 				} else {
-					$summary->numHolds = 0;
 					$summary->numAvailableHolds = 0;
 					$summary->numUnavailableHolds = 0;
 				}
