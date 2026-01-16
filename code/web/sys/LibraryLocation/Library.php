@@ -84,6 +84,7 @@ class Library extends DataObject {
 	public $_themes;
 	public $layoutSettingId;  //Link to LayoutSetting
 	public $groupedWorkDisplaySettingId; //Link to GroupedWorkDisplaySettings
+	public $customGroupedWorkSearchSpecsPath; //Path to custom grouped work search specs YAML file
 
 	public $browseCategoryGroupId;
 
@@ -3318,6 +3319,17 @@ class Library extends DataObject {
 				'default' => $defaultSettingId,
 				'permissions' => ['Library Catalog Options'],
 				'forcesReindex' => true,
+			],
+
+			'customGroupedWorkSearchSpecsPath' => [
+				'property' => 'customGroupedWorkSearchSpecsPath',
+				'type' => 'text',
+				'label' => 'Custom Grouped Work Search Specs Path',
+				'description' => 'Path to custom grouped work search specs YAML file (e.g., /data/aspen-discovery/custom/groupedWorkSearchSpecs.yaml). Overrides default catalog search field configuration. Leave empty to use default search specs.',
+				'hideInLists' => true,
+				'size' => 100,
+				'maxLength' => 255,
+				'permissions' => ['Library Catalog Options'],
 			],
 
 			// Searching //
