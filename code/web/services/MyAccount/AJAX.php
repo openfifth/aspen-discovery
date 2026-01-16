@@ -1112,18 +1112,18 @@ class MyAccount_AJAX extends JSON_Action {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Cancelling hold failed',
+				'text' => 'Replacing hold failed',
 				'isPublicFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Error cancelling hold.',
+				'text' => 'Error replacing hold.',
 				'isPublicFacing' => true,
 			]),
 		];
 
 		if (!UserAccount::isLoggedIn()) {
 			$result['message'] = translate([
-				'text' => 'You must be logged in to cancel a hold.  Please close this dialog and login again.',
+				'text' => 'You must be logged in to replace a hold.  Please close this dialog and login again.',
 				'isPublicFacing' => true,
 			]);;
 		} else {
@@ -1132,16 +1132,16 @@ class MyAccount_AJAX extends JSON_Action {
 			$user = UserAccount::getLoggedInUser();
 			$patronOwningHold = $user->getUserReferredTo($patronId);
 
-			if ($patronOwningHold == false) {
+			if ($patronOwningHold === false) {
 				$result['message'] = translate([
-					'text' => 'Sorry, you do not have access to cancel holds for the supplied user.',
+					'text' => 'Sorry, you do not have access to replace holds for the supplied user.',
 					'isPublicFacing' => true,
 				]);;
 			} else {
 				//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
 				if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
 					$result['message'] = translate([
-						'text' => 'Information about the hold to be cancelled was not provided.',
+						'text' => 'Information about the hold to be replace was not provided.',
 						'isPublicFacing' => true,
 					]);;
 				} else {
