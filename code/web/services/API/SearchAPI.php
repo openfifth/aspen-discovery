@@ -2081,7 +2081,7 @@ class SearchAPI extends AbstractAPI {
 							if ($list->find(true)) {
 								$listEntry = new UserListEntry();
 								$listEntry->listId = $list->id;
-								$sortOptions = UserList::getSortOptions();
+								$sortOptions = UserList::getSqlSortOptions();
 								if (array_key_exists($list->defaultSort, $sortOptions)) {
 									$listEntry->orderBy($sortOptions[$list->defaultSort]);
 								}
