@@ -372,6 +372,11 @@ class Polaris extends AbstractIlsDriver {
 	}
 
 	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		$result = [
+			'success' => false,
+			'message' => 'Unknown Error renewing Checkout',
+		];
+
 		$staffInfo = $this->getStaffUserInfo();
 		$polarisUrl = "/PAPIService/REST/public/v1/1033/100/1/patron/{$patron->getBarcode()}/itemsout/$itemId";
 		$body = new stdClass();
@@ -406,7 +411,6 @@ class Polaris extends AbstractIlsDriver {
 						'isPublicFacing' => true,
 					]);
 
-					return $result;
 				} else {
 					$message = '';
 					foreach ($itemRenewResult->BlockRows as $blockRow) {
@@ -432,8 +436,6 @@ class Polaris extends AbstractIlsDriver {
 						'text' => 'This item could not be renewed',
 						'isPublicFacing' => true,
 					]);
-
-					return $result;
 				}
 			} else if ($jsonResponse->PAPIErrorCode == -2) {
 				$itemRenewResult = $jsonResponse->ItemRenewResult;
@@ -474,9 +476,6 @@ class Polaris extends AbstractIlsDriver {
 						'text' => $userCanOverride,
 						'isPublicFacing' => true,
 					]);
-
-					return $result;
-
 				}
 			} else {
 				$message = "The item could not be renewed. {$jsonResponse->ErrorMessage}";
@@ -491,8 +490,6 @@ class Polaris extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 				$result['api']['message'] = $jsonResponse->ErrorMessage;
-
-				return $result;
 			}
 		} else {
 			$message = "The item could not be renewed";
@@ -513,9 +510,8 @@ class Polaris extends AbstractIlsDriver {
 				'text' => 'The item could not be renewed',
 				'isPublicFacing' => true,
 			]);
-
-			return $result;
 		}
+		return $result;
 	}
 
 	public function getHolds($patron): array {
@@ -525,7 +521,7 @@ class Polaris extends AbstractIlsDriver {
 		$unavailableHolds = [];
 		$cancelledHolds = [];
 		$showCancelled = false;
-		if ($library->showCancelledHolds && $library->getAccountProfile()->ils == "polaris") {
+		if ($library->showCancelledHolds) {
 			$showCancelled = true;
 		}
 		$holds = [
