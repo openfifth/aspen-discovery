@@ -91,8 +91,9 @@
 					<div class="btn-group btn-group-vertical btn-block">
 						{if $section == 'available'}
 							<button onclick="return AspenDiscovery.CloudLibrary.checkOutTitle('{$record->userId}', '{$record->sourceId}', this);" class="btn btn-sm btn-action">{translate text="Checkout" isPublicFacing=true}</button>
+						{else}
+							<button onclick="return AspenDiscovery.CloudLibrary.cancelHold('{$record->userId}', '{$record->sourceId}');" class="btn btn-sm btn-warning">{translate text="Cancel Hold" isPublicFacing=true}</button>
 						{/if}
-						<button onclick="return AspenDiscovery.CloudLibrary.cancelHold('{$record->userId}', '{$record->sourceId}');" class="btn btn-sm btn-warning">{translate text="Cancel Hold" isPublicFacing=true}</button>
 					</div>
 					{if !empty($showWhileYouWait)}
 						<div class="btn-group btn-group-vertical btn-block">
