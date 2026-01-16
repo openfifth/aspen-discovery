@@ -138,6 +138,7 @@ class Role extends DataObject {
 				'Administer EBSCO EDS',
 				'Administer Community Engagement Module',
 				'Administer Summon',
+				'Administer Gale',
 				'Administer Genealogy',
 				'Administer Hoopla',
 				'Administer IP Addresses',
