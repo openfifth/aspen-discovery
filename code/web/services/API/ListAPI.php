@@ -1724,8 +1724,8 @@ class ListAPI extends AbstractAPI {
 				$listGroup->parentGroupId = $parentId;
 				if ($listGroup->insert()) {
 					// Set the last viewed group to the newly created group
-					$user->lastListGroupViewed = $listGroup->id;
-					$user->update();
+					//$user->lastListGroupViewed = $listGroup->id;
+					//$user->update();
 					return [
 						'success' => true,
 						'message' => "List group $listGroup->title created successfully",

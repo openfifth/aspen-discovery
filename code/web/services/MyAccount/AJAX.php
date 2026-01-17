@@ -11722,8 +11722,8 @@ class MyAccount_AJAX extends JSON_Action {
 				$listGroup->parentGroupId = $parentId;
 				if ($listGroup->insert()) {
 					// Set the last viewed group to the newly created group
-					$user->lastListGroupViewed = $listGroup->id;
-					$user->update();
+					//$user->lastListGroupViewed = $listGroup->id;
+					//$user->update();
 					$result['success'] = "true";
 					$result['message'] = "List group $listGroup->title created successfully";
 				} else {
