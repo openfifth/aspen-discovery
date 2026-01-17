@@ -1308,6 +1308,7 @@ class SearchAPI extends AbstractAPI {
 	function getSubCategories($textId = null, $loadFirstResults = false) : array {
 		$isLiDA = $this->checkIfLiDA();
 		$textId = $this->getTextId($textId);
+		$user = $this->getUserForApiCall();
 		$key = $isLiDA ? 'records' : 'initialResults';
 		$curCount = 1;
 		if (!empty($textId)) {
@@ -1373,7 +1374,9 @@ class SearchAPI extends AbstractAPI {
 									if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 										$pageToLoad = 1;
 										if ($isLiDA) {
-											$firstSubCategoryResults = $temp->getListTitles();
+											require_once ROOT_DIR . '/services/API/ListAPI.php';
+											$listAPI = new ListAPI();
+											$firstSubCategoryResults = $listAPI->_getUserListTitles($temp->id, 25, $user, 1, $temp->defaultSort);
 										} else {
 											$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
 										}
@@ -1408,7 +1411,9 @@ class SearchAPI extends AbstractAPI {
 												if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 													$pageToLoad = 1;
 													if ($isLiDA) {
-														$firstSubCategoryResults = $list->getListTitles();
+														require_once ROOT_DIR . '/services/API/ListAPI.php';
+														$listAPI = new ListAPI();
+														$firstSubCategoryResults = $listAPI->_getUserListTitles($temp->id, 25, $user, 1, $temp->defaultSort);
 													} else {
 														$firstSubCategoryResults = $list->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
 													}
@@ -1762,6 +1767,8 @@ class SearchAPI extends AbstractAPI {
 						'textId' => $textId,
 						'label' => $browseCategory->label,
 						'source' => $source,
+						'sourceListId' => $browseCategory->sourceListId,
+						'internalId' => $browseCategory->id,
 						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
 						'records' => $results,
 					];
@@ -2270,7 +2277,7 @@ class SearchAPI extends AbstractAPI {
 							if ($list->find(true)) {
 								$listEntry = new UserListEntry();
 								$listEntry->listId = $list->id;
-								$sortOptions = UserList::getSortOptions();
+								$sortOptions = UserList::getSqlSortOptions();
 								if (array_key_exists($list->defaultSort, $sortOptions)) {
 									$listEntry->orderBy($sortOptions[$list->defaultSort]);
 								}

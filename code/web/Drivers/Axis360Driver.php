@@ -454,6 +454,7 @@ class Axis360Driver extends AbstractEContentDriver {
 		$summary = $user->getCachedAccountSummary('axis360');
 
 		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			$summary->resetCounters();
 			//Get account information from api
 			if ($this->getAxis360AccessToken($user)) {
 				require_once ROOT_DIR . '/RecordDrivers/Axis360RecordDriver.php';
