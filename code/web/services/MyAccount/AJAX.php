@@ -11614,6 +11614,9 @@ class MyAccount_AJAX extends JSON_Action {
 				$listGroup->title = $title;
 				$listGroup->parentGroupId = $parentId;
 				if ($listGroup->insert()) {
+					// Set the last viewed group to the newly created group
+					$user->lastListGroupViewed = $listGroup->id;
+					$user->update();
 					$result['success'] = "true";
 					$result['message'] = "List group $listGroup->title created successfully";
 				} else {
@@ -11678,6 +11681,14 @@ class MyAccount_AJAX extends JSON_Action {
 			$group->userId = UserAccount::getActiveUserId();
 			if ($group->find(true)) {
 				if ($group->delete()) {
+					// clear last viewed group if it was this one
+					$user = UserAccount::getLoggedInUser();
+					if ($user->lastListGroupViewed == $groupId) {
+						$user = UserAccount::getActiveUserObj();
+						$user->lastListGroupViewed = -1;
+						$user->update();
+					}
+
 					// Unassign any lists that were in this group
 					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 					$userList = new UserList();
