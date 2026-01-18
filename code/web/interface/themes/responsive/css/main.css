@@ -11420,7 +11420,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
     display: none;
   }
 }
-@media screen and (min-width: 551px) {
+@media screen and (min-width: 550px) {
   #smallScreenCalendar {
     display: none;
   }
