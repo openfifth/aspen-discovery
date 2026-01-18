@@ -3584,14 +3584,18 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		return $groupedWorkDetails;
 	}
 
-	public function getBookcoverInfo() {
+	public function getBookcoverInfo() : ?BookCoverInfo {
 		require_once ROOT_DIR . '/sys/Covers/BookCoverInfo.php';
 		$bookCoverInfo = new BookCoverInfo();
-		$bookCoverInfo->setRecordId($this->getPermanentId());
-		$bookCoverInfo->setRecordType('grouped_work');
-		if ($bookCoverInfo->find(true)) {
-			return $bookCoverInfo;
-		} else {
+		if ($this->getPermanentId() != null) {
+			$bookCoverInfo->setRecordId($this->getPermanentId());
+			$bookCoverInfo->setRecordType('grouped_work');
+			if ($bookCoverInfo->find(true)) {
+				return $bookCoverInfo;
+			} else {
+				return null;
+			}
+		} else{
 			return null;
 		}
 	}
