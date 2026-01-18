@@ -9206,14 +9206,12 @@ AspenDiscovery.Browse = (function(){
 			$tabs.find('[role="tab"]').each(function(){
 				const $btn = $(this);
 				const thisId = $btn.attr('id');
-				const panelId = thisId.replace('tab-', 'panel-');
-				$btn.attr('aria-controls', panelId);
 
 				if (thisId === 'browse-sub-category-tab-' + subCategoryTextId) {
 					$btn.attr({ 'aria-selected': 'true', tabindex: 0 })
 						.addClass('selected');
 				} else {
-					$btn.attr({ 'aria-selected': 'false', tabindex: -1 })
+					$btn.attr({ 'aria-selected': 'false', tabindex: 0 })
 						.removeClass('selected');
 				}
 			});
