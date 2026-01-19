@@ -150,6 +150,9 @@ abstract class AbstractDriver {
 			$accountProfile->decrementUnavailableHolds();
 		}
 		$hold->delete();
+		if ($patron->getHomeLibrary()->showCancelledHolds) {
+			$accountProfile->markHoldsStale();
+		}
 	}
 
 	public function updateCachedHoldsBasedOnActiveHolds(array $cachedHolds, array $activeHolds, AccountSummary $accountSummary) : array {

@@ -80,6 +80,9 @@ class UserList extends DataObject {
 		'copies_available_asc' => '',
 	];
 
+	public static function getSqlSortOptions() : array {
+		return UserList::$__userListSortOptions;
+	}
 
 	public static function getSortOptions(): array {
 		$sortOptions = [

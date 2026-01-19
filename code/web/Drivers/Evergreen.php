@@ -2217,12 +2217,6 @@ class Evergreen extends AbstractIlsDriver {
 		$summary = $patron->getCachedAccountSummary('ils');
 
 		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
-			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $patron->id;
-			$summary->source = 'ils';
-			$summary->resetCounters();
-
 			//Can't use the quick response since it includes eContent.
 			$checkouts = $this->getCheckouts($patron);
 			$summary->numCheckedOut = count($checkouts);
