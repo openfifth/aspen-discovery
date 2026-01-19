@@ -36,5 +36,18 @@ function getGaleUpdates() {
                 "INSERT INTO permissions (id, name, sectionName, requiredModule, weight, description) VALUES (263, 'Library Gale Options', 'Primary Configuration - Library Fields', '', 49, 'Configure Library fields related to Gale content.');",
 			],
 		],
+		'create_gale_product_codes' => [
+			'title' => 'Create Gale Product Codes Table',
+			'description' => 'Add table for Gale product code display names',
+			'sql' => [
+				"CREATE TABLE gale_product_codes (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					settingId INT NOT NULL,
+					productCode VARCHAR(50) NOT NULL,
+					displayName VARCHAR(255) NOT NULL,
+					INDEX (settingId)
+				) ENGINE = InnoDB",
+			],
+		],
 	];
 }

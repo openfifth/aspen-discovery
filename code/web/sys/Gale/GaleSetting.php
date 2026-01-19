@@ -1,6 +1,8 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
 
+require_once ROOT_DIR . '/sys/Gale/GaleProductCode.php';
+
 class GaleSetting extends DataObject {
 	public $__table = 'gale_settings';
 	public $id;
@@ -8,6 +10,7 @@ class GaleSetting extends DataObject {
 	public $locationId;
 
 	private $_libraries;
+	private $_productCodes;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -15,6 +18,7 @@ class GaleSetting extends DataObject {
 			return self::$_objectStructure[$context];
 		}
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Libraries'));
+		$productCodeStructure = GaleProductCode::getObjectStructure($context);
 
 		$structure = [
 			'id' => [
@@ -36,6 +40,22 @@ class GaleSetting extends DataObject {
 				'label' => 'Location ID',
 				'description' => 'The Location ID to use for the Gale API',
 				'hideInLists' => true,
+			],
+			'productCodes' => [
+				'property' => 'productCodes',
+				'type' => 'oneToMany',
+				'label' => 'Product Codes',
+				'description' => 'Product codes available for this Gale configuration.',
+				'keyThis' => 'id',
+				'keyOther' => 'settingId',
+				'subObjectType' => 'GaleProductCode',
+				'structure' => $productCodeStructure,
+				'sortable' => false,
+				'storeDb' => true,
+				'allowEdit' => true,
+				'canEdit' => false,
+				'canAddNew' => true,
+				'canDelete' => true,
 			],
 			'libraries' => [
 				'property' => 'libraries',
@@ -68,6 +88,8 @@ class GaleSetting extends DataObject {
 				}
 			}
 			return $this->_libraries;
+		} elseif ($name == 'productCodes') {
+			return $this->getProductCodes();
 		} else {
 			return parent::__get($name);
 		}
@@ -76,6 +98,8 @@ class GaleSetting extends DataObject {
 	public function __set($name, $value) {
 		if ($name == "libraries") {
 			$this->_libraries = $value;
+		} elseif ($name == 'productCodes') {
+			$this->_productCodes = $value;
 		} else {
 			parent::__set($name, $value);
 		}
@@ -85,6 +109,7 @@ class GaleSetting extends DataObject {
 		$ret = parent::update();
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
+			$this->saveProductCodes();
 		}
 		return true;
 	}
@@ -93,6 +118,7 @@ class GaleSetting extends DataObject {
 		$ret = parent::insert();
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
+			$this->saveProductCodes();
 		}
 		return $ret;
 	}
@@ -119,6 +145,32 @@ class GaleSetting extends DataObject {
 				}
 			}
 			unset($this->_libraries);
+		}
+	}
+
+	/**
+	 * @return GaleProductCode[]
+	 */
+	public function getProductCodes(): array {
+		if (!isset($this->_productCodes)) {
+			$this->_productCodes = [];
+			if ($this->id) {
+				$obj = new GaleProductCode();
+				$obj->settingId = $this->id;
+				$obj->orderBy('displayName');
+				$obj->find();
+				while ($obj->fetch()) {
+					$this->_productCodes[$obj->id] = clone($obj);
+				}
+			}
+		}
+		return $this->_productCodes;
+	}
+
+	public function saveProductCodes(): void {
+		if (isset($this->_productCodes) && is_array($this->_productCodes)) {
+			$this->saveOneToManyOptions($this->_productCodes, 'settingId');
+			unset($this->_productCodes);
 		}
 	}
 }
