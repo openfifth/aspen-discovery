@@ -43,6 +43,7 @@ class EmailTemplate extends DataObject {
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
 				'registerForEventFromWaitingList' => 'Register for Event From Waiting List',
+				'eventCancellation' => 'Cancellation of an Event',
 			];
 		}
 		require_once ROOT_DIR . '/sys/Translation/Language.php';
@@ -324,6 +325,17 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
 			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
 			$text = str_replace('%canRegisterUntil%', $parameters['canRegisterUntil'] ?? '', $text);
+		} elseif ($this->templateType == 'eventCancellation') {
+			$text = str_replace('%changeType%', $parameters['changeType'] ?? '', $text);
+			$instancesText = '';
+			if (isset($parameters['instances']) && is_array($parameters['instances'])) {
+				foreach ($parameters['instances'] as $instance) {
+					$instancesText .= " Event Title: " . $instance['eventTitle'] . "\n";
+					$instancesText .= " Date: " . $instance['eventDate'] . "\n";
+					$instancesText .= " Time: " . $instance['eventTime'] . "\n";
+				}
+			}
+			$text = str_replace('%eventInstances%', trim($instancesText), $text);
 		}
 		return $text;
 	}
