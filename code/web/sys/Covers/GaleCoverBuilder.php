@@ -40,7 +40,12 @@ class GaleCoverBuilder extends AbstractCoverBuilder {
 			$iconName = 'gale_' . str_replace(' ', '_', strtolower($props['format']) . 's') . '.png';
 			global $configArray;
 			$galeIconUrl = $configArray['Site']['local'] . '/interface/themes/responsive/images/' . $iconName;
-			if ($galeImage = @file_get_contents($galeIconUrl, false)) {
+			$galeImage = @file_get_contents($galeIconUrl, false);
+			if ($galeImage === false) {
+				$defaultIconUrl = $configArray['Site']['local'] . '/interface/themes/responsive/images/gale_default.png';
+				$galeImage = @file_get_contents($defaultIconUrl, false);
+			}
+			if ($galeImage !== false) {
 				$imageResource = @imagecreatefromstring($galeImage);
 
 				$listEntryWidth = imagesx($imageResource);
