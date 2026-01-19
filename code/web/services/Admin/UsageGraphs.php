@@ -183,6 +183,10 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 				/** @noinspection PhpUndefinedFieldInspection */
 				$dataSeries['EBSCOhost Searches']['data'][$curPeriod] = $userUsage->sumEbscohostSearches;
 			}
+			if (array_key_exists('Gale', $enabledModules) && ($stat == 'galeSearches' || $stat == 'searches')) {
+				/** @noinspection PhpUndefinedFieldInspection */
+				$dataSeries['Gale Searches']['data'][$curPeriod] = $userUsage->sumGaleSearches;
+			}
 			if (array_key_exists('Events', $enabledModules) && ($stat == 'eventSearches' || $stat == 'searches')) {
 				/** @noinspection PhpUndefinedFieldInspection */
 				$dataSeries['Events Searches']['data'][$curPeriod] = $userUsage->sumEventsSearches;
