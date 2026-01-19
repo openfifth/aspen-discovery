@@ -10,6 +10,45 @@ class Gale_Results extends ResultsAction {
 
 //		$aspenUsage->galeSearches++;
 
+		// Check to see if the date range has been set and if so, convert to a filter and resend.
+		$dateFilters = [
+			'start_date',
+		];
+		foreach ($dateFilters as $dateFilter) {
+			if ((isset($_REQUEST[$dateFilter . 'Start']) && !empty($_REQUEST[$dateFilter . 'Start'])) || (isset($_REQUEST[$dateFilter . 'End']) && !empty($_REQUEST[$dateFilter . 'End']))) {
+				$queryParams = $_GET;
+				$startDate = preg_match('/^\d{2,4}-\d{1,2}-\d{1,2}$/', $_REQUEST[$dateFilter . 'Start']) ? $_REQUEST[$dateFilter . 'Start'] : '*';
+				$endDate = preg_match('/^\d{4}-\d{1,2}-\d{1,2}$/', $_REQUEST[$dateFilter . 'End']) ? $_REQUEST[$dateFilter . 'End'] : '*';
+				if ($endDate != '*' && $startDate != '*' && $endDate < $startDate) {
+					$tmpDate = $endDate;
+					$endDate = $startDate;
+					$startDate = $tmpDate;
+				}
+				unset($queryParams[$dateFilter . 'Start']);
+				unset($queryParams[$dateFilter . 'End']);
+				$queryParamStrings = [];
+				foreach ($queryParams as $paramName => $queryValue) {
+					if (is_array($queryValue)) {
+						foreach ($queryValue as $arrayValue) {
+							if (strlen($arrayValue) > 0) {
+								$queryParamStrings[] = $paramName . '[]=' . urlencode($arrayValue);
+							}
+						}
+					} else {
+						if (strlen($queryValue)) {
+							$queryParamStrings[] = $paramName . '=' . urlencode($queryValue);
+						}
+					}
+				}
+				if ($startDate != '*' || $endDate != '*') {
+					$queryParamStrings[] = "filter[]=$dateFilter:[$startDate+TO+$endDate]";
+				}
+				$queryParamString = join('&', $queryParamStrings);
+				header("Location: /Gale/Results?$queryParamString");
+				exit;
+			}
+		}
+
 		//Set default sort by setting the request variable so the init grabs it
 		if (!array_key_exists('sort', $_REQUEST) && UserAccount::isLoggedIn()) {
 			$userId = UserAccount::getActiveUserId();

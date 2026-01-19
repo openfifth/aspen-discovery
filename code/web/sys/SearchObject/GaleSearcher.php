@@ -10,6 +10,8 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	protected $limit = 20;
 	protected $sortOptions = array();
 	protected $defaultSort = 'relevance';
+	private ?string $dateRangeStart = null;
+	private ?string $dateRangeEnd = null;
 
 	/** @var GaleSetting */
 	private string $galeBaseUrl = 'https://sru.galegroup.com/';
@@ -31,11 +33,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		'Subject' => 'dc.subject',
 		'Publication' => 'dc.relation',
 		'ISSN' => 'bath.issn',
-	];
-	private array $facetFieldMap = [
-		'Format' => 'dc.type',
-		'Subject' => 'dc.subject',
-		'Publication' => 'dc.relation',
 	];
 
 	public function __construct() {
@@ -86,6 +83,24 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		return true;
 	}
 
+	protected function initFilters(): void {
+		parent::initFilters();
+		$range = $this->filterList['start_date'][0] ?? null;
+		if ($range && preg_match('/\\[(.*?)\\sTO\\s(.*?)\\]/', $range, $matches)) {
+			$this->dateRangeStart = $matches[1] !== '*' ? $matches[1] : null;
+			$this->dateRangeEnd = $matches[2] !== '*' ? $matches[2] : null;
+		}
+		if ($this->dateRangeStart === null && $this->dateRangeEnd === null) {
+			unset($this->filterList['start_date']);
+			return;
+		}
+		$start = $this->dateRangeStart ?? '*';
+		$end   = $this->dateRangeEnd ?? '*';
+		$this->filterList['start_date'] = [
+			'[' . $start . ' TO ' . $end . ']',
+		];
+	}
+
     /**
 	 * Create an instance of the Gale Searcher
 	 * @return SearchObject_GaleSearcher
@@ -131,6 +146,18 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 			$searchQuery = $searchTerm;
 		} else {
 			$searchQuery = $mappedIndex . '=' . $searchTerm;
+		}
+		if ($this->dateRangeStart !== null || $this->dateRangeEnd !== null) {
+			$dateClauses = [];
+			if ($this->dateRangeStart !== null) {
+				$normalizedStart = $this->normalizeDateFomat($this->dateRangeStart);
+				$dateClauses[] = 'dc.date>=' . $normalizedStart;
+			}
+			if ($this->dateRangeEnd !== null) {
+				$normalizedEnd = $this->normalizeDateFomat($this->dateRangeEnd);
+				$dateClauses[] = 'dc.date<=' . $normalizedEnd;
+			}
+			$searchQuery .= ' and ' . implode(' and ', $dateClauses);
 		}
 
 		$this->lastSearchResults = [];
@@ -331,57 +358,55 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		if (empty($this->lastSearchResults)) {
 			return [];
 		}
-		$facetDefinitions = $this->getFacetDefinitions();
-		if (empty($facetDefinitions)) {
-			return [];
-		}
-
-		$facetCounts = [];
-		foreach (array_keys($facetDefinitions) as $facetKey) {
-			$facetCounts[$facetKey] = [];
-		}
-
-		foreach ($this->lastSearchResults as $recordNode) {
-			$dcChildren = $recordNode->children('dc', true);
-			foreach ($facetDefinitions as $facetKey => $definition) {
-				$field = $definition['dcField'];
-				$fieldName = substr($field, strpos($field, '.') + 1);
-				if (!isset($dcChildren->$fieldName)) {
-					continue;
-				}
-				foreach ($dcChildren->$fieldName as $valueNode) {
-					$value = trim((string)$valueNode);
-					if ($value === '') {
-						continue;
-					}
-					if (!isset($facetCounts[$facetKey][$value])) {
-						$facetCounts[$facetKey][$value] = 0;
-					}
-					$facetCounts[$facetKey][$value]++;
-				}
-			}
-		}
-
 		$facetSet = [];
-		foreach ($facetCounts as $facetKey => $valueCounts) {
-			if (empty($valueCounts)) {
-				continue;
-			}
-			$definition = $facetDefinitions[$facetKey];
-			$facetSet[$facetKey] = [
-				'label' => $definition['label'],
-				'multiSelect' => true,
-				'list' => [],
-			];
-			foreach ($valueCounts as $value => $count) {
-				$facetSet[$facetKey]['list'][$value] = [
-					'type' => $facetKey,
-					'value' => $value,
-					'display' => $value,
-					'count' => $count,
-					'url' => $this->renderLinkWithFilter($facetKey, $value),
-					'removalUrl' => $this->renderLinkWithoutFilter("$facetKey:$value"),
-					'isApplied' => isset($this->filterList[$facetKey]) && in_array($value, $this->filterList[$facetKey], true),
+		$facetDefinitions = $this->getFacetDefinitions();
+		foreach ($facetDefinitions as $facetKey => $facetDefinition) {
+			if ($facetKey === 'productCode') {
+				if ($this->getSettings() != null && !empty($this->getSettings()->getProductCodes())){
+					$productCodes = $this->getSettings()->getProductCodes();
+					foreach ($productCodes as $productCode) {
+						if (empty($productCode->productCode)) {
+							continue;
+						}
+						$code = $productCode->productCode;
+						// Only show the product code that is filtered
+						if (!empty($this->filterList['productCode']) && !in_array($code, $this->filterList['productCode'], true)) {
+							continue;
+						}
+						$isApplied = isset($this->filterList['productCode']) && in_array($code, $this->filterList['productCode'], true);
+						$list[$code] = [
+							'value' => $code,
+							'count' => '',
+							'display' => $productCode->displayName ?: $code,
+							'url' => $this->renderLinkWithFilter('productCode', $code),
+							'removalUrl' => $this->renderLinkWithoutFilter("productCode:$code"),
+							'isApplied' => $isApplied,
+						];
+					}
+					if (!empty($list)) {
+						$facetSet['productCode'] = [
+							'label' => 'Product',
+							'collapseByDefault' => false,
+							'multiSelect' => false,
+							'valuesToShow' => 5,
+							'list' => $list,
+							'hasApplied' => isset($this->filterList['productCode']) && !empty($this->filterList['productCode']),
+						];
+					}
+				}
+
+			} elseif ($facetKey === 'start_date') {
+				$startDate = $this->dateRangeStart;
+				$endDate = $this->dateRangeEnd;
+				$facetSet['start_date'] = [
+					'label' => 'Date',
+					'collapseByDefault' => false,
+					'valuesToShow' => 0,
+					'list' => ['_gale_date' => ['display' => '']],
+					'hasApplied' => $this->dateRangeStart !== null || $this->dateRangeEnd !== null,
+					'start' => $startDate,
+					'end' => $endDate,
+					'allowPastDates' => true,
 				];
 			}
 		}
@@ -389,21 +414,58 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	}
 
 	public function getFilterList(): array {
-		$list = [];
+		$filterList = [];
 		$facetDefinitions = $this->getFacetDefinitions();
+		$settings = $this->getSettings();
+		$productCodeLabels = [];
+		foreach ($settings->getProductCodes() as $productCode) {
+			if (!empty($productCode->productCode)) {
+				$productCodeLabels[$productCode->productCode] = $productCode->displayName ?: $productCode->productCode;
+			}
+		}
+
 		foreach ($this->filterList as $field => $values) {
 			$label = $facetDefinitions[$field]['label'] ?? ucfirst($field);
 			foreach ($values as $value) {
-				$list[$label][] = [
+				if ($field === 'productCode') {
+					$display = isset($productCodeLabels[$value]) ? $productCodeLabels[$value] : $value;
+				} elseif ($field === 'start_date') {
+					$display = '';
+					$utcTimeZone = new DateTimeZone('UTC');
+					$defaultTimezone = new DateTimeZone(date_default_timezone_get());
+					if ($this->dateRangeStart != '*') {
+						$dt = new DateTime($this->dateRangeStart, $utcTimeZone);
+						$dt->setTimezone($defaultTimezone);
+						$startDate =  $dt->format("m/d/Y");
+					}else{
+						$startDate = '';
+					}
+					if ($this->dateRangeEnd != '*') {
+						$dt = new DateTime($this->dateRangeEnd, $utcTimeZone);
+						$dt->setTimezone($defaultTimezone);
+						$endDate = $dt->format("m/d/Y");
+					}else{
+						$endDate = '';
+					}
+					if (empty($startDate)) {
+						$display = translate(['text'=>'Before %1%', 1=>$endDate, 'isPublicFacing'=>true]);
+					}else if (empty($endDate)) {
+						$display = translate(['text'=>'After %1%', 1=>$startDate, 'isPublicFacing'=>true]);
+					}else{
+						$display = translate(['text'=>'Between %1% and %2%', 1=>$startDate, 2=>$endDate, 'isPublicFacing'=>true]);
+					}
+				}
+				$filterList[$label][] = [
 					'value' => $value,
-					'display' => $value,
+					'display' => $display,
 					'field' => $field,
+					'url' => $this->renderLinkWithFilter($field, $value),
 					'removalUrl' => $this->renderLinkWithoutFilter("$field:$value"),
 					'countIsApproximate' => false,
 				];
 			}
 		}
-		return $list;
+		return $filterList;
 	}
 
 	function getSearchesFile() {
@@ -443,30 +505,25 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		// TODO: Implement loadDynamicFields() method.
 	}
 
+	/**
+	 * Gale defines the facets instead of building dynamically from the search results
+	 *
+	 */
 	private function getFacetDefinitions(): array {
 		return [
-			'type' => [
+			'productCode' => [
 				'label' => translate([
-					'text' => 'Format',
+					'text' => 'Product',
 					'isPublicFacing' => true,
 					'inAttribute' => true,
 				]),
 			],
-			'subject' => [
+			'start_date' => [
 				'label' => translate([
-					'text' => 'Subjects',
+					'text' => 'Date',
 					'isPublicFacing' => true,
 					'inAttribute' => true,
 				]),
-				'dcField' => 'dc.subject',
-			],
-			'publication' => [
-				'label' => translate([
-					'text' => 'Publication',
-					'isPublicFacing' => true,
-					'inAttribute' => true,
-				]),
-				'dcField' => 'dc.relation',
 			],
 		];
 	}
@@ -485,7 +542,17 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	}	
 
 	private function getProductCode(): string {
+		$filterValues = $this->filterList['productCode'] ?? [];
+		if (!empty($filterValues)) {
+			return (string)reset($filterValues);
+		}
 		return 'GPS';
+	}
+	private function normalizeDateFomat(string $date): string {
+		if (preg_match('/^(\\d{4})-(\\d{2})-(\\d{2})$/', $date, $matches)) {
+			return $matches[1] . $matches[2] . $matches[3];
+		}
+		return $date;
 	}
 
     public function __destruct() {
