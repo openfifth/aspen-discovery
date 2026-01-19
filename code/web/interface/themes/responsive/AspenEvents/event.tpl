@@ -101,7 +101,7 @@
 					{if $recordDriver->isWaitingListFull()}
 						<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
 					{else}
-						{$recordDriver->getAvailableNUmberOfWaitingListSeats()} / {$recordDriver->getWaitingListNumberOfSeats()};
+						{$recordDriver->getDisplayWaitingListSeats()}
 					{/if}
 					</li>
 					{if $private}
