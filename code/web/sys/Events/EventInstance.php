@@ -138,14 +138,22 @@ class EventInstance extends DataObject {
 		return parent::insert();
 	}
 
-	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
+	public function delete(bool $useWhere = false, bool $hardDelete = false, $supressIndividualNotifications = false ) : bool|int {
 		if (!$useWhere) {
-
+			global $logger;
 			//Remove all waiting list entries for this event instance
 			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
-			$waitingListEntry = new UserAspenEventInstanceWaitingList();
-			$waitingListEntry->eventInstanceId = $this->id;
-			$waitingListEntry->delete(true);
+			require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+
+			if (!$supressIndividualNotifications) {
+				$logger->log("i have bben triggered b the delete in event", Logger::LOG_ERROR);
+				$AJAX = new MyAccount_AJAX();
+				$AJAX->sendEventInstanceLevelNotifications($this->id, 'deleted');
+			}
+			
+			// $waitingListEntry = new UserAspenEventInstanceWaitingList();
+			// $waitingListEntry->eventInstanceId = $this->id;
+			// $waitingListEntry->delete(true);
 
 			$this->deleted = 1;
 			$this->dateUpdated = time();

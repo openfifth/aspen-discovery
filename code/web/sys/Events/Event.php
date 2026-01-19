@@ -526,6 +526,8 @@ class Event extends DataObject {
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
 		if (!$useWhere) {
+			global $logger;
+			$logger->log("called main delete", Logger::LOG_ERROR);
 			$this->deleted = 1;
 			$this->dateUpdated = time();
 			$ret = parent::update();
@@ -534,13 +536,21 @@ class Event extends DataObject {
 				$instance = new EventInstance();
 				$instance->eventId = $this->id;
 				$instance->find();
+				$allInstances = [];
 				while ($instance->fetch()) {
-					$instance->delete();
+					$allInstances[] = clone $instance;
+					$instance->delete(false, false, true);
 				}
+
+				require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+				$AJAX = new MyAccount_AJAX();
+				$AJAX->sendEventLevelNotifications($this->id, $allInstances, 'deleted');
 				return true;
 			}
 			return false;
 		} else {
+			global $logger;
+			$logger->log("main delete not in use where", Logger::LOG_ERROR);
 			return parent::delete($useWhere, $hardDelete);
 		}
 	}
