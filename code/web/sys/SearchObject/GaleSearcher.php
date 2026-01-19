@@ -41,6 +41,7 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	public function __construct() {
 		parent::__construct();
 		$this->searchSource = 'gale';
+		$this->searchType = 'gale';
 		$this->resultsModule = 'Gale';
 		$this->resultsAction = 'Results';
 	}
@@ -124,7 +125,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 
 		$productCode = $this->getProductCode();
 		$searchTerm = $this->searchTerms[0]['lookfor'] ?? '';
-		// TODO not allow empty search term
 		$searchIndex = $this->searchTerms[0]['index'] ?? '';
 		$mappedIndex = $this->searchIndexFieldMap[$searchIndex] ?? '';
 		if ($mappedIndex === '') {
@@ -213,17 +213,10 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 
 				$record = new GaleRecordDriver($recordNode);
 				if ($record->isValid()) {
-					global $memCache;
-					$id = $record->getUniqueID();
-					if (!empty($id)) {
-						$memCache->set('gale_min_' . $id, [
-							'title'  => $record->getTitle(),
-							'author' => $record->getAuthor(),
-							'format' => $record->getFormats(),
-						], 9000);
-					}
 					$interface->assign('recordDriver', $record);
 					$html[] = $interface->fetch($record->getSearchResult());
+				} else {
+					$html[] = "Unable to find record";
 				}
 			}
 		}
@@ -255,12 +248,10 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	}
 
 	public function retrieveRecord(string $identifier): ?SimpleXMLElement {
-	/*	$settings = $this->getSettings();
+		$settings = $this->getSettings();
 		if ($settings === null || empty($settings->locationId)) {
 			return null;
 		}
-		global $logger;
-		$logger->log("Gale retrieve record: " . $identifier, Logger::LOG_ERROR);
 	
 		$productCode = $this->getProductCode();
 		$params = [
@@ -268,13 +259,12 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 			'maximumRecords' => 1,
 			'operation'      => 'searchRetrieve',
 			'version'        => '1.1',
-			'query'          => 'dc.identifier=' . $identifier . '',
+			'query'          => 'rec.id=' . $identifier . '',
 			'x-username'     => $settings->locationId,
 		];
 		$recordUrl = rtrim($this->galeBaseUrl, '/') . '/' . rawurlencode($productCode) .
 			'?' . http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 		$curl = $this->getCurlConnection();
-		$logger->log("Gale record URL: $recordUrl", Logger::LOG_ERROR);
 		curl_setopt($curl, CURLOPT_URL, $recordUrl);
 		$response = curl_exec($curl);
 		if ($response === false || $response === '') {
@@ -288,28 +278,7 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		$xml->registerXPathNamespace('zs', 'http://www.loc.gov/zing/srw/');
 		$xml->registerXPathNamespace('dc', 'http://purl.org/dc/elements/1.1/');
 		$records = $xml->xpath('//zs:records/zs:record/zs:recordData/dc:dc');
-		return $records ? $records[0] : null;*/
-
-		global $memCache;
-	
-		$data = $memCache->get('gale_min_' . $identifier);
-		if (empty($data)) {
-			return null;
-		}
-	
-		$xml = '<dc:dc xmlns:dc="http://purl.org/dc/elements/1.1/">';
-		if (!empty($data['title'])) {
-			$xml .= '<dc:title>' . htmlspecialchars($data['title'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</dc:title>';
-		}
-		if (!empty($data['author'])) {
-			$xml .= '<dc:creator>' . htmlspecialchars($data['author'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</dc:creator>';
-		}
-		if (!empty($data['format'])) {
-			$xml .= '<dc:type>' . htmlspecialchars($data['format'], ENT_XML1 | ENT_QUOTES, 'UTF-8') . '</dc:type>';
-		}
-		$xml .= '</dc:dc>';
-	
-			return simplexml_load_string($xml);
+		return $records ? $records[0] : null;
 	}
 	
 
@@ -337,6 +306,11 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 			]),
 			'Publication' => translate([
 				'text' => 'Publication',
+				'isPublicFacing' => true,
+				'inAttribute' => true,
+			]),
+			'ISSN' => translate([
+				'text' => 'ISSN',
 				'isPublicFacing' => true,
 				'inAttribute' => true,
 			]),
@@ -411,7 +385,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 				];
 			}
 		}
-
 		return $facetSet;
 	}
 
@@ -433,20 +406,25 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		return $list;
 	}
 
-	public function getSearchesFile(): bool|string {
+	function getSearchesFile() {
+		// Gale does not have a searches file, we load dynamically
 		return false;
 	}
 
+	public function getIndexError() {
+		// TODO: Implement getIndexError() method.
+	}
+
 	public function buildRSS($result = null) {
-		return null;
+		// TODO: Implement buildRSS() method.
 	}
 
 	public function buildExcel($result = null) {
-		return null;
+		// TODO: Implement buildExcel() method.
 	}
 
-	public function getResultRecordSet(): array {
-		return $this->lastSearchResults;
+	public function getResultRecordSet() {
+		// TODO: Implement getResultRecordSet() method.
 	}
 
 	public function getSearchName() {
@@ -457,16 +435,12 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		return 'Keyword';
 	}
 
-	public function loadValidFields(): array {
-		return array_keys($this->searchIndexFieldMap);
+	function loadValidFields() {
+		// TODO: Implement loadValidFields() method.
 	}
 
-	public function loadDynamicFields(): array {
-		return [];
-	}
-
-	public function getIndexError() {
-		return null;
+	function loadDynamicFields() {
+		// TODO: Implement loadDynamicFields() method.
 	}
 
 	private function getFacetDefinitions(): array {
@@ -477,7 +451,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 					'isPublicFacing' => true,
 					'inAttribute' => true,
 				]),
-				'dcField' => 'dc.type',
 			],
 			'subject' => [
 				'label' => translate([
