@@ -776,6 +776,7 @@ class UInterface extends Smarty {
 		$this->assign('displayExploreMoreBarInEbscoEds', $library->displayExploreMoreBarInEbscoEds);
 		$this->assign('displayExploreMoreBarInCatalogSearch', $library->displayExploreMoreBarInCatalogSearch);
 		$this->assign('displayExploreMoreBarInEbscoHost', $library->displayExploreMoreBarInEbscoHost);
+		$this->assign('displayExploreMoreBarInGale', $library->displayExploreMoreBarInGale);
 
 		if ($location != null) {
 			$this->assign('showDisplayNameInHeader', $location->showDisplayNameInHeader);
@@ -785,6 +786,7 @@ class UInterface extends Smarty {
 			$this->assign('displayExploreMoreBarInEbscoEds', $location->displayExploreMoreBarInEbscoEds);
 			$this->assign('displayExploreMoreBarInCatalogSearch', $location->displayExploreMoreBarInCatalogSearch);
 			$this->assign('displayExploreMoreBarInEbscoHost', $location->displayExploreMoreBarInEbscoHost);
+			$this->assign('displayExploreMoreBarInGale', $location->displayExploreMoreBarInGale);
 		}
 
 		if (!$fromBookCoverProcessing) {

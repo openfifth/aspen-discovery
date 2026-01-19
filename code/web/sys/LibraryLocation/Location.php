@@ -58,6 +58,7 @@ class Location extends DataObject {
 	public $displayExploreMoreBarInEbscoEds;
 	public $displayExploreMoreBarInEbscoHost;
 	public $displayExploreMoreBarInCatalogSearch;
+	public $displayExploreMoreBarInGale;
 	public $headerText;
 	public $address;
 	public $phone;
@@ -1059,6 +1060,14 @@ class Location extends DataObject {
 						'type' => 'checkbox',
 						'label' => 'Display Explore More Bar in Ebsco Host Search Results',
 						'description' => 'Whether to display the Explore More Bar in Ebsco Host search results',
+						'hideInLists' => true,
+						'default' => true,
+					],
+					'displayExploreMoreBarInGale' => [
+						'property' => 'displayExploreMoreBarInGale',
+						'type' => 'checkbox',
+						'label' => 'Display Explore More Bar in Gale Search Results',
+						'description' => 'Whether to display the Explore More Bar in Gale search results',
 						'hideInLists' => true,
 						'default' => true,
 					],

@@ -3846,6 +3846,7 @@ class Sierra extends AbstractIlsDriver {
 								$location->useLibraryThemes = 1;
 								$location->languageAndDisplayInHeader = 1;
 								$location->displayExploreMoreBarInSummon = 1;
+								$location->displayExploreMoreBarInGale = 1;
 								$location->displayExploreMoreBarInEbscoEds = 1;
 								$location->displayExploreMoreBarInEbscoHost = 1;
 								$location->displayExploreMoreBarInCatalogSearch = 1;

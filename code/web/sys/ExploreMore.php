@@ -65,6 +65,10 @@ class ExploreMore {
 		if (count($summonMatches) > 0) {
 			$interface->assign('relatedArticles', $summonMatches);
 		}
+		$galeMatches = $this->loadGaleOptions('', [], $searchTerm);
+		if (count($galeMatches) > 0) {
+			$interface->assign('relatedArticles', $galeMatches);
+		}
 
 		if ($activeSection != 'catalog') {
 			$relatedWorks = $this->getRelatedWorks($quotedSubjectsForSearching, $relatedCatalogContent);
@@ -133,6 +137,10 @@ class ExploreMore {
 		if (array_key_exists('Summon', $enabledModules)) {
 			$exploreMoreOptions = $this->loadSummonOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
 		};
+
+		if (array_key_exists('Gale', $enabledModules)) {
+			$exploreMoreOptions = $this->loadGaleOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
+		}
 
 		if (array_key_exists('Events', $enabledModules)) {
 			$exploreMoreOptions = $this->loadEventOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
@@ -834,6 +842,55 @@ class ExploreMore {
 						]),
 						'image' => $image,
 						'link' => '/Summon/Results?lookfor=' . urlencode($searchTerm),
+						'openInNewWindow' => false,
+					];
+				}
+			}
+		}
+		return $exploreMoreOptions;
+	}
+
+
+	/**
+	 * @param $activeSection
+	 * @param $searchTerm
+	 * @param $exploreMoreOptions
+	 * @return array
+	 */
+	public function loadGaleOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme) {
+		global $library;
+		global $enabledModules;
+		if (!empty($searchTerm) && array_key_exists('Gale', $enabledModules) && $library->galeSettingsId != -1 && $activeSection != 'gale') {
+			//Load Gale Options
+			/** @var SearchObject_GaleSearcher $galeSearcher */
+			$galeSearcher = SearchObjectFactory::initSearchObject('Gale');
+			$galeSearcher->setSearchTerms([
+				'lookfor' => $searchTerm,
+				'index' => 'Keyword',
+			]);
+			$galeResults = $galeSearcher->processSearch(true, false);
+			if ($galeResults != null) {
+				$exploreMoreOptions['sampleRecords']['gale'] = [];
+				$numMatches = $galeSearcher->getResultSummary()['resultTotal'];
+				if ($numMatches > 1) {
+					if ($appliedTheme != null && !empty($appliedTheme->articlesDBImage)) {
+						$image = '/files/origional/' . $appliedTheme->articlesDBImage;
+					} else {
+						$image = '/interface/themes/responsive/images/gale.png';
+					}
+					$exploreMoreOptions['searchLinks'][] = [
+						'label' => translate([
+							'text' => "All Gale Results (%1%)",
+							1 => $numMatches,
+							'isPublicFacing' => true,
+						]),
+						'description' => translate([
+							'text' => "All Results in Gale related to %1%",
+							1 => $searchTerm,
+							'isPublicFacing' => true,
+						]),
+						'image' => $image,
+						'link' => '/Gale/Results?lookfor=' . urlencode($searchTerm),
 						'openInNewWindow' => false,
 					];
 				}

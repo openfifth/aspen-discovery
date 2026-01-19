@@ -90,5 +90,13 @@ function getGaleUpdates()
 				  ) ENGINE=InnoDB",
 			],
 		],
+		'display_explore_more_bar_in_gale' => [
+			'title' => 'Display Explore More Bar in Gale',
+			'description' => 'Display Explore More Bar in Gale',
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN displayExploreMoreBarInGale TINYINT(1) DEFAULT 1',
+				'ALTER TABLE location ADD COLUMN displayExploreMoreBarInGale TINYINT(1) DEFAULT 1',
+			],
+		],
 	];
 }
