@@ -450,14 +450,12 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 					$defaultTimezone = new DateTimeZone(date_default_timezone_get());
 					if ($this->dateRangeStart != '*') {
 						$dt = new DateTime($this->dateRangeStart, $utcTimeZone);
-						$dt->setTimezone($defaultTimezone);
 						$startDate =  $dt->format("m/d/Y");
 					}else{
 						$startDate = '';
 					}
 					if ($this->dateRangeEnd != '*') {
 						$dt = new DateTime($this->dateRangeEnd, $utcTimeZone);
-						$dt->setTimezone($defaultTimezone);
 						$endDate = $dt->format("m/d/Y");
 					}else{
 						$endDate = '';
