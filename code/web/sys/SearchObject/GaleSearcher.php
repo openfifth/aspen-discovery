@@ -181,7 +181,7 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		$curl = $this->getCurlConnection();
 		curl_setopt($curl, CURLOPT_URL, $requestUrl);
 		$response = curl_exec($curl);
-		if ($response === false || strlen($response) === 0) {
+		if ($response === false) {
 			$this->stopQueryTimer();
 			return new AspenError('Error retrieving data from Gale.');
 		}
@@ -294,12 +294,11 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		$curl = $this->getCurlConnection();
 		curl_setopt($curl, CURLOPT_URL, $recordUrl);
 		$response = curl_exec($curl);
-		if ($response === false || $response === '') {
+		if ($response === false) {
 			return null;
 		}
-	
 		$xml = simplexml_load_string($response);
-		if (!$xml) {
+		if ($xml === false) {
 			return null;
 		}
 		$xml->registerXPathNamespace('zs', 'http://www.loc.gov/zing/srw/');
