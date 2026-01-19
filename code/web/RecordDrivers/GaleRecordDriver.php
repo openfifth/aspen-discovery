@@ -85,7 +85,7 @@ class GaleRecordDriver extends RecordInterface {
 		$interface->assign('bookCoverUrl', $this->getBookcoverUrl('small'));
 		$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('medium'));
 
-	/*	require_once ROOT_DIR . '/sys/Gale/GaleRecordUsage.php';
+		require_once ROOT_DIR . '/sys/Gale/GaleRecordUsage.php';
 		global $aspenUsage;
 		$recordUsage = new GaleRecordUsage();
 		$recordUsage->instance = $aspenUsage->getInstance();
@@ -99,7 +99,7 @@ class GaleRecordDriver extends RecordInterface {
 			$recordUsage->timesViewedInSearch = 1;
 			$recordUsage->timesUsed = 0;
 			$recordUsage->insert();
-		}*/
+		}
 		return 'RecordDrivers/Gale/result.tpl';
 	}
 

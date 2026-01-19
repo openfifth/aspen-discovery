@@ -1,6 +1,7 @@
 <?php
 /**@noinspection SqlResolve*/
-function getGaleUpdates() {
+function getGaleUpdates()
+{
 	return [
 		'gale_module' => [
 			'title' => 'Gale Module',
@@ -27,13 +28,13 @@ function getGaleUpdates() {
 				'ALTER TABLE library ADD COLUMN galeSettingsId INT(11) DEFAULT -1',
 			],
 		],
-		'add_permissions_for_gale_module_2' => [
+		'add_permissions_for_gale_module' => [
 			'title' => 'Add Permissions For Gale Module',
 			'description' => 'Add permissions for the Gale Module',
 			'sql' => [
 				"INSERT INTO permissions (id, name, sectionName, requiredModule, weight, description) VALUES (253, 'Administer Gale', 'Cataloging & eContent', 'Gale', 125, 'Allows the user to administer Gale integration for all libraries.');",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Gale'))",
-                "INSERT INTO permissions (id, name, sectionName, requiredModule, weight, description) VALUES (263, 'Library Gale Options', 'Primary Configuration - Library Fields', '', 49, 'Configure Library fields related to Gale content.');",
+				"INSERT INTO permissions (id, name, sectionName, requiredModule, weight, description) VALUES (263, 'Library Gale Options', 'Primary Configuration - Library Fields', '', 49, 'Configure Library fields related to Gale content.');",
 			],
 		],
 		'create_gale_product_codes' => [
@@ -47,6 +48,46 @@ function getGaleUpdates() {
 					displayName VARCHAR(255) NOT NULL,
 					INDEX (settingId)
 				) ENGINE = InnoDB",
+			],
+		],
+		'aspen_usage_gale' => [
+			'title' => 'Aspen Usage for Gale Searches',
+			'description' => 'Add a column to track usage of Gale searches within Aspen',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE aspen_usage ADD COLUMN galeSearches INT(11) DEFAULT 0',
+			],
+		],
+		'track_gale_user_usage4' => [
+			'title' => 'Gale Usage by user',
+			'description' => 'Add a table to track how often a particular user uses Gale.',
+			'sql' => [
+				"CREATE TABLE user_gale_usage (
+				    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				    userId INT(11) NOT NULL,
+					instance VARCHAR(100) DEFAULT NULL,
+				    month INT(2) NOT NULL,
+				    year INT(4) NOT NULL,
+				    usageCount INT(11),
+					KEY year (year, month, instance, userId)
+				) ENGINE = InnoDB",
+			],
+		],
+		'gale_record_usage' => [
+			'title' => 'Gale Record Usage',
+			'description' => 'Add a table to track how often a particular Gale record is used.',
+			'sql' => [
+				"CREATE TABLE `gale_usage` (
+					`id` int(11) NOT NULL AUTO_INCREMENT,
+					`instance` varchar(100) DEFAULT NULL,
+					`galeId` varchar(50) NOT NULL,
+					`month` int(11) NOT NULL,
+					`year` int(11) NOT NULL,
+					`timesViewedInSearch` int(11) NOT NULL,
+					`timesUsed` int(11) NOT NULL,
+					PRIMARY KEY (`id`),
+					KEY `galeId` (`galeId`,`year`,`instance`,`month`)
+				  ) ENGINE=InnoDB",
 			],
 		],
 	];
