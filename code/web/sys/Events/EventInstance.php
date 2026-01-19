@@ -286,4 +286,15 @@ class EventInstance extends DataObject {
 		}
 		return false;
 	}
+
+	public function getDisplayWaitingListSeats(): string {
+		if ($this->deleted) {
+			return '—';
+		}
+
+		$availableSeats = $this->availableNumberOfWaitingListSeats;
+		$totalSeats = $this->waitingListNumberOfSeats ?? '?';
+
+		return "{$availableSeats} / {$totalSeats}";
+	}
 }
