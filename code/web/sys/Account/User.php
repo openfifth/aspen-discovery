@@ -2056,6 +2056,7 @@ class User extends DataObject {
 		require_once ROOT_DIR . "/sys/User/Hold.php";
 		$hold = new Hold();
 		$hold->userId = $this->id;
+		$hold->cancelled = 0;
 		$hold->find();
 		while ($hold->fetch()) {
 			$cacheKey = "$hold->source:$hold->recordId";
@@ -5359,8 +5360,28 @@ class User extends DataObject {
 			uasort($holdsToReturn['available'], $holdSort);
 		}
 		if (!empty($holdsToReturn['cancelled'])) {
-			uasort($holdsToReturn['cancelled'], $holdSort);
-			arsort($holdsToReturn['cancelled']);
+			$cancelledHoldSort = function (Hold $a, Hold $b) {
+				$titleA = $a->getSortTitle();
+				$titleB = $b->getSortTitle();
+
+				$dateA = (!empty($a->expirationDate) && $a->expirationDate > 0) ? $a->expirationDate : null;
+				$dateB = (!empty($b->expirationDate) && $b->expirationDate > 0) ? $b->expirationDate : null;
+
+				if ($dateA !== null && $dateB !== null) {
+					if ($dateA == $dateB) {
+						return strnatcasecmp($titleA, $titleB);
+					}
+					return $dateB <=> $dateA;
+				}
+				if ($dateA !== null && $dateB === null) {
+					return -1;
+				}
+				if ($dateA === null && $dateB !== null) {
+					return 1;
+				}
+				return strnatcasecmp($titleA, $titleB);
+			};
+			uasort($holdsToReturn['cancelled'], $cancelledHoldSort);
 		}
 		if (!empty($holdsToReturn['unavailable'])) {
 			if ($unavailableSort === 'reactivate') {

@@ -75,7 +75,7 @@
 							<div class="btn btn-block btn-default">
 								<a href="/MyAccount/Holds">
 									<div class="dashboardLabel">{translate text="Ready For Pickup" isPublicFacing=true}</div>
-									<div class="dashboardValue"><span class="ils-available-holds-placeholder"><img src="/images/loading.gif" alt="loading"></span></div>
+									<div class="dashboardValue"><span class="available-holds-placeholder"><img src="/images/loading.gif" alt="loading"></span></div>
 								</a>
 							</div>
 						</div>
