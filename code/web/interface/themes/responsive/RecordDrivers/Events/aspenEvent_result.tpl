@@ -79,7 +79,7 @@
 							{if $isWaitingListFull}
 									<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
 							{else}
-								{$availableNumberOfWaitingListSeats} / {$waitingListNumberOfSeats}
+								{$displayWaitingListSeats}
 							{/if}
 						</div>
 					{/if}
