@@ -1833,6 +1833,20 @@ class UserList extends DataObject {
 					$isbn = $curDoc->getPrimaryISBN() ?? '';
 					$upc = '';
 					$output = [''];
+				} elseif ($curDoc instanceof GaleRecordDriver) {
+					// Hyperlink to Gale record
+					$link = $curDoc->getLinkUrl() ?? '';
+					// Title
+					$title = $curDoc->getTitle() ?? '';
+					// Primary Author
+					$author = $curDoc->getAuthor() ?? '';
+					//Set other values to empty string
+					$publishers = '';
+					$publishDate = '';
+					$uniqueFormats = '';
+					$isbn = '';
+					$upc = '';
+					$output = [''];
 
 				} elseif ($curDoc instanceof WebsitePageRecordDriver) {
 					// Hyperlink

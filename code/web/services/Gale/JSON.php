@@ -59,4 +59,23 @@ class Gale_JSON extends JSON_Action {
 			'message' => 'Updated usage for Gale record ' . $id,
 		];
 	}
+
+    function getTitleAuthor(): array {
+		$result = [
+			'success' => false,
+			'title' => 'Unknown',
+			'author' => 'Unknown',
+		];
+		require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+		$id = $_REQUEST['id'];
+		if (!empty($id)) {
+			$recordDriver = new GaleRecordDriver($id);
+			if ($recordDriver->isValid()) {
+				$result['success'] = true;
+				$result['title'] = $recordDriver->getTitle();
+				$result['author'] = $recordDriver->getAuthor();
+			}
+		}
+		return $result;
+	}
 }

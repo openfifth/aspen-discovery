@@ -306,6 +306,22 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		$records = $xml->xpath('//zs:records/zs:record/zs:recordData/dc:dc');
 		return $records ? $records[0] : null;
 	}
+
+	/**
+	 * Retrieves a document specified by the ID.
+	 *
+	 * @param string[] $ids An array of documents to retrieve from Solr
+	 * @access  public
+	 * @return  array              The requested resources
+	 */
+	public function getRecords($ids) {
+		$records = [];
+		require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+		foreach ($ids as $index => $id) {
+			$records[$index] = new GaleRecordDriver($id);
+		}
+		return $records;
+	}
 	
 
 	public function getSearchIndexes(): array {

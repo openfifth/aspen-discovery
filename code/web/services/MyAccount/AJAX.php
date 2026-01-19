@@ -1900,6 +1900,13 @@ class MyAccount_AJAX extends JSON_Action {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
 							}
+						} elseif ($userListEntry->source == 'Gale') {
+							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
 						}
 						$userListEntry->insert();
 					}
@@ -9290,6 +9297,13 @@ class MyAccount_AJAX extends JSON_Action {
 						} elseif ($userListEntry->source == 'Summon') {
 							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
 							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'Gale') {
+							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
 							if ($recordDriver->isValid()) {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);

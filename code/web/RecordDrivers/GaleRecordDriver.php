@@ -201,6 +201,16 @@ class GaleRecordDriver extends RecordInterface {
 		return null;
 	}
 
+	public function getListEntry($listId = null, $allowEdit = true) {
+		$this->getSearchResult('list');
+
+		//Switch template
+		return 'RecordDrivers/Gale/listEntry.tpl';
+	}
+	public function getId() {
+		return $this->getUniqueID();
+	}
+
 	public function getUniqueID() {
 		$identifier = $this->getPrimaryIdentifier();
 		return $identifier;
