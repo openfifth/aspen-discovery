@@ -11601,6 +11601,12 @@ class MyAccount_AJAX extends JSON_Action {
 			return false;
 		}
 
+		$homeLibrary = Library::getPatronHomeLibrary();
+		if (is_null($homeLibrary)) {
+			global $library;
+			$homeLibrary = $library;
+		}
+
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
@@ -11637,6 +11643,7 @@ class MyAccount_AJAX extends JSON_Action {
 			'eventTime' => $eventInstance->time,
 			'user' => $user,
 			'canRegisterUntil' => $humanRegisterUntilDate,
+			'library' => $homeLibrary,
 		];
 
 		$emailTemplate->sendEmail($user->email, $parameters);
@@ -11797,6 +11804,145 @@ class MyAccount_AJAX extends JSON_Action {
 				'success' => false,
 			];
 		}
+	}
+
+	public function sendEventInstanceLevelNotifications($eventInstanceId, string $changeType): void {
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)){
+			return;
+		}
+
+		$userIds = $this->getAffectedUsersForInstances([$eventInstanceId]);
+
+		foreach ($userIds as $userId) {
+			$user = new User();
+			$user->id = $userId;
+			if (!$user->find(true)) {
+				continue;
+			}
+
+			$homeLibrary = Library::getPatronHomeLibrary();
+			if (is_null($homeLibrary)){
+				global $library;
+				$homeLibrary = $library;
+			}
+
+			//Send one email
+			if ($user->eventRegistrationNotificationsByEmail == 1) {
+				$this->sendEventEmail($user, $changeType, [$eventInstance]);
+			}
+		}
+	}
+
+	public function sendEventLevelNotifications(int $eventId, array $instances, string $changeType): void {
+		global $logger;
+
+		if (empty($instances)) {
+			return;
+		}
+
+		$instanceMap = [];
+		foreach ($instances as $instance) {
+			$instanceMap[$instance->id] = $instance;
+		}
+
+		$allUserIds = [];
+
+		foreach ($instances as $instance) {
+			$userIds = $this->getAffectedUsersForInstances([$instance->id]);
+			foreach ($userIds as $userId) {
+				if (!isset($allUserIds[$userId])) {
+					$allUserIds[$userId] = [];
+				}
+				$allUserIds[$userId][] = $instance;
+			}
+		}
+
+		if (empty($allUserIds)) {
+			return;
+		}
+
+		foreach ($allUserIds as $userId => $userInstances) {
+			$user = new User();
+			$user->id = $userId;
+			if (!($user->find(true))) {
+				continue;
+			}
+			$this->sendEventEmail($user, $changeType, $userInstances);
+		}
+	}
+
+	private function getAffectedUsersForInstances(array $instanceIds): array {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+
+		$userIds = [];
+
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->whereAdd('eventInstanceId IN (' . implode(', ', $instanceIds) . ')');
+		$registration->find();
+		while ($registration->fetch()) {
+			$userIds[$registration->userId] = true;
+		}
+
+		$waitingList = new UserAspenEventInstanceWaitingList();
+		$waitingList->whereAdd('eventInstanceId IN (' . implode(',', $instanceIds) . ')');
+		$waitingList->find();
+		while ($waitingList->fetch()){
+			$userIds[$waitingList->userId] = true;
+		}
+		return array_keys($userIds);
+	}
+
+	private function sendEventEmail(User $user, string $changeType, array $eventInstances): void {
+		require_once ROOT_DIR . '/sys/Email/Mailer.php';
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+
+		$emailTemplate = EmailTemplate::getActiveTemplate('eventCancellation');
+		if (!$emailTemplate) {
+			global $logger;
+			$logger->log('Unable to find email template', Logger::LOG_ERROR);
+			return;
+		}
+
+
+		$formattedInstances = $this->formatEventInstances($eventInstances);
+		$parameters = [
+			'user' => $user,
+			'changeType' => $changeType, 
+			'instances' => $formattedInstances, 
+		];
+
+			$emailTemplate->sendEmail($user->email, $parameters);
+	}
+
+	private function formatEventInstances(array $eventInstances): array {
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+
+		$formatted = [];
+
+		$event = new Event();
+		$event->id = $eventInstance->eventId;
+		if (!$event->find(true)) {
+			return false;
+		}
+
+
+
+		foreach ($eventInstances as $instance) {
+			$humanEventDate = $this->formatHumanDate($instance->date);
+			global $logger;
+			$formatted[] = [
+				'eventTitle' => $event->title,
+				'eventDate' => $humanEventDate,
+				'eventTime' => $instance->time,
+			];
+		}
+		return $formatted;
 	}
 
  }
