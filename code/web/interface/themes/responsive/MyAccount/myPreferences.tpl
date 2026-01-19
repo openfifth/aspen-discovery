@@ -105,7 +105,7 @@
 							</div>
 						</div>
 
-						{if !empty($showEdsPreferences) || !empty($validEdsSorts) || !empty($validEbscohostSorts) || !empty($validSummonSorts)}
+						{if !empty($showEdsPreferences) || !empty($validEdsSorts) || !empty($validEbscohostSorts) || !empty($validSummonSorts) || !empty($validGaleSorts)}
 							<div class="panel" id="articlesAndDatabasesPreferencesPanel">
 								<a data-toggle="collapse" href="#articlesAndDatabasesPreferencesPanelBody">
 									<div class="panel-heading">
@@ -154,6 +154,16 @@
 												{else}
 													&nbsp;{if $profile->hideResearchStarters==0} {translate text='No' isPublicFacing=true}{else} {translate text='Yes' isPublicFacing=true}{/if}
 												{/if}
+											</div>
+										{/if}
+										{if !empty($validGaleSorts)}
+											<div class="form-group propertyRow">
+												<label for="defaultGaleSort" class="control-label">{translate text='Default Sort For New Searches' isPublicFacing=true}</label>&nbsp;
+												<select name="defaultGaleSort" id="defaultGaleSort" class="form-control">
+													{foreach from=$validGaleSorts key="sortValue" item="sortName"}
+														<option value="{$sortValue}" {if $defaultGaleSort == $sortValue}selected{/if}>{translate text=$sortName isPublicFacing=true inAttribuge=true}</option>
+													{/foreach}
+												</select>
 											</div>
 										{/if}
 									</div>
