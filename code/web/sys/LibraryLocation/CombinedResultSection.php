@@ -32,6 +32,9 @@ abstract class CombinedResultSection extends DataObject {
 		if (array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1) {
 			$validResultSources['summon'] = 'Summon';
 		}
+		if (array_key_exists('Gale', $enabledModules)) {
+			$validResultSources['gale'] = 'Gale';
+		}
 		if (array_key_exists('Events', $enabledModules)) {
 			$validResultSources['events'] = 'Events';
 		}
@@ -101,6 +104,8 @@ abstract class CombinedResultSection extends DataObject {
 			return "https://dp.la/search?q=$searchTerm";
 		} elseif ($this->source == 'summon') {
 			return "Search/Results?lookfor=$searchTerm&searchSource=summon";
+		} elseif ($this->source == 'gale') {
+			return "/Gale/Results?lookfor=$searchTerm&searchSource=gale";
 		} elseif ($this->source == 'ebsco_eds') {
 			return "/EBSCO/Results?lookfor=$searchTerm&searchSource=ebsco_eds";
 		} elseif ($this->source == 'ebscohost') {
