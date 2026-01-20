@@ -14,7 +14,7 @@
 (function (window, undefined) {
 
 	'use strict';
-	
+
 	//////////////
 	// Constants
 	/////////////
@@ -113,7 +113,7 @@
 
 		// os
 		WINDOWS	 = 'Windows';
-   
+
 	var isWindow			= typeof window !== TYPEOF.UNDEFINED,
 		NAVIGATOR		   = (isWindow && window.navigator) ? 
 								window.navigator : 
