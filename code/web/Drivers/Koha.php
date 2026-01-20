@@ -2064,9 +2064,9 @@ class Koha extends AbstractIlsDriver {
 		/** @var File_MARC_Record 		- links to relavent item type information */
 		$marcRecordFile 				= $marcRecordDriver->getMarcRecord();
 		/** @var File_MARC_Data_Field 	- contains the item type id*/
-		$itemTypeField 					= $marcRecordFile->getField('942');
+		$itemTypeField 					= $marcRecordFile->getField('952');
 		
-		if ($itemTypeSubfield = $itemTypeField->getSubfield('c')) {
+		if ($itemTypeSubfield = $itemTypeField->getSubfield('y')) {
 			$itemTypeId = trim($itemTypeSubfield->getData());
 		}
 
