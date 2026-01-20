@@ -1,7 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js';
 import { getMessaging } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging-sw.js";
 import { getToken } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js";
-import * as UAParser from "../lib/ua-parser-min.js";
+import * as UAP from "../lib/ua-parser-min.js";
 //import '../lib/apisauce.min.js';
 
 function initialize() {
