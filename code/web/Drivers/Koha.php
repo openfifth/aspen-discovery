@@ -1998,7 +1998,7 @@ class Koha extends AbstractIlsDriver {
 			return "You must be logged in to place holds.";
 		}
 		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
-		if (!$rawFee || $rawFee == "0.000000"){
+		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000"){
 			return null;
 		}
 		$fee = $this->formatFee($rawFee);
@@ -2010,7 +2010,7 @@ class Koha extends AbstractIlsDriver {
 			return "You must be logged in to place holds.";
 		}
 		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
-		if (!$rawFee || $rawFee == "0.000000"){
+		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000"){
 			return null;
 		}
 		$fee = $this->formatFee($rawFee);
@@ -2038,10 +2038,22 @@ class Koha extends AbstractIlsDriver {
 		$marcRecordFile 				= $marcRecordDriver->getMarcRecord();
 		/** @var File_MARC_Data_Field 	- contains the item type id*/
 		$itemTypeField 					= $marcRecordFile->getField('952');
-		
-		if ($itemTypeSubfield = $itemTypeField->getSubfield('y')) {
-			$itemTypeId = trim($itemTypeSubfield->getData());
+
+		if ($itemTypeField ==  false) {
+			global $logger;
+			$logger->log('No field 952 found on record with id: ' . $marcRecordDriver->getId(), Logger::LOG_ERROR);
+			return 'unknown';
 		}
+
+		$itemTypeSubfield = $itemTypeField->getSubfield('y');
+
+		if ($itemTypeSubfield ==  false) {
+			global $logger;
+			$logger->log('No subfield y found for field 952 on record with id: ' . $marcRecordDriver->getId(), Logger::LOG_ERROR);
+			return 'unknown';
+		}
+		
+		$itemTypeId = trim($itemTypeSubfield->getData());
 
 		$fees = [];
 
