@@ -105,6 +105,10 @@ self.addEventListener('notificationclick', (event) => {
 	console.log("notification clicked");
 	console.log(event);
 	event.notification.close();
-	var fullPath = self.location.origin + event.notification.data.path;
+	var fullPath = self.location.origin;
+	if(event.notification.data.path)
+	{
+		fullPath += event.notification.data.path;
+	} 
 	clients.openWindow(fullPath);
 });
