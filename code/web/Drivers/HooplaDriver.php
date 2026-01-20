@@ -233,7 +233,6 @@ class HooplaDriver extends AbstractEContentDriver {
 							}
 						}
 
-						$summary->numHolds = $availableHolds + $unavailableHolds;
 						$summary->numAvailableHolds = $availableHolds;
 						$summary->numUnavailableHolds = $unavailableHolds;
 					} else {
@@ -242,7 +241,6 @@ class HooplaDriver extends AbstractEContentDriver {
 						$logger->log('Error retrieving holds from Hoopla. User ID: ' . $user->id . $errorMessage, Logger::LOG_NOTICE);
 					}
 				} else {
-					$summary->numHolds = 0;
 					$summary->numAvailableHolds = 0;
 					$summary->numUnavailableHolds = 0;
 				}
@@ -259,50 +257,55 @@ class HooplaDriver extends AbstractEContentDriver {
 	 * @return Checkout[]
 	 */
 	public function getCheckouts(User $patron): array {
-		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		$checkedOutItems = [];
-		if ($this->hooplaEnabled) {
-			$hooplaCheckedOutTitlesURL = $this->getHooplaBasePatronURL($patron);
-			if (!empty($hooplaCheckedOutTitlesURL)) {
-				$hooplaCheckedOutTitlesURL .= '/checkouts/current';
-				$checkOutsResponse = $this->getAPIResponse('hoopla.getCheckouts', $hooplaCheckedOutTitlesURL);
-				if ($checkOutsResponse['httpCode'] == 200 && !empty($checkOutsResponse['body'])) {
-					$hooplaPatronStatus = null;
-					foreach ($checkOutsResponse['body'] as $checkOut) {
-						$hooplaRecordID = $checkOut->contentId;
-						$currentTitle = new Checkout();
-						$currentTitle->type = 'hoopla';
-						$currentTitle->source = 'hoopla';
-						$currentTitle->userId = $patron->id;
-						$currentTitle->sourceId = $checkOut->contentId;
-						$currentTitle->recordId = $checkOut->contentId;
-						$currentTitle->title = $checkOut->title;
-						if (isset($checkOut->author)) {
-							$currentTitle->author = $checkOut->author;
-						}
-						$currentTitle->format = $checkOut->kind;
-						$currentTitle->checkoutDate = $checkOut->borrowed;
-						$currentTitle->dueDate = $checkOut->due;
-						$currentTitle->accessOnlineUrl = $checkOut->url;
+		$accountSummary = $patron->getCachedAccountSummary('hoopla');
+		$cachedCheckouts = $patron->getCachedCheckoutsForSource('hoopla');
+		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			require_once ROOT_DIR . '/sys/User/Checkout.php';
+			$checkouts = [];
+			if ($this->hooplaEnabled) {
+				$hooplaCheckedOutTitlesURL = $this->getHooplaBasePatronURL($patron);
+				if (!empty($hooplaCheckedOutTitlesURL)) {
+					$hooplaCheckedOutTitlesURL .= '/checkouts/current';
+					$checkOutsResponse = $this->getAPIResponse('hoopla.getCheckouts', $hooplaCheckedOutTitlesURL);
+					if ($checkOutsResponse['httpCode'] == 200 && !empty($checkOutsResponse['body'])) {
+						$hooplaPatronStatus = null;
+						foreach ($checkOutsResponse['body'] as $checkOut) {
+							$hooplaRecordID = $checkOut->contentId;
+							$currentTitle = new Checkout();
+							$currentTitle->type = 'hoopla';
+							$currentTitle->source = 'hoopla';
+							$currentTitle->userId = $patron->id;
+							$currentTitle->sourceId = $checkOut->contentId;
+							$currentTitle->recordId = $checkOut->contentId;
+							$currentTitle->title = $checkOut->title;
+							if (isset($checkOut->author)) {
+								$currentTitle->author = $checkOut->author;
+							}
+							$currentTitle->format = $checkOut->kind;
+							$currentTitle->checkoutDate = $checkOut->borrowed;
+							$currentTitle->dueDate = $checkOut->due;
+							$currentTitle->accessOnlineUrl = $checkOut->url;
 
-						require_once ROOT_DIR . '/RecordDrivers/HooplaRecordDriver.php';
-						$hooplaRecordDriver = new HooplaRecordDriver($hooplaRecordID);
-						if ($hooplaRecordDriver->isValid()) {
-							// Get Record For other details
-							$currentTitle->groupedWorkId = $hooplaRecordDriver->getGroupedWorkId();
-							$currentTitle->author = $hooplaRecordDriver->getPrimaryAuthor();
-							$currentTitle->format = $hooplaRecordDriver->getPrimaryFormat();
+							require_once ROOT_DIR . '/RecordDrivers/HooplaRecordDriver.php';
+							$hooplaRecordDriver = new HooplaRecordDriver($hooplaRecordID);
+							if ($hooplaRecordDriver->isValid()) {
+								// Get Record For other details
+								$currentTitle->groupedWorkId = $hooplaRecordDriver->getGroupedWorkId();
+								$currentTitle->author = $hooplaRecordDriver->getPrimaryAuthor();
+								$currentTitle->format = $hooplaRecordDriver->getPrimaryFormat();
+							}
+							$key = $currentTitle->source . $currentTitle->sourceId . $currentTitle->userId; // This matches the key naming scheme in the Overdrive Driver
+							$checkouts[$key] = $currentTitle;
 						}
-						$key = $currentTitle->source . $currentTitle->sourceId . $currentTitle->userId; // This matches the key naming scheme in the Overdrive Driver
-						$checkedOutItems[$key] = $currentTitle;
+					} else {
+						global $logger;
+						$logger->log('Error retrieving checkouts from Hoopla.', Logger::LOG_ERROR);
 					}
-				} else {
-					global $logger;
-					$logger->log('Error retrieving checkouts from Hoopla.', Logger::LOG_ERROR);
 				}
 			}
+			$cachedCheckouts = $this->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
-		return $checkedOutItems;
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -465,8 +468,9 @@ class HooplaDriver extends AbstractEContentDriver {
 					if ($checkoutResponse['httpCode'] == 200) {
 						$this->trackUserUsageOfHoopla($patron);
 						$this->trackRecordCheckout($titleId);
-						$patron->clearCachedAccountSummaryForSource('hoopla');
-						$patron->forceReloadOfCheckouts();
+						$accountSummary = $patron->getCachedAccountSummary('hoopla');
+						$accountSummary->incrementNumberOfCheckouts();
+						$accountSummary->markCheckoutsStale();
 
 						$dueDate = date('l, F j', $checkoutResponse['body']->due);
 
@@ -669,7 +673,7 @@ class HooplaDriver extends AbstractEContentDriver {
 	 *
 	 * @return array
 	 */
-	public function returnCheckout($patron, $hooplaId) {
+	public function returnCheckout(User $patron, string $hooplaId) : array {
 		$apiResult = [];
 		if ($this->hooplaEnabled) {
 			$returnCheckoutURL = $this->getHooplaBasePatronURL($patron);
@@ -678,8 +682,9 @@ class HooplaDriver extends AbstractEContentDriver {
 				$returnCheckoutURL .= "/$itemId";
 				$result = $this->getAPIResponseReturnHooplaTitle($returnCheckoutURL);
 				if ($result) {
-					$patron->clearCachedAccountSummaryForSource('hoopla');
-					$patron->forceReloadOfCheckouts();
+					$accountSummary = $patron->getCachedAccountSummary('hoopla');
+					$accountSummary->decrementNumberOfCheckouts();
+					$accountSummary->markCheckoutsStale();
 
 					// Result for API or app use
 					$apiResult['title'] = translate([
@@ -783,21 +788,18 @@ class HooplaDriver extends AbstractEContentDriver {
 	 * @param $patron  User
 	 * @return mixed
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for HooplaDriver, renew one at a time'
+		];
 	}
 
-	/**
-	 * Renew a single title currently checked out to the user
-	 *
-	 * @param $patron     User
-	 * @param $recordId   string
-	 * @param $itemId     string
-	 * @param $itemIndex  string
-	 * @return mixed
-	 */
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
-		return false;
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Titles from Hoopla cannot be renewed'
+		];
 	}
 
 	/**

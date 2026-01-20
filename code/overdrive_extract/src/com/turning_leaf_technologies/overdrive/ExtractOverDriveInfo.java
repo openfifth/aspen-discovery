@@ -97,7 +97,8 @@ class ExtractOverDriveInfo {
 		boolean checkForDeletedRecords = false;
 		Calendar rightNow = Calendar.getInstance();
 		int hour = rightNow.get(Calendar.HOUR_OF_DAY);
-		if (hour == 8){
+		int configuredDeletionHour = settings.getDeletionCheckHour();
+		if (configuredDeletionHour >= 0 && hour == configuredDeletionHour){
 			checkForDeletedRecords = true;
 		}
 

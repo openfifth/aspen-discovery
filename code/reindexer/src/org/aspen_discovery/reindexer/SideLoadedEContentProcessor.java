@@ -119,6 +119,8 @@ class SideLoadedEContentProcessor extends MarcRecordProcessor{
 		List<DataField> urlFields = MarcUtil.getDataFields(record, 856);
 		RecordInfo relatedRecord = null;
 		int urlIndex = 0;
+		boolean hasValidUrl = false;
+		HashSet<String> urlValidationNotes = new HashSet<>();
 		SideLoadSettings sideLoadSettings = (SideLoadSettings) settings;
 		for (DataField urlField : urlFields){
 			//load url into the item
@@ -129,6 +131,8 @@ class SideLoadedEContentProcessor extends MarcRecordProcessor{
 					if (urlField.getIndicator1() == '4' || urlField.getIndicator1() == ' ' || urlField.getIndicator1() == '0') {
 						if (urlField.getIndicator2() == ' ' || urlField.getIndicator2() == '0' || urlField.getIndicator2() == '1' || urlField.getIndicator2() == '4') {
 							urlIndex++;
+
+							hasValidUrl = true;
 
 							ItemInfo itemInfo = new ItemInfo();
 							if (sideLoadSettings.isConvertFormatToEContent()) {
@@ -176,15 +180,21 @@ class SideLoadedEContentProcessor extends MarcRecordProcessor{
 
 							loadEContentFormatInformation(groupedWork, record, relatedRecord, itemInfo);
 						} else {
-							indexer.getLogEntry().addNote("Record " + identifier + " skipped: invalid 856 indicator2 '" + urlField.getIndicator2() + "'. Valid values are: whitespace (i.e., blank), 0, 1, 4.");
-							indexer.getLogEntry().incInvalidRecords(identifier);
+							urlValidationNotes.add(" -- " + linkText + " skipped: invalid 856 indicator2 '" + urlField.getIndicator2() + "'. Valid values are: whitespace (i.e., blank), 0, 1, 4.");
 						}
 					} else {
-						indexer.getLogEntry().addNote("Record " + identifier + " skipped: invalid 856 indicator1 '" + urlField.getIndicator1() + "' Valid values are: 0, 4, whitespace (i.e., blank).");
-						indexer.getLogEntry().incInvalidRecords(identifier);
+						urlValidationNotes.add(" -- " + linkText + " skipped: invalid 856 indicator1 '" + urlField.getIndicator1() + "' Valid values are: 0, 4, whitespace (i.e., blank).");
 					}
 				}
 			}
+		}
+
+		if (!hasValidUrl) {
+			indexer.getLogEntry().addNote("Record " + identifier + " skipped: no valid 856 found.");
+			for (String note : urlValidationNotes) {
+				indexer.getLogEntry().addNote(note);
+			}
+			indexer.getLogEntry().incInvalidRecords(identifier);
 		}
 
 		return relatedRecord;

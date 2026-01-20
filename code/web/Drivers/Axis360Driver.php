@@ -69,46 +69,47 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @access public
 	 */
 	public function getCheckouts(User $patron): array {
-		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		if (isset($this->checkouts[$patron->id])) {
-			return $this->checkouts[$patron->id];
-		}
-		$checkouts = [];
-		$settings = $this->getSettings($patron);
-		if ($settings == false) {
-			return $checkouts;
-		}
-		if ($this->getAxis360AccessToken($patron)) {
-			$checkoutsUrl = $settings->apiUrl . "/Services/VendorAPI/availability/v3_1";
-			$params = [
-				'statusFilter' => 'CHECKOUT',
-				'patronId' => $patron->getBarcode(),
-			];
-			$headers = [
-				'Authorization: ' . $this->accessToken,
-				'Library: ' . $settings->libraryPrefix,
-			];
-			$this->initCurlWrapper();
-			$this->curlWrapper->addCustomHeaders($headers, false);
-			$response = $this->curlWrapper->curlPostPage($checkoutsUrl, $params);
-			ExternalRequestLogEntry::logRequest('axis360.getCheckouts', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
-			/** @var stdClass $xmlResults */
-			$xmlResults = simplexml_load_string($response);
-			$status = $xmlResults->status;
-			if ($status->code == '0000') {
-				foreach ($xmlResults->title as $title) {
-					$this->loadCheckoutInfo($title, $checkouts, $patron);
-				}
-			} else {
-				global $logger;
-				$logger->log('Error loading checkouts ' . $status->statusMessage, Logger::LOG_ERROR);
-				$this->incrementStat('numApiErrors');
+		$accountSummary = $patron->getCachedAccountSummary('axis360');
+		$cachedCheckouts = $patron->getCachedCheckoutsForSource('axis360');
+		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			require_once ROOT_DIR . '/sys/User/Checkout.php';
+			if (isset($this->checkouts[$patron->id])) {
+				return $this->checkouts[$patron->id];
 			}
-
-			return $checkouts;
-		} else {
-			return $checkouts;
+			$checkouts = [];
+			$settings = $this->getSettings($patron);
+			if ($settings !== false) {
+				if ($this->getAxis360AccessToken($patron)) {
+					$checkoutsUrl = $settings->apiUrl . "/Services/VendorAPI/availability/v3_1";
+					$params = [
+						'statusFilter' => 'CHECKOUT',
+						'patronId' => $patron->getBarcode(),
+					];
+					$headers = [
+						'Authorization: ' . $this->accessToken,
+						'Library: ' . $settings->libraryPrefix,
+					];
+					$this->initCurlWrapper();
+					$this->curlWrapper->addCustomHeaders($headers, false);
+					$response = $this->curlWrapper->curlPostPage($checkoutsUrl, $params);
+					ExternalRequestLogEntry::logRequest('axis360.getCheckouts', 'POST', $checkoutsUrl, $this->curlWrapper->getHeaders(), false, $this->curlWrapper->getResponseCode(), $response, []);
+					/** @var stdClass $xmlResults */
+					$xmlResults = simplexml_load_string($response);
+					$status = $xmlResults->status;
+					if ($status->code == '0000') {
+						foreach ($xmlResults->title as $title) {
+							$this->loadCheckoutInfo($title, $checkouts, $patron);
+						}
+					} else {
+						global $logger;
+						$logger->log('Error loading checkouts ' . $status->statusMessage, Logger::LOG_ERROR);
+						$this->incrementStat('numApiErrors');
+					}
+				}
+			}
+			$cachedCheckouts = $this->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -124,18 +125,14 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @param $patron  User
 	 * @return mixed
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Axis360Driver, renew one at a time'
+		];
 	}
 
-	/**
-	 * Renew a single title currently checked out to the user
-	 *
-	 * @param $patron     User
-	 * @param $recordId   string
-	 * @return mixed
-	 */
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		return $this->checkOutTitle($patron, $recordId, true);
 	}
 
@@ -146,7 +143,7 @@ class Axis360Driver extends AbstractEContentDriver {
 	 * @param $transactionId   string
 	 * @return array
 	 */
-	public function returnCheckout($patron, $transactionId) {
+	public function returnCheckout(User $patron,string $transactionId) : array {
 		$result = [
 			'success' => false,
 		];
@@ -202,8 +199,9 @@ class Axis360Driver extends AbstractEContentDriver {
 				]);
 
 				$this->incrementStat('numEarlyReturns');
-				$patron->clearCachedAccountSummaryForSource('axis360');
-				$patron->forceReloadOfCheckouts();
+				$accountSummary = $patron->getCachedAccountSummary('axis360');
+				$accountSummary->decrementNumberOfCheckouts();
+				$accountSummary->markCheckoutsStale();
 			}
 		} else {
 			$result['message'] = translate([
@@ -456,6 +454,7 @@ class Axis360Driver extends AbstractEContentDriver {
 		$summary = $user->getCachedAccountSummary('axis360');
 
 		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
+			$summary->resetCounters();
 			//Get account information from api
 			if ($this->getAxis360AccessToken($user)) {
 				require_once ROOT_DIR . '/RecordDrivers/Axis360RecordDriver.php';
@@ -603,8 +602,9 @@ class Axis360Driver extends AbstractEContentDriver {
 					$patron->lastReadingHistoryUpdate = 0;
 					$patron->update();
 				}
-				$patron->clearCachedAccountSummaryForSource('axis360');
-				$patron->forceReloadOfCheckouts();
+				$accountSummary = $patron->getCachedAccountSummary('axis360');
+				$accountSummary->incrementNumberOfCheckouts();
+				$accountSummary->markCheckoutsStale();
 			}
 		} else {
 			$result['message'] = translate([
