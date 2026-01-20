@@ -9,7 +9,7 @@ class AspenMobile_NotificationTestingTool extends Admin_Admin {
 	function launch() : void {
 		global $interface;
 		$interface->assign('instructions', $this->getInstructions());
-        require_once ROOT_DIR . '/sys/Notifications/FirebaseNotification.php';
+		require_once ROOT_DIR . '/sys/Notifications/FirebaseNotification.php';
 		$firebaseNotification = new FirebaseNotification();
 		$notificationContents = '';
 		$receiptContents = '';
