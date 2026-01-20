@@ -1,11 +1,11 @@
 /////////////////////////////////////////////////////////////////////////////////
-/* UAParser.js v2.0.7
-   Copyright © 2012-2025 Faisal Salman <f@faisalman.com>
-   AGPLv3 License *//*
-   Detect Browser, Engine, OS, CPU, and Device type/model from User-Agent data.
-   Supports browser & node.js environment. 
-   Demo   : https://uaparser.dev
-   Source : https://github.com/faisalman/ua-parser-js */
+/*	UAParser.js v2.0.7
+	Copyright © 2012-2025 Faisal Salman <f@faisalman.com>
+	AGPLv3 License *//*
+	Detect Browser, Engine, OS, CPU, and Device type/model from User-Agent data.
+	Supports browser & node.js environment. 
+	Demo   : https://uaparser.dev
+	Source : https://github.com/faisalman/ua-parser-js */
 /////////////////////////////////////////////////////////////////////////////////
 
 /* jshint esversion: 3 */ 
