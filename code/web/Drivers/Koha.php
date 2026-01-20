@@ -2063,9 +2063,15 @@ class Koha extends AbstractIlsDriver {
 		if ( $sortingStrategy == 'lowest' ) {
     	    return min($fees);
     	}
+
+		// If more than one option share an equal number of occurrences, then pick the first one.
 		if ( $sortingStrategy == 'most_common' ) {
-			$feeCounts = array_count_values($fees);		
-			return arsort($feeCounts)[0];
+			$feeCounts = array_count_values($fees);
+			// Ensure it is sorted by fee (desc)
+			krsort($feeCounts);
+			// Sort by count (desc)
+			arsort($feeCounts);
+			return array_key_first($feeCounts);
 		}	
     	
     	return max($fees);
