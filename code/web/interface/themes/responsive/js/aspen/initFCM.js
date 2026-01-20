@@ -68,10 +68,13 @@ function initialize() {
 		}
 	});
 }
-if(Globals.loggedIn)
-{
-	initialize();
-}
+
+$(document).ready(function(){
+	if(Globals.loggedIn)
+	{
+		initialize();
+	}
+});
 self.addEventListener('fetch', event => {
 	console.log("fetch...");
 	console.log(event);
