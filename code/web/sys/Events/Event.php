@@ -1044,8 +1044,7 @@ class Event extends DataObject {
 					$structure['infoSection']['properties']['displayEventBranchOnThumbnail']['readOnly'] = true;
 					$this->displayEventBranchOnThumbnail = $eventType->displayEventBranchOnThumbnail;
 				}
-
-				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getInformationFieldSetFields();
+				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getFieldSetFieldsByUse(1);
 				// Update scheduling sections
 				switch ($this->recurrenceOption) {
 					case '2':
