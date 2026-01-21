@@ -1266,7 +1266,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			$user->whereAdd('homeLocationId = ' . $libraryId);
 		}
 
-		$user->orderBy('displayname ASC');
+		$user->orderBy('displayName ASC');
 		$user->limit(0, 500);
 
 		$users = array();
