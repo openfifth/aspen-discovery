@@ -33,7 +33,7 @@ AspenDiscovery.ToastNotifications = function() {
 			};
 		},
 		markEventToastSeen: function(SSEData) {
-			if (!SSEData.waitingListId) {
+			if (!SSEData.waitingListId && !SSEData.notificationId) {
 				return;
 			}
 
@@ -41,6 +41,7 @@ AspenDiscovery.ToastNotifications = function() {
 			var params = {
 				method: 'markEventToastSeen',
 				waitingListId: SSEData.waitingListId,
+				notificationId: SSEData.notificationId,
 			};
 
 			$.getJSON(url, params, function(data) {
@@ -118,7 +119,7 @@ AspenDiscovery.ToastNotifications = function() {
 				setTimeout(() => {
 				toast.remove();
 				}, 300);
-				if(SSEData.type === 'event_waiting_list') {
+				if(SSEData.type === 'event_waiting_list' || SSEData.type === 'event_change') {
 					AspenDiscovery.ToastNotifications.markEventToastSeen(SSEData);
 				}
 			});
