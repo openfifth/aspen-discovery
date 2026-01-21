@@ -156,5 +156,35 @@ class EventField extends DataObject {
 		}
 		return $fieldList;
 	}
+
+	public function	getFieldObjectStructure() {
+		if (!$this->find(true)) {
+			return;
+		}
+		$type = match ($this->type) {
+			0 => 'text',
+			1 => 'textarea',
+			2 => 'checkbox',
+			3 => 'enum',
+			4 => 'email',
+			5 => 'url',
+			default => '',
+		};
+		$structure = [
+			'fieldId' => $this->id,
+			'property' => $this->id,
+			'type' => $type,
+			'label' => $this->name,
+			'description' => $this->description,
+			'default' => $this->defaultValue,
+			'facetName' => $this->facetName,
+		];
+		if ($type == 'enum') {
+			$structure['values'] = explode("\n", $this->allowableValues);
+		} else if ($type == 'checkbox') {
+			$structure['returnValueForUnchecked'] = true;
+		}
+		return $structure;
+	}
 }
 
