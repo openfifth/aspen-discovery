@@ -166,35 +166,10 @@ class EventFieldSet extends DataObject {
 
 	public function getFieldObjectStructure() : array {
 		$structure = [];
-		foreach ($this->getEventFields() as $fieldId) {
+		foreach ($this->getEventFields() as $eventFieldSetField) {
 			$field = new EventField();
-			$field->id = $fieldId->eventFieldId;
-			if ($field->find(true)) {
-				$type = match ($field->type) {
-					0 => 'text',
-					1 => 'textarea',
-					2 => 'checkbox',
-					3 => 'enum',
-					4 => 'email',
-					5 => 'url',
-					default => '',
-				};
-				$structure[$field->id] = [
-					'fieldId' => $field->id,
-					'property' => $field->id,
-					'type' => $type,
-					'label' => $field->name,
-					'description' => $field->description,
-					'default' => $field->defaultValue,
-					'facetName' => $field->facetName,
-				];
-				if ($type == 'enum') {
-					$allowableValues = array_map('trim', explode("\n", $field->allowableValues));
-					require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
-					$keys = array_map([StringUtils::class, 'toCamelCase'], $allowableValues);
-					$structure[$field->id]['values'] = array_combine($keys, $allowableValues);
-				}
-			}
+			$field->id = $eventFieldSetField->eventFieldId;
+			$structure[$field->id] = $field->getFieldObjectStructure();
 		}
 		return $structure;
 	}
