@@ -1266,8 +1266,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			$user->whereAdd('homeLocationId = ' . $libraryId);
 		}
 
-		$user->orderBy('displayName ASC');
-		$user->limit(0, 500);
 
 		$users = array();
 
@@ -1275,11 +1273,16 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			while ($user->fetch()) {
 				$users[] = array(
 					'id' => $user->id,
-					'displayName' => $user->displayName,
+					'displayName' => $user->getDisplayName(),
 					'ils_barcode' => $user->ils_barcode,
 				);
 			} 
 		}
+
+		usort($users, function ($a, $b) {
+			return strcasecmp($a['displayName'], $b['displayName']);
+		});
+		
 		return $users;
 	}
 
