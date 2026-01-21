@@ -12796,15 +12796,12 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$formatted = [];
 
-		$event = new Event();
-		$event->id = $eventInstance->eventId;
-		if (!$event->find(true)) {
-			return false;
-		}
-
-
-
 		foreach ($eventInstances as $instance) {
+			$event = new Event();
+			$event->id = $instance->eventId;
+			if (!$event->find(true)) {
+				continue;
+			}
 			$humanEventDate = $this->formatHumanDate($instance->date);
 			global $logger;
 			$formatted[] = [
