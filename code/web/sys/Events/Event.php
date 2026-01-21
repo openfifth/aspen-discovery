@@ -234,7 +234,7 @@ class Event extends DataObject {
 			]
 		];
 		// Add empty, hidden, readonly copies of all potential fields so that data can be added if they exist for any selected event type
-		$eventFieldList = EventField::getEventFieldList();
+		$eventFieldList = EventField::getEventInformationFieldList();
 		foreach ($eventFieldList as $fieldId => $field) {
 			$structure['infoSection']['properties']['fieldSetFieldSection']['properties'][$fieldId] = [
 				'property' => $fieldId,
@@ -994,7 +994,7 @@ class Event extends DataObject {
 					$structure['scheduleSection']['properties']['eventLength']['readOnly'] = true;
 					$this->eventLength = $eventType->eventLength;
 				}
-				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getFieldSetFields();
+				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getInformationFieldSetFields();
 				// Update scheduling sections
 				switch ($this->recurrenceOption) {
 					case '2':

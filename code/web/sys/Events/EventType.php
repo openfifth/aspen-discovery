@@ -404,10 +404,10 @@ class EventType extends DataObject {
 
 	}
 
-	public function getFieldSetFields() : array {
+	public function getInformationFieldSetFields() : array {
 		$fieldSet = new EventFieldSet();
-		if ($this->eventFieldSetId) {
-			$fieldSet->id = $this->eventFieldSetId;
+		if ($this->eventInformationFieldSetId) {
+			$fieldSet->id = $this->eventInformationFieldSetId;
 			if ($fieldSet->find(true)) {
 				return $fieldSet->getFieldObjectStructure();
 			}
