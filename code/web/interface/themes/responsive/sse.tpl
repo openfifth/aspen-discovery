@@ -18,6 +18,10 @@
 				{
 					eventSource: '/MyAccount/AJAX?method=AspenEventRegistrationNotificationsSSE',
 					eventName: 'aspen_event_registration_notification'
+				},
+				{
+					eventSource: '/MyAccount/AJAX?method=AspenEventRegistrationNotificationsSSE',
+					eventName: 'aspen_event_change_notification'
 				}
 			);
 		</script>
