@@ -9037,6 +9037,11 @@ class MyAccount_AJAX extends JSON_Action {
 			$recordDriver = new AspenEventRecordDriver($sourceId);	
 			$interface->assign('isRegistered', $recordDriver->isUserRegisteredForEvent());
 
+			// Generate registration form using custom fields
+			$eventType = $eventInstance->getEventType();
+			$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+			$interface->assign('registrationFormStructure', $registrationFormStructure);
+
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 		}
