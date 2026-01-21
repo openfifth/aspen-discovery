@@ -305,4 +305,22 @@ class EventInstance extends DataObject {
 
 		return "{$availableSeats} / {$totalSeats}";
 	}
+
+	public function getEventType() : EventType|null {
+		if (!isset($this->eventId)) {
+			return null;
+		}
+		$event = $this->getParentEvent();
+
+		if (!isset($event->eventTypeId)) {
+			return null;
+		}
+		$eventType = new EventType();
+		$eventType->id = $event->eventTypeId;
+		if (!$eventType->find(true)) {
+			return null;
+		}
+
+		return $eventType;
+	}
 }
