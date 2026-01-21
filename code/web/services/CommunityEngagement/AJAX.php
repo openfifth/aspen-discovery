@@ -1266,23 +1266,36 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			$user->whereAdd('homeLocationId = ' . $libraryId);
 		}
 
-
 		$users = array();
 
 		if($user->find()) {
 			while ($user->fetch()) {
 				$users[] = array(
 					'id' => $user->id,
-					'displayName' => $user->getDisplayName(),
+					'displayName' => $user->displayName,
 					'ils_barcode' => $user->ils_barcode,
 				);
 			} 
 		}
 
 		usort($users, function ($a, $b) {
-			return strcasecmp($a['displayName'], $b['displayName']);
+			$aName = trim((string)$a['displayName']);
+			$bName = trim((string)$b['displayName']);
+
+			if ($aName === '' && $bName === '') {
+				return 0;
+			}
+
+			if ($aName === '') {
+				return 1;
+			}
+			if ($bName === '') {
+				return -1;
+			}
+
+			return strcasecmp($bName, $aName);
 		});
-		
+
 		return $users;
 	}
 
