@@ -12251,7 +12251,7 @@ class MyAccount_AJAX extends JSON_Action {
 				exit();
 			}
 
-			if ($homeLibrary->allowEventToastNotification != 1 ||
+			if ($homeLibrary->allowEventToastNotifications != 1 ||
 				(isset($patron->eventRegistrationNotificationsByToast) && $patron->eventRegistrationNotificationsByToast != 1)) {
 				echo "event: heart_beat\n";
 				echo "data: Event toast notifications disabled\n\n";
@@ -12321,6 +12321,64 @@ class MyAccount_AJAX extends JSON_Action {
 				flush();
 			}
 
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventNotification.php';
+			$eventNotifications = new UserAspenEventNotification();
+			$eventNotifications->userId = $patron->id;
+			$eventNotifications->toastShown = 0;
+			$eventNotifications->orderBy('createdAt ASC');
+
+			if ($eventNotifications->find()) {
+				while ($eventNotifications->fetch()) {
+
+					// Avoid duplicates in same SSE session
+					if (in_array('event_' . $eventNotifications->id, $sentThisSession)) {
+						continue;
+					}
+
+					// Build message text based on changeType
+					switch ($eventNotifications->changeType) {
+						case 'deleted':
+							$title = translate([
+								'text' => 'An event you registered for was cancelled',
+								'isPublicFacing' => true
+							]);
+							$icon = 'fa-calendar-xmark';
+							break;
+						default:
+							$title = translate([
+								'text' => 'An event you registered for has changed',
+								'isPublicFacing' => true
+							]);
+							$icon = 'fa-calendar';
+					}
+
+					$data = [
+						'id' => 'event_change_' . $eventNotifications->id,
+						'notificationId' =>$notification->id,
+						'type' => 'event_change',
+						'title' => $title,
+						'body' => translate([
+							'text' => 'Check your events for details',
+							'isPublicFacing' => true
+						]),
+						'icon' => $icon,
+						'link' => [
+							'href' => '/MyAccount/MyEvents',
+							'text' => translate([
+								'text' => 'View events',
+								'isPublicFacing' => true
+							])
+						]
+					];
+
+					echo "event: aspen_event_change_notification\n";
+					echo "data: " . json_encode($data) . "\n\n";
+					flush();
+
+					$sentThisSession[] = 'event_' . $eventNotifications->id;
+				}
+			}
+
 			sleep($interval);
 		}
 	}
@@ -12334,30 +12392,45 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$patron = UserAccount::getActiveUserObj();
 		$waitingListId = $_REQUEST['waitingListId'] ?? null;
+		$NotificationId = $_REQUEST['notificationId'] ?? null;
 		
-		if (!$waitingListId) {
+		if (!$waitingListId && !$notificationId) {
 			return [
 				'success' => false,
 			];
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
-
-		$waitingList = new UserAspenEventInstanceWaitingList();
-		$waitingList->id = $waitingListId;
-		$waitingList->userId = $patron->id;
-
-		if ($waitingList->find(true)) {
-			$waitingList->toastShown = 1;
-			$waitingList->update();
-			return [
-				'success' => true,
-			];
-		} else {
-			return [
-				'success' => false,
-			];
+		if ($waitingListId) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
+			$waitingList = new UserAspenEventInstanceWaitingList();
+			$waitingList->id = $waitingListId;
+			$waitingList->userId = $patron->id;
+			
+			if ($waitingList->find(true)) {
+				$waitingList->toastShown = 1;
+				$waitingList->update();
+				return [
+					'success' => true,
+				];
+			} 
+			return ['success' => false];
 		}
+
+		if ($notificationId) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventNotification.php';
+			
+			$notification = new UserAspenEventNotification();
+			$notification->id = $notificationId;
+			$notification->userId = $patron->id;
+
+			if ($notification->find(true)) {
+				$notification->toastShown = 1;
+				$notification->update();
+				return ['success' => true];
+			}
+			return ['success' => false];
+		}
+		return ['success' => false];
 	}
 
 	public function sendEventInstanceLevelNotifications($eventInstanceId, string $changeType): void {
@@ -12388,6 +12461,10 @@ class MyAccount_AJAX extends JSON_Action {
 			//Send one email
 			if ($user->eventRegistrationNotificationsByEmail == 1) {
 				$this->sendEventEmail($user, $changeType, [$eventInstance]);
+			}
+
+			if ($homeLibrary->allowEventToastNotifications && $user->eventRegistrationNotificationsByToast) {
+				$this->createEventChangeToastNotification($user, $eventInstance, $changeType);
 			}
 		}
 	}
@@ -12427,6 +12504,18 @@ class MyAccount_AJAX extends JSON_Action {
 				continue;
 			}
 			$this->sendEventEmail($user, $changeType, $userInstances);
+
+			$homeLibrary = Library::getPatronHomeLibrary();
+			if (is_null($homeLibrary)){
+				global $library;
+				$homeLibrary = $library;
+			}
+
+			if ($homeLibrary->allowEventToastNotifications && $user->eventRegistrationNotificationsByToast) {
+				foreach ($userInstances as $userInstance) {
+					$this->createEventChangeToastNotification($user, $userInstance, $changeType);
+				}
+			}
 		}
 	}
 
@@ -12494,6 +12583,21 @@ class MyAccount_AJAX extends JSON_Action {
 			];
 		}
 		return $formatted;
+	}
+
+	private function createEventChangeToastNotification($user, $eventInstance, $changeType): void {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventNotification.php';
+
+		$notification = new UserAspenEventNotification();
+		$notification->userId = $user->id;
+		$notification->eventInstanceId = $eventInstance->id;
+		$notification->eventId = $eventInstance->eventId;
+		$notification->notificationType = 'event_change';
+		$notification->changeType = $changeType;
+		$notification->toastShown = 0;
+		$notification->emailSent = 0;
+		$notification->createdAt = time();
+		$notification->insert();
 	}
 
  }
