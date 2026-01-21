@@ -995,7 +995,7 @@ class Event extends DataObject {
 					$structure['scheduleSection']['properties']['eventLength']['readOnly'] = true;
 					$this->eventLength = $eventType->eventLength;
 				}
-				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getInformationFieldSetFields();
+				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getFieldSetFieldsByUse(1);
 				// Update scheduling sections
 				switch ($this->recurrenceOption) {
 					case '2':
