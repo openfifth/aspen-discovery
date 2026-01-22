@@ -543,34 +543,32 @@ class HooplaDriver extends AbstractEContentDriver {
 								])
 							]
 						];
-					} else if ($checkoutResponse['httpCode'] == 422) {
-						if ($hooplaType == 'Flex') {
-							// prompt user to place a hold for Flex titles
-							return [
-								'success' => false,
-								'noCopies' => true,
+					} else if ($checkoutResponse['httpCode'] == 422 && $hooplaType == 'Flex') {
+						// prompt user to place a hold for Flex titles
+						return [
+							'success' => false,
+							'noCopies' => true,
+							'title' => translate([
+								'text' => 'Title Not Available',
+								'isPublicFacing' => true,
+							]),
+							'message' => translate([
+								'text' => 'No copies available right now, would you like to place a hold instead?',
+								'isPublicFacing' => true,
+							]),
+							'buttons' => '<button class="btn btn-primary" onclick="AspenDiscovery.Hoopla.doHold(\'' . $patron->id . '\', \'' . $titleId . '\')">' . translate(['text' => 'Place Hold', 'isPublicFacing' => true]) . '</button> ',
+							'api' => [
 								'title' => translate([
-									'text' => 'Title Not Available',
+									'text' => 'Unable to checkout title',
 									'isPublicFacing' => true,
 								]),
 								'message' => translate([
-									'text' => 'No copies available right now, would you like to place a hold instead?',
+									'text' => 'Title currently unavailable, please try again after 5 minutes',
 									'isPublicFacing' => true,
 								]),
-								'buttons' => '<button class="btn btn-primary" onclick="AspenDiscovery.Hoopla.doHold(\'' . $patron->id . '\', \'' . $titleId . '\')">' . translate(['text' => 'Place Hold', 'isPublicFacing' => true]) . '</button> ',
-								'api' => [
-									'title' => translate([
-										'text' => 'Unable to checkout title',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => 'Title currently unavailable, please try again after 5 minutes',
-										'isPublicFacing' => true,
-									]),
-								]
-							];
-						}
-					} else if ($checkoutResponse['httpCode'] == 412) {
+							]
+						];
+					} else {
 						return [
 							'success' => false,
 							'title' => translate([
@@ -578,7 +576,7 @@ class HooplaDriver extends AbstractEContentDriver {
 								'isPublicFacing' => true,
 							]),
 							'message' => translate([
-								'text' => $checkoutResponse['body']->message,
+								'text' => $checkoutResponse['body']->detail ?? $checkoutResponse['body']->message ?? 'Title currently unavailable',
 								'isPublicFacing' => true,
 							]),
 							'api' => [
@@ -587,7 +585,7 @@ class HooplaDriver extends AbstractEContentDriver {
 									'isPublicFacing' => true,
 								]),
 								'message' => translate([
-									'text' => $checkoutResponse['body']->message,
+									'text' => $checkoutResponse['body']->detail ?? $checkoutResponse['body']->message ?? 'Title currently unavailable',
 									'isPublicFacing' => true,
 								]),
 							]
