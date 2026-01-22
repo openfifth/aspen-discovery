@@ -71,7 +71,7 @@ class Axis360Driver extends AbstractEContentDriver {
 	public function getCheckouts(User $patron): array {
 		$accountSummary = $patron->getCachedAccountSummary('axis360');
 		$cachedCheckouts = $patron->getCachedCheckoutsForSource('axis360');
-		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+		if ($accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
 			require_once ROOT_DIR . '/sys/User/Checkout.php';
 			if (isset($this->checkouts[$patron->id])) {
 				return $this->checkouts[$patron->id];
@@ -236,7 +236,7 @@ class Axis360Driver extends AbstractEContentDriver {
 	public function getHolds(User $patron, ?bool $forSummary = false): array {
 		$accountSummary = $patron->getCachedAccountSummary('axis360');
 		$cachedHolds = $patron->getCachedHoldsForSource('axis360');
-		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 			$holds = [
 				'available' => [],
