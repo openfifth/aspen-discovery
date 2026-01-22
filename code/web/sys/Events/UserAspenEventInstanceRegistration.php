@@ -291,4 +291,19 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public function wasRegisteredByStaff(): bool {
 		return !empty($this->registeredByStaffId);
 	}
+
+	public function saveEventFieldValue(int $eventFieldId, string $value): void {
+		if (empty($value) && $value !== '0') {
+			return;
+		}
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
+		$fieldEntry = new UserAspenEventInstanceRegistrationEventField();
+		$fieldEntry->eventInstanceRegistrationId = $this->id;
+		$fieldEntry->eventFieldId = $eventFieldId;
+		if ($fieldEntry->find(true)) {
+			return;
+		}
+		$fieldEntry->value = $value;
+		$fieldEntry->insert();
+	}
 }
