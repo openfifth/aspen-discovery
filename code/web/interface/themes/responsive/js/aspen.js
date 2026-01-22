@@ -10624,6 +10624,12 @@ AspenDiscovery.Admin = (function () {
 			window.location.href = url + "?release=" + selectedRelease;
 			return false;
 		},
+        displayApiDocs: function () {
+            var url = Globals.path + "/API/Documentation";
+            var selectedApi = $('#apiSelector').val();
+            window.location.href = url + "?api=" + selectedApi;
+            return false;
+        },
 
 		updateBrowseSearchForSource() {
 			const selectedSource = $('#sourceSelect').val();
