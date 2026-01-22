@@ -8866,6 +8866,13 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		}
 
+		// save the user inputed registration information
+		foreach ($_REQUEST as $key => $value) {
+		    if (is_int($key)) {
+				$this->saveUserAspenEventInstanceRegistrationEventField($registration->id, $key, $value); 
+		    }
+		}
+
 		$result['success'] = true;
 		$result['title'] = translate([
 			'text' => 'Registration Information',
@@ -8891,6 +8898,20 @@ class MyAccount_AJAX extends JSON_Action {
 			$userEventsEntry->dateAdded = time();
 			$userEventsEntry->insert();
 		}
+	}
+	
+	private function saveUserAspenEventInstanceRegistrationEventField($eventInstanceRegistrationId, $eventFieldId, $value):void {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
+		$userAspenEventInstanceRegistrationEventField = new UserAspenEventInstanceRegistrationEventField();
+		$userAspenEventInstanceRegistrationEventField->eventInstanceRegistrationId = $eventInstanceRegistrationId;
+		$userAspenEventInstanceRegistrationEventField->eventFieldId = $eventFieldId;
+		if (
+			$userAspenEventInstanceRegistrationEventField->find(true) ||
+			(empty($value) && $value !== '0') ) {
+			return;
+		}
+		$userAspenEventInstanceRegistrationEventField->value = $value;
+		$userAspenEventInstanceRegistrationEventField->insert();
 	}
 
 	/** @noinspection PhpUnused */
