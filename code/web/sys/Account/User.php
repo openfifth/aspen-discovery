@@ -3588,6 +3588,7 @@ class User extends DataObject {
 				$summary->totalYearlyCheckouts = $readingHistoryDB->count();
 
 				// Top author
+				$authors = [];
 				$readingHistoryDB->find();
 				while ($readingHistoryDB->fetch()) {
 					$author = strtolower(preg_replace('/[.|,]/', "", $readingHistoryDB->author));
