@@ -8707,6 +8707,14 @@ class MyAccount_AJAX extends JSON_Action {
 		$registration->eventInstanceId = $eventInstanceId;
 		$registration->registerUser();
 
+		// save the user inputed registration information
+		foreach ($_REQUEST as $key => $value) {
+		    if (is_int($key)) {
+				$registration->saveEventFieldValue($key, $value); 
+		    }
+		}
+
+
 		$result['success'] = true;
 		$result['title'] = translate([
 			'text' => 'Registration Information',
