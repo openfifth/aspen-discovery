@@ -136,6 +136,8 @@ abstract class AbstractDriver {
 			foreach ($holdSection as $hold) {
 				if ($hold->sourceId == $sourceId) {
 					return $hold;
+				}elseif ($hold->recordId == $sourceId) {
+					return $hold;
 				}
 			}
 		}
