@@ -14,7 +14,7 @@ class Grouping_Record {
 	public string $language;
 	public ?string $publisher;
 	public ?string $publicationDate;
-	private ?int $sortablePublicationDate = null;
+	private null|int|string $sortablePublicationDate = null;
 	public ?string $placeOfPublication;
 	public ?string $physical;
 	public bool|string $closedCaptioned;
@@ -714,7 +714,7 @@ class Grouping_Record {
 		return $bookcoverUrl;
 	}
 
-	public function getSortablePublicationDate() : int {
+	public function getSortablePublicationDate() : int|string {
 		if ($this->sortablePublicationDate === null) {
 			if ($this->publicationDate == null) {
 				$this->sortablePublicationDate = 0;
