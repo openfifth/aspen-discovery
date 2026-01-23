@@ -32,6 +32,14 @@ abstract class CombinedResultSection extends DataObject {
 		if (array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1) {
 			$validResultSources['summon'] = 'Summon';
 		}
+		if (array_key_exists('CloudSource', $enabledModules)) {
+			require_once ROOT_DIR . '/sys/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $library->libraryId;
+			if ($libraryCloudSourceSetting->find(true)) {
+				$validResultSources['cloudsource'] = 'CloudSource';
+			}
+		}
 		if (array_key_exists('Events', $enabledModules)) {
 			$validResultSources['events'] = 'Events';
 		}

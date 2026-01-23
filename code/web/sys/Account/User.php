@@ -4545,6 +4545,11 @@ class User extends DataObject {
 			]);
 		}
 
+		if (array_key_exists('CloudSource', $enabledModules)) {
+			$sections['cloudsource'] = new AdminSection('CloudSource OA');
+			$sections['cloudsource']->addAction(new AdminAction('Settings', 'Define connection information for CloudSource OA and Aspen Discovery.', '/CloudSource/CloudSourceSettings'), 'Administer CloudSource OA');
+		}
+
 		if (array_key_exists('EBSCO EDS', $enabledModules)) {
 			$sections['ebsco'] = new AdminSection('EBSCO EDS');
 			$sections['ebsco']->addAction(new AdminAction('Settings', 'Define connection information between EBSCO EDS and Aspen Discovery.', '/EBSCO/EDSSettings'), 'Administer EBSCO EDS');
