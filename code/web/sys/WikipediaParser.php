@@ -111,6 +111,10 @@ class WikipediaParser {
 			global $logger;
 			$logger->log(sprintf('Wikipedia fetch failed (%d) for %s.', $curlWrapper->getResponseCode(), $pageUrl), Logger::LOG_DEBUG);
 			return null;
+		}elseif (empty($html)) {
+			global $logger;
+			$logger->log(sprintf('Wikipedia fetch returned no data for %s.', $pageUrl), Logger::LOG_DEBUG);
+			return null;
 		}
 
 		return $this->parseWikipedia($html, $title);

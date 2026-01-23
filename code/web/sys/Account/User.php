@@ -75,6 +75,7 @@ class User extends DataObject {
 	public $pickupSublocationId;
 	public $rememberHoldPromptForEdition;
 	public $holdPromptForEdition;
+	public $promptToFreezeHoldsImmediately;
 
 	public $lastListUsed;
 	public $lastListGroupAdded;
@@ -1654,6 +1655,7 @@ class User extends DataObject {
 		$this->__set('rememberHoldPickupLocation', (isset($_POST['rememberHoldPickupLocation']) && $_POST['rememberHoldPickupLocation'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPromptForEdition', (isset($_POST['rememberHoldPromptForEdition']) && $_POST['rememberHoldPromptForEdition'] == 'on') ? 1 : 0);
 		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
+		$this->__set('promptToFreezeHoldsImmediately', (isset($_POST['promptToFreezeHoldsImmediately']) && $_POST['promptToFreezeHoldsImmediately'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
@@ -1694,12 +1696,12 @@ class User extends DataObject {
 		if ($saveResult === false) {
 			return [
 				'success' => false,
-				'message' => 'Could not save to the database',
+				'message' => 'Could not save to the database.',
 			];
 		} else {
 			return [
 				'success' => true,
-				'message' => 'Your preferences were updated successfully',
+				'message' => 'Your preferences were updated successfully.',
 			];
 		}
 	}
@@ -2056,6 +2058,7 @@ class User extends DataObject {
 		require_once ROOT_DIR . "/sys/User/Hold.php";
 		$hold = new Hold();
 		$hold->userId = $this->id;
+		$hold->cancelled = 0;
 		$hold->find();
 		while ($hold->fetch()) {
 			$cacheKey = "$hold->source:$hold->recordId";
@@ -3393,6 +3396,7 @@ class User extends DataObject {
 				$summary->totalYearlyCheckouts = $readingHistoryDB->count();
 
 				// Top author
+				$authors = [];
 				$readingHistoryDB->find();
 				while ($readingHistoryDB->fetch()) {
 					$author = strtolower(preg_replace('/[.|,]/', "", $readingHistoryDB->author));
@@ -5359,8 +5363,28 @@ class User extends DataObject {
 			uasort($holdsToReturn['available'], $holdSort);
 		}
 		if (!empty($holdsToReturn['cancelled'])) {
-			uasort($holdsToReturn['cancelled'], $holdSort);
-			arsort($holdsToReturn['cancelled']);
+			$cancelledHoldSort = function (Hold $a, Hold $b) {
+				$titleA = $a->getSortTitle();
+				$titleB = $b->getSortTitle();
+
+				$dateA = (!empty($a->expirationDate) && $a->expirationDate > 0) ? $a->expirationDate : null;
+				$dateB = (!empty($b->expirationDate) && $b->expirationDate > 0) ? $b->expirationDate : null;
+
+				if ($dateA !== null && $dateB !== null) {
+					if ($dateA == $dateB) {
+						return strnatcasecmp($titleA, $titleB);
+					}
+					return $dateB <=> $dateA;
+				}
+				if ($dateA !== null && $dateB === null) {
+					return -1;
+				}
+				if ($dateA === null && $dateB !== null) {
+					return 1;
+				}
+				return strnatcasecmp($titleA, $titleB);
+			};
+			uasort($holdsToReturn['cancelled'], $cancelledHoldSort);
 		}
 		if (!empty($holdsToReturn['unavailable'])) {
 			if ($unavailableSort === 'reactivate') {

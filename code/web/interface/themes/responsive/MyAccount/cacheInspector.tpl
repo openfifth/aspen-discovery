@@ -8,9 +8,11 @@
 					<th>{translate text="Source" isAdminFacing=true}</th>
 					<th>{translate text="Data Stale" isAdminFacing=true}</th>
 					<th>{translate text="Checkouts Stale" isAdminFacing=true}</th>
+					<th>{translate text="Checkouts Cache Time" isAdminFacing=true}</th>
 					<th>{translate text="Checked Out" isAdminFacing=true}</th>
 					<th>{translate text="Checkouts Remaining" isAdminFacing=true}</th>
 					<th>{translate text="Overdue" isAdminFacing=true}</th>
+					<th>{translate text="Hold Cache Time" isAdminFacing=true}</th>
 					<th>{translate text="Holds Stale" isAdminFacing=true}</th>
 					<th>{translate text="Available Holds" isAdminFacing=true}</th>
 					<th>{translate text="Unavailable Holds" isAdminFacing=true}</th>
@@ -22,10 +24,12 @@
 					<tr>
 						<td>{$accountSummary->source}</td>
 						<td>{if $accountSummary->dataIsStale}Y{else}N{/if}</td>
+						<td>{$accountSummary->checkoutCacheTime|date_format:"%D %T"}</td>
 						<td>{if $accountSummary->checkoutsAreStale}Y{else}N{/if}</td>
 						<td>{$accountSummary->numCheckedOut}</td>
 						<td>{$accountSummary->numCheckoutsRemaining}</td>
 						<td>{$accountSummary->numOverdue}</td>
+						<td>{$accountSummary->holdCacheTime|date_format:"%D %T"}</td>
 						<td>{if $accountSummary->holdsAreStale}Y{else}N{/if}</td>
 						<td>{$accountSummary->numAvailableHolds}</td>
 						<td>{$accountSummary->numUnavailableHolds}</td>
