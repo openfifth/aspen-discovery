@@ -34,11 +34,11 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 	protected $resultsModule = 'Search';
 	protected $resultsAction = 'Results';
 
-		/** @var string */
+	/** @var string */
 	protected $searchSource = 'local';
 	protected $searchType = 'basic';
 
-/** Values for the options array*/
+	/** Values for the options array*/
 	protected $holdings = true;
 	protected $didYouMean = false;
 	protected $language = 'en';
@@ -73,7 +73,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 	protected $journalTitle = false;
 	protected $lightWeightRes = true;
 	protected $sort = null;
-	  /**
+	/**
 	 * @var string mixed
 	 */
 	private $searchIndex = '';
@@ -134,16 +134,16 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 	 * Create an instance of the Summon Searcher
 	 * @return SearchObject_CloudSourceSearcher
 	 */
-	 public static function getInstance() {
-	if (SearchObject_CloudSourceSearcher::$instance == null) {
-		SearchObject_CloudSourceSearcher::$instance = new SearchObject_CloudSourceSearcher();
+	public static function getInstance() {
+		if (SearchObject_CloudSourceSearcher::$instance == null) {
+			SearchObject_CloudSourceSearcher::$instance = new SearchObject_CloudSourceSearcher();
 		}
 		return SearchObject_CloudSourceSearcher::$instance;
 	}
 
 	/**
 	 * Retreive settings for institution's summon connector
-	*/
+	 */
 	private function getSettings() {
 		global $library;
 		require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
@@ -315,7 +315,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 		return $summary;
 	}
 
-	 /** Return a url for use by pagination template
+	/** Return a url for use by pagination template
 	 *
 	 * @access  public
 	 * @return  string   URL of a new search
