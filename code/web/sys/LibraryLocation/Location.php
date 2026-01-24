@@ -152,6 +152,7 @@ class Location extends DataObject {
 	//LiDA Settings
 	public $lidaLocationSettingId;
 	public $lidaSelfCheckSettingId;
+	public $lidaHomeScreenLinkGroupId;
 
 	//Facet Settings
 	public $openArchivesFacetSettingId;

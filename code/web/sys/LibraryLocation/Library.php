@@ -477,6 +477,7 @@ class Library extends DataObject {
 	//LiDA settings
 	public $lidaNotificationSettingId;
 	public $lidaGeneralSettingId;
+	public $lidaHomeScreenLinkGroupId;
 
 	public $accountProfileId;
 
