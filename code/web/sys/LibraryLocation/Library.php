@@ -6812,4 +6812,18 @@ class Library extends DataObject {
 			'useAlternateLibraryCardForCloudLibrary' => $useAlternateLibraryCardForCloudLibrary,
 		];
 	}
+
+	protected $_homeScreenLinkGroup = null;
+
+	public function getHomeScreenLinkGroup(): ?HomeScreenLinkGroup {
+		if ($this->_homeScreenLinkGroup == null) {
+			require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+			$homeScreenLinkGroup = new HomeScreenLinkGroup();
+			$homeScreenLinkGroup->id = $this->lidaHomeScreenLinkGroupId;
+			if ($homeScreenLinkGroup->find(true)) {
+				$this->_homeScreenLinkGroup = $homeScreenLinkGroup;
+			}
+		}
+		return $this->_homeScreenLinkGroup;
+	}
 }

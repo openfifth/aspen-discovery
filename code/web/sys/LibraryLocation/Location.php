@@ -3300,4 +3300,26 @@ class Location extends DataObject {
 
 		return $structure;
 	}
+
+	protected $_homeScreenLinkGroup = null;
+
+	/**
+	 * @return HomeScreenLinkGroup|null
+	 * @noinspection PhpUnused
+	 */
+	public function getHomeScreenLinkGroup(): ?HomeScreenLinkGroup {
+		if ($this->_homeScreenLinkGroup == null) {
+			if ($this->lidaHomeScreenLinkGroupId == -1) {
+				$this->_homeScreenLinkGroup = $this->getParentLibrary()->getHomeScreenLinkGroup();
+			} else {
+				require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+				$homeScreenLinkGroup = new HomeScreenLinkGroup();
+				$homeScreenLinkGroup->id = $this->lidaHomeScreenLinkGroupId;
+				if ($homeScreenLinkGroup->find(true)) {
+					$this->_homeScreenLinkGroup = $homeScreenLinkGroup;
+				}
+			}
+		}
+		return $this->_homeScreenLinkGroup;
+	}
 }
