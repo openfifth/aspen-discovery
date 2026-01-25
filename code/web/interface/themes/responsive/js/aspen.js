@@ -1068,6 +1068,11 @@ var AspenDiscovery = (function(){
 			}
 		},
 
+		copyCurrentURL: function() {
+      var $url = aspenJQ(location).attr('href');
+			navigator.clipboard.writeText($url);
+		},
+
 		goToAnchor: function(anchorName) {
 			aspenJQ('html,body').animate({scrollTop: aspenJQ("#" + anchorName).offset().top},'slow');
 		},

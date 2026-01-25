@@ -108,7 +108,10 @@ class Location extends DataObject {
 	public $automaticTimeoutLengthLoggedOut;
 	public $additionalCss;
 	public $showEmailThis;
-	public $showShareOnExternalSites;
+	public $showShareOnX;
+	public $showShareOnFacebook;
+	public $showShareOnPinterest;
+	public $showShareOnLink;
 	public $showFavorites;
 	public /** @noinspection PhpUnused */
 		$econtentLocationsToInclude;
