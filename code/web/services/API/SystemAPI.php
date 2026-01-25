@@ -1306,6 +1306,21 @@ class SystemAPI extends AbstractAPI {
 		}
 	}
 
+	public function getHomeScreenLinksByGroup(array $localHomeScreenLinks = null): array {
+		$homeScreenLinks = [];
+		if ($localHomeScreenLinks) {
+			foreach ($localHomeScreenLinks as $homeScreenLink) {
+				require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLink.php';
+				$link = new HomeScreenLink();
+				$link->id = $homeScreenLink->homeScreenLinkId;
+				$link->find(true);
+				$homeScreenLinks[] = $link;
+			}
+		}
+
+		return $homeScreenLinks;
+	}
+
 	function getBreadcrumbs(): array {
 		return [];
 	}
