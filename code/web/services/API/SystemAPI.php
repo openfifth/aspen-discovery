@@ -1252,6 +1252,11 @@ class SystemAPI extends AbstractAPI {
 							}
 						}
 					}
+				} else {
+					return [
+						'success' => false,
+						'message' => 'No library found with provided id',
+					];
 				}
 			} else if (isset($_REQUEST['locationId'])) {
 				$location = new Location();
@@ -1282,11 +1287,16 @@ class SystemAPI extends AbstractAPI {
 							}
 						}
 					}
+				} else {
+					return [
+						'success' => false,
+						'message' => 'No location found with provided id',
+					];
 				}
 			}
 			return [
 				'success' => true,
-				'links' => $homeScreenLinks,
+				'links' => $homeScreenLinks
 			];
 		} else {
 			return [
