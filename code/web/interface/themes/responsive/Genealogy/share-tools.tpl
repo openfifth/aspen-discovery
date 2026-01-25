@@ -23,7 +23,7 @@
 			</a>
 		{/if}
 		{if !empty($showShareOnLink)}
-			<a href="javascript:void(0);" onclick="AspenDiscovery.copyCurrentURL();" title="{translate text="Share a link to this page" inAttribute=true isPublicFacing=true}">
+			<a href="javascript:void(0);" onclick="navigator.clipboard.writeText('{$url}/{$recordDriver->getLinkUrl()}');" title="{translate text="Share a link to this page" inAttribute=true isPublicFacing=true}">
 				<i class="fas fa-share-alt-square fa-2x fa-fw"></i>
 			</a>
 		{/if}
