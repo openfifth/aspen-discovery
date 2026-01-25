@@ -1004,6 +1004,16 @@ class Library extends DataObject {
 			$appGeneralSettings[$appGeneralSetting->id] = $appGeneralSetting->name;
 		}
 
+		require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+		$homeScreenLinkGroup = new HomeScreenLinkGroup();
+		$homeScreenLinkGroup->orderBy('name');
+		$homeScreenLinkGroups = [];
+		$homeScreenLinkGroup->find();
+		$homeScreenLinkGroups[-1] = 'none';
+		while ($homeScreenLinkGroup->fetch()) {
+			$homeScreenLinkGroups[$homeScreenLinkGroup->id] = $homeScreenLinkGroup->name;
+		}
+
 		require_once ROOT_DIR . '/sys/Authentication/SSOSetting.php';
 		$ssoSetting = new SSOSetting();
 		$ssoSetting->orderBy('name');
@@ -4797,6 +4807,15 @@ class Library extends DataObject {
 						'values' => $notificationSettings,
 						'label' => 'Notification Settings',
 						'description' => 'The Notification Settings to use for Aspen LiDA',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+					'lidaHomeScreenLinkGroupId' => [
+						'property' => 'lidaHomeScreenLinkGroupId',
+						'type' => 'enum',
+						'values' => $homeScreenLinkGroups,
+						'label' => 'Home Screen Link Group',
+						'description' => 'The Home Screen Link Group to use for Aspen LiDA for this library',
 						'hideInLists' => true,
 						'default' => -1,
 					],
