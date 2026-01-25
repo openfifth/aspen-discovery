@@ -579,7 +579,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 	public function getCheckouts(User $patron, bool $forSummary = false): array {
 		$accountSummary = $patron->getCachedAccountSummary('overdrive');
 		$cachedCheckouts = $patron->getCachedCheckoutsForSource('overdrive');
-		if ($accountSummary->dataIsStale || $accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+		if ($accountSummary->dataIsStale || $accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
 			require_once ROOT_DIR . '/sys/User/Checkout.php';
 			global $logger;
 
@@ -736,7 +736,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 	public function getHolds(User $patron, bool $forSummary = false): array {
 		$accountSummary = $patron->getCachedAccountSummary('overdrive');
 		$cachedHolds = $patron->getCachedHoldsForSource('overdrive');
-		if ($accountSummary->dataIsStale || $accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->dataIsStale || $accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 			$holds = [
 				'available' => [],

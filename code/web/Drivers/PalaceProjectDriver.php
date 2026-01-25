@@ -38,7 +38,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 		$cachedHolds = $patron->getCachedHoldsForSource('palace_project');
 		$cachedCheckouts = $patron->getCachedCheckoutsForSource('palace_project');
 
-		if ($accountSummary->holdsAreStale || $accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds']) || isset($_REQUEST['refreshCheckouts'])) {
+		if ($accountSummary->areHoldsStale() || $accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds']) || isset($_REQUEST['refreshCheckouts'])) {
 			require_once ROOT_DIR . '/sys/User/Checkout.php';
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 			$checkouts = [];
