@@ -8,7 +8,7 @@ class HomeScreenLinkGroup extends DataObject {
 	public $name;
 
 	/** @var HomeScreenLinkGroupEntry[] */
-	protected $_homeScreenLinkGroups;
+	protected $_homeScreenLinks;
 
 	protected $_libraries;
 	protected $_locations;
@@ -80,5 +80,19 @@ class HomeScreenLinkGroup extends DataObject {
 
 		self::$_objectStructure[$context] = $structure;
 		return self::$_objectStructure[$context];
+	}
+
+	public function getHomeScreenLinks(): ?array {
+		if (!isset($this->_homeScreenLinks) && $this->id) {
+			$this->_homeScreenLinks = [];
+			$homeScreenLink = new HomeScreenLinkGroupEntry();
+			$homeScreenLink->homeScreenLinkGroupId = $this->id;
+			$homeScreenLink->orderBy('weight');
+			$homeScreenLink->find();
+			while ($homeScreenLink->fetch()) {
+				$this->_homeScreenLinks[$homeScreenLink->id] = clone($homeScreenLink);
+			}
+		}
+		return $this->_homeScreenLinks;
 	}
 }
