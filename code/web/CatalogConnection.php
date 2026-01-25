@@ -579,7 +579,7 @@ class CatalogConnection {
 	public function getCheckouts(User $user): array {
 		$accountSummary = $user->getCachedAccountSummary('ils');
 		$cachedCheckouts = $user->getCachedCheckoutsForSource('ils');
-		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+		if ($accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
 			$checkouts = $this->driver->getCheckouts($user);
 
 			$cachedCheckouts = $this->driver->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
@@ -929,7 +929,7 @@ class CatalogConnection {
 	public function getHolds(User $user): array {
 		$accountSummary = $user->getCachedAccountSummary('ils');
 		$cachedHolds = $user->getCachedHoldsForSource('ils');
-		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			$holds = $this->driver->getHolds($user);
 
 			$userLibrary = $user->getHomeLibrary();
