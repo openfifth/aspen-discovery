@@ -30,25 +30,22 @@ class AspenLiDA_HomeScreenLinkGroups extends ObjectEditor {
 		$object->orderBy($this->getSort());
 		$this->applyFilters($object);
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
-		if (!UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links')) {
-			// Administer Library Aspen LiDA Home Screen Links: Include the group for the home library and any location groups.
-			$homeScreenLinkGroups = [];
-			$library = Library::getPatronHomeLibrary(UserAccount::getActiveUserObj());
-			if ($library && $library->lidaHomeScreenLinkGroupId > 0) {
-				$homeScreenLinkGroups[] = $library->lidaHomeScreenLinkGroupId;
+		$homeScreenLinkGroups = [];
+		$library = Library::getPatronHomeLibrary(UserAccount::getActiveUserObj());
+		if ($library && $library->lidaHomeScreenLinkGroupId > 0) {
+			$homeScreenLinkGroups[] = $library->lidaHomeScreenLinkGroupId;
+		}
+		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
+		$locations = Location::getLocationListAsObjects(true);
+		foreach ($locations as $tmpLocation) {
+			if ($tmpLocation->lidaHomeScreenLinkGroupId > 0) {
+				$homeScreenLinkGroups[] = $tmpLocation->lidaHomeScreenLinkGroupId;
 			}
-			require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
-			$locations = Location::getLocationListAsObjects(true);
-			foreach ($locations as $tmpLocation) {
-				if ($tmpLocation->lidaHomeScreenLinkGroupId > 0) {
-					$homeScreenLinkGroups[] = $tmpLocation->lidaHomeScreenLinkGroupId;
-				}
-			}
-			if (!empty($homeScreenLinkGroups)) {
-				$object->whereAddIn('id', array_unique($homeScreenLinkGroups), false);
-			} else {
-				return [];
-			}
+		}
+		if (!empty($homeScreenLinkGroups)) {
+			$object->whereAddIn('id', array_unique($homeScreenLinkGroups), false);
+		} else {
+			return [];
 		}
 		$object->find();
 		$list = [];
