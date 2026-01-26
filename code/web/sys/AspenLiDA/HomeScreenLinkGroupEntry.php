@@ -54,7 +54,7 @@ class HomeScreenLinkGroupEntry extends DataObject {
 		$homeScreenLinks->find();
 		$allHomeScreenLinksList = [];
 		while ($homeScreenLinks->fetch()) {
-			$allHomeScreenLinksList[$homeScreenLinks->id] = $homeScreenLinks->title . " ($homeScreenLinks->textId)" . " - $browseCategories->id";
+			$allHomeScreenLinksList[$homeScreenLinks->id] = $homeScreenLinks->title . " ($homeScreenLinks->textId)" . " - $homeScreenLinks->id";
 		}
 		$structure = [
 			'id' => [
