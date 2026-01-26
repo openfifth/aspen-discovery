@@ -231,10 +231,10 @@
 								{if !$record->isIll}
 									{if $record->frozen}
 										<button onclick="return AspenDiscovery.Account.thawHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', this);"
-												class="btn btn-sm btn-default btn=wrap thawButton">{translate text="Thaw Hold" isPublicFacing=true}</button>
+												class="btn btn-sm btn-default btn-wrap thawButton">{translate text="Thaw Hold" isPublicFacing=true}</button>
 									{else}
 										<button onclick="return AspenDiscovery.Account.freezeHold('{$record->userId}', '{$record->sourceId}', '{$record->cancelId}', {if !empty($suspendRequiresReactivationDate)}true{else}false{/if}, this);"
-												class="btn btn-sm btn-default btn=wrap freezeButton">{translate text="Freeze Hold" isPublicFacing=true}</button>
+												class="btn btn-sm btn-default btn-wrap freezeButton">{translate text="Freeze Hold" isPublicFacing=true}</button>
 									{/if}
 								{/if}
 							{/if}
