@@ -588,6 +588,35 @@ class HomeScreenLink extends DataObject {
 		return '/AspenLiDA/HomeScreenLinks?objectAction=edit&id=' . $this->id;
 	}
 
+	function validateTextId(): array {
+		$validationResults = [
+			'validatedOk' => true,
+			'errors' => [],
+		];
+
+		if (!$this->textId || strlen($this->textId) == 0) {
+			$this->textId = $this->label . ' ' . $this->sharing;
+			if ($this->sharing == 'private') {
+				$this->textId .= '_' . $this->userId;
+			} elseif ($this->sharing == 'location') {
+				$location = Location::getUserHomeLocation();
+				$this->textId .= '_' . $location->code;
+			} elseif ($this->sharing == 'library') {
+				$this->textId .= '_' . Library::getPatronHomeLibrary()->subdomain;
+			}
+		}
+
+		$this->textId = strtolower($this->textId);
+		// Convert any non-word characters to an underscore.
+		$this->textId = preg_replace('/\W/', '_', $this->textId);
+		// Ensure the length is 150 or fewer characters.
+		if (strlen($this->textId) > 150) {
+			$this->textId = substr($this->textId, 0, 150);
+		}
+
+		return $validationResults;
+	}
+
 	public function canActiveUserEdit(): bool {
 		if ($this->sharing == 'everyone') {
 			return UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links') || ($this->userId == UserAccount::getActiveUserId());
