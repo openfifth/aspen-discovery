@@ -134,6 +134,11 @@ class Events_Calendar extends Action {
 				}
 			}
 			$selectedLocation = array_search($selectedLocation, $locations);
+			if ($selectedCode !== false) {
+				$selectedLocation = $selectedCode;
+			} else {
+				$selectedCode = 'all';
+			}
 		} elseif ($eventsDefaultCalendarView == 2 ) {
 			reset($locations);
 			$selectedLocation = key($locations);
