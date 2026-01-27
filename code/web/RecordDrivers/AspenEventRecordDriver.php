@@ -138,7 +138,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('numberOfSeats', $this->getNumberOfSeats());
 	$interface->assign('availableSeats', $this->getAvailableSeats());
 	$interface->assign('isEventFull', $this->isEventFull());
-	$this->assignWaitingListTemplateVars();
+	$this->assignRegistrationTemplateVars();
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -559,7 +559,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return $eventObject->getDisplayWaitingListSeats();
 	}
 
-	public function assignWaitingListTemplateVars(): void {
+	public function assignRegistrationTemplateVars(): void {
 		global $interface;
 		$interface->assign('waitingList', $this->isWaitingListEnabled());
 		$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
@@ -584,6 +584,19 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 		$interface->assign('registrationAction', $registrationAction);
 		$interface->assign('displayWaitingListSeats', $this->getDisplayWaitingListSeats());
+
+		$canStaffRegister = false;
+		$eventInstanceId = null;
+		if ($eventObject) {
+			$eventInstanceId = $eventObject->id;
+			$parentEvent = $eventObject->getParentEvent();
+			if ($parentEvent && $parentEvent->registrationRequired) {
+				require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+				$canStaffRegister = EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId);
+			}
+		}
+		$interface->assign('canStaffRegister', $canStaffRegister);
+		$interface->assign('eventInstanceId', $eventInstanceId);
 	}
 
 	/**
