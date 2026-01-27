@@ -49,7 +49,7 @@ class CloudSourceRecordDriver extends RecordInterface {
 	 */
 	public function getLinkUrl($unscoped = false)
 	{
-		return $this->getRecordUrl();
+		return '/CloudSource/Record?id=' . $this->getId();
 	}
 
 	/**
@@ -155,6 +155,11 @@ class CloudSourceRecordDriver extends RecordInterface {
 		$interface->assign('accessibleBrowseCategories', $accessibleBrowseCategories);
 
 		return 'RecordDrivers/CloudSource/browse_result.tpl';
+	}
+
+	public function getRecordViewData()
+	{
+		return $this->record;
 	}
 
 	/**

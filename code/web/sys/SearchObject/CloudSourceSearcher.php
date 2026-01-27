@@ -129,7 +129,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 	}
 
 	/**
-	 * Create an instance of the Summon Searcher
+	 * Create an instance of the CloudSource Searcher
 	 * @return SearchObject_CloudSourceSearcher
 	 */
 	public static function getInstance() {
