@@ -97,9 +97,8 @@ class Events_EventManagement extends Action {
 		$eventInstance->find();
 		while ($eventInstance->fetch()) {
 			$parentEvent = $eventInstance->getParentEvent();
-			if ($parentEvent && !$parentEvent->deleted) {
-				// For now, show all events where registration could be enabled (has seats or registration flag)
-				// Staff can manage any event they have location access to
+			if ($parentEvent && !$parentEvent->deleted && $parentEvent->registrationRequired) {
+				// Only show events with registration enabled that staff has location access to
 				if (EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
 					$events[] = [
 						'instanceId' => $eventInstance->id,
