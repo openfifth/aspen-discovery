@@ -336,6 +336,7 @@ class Events_Calendar extends Action {
 							'isCancelled' => $isCancelled,
 							'hiddenTimestamps' => $hiddenTimestamps,
 							'eventFields' => $eventFields,
+							'location' => $result['branch'][0],
 						];
 					}
 				}
