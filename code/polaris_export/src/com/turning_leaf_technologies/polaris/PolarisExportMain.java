@@ -49,6 +49,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -63,10 +64,10 @@ public class PolarisExportMain {
 
 	private static IndexingProfile indexingProfile;
 	private static MarcRecordGrouper recordGroupingProcessorSingleton;
-	private static GroupedWorkIndexer groupedWorkIndexer;
 	private static Ini configIni;
 	private static Connection dbConn;
 	private static String serverName;
+	private static String databaseConnectionInfo;
 
 	private static IlsExtractLogEntry logEntry;
 	private static long accountProfileId;
@@ -96,6 +97,9 @@ public class PolarisExportMain {
 
 	private static int polarisMajorVersion;
 	private static int polarisMinorVersion;
+	private static final ThreadLocal<IndexerHolder> groupedWorkIndexerThreadLocal = new ThreadLocal<>();
+	private static final Map<Thread, IndexerHolder> groupedWorkIndexers = new ConcurrentHashMap<>();
+	private static final Set<String> groupedWorksQueued = ConcurrentHashMap.newKeySet();
 
 	public static void main(String[] args) {
 		boolean extractSingleWork = false;
@@ -145,7 +149,7 @@ public class PolarisExportMain {
 
 			try {
 				//Connect to the Aspen Database
-				String databaseConnectionInfo = ConfigUtil.cleanIniValue(configIni.get("Database", "database_aspen_jdbc"));
+				databaseConnectionInfo = ConfigUtil.cleanIniValue(configIni.get("Database", "database_aspen_jdbc"));
 				if (databaseConnectionInfo == null) {
 					logger.error("Please provide database_aspen_jdbc within config.pwd.ini");
 					System.exit(1);
@@ -219,11 +223,7 @@ public class PolarisExportMain {
 					recordGroupingProcessorSingleton = null;
 				}
 
-				if (groupedWorkIndexer != null) {
-					groupedWorkIndexer.finishIndexingFromExtract(logEntry);
-					groupedWorkIndexer.close();
-					groupedWorkIndexer = null;
-				}
+				closeGroupedWorkIndexers();
 
 				try {
 					if (indexingProfile.isRunFullUpdate()) {
@@ -1435,6 +1435,7 @@ public class PolarisExportMain {
 							logger.error("Error waiting for all extracts to finish");
 						}
 					}
+					groupedWorksQueued.clear();
 					logEntry.saveResults();
 				} catch (Exception e) {
 					logEntry.incErrors("Unable to parse document for paged bibs response", e);
@@ -1539,8 +1540,10 @@ public class PolarisExportMain {
 						//Regroup the record
 						String groupedWorkId = groupPolarisRecord(marcRecord);
 						if (groupedWorkId != null) {
-							//Reindex the record
-							getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
+							//Reindex the record once per batch
+							if (groupedWorksQueued.add(groupedWorkId)) {
+								getGroupedWorkIndexer().processGroupedWork(groupedWorkId);
+							}
 						}
 						response.numChanges++;
 					}
@@ -1902,10 +1905,56 @@ public class PolarisExportMain {
 	}
 
 	private synchronized static GroupedWorkIndexer getGroupedWorkIndexer() {
-		if (groupedWorkIndexer == null) {
-			groupedWorkIndexer = new GroupedWorkIndexer(serverName, dbConn, configIni, false, false, logEntry, logger);
+		IndexerHolder holder = groupedWorkIndexerThreadLocal.get();
+		if (holder == null) {
+			try {
+				Connection threadConn = DriverManager.getConnection(databaseConnectionInfo);
+				holder = new IndexerHolder(new GroupedWorkIndexer(serverName, threadConn, configIni, false, false, logEntry, logger), threadConn);
+				groupedWorkIndexerThreadLocal.set(holder);
+				groupedWorkIndexers.put(Thread.currentThread(), holder);
+			} catch (SQLException e) {
+				throw new RuntimeException("Unable to create grouped work indexer for thread", e);
+			}
 		}
-		return groupedWorkIndexer;
+		return holder.indexer;
+	}
+
+	private static void closeGroupedWorkIndexers() {
+		for (IndexerHolder holder : groupedWorkIndexers.values()) {
+			if (holder == null || holder.closed) {
+				continue;
+			}
+			try {
+				holder.indexer.finishIndexingFromExtract(logEntry);
+			} catch (Exception e) {
+				logEntry.incErrors("Error finishing indexing from extract for grouped work indexer", e);
+			} finally {
+				try {
+					holder.indexer.close();
+				} catch (Exception e) {
+					logEntry.incErrors("Error closing grouped work indexer", e);
+				}
+				try {
+					holder.connection.close();
+				} catch (Exception e) {
+					logEntry.incErrors("Error closing grouped work indexer connection", e);
+				}
+				holder.closed = true;
+			}
+		}
+		groupedWorkIndexers.clear();
+		groupedWorkIndexerThreadLocal.remove();
+	}
+
+	private static class IndexerHolder {
+		private final GroupedWorkIndexer indexer;
+		private final Connection connection;
+		private boolean closed = false;
+
+		private IndexerHolder(GroupedWorkIndexer indexer, Connection connection) {
+			this.indexer = indexer;
+			this.connection = connection;
+		}
 	}
 
 	private static class ProcessBibRequestResponse{
