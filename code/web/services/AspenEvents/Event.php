@@ -52,6 +52,22 @@ class AspenEvents_Event extends Action {
 		$interface->assign('userOnWaitingList', $this->recordDriver->isUserOnWaitingList());
 		$interface->assign('userWaitingListPosition', $this->recordDriver->getUserWaitingListPosition());
 		$interface->assign('userCanRegister', $this->recordDriver->getUserCanRegister());
+
+		// Check if staff can register users for this event
+		$canStaffRegister = false;
+		$eventInstanceId = null;
+		$eventInstance = $this->recordDriver->getEventObject();
+		if ($eventInstance) {
+			$eventInstanceId = $eventInstance->id;
+			$parentEvent = $eventInstance->getParentEvent();
+			if ($parentEvent && $parentEvent->registrationRequired) {
+				require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+				$canStaffRegister = EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId);
+			}
+		}
+		$interface->assign('canStaffRegister', $canStaffRegister);
+		$interface->assign('eventInstanceId', $eventInstanceId);
+
 		// Display Page
 		$this->display('event.tpl', $this->recordDriver->getTitle(), null, false);
 	}
