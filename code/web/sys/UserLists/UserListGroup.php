@@ -135,6 +135,11 @@ class UserListGroup extends DataObject {
 	}
 
 	function getListGroups(user $user) : array {
+		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
+		$includePagination = false;
+		if (isset($_REQUEST['includePagination'])) {
+			$includePagination = $_REQUEST['includePagination'];
+		}
 
 		$listsPerPage = 20;
 		if (isset($_REQUEST['limit'])) {
@@ -147,16 +152,18 @@ class UserListGroup extends DataObject {
 		$group = new UserListGroup();
 		$group->userId = $user->id;
 		$group->orderBy('title DESC');
-		$group->limit(($page - 1) * $listsPerPage, $listsPerPage);
-		$listCount = $group->count();
+		if ($includePagination) {
+			$group->limit(($page - 1) * $listsPerPage, $listsPerPage);
+			$listCount = $group->count();
 
-		$options = [
-			'totalItems' => $listCount,
-			'perPage' => $listsPerPage,
-		];
+			$options = [
+				'totalItems' => $listCount,
+				'perPage' => $listsPerPage,
+			];
 
-		require_once ROOT_DIR . '/sys/Pager.php';
-		$pager = new Pager($options);
+			require_once ROOT_DIR . '/sys/Pager.php';
+			$pager = new Pager($options);
+		}
 
 		$allGroups = [];
 		if ($group->find()) {
@@ -193,12 +200,16 @@ class UserListGroup extends DataObject {
 			return strnatcasecmp($a->title, $b->title);
 		});
 
-		return [
-			'page_current' => (int)$pager->getCurrentPage(),
-			'totalResults' => (int)$pager->getTotalItems(),
-			'page_total' => (int)$pager->getTotalPages(),
-			'groups' => $groups,
-		];
+		if ($includePagination) {
+			return [
+				'page_current' => (int)$pager->getCurrentPage(),
+				'totalResults' => (int)$pager->getTotalItems(),
+				'page_total' => (int)$pager->getTotalPages(),
+				'groups' => $groups,
+			];
+		}
+
+		return $groups;
 	}
 
 	/** @noinspection PhpUnused */

@@ -343,24 +343,55 @@ class ListAPI extends AbstractAPI {
 			];
 		}
 
+		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
+		$includePagination = false;
+		if (isset($_REQUEST['includePagination'])) {
+			$includePagination = $_REQUEST['includePagination'];
+		}
+
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$listGroup = new UserListGroup();
 		$listGroups = $listGroup->getListGroups($user);
 		$unassignedLists = $user->getUnassignedListsForListGroups();
 
 		$lists = [];
-		foreach ($unassignedLists['lists'] as $userList) {
-			$lists[] = [
-				'id' => $userList->id,
-				'title' => $userList->title,
-				'description' => $userList->description,
-				'displayListAuthor' => $userList->displayListAuthor == 1,
-				'numTitles' => $userList->numValidListItems(),
-				'public' => $userList->public == 1,
-				'created' => $userList->created,
-				'dateUpdated' => $userList->dateUpdated,
-				'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
-				'listGroupId' => $userList->listGroupId,
+		if ($includePagination) {
+			foreach ($unassignedLists['lists'] as $userList) {
+				$lists[] = [
+					'id' => $userList->id,
+					'title' => $userList->title,
+					'description' => $userList->description,
+					'displayListAuthor' => $userList->displayListAuthor == 1,
+					'numTitles' => $userList->numValidListItems(),
+					'public' => $userList->public == 1,
+					'created' => $userList->created,
+					'dateUpdated' => $userList->dateUpdated,
+					'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+					'listGroupId' => $userList->listGroupId,
+				];
+			}
+		} else {
+			foreach ($unassignedLists as $userList) {
+				$lists[] = [
+					'id' => $userList->id,
+					'title' => $userList->title,
+					'description' => $userList->description,
+					'displayListAuthor' => $userList->displayListAuthor == 1,
+					'numTitles' => $userList->numValidListItems(),
+					'public' => $userList->public == 1,
+					'created' => $userList->created,
+					'dateUpdated' => $userList->dateUpdated,
+					'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+					'listGroupId' => $userList->listGroupId,
+				];
+			}
+		}
+
+		if (!$includePagination) {
+			return [
+				'success' => true,
+				'groups' => $listGroups,
+				'unassigned' => $lists,
 			];
 		}
 
