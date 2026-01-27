@@ -499,6 +499,8 @@ class Library extends DataObject {
 	// Aspen Events
 	/** @noinspection PhpUnused */
 	public $aspenEventsToInclude;
+	/** @noinspection PhpUnused */
+	public $allowStaffToRegisterUsersForEvents;
 	public $displayEventNotificationsInAccount;
 	public $allowEventToastNotification;
 
@@ -3401,6 +3403,14 @@ class Library extends DataObject {
 							'2' => "Events that occur at one of this library's locations",
 						],
 						'default' => '2',
+					],
+					'allowStaffToRegisterUsersForEvents' => [
+						'property' => 'allowStaffToRegisterUsersForEvents',
+						'type' => 'checkbox',
+						'label' => 'Allow Staff to Register Users for Events',
+						'description' => 'Allow staff with appropriate permissions to register patrons for Aspen native events',
+						'default' => 0,
+						'hideInLists' => true,
 					],
 					'displayEventNotificationsInAccount' => [
 						'property' => 'displayEventNotificationsInAccount',
