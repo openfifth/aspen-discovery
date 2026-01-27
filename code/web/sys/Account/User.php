@@ -4747,6 +4747,11 @@ class User extends DataObject {
 				'View System Reports',
 				'View Indexing Logs',
 			]);
+			$sections['events']->addAction(new AdminAction('Event Management', 'Manage Aspen Events including patron registrations.', '/Events/EventManagement'), [
+				'Register Users for Events for All Locations',
+				'Register Users for Events for Home Library Locations',
+				'Register Users for Events for Home Location',
+			]);
 		}
 
 		if (array_key_exists('Web Indexer', $enabledModules)) {
