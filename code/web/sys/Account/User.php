@@ -265,7 +265,7 @@ class User extends DataObject {
 			$listsPerPage = $_REQUEST['limit'];
 		}
 
-		$page = $_REQUEST['page'] ?? 1;
+		$page = $_REQUEST['pageUnassigned'] ?? 1;
 
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();

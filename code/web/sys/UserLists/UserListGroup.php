@@ -146,7 +146,7 @@ class UserListGroup extends DataObject {
 			$listsPerPage = $_REQUEST['limit'];
 		}
 
-		$page = $_REQUEST['page'] ?? 1;
+		$page = $_REQUEST['pageGroups'] ?? 1;
 
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$group = new UserListGroup();
