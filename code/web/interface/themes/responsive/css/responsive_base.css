@@ -11174,7 +11174,8 @@ a.browse-thumbnail.active {
     margin: 3px 5px;
   }
 }
-.calendar-event-time {
+.calendar-event-time,
+.calendar-event-location {
   font-size: 12px;
 }
 .calendar-event-state {
@@ -11274,19 +11275,22 @@ a.browse-thumbnail.active {
     overflow: clip;
   }
   .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-title,
-  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time,
+  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-location {
     overflow: visible;
     white-space: normal;
     max-height: 3.5vh;
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-title,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time,
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-location {
     overflow: visible;
     white-space: normal;
     height: 3.5vh;
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-title,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-time,
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-location {
     overflow: clip;
     white-space: nowrap;
     font-size: 0.85rem;
@@ -11305,7 +11309,7 @@ a.browse-thumbnail.active {
   .calendar-row .calendar-day-cell .calendar-events .calendar-event .end-time {
     display: none;
   }
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time .calendar-event-location {
     font-weight: bold;
   }
   html,

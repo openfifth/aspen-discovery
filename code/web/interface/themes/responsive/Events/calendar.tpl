@@ -74,6 +74,15 @@
 									<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
 										{$event.formattedTime}
 									</div>
+
+									<div class="calendar-event-location">
+										{$event.location}
+									</div>
+									{if !$event.hiddenTimestamps}
+										<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
+											{$event.formattedTime}
+										</div>
+									{/if}
 									{if !empty($event.eventFields)}
 										{foreach from=$event.eventFields key=eventFieldName item=eventField}
 											{if $eventFieldName == 'description'}

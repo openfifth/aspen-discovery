@@ -115,7 +115,7 @@
 	font-weight: bold;
 }
 
-.calendar-event-time, .calendar-event-field{
+.calendar-event-time, .calendar-event-field, .calendar-event-location {
 	font-size: 12px;
 }
 
@@ -307,7 +307,7 @@
 					overflow: clip;
 
 					&.wrap-title {
-						.calendar-event-title, .calendar-event-time, .calendar-event-field{
+						.calendar-event-title, .calendar-event-time, .calendar-event-field, .calendar-event-location{
 							overflow: visible;
 							white-space: normal;
 							max-height: 3.5vh;
@@ -315,14 +315,14 @@
 					}
 
 					.calendar-event:has(.calendar-event-state) {
-						.calendar-event-title, .calendar-event-time, .calendar-event-field{
+						.calendar-event-title, .calendar-event-time, .calendar-event-field, .calendar-event-location{
 							overflow: visible;
 							white-space: normal;
 							height: 3.5vh;
 						}
 					}
 
-					.calendar-event-title, .calendar-event-time, .calendar-event-field {
+					.calendar-event-title, .calendar-event-time, .calendar-event-field, .calendar-event-location {
 						overflow: clip;
 						white-space: nowrap;
 						font-size: 0.85rem;
