@@ -42,7 +42,9 @@ class Union_AJAX extends JSON_Action {
 			$results = $this->getResultsFromEDS($searchTerm, $numberOfResults, $fullResultsLink);
 		} elseif ($source == 'summon') {
 			$results = $this->getResultsFromSummon($searchTerm, $numberOfResults, $fullResultsLink);
-		} elseif ($source == 'ebscohost') {
+		} elseif ($source == 'cloudsource') {
+			$results = $this->getResultsFromCloudSource($searchTerm, $numberOfResults, $fullResultsLink);
+		}elseif ($source == 'ebscohost') {
 			$results = $this->getResultsFromEbscohost($searchTerm, $numberOfResults, $fullResultsLink);
 		} elseif ($source == 'events') {
 			$results = $this->getResultsFromSolrSearcher('Events', $searchTerm, $numberOfResults, $fullResultsLink);

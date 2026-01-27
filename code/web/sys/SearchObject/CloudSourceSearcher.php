@@ -87,8 +87,6 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 		$this->searchType = 'cloudsource';
 		$this->resultsModule = 'CloudSource';
 		$this->resultsAction = 'Results';
-		$this->sort = $_GET['sort'] ?? 'relevance';
-		$this->getSort();
 	}
 
 	/**
@@ -142,7 +140,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 	}
 
 	/**
-	 * Retreive settings for institution's summon connector
+	 * Retreive settings for institution's CloudSource connector
 	 */
 	private function getSettings() {
 		global $library;
@@ -179,6 +177,10 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 		$curlConnection = $this->getCurlConnection();
 		$url = $settings->baseUrl . '/api/cloudsourcesearch/search';
 		$searchTerm = $this->searchTerms[0]['lookfor'];
+		$start = 0;
+		if ($this->page > 1) {
+			$start = 20 * ($this->page - 1);
+		}
 
 		//CloudSource uses access tokens for authorization, no other auth process
 		$headers = [
@@ -199,7 +201,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 		$params = [
 			'@ROAObject' => 'searchrequest',
 			'term' => $searchTerm,
-			'start' => 0,
+			'start' => $start,
 			'pageSize' => 20,
 			'includeFields' => 'title,author{name},format{name},webUrl,publishDate,abstrakt,index',
 			'includeFacets' => true,
@@ -251,7 +253,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 	}
 
 	//Retreive a specific record - used to retreive bookcovers
-	public function retrieveRecord($id) {
+	public function retrieveRecord($id, $index = null) {
 		$settings = $this->getSettings();
 		//CloudSource uses access tokens for authorization, no other auth process
 		$headers = [
@@ -260,7 +262,7 @@ class SearchObject_CloudSourceSearcher extends SearchObject_BaseSearcher{
 			'SD-Stats-Session-ID: ' . $_COOKIE['aspen_session']
 		];
 
-		$baseUrl = $settings->baseUrl . '/api/cloudsourcesearch/search/id/WORK/' . $id;
+		$baseUrl = $settings->baseUrl . '/api/cloudsourcesearch/search/id/' . $index . '/' . $id;
 
 
 		$recordData = $this->httpRequest($baseUrl, $headers);

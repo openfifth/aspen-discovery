@@ -15,7 +15,11 @@ class CloudSourceRecordDriver extends RecordInterface {
 		if (is_string($record)) {
 			/** @var SearchObject_CloudSourceSearcher $cloudSourceSearcher */
 			$cloudSourceSearcher = SearchObjectFactory::initSearchObject("CloudSource");
-			$this->record = $cloudSourceSearcher->retrieveRecord($record);
+			[
+				$id,
+				$index,
+			] = explode('_', $record, 2);
+			$this->record = $cloudSourceSearcher->retrieveRecord($id, $index);
 		} else {
 			$this->record = $record;
 		}
@@ -67,8 +71,8 @@ class CloudSourceRecordDriver extends RecordInterface {
 
 	public function getUniqueID()
 	{
-		if (isset($this->record->id)) {
-			return (string)$this->record->id;
+		if (isset($this->record->id) && isset($this->record->index)) {
+			return (string)$this->record->id . '_' . (string)$this->record->index;
 		} else {
 			return null;
 		}

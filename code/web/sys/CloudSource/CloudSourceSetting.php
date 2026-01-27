@@ -11,6 +11,8 @@ class CloudSourceSetting extends DataObject
 	public $baseUrl;
 	public $accessToken;
 	public $profileKey;
+	public $showInExploreMore;
+	public $showInCombinedResults;
 
 
 	public $_libraries;
@@ -66,6 +68,16 @@ class CloudSourceSetting extends DataObject
 				'label' => 'Profile Key',
 				'description' => 'The profile key provided by CloudSource OA.',
 				'hideInLists' => true,
+			],
+			'showInExploreMore' => [
+				'property' => 'showInExploreMore',
+				'type' => 'checkbox',
+				'label' => 'Show in Explore More',
+			],
+			'showInCombinedResults' => [
+				'property' => 'showInCombinedResults',
+				'type' => 'checkbox',
+				'label' => 'Show in Combined Results',
 			],
 			'libraries' => [
 				'property' => 'libraries',
