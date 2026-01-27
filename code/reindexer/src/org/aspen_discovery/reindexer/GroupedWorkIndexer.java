@@ -21,6 +21,7 @@ import java.sql.*;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
 
 import org.apache.logging.log4j.Logger;
@@ -65,6 +66,7 @@ public class GroupedWorkIndexer {
 	private PreparedStatement getUserReadingHistoryLinkStmt;
 	private PreparedStatement getUserRatingLinkStmt;
 	private PreparedStatement getUserNotInterestedLinkStmt;
+	private static final AtomicBoolean setupMessageLogged = new AtomicBoolean(false);
 
 	private PreparedStatement forceReindexOfRecordStmt;
 
@@ -379,7 +381,9 @@ public class GroupedWorkIndexer {
 		}
 
 		//Initialize the updateServer and solr server
-		logEntry.addNote("Setting up update server and solr server");
+		if (setupMessageLogged.compareAndSet(false, true)) {
+			logEntry.addNote("Setting up update server and solr server");
+		}
 
 		String solrUrl;
 		if (indexVersion == 1) {

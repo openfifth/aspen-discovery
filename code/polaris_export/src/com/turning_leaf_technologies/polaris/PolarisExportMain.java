@@ -1920,12 +1920,16 @@ public class PolarisExportMain {
 	}
 
 	private static void closeGroupedWorkIndexers() {
+		boolean finishedOnce = false;
 		for (IndexerHolder holder : groupedWorkIndexers.values()) {
 			if (holder == null || holder.closed) {
 				continue;
 			}
 			try {
-				holder.indexer.finishIndexingFromExtract(logEntry);
+				if (!finishedOnce) {
+					holder.indexer.finishIndexingFromExtract(logEntry);
+					finishedOnce = true;
+				}
 			} catch (Exception e) {
 				logEntry.incErrors("Error finishing indexing from extract for grouped work indexer", e);
 			} finally {
