@@ -342,6 +342,7 @@ class Events_Calendar extends Action {
 							'formattedTime' => $formattedTime,
 							'isCancelled' => $isCancelled,
 							'eventFields' => $eventFields,
+							'location' => $result['branch'][0],
 						];
 					}
 				}
