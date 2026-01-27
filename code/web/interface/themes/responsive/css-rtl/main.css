@@ -10595,7 +10595,7 @@ a.browse-thumbnail.active {
 .calendar-event-title {
   font-weight: bold;
 }
-.calendar-event-time {
+.calendar-event-time, .calendar-event-location {
   font-size: 12px;
 }
 .calendar-event-state {

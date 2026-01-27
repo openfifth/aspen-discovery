@@ -11565,7 +11565,8 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   font-weight: bold;
 }
 .calendar-event-time,
-.calendar-event-field {
+.calendar-event-field,
+.calendar-event-location {
   font-size: 12px;
 }
 .calendar-event-description {
@@ -11690,21 +11691,24 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   }
   .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-title,
   .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time,
-  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field {
+  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field,
+  .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-location {
     overflow: visible;
     white-space: normal;
     max-height: 3.5vh;
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-title,
   .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-field {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-field,
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-location {
     overflow: visible;
     white-space: normal;
     height: 3.5vh;
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-title,
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-time,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event-field {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-field
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-location {
     overflow: clip;
     white-space: nowrap;
     font-size: 0.85rem;
@@ -11725,7 +11729,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   .calendar-row .calendar-day-cell .calendar-events .calendar-event .show-end-time {
     white-space: nowrap;
   }
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time .calendar-event-location {
     font-weight: bold;
   }
   html,
@@ -11892,21 +11896,24 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-title,
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field 
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-location {
     overflow: visible;
     white-space: normal;
     max-height: 3.5vh;
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-title,
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-time,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-field {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-field,
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event:has(.calendar-event-state) .calendar-event-location {
     overflow: visible;
     white-space: normal;
     height: 3.5vh;
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-title,
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-time,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-field {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-field,
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event-location {
     overflow: clip;
     white-space: nowrap;
     font-size: 0.85rem;
@@ -11927,7 +11934,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event .show-end-time {
     white-space: nowrap;
   }
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time .calendar-event-location {
     font-weight: bold;
   }
   [data-context="print-layout"] html,

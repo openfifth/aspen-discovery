@@ -85,6 +85,9 @@
 									<div class="calendar-event-title">
 										<a href="{$event.link}" target="_blank" aria-label="{translate text=$event.title isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})">{$event.title}</a>
 									</div>
+									<div class="calendar-event-location">
+										{$event.location}
+									</div>
 									{if !$event.hiddenTimestamps}
 										<div class="calendar-event-time {if $printEndTime}show-end-time{else}can-hide-end-time{/if}">
 											{$event.formattedTime}
