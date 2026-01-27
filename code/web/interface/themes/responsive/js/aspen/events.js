@@ -805,6 +805,150 @@ AspenDiscovery.Events = (function(){
 			} else {
 				waitingListNumberOfSeats.style.display = 'none';
 			}
+		},
+
+		showStaffRegistrationModal: function(eventInstanceId) {
+			var url = Globals.path + "/Events/AJAX";
+			var params = {
+				method: 'getStaffRegistrationModal',
+				eventInstanceId: eventInstanceId
+			};
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		lookupPatronForRegistration: function() {
+			var barcode = $("#patronBarcodeInput").val().trim();
+			if (!barcode) {
+				$("#patronLookupError").text("Please enter a barcode.").show();
+				$("#patronLookupResult").hide();
+				return;
+			}
+
+			var url = Globals.path + "/Events/AJAX";
+			var params = {
+				method: 'lookupPatronByBarcode',
+				barcode: barcode
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					$("#foundPatronId").val(data.user.id);
+					$("#foundPatronName").text(data.user.displayName);
+					$("#foundPatronBarcode").text(data.user.barcode);
+					$("#foundPatronEmail").text(data.user.email || '-');
+					$("#foundPatronLocation").text(data.user.homeLocation || '-');
+					$("#patronLookupResult").show();
+					$("#patronLookupError").hide();
+				} else {
+					$("#patronLookupError").text(data.message).show();
+					$("#patronLookupResult").hide();
+				}
+			}).fail(function() {
+				$("#patronLookupError").text("Error looking up patron.").show();
+				$("#patronLookupResult").hide();
+			});
+		},
+
+		confirmStaffRegistration: function() {
+			var eventInstanceId = $("#staffRegEventInstanceId").val();
+			var userId = $("#foundPatronId").val();
+
+			if (!eventInstanceId || !userId) {
+				AspenDiscovery.showMessage("Error", "Missing event or patron information.");
+				return;
+			}
+
+			var url = Globals.path + "/Events/AJAX";
+			var params = {
+				method: 'staffRegisterUserForEvent',
+				eventInstanceId: eventInstanceId,
+				userId: userId
+			};
+
+			$.getJSON(url, params, function(data) {
+				AspenDiscovery.showMessage(data.title, data.message, !data.success);
+				if (data.success) {
+					setTimeout(function() {
+						location.reload();
+					}, 1500);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		staffUnregisterUser: function(eventInstanceId, userId) {
+			if (!confirm("Are you sure you want to cancel this registration?")) {
+				return;
+			}
+
+			var url = Globals.path + "/Events/AJAX";
+			var params = {
+				method: 'staffUnregisterUserFromEvent',
+				eventInstanceId: eventInstanceId,
+				userId: userId
+			};
+
+			$.getJSON(url, params, function(data) {
+				AspenDiscovery.showMessage(data.title, data.message, !data.success);
+				if (data.success) {
+					setTimeout(function() {
+						location.reload();
+					}, 1500);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		staffReregisterUser: function(eventInstanceId, userId) {
+			var url = Globals.path + "/Events/AJAX";
+			var params = {
+				method: 'staffRegisterUserForEvent',
+				eventInstanceId: eventInstanceId,
+				userId: userId
+			};
+
+			$.getJSON(url, params, function(data) {
+				AspenDiscovery.showMessage(data.title, data.message, !data.success);
+				if (data.success) {
+					setTimeout(function() {
+						location.reload();
+					}, 1500);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		toggleAttendance: function(registrationId, attended) {
+			var url = Globals.path + "/Events/AJAX";
+			var params = {
+				method: 'markAttendance',
+				registrationId: registrationId,
+				attended: attended ? 1 : 0
+			};
+
+			var checkbox = $("#attended-" + registrationId);
+			var cell = checkbox.closest('td');
+			checkbox.prop('disabled', true);
+
+			$.getJSON(url, params, function(data) {
+				checkbox.prop('disabled', false);
+				if (data.success) {
+					cell.css('background-color', '#dff0d8');
+					setTimeout(function() { cell.css('background-color', ''); }, 800);
+				} else {
+					cell.css('background-color', '#f2dede');
+					setTimeout(function() { cell.css('background-color', ''); }, 1200);
+					checkbox.prop('checked', !attended);
+				}
+			}).fail(function() {
+				checkbox.prop('disabled', false);
+				cell.css('background-color', '#f2dede');
+				setTimeout(function() { cell.css('background-color', ''); }, 1200);
+				checkbox.prop('checked', !attended);
+			});
 		}
 	};
 }(AspenDiscovery.Events || {}));
