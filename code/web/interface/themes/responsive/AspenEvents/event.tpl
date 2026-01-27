@@ -197,6 +197,16 @@
 			<div class="btn-group btn-group-sm">
 				{include file="Events/share-tools.tpl" eventUrl=$recordDriver->getExternalUrl()}
 			</div>
+			{if $canStaffRegister}
+				<div class="btn-group btn-group-sm">
+					<button class="btn btn-sm btn-tools" onclick="return AspenDiscovery.Events.showStaffRegistrationModal({$eventInstanceId});">
+						<i class="fas fa-user-plus" role="presentation"></i> {translate text="Staff Registration" isAdminFacing=true}
+					</button>
+					<a href="/Events/EventManagement?eventInstanceId={$eventInstanceId}" class="btn btn-sm btn-tools">
+						<i class="fas fa-users" role="presentation"></i> {translate text="Manage Event" isAdminFacing=true}
+					</a>
+				</div>
+			{/if}
 			<br>
 			<br>
 			{$recordDriver->getFullDescription()}
