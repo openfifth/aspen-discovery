@@ -33,7 +33,7 @@ abstract class CombinedResultSection extends DataObject {
 			$validResultSources['summon'] = 'Summon';
 		}
 		if (array_key_exists('CloudSource', $enabledModules)) {
-			require_once ROOT_DIR . '/sys/LibraryCloudSourceSetting.php';
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
 			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
 			$libraryCloudSourceSetting->libraryId = $library->libraryId;
 			if ($libraryCloudSourceSetting->find(true)) {
@@ -109,7 +109,9 @@ abstract class CombinedResultSection extends DataObject {
 			return "https://dp.la/search?q=$searchTerm";
 		} elseif ($this->source == 'summon') {
 			return "Search/Results?lookfor=$searchTerm&searchSource=summon";
-		} elseif ($this->source == 'ebsco_eds') {
+		} elseif ($this->source == 'cloudsource') {
+			return "Search/Results?lookfor=$searchTerm&searchSource=cloudsource";
+		}elseif ($this->source == 'ebsco_eds') {
 			return "/EBSCO/Results?lookfor=$searchTerm&searchSource=ebsco_eds";
 		} elseif ($this->source == 'ebscohost') {
 			global $library;
