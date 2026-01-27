@@ -49,6 +49,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -1044,7 +1045,7 @@ public class PolarisExportMain {
 		}
 
 		//If we are doing a continuous index, get a list of any items that have been updated or changed or bib ids that have been replaced
-		TreeSet<String> bibsToUpdate = new TreeSet<>();
+		Set<String> bibsToUpdate = new ConcurrentSkipListSet<>();
 
 		// Get a list of all the bibs that have been updated since the last extract
 		boolean updatingBibsHadErrors;
@@ -1222,7 +1223,7 @@ public class PolarisExportMain {
 		logEntry.saveResults();
 	}
 
-	private static void getBibsToUpdateBasedOnItemChangesAndDeletions(long sourceId, HashSet<Long> updatedAndDeletedItemIds, TreeSet<String> bibsToUpdate) {
+	private static void getBibsToUpdateBasedOnItemChangesAndDeletions(long sourceId, HashSet<Long> updatedAndDeletedItemIds, Set<String> bibsToUpdate) {
 		logEntry.addNote("There were " + updatedAndDeletedItemIds.size() + " items that have been updated or deleted");
 		logEntry.saveResults();
 		ThreadPoolExecutor es = (ThreadPoolExecutor) Executors.newFixedThreadPool(5);
@@ -1265,7 +1266,7 @@ public class PolarisExportMain {
 		logEntry.saveResults();
 	}
 
-	private static void getBibsReplacedSinceLastExtract(long lastExtractTime, TreeSet<String> bibsToUpdate) {
+	private static void getBibsReplacedSinceLastExtract(long lastExtractTime, Set<String> bibsToUpdate) {
 		DateTimeFormatter dateReplacedFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd", Locale.ENGLISH).withZone(ZoneId.systemDefault());
 		String formattedLastItemExtractDate = URLEncoder.encode(dateReplacedFormatter.format(Instant.ofEpochSecond(lastExtractTime)), StandardCharsets.UTF_8);
 		//noinspection SpellCheckingInspection
@@ -1302,7 +1303,7 @@ public class PolarisExportMain {
 		}
 	}
 
-	private static boolean getBibsUpdatedSinceLastExtract(String formattedLastExtractTime, TreeSet<String> bibsToUpdate) {
+	private static boolean getBibsUpdatedSinceLastExtract(String formattedLastExtractTime, Set<String> bibsToUpdate) {
 		boolean updatingBibsHadErrors = false;
 		String getUpdatedBibsUrl = "/PAPIService/REST/protected/v1/1033/100/1/" + accessToken + "/synch/bibs/updated?updatedate=" + formattedLastExtractTime;
 		WebServiceResponse updatedBibs = callPolarisAPI(getUpdatedBibsUrl, null, "GET", "application/json", accessSecret);
