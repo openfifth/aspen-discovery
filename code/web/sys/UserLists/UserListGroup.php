@@ -135,10 +135,29 @@ class UserListGroup extends DataObject {
 	}
 
 	function getListGroups(user $user) : array {
+
+		$listsPerPage = 20;
+		if (isset($_REQUEST['limit'])) {
+			$listsPerPage = $_REQUEST['limit'];
+		}
+
+		$page = $_REQUEST['page'] ?? 1;
+
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$group = new UserListGroup();
 		$group->userId = $user->id;
 		$group->orderBy('title DESC');
+		$group->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		$listCount = $group->count();
+
+		$options = [
+			'totalItems' => $listCount,
+			'perPage' => $listsPerPage,
+		];
+
+		require_once ROOT_DIR . '/sys/Pager.php';
+		$pager = new Pager($options);
+
 		$allGroups = [];
 		if ($group->find()) {
 			while ($group->fetch()) {
@@ -174,7 +193,12 @@ class UserListGroup extends DataObject {
 			return strnatcasecmp($a->title, $b->title);
 		});
 
-		return $groups;
+		return [
+			'page_current' => (int)$pager->getCurrentPage(),
+			'totalResults' => (int)$pager->getTotalItems(),
+			'page_total' => (int)$pager->getTotalPages(),
+			'groups' => $groups,
+		];
 	}
 
 	/** @noinspection PhpUnused */

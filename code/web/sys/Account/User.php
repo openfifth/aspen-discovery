@@ -254,17 +254,41 @@ class User extends DataObject {
 	}
 	
 	function getUnassignedListsForListGroups() {
+
+		$listsPerPage = 20;
+		if (isset($_REQUEST['limit'])) {
+			$listsPerPage = $_REQUEST['limit'];
+		}
+
+		$page = $_REQUEST['page'] ?? 1;
+
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();
 		$userList->listGroupId = -1;
 		$userList->user_id = $this->id;
 		$userList->orderBy('title ASC');
+		$userList->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		$listCount = $userList->count();
 		$userList->find();
 		$lists = [];
+
+		$options = [
+			'totalItems' => $listCount,
+			'perPage' => $listsPerPage,
+		];
+
+		require_once ROOT_DIR . '/sys/Pager.php';
+		$pager = new Pager($options);
+
 		while ($userList->fetch()) {
 			$lists[] = clone $userList;
 		}
-		return $lists;
+		return [
+			'page_current' => (int)$pager->getCurrentPage(),
+			'totalResults' => (int)$pager->getTotalItems(),
+			'page_total' => (int)$pager->getTotalPages(),
+			'lists' => $lists,
+		];
 	}
 
 	protected ?CatalogConnection $_catalogDriver = null;
