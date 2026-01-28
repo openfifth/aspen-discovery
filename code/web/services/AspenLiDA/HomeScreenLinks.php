@@ -17,6 +17,10 @@ class AspenLiDA_HomeScreenLinks extends ObjectEditor {
 		return 'Home Screen Links';
 	}
 
+	function getModule(): string {
+		return 'AspenLiDA';
+	}
+
 	function getAllObjects(int $page, int $recordsPerPage): array {
 		$object = new HomeScreenLink();
 		$object->orderBy($this->getSort());
@@ -72,6 +76,11 @@ class AspenLiDA_HomeScreenLinks extends ObjectEditor {
 
 	function getActiveAdminSection(): string {
 		return 'aspen_lida';
+	}
+
+	/** @noinspection PhpUnusedParameterInspection */
+	public function getEditLink(string $context): string {
+		return '/AspenLiDA/HomeScreenLinks';
 	}
 
 	function canView(): bool {
