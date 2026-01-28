@@ -64,7 +64,7 @@ class HomeScreenLinkGroup extends DataObject {
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
 				'label' => 'Libraries',
-				'description' => 'Define libraries that use this browse category group',
+				'description' => 'Define libraries that use this home screen link group',
 				'values' => $libraryList,
 			],
 
@@ -73,13 +73,187 @@ class HomeScreenLinkGroup extends DataObject {
 				'type' => 'multiSelect',
 				'listStyle' => 'checkboxSimple',
 				'label' => 'Locations',
-				'description' => 'Define locations that use this browse category group',
+				'description' => 'Define locations that use this home screen link group',
 				'values' => $locationList,
 			],
 		];
 
 		self::$_objectStructure[$context] = $structure;
 		return self::$_objectStructure[$context];
+	}
+
+	public function __get($name) {
+		if ($name == "libraries") {
+			return $this->getLibraries();
+		} elseif ($name == "locations") {
+			return $this->getLocations();
+		} elseif ($name == 'homeScreenLinks') {
+			return $this->getHomeScreenLinks();
+		} else {
+			return parent::__get($name);
+		}
+	}
+
+	public function __set($name, $value) {
+		if ($name == "libraries") {
+			$this->setLibraries($value);
+		} elseif ($name == "locations") {
+			$this->setLocations($value);
+		} elseif ($name == 'homeScreenLinks') {
+			$this->_homeScreenLinks = $value;
+		} else {
+			parent::__set($name, $value);
+		}
+	}
+
+	/**
+	 * Override the update functionality to save related objects
+	 *
+	 * @see DB/DB_DataObject::update()
+	 */
+	public function update(string $context = ''): int|bool {
+		//Updates to properly update settings based on the ILS
+		$ret = parent::update();
+		if ($ret !== FALSE) {
+			$this->saveLibraries();
+			$this->saveLocations();
+			$this->saveHomeScreenLinks();
+		}
+
+		return $ret;
+	}
+
+	/**
+	 * Override the insert functionality to save the related objects
+	 *
+	 * @see DB/DB_DataObject::insert()
+	 */
+	public function insert(string $context = ''): int|bool {
+		$ret = parent::insert();
+		if ($ret !== FALSE) {
+			$this->saveLibraries();
+			$this->saveLocations();
+			$this->saveHomeScreenLinks();
+		}
+		return $ret;
+	}
+
+
+	public function saveLibraries(): void {
+		if (isset ($this->_libraries) && is_array($this->_libraries)) {
+			$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links'));
+			foreach ($libraryList as $libraryId => $displayName) {
+				$library = new Library();
+				$library->libraryId = $libraryId;
+				$library->find(true);
+				if (in_array($libraryId, $this->_libraries)) {
+					//We want to apply the scope to this library
+					if ($library->lidaHomeScreenLinkGroupId != $this->id) {
+						$library->lidaHomeScreenLinkGroupId = $this->id;
+						$library->update();
+					}
+				} else {
+					//It should not be applied to this scope. Only change if it was applied to the scope
+					if ($library->lidaHomeScreenLinkGroupId == $this->id) {
+						$library->lidaHomeScreenLinkGroupId = -1;
+						$library->update();
+					}
+				}
+			}
+			unset($this->_libraries);
+		}
+	}
+
+	public function saveLocations(): void {
+		if (isset ($this->_locations) && is_array($this->_locations)) {
+			$locationList = Location::getLocationList(!UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links'));
+			/**
+			 * @var int $locationId
+			 * @var Location $location
+			 */
+			foreach ($locationList as $locationId => $displayName) {
+				$location = new Location();
+				$location->locationId = $locationId;
+				$location->find(true);
+				if (in_array($locationId, $this->_locations)) {
+					//We want to apply the scope to this library
+					if ($location->lidaHomeScreenLinkGroupId != $this->id) {
+						$location->lidaHomeScreenLinkGroupId = $this->id;
+						$location->update();
+					}
+				} else {
+					//It should not be applied to this scope. Only change if it was applied to the scope
+					if ($location->lidaHomeScreenLinkGroupId == $this->id) {
+						$library = new Library();
+						$library->libraryId = $location->libraryId;
+						$library->find(true);
+						if ($library->lidaHomeScreenLinkGroupId != -1) {
+							$location->lidaHomeScreenLinkGroupId = -1;
+						} else {
+							$location->lidaHomeScreenLinkGroupId = -2;
+						}
+						$location->update();
+					}
+				}
+			}
+			unset($this->_locations);
+		}
+	}
+
+	public function saveHomeScreenLinks(): void {
+		if (isset ($this->_homeScreenLinks) && is_array($this->_homeScreenLinks)) {
+			$uniqueHomeScreenLinks = [];
+			/**
+			 * @var int $linkId
+			 * @var HomeScreenLink $homeScreenLink
+			 */
+			foreach ($this->_homeScreenLinks as $linkId => $homeScreenLink) {
+				if (in_array($homeScreenLink->homeScreenLinkId, $uniqueHomeScreenLinks)) {
+					$homeScreenLink->delete();
+					unset($this->_homeScreenLinks[$linkId]);
+				} else {
+					$uniqueHomeScreenLinks[] = $homeScreenLink->homeScreenLinkId;
+				}
+			}
+			$this->saveOneToManyOptions($this->_homeScreenLinks, 'homeScreenLinkGroupId');
+			unset($this->_homeScreenLinks);
+		}
+	}
+
+	/** @return ?Library[] */
+	public function getLibraries(): ?array {
+		if (!isset($this->_libraries) && $this->id) {
+			$this->_libraries = [];
+			$obj = new Library();
+			$obj->lidaHomeScreenLinkGroupId = $this->id;
+			$obj->find();
+			while ($obj->fetch()) {
+				$this->_libraries[$obj->libraryId] = $obj->libraryId;
+			}
+		}
+		return $this->_libraries;
+	}
+
+	/** @return ?Location[] */
+	public function getLocations(): ?array {
+		if (!isset($this->_locations) && $this->id) {
+			$this->_locations = [];
+			$obj = new Location();
+			$obj->lidaHomeScreenLinkGroupId = $this->id;
+			$obj->find();
+			while ($obj->fetch()) {
+				$this->_locations[$obj->locationId] = $obj->locationId;
+			}
+		}
+		return $this->_locations;
+	}
+
+	public function setLibraries($val): void {
+		$this->_libraries = $val;
+	}
+
+	public function setLocations($val): void {
+		$this->_locations = $val;
 	}
 
 	public function getHomeScreenLinks(): ?array {
@@ -94,5 +268,10 @@ class HomeScreenLinkGroup extends DataObject {
 			}
 		}
 		return $this->_homeScreenLinks;
+	}
+
+	/** @noinspection PhpUnusedParameterInspection */
+	public function getEditLink(string $context): string {
+		return '/AspenLiDA/HomeScreenLinkGroups?objectAction=edit&id=' . $this->id;
 	}
 }
