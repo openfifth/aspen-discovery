@@ -51,6 +51,7 @@ import java.util.Date;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -97,6 +98,7 @@ public class PolarisExportMain {
 
 	private static int polarisMajorVersion;
 	private static int polarisMinorVersion;
+	private static final ThreadPoolExecutor bibsExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 	private static final ThreadLocal<IndexerHolder> groupedWorkIndexerThreadLocal = new ThreadLocal<>();
 	private static final Map<Thread, IndexerHolder> groupedWorkIndexers = new ConcurrentHashMap<>();
 	private static final Set<String> groupedWorksQueued = ConcurrentHashMap.newKeySet();
@@ -1418,17 +1420,22 @@ public class PolarisExportMain {
 					}
 
 					//Use multiple threads to update each bib record, so we can make multiple calls to Polaris to get items
-					ThreadPoolExecutor es = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
 					MarcFactory finalMarcFactory = marcFactory;
+					CountDownLatch latch = new CountDownLatch(bibsPagedRows.getLength());
 					for (int i = 0; i < bibsPagedRows.getLength(); i++) {
 						int finalI = i;
-						es.execute(() -> processPolarisBibAndReindex(finalMarcFactory, lastExtractTime, incrementProductsInLog, response, bibsPagedRows, finalI));
+						bibsExecutor.execute(() -> {
+							try {
+								processPolarisBibAndReindex(finalMarcFactory, lastExtractTime, incrementProductsInLog, response, bibsPagedRows, finalI);
+							} finally {
+								latch.countDown();
+							}
+						});
 					}
-					es.shutdown();
 					while (true) {
 						try {
-							boolean terminated = es.awaitTermination(1, TimeUnit.MINUTES);
-							if (terminated){
+							boolean completed = latch.await(1, TimeUnit.MINUTES);
+							if (completed){
 								break;
 							}
 						} catch (InterruptedException e) {
@@ -1906,7 +1913,10 @@ public class PolarisExportMain {
 
 	private synchronized static GroupedWorkIndexer getGroupedWorkIndexer() {
 		IndexerHolder holder = groupedWorkIndexerThreadLocal.get();
-		if (holder == null) {
+		if (holder == null || holder.closed) {
+			if (holder != null) {
+				groupedWorkIndexers.remove(Thread.currentThread());
+			}
 			try {
 				Connection threadConn = DriverManager.getConnection(databaseConnectionInfo);
 				holder = new IndexerHolder(new GroupedWorkIndexer(serverName, threadConn, configIni, false, false, logEntry, logger), threadConn);
