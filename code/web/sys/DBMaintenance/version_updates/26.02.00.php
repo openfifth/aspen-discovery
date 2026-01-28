@@ -29,7 +29,6 @@ function getUpdates26_02_00(): array {
 					accessToken VARCHAR(255),
 					profileKey VARCHAR(255),
 					showInExploreMore TINYINT(1) DEFAULT 1,
-					showInCombinedResults TINYINT(1) DEFAULT 1,
 				) ENGINE=INNODB",
 			]
 		], //create_cloudsource_table
