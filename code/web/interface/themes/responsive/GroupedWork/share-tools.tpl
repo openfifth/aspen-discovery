@@ -23,7 +23,7 @@
 			</a>
 		{/if}
 		{if !empty($showShareOnLink)}
-			<a href="javascript:void(0);" onclick="navigator.clipboard.writeText('{$url}/{$recordDriver->getLinkUrl()}');AspenDiscovery.showMessage('{translate text="Link Copied" isPublicFacing=true inAttribute=true}', '{translate text="The link for this has been copied to the clipboard. You can now share it with others by pasting the link." isPublicFacing=true inAttribute=true}');" title="{translate text="Share a link to this page" inAttribute=true isPublicFacing=true}">
+			<a href="javascript:void(0);" onclick="navigator.clipboard.writeText('{$url}/{$recordDriver->getLinkUrl()}');AspenDiscovery.showMessage('{translate text="Link Copied" isPublicFacing=true inAttribute=true}', '{translate text="The link for this has been copied to the clipboard. You can now share it with others by pasting the link." isPublicFacing=true inAttribute=true}', true);" title="{translate text="Share a link to this page" inAttribute=true isPublicFacing=true}">
 				<i class="fas fa-share-alt-square fa-2x fa-fw"></i>
 			</a>
 		{/if}
