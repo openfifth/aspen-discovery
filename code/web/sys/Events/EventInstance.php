@@ -92,6 +92,7 @@ class EventInstance extends DataObject {
 				'label' => 'Number of Seats on Waiting List Override',
 				'description' => 'Override waiting list capacity for thie specific instance.',
 				'min' => 0,
+				'max' => 1000,
 			],
 			'status' => [
 				'property' => 'status',

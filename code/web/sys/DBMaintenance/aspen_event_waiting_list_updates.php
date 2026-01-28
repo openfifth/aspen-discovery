@@ -73,5 +73,13 @@ function getAspenEventWaitingListUpdates() {
 				'ALTER TABLE user ADD COLUMN eventRegistrationNotificationsByToast TINYINT DEFAULT 0',
 			],
 		], //add_event_toast_notification_preferences_to_user_db_table
+		'alter_column_type_for_waiting_list_number_of_seats' => [
+			'title' => 'Alter Column Type For Waiting List Number of Seats',
+			'description' => 'Alter the column type for the number of seats a waiting list can have',
+			'sql' => [
+				'ALTER TABLE event MODIFY waitingListNumberOfSeats SMALLINT UNSIGNED DEFAULT NULL',
+				'ALTER TABLE event_instance MODIFY waitingListNumberOfSeats SMALLINT UNSIGNED DEFAULT NULL',
+			],
+		], //alter_column_type_for_waiting_list_number_of_seats
 	];
 }
