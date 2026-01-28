@@ -12679,7 +12679,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 					$data = [
 						'id' => 'event_change_' . $eventNotifications->id,
-						'notificationId' =>$notification->id,
+						'notificationId' =>$eventNotifications->id,
 						'type' => 'event_change',
 						'title' => $title,
 						'body' => translate([
