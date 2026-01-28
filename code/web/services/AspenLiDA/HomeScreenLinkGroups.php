@@ -17,6 +17,10 @@ class AspenLiDA_HomeScreenLinkGroups extends ObjectEditor {
 		return 'Home Screen Link Groups';
 	}
 
+	function getModule(): string {
+		return 'AspenLiDA';
+	}
+
 	function canDelete(): bool {
 		return UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links');
 	}
@@ -30,22 +34,24 @@ class AspenLiDA_HomeScreenLinkGroups extends ObjectEditor {
 		$object->orderBy($this->getSort());
 		$this->applyFilters($object);
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
-		$homeScreenLinkGroups = [];
-		$library = Library::getPatronHomeLibrary(UserAccount::getActiveUserObj());
-		if ($library && $library->lidaHomeScreenLinkGroupId > 0) {
-			$homeScreenLinkGroups[] = $library->lidaHomeScreenLinkGroupId;
-		}
-		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
-		$locations = Location::getLocationListAsObjects(true);
-		foreach ($locations as $tmpLocation) {
-			if ($tmpLocation->lidaHomeScreenLinkGroupId > 0) {
-				$homeScreenLinkGroups[] = $tmpLocation->lidaHomeScreenLinkGroupId;
+		if (!UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links')) {
+			$homeScreenLinkGroups = [];
+			$library = Library::getPatronHomeLibrary(UserAccount::getActiveUserObj());
+			if ($library && $library->lidaHomeScreenLinkGroupId > 0) {
+				$homeScreenLinkGroups[] = $library->lidaHomeScreenLinkGroupId;
 			}
-		}
-		if (!empty($homeScreenLinkGroups)) {
-			$object->whereAddIn('id', array_unique($homeScreenLinkGroups), false);
-		} else {
-			return [];
+			require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
+			$locations = Location::getLocationListAsObjects(true);
+			foreach ($locations as $tmpLocation) {
+				if ($tmpLocation->lidaHomeScreenLinkGroupId > 0) {
+					$homeScreenLinkGroups[] = $tmpLocation->lidaHomeScreenLinkGroupId;
+				}
+			}
+			if (!empty($homeScreenLinkGroups)) {
+				$object->whereAddIn('id', array_unique($homeScreenLinkGroups), false);
+			} else {
+				return [];
+			}
 		}
 		$object->find();
 		$list = [];
@@ -86,6 +92,12 @@ class AspenLiDA_HomeScreenLinkGroups extends ObjectEditor {
 	function getActiveAdminSection(): string {
 		return 'aspen_lida';
 	}
+
+	/** @noinspection PhpUnusedParameterInspection */
+	public function getEditLink(string $context): string {
+		return '/AspenLiDA/HomeScreenLinkGroups';
+	}
+
 
 	function canView(): bool {
 		return UserAccount::userHasPermission([
