@@ -4170,6 +4170,11 @@ class MyAccount_AJAX extends JSON_Action {
 						$userCanRegisterFromWaitingList = $waitingListInfo['canRegister'];
 					}
 				}
+
+				// Generate registration form using custom fields
+				$eventType = $eventInstance->getEventType();
+				$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+				$interface->assign('registrationFormStructure', $registrationFormStructure);
 			} else {
 				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
 			}

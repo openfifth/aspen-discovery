@@ -9,5 +9,6 @@
 			<p class="text-info"><em>{translate text="You were registered for this event by a staff member." isPublicFacing=true}</em></p>
 		{/if}
 		{include file='AspenEvents/registrationToggleButton.tpl' eventSourceId=$event.sourceId registrationAction=$event.registrationAction userWaitingListPosition=$event.userWaitingListPosition}
+	    {include file='AspenEvents/customRegistrationForm.tpl'  eventSourceId=$event.sourceId}
 	</section>
 {/strip}
