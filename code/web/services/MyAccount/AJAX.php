@@ -12591,6 +12591,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$waitingList->toastShown = 0;
 			$waitingList->whereAdd("expiresAt >= NOW()");
 			$waitingList->orderBy('expiresAt ASC');
+			$waitingList->limit(10);
 
 			if ($waitingList->find()) {
 				while ($waitingList->fetch()) {
@@ -12651,6 +12652,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$eventNotifications->userId = $patron->id;
 			$eventNotifications->toastShown = 0;
 			$eventNotifications->orderBy('createdAt ASC');
+			$eventNotifications->limit(10);
 
 			if ($eventNotifications->find()) {
 				while ($eventNotifications->fetch()) {
