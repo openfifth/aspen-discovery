@@ -4680,6 +4680,11 @@ class MyAccount_AJAX extends JSON_Action {
 					$hasWaitingListUsers = $checkWaitingList->count() > 0;
 					$userCanRegister = $eventInstance->hasAvailableSeats() && !$hasWaitingListUsers;
 				}
+				
+				// Generate registration form using custom fields
+				$eventType = $eventInstance->getEventType();
+				$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+				$interface->assign('registrationFormStructure', $registrationFormStructure);
 			}
 
 			if (array_key_exists($curEventId, $eventRecords)) {
