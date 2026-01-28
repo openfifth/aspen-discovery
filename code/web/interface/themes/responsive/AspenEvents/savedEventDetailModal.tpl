@@ -7,6 +7,7 @@
 		{include file='AspenEvents/registrationUserSelector.tpl' eventSourceId="{$event.sourceId}"}
     	{include file='AspenEvents/registrationUserDetails.tpl' eventSourceId="{$event.sourceId}"}
 		{include file='AspenEvents/registrationToggleButton.tpl' eventSourceId="{$event.sourceId}" isRegistered="{$event.isRegistered}" isEventFull="{$event.isEventFull}" userCanRegister="{$event.userCanRegister}"}
+	    {include file='AspenEvents/customRegistrationForm.tpl'  eventSourceId="{$event.sourceId}" }
 	</section>
 {/if}
 {/strip}
