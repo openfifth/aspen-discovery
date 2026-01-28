@@ -4671,6 +4671,14 @@ class MyAccount_AJAX extends JSON_Action {
 				if ($userOnWaitingList) {
 					$userWaitingListPosition = $userWaitingList->position;
 					$userCanRegister = $userWaitingList->canRegister;
+				} elseif (!$waitingList) {
+					$userCanRegister = $eventInstance->hasAvailableSeats();
+				} else {
+					$checkWaitingList = new UserAspenEventInstanceWaitingList();
+					$checkWaitingList->eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+					$checkWaitingList->whereAdd('status IN ("waiting", "notified")');
+					$hasWaitingListUsers = $checkWaitingList->count() > 0;
+					$userCanRegister = $eventInstance->hasAvailableSeats() && !$hasWaitingListUsers;
 				}
 			}
 
