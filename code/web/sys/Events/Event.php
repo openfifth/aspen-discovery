@@ -167,6 +167,7 @@ class Event extends DataObject {
 						'label' => 'Number of Seats',
 						'description' => 'Maximum number of available seats for this event. Leave blank or 0 for unlimited.',
 						'min' => 0,
+						'max' => 1000,
 					],
 				],
 			],
