@@ -22,8 +22,8 @@ function getUpdates26_02_00(): array {
 			'continueOnError' => false,
 			'sql' => [
 				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES
-					('Aspen LiDA', 'Administer All Aspen LiDA Home Screen Links', '', 160, 'Allows the user to manage Aspen LiDA Home Screen Links for all libraries.'),
-					('Aspen LiDA', 'Administer Library Aspen LiDA Home Screen Links', '', 161, 'Allows the user to manage Aspen LiDA Home Screen Links for their home library.')
+				('Aspen LiDA', 'Administer All Aspen LiDA Home Screen Links', '', 160, 'Allows the user to manage Aspen LiDA Home Screen Links for all libraries.'),
+				('Aspen LiDA', 'Administer Library Aspen LiDA Home Screen Links', '', 161, 'Allows the user to manage Aspen LiDA Home Screen Links for their home library.')
 				"
 			],
 		],
@@ -33,8 +33,7 @@ function getUpdates26_02_00(): array {
 			'description' => 'Assign Aspen LiDA Home Screen Link permission to OPAC Admin role.',
 			'continueOnError' => false,
 			'sql' => [
-				"INSERT INTO role_permissions(roleId, permissionId) VALUES
-					((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer All Aspen LiDA Home Screen Links'))",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer All Aspen LiDA Home Screen Links'))",
 			],
 		],
 		//aspen_lida_home_screen_links_role_permissions
@@ -44,36 +43,36 @@ function getUpdates26_02_00(): array {
 			'continueOnError' => false,
 			'sql' => [
 				"CREATE TABLE IF NOT EXISTS `aspen_lida_home_screen_link_group` (
-				  `id` int(11) NOT NULL AUTO_INCREMENT,
-				  `name` varchar(50) NOT NULL,
-				  PRIMARY KEY (`id`)
+				`id` int(11) NOT NULL AUTO_INCREMENT,
+				`name` varchar(50) NOT NULL,
+				PRIMARY KEY (`id`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
 				"CREATE TABLE IF NOT EXISTS `aspen_lida_home_screen_link_group_entry` (
-				  `id` int(11) NOT NULL AUTO_INCREMENT,
-				  `homeScreenLinkGroupId` int(11) NOT NULL,
-				  `homeScreenLinkId` int(11) NOT NULL,
-				  `weight` int(11) NOT NULL DEFAULT '0',
-				  PRIMARY KEY (`id`),
-				  KEY `homeScreenLinkGroupId` (`homeScreenLinkGroupId`),
-				  KEY `homeScreenLinkId` (`homeScreenLinkId`)
+				`id` int(11) NOT NULL AUTO_INCREMENT,
+				`homeScreenLinkGroupId` int(11) NOT NULL,
+				`homeScreenLinkId` int(11) NOT NULL,
+				`weight` int(11) NOT NULL DEFAULT '0',
+				PRIMARY KEY (`id`),
+				KEY `homeScreenLinkGroupId` (`homeScreenLinkGroupId`),
+				KEY `homeScreenLinkId` (`homeScreenLinkId`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
 				"CREATE TABLE IF NOT EXISTS `aspen_lida_home_screen_link` (
-				  `id` int(11) NOT NULL AUTO_INCREMENT,
-				  `title` varchar(100) NOT NULL,
-				  `textId` varchar(100) DEFAULT NULL,
-				  `userId` int(11) DEFAULT NULL,
-				  `sharing` enum('everyone','library','private') NOT NULL DEFAULT 'everyone',
-				  `libraryId` int(11) DEFAULT NULL,
-				  `typeOfIcon` enum('materialIcon','uploadIcon') NOT NULL DEFAULT 'materialIcon',
-				  `materialIcon` varchar(100) DEFAULT NULL,
-				  `uploadIcon` varchar(255) DEFAULT NULL,
-				  `linkType` enum('deepLink','externalLink') NOT NULL DEFAULT 'deepLink',
-				  `deepLinkPath` varchar(100) DEFAULT NULL,
-				  `deepLinkId` varchar(100) DEFAULT NULL,
-				  `linkUrl` varchar(255) DEFAULT NULL,
-				  PRIMARY KEY (`id`),
-				  KEY `userId` (`userId`),
-				  KEY `libraryId` (`libraryId`)
+				`id` int(11) NOT NULL AUTO_INCREMENT,
+				`title` varchar(100) NOT NULL,
+				`textId` varchar(100) DEFAULT NULL,
+				`userId` int(11) DEFAULT NULL,
+				`sharing` enum('everyone','library','private') NOT NULL DEFAULT 'everyone',
+				`libraryId` int(11) DEFAULT NULL,
+				`typeOfIcon` enum('materialIcon','uploadIcon') NOT NULL DEFAULT 'materialIcon',
+				`materialIcon` varchar(100) DEFAULT NULL,
+				`uploadIcon` varchar(255) DEFAULT NULL,
+				`linkType` enum('deepLink','externalLink') NOT NULL DEFAULT 'deepLink',
+				`deepLinkPath` varchar(100) DEFAULT NULL,
+				`deepLinkId` varchar(100) DEFAULT NULL,
+				`linkUrl` varchar(255) DEFAULT NULL,
+				PRIMARY KEY (`id`),
+				KEY `userId` (`userId`),
+				KEY `libraryId` (`libraryId`)
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
 			],
 		],
