@@ -77,12 +77,7 @@ class AspenLiDA_HomeScreenLinks extends ObjectEditor {
 	function getActiveAdminSection(): string {
 		return 'aspen_lida';
 	}
-
-	/** @noinspection PhpUnusedParameterInspection */
-	public function getEditLink(string $context): string {
-		return '/AspenLiDA/HomeScreenLinks';
-	}
-
+	
 	function canView(): bool {
 		return UserAccount::userHasPermission([
 			'Administer All Aspen LiDA Home Screen Links',
