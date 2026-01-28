@@ -12704,6 +12704,10 @@ class MyAccount_AJAX extends JSON_Action {
 
 					$sentThisSession[] = 'event_' . $eventNotifications->id;
 				}
+
+				if (count($sentThisSession) > 1000) {
+					$sentThisSession = array_slice($sentThisSession, -500);
+				}
 			}
 
 			sleep($interval);
