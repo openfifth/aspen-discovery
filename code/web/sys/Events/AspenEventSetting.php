@@ -120,7 +120,7 @@ class AspenEventSetting extends DataObject {
 		if (!isset($this->_libraries) && $this->id) {
 			$this->_libraries = [];
 			$library = new LibraryEventsSetting();
-			$library->settingSource = 'aspenEvent';
+			$library->settingSource = 'aspenEvents';
 			$library->settingId = $this->id;
 			$library->find();
 			while ($library->fetch()) {
@@ -151,7 +151,7 @@ class AspenEventSetting extends DataObject {
 			foreach ($this->_libraries as $libraryId) {
 				$libraryEventSetting = new LibraryEventsSetting();
 
-				$libraryEventSetting->settingSource = 'aspenEvent';
+				$libraryEventSetting->settingSource = 'aspenEvents';
 				$libraryEventSetting->settingId = $this->id;
 				$libraryEventSetting->libraryId = $libraryId;
 				$libraryEventSetting->insert();
@@ -177,7 +177,7 @@ class AspenEventSetting extends DataObject {
 	private function clearLibraries() : void {
 		//Delete links to the libraries
 		$libraryEventSetting = new LibraryEventsSetting();
-		$libraryEventSetting->settingSource = 'aspenEvent';
+		$libraryEventSetting->settingSource = 'aspenEvents';
 		$libraryEventSetting->settingId = $this->id;
 		$libraryEventSetting->delete(true);
 	}
