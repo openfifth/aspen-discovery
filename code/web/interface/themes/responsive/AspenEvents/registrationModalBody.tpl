@@ -1,3 +1,3 @@
 {strip}
-	<p>DRAFT</p>
+	<p></p>
 {/strip}
