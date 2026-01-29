@@ -8350,6 +8350,11 @@ class MyAccount_AJAX extends JSON_Action {
 			$aspenEventSettings = new AspenEventSetting();
 			$aspenEventSettings->id = $libraryEventSettings->settingId;
 			if (!$aspenEventSettings->find(true)) {
+				unset($result['buttons']);
+				$result['message'] = translate([
+					'text' => 'Aspen Events are not configured for this library.',
+					'isPublicFacing' => true,
+				]);
 				return $result;
 			}
 			$body = $aspenEventSettings->getRegistrationModalBody();
