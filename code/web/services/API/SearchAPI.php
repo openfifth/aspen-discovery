@@ -2761,7 +2761,7 @@ class SearchAPI extends AbstractAPI {
 									$eventSource = 'assabet';
 									$bypass = $assabetBypass;
 									$addToList = $assabetAddToList;
-								} else if (str_starts_with($record['id'], 'aspenEvent')) {
+								} else if (str_starts_with($record['id'], 'aspenEvents')) {
 									$eventSource = 'aspenEvents';
 									$bypass = $aspenEventsBypass;
 									$addToList = $aspenEventsAddToList;
@@ -3469,7 +3469,7 @@ class SearchAPI extends AbstractAPI {
 						$eventSource = 'assabet';
 						$bypass = $assabetBypass;
 						$addToList = $assabetAddToList;
-					} else if (str_starts_with($record['id'], 'aspenEvent')) {
+					} else if (str_starts_with($record['id'], 'aspenEvents')) {
 						$eventSource = 'aspenEvents';
 						$bypass = $aspenEventsBypass;
 						$addToList = $aspenEventsAddToList;

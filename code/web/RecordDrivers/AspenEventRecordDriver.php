@@ -41,7 +41,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		$this->getSearchResult('list', false);
 
 		global $interface;
-		$interface->assign('eventVendor', 'aspenEvent');
+		$interface->assign('eventVendor', 'aspenEvents');
 
 		//Switch template
 		return 'RecordDrivers/Events/listEntry.tpl';
