@@ -500,6 +500,8 @@ abstract class Solr {
 		$result = $this->_select('GET', $options, false, $suggestionHandler);
 		if ($result instanceof AspenError) {
 			AspenError::raiseError($result);
+		}elseif (empty($result)) {
+			$result = [];
 		}
 
 		// Add highlighting because suggestion highlighting still does not

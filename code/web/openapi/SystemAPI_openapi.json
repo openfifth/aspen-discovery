@@ -1,0 +1,157 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aspen Discovery System API",
+    "version": "1.0.0",
+    "description": "OpenAPI documentation for the Aspen Discovery System API endpoints."
+  },
+  "servers": [
+    {
+      "url": "https://{aspenDomain}/API/SystemAPI?method=",
+      "variables": {
+        "aspenDomain": {
+          "default": "example.aspendiscovery.org",
+          "description": "The URL of the Aspen instance"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "getLocalIllForm": {
+      "get": {
+        "summary": "Get Local ILL Form",
+        "description": "Returns information needed to display a Local ILL Form to the user.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "formId",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The ID of the form to return information about",
+            "example": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LocalIllFormResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request - Invalid method or parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "invalid_method"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - Request requires authentication",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "unauthorized_access"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "FormFieldResult": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "property": {
+                "type": "string"
+              },
+              "display": {
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      },
+      "LocalIllFormResult": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "message": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string",
+                "nullable": true
+              },
+              "buttonLabel": {
+                "type": "string",
+                "nullable": true
+              },
+              "buttonLabelProcessing": {
+                "type": "string",
+                "nullable": true
+              },
+              "fields": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FormFieldResult"
+                },
+                "nullable": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

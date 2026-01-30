@@ -29,7 +29,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	public function getCheckouts(User $patron): array {
 		$accountSummary = $patron->getCachedAccountSummary('cloud_library');
 		$cachedCheckouts = $patron->getCachedCheckoutsForSource('cloud_library');
-		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+		if ($accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
 
 			$checkouts = [];
@@ -272,7 +272,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	public function getHolds(User $patron): array {
 		$accountSummary = $patron->getCachedAccountSummary('cloud_library');
 		$cachedHolds = $patron->getCachedHoldsForSource('cloud_library');
-		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 

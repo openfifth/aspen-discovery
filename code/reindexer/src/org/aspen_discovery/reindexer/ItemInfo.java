@@ -151,7 +151,7 @@ public class ItemInfo{
 	}
 
 	String getShelfLocation() {
-		return shelfLocation;
+		return shelfLocation == null ? "" : shelfLocation;
 	}
 
 	String getDetailedLocation(){
