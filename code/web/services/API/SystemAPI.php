@@ -402,8 +402,10 @@ class SystemAPI extends AbstractAPI {
 		$aspenEventWaitingListUpdates = getAspenEventWaitingListUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_notification_updates.php';
 		$asepnEventNotificationUpdates = getAspenEventNotificationUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/api_oauth_updates.php';
+		$apiOAuthUpdates = getApiOAuthUpdates();
 
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates, $galeUpdates, $aspenEventRegistrationUpdates, $aspenEventWaitingListUpdates, $asepnEventNotificationUpdates);
+		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates, $galeUpdates, $aspenEventRegistrationUpdates, $aspenEventWaitingListUpdates, $asepnEventNotificationUpdates, $apiOAuthUpdates);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
