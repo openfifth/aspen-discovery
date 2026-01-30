@@ -233,7 +233,6 @@ class HooplaDriver extends AbstractEContentDriver {
 							}
 						}
 
-						$summary->numHolds = $availableHolds + $unavailableHolds;
 						$summary->numAvailableHolds = $availableHolds;
 						$summary->numUnavailableHolds = $unavailableHolds;
 					} else {
@@ -242,7 +241,6 @@ class HooplaDriver extends AbstractEContentDriver {
 						$logger->log('Error retrieving holds from Hoopla. User ID: ' . $user->id . $errorMessage, Logger::LOG_NOTICE);
 					}
 				} else {
-					$summary->numHolds = 0;
 					$summary->numAvailableHolds = 0;
 					$summary->numUnavailableHolds = 0;
 				}
@@ -261,7 +259,7 @@ class HooplaDriver extends AbstractEContentDriver {
 	public function getCheckouts(User $patron): array {
 		$accountSummary = $patron->getCachedAccountSummary('hoopla');
 		$cachedCheckouts = $patron->getCachedCheckoutsForSource('hoopla');
-		if ($accountSummary->checkoutsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+		if ($accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
 			require_once ROOT_DIR . '/sys/User/Checkout.php';
 			$checkouts = [];
 			if ($this->hooplaEnabled) {
@@ -818,7 +816,7 @@ class HooplaDriver extends AbstractEContentDriver {
 	public function getHolds(User $patron, ?bool $forSummary = false): array {
 		$accountSummary = $patron->getCachedAccountSummary('hoopla');
 		$cachedHolds = $patron->getCachedHoldsForSource('hoopla');
-		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 			$holds = [
 				'available' => [],
