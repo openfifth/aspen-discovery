@@ -318,6 +318,14 @@
 										{else}
 											{if $campaign.canEnroll}
 												<button class="btn btn-primary btn-sm" aria-label="{$smarty.capture.linkedEnrollLabel|strip_tags|escape:'html'}" onclick="AspenDiscovery.Account.enroll({$campaign.campaignId}, {$linkedUser.linkedUserId});">{translate text="Enroll" isPublicFacing=true}</button>
+											{else}
+												<td>
+													{if $campaign.enrollmentStatus == 'not_yet_open'}
+														<span class="text-muted">{translate text="Enrollment Opens" isPublicFacing=true} {$campaign.startDate|date_format:"%B %e, %Y"}</span>
+													{elseif $campaign.enrollmentStatus == 'closed'}
+														<span class="text-muted">{translate text="Enrollment Expired" isPublicFacing=true}</span>
+													{/if}
+												</td>
 											{/if}
 										{/if}
 									</td>
@@ -534,6 +542,14 @@
 											{translate text="Enroll" isPublicFacing=true}
 										</button>
 									</td>
+								{else}
+									<td>
+										{if $campaign->enrollmentStatus == 'not_yet_open'}
+											<span class="text-muted">{translate text="Enrollment Opens" isPublicFacing=true} {$campaign->enrollmentStartDate|date_format:"%B %e, %Y"}</span>
+										{elseif $campaign->enrollmentStatus == 'closed'}
+											<span class="text-muted">{translate text="Enrollment Expired" isPublicFacing=true}</span>
+										{/if}
+									</td>
 								{/if}
 							{/if}
 							<td>
@@ -658,6 +674,14 @@
 								{if $campaign->canEnroll}
 									<td>
 										<button class="btn btn-primary btn-sm" aria-label="{$smarty.capture.enrollLabel|strip_tags|escape:'html'}" onclick="AspenDiscovery.Account.enroll({$campaign->id}, {$userId});">{translate text="Enroll" isPublicFacing=true}</button>
+									</td>
+								{else}
+									<td>
+										{if $campaign->enrollmentStatus == 'not_yet_open'}
+											<span class="text-muted">{translate text="Enrollment Opens" isPublicFacing=true} {$campaign->enrollmentStartDate|date_format:"%B %e, %Y"}</span>
+										{elseif $campaign->enrollmentStatus == 'closed'}
+											<span class="text-muted">{translate text="Enrollment Expired" isPublicFacing=true}</span>
+										{/if}
 									</td>
 								{/if}
 							{/if}

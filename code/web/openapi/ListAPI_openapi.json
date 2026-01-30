@@ -1,0 +1,212 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Aspen Discovery List API",
+    "version": "1.0.0",
+    "description": "OpenAPI documentation for the Aspen Discovery List API endpoints. These endpoints allow fetching information about patron and staff lists."
+  },
+  "servers": [
+    {
+      "url": "https://{aspenDomain}/API/ListAPI?method=",
+      "variables": {
+        "aspenDomain": {
+          "default": "example.aspendiscovery.org",
+          "description": "The URL of the Aspen instance"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "getListTitles": {
+      "get": {
+        "summary": "Get information of a list",
+        "description": "Returns list of items and list metadata about a particular list made by a patron or staff.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "id",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The ID of the list to return information about",
+            "required": true,
+            "example": 44114
+          },
+          {
+            "in": "query",
+            "name": "numTitles",
+            "schema": {
+              "type": "integer",
+              "default": 25
+            },
+            "description": "The number of work/titles within the list to return",
+            "example": 42
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "The page of Results to return",
+            "example": 4
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListAPIResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "BadRequest": {
+        "description": "Bad Request - Invalid method or parameters",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "invalid_method"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "Unauthorized - Request requires authentication",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string",
+                  "example": "unauthorized_access"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "ListAPIItemResult": {
+        "type": "object",
+        "properties": {
+          "author": {
+            "type": "string",
+            "example": "Ellison, Ralph"
+          },
+          "description": {
+            "type": "string"
+          },
+          "format": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "id": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string"
+          },
+          "language": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "length": {
+            "type": "string"
+          },
+          "publisher": {
+            "type": "string"
+          },
+          "recordType": {
+            "type": "string"
+          },
+          "shortID": {
+            "type": "string"
+          },
+          "small_image": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "titleURL": {
+            "type": "string"
+          }
+        }
+      },
+      "ListAPIResult": {
+        "type": "object",
+        "properties": {
+          "result": {
+            "type": "object",
+            "properties": {
+              "success": {
+                "type": "boolean"
+              },
+              "listTitle": {
+                "type": "string"
+              },
+              "listDescription": {
+                "type": "string",
+                "nullable": true
+              },
+              "defaultSort": {
+                "type": "string",
+                "enum": [
+                  "dateAdded",
+                  "recentlyAdded",
+                  "title",
+                  "custom"
+                ]
+              },
+              "totalResults": {
+                "type": "string",
+                "nullable": true
+              },
+              "titles": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ListAPIItemResult"
+                },
+                "nullable": true
+              },
+              "page_current": {
+                "type": "integer"
+              },
+              "page_total": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -510,6 +510,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			if ($lookupMyAccountInfoResponse && !isset($lookupMyAccountInfoResponse->messageList)) {
 				$checkouts = $this->getCheckouts($patron);
 				$summary->numCheckedOut = count($checkouts);
+				$summary->numOverdue = 0;
 				foreach ($checkouts as $checkout) {
 					if ($checkout->isOverdue()) {
 						$summary->numOverdue++;

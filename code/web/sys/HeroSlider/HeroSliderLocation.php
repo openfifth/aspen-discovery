@@ -179,9 +179,9 @@ class HeroSliderLocation extends DataObject {
 			if ($activePlaylist->find(true)) {
 				$playlistImages = $activePlaylist->getImages();
 
-				foreach ($playlistImages as $image) {
+				foreach ($playlistImages as $playListImage) {
 					$image = new ImageUpload();
-					$image->id = $image->imageId;
+					$image->id = $playListImage->imageId;
 					$image->type = 'hero_slider';
 					if ($image->find(true)) {
 						$aspectRatio = "$image->aspectRatioWidth:$image->aspectRatioHeight";
@@ -193,8 +193,8 @@ class HeroSliderLocation extends DataObject {
 				$firstAspectRatio = reset($activeAspectRatios);
 				$structure['aspectRatioPreset']['note'] = "Active Playlist has an aspect ratio of $firstAspectRatio.";
 			}else{
-				$aspectRatios = implode(',', $activeAspectRatios);
-				$structure['aspectRatioPreset']['note'] = "Active Playlist has aspect ratio of $aspectRatios.";
+				$aspectRatios = implode(', ', $activeAspectRatios);
+				$structure['aspectRatioPreset']['note'] = "Active Playlist has aspect ratios of $aspectRatios.";
 			}
 
 		}

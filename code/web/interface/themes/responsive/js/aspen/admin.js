@@ -1373,6 +1373,12 @@ AspenDiscovery.Admin = (function () {
 			window.location.href = url + "?release=" + selectedRelease;
 			return false;
 		},
+        displayApiDocs: function () {
+            var url = Globals.path + "/API/Documentation";
+            var selectedApi = $('#apiSelector').val();
+            window.location.href = url + "?api=" + selectedApi;
+            return false;
+        },
 
 		updateBrowseSearchForSource() {
 			const selectedSource = $('#sourceSelect').val();
@@ -1813,6 +1819,7 @@ AspenDiscovery.Admin = (function () {
 			}
 		},
 		getUrlOptions: function () {
+			$('#propertyRowlinkUrl').hide();
 			$('#propertyRowctaUrl').hide();
 			$('#propertyRowdeepLinkId').hide();
 			$('#propertyRowdeepLinkPath').hide();
@@ -1821,10 +1828,12 @@ AspenDiscovery.Admin = (function () {
 			var linkType = $("#linkTypeSelect").val();
 			if (linkType === "0" || linkType === 0) {
 				$('#propertyRowctaUrl').hide();
+				$('#propertyRowlinkUrl').hide();
 				$('#propertyRowdeepLinkId').hide();
 				$('#propertyRowdeepLinkPath').show();
 			} else {
 				$('#propertyRowctaUrl').show();
+				$('#propertyRowlinkUrl').show();
 				$('#propertyRowdeepLinkId').hide();
 				$('#propertyRowdeepLinkPath').hide();
 				$('#propertyRowdeepLinkFullPath').hide();
@@ -3015,6 +3024,20 @@ AspenDiscovery.Admin = (function () {
 					$options.stop(true, true).slideUp(200);
 				}
 			});
-		}
+		},
+
+		toggleHomeScreenIconTypeFields: function () {
+			$('#propertyRowmaterialIcon').hide();
+			$('#propertyRowuploadIcon').hide();
+
+			var linkType = $("#typeOfIconSelect").val();
+			if (linkType === "imageUpload") {
+				$('#propertyRowmaterialIcon').hide();
+				$('#propertyRowuploadIcon').show();
+			} else {
+				$('#propertyRowmaterialIcon').show();
+				$('#propertyRowuploadIcon').hide();
+			}
+		},
 	};
 }(AspenDiscovery.Admin || {}));
