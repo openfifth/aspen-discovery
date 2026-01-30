@@ -895,7 +895,7 @@ class Sierra extends AbstractIlsDriver {
 		return $checkedOutTitles;
 	}
 
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$sierraUrl = $this->accountProfile->vendorOpacUrl . "/iii/sierra-api/v{$this->accountProfile->apiVersion}/patrons/checkouts/$itemId/renewal";
 		$renewResponse = $this->_postPage('sierra.renewCheckout', $sierraUrl, '');
 
@@ -930,9 +930,6 @@ class Sierra extends AbstractIlsDriver {
 				'text' => 'Checkout renewed successfully',
 				'isPublicFacing' => true,
 			]);
-
-			$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			$patron->forceReloadOfCheckouts();
 		} else {
 			$message = translate([
 				'text' => "Unable to renew your checkout",
@@ -1378,8 +1375,11 @@ class Sierra extends AbstractIlsDriver {
 		return false;
 	}
 
-	public function renewAll(User $patron) : bool|array {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Sierra, renew one at a time'
+		];
 	}
 
 	public function patronLogin($username, $password, $validatedViaSSO) : User|AspenError|null {
@@ -1823,6 +1823,7 @@ class Sierra extends AbstractIlsDriver {
 			global $library;
 			$params = [];
 
+			$userHomeLibrary = $patron->getHomeLibrary();
 			if (isset($_REQUEST['email'])) {
 				$patron->email = $_REQUEST['email'];
 				$params['emails'] = [$_REQUEST['email']];
@@ -1832,7 +1833,7 @@ class Sierra extends AbstractIlsDriver {
 				if (isset($_REQUEST['phone'])) {
 					$patron->phone = $_REQUEST['phone'];
 					$tmpPhone = new stdClass();
-					$tmpPhone->type = 't';
+					$tmpPhone->type = $userHomeLibrary->phoneField;
 					$tmpPhone->number = $_REQUEST['phone'];
 					$params['phones'][] = $tmpPhone;
 				}
@@ -1844,7 +1845,7 @@ class Sierra extends AbstractIlsDriver {
 				if (isset($_REQUEST['workPhone'])) {
 					$patron->_workPhone = $_REQUEST['workPhone'];
 					$tmpPhone = new stdClass();
-					$tmpPhone->type = 'p';
+					$tmpPhone->type = $userHomeLibrary->workPhoneField;
 					$tmpPhone->number = $_REQUEST['workPhone'];
 					$params['phones'][] = $tmpPhone;
 				}
@@ -2795,8 +2796,6 @@ class Sierra extends AbstractIlsDriver {
 				$result['message'] = 'Could not record fine payment.';
 			}
 		}
-
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $result;
 	}
 
@@ -3002,10 +3001,11 @@ class Sierra extends AbstractIlsDriver {
 			}
 		}
 		if (!empty($patronInfo->phones)) {
+			$userHomeLibrary = $user->getHomeLibrary();
 			foreach ($patronInfo->phones as $phoneInfo) {
-				if ($phoneInfo->type == 'p') {
+				if ($phoneInfo->type == $userHomeLibrary->phoneNumber) {
 					$user->phone = $phoneInfo->number;
-				}elseif ($phoneInfo->type == 't') {
+				}elseif ($phoneInfo->type == $userHomeLibrary->workPhoneField) {
 					$user->_workPhone = $phoneInfo->number;
 				}
 			}

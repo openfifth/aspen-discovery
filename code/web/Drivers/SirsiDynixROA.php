@@ -510,6 +510,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			if ($lookupMyAccountInfoResponse && !isset($lookupMyAccountInfoResponse->messageList)) {
 				$checkouts = $this->getCheckouts($patron);
 				$summary->numCheckedOut = count($checkouts);
+				$summary->numOverdue = 0;
 				foreach ($checkouts as $checkout) {
 					if ($checkout->isOverdue()) {
 						$summary->numOverdue++;
@@ -1401,7 +1402,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 *                              If an error occurs, return an AspenError
 	 * @access  public
 	 */
-	function placeItemHold(User $patron, string $recordId, string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
+	function placeItemHold(User $patron, string $recordId, ?string $itemId, string $pickupBranch, ?string $cancelDate = null, ?string $pickupSublocation = null) : array {
 		return $this->placeSirsiHold($patron, $recordId, $itemId, false, $pickupBranch, $cancelDate);
 	}
 
@@ -2131,7 +2132,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	 * @param string $itemIndex
 	 * @return array
 	 */
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$sessionToken = $this->getSessionToken($patron);
 		if (!$sessionToken) {
 			$result = [
@@ -2169,7 +2170,8 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 		if (isset($circRenewResponse->circRecord->key)) {
 			// Success
-			$patron->forceReloadOfCheckouts();
+			$accountSummary = $patron->getCachedAccountSummary('ils');
+			$accountSummary->markCheckoutsStale();
 			$result = [
 				'success' => true,
 				'itemId' => $circRenewResponse->circRecord->key,
@@ -2281,9 +2283,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			}
 
 			$accountSummary = $patron->getAccountSummary();
-			if ($accountSummary->totalFines != $totalFinesOwed) {
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-			}
 		}
 		return $fines;
 	}
@@ -3933,45 +3932,71 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			$checkOutResponse = $this->getWebServiceResponse('checkOutItem', $webServiceURL . '/circulation/circRecord/checkOut', $checkOutParams, $sessionToken, 'POST', $additionalHeaders, [], $currentLocation->code);
 
 			if (!empty($checkOutResponse)) {
-				$checkOutMessage = '';
-				if (!empty($checkOutResponse->messageList)){
-					foreach ($checkOutResponse->messageList as $message) {
-						if (!empty($checkOutMessage)) {
-							$checkOutMessage .= '<br/>';
-						}else{
-							$checkOutMessage .= translate([
-								'text' => $message->message,
-								'isPublicFacing' => true,
-							]);
+				$processCheckoutResponse = true;
+				//Check for things that we cannot look for proactively.
+				$retryCheckout = false;
+				if (!empty($checkOutResponse->dataMap)) {
+					if (!empty($checkOutResponse->dataMap->promptType) && ($checkOutResponse->dataMap->promptType == 'CKOBLOCKS')) {
+						if (!empty($checkOutResponse->dataMap->claimsReturned)) {
+							$retryCheckout = true;
+						}
+					}
+					if (!empty($checkOutResponse->dataMap->userStatus->key)) {
+						if ($checkOutResponse->dataMap->userStatus->key == 'OK' || $checkOutResponse->dataMap->userStatus->key == 'DELINQUENT') {
+							$retryCheckout = true;
 						}
 					}
 				}
 
-				$result['message'] = $checkOutMessage;
-				if ($this->lastWebServiceResponseCode == 200) {
-					$result['success'] = true;
-					$result['api']['title'] = translate([
-						'text' => 'Check Out successful',
-						'isPublicFacing' => true,
-					]);
-
-					$checkouts = $this->getCheckouts($patron);
-					foreach ($checkouts as $checkout) {
-						if ($checkout->barcode == $barcode) {
-							$result['itemData'] = [
-								'title' => $checkout->getTitle(),
-								'due' => date('M j Y', $checkout->dueDate),
-								'barcode' => $barcode,
-								'itemId' => $itemKey,
-								'owningLocationCode' => $owningLocationCode,
-								'checkoutLocationCode' => $checkoutLocationCode
-							];
-							break;
-						}
+				if ($retryCheckout && !empty($this->accountProfile->overrideCode)) {
+					$additionalHeaders[] = 'SD-Prompt-Return: CKOBLOCKS/' . $this->accountProfile->overrideCode;
+					$checkOutResponse = $this->getWebServiceResponse('checkOutItem', $webServiceURL . '/circulation/circRecord/checkOut', $checkOutParams, $sessionToken, 'POST', $additionalHeaders, [], $currentLocation->code);
+					if (empty($checkOutResponse)) {
+						$processCheckoutResponse = false;
 					}
 				}
 
-				$result['api']['message'] = $checkOutMessage;
+				if ($processCheckoutResponse) {
+					$checkOutMessage = '';
+					if (!empty($checkOutResponse->messageList)) {
+						foreach ($checkOutResponse->messageList as $message) {
+							if (!empty($checkOutMessage)) {
+								$checkOutMessage .= '<br/>';
+							} else {
+								$checkOutMessage .= translate([
+									'text' => $message->message,
+									'isPublicFacing' => true,
+								]);
+							}
+						}
+					}
+
+					$result['message'] = $checkOutMessage;
+					if ($this->lastWebServiceResponseCode == 200) {
+						$result['success'] = true;
+						$result['api']['title'] = translate([
+							'text' => 'Check Out successful',
+							'isPublicFacing' => true,
+						]);
+
+						$checkouts = $this->getCheckouts($patron);
+						foreach ($checkouts as $checkout) {
+							if ($checkout->barcode == $barcode) {
+								$result['itemData'] = [
+									'title' => $checkout->getTitle(),
+									'due' => date('M j Y', $checkout->dueDate),
+									'barcode' => $barcode,
+									'itemId' => $itemKey,
+									'owningLocationCode' => $owningLocationCode,
+									'checkoutLocationCode' => $checkoutLocationCode
+								];
+								break;
+							}
+						}
+					}
+
+					$result['api']['message'] = $checkOutMessage;
+				}
 			}
 		}
 
@@ -4316,10 +4341,10 @@ class SirsiDynixROA extends AbstractIlsDriver {
 		return false;
 	}
 
-	public function renewAll(User $patron) : bool|array{
+	public function renewAll(User $patron) : array{
 		return [
-			'success' => false,
-			'message' => 'Renew All not supported directly, call through Catalog Connection',
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Symphony, renew one at a time'
 		];
 	}
 

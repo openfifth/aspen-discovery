@@ -118,11 +118,22 @@ class OverDriveDriver extends AbstractEContentDriver {
 		if ($this->_availableSettings == null) {
 			$this->_availableSettings = [];
 
+			global $library;
+			$activeLibrary = $library;
 			if (UserAccount::isLoggedIn()) {
-				$activeLibrary = UserAccount::getLoggedInUser()->getHomeLibrary();
-			}else{
-				global $library;
-				$activeLibrary = $library;
+				$activeLocationId = UserAccount::getUserHomeLocationId();
+				if ($activeLocationId > 0) {
+					$location = new Location();
+					$location->locationId = $activeLocationId;
+					if ($location->find(true)) {
+						$activeLibrary = new Library();
+						$activeLibrary->libraryId = $location->libraryId;
+						if (!$activeLibrary->find(true)) {
+							$activeLibrary = $library;
+						}
+					}
+				}
+
 			}
 
 			if ($activeLibrary != null) {
@@ -566,151 +577,155 @@ class OverDriveDriver extends AbstractEContentDriver {
 	 * If multiple OverDrive collections are connected, all checkouts for all collections will be loaded.
 	 */
 	public function getCheckouts(User $patron, bool $forSummary = false): array {
-		require_once ROOT_DIR . '/sys/User/Checkout.php';
-		global $logger;
+		$accountSummary = $patron->getCachedAccountSummary('overdrive');
+		$cachedCheckouts = $patron->getCachedCheckoutsForSource('overdrive');
+		if ($accountSummary->dataIsStale || $accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			require_once ROOT_DIR . '/sys/User/Checkout.php';
+			global $logger;
 
-		if (!empty($this->settings)) {
-			$settingsToCheck = [$this->settings->id => $this->settings];
-		}else{
-			$settingsToCheck = $this->getAvailableSettings();
-		}
-		$checkedOutTitles = [];
-		foreach ($settingsToCheck as $setting) {
-			if (!$this->isUserValidForOverDrive($setting, $patron)) {
-				continue;
+			if (!empty($this->settings)) {
+				$settingsToCheck = [$this->settings->id => $this->settings];
+			} else {
+				$settingsToCheck = $this->getAvailableSettings();
 			}
-			$url = $setting->patronApiUrl . '/v1/patrons/me/checkouts';
-			$response = $this->_callPatronUrl($setting, $patron, $url, "getCheckouts");
-			if ($response === false) {
-				//The user is not authorized to use OverDrive
-				$this->incrementStat('numApiErrors');
-				continue;
-			}
+			$checkouts = [];
+			foreach ($settingsToCheck as $setting) {
+				if (!$this->isUserValidForOverDrive($setting, $patron)) {
+					continue;
+				}
+				$url = $setting->patronApiUrl . '/v1/patrons/me/checkouts';
+				$response = $this->_callPatronUrl($setting, $patron, $url, "getCheckouts");
+				if ($response === false) {
+					//The user is not authorized to use OverDrive
+					$this->incrementStat('numApiErrors');
+					continue;
+				}
 
-			$supplementalMaterialIds = [];
-			if (isset($response->checkouts)) {
-				foreach ($response->checkouts as $curTitle) {
-					$checkout = new Checkout();
-					$checkout->type = 'overdrive';
-					$checkout->source = 'overdrive';
-					$checkout->userId = $patron->id;
-					if (isset($curTitle->links->bundledChildren)) {
-						foreach ($curTitle->links->bundledChildren as $bundledChild) {
-							if (preg_match('%.*/checkouts/(.*)%ix', $bundledChild->href, $matches)) {
-								$supplementalMaterialIds[$matches[1]] = $curTitle->reserveId;
+				$supplementalMaterialIds = [];
+				if (isset($response->checkouts)) {
+					foreach ($response->checkouts as $curTitle) {
+						$checkout = new Checkout();
+						$checkout->type = 'overdrive';
+						$checkout->source = 'overdrive';
+						$checkout->userId = $patron->id;
+						if (isset($curTitle->links->bundledChildren)) {
+							foreach ($curTitle->links->bundledChildren as $bundledChild) {
+								if (preg_match('%.*/checkouts/(.*)%ix', $bundledChild->href, $matches)) {
+									$supplementalMaterialIds[$matches[1]] = $curTitle->reserveId;
+								}
 							}
 						}
-					}
 
-					if (array_key_exists($curTitle->reserveId, $supplementalMaterialIds)) {
-						$parentCheckoutId = $supplementalMaterialIds[$curTitle->reserveId];
-						/** @var Checkout $parentCheckout */
-						$parentCheckout = $checkedOutTitles['overdrive' . $parentCheckoutId . $patron->id];
-						if (!isset($parentCheckout->supplementalMaterials)) {
-							$parentCheckout->supplementalMaterials = [];
-						}
-						$supplementalMaterial = new Checkout();
-						$supplementalMaterial->source = 'overdrive';
-						$supplementalMaterial->sourceId = $curTitle->reserveId . '_' . $setting->id;
-						if (count($settingsToCheck) > 1) {
-							$supplementalMaterial->collectionName = $setting->name;
-						}
-						$supplementalMaterial->recordId = $curTitle->reserveId;
-						$supplementalMaterial->userId = $patron->id;
-						$supplementalMaterial->isSupplemental = true;
-						$supplementalMaterial = $this->loadCheckoutFormatInformation($curTitle, $supplementalMaterial);
-						if (!empty($supplementalMaterial->selectedFormatValue)) {
-							$parentCheckout->supplementalMaterials[] = $supplementalMaterial;
-						}
-					} else {
-						//Load data from api
-						$checkout->sourceId = $curTitle->reserveId . '_' . $setting->id;
-						$checkout->recordId = $curTitle->reserveId;
-						if (count($settingsToCheck) > 1) {
-							$checkout->collectionName = $setting->name;
-						}
-						$checkout->dueDate = $curTitle->expires;
-						$checkout->canRenew = false;
-						try {
-							$expirationDate = new DateTime($curTitle->expires);
-							$checkout->dueDate = $expirationDate->getTimestamp();
-							//If the title expires in less than 3 days, we should be able to renew it
-
-							if ($expirationDate->getTimestamp() < time() + 3 * 24 * 60 * 60) {
-								$checkout->canRenew = true;
-							} else {
-								$checkout->canRenew = false;
+						if (array_key_exists($curTitle->reserveId, $supplementalMaterialIds)) {
+							$parentCheckoutId = $supplementalMaterialIds[$curTitle->reserveId];
+							/** @var Checkout $parentCheckout */
+							$parentCheckout = $checkouts['overdrive' . $parentCheckoutId . $patron->id];
+							if (!isset($parentCheckout->supplementalMaterials)) {
+								$parentCheckout->supplementalMaterials = [];
 							}
-						} catch (Exception $e) {
-							$logger->log("Could not parse date for overdrive expiration " . $curTitle->expires, Logger::LOG_NOTICE);
-						}
-						try {
-							$checkOutDate = new DateTime($curTitle->checkoutDate);
-							$checkout->checkoutDate = $checkOutDate->getTimestamp();
-						} catch (Exception $e) {
-							$logger->log("Could not parse date for overdrive checkout date " . $curTitle->checkoutDate, Logger::LOG_NOTICE);
-						}
-						$checkout->overdriveRead = false;
-						if (isset($curTitle->isFormatLockedIn) && $curTitle->isFormatLockedIn == 1) {
-							$checkout->formatSelected = true;
+							$supplementalMaterial = new Checkout();
+							$supplementalMaterial->source = 'overdrive';
+							$supplementalMaterial->sourceId = $curTitle->reserveId . '_' . $setting->id;
+							if (count($settingsToCheck) > 1) {
+								$supplementalMaterial->collectionName = $setting->name;
+							}
+							$supplementalMaterial->recordId = $curTitle->reserveId;
+							$supplementalMaterial->userId = $patron->id;
+							$supplementalMaterial->isSupplemental = true;
+							$supplementalMaterial = $this->loadCheckoutFormatInformation($curTitle, $supplementalMaterial);
+							if (!empty($supplementalMaterial->selectedFormatValue)) {
+								$parentCheckout->supplementalMaterials[] = $supplementalMaterial;
+							}
 						} else {
-							$checkout->formatSelected = false;
-						}
-						$checkout->formats = [];
-						if (!$forSummary) {
-							$checkout = $this->loadCheckoutFormatInformation($curTitle, $checkout);
-
-							if (isset($curTitle->actions->earlyReturn)) {
-								$checkout->canReturnEarly = true;
+							//Load data from api
+							$checkout->sourceId = $curTitle->reserveId . '_' . $setting->id;
+							$checkout->recordId = $curTitle->reserveId;
+							if (count($settingsToCheck) > 1) {
+								$checkout->collectionName = $setting->name;
 							}
-							//Figure out which eContent record this is for.
-							require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
-							$overDriveRecord = new OverDriveRecordDriver($checkout->recordId);
-							if ($overDriveRecord->isValid()) {
-								$checkout->updateFromRecordDriver($overDriveRecord);
-								$checkout->format = $checkout->getRecordFormatCategory();
+							$checkout->dueDate = $curTitle->expires;
+							$checkout->canRenew = false;
+							try {
+								$expirationDate = new DateTime($curTitle->expires);
+								$checkout->dueDate = $expirationDate->getTimestamp();
+								//If the title expires in less than 3 days, we should be able to renew it
+
+								if ($expirationDate->getTimestamp() < time() + 3 * 24 * 60 * 60) {
+									$checkout->canRenew = true;
+								} else {
+									$checkout->canRenew = false;
+								}
+							} catch (Exception $e) {
+								$logger->log("Could not parse date for overdrive expiration " . $curTitle->expires, Logger::LOG_NOTICE);
+							}
+							try {
+								$checkOutDate = new DateTime($curTitle->checkoutDate);
+								$checkout->checkoutDate = $checkOutDate->getTimestamp();
+							} catch (Exception $e) {
+								$logger->log("Could not parse date for overdrive checkout date " . $curTitle->checkoutDate, Logger::LOG_NOTICE);
+							}
+							$checkout->overdriveRead = false;
+							if (isset($curTitle->isFormatLockedIn) && $curTitle->isFormatLockedIn == 1) {
+								$checkout->formatSelected = true;
 							} else {
-								//The title doesn't exist in the collection - this happens with Magazines right now (early 2021).
-								//Load the title information from metadata, but don't link it.
-								$overDriveMetadata = $this->getProductMetadata($patron->getHomeLibrary(), $setting, $checkout->recordId);
-								if ($overDriveMetadata) {
-									$checkout->format = $overDriveMetadata->mediaType;
-									$checkout->coverUrl = $overDriveMetadata->images->cover150Wide->href;
-									$checkout->title = $overDriveMetadata->title;
-									$checkout->author = $overDriveMetadata->publisher;
-									//Magazines link to the searchable record by the parent magazine title id
-									if (!empty($overDriveMetadata->parentMagazineTitleId)) {
-										require_once ROOT_DIR . '/sys/OverDrive/OverDriveAPIProduct.php';
-										$overDriveProduct = new OverDriveAPIProduct();
-										$overDriveProduct->crossRefId = $overDriveMetadata->parentMagazineTitleId;
-										if ($overDriveProduct->find(true)) {
-											//we have the product, now we need to find the grouped work id
-											require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
-											$groupedWorkPrimaryIdentifier = new GroupedWorkPrimaryIdentifier();
-											$groupedWorkPrimaryIdentifier->type = 'overdrive';
-											$groupedWorkPrimaryIdentifier->identifier = $overDriveProduct->overdriveId;
-											if ($groupedWorkPrimaryIdentifier->find(true)) {
-												require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
-												$groupedWork = new GroupedWork();
-												$groupedWork->id = $groupedWorkPrimaryIdentifier->grouped_work_id;
-												if ($groupedWork->find(true)) {
-													$checkout->groupedWorkId = $groupedWork->permanent_id;
+								$checkout->formatSelected = false;
+							}
+							$checkout->formats = [];
+							if (!$forSummary) {
+								$checkout = $this->loadCheckoutFormatInformation($curTitle, $checkout);
+
+								if (isset($curTitle->actions->earlyReturn)) {
+									$checkout->canReturnEarly = true;
+								}
+								//Figure out which eContent record this is for.
+								require_once ROOT_DIR . '/RecordDrivers/OverDriveRecordDriver.php';
+								$overDriveRecord = new OverDriveRecordDriver($checkout->recordId);
+								if ($overDriveRecord->isValid()) {
+									$checkout->updateFromRecordDriver($overDriveRecord);
+									$checkout->format = $checkout->getRecordFormatCategory();
+								} else {
+									//The title doesn't exist in the collection - this happens with Magazines right now (early 2021).
+									//Load the title information from metadata, but don't link it.
+									$overDriveMetadata = $this->getProductMetadata($patron->getHomeLibrary(), $setting, $checkout->recordId);
+									if ($overDriveMetadata) {
+										$checkout->format = $overDriveMetadata->mediaType;
+										$checkout->coverUrl = $overDriveMetadata->images->cover150Wide->href;
+										$checkout->title = $overDriveMetadata->title;
+										$checkout->author = $overDriveMetadata->publisher;
+										//Magazines link to the searchable record by the parent magazine title id
+										if (!empty($overDriveMetadata->parentMagazineTitleId)) {
+											require_once ROOT_DIR . '/sys/OverDrive/OverDriveAPIProduct.php';
+											$overDriveProduct = new OverDriveAPIProduct();
+											$overDriveProduct->crossRefId = $overDriveMetadata->parentMagazineTitleId;
+											if ($overDriveProduct->find(true)) {
+												//we have the product, now we need to find the grouped work id
+												require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
+												$groupedWorkPrimaryIdentifier = new GroupedWorkPrimaryIdentifier();
+												$groupedWorkPrimaryIdentifier->type = 'overdrive';
+												$groupedWorkPrimaryIdentifier->identifier = $overDriveProduct->overdriveId;
+												if ($groupedWorkPrimaryIdentifier->find(true)) {
+													require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+													$groupedWork = new GroupedWork();
+													$groupedWork->id = $groupedWorkPrimaryIdentifier->grouped_work_id;
+													if ($groupedWork->find(true)) {
+														$checkout->groupedWorkId = $groupedWork->permanent_id;
+													}
 												}
 											}
 										}
 									}
 								}
 							}
-						}
 
-						$key = $checkout->source . $checkout->sourceId . $checkout->userId;
-						$checkedOutTitles[$key] = $checkout;
+							$key = $checkout->source . $checkout->sourceId . $checkout->userId;
+							$checkouts[$key] = $checkout;
+						}
 					}
 				}
 			}
+			$cachedCheckouts = $this->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
-
-		return $checkedOutTitles;
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -721,7 +736,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 	public function getHolds(User $patron, bool $forSummary = false): array {
 		$accountSummary = $patron->getCachedAccountSummary('overdrive');
 		$cachedHolds = $patron->getCachedHoldsForSource('overdrive');
-		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->dataIsStale || $accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 			$holds = [
 				'available' => [],
@@ -1109,7 +1124,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 		}
 
 		$holds = $this->getHolds($patron);
-		$holdToCancel = $this->getHoldByCancelId($holds, $recordId, $cancelId);
+		$holdToCancel = $this->getHoldBySourceId($holds, $recordId);
 
 		$url = $settings->patronApiUrl . '/v1/patrons/me/holds/' . $overDriveId;
 		$response = $this->_callPatronDeleteUrl($settings, $patron, $url, "cancelHold");
@@ -1174,7 +1189,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 	 *
 	 * @return array results (success, message, noCopies)
 	 */
-	public function checkOutTitle($patron, $titleId) : array {
+	public function checkOutTitle(User $patron, string $titleId) : array {
 		//Figure out which collection the title is on hold in.
 		$settingIdForItem = null;
 		if (str_contains($titleId, '_')){
@@ -1266,8 +1281,9 @@ class OverDriveDriver extends AbstractEContentDriver {
 			$this->incrementStat('numCheckouts');
 			$patron->lastReadingHistoryUpdate = 0;
 			$patron->update();
-			$patron->clearCachedAccountSummaryForSource('overdrive');
-			$patron->forceReloadOfCheckouts();
+			$accountSummary = $patron->getCachedAccountSummary('overdrive');
+			$accountSummary->incrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		} else {
 			$this->incrementStat('numFailedCheckouts');
 			$result['message'] = translate([
@@ -1407,8 +1423,9 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numEarlyReturns');
 
-			$patron->clearCachedAccountSummaryForSource('overdrive');
-			$patron->forceReloadOfCheckouts();
+			$accountSummary = $patron->getCachedAccountSummary('overdrive');
+			$accountSummary->decrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		} else {
 			$cancelHoldResult['message'] = translate([
 				'text' => 'There was an error returning this item.',
@@ -1589,8 +1606,11 @@ class OverDriveDriver extends AbstractEContentDriver {
 	 * Renew all titles currently checked out to the user.
 	 * This is not currently implemented for OverDrive
 	 */
-	public function renewAll(User $patron) : array|false {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for OverDrive, renew one at a time'
+		];
 	}
 
 	/**
@@ -1599,7 +1619,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 	 * If the library has multiple OverDrive collections available, the driver should have the active settings
 	 * set using a call to setSettings before calling this method.
 	 */
-	function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) : array {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		if (str_contains($recordId, '_')){
 			list ($recordId, $settingId) = explode('_', $recordId);
 			$settings = $this->getAvailableSettings()[$settingId];
@@ -1642,7 +1662,11 @@ class OverDriveDriver extends AbstractEContentDriver {
 
 			$this->incrementStat('numRenewals');
 
-			$patron->forceReloadOfCheckouts();
+			//OverDrive actually places another hold rather than extending checkout time
+			$accountSummary = $patron->getCachedAccountSummary('overdrive');
+			$accountSummary->incrementNumberOfUnavailableHolds();
+			$accountSummary->markHoldsStale();
+
 		} else {
 			$holdResult['message'] = translate([
 				'text' => 'Sorry, but we could not renew this title for you.',

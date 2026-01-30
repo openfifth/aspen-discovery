@@ -138,7 +138,7 @@ class Events_Calendar extends Action {
 				}
 			}
 		}
-		$searchObject->setSort('start_date_sort');
+		$searchObject->setSort('start_date_sort asc, title_sort asc');
 
 		$timer->logTime('Setup Search');
 

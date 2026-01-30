@@ -44,7 +44,8 @@ class SearchAPI extends AbstractAPI {
 					'searchAvailableFacets',
 					'getSearchSources',
 					'getSearchIndexes',
-					'getBrowseCategories'
+					'getBrowseCategories',
+					'getHomeScreenFeed'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -217,11 +218,13 @@ class SearchAPI extends AbstractAPI {
 			while ($line = fgets($fh)) {
 				$pieces = [];
 				if (preg_match('/^MemTotal:\s+(\d+)\skB$/', $line, $pieces)) {
-					$totalMem = $pieces[1] * 1024;
-				} else {
-					if (preg_match('/^MemAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
-						$freeMem = $pieces[1] * 1024;
-					}
+					$totalMem += $pieces[1] * 1024;
+				} else if (preg_match('/^MemAvailable:\s+(\d+)\skB$/', $line, $pieces)) {
+					$freeMem += $pieces[1] * 1024;
+				} else if (preg_match('/^SwapTotal:\s+(\d+)\skB$/', $line, $pieces)) {
+					$totalMem += $pieces[1] * 1024;
+				} else if (preg_match('/^SwapFree:\s+(\d+)\skB$/', $line, $pieces)) {
+					$freeMem += $pieces[1] * 1024;
 				}
 			}
 			$this->addServerStat($serverStats, 'Total Memory', StringUtils::formatBytes($totalMem));
@@ -1306,6 +1309,7 @@ class SearchAPI extends AbstractAPI {
 	function getSubCategories($textId = null, $loadFirstResults = false) : array {
 		$isLiDA = $this->checkIfLiDA();
 		$textId = $this->getTextId($textId);
+		$user = $this->getUserForApiCall();
 		$key = $isLiDA ? 'records' : 'initialResults';
 		$curCount = 1;
 		if (!empty($textId)) {
@@ -1371,7 +1375,9 @@ class SearchAPI extends AbstractAPI {
 									if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 										$pageToLoad = 1;
 										if ($isLiDA) {
-											$firstSubCategoryResults = $temp->getListTitles();
+											require_once ROOT_DIR . '/services/API/ListAPI.php';
+											$listAPI = new ListAPI();
+											$firstSubCategoryResults = $listAPI->_getUserListTitles($temp->id, 25, $user, 1, $temp->defaultSort);
 										} else {
 											$firstSubCategoryResults = $temp->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
 										}
@@ -1406,7 +1412,9 @@ class SearchAPI extends AbstractAPI {
 												if (($curCount == 1 && $loadFirstResults) || $isLiDA) {
 													$pageToLoad = 1;
 													if ($isLiDA) {
-														$firstSubCategoryResults = $list->getListTitles();
+														require_once ROOT_DIR . '/services/API/ListAPI.php';
+														$listAPI = new ListAPI();
+														$firstSubCategoryResults = $listAPI->_getUserListTitles($temp->id, 25, $user, 1, $temp->defaultSort);
 													} else {
 														$firstSubCategoryResults = $list->getBrowseRecords(($pageToLoad - 1) * self::ITEMS_PER_PAGE, self::ITEMS_PER_PAGE);
 													}
@@ -1447,6 +1455,8 @@ class SearchAPI extends AbstractAPI {
 									'label' => $temp->label,
 									'textId' => $temp->textId,
 									'source' => $temp->source,
+									'sourceListId' => $temp->sourceListId,
+									'internalId' => $temp->id,
 									$key => $results,
 								];
 								$curCount++;
@@ -1703,6 +1713,41 @@ class SearchAPI extends AbstractAPI {
 	}
 
 	/**
+	 * Returns the home screen feed for the active library/location.
+	 * @noinspection PhpUnused
+	 * @return array
+	 */
+	public function getHomeScreenFeed(): array {
+		global $library;
+		global $locationSingleton;
+
+		$activeLocation = $locationSingleton->getActiveLocation();
+
+		/** @var HomeScreenLink $homeScreenLinks */
+		$homeScreenLinks = [];
+
+		require_once ROOT_DIR . '/services/API/SystemAPI.php';
+		$systemAPI = new SystemAPI();
+
+		if ($activeLocation != null) {
+			if ($activeLocation->getHomeScreenLinkGroup()) {
+				$homeScreenLinks = $systemAPI->getHomeScreenLinksByGroup($activeLocation->getHomeScreenLinkGroup()->getHomeScreenLinks());
+			}
+		} else {
+			if ($library->getHomeScreenLinkGroup()) {
+				$homeScreenLinks = $systemAPI->getHomeScreenLinksByGroup($library->getHomeScreenLinkGroup()->getHomeScreenLinks());
+			}
+		}
+
+		$browseCategories = $this->getBrowseCategories();
+
+		return [
+			'homeScreenLinks' => $homeScreenLinks,
+			'browseCategories' => $browseCategories,
+		];
+	}
+
+	/**
 	 * Returns the browse categories and results for the library/location.
 	 * @param BrowseCategory[]|null $localBrowseCategories
 	 * @param bool $isLiDA
@@ -1726,8 +1771,6 @@ class SearchAPI extends AbstractAPI {
 						'system_recommended_for_you',
 						'system_saved_searches',
 					]);
-					$subCategoriesKey = $browseCategory->textId === "system_user_lists" ? 'records' : 'subCategories';
-					$recordsKey = $browseCategory->textId === "system_user_lists" ? 'subCategories' : 'records';
 					$subCatResult = $searchAPI->getSubCategories($textId, true);
 					$hasSubcategories = !empty($subCatResult['subCategories']);
 					$subCategoryCount = $hasSubcategories ? is_array($subCatResult['subCategories']) && count($subCatResult['subCategories']) : 0;
@@ -1760,6 +1803,8 @@ class SearchAPI extends AbstractAPI {
 						'textId' => $textId,
 						'label' => $browseCategory->label,
 						'source' => $source,
+						'sourceListId' => $browseCategory->sourceListId,
+						'internalId' => $browseCategory->id,
 						'subCategories' => $hasSubcategories ? $subCatResult['subCategories'] : [],
 						'records' => $results,
 					];
@@ -2268,7 +2313,7 @@ class SearchAPI extends AbstractAPI {
 							if ($list->find(true)) {
 								$listEntry = new UserListEntry();
 								$listEntry->listId = $list->id;
-								$sortOptions = UserList::getSortOptions();
+								$sortOptions = UserList::getSqlSortOptions();
 								if (array_key_exists($list->defaultSort, $sortOptions)) {
 									$listEntry->orderBy($sortOptions[$list->defaultSort]);
 								}
@@ -2588,7 +2633,7 @@ class SearchAPI extends AbstractAPI {
 				$response['key'] = $thisId;
 			}
 			$response['success'] = true;
-			$response['records'] = $result['items'];
+			$response['records'] = $result['items'] ?? [];
 		} else {
 			require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 			$browseCategory = new BrowseCategory();

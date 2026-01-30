@@ -16,8 +16,6 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 		return false;
 	}
 
-	private $checkouts = [];
-
 	/**
 	 * Get Patron Checkouts
 	 *
@@ -29,65 +27,63 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 * @access public
 	 */
 	public function getCheckouts(User $patron): array {
-		if (isset($this->checkouts[$patron->id])) {
-			return $this->checkouts[$patron->id];
-		}
+		$accountSummary = $patron->getCachedAccountSummary('cloud_library');
+		$cachedCheckouts = $patron->getCachedCheckoutsForSource('cloud_library');
+		if ($accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
+			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
 
-		require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
+			$checkouts = [];
+			$settings = $this->getSettings($patron);
+			if ($settings !== false) {
+				$circulation = $this->getPatronCirculation($patron);
 
-		$checkouts = [];
-		$settings = $this->getSettings($patron);
-		if (!$settings) {
-			return $checkouts;
-		}
+				if (isset($circulation->Checkouts->Item)) {
+					foreach ($circulation->Checkouts->Item as $checkoutFromCloudLibrary) {
+						$checkout = new Checkout();
+						$checkout->type = 'cloud_library';
+						$checkout->source = 'cloud_library';
 
-		$circulation = $this->getPatronCirculation($patron);
+						$checkout->sourceId = (string)$checkoutFromCloudLibrary->ItemId;
+						$checkout->recordId = (string)$checkoutFromCloudLibrary->ItemId;
+						$checkout->checkoutDate = strtotime((string)$checkoutFromCloudLibrary->EventStartDateInUTC);
+						$checkout->dueDate = strtotime((string)$checkoutFromCloudLibrary->EventEndDateInUTC);
 
-		if (isset($circulation->Checkouts->Item)) {
-			foreach ($circulation->Checkouts->Item as $checkoutFromCloudLibrary) {
-				$checkout = new Checkout();
-				$checkout->type = 'cloud_library';
-				$checkout->source = 'cloud_library';
+						try {
+							$timeDiff = $checkout->dueDate - time();
+							// Checkouts cannot be renewed 3 days before the title is due.
+							if ($timeDiff < (3 * 24 * 60 * 60)) {
+								$checkout->canRenew = true;
+							} else {
+								$checkout->canRenew = false;
+							}
+						} catch (Exception) {
+							$checkout->canRenew = false;
+						}
 
-				$checkout->sourceId = (string)$checkoutFromCloudLibrary->ItemId;
-				$checkout->recordId = (string)$checkoutFromCloudLibrary->ItemId;
-				$checkout->checkoutDate = strtotime((string)$checkoutFromCloudLibrary->EventStartDateInUTC);
-				$checkout->dueDate = strtotime((string)$checkoutFromCloudLibrary->EventEndDateInUTC);
+						$recordDriver = new CloudLibraryRecordDriver((string)$checkoutFromCloudLibrary->ItemId);
+						if ($recordDriver->isValid()) {
+							$checkout->updateFromRecordDriver($recordDriver);
+							$checkout->accessOnlineUrl = $recordDriver->getAccessOnlineLinkUrl($patron);
+						} else {
+							$checkout->title = translate([
+								'text' => 'Unknown cloudLibrary Title',
+								'isPublicFacing' => true,
+							]);
+							$checkout->format = translate([
+								'text' => 'Unknown - cloudLibrary',
+								'isPublicFacing' => true,
+							]);
+						}
 
-				try {
-					$timeDiff = $checkout->dueDate - time();
-					// Checkouts cannot be renewed 3 days before the title is due.
-					if ($timeDiff < (3 * 24 * 60 * 60)) {
-						$checkout->canRenew = true;
-					} else {
-						$checkout->canRenew = false;
+						$checkout->userId = $patron->id;
+
+						$checkouts[$checkout->source . $checkout->sourceId . $checkout->userId] = $checkout;
 					}
-				} catch (Exception $e) {
-					$checkout->canRenew = false;
 				}
-
-				$recordDriver = new CloudLibraryRecordDriver((string)$checkoutFromCloudLibrary->ItemId);
-				if ($recordDriver->isValid()) {
-					$checkout->updateFromRecordDriver($recordDriver);
-					$checkout->accessOnlineUrl = $recordDriver->getAccessOnlineLinkUrl($patron);
-				} else {
-					$checkout->title = translate([
-						'text' => 'Unknown cloudLibrary Title',
-						'isPublicFacing' => true,
-					]);
-					$checkout->format = translate([
-						'text' => 'Unknown - cloudLibrary',
-						'isPublicFacing' => true,
-					]);
-				}
-
-				$checkout->userId = $patron->id;
-
-				$checkouts[$checkout->source . $checkout->sourceId . $checkout->userId] = $checkout;
 			}
+			$cachedCheckouts = $this->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
-
-		return $checkouts;
+		return $cachedCheckouts;
 	}
 
 	/**
@@ -103,21 +99,17 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 * @param $patron  User
 	 * @return mixed
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) : array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for CloudLibraryDriver, renew one at a time'
+		];
 	}
 
 	/**
 	 * Renew a title by checking it in first and then checking it out again.
-	 *
-	 * @param User $patron   The patron requesting the renewal.
-	 * @param string $recordId The record id.
-	 * @param mixed  $itemId   Optional additional item id.
-	 * @param mixed  $itemIndex Optional index.
-	 * @return array           Array containing success status and messages.
 	 */
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null): array
-	{
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		// Check if the item has any active holds or reserves.
 		if ($this->itemHasHoldsOrReserves($patron, $recordId)) {
 			return [
@@ -177,7 +169,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 * @param $recordId   string
 	 * @return array
 	 */
-	public function returnCheckout($patron, $recordId) {
+	public function returnCheckout(User $patron,string $recordId) : array {
 		$result = [
 			'success' => false,
 			'message' => translate([
@@ -187,10 +179,10 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 		];
 		$settings = $this->getSettings($patron);
 		$patronId = $this->getPatronId($patron);
-		$apiPath = "/cirrus/library/{$settings->libraryId}/checkin";
+		$apiPath = "/cirrus/library/$settings->libraryId/checkin";
 		$requestBody = "<CheckinRequest>
-				<ItemId>{$recordId}</ItemId>
-				<PatronId>{$patronId}</PatronId>
+				<ItemId>$recordId</ItemId>
+				<PatronId>$patronId</PatronId>
 			</CheckinRequest>";
 		$response = $this->callCloudLibraryUrl($settings, $apiPath, 'POST', $requestBody);
 		$responseCode = $this->curlWrapper->getResponseCode();
@@ -212,14 +204,14 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 
-			$patron->clearCachedAccountSummaryForSource('cloud_library');
-			$patron->forceReloadOfCheckouts();
+			$accountSummary = $patron->getCachedAccountSummary('cloud_library');
+			$accountSummary->decrementNumberOfCheckouts();
+			$accountSummary->markCheckoutsStale();
 		} elseif ($responseCode == '400') {
 			$result['message'] = translate([
 				'text' => "Bad Request returning checkout.",
 				'isPublicFacing' => true,
 			]);
-			global $configArray;
 			if (IPAddress::showDebuggingInformation()) {
 				$result['message'] .= "\r\n" . $requestBody;
 			}
@@ -280,7 +272,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	public function getHolds(User $patron): array {
 		$accountSummary = $patron->getCachedAccountSummary('cloud_library');
 		$cachedHolds = $patron->getCachedHoldsForSource('cloud_library');
-		if ($accountSummary->holdsAreStale || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
+		if ($accountSummary->areHoldsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshHolds'])) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
 			require_once ROOT_DIR . '/sys/User/Hold.php';
 
@@ -365,10 +357,10 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 			return $result;
 		}
 
-		$apiPath = "/cirrus/library/{$settings->libraryId}/placehold?password=$password";
+		$apiPath = "/cirrus/library/$settings->libraryId/placehold?password=$password";
 		$requestBody = "<PlaceHoldRequest>
-				<ItemId>{$recordId}</ItemId>
-				<PatronId>{$patronId}</PatronId>
+				<ItemId>$recordId</ItemId>
+				<PatronId>$patronId</PatronId>
 			</PlaceHoldRequest>";
 		$response = $this->callCloudLibraryUrl($settings, $apiPath, 'POST', $requestBody);
 		ExternalRequestLogEntry::logRequest('cloudLibrary.placeHold', 'POST', $settings->apiUrl . $apiPath, $this->curlWrapper->getHeaders(), $requestBody, $this->curlWrapper->getResponseCode(), $response, ['password' => $password]);
@@ -430,7 +422,6 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				'text' => "Bad Request placing hold.",
 				'isPublicFacing' => true,
 			]);
-			global $configArray;
 			if (IPAddress::showDebuggingInformation()) {
 				$result['message'] .= "\r\n" . $requestBody;
 			}
@@ -477,21 +468,6 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 
-		} elseif ($responseCode == '404') {
-			$result['message'] = translate([
-				'text' => 'Could not place hold.  Already on hold or the item can be checked out',
-				'isPublicFacing' => true,
-			]);
-
-			// Result for API or app use
-			$result['api']['title'] = translate([
-				'text' => 'Unable to place hold',
-				'isPublicFacing' => true,
-			]);
-			$result['api']['message'] = translate([
-				'text' => 'Could not place hold.  Already on hold or the item can be checked out',
-				'isPublicFacing' => true,
-			]);
 		}
 		return $result;
 	}
@@ -724,8 +700,9 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 					]);
 				}
 
-				$patron->clearCachedAccountSummaryForSource('cloud_library');
-				$patron->forceReloadOfCheckouts();
+				$accountSummary = $patron->getCachedAccountSummary('cloud_library');
+				$accountSummary->incrementNumberOfCheckouts();
+				$accountSummary->markCheckoutsStale();
 			}
 		}
 		return $result;
@@ -736,7 +713,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 		if ($settings !== false) {
 			$patronId = $this->getPatronId($user);
 			$password = $this->getCloudLibraryPasswordOrPin($user);
-			$apiPath = "/cirrus/library/{$settings->libraryId}/circulation/patron/$patronId?password=$password";
+			$apiPath = "/cirrus/library/$settings->libraryId/circulation/patron/$patronId?password=$password";
 			$circulationInfo = $this->callCloudLibraryUrl($settings, $apiPath);
 			ExternalRequestLogEntry::logRequest('cloudLibrary.getPatronCirculation', 'GET', $settings->apiUrl . $apiPath, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $circulationInfo, ['password' => $password]);
 			return simplexml_load_string($circulationInfo);
@@ -796,7 +773,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 
 		$headers = [
 			"3mcl-Datetime: $nowUtcDate",
-			"3mcl-Authorization: 3MCLAUTH {$settings->accountId}:$signature",
+			"3mcl-Authorization: 3MCLAUTH $settings->accountId:$signature",
 			'3mcl-APIVersion: 3.0',
 			'Content-Type: application/xml',
 			'Accept: application/xml',
@@ -813,8 +790,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 */
 	public function trackUserUsageOfCloudLibrary(User $user): void {
 		require_once ROOT_DIR . '/sys/CloudLibrary/UserCloudLibraryUsage.php';
-		global $library;
-		$userCloudLibraryTracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;;
+		$userCloudLibraryTracking = $user->userCookiePreferenceLocalAnalytics || !$user->getHomeLibrary()->cookieStorageConsent;
 		$userUsage = new UserCloudLibraryUsage();
 		$userUsage->userId = $user->id;
 		$userUsage->year = date('Y');
@@ -886,12 +862,12 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	public function checkAuthentication(User $user): bool
 	{
 		$settings = $this->getSettings($user);
-		if ($settings == false) {
+		if ($settings === false) {
 			return false;
 		}
 		$patronId = $this->getPatronId($user);
 		$password = $this->getCloudLibraryPasswordOrPin($user);
-		$apiPath = "/cirrus/library/{$settings->libraryId}/patron/$patronId?password=$password";
+		$apiPath = "/cirrus/library/$settings->libraryId/patron/$patronId?password=$password";
 		$authenticationResponse = $this->callCloudLibraryUrl($settings, $apiPath);
 		ExternalRequestLogEntry::logRequest('cloudLibrary.checkAuthentication', 'GET', $settings->apiUrl . $apiPath, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $authenticationResponse, ['password' => $password]);
 		/** @var SimpleXMLElement $authentication */
@@ -947,7 +923,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	public function getItemStatus($itemId, $patron) {
 		$settings = $this->getSettings($patron);
 		$patronId = $this->getPatronId($patron);
-		$apiPath = "/cirrus/library/{$settings->libraryId}/item/status/$patronId/$itemId";
+		$apiPath = "/cirrus/library/$settings->libraryId/item/status/$patronId/$itemId";
 		$itemStatusInfo = $this->callCloudLibraryUrl($settings, $apiPath);
 		ExternalRequestLogEntry::logRequest('cloudLibrary.getItemStatus', 'GET', $settings->apiUrl . $apiPath, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $itemStatusInfo, []);
 		if ($this->curlWrapper->getResponseCode() == 200) {
@@ -991,12 +967,12 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	private function generateRedirectUrl(User $patron, CloudLibraryRecordDriver $recordDriver, $includePassword = false) {
 		$settings = $this->getSettings($patron);
 		$userInterfaceUrl = $settings->userInterfaceUrl;
-		if (substr($userInterfaceUrl, -1) == '/') {
+		if (str_ends_with($userInterfaceUrl, '/')) {
 			$userInterfaceUrl = substr($userInterfaceUrl, 0, -1);
 		}
 
 		//Login the user to CloudLibrary
-		$loginUrl = "{$userInterfaceUrl}/login";
+		$loginUrl = "$userInterfaceUrl/login";
 		if ($includePassword) {
 			$postParams = [
 				'username' => $this->getPatronId($patron),
@@ -1028,11 +1004,11 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				$cookies = array_merge($cookies, $cookie);
 			}
 			foreach ($cookies as $name => $value) {
-				if (strpos($name, 'sessionid_') === 0) {
+				if (str_starts_with($name, 'sessionid_')) {
 					if ($recordDriver->getPrimaryFormat() == 'MP3') {
-						$redirectUrl = "$userInterfaceUrl/audiobooks/{$recordDriver->getId()}?auth_cookie={$value}";
+						$redirectUrl = "$userInterfaceUrl/audiobooks/{$recordDriver->getId()}?auth_cookie=$value";
 					} else {
-						$redirectUrl = "$userInterfaceUrl/ebooks/{$recordDriver->getId()}?auth_cookie={$value}";
+						$redirectUrl = "$userInterfaceUrl/ebooks/{$recordDriver->getId()}?auth_cookie=$value";
 					}
 					$redirectUrlCurlWrapper = new CurlWrapper();
 					$redirectUrlCurlWrapper->curlGetPage($redirectUrl);
@@ -1047,10 +1023,9 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	}
 
 	public function getCloudLibraryUrl(User $patron, CloudLibraryRecordDriver $recordDriver) {
-		$redirectUrl = null;
 		$settings = $this->getSettings($patron);
 		$userInterfaceUrl = $settings->userInterfaceUrl;
-		if (substr($userInterfaceUrl, -1) == '/') {
+		if (str_ends_with($userInterfaceUrl, '/')) {
 			$userInterfaceUrl = substr($userInterfaceUrl, 0, -1);
 		}
 
@@ -1064,7 +1039,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 		$redirectUrl = $userInterfaceUrl . '/detail/' . $recordDriver->getId();
 
 		//Login the user to CloudLibrary
-		$loginUrl = "{$userInterfaceUrl}/login";
+		$loginUrl = "$userInterfaceUrl/login";
 		$postParams = [
 			'username' => $patron->getBarcode(),
 			'password' => $patron->getPasswordOrPin(),
@@ -1084,7 +1059,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				$cookies = array_merge($cookies, $cookie);
 			}
 			foreach ($cookies as $name => $value) {
-				if (strpos($name, 'sessionid_') === 0) {
+				if (str_starts_with($name, 'sessionid_')) {
 					/*if ($recordDriver->getPrimaryFormat() == 'MP3') {
 						//TODO: Need a new URL from CloudLibrary for audio books
 						$redirectUrl = "$userInterfaceUrl/audiobooks/{$recordDriver->getId()}?auth_cookie={$value}";
@@ -1092,7 +1067,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 						$redirectUrl = "$userInterfaceUrl/ebooks/{$recordDriver->getId()}?auth_cookie={$value}";
 					}*/
 
-					$redirectUrl = "$userInterfaceUrl/ebooks/{$recordDriver->getId()}?auth_cookie={$value}";
+					$redirectUrl = "$userInterfaceUrl/ebooks/{$recordDriver->getId()}?auth_cookie=$value";
 					break;
 				}
 			}
@@ -1110,7 +1085,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 	 */
 	private function itemHasHoldsOrReserves(User $patron, string $itemId): bool {
 		$settings = $this->getSettings($patron);
-		$apiPath = "/cirrus/library/{$settings->libraryId}/circulation/item/{$itemId}";
+		$apiPath = "/cirrus/library/$settings->libraryId/circulation/item/$itemId";
 		$response = $this->callCloudLibraryUrl($settings, $apiPath, 'GET');
 		if ($this->curlWrapper->getResponseCode() == 200) {
 			$xml = simplexml_load_string($response);

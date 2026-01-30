@@ -77,6 +77,14 @@ function getUpdates26_01_00(): array {
 				'ALTER TABLE user_account_summary ADD COLUMN checkoutsAreStale TINYINT(1) DEFAULT 1'
 			],
 		], //account_summary_data_stale
+		'sierra_phone_fields' => [
+			'title' => 'Sierra Phone Fields',
+			'description' => 'Add configurable phone fields for Sierra Phone and Work Phone',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN phoneField CHAR(1) DEFAULT 't'",
+				"ALTER TABLE library ADD COLUMN workPhoneField CHAR(1) DEFAULT 'p'"
+			]
+		], //sierra_phone_fields
 
 		//kirstien
 
@@ -266,6 +274,16 @@ function getUpdates26_01_00(): array {
 			'ALTER TABLE user_payments ADD COLUMN IF NOT EXISTS stripeReceiptUrl VARCHAR(255) DEFAULT NULL'
 		]
 	], //user_payments_stripe_receipt_url
+
+	//tomas
+	'overdrive_configurable_deletion_check_hour' => [
+		'title' => 'OverDrive - Add Configurable Deletion Check Hour',
+		'description' => 'Add deletionCheckHour column to overdrive_settings to allow configuring when deletion checks run',
+		'continueOnError' => false,
+		'sql' => [
+			'ALTER TABLE overdrive_settings ADD COLUMN deletionCheckHour INT DEFAULT 8 AFTER name'
+		]
+	], //overdrive_configurable_deletion_check_hour
 
 	];
 }

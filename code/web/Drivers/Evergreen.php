@@ -272,14 +272,17 @@ class Evergreen extends AbstractIlsDriver {
 	/**
 	 * @inheritDoc
 	 */
-	public function renewAll(User $patron) {
-		return false;
+	public function renewAll(User $patron) :array {
+		return [
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Evergreen, renew one at a time'
+		];
 	}
 
 	/**
 	 * @inheritDoc
 	 */
-	function renewCheckout(User $patron, $recordId, $itemId = null, $itemIndex = null) {
+	function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		$result = [
 			'itemId' => $itemId,
 			'success' => false,
@@ -336,9 +339,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your title was renewed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfCheckouts();
 				} elseif (isset($apiResponse->payload[0]) && isset($apiResponse->payload[0]->desc)) {
 					$result['message'] = $apiResponse->payload[0]->desc;
 					$result['api']['message'] = $apiResponse->payload[0]->desc;
@@ -1491,8 +1491,6 @@ class Evergreen extends AbstractIlsDriver {
 						'text' => 'Your hold was placed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 				}
 			}
 		}
@@ -1692,8 +1690,6 @@ class Evergreen extends AbstractIlsDriver {
 			]);
 			$logger->log('Unable to post the payment to the library ILS. The library has been notified and will manually reconcile the payment. Response code: ' . $this->apiCurlWrapper->getResponseCode(), Logger::LOG_ERROR);
 		}
-
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $result;
 	}
 
@@ -2221,12 +2217,6 @@ class Evergreen extends AbstractIlsDriver {
 		$summary = $patron->getCachedAccountSummary('ils');
 
 		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
-			require_once ROOT_DIR . '/sys/User/AccountSummary.php';
-			$summary = new AccountSummary();
-			$summary->userId = $patron->id;
-			$summary->source = 'ils';
-			$summary->resetCounters();
-
 			//Can't use the quick response since it includes eContent.
 			$checkouts = $this->getCheckouts($patron);
 			$summary->numCheckedOut = count($checkouts);
