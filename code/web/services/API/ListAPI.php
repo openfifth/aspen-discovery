@@ -246,6 +246,13 @@ class ListAPI extends AbstractAPI {
 			$checkIfValid = $_REQUEST['checkIfValid'];
 		}
 
+		$listsPerPage = 20;
+		if (isset($_REQUEST['limit'])) {
+			$listsPerPage = $_REQUEST['limit'];
+		}
+
+		$page = $_REQUEST['page'] ?? 1;
+
 		global $configArray;
 		$userId = $user->id;
 
@@ -253,8 +260,19 @@ class ListAPI extends AbstractAPI {
 		$list = new UserList();
 		$list->user_id = $userId;
 		$list->deleted = 0;
+		$list->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		$listCount = $list->count();
 		$list->find();
 		$results = [];
+
+		$options = [
+			'totalItems' => $listCount,
+			'perPage' => $listsPerPage,
+		];
+
+		require_once ROOT_DIR . '/sys/Pager.php';
+		$pager = new Pager($options);
+
 		if ($list->getNumResults() > 0) {
 			while ($list->fetch()) {
 				if ($checkIfValid == "true") {
@@ -303,10 +321,14 @@ class ListAPI extends AbstractAPI {
 				];
 			}
 		}
+
 		return [
 			'success' => true,
+			'page_current' => (int)$pager->getCurrentPage(),
+			'totalResults' => (int)$pager->getTotalItems(),
+			'page_total' => (int)$pager->getTotalPages(),
 			'lists' => $results,
-			'count' => $count,
+			'count' => $count
 		];
 	}
 
@@ -321,31 +343,67 @@ class ListAPI extends AbstractAPI {
 			];
 		}
 
+		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
+		$includePagination = false;
+		if (isset($_REQUEST['includePagination'])) {
+			$includePagination = $_REQUEST['includePagination'];
+		}
+
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$listGroup = new UserListGroup();
 		$listGroups = $listGroup->getListGroups($user);
 		$unassignedLists = $user->getUnassignedListsForListGroups();
 
 		$lists = [];
-		foreach ($unassignedLists as $userList) {
-			$lists[] = [
-				'id' => $userList->id,
-				'title' => $userList->title,
-				'description' => $userList->description,
-				'displayListAuthor' => $userList->displayListAuthor == 1,
-				'numTitles' => $userList->numValidListItems(),
-				'public' => $userList->public == 1,
-				'created' => $userList->created,
-				'dateUpdated' => $userList->dateUpdated,
-				'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
-				'listGroupId' => $userList->listGroupId,
+		if ($includePagination) {
+			foreach ($unassignedLists['lists'] as $userList) {
+				$lists[] = [
+					'id' => $userList->id,
+					'title' => $userList->title,
+					'description' => $userList->description,
+					'displayListAuthor' => $userList->displayListAuthor == 1,
+					'numTitles' => $userList->numValidListItems(),
+					'public' => $userList->public == 1,
+					'created' => $userList->created,
+					'dateUpdated' => $userList->dateUpdated,
+					'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+					'listGroupId' => $userList->listGroupId,
+				];
+			}
+		} else {
+			foreach ($unassignedLists as $userList) {
+				$lists[] = [
+					'id' => $userList->id,
+					'title' => $userList->title,
+					'description' => $userList->description,
+					'displayListAuthor' => $userList->displayListAuthor == 1,
+					'numTitles' => $userList->numValidListItems(),
+					'public' => $userList->public == 1,
+					'created' => $userList->created,
+					'dateUpdated' => $userList->dateUpdated,
+					'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
+					'listGroupId' => $userList->listGroupId,
+				];
+			}
+		}
+
+		if (!$includePagination) {
+			return [
+				'success' => true,
+				'groups' => $listGroups,
+				'unassigned' => $lists,
 			];
 		}
 
 		return [
 			'success' => true,
 			'groups' => $listGroups,
-			'unassigned' => $lists,
+			'unassigned' => [
+				'page_current' => $unassignedLists['page_current'],
+				'totalResults' => $unassignedLists['totalResults'],
+				'page_total' => $unassignedLists['page_total'],
+				'lists' => $lists,
+			],
 		];
 	}
 
