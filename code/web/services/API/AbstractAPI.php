@@ -72,6 +72,18 @@ abstract class AbstractAPI extends Action{
 		return false;
 	}
 
+	protected function extractBasicAuthCredentials(): void {
+		if (!isset($_SERVER['PHP_AUTH_USER']) && (isset($_SERVER['HTTP_AUTHORIZATION']) || isset($_SERVER['REDIRECT_HTTP_AUTHORIZATION']))) {
+			$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+			if (preg_match('/^Basic\s+(.*)$/i', $authHeader, $matches)) {
+				$credentials = base64_decode($matches[1]);
+				if (strpos($credentials, ':') !== false) {
+					list($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']) = explode(':', $credentials, 2);
+				}
+			}
+		}
+	}
+
 	/**
 	 * @return array
 	 * @noinspection PhpUnused
@@ -106,6 +118,30 @@ abstract class AbstractAPI extends Action{
 	 * @return bool|User
 	 */
 	function getUserForApiCall() : bool|User {
+		$this->extractBasicAuthCredentials();
+
+		global $oAuthUser;
+		if (isset($oAuthUser) && $oAuthUser !== false) {
+			if ($oAuthUser->source == 'admin') {
+				return false;
+			}
+
+			if (empty($_REQUEST['language'])) {
+				global $activeLanguage;
+				global $translator;
+				$userLanguage = new Language();
+				$userLanguage->code = $oAuthUser->interfaceLanguage;
+				if ($userLanguage->find(true)) {
+					if ($userLanguage->code != $activeLanguage->code) {
+						$activeLanguage = $userLanguage;
+						$translator = new Translator('lang', $userLanguage->code);
+					}
+				}
+			}
+
+			return $oAuthUser;
+		}
+
 		if ($this->_userForAPICall === null) {
 			[$username, $password] = $this->loadUsernameAndPassword();
 			$user = UserAccount::validateAccount($username, $password);
