@@ -44,7 +44,8 @@ class SearchAPI extends AbstractAPI {
 					'searchAvailableFacets',
 					'getSearchSources',
 					'getSearchIndexes',
-					'getBrowseCategories'
+					'getBrowseCategories',
+					'getHomeScreenFeed'
 				])) {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
@@ -1709,6 +1710,41 @@ class SearchAPI extends AbstractAPI {
 		}
 
 		return $browseCategories;
+	}
+
+	/**
+	 * Returns the home screen feed for the active library/location.
+	 * @noinspection PhpUnused
+	 * @return array
+	 */
+	public function getHomeScreenFeed(): array {
+		global $library;
+		global $locationSingleton;
+
+		$activeLocation = $locationSingleton->getActiveLocation();
+
+		/** @var HomeScreenLink $homeScreenLinks */
+		$homeScreenLinks = [];
+
+		require_once ROOT_DIR . '/services/API/SystemAPI.php';
+		$systemAPI = new SystemAPI();
+
+		if ($activeLocation != null) {
+			if ($activeLocation->getHomeScreenLinkGroup()) {
+				$homeScreenLinks = $systemAPI->getHomeScreenLinksByGroup($activeLocation->getHomeScreenLinkGroup()->getHomeScreenLinks());
+			}
+		} else {
+			if ($library->getHomeScreenLinkGroup()) {
+				$homeScreenLinks = $systemAPI->getHomeScreenLinksByGroup($library->getHomeScreenLinkGroup()->getHomeScreenLinks());
+			}
+		}
+
+		$browseCategories = $this->getBrowseCategories();
+
+		return [
+			'homeScreenLinks' => $homeScreenLinks,
+			'browseCategories' => $browseCategories,
+		];
 	}
 
 	/**
