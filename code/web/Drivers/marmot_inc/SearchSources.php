@@ -194,10 +194,10 @@ class SearchSources {
 					'hasAdvancedSearch' => false,
 				];
 			}
-			//TODO: change to Articles & Databases
+
 			if ($searchGale) {
 				$searchOptions['gale'] = [
-					'name' => 'Gale Databases',
+					'name' => 'Articles & Databases',
 					'description' => 'Gale - Articles and Database',
 					'catalogType' => 'gale',
 					'hasAdvancedSearch' => false,

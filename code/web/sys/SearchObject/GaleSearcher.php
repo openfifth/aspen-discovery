@@ -132,7 +132,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	}
 
 	public function processSearch(bool $returnIndexErrors = false, bool $recommendations = false, bool $preventQueryModification = false): AspenError|SimpleXMLElement|array|null {
-        global $logger;
         $galeSettings = $this->getSettings();
 		if ($galeSettings == null || empty($galeSettings->locationId)) {
 			return new AspenError('Gale searching is not configured for this library.');
@@ -179,7 +178,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		];
 		$queryParams = http_build_query($params, '', '&', PHP_QUERY_RFC3986);
 		$requestUrl = rtrim($this->galeBaseUrl, '/') . '/' . rawurlencode($productCode) . '?' . $queryParams;
-		$logger->log("Gale request URL: $requestUrl", Logger::LOG_ERROR);
 
 		$curl = $this->getCurlConnection();
 		curl_setopt($curl, CURLOPT_URL, $requestUrl);
@@ -226,8 +224,6 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		} else {
 			$summary['endRecord'] = $this->page * $this->limit;
 		}
-        global $logger;
-        $logger->log("Gale result summary: " . print_r($summary, true), Logger::LOG_ERROR);
 		return $summary;
 	}
 
