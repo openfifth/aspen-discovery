@@ -6,6 +6,25 @@ require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
 require_once ROOT_DIR . '/sys/HeroSlider/HeroSliderPlaylist.php';
 
 class Admin_HeroSliderPlaylists extends ObjectEditor {
+	function launch() : void {
+		//Get a list of all Images that are available
+		require_once ROOT_DIR . '/sys/File/ImageUpload.php';
+		$imageList = [];
+		$image = new ImageUpload();
+		$image->type = 'hero_slider';
+		if (!UserAccount::userHasPermission('Administer All Hero Sliders')) {
+			$homeLibrary = Library::getPatronHomeLibrary();
+			$image->whereAdd("owningLibrary = $homeLibrary->libraryId OR sharing = 2");
+		}
+		$numAvailableImages = $image->count();
+		if ($numAvailableImages == 0) {
+			global $interface;
+			$warningMessage = translate(['text' => '<strong>Warning:</strong> No Hero Slider Images have been created. You should <a href="/WebBuilder/Images?objectAction=addNew">create images</a> first.', 'isAdminFacing' => true]);
+			$interface->assign('propertiesListWarningMessage', $warningMessage);
+		}
+		parent::launch();
+	}
+
 	function getObjectType(): string {
 		return 'HeroSliderPlaylist';
 	}

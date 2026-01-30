@@ -348,74 +348,73 @@ class UserAccount {
 		}
 		global $action;
 		global $module;
-		//global $logger;
 
 		$userData = false;
 		if (isset($_SESSION['activeUserId'])) {
 			$activeUserId = $_SESSION['activeUserId'];
-			//global $memCache;
-			//global $serverName;
+			//Load the user from the database
+			$userData = new User();
 
-			///** @var User $userData */
-			//$userData = $memCache->get("user_{$serverName}_{$activeUserId}");
-			//if ($userData === false || isset($_REQUEST['reload'])) {
-
-				//Load the user from the database
-				$userData = new User();
-
-				$userData->id = $activeUserId;
-				if ($userData->find(true)) {
-					if (UserAccount::isUserMasquerading() || !empty($_SESSION['loggedInViaSSO'])) {
-						return $userData;
-					} else {
-						//Get the account profile for the user
-						$driversToTest = UserAccount::getAccountProfiles();
-						if (!array_key_exists($userData->source, $driversToTest)) {
-							AspenError::raiseError("We could not validate your account, please logout and login again. If this error persists, please contact the library. Error ($activeUserId)");
-						}
-						$accountProfile = $driversToTest[$userData->source]['accountProfile'];
-						if ($accountProfile->authenticationMethod == 'db') {
-							$userData = UserAccount::validateAccount($userData->username, $userData->password, $userData->source);
-						} else {
-							$userData = UserAccount::validateAccount($userData->ils_barcode, $userData->ils_password, $userData->source);
-						}
-
-						if ($userData == false) {
-							//This happens when the PIN has been reset in the ILS, redirect to the login page
-							global $isAJAX;
-							if (!$isAJAX) {
-								UserAccount::softLogout();
-
-								require_once ROOT_DIR . '/services/MyAccount/Login.php';
-								$launchAction = new MyAccount_Login();
-								$launchAction->launch();
-								exit();
-							}
-							AspenError::raiseError("We could not validate your account, please logout and login again. If this error persists, please contact the library. Error ($activeUserId)");
-						}
-						self::updateSession($userData);
-					}
+			$userData->id = $activeUserId;
+			if ($userData->find(true)) {
+				if (UserAccount::isUserMasquerading() || !empty($_SESSION['loggedInViaSSO'])) {
+					return $userData;
 				} else {
-					AspenError::raiseError("Error validating saved session for user $activeUserId, the user was not found in the database.");
+					//Get the account profile for the user
+					$driversToTest = UserAccount::getAccountProfiles();
+					if (!array_key_exists($userData->source, $driversToTest)) {
+						AspenError::raiseError("We could not validate your account (source not found), please logout and login again. If this error persists, please contact the library. Error ($activeUserId)");
+					}
+					$accountProfile = $driversToTest[$userData->source]['accountProfile'];
+					if ($accountProfile->authenticationMethod == 'db') {
+						$userData = UserAccount::validateAccount($userData->username, $userData->password, $userData->source);
+					} else {
+						$userData = UserAccount::validateAccount($userData->ils_barcode, $userData->ils_password, $userData->source);
+					}
+
+					if ($userData === false) {
+						//This happens when the PIN has been reset in the ILS, redirect to the login page
+						global $isAJAX;
+						if (!$isAJAX) {
+							UserAccount::softLogout();
+
+							require_once ROOT_DIR . '/services/MyAccount/Login.php';
+							$launchAction = new MyAccount_Login();
+							$launchAction->launch();
+							exit();
+						}else{
+							//Return JSON to the user that the account could not be validated.
+							header('Content-type: application/json');
+							header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
+							header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
+
+							$result = [
+								'success' => false,
+								'message' => 'Could not validate account, please login again',
+								'forceLogout' => true,
+							];
+							echo (json_encode($result));
+							exit();
+						}
+					}
+					self::updateSession($userData);
 				}
-			//} else {
-				//$logger->log("Found cached user {$userData->id}", Logger::LOG_DEBUG);
-			//}
+			} else {
+				AspenError::raiseError("Error validating saved session for user $activeUserId, the user was not found in the database.");
+			}
+
 			UserAccount::$isLoggedIn = true;
 
 			$masqueradeMode = UserAccount::isUserMasquerading();
 			if ($masqueradeMode) {
 				global $guidingUser;
-				//$guidingUser = $memCache->get("user_{$serverName}_{$_SESSION['guidingUserId']}"); //TODO: check if this ever works
-				//if ($guidingUser === false || isset($_REQUEST['reload'])) {
-					$guidingUser = new User();
-					$guidingUser->get($_SESSION['guidingUserId']);
-					if (!$guidingUser) {
-						global $logger;
-						$logger->log('Invalid Guiding User ID in session variable: ' . $_SESSION['guidingUserId'], Logger::LOG_ERROR);
-						unset($_SESSION['guidingUserId']); // session_start(); session_commit(); probably needed for this to take effect, but might have other side effects
-					}
-				//}
+				$guidingUser = new User();
+				$fetchedGuidingUser = $guidingUser->get($_SESSION['guidingUserId']);
+				if (!$fetchedGuidingUser) {
+					global $logger;
+					$logger->log('Invalid Guiding User ID in session variable: ' . $_SESSION['guidingUserId'], Logger::LOG_ERROR);
+					unset($_SESSION['guidingUserId']); // session_start(); session_commit(); probably needed for this to take effect, but might have other side effects
+				}
 			}
 
 			//Check to see if the patron is already logged in within CAS as long as we aren't on a page that is likely to be a login page

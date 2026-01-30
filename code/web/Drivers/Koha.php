@@ -2799,10 +2799,10 @@ class Koha extends AbstractIlsDriver {
 		return false;
 	}
 
-	public function renewAll(User $patron) {
+	public function renewAll(User $patron) : array {
 		return [
-			'success' => false,
-			'message' => 'Renew All not supported directly, call through Catalog Connection',
+			'success' => 'false',
+			'message' => 'Renew All not implemented for Koha, renew one at a time'
 		];
 	}
 
@@ -2824,7 +2824,7 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
-	public function renewCheckout($patron, $recordId, $itemId = null, $itemIndex = null) {
+	public function renewCheckout(User $patron, string $recordId, ?string $itemId = null, ?string $itemIndex = null) : array {
 		/** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
 		$result = [
 			'success' => false,
@@ -2925,9 +2925,6 @@ class Koha extends AbstractIlsDriver {
 						'text' => 'Your checkout was renewed successfully.',
 						'isPublicFacing' => true,
 					]);
-
-					$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-					$patron->forceReloadOfCheckouts();
 				} else {
 					$result['success'] = false;
 					if ($responseCode == 403) {
@@ -3045,9 +3042,6 @@ class Koha extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 				$result['api']['message'] = $renewsRemaining . ' of ' . $maxRenewals . ' renewals remaining.';
-
-				$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-				$patron->forceReloadOfCheckouts();
 			} else {
 				$error = $renewResponse->error;
 				$success = false;
@@ -6178,6 +6172,7 @@ class Koha extends AbstractIlsDriver {
 		if ($summary->dataIsStale || isset($_REQUEST['reload'])) {
 			global $timer;
 			global $library;
+			$summary->resetCounters();
 
 			$this->initDatabaseConnection();
 
@@ -6911,7 +6906,6 @@ class Koha extends AbstractIlsDriver {
 				break;
 			}
 		}
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $hold_result;
 	}
 
@@ -7030,7 +7024,6 @@ class Koha extends AbstractIlsDriver {
 				]);
 			}
 		}
-		$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
 		return $result;
 	}
 
@@ -8711,10 +8704,6 @@ class Koha extends AbstractIlsDriver {
 			$item = [];
 			$result = [
 				'success' => false,
-				'message' => translate([
-					'text' => 'There was an error checking out this title.',
-					'isPublicFacing' => true,
-				]),
 				'title' => translate([
 					'text' => 'Unable to checkout title',
 					'isPublicFacing' => true,
@@ -8818,9 +8807,6 @@ class Koha extends AbstractIlsDriver {
 							'owningLocationCode' => $holdingBranch,
 							'checkoutLocationCode' => $checkoutLocation
 						];
-
-						$patron->clearCachedAccountSummaryForSource($this->getIndexingProfile()->name);
-						$patron->forceReloadOfCheckouts();
 					} else {
 						$result['message'] = translate([
 							'text' => 'Error (%1%) checking out this title.',

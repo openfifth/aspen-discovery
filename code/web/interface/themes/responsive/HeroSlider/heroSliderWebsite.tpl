@@ -28,24 +28,28 @@
 				{/foreach}
 			</div>
 
-			{if $location->autoRotate}
+			{if count($slides) > 1}
 				<div class="swiper-pagination"></div>
+			{/if}
+			{if $location->autoRotate && count($slides) > 1}
 				<button class="swiper-button-pause" aria-label="Pause auto-rotation" title="Pause">
 					<i class="fas fa-pause"></i>
 				</button>
 			{/if}
-			<div class="swiper-button-prev"></div>
-			<div class="swiper-button-next"></div>
+			{if count($slides) > 1}
+				<div class="swiper-button-prev"></div>
+				<div class="swiper-button-next"></div>
+			{/if}
 		</div>
 	</div>
 
 	<script>
-		$(() => {
-			AspenDiscovery.HeroSlider.initWebsiteSlider({
+		$(() => {ldelim}
+			AspenDiscovery.HeroSlider.initWebsiteSlider({ldelim}
 				autoRotate: {if $location->autoRotate}true{else}false{/if},
 				defaultInterval: {$location->rotationInterval * 1000}
-			});
-		});
+			{rdelim})
+		{rdelim})
 	</script>
 </body>
 {/strip}

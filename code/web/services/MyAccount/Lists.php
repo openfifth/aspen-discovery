@@ -97,6 +97,9 @@ class Lists extends MyAccount {
 				if (empty($activeListGroup) && count($listGroups) > 0) {
 					$activeListGroup = $listGroup->getListsForGroup(UserAccount::getActiveUserObj());
 					$activeListGroupDetails = $listGroups[0];
+					// Update the user's last viewed group to this one so we don't keep hitting this case
+					$user->lastListGroupViewed = $activeListGroupDetails->id;
+					$user->update();
 				} else {
 					$activeListGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser(UserAccount::getActiveUserObj());
 				}

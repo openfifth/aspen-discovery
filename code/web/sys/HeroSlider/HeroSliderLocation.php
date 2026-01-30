@@ -171,6 +171,37 @@ class HeroSliderLocation extends DataObject {
 		return $structure;
 	}
 
+	public function updateStructureForEditingObject($structure) : array {
+		if ($this->id >0 ) {
+			$activePlaylist = new HeroSliderPlaylist();
+			$activePlaylist->id = $this->playlistId;
+			$activeAspectRatios = [];
+			if ($activePlaylist->find(true)) {
+				$playlistImages = $activePlaylist->getImages();
+
+				foreach ($playlistImages as $playListImage) {
+					$image = new ImageUpload();
+					$image->id = $playListImage->imageId;
+					$image->type = 'hero_slider';
+					if ($image->find(true)) {
+						$aspectRatio = "$image->aspectRatioWidth:$image->aspectRatioHeight";
+						$activeAspectRatios[$aspectRatio] = $aspectRatio;
+					}
+				}
+			}
+			if (count($activeAspectRatios) == 1) {
+				$firstAspectRatio = reset($activeAspectRatios);
+				$structure['aspectRatioPreset']['note'] = "Active Playlist has an aspect ratio of $firstAspectRatio.";
+			}else{
+				$aspectRatios = implode(', ', $activeAspectRatios);
+				$structure['aspectRatioPreset']['note'] = "Active Playlist has aspect ratios of $aspectRatios.";
+			}
+
+		}
+
+		return $structure;
+	}
+
 	public function getEmbedUrl(): string {
 		global $configArray;
 		return $configArray['Site']['url'] . '/API/HeroSliderAPI?method=getHeroSlider&id=' . $this->id;

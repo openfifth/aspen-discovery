@@ -979,6 +979,9 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmReplaceHold(): array {
+		global $library;
+		$user = UserAccount::getLoggedInUser();
+		$bypassPickupChoice = false;
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
 		$pickupLocationId = $_REQUEST['pickupLocationId'];
@@ -987,16 +990,120 @@ class MyAccount_AJAX extends JSON_Action {
 			'text' => 'Confirm Place Hold',
 			'isPublicFacing' => true,
 		]);
+
+		if ($user->rememberHoldPickupLocation) {
+			$pickupLocation = $user->getPickupLocation();
+			// If the pickup location defaults to the user's home location, its validity must still be checked.
+			if ($pickupLocation != null && $pickupLocation->validHoldPickupBranch != 2) {
+				$bypassPickupChoice = true;
+				$pickupLocationId = $pickupLocation;
+			}
+		}
+		if ($library->hidePickupLocationPrompt) {
+			$numLocationsToSelectFrom = 0;
+			$firstLocationCode = '';
+			$locations = $user->getValidPickupBranches('ils');
+			foreach ($locations as $location) {
+				if (is_object($location)) {
+					$numLocationsToSelectFrom++;
+					if (empty($firstLocationCode)) {
+						$firstLocationCode = $location->code;
+					}
+				}
+			}
+			if ($numLocationsToSelectFrom == 1) {
+				$pickupLocationId = $firstLocationCode;
+				$bypassPickupChoice = true;
+			}
+		}
+
+		if (!$bypassPickupChoice) {
+			global $interface;
+			/** @var $interface UInterface
+			 * @var $user User
+			 */
+			if (UserAccount::isLoggedIn()) {
+				$patronOwningHold = $user->getUserReferredTo($patronId);
+				$defaultPickupLocation = $user->pickupLocationId;
+				$sourceId = 'ils:' . $_REQUEST['recordId'];
+
+				$location = new Location();
+				$pickupBranches = $location->getPickupBranches($patronOwningHold);
+				$pickupSublocations = [];
+
+				$pickupAt = 0;
+				require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
+				$marcRecord = new MarcRecordDriver($sourceId);
+				if ($marcRecord->isValid()) {
+					$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
+					$pickupAt = $relatedRecord->getHoldPickupSetting();
+					if ($pickupAt > 0) {
+						$itemLocations = $marcRecord->getValidPickupLocations($pickupAt);
+						foreach ($pickupBranches as $locationKey => $location) {
+							if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
+								unset($pickupBranches[$locationKey]);
+							}
+						}
+					}
+
+					foreach ($pickupBranches as $locationKey => $location) {
+						if (is_object($location)) {
+							$pickupSublocations[$locationKey] = $user->getValidSublocations($location->locationId);
+						}
+					}
+
+					$catalogDriver = $user->getCatalogDriver();
+					if (!empty($catalogDriver) && $catalogDriver->restrictValidPickupLocationsForRecordByILS()) {
+						$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
+						if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
+							$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
+							$pickupBranches = array_filter($pickupBranches, function ($location) use ($validLocationCodesFromILS) {
+								if (!is_object($location)) {
+									return true;
+								}
+								foreach ($validLocationCodesFromILS as $validCode) {
+									if (str_starts_with($validCode, $location->code)) {
+										return true;
+									}
+								}
+								return false;
+							});
+						} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
+							$pickupBranches = [];
+						}
+					}
+				}
+
+				$interface->assign('patronId', $patronId);
+				$interface->assign('defaultPickupLocation', $defaultPickupLocation);
+				$interface->assign('pickupAt', $pickupAt);
+				$interface->assign('pickupLocations', $pickupBranches);
+				$interface->assign('pickupSublocations', $pickupSublocations);
+				$pickupLocationId = null;
+
+				return [
+					'title' => translate([
+						'text' => 'Place Hold',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => $interface->fetch("MyAccount/replaceHoldForm.tpl"),
+					'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\");'>" . translate([
+							'text' => 'Confirm Pickup Location',
+							'isPublicFacing' => true,
+						]) . '</button>',
+				];
+			}
+		}
 		return [
 			'title' => translate([
 				'text' => 'Place Hold',
 				'isPublicFacing' => true,
 			]),
-			'body' => translate([
+			'modalBody' => translate([
 				'text' => "Are you sure you want to re-place this hold?",
 				'isPublicFacing' => true,
 			]),
-			'buttons' => "<button type='button' class='tool btn btn-primary confirmCancelButton' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\")'>$cancelButtonLabel</button>",
+			'modalButtons' => "<button type='button' class='tool btn btn-primary confirmCancelButton' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\")'>$cancelButtonLabel</button>",
 		];
 	}
 
@@ -1005,18 +1112,18 @@ class MyAccount_AJAX extends JSON_Action {
 		$result = [
 			'success' => false,
 			'title' => translate([
-				'text' => 'Cancelling hold failed',
+				'text' => 'Replacing hold failed',
 				'isPublicFacing' => true,
 			]),
 			'message' => translate([
-				'text' => 'Error cancelling hold.',
+				'text' => 'Error replacing hold.',
 				'isPublicFacing' => true,
 			]),
 		];
 
 		if (!UserAccount::isLoggedIn()) {
 			$result['message'] = translate([
-				'text' => 'You must be logged in to cancel a hold.  Please close this dialog and login again.',
+				'text' => 'You must be logged in to replace a hold.  Please close this dialog and login again.',
 				'isPublicFacing' => true,
 			]);;
 		} else {
@@ -1025,16 +1132,16 @@ class MyAccount_AJAX extends JSON_Action {
 			$user = UserAccount::getLoggedInUser();
 			$patronOwningHold = $user->getUserReferredTo($patronId);
 
-			if ($patronOwningHold == false) {
+			if ($patronOwningHold === false) {
 				$result['message'] = translate([
-					'text' => 'Sorry, you do not have access to cancel holds for the supplied user.',
+					'text' => 'Sorry, you do not have access to replace holds for the supplied user.',
 					'isPublicFacing' => true,
 				]);;
 			} else {
 				//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
 				if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
 					$result['message'] = translate([
-						'text' => 'Information about the hold to be cancelled was not provided.',
+						'text' => 'Information about the hold to be replace was not provided.',
 						'isPublicFacing' => true,
 					]);;
 				} else {
@@ -2505,7 +2612,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	function renewCheckout() {
+	function renewCheckout() : array {
 		if (isset($_REQUEST['patronId']) && isset($_REQUEST['recordId']) && isset($_REQUEST['renewIndicator'])) {
 			if (strpos($_REQUEST['renewIndicator'], '|') > 0) {
 				[
@@ -2655,7 +2762,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function renewAll() {
+	function renewAll() : array {
 		$renewResults = [
 			'success' => false,
 			'message' => ['Unable to renew all titles'],
@@ -3454,9 +3561,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$hasLinkedUsers = count($user->getLinkedUsers()) > 0;
 		try {
-			for ($i = 0; $i < 2; $i++) {
+			for ($i = 0; $i < 3; $i++) {
 				if ($i == 0) {
 					$exportType = "available";
+				} elseif ($i == 1) {
+					$exportType = "cancelled";
 				} else {
 					$exportType = "unavailable";
 				}
@@ -3598,6 +3707,119 @@ class MyAccount_AJAX extends JSON_Action {
 							$availValues[] = $user;
 						}
 						fputcsv($fp, $availValues);
+					}
+				} elseif ($exportType == "cancelled") {
+					// Section header
+					$holdType = translate([
+						'text' => 'Holds - ' . ucfirst($exportType),
+						'isPublicFacing' => true,
+					]);
+					$header = array($holdType);
+					fputcsv($fp, $header);
+					// Col names
+					$titleCol = translate([
+						'text' => 'Title',
+						'isPublicFacing' => true,
+					]);
+					$authorCol = translate([
+						'text' => 'Author',
+						'isPublicFacing' => true,
+					]);
+					$formatCol = translate([
+						'text' => 'Format',
+						'isPublicFacing' => true,
+					]);
+					$cancelledCol = translate([
+						'text' => 'Cancellation Date',
+						'isPublicFacing' => true,
+					]);
+					$pickupCol = translate([
+						'text' => 'Pickup',
+						'isPublicFacing' => true,
+					]);
+					$statusCol = translate([
+						'text' => 'Status',
+						'isPublicFacing' => true,
+					]);
+					$userCol = translate([
+						'text' => 'User',
+						'isPublicFacing' => true,
+					]);
+
+					$cancelledFields = [
+						$titleCol,
+						$authorCol,
+						$formatCol,
+						$cancelledCol,
+						$pickupCol
+					];
+					$cancelledFields[] = $statusCol;
+					if ($hasLinkedUsers) {
+						$cancelledFields[] = $userCol;
+					}
+					fputcsv($fp, $cancelledFields);
+
+					foreach ($allHolds['cancelled'] as $row) {
+						$title = preg_replace("~([/:])$~", "", $row->title);
+						if (isset ($row->title2)) {
+							$title .= preg_replace("~([/:])$~", "", $row->title2);
+						}
+
+						if (isset ($row->author)) {
+							if (is_array($row->author)) {
+								$author = implode(', ', $row->author);
+							} else {
+								$author = $row->author;
+							}
+							$author = str_replace('&nbsp;', ' ', $author);
+						} else {
+							$author = '';
+						}
+						if (isset($row->format)) {
+							if (is_array($row->format)) {
+								$format = implode(', ', $row->format);
+							} else {
+								$format = $row->format;
+							}
+						} else {
+							$format = '';
+						}
+						if (empty($row->expirationDate)) {
+							$cancelDate = '';
+						} else {
+							if (is_array($row->expirationDate)) {
+								$cancelDate = new DateTime();
+								$cancelDate->setDate($row->expirationDate['year'], $row->expirationDate['month'], $row->expirationDate['day']);
+								$cancelDate = $cancelDate->format('M d, Y');
+							} else {
+								$cancelDate = $this->isValidTimeStamp($row->expirationDate) ? $row->expirationDate : strtotime($row->expirationDate);
+								$cancelDate = date('M d, Y', $cancelDate);
+							}
+						}
+
+						$pickup = $row->pickupLocationName ?? '';
+
+						$status = $row->status ?? '';
+
+						if (isset($row->frozen) && $row->frozen && $showDateWhenSuspending && !empty($row->reactivateDate)) {
+							$reactivateTime = $this->isValidTimeStamp($row->reactivateDate) ? $row->reactivateDate : strtotime($row->reactivateDate);
+							$status .= " until " . date('M d, Y', $reactivateTime);
+						}
+
+						$user = $row->getUserName();
+
+						$cancelledValues = [
+							$title,
+							$author,
+							$format,
+							$cancelDate,
+							$pickup
+						];
+						$cancelledValues[] = $status;
+						if ($hasLinkedUsers) {
+							$cancelledValues[] = $user;
+						}
+						fputcsv($fp, $cancelledValues);
 					}
 				} else {
 					// Section header
@@ -11499,6 +11721,9 @@ class MyAccount_AJAX extends JSON_Action {
 				$listGroup->title = $title;
 				$listGroup->parentGroupId = $parentId;
 				if ($listGroup->insert()) {
+					// Set the last viewed group to the newly created group
+					//$user->lastListGroupViewed = $listGroup->id;
+					//$user->update();
 					$result['success'] = "true";
 					$result['message'] = "List group $listGroup->title created successfully";
 				} else {
@@ -11563,6 +11788,14 @@ class MyAccount_AJAX extends JSON_Action {
 			$group->userId = UserAccount::getActiveUserId();
 			if ($group->find(true)) {
 				if ($group->delete()) {
+					// clear last viewed group if it was this one
+					$user = UserAccount::getLoggedInUser();
+					if ($user->lastListGroupViewed == $groupId) {
+						$user = UserAccount::getActiveUserObj();
+						$user->lastListGroupViewed = -1;
+						$user->update();
+					}
+
 					// Unassign any lists that were in this group
 					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 					$userList = new UserList();

@@ -73,7 +73,7 @@
 			{/if}
 		{/foreach}
 
-		{if (!isset($canSave) || ($canSave == true))}
+		{if (!isset($canSave) || ($canSave == true)) && !(!empty($isRecordLocked) && !$userCanChangeRecordLocks)}
 			{if !empty($tos)}
 				<div class="form-group">
 					<input id="tosCheckbox" type="checkbox" {if $tosAccept}checked="checked"{/if}> {translate text="I have read and accept the " isPublicFacing=true} <a onclick="AspenDiscovery.Account.selfRegistrationTermsModal('{$selfRegTermsID}');"> {translate text="Terms of Service" isPublicFacing=true} </a>
@@ -136,13 +136,11 @@
 		<script type="text/javascript">
 			var checkbox = document.querySelector("#tosCheckbox");
 			var target = document.querySelector("div.form-group button[value='Register']");
+			{literal}
 			checkbox.onclick = function() {
-				if (checkbox.checked) {
-					target.disabled = false;}
-				else {
-					target.disabled = true;
-				}
+				target.disabled = !checkbox.checked;
 			}
+			{/literal}
 			{if !empty($showTOSFirst)}
 				AspenDiscovery.Account.selfRegistrationTermsModal('{$selfRegTermsID}');
 			{/if}
