@@ -34,6 +34,14 @@
 				</div>
 			</div>
 		{/if}
+		{if !empty($summHasFullText)}
+			<div class="row">
+				<div class="result-label col-tn-3">{translate text='Full Text' isPublicFacing=true}</div>
+				<div class="col-tn-9 result-value">
+					{$summHasFullText|escape}
+				</div>
+			</div>
+		{/if}
 
         {if !empty($summDescription)}
 			{* Standard Description *}

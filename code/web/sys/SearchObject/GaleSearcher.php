@@ -159,7 +159,10 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 			}
 			$searchQuery .= ' and ' . implode(' and ', $dateClauses);
 		}
-
+		$filterFullText = isset($this->filterList['fullTextOnly']) && in_array('fullTextOnly', $this->filterList['fullTextOnly'], true);
+		if ($galeSettings->fullTextOnly || $filterFullText) {
+			$searchQuery .= ' and marc.992=fulltext';
+		}
 		$this->lastSearchResults = [];
 		$this->lastResponse = null;
 
@@ -423,6 +426,28 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 					'end' => $endDate,
 					'allowPastDates' => true,
 				];
+			} elseif ($facetKey === 'fullTextOnly') {
+				if (!$this->getSettings()->fullTextOnly) {
+					$fullTextValue = 'fullTextOnly';
+					$isApplied = isset($this->filterList['fullTextOnly']) && in_array($fullTextValue, $this->filterList['fullTextOnly'], true);
+					$facetSet['fullTextOnly'] = [
+						'label' => 'Full Text Only',
+						'collapseByDefault' => false,
+						'valuesToShow' => 2,
+						'list' => [
+							$fullTextValue => [
+								'value' => $fullTextValue,
+								'count' => '',
+								'display' => translate(['text' => 'Full Text Only', 'isPublicFacing' => true]),
+								'url' => $this->renderLinkWithFilter('fullTextOnly', $fullTextValue),
+								'removalUrl' => $this->renderLinkWithoutFilter("fullTextOnly:$fullTextValue"),
+								'isApplied' => $isApplied,
+
+							],
+						],
+						'hasApplied' => $isApplied,
+					];
+				}
 			}
 		}
 		return $facetSet;
@@ -467,6 +492,8 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 					}else{
 						$display = translate(['text'=>'Between %1% and %2%', 1=>$startDate, 2=>$endDate, 'isPublicFacing'=>true]);
 					}
+				} elseif ($field === 'fullTextOnly') {
+					$display = translate(['text' => 'Full Text Only', 'isPublicFacing' => true]);
 				}
 				$filterList[$label][] = [
 					'value' => $value,
@@ -534,6 +561,13 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 			'start_date' => [
 				'label' => translate([
 					'text' => 'Date',
+					'isPublicFacing' => true,
+					'inAttribute' => true,
+				]),
+			],
+			'fullTextOnly' => [
+				'label' => translate([
+					'text' => 'Full Text Only',
 					'isPublicFacing' => true,
 					'inAttribute' => true,
 				]),

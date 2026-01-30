@@ -8,6 +8,7 @@ class GaleSetting extends DataObject {
 	public $id;
 	public $name;
 	public $locationId;
+	public $fullTextOnly;
 
 	private $_libraries;
 	private $_productCodes;
@@ -39,7 +40,14 @@ class GaleSetting extends DataObject {
 				'type' => 'text',
 				'label' => 'Location ID',
 				'description' => 'The Location ID to use for the Gale API',
-				'hideInLists' => true,
+				'hideInLists' => false,
+			],
+			'fullTextOnly' => [
+				'property' => 'fullTextOnly',
+				'type' => 'checkbox',
+				'label' => 'Search for full text only',
+				'description' => 'Whether or not to ONLY search for full text resouces from Gale',
+				'hideInLists' => false,
 			],
 			'productCodes' => [
 				'property' => 'productCodes',

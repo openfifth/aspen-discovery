@@ -74,6 +74,7 @@ class GaleRecordDriver extends RecordInterface {
 		$interface->assign('summAuthor', $this->getAuthor());
 		$interface->assign('summSourceDatabase', $this->getSourceDatabase());
 		$interface->assign('summPublicationDates', $this->getPublicationDate());
+		$interface->assign('summHasFullText', $this->getFullText());
 
 		//Check to see if there are lists the record is on
 		if ($showListsAppearingOn) {
@@ -153,7 +154,7 @@ class GaleRecordDriver extends RecordInterface {
 		$interface->assign('bookCoverUrl', $this->getBookcoverUrl('small'));
 		$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('medium'));
 		$interface->assign('summPublicationDates', $this->getPublicationDate());
-
+		$interface->assign('summHasFullText', $this->getFullText());
 
 		return 'RecordDrivers/Gale/combinedResult.tpl';
 	}
@@ -274,6 +275,20 @@ class GaleRecordDriver extends RecordInterface {
 	}
 	public function getExploreMoreInfo() {
 		return [];
+	}
+
+	public function getFullText() {
+		$rights = $this->record->xpath('dc:rights');
+		if (!empty($rights)) {
+			foreach ($rights as $right) {
+				$value = (string)$right;
+				if (stripos($value, 'Text: Yes') !== false) {
+					return 'Yes';
+				}
+			}
+			return 'No';
+		}
+		return 'No';
 	}
 
 }

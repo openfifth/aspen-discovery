@@ -17,7 +17,8 @@ function getGaleUpdates()
 				"CREATE TABLE gale_settings (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					name VARCHAR(100) NOT NULL,
-					locationId VARCHAR(255) NOT NULL
+					locationId VARCHAR(255) NOT NULL,
+					fullTextOnly TINYINT(1) DEFAULT 0
 				) ENGINE = InnoDB",
 			],
 		],
