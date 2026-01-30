@@ -136,6 +136,8 @@ abstract class AbstractDriver {
 			foreach ($holdSection as $hold) {
 				if ($hold->sourceId == $sourceId) {
 					return $hold;
+				}elseif ($hold->recordId == $sourceId) {
+					return $hold;
 				}
 			}
 		}
@@ -150,6 +152,9 @@ abstract class AbstractDriver {
 			$accountProfile->decrementUnavailableHolds();
 		}
 		$hold->delete();
+		if ($patron->getHomeLibrary()->showCancelledHolds) {
+			$accountProfile->markHoldsStale();
+		}
 	}
 
 	public function updateCachedHoldsBasedOnActiveHolds(array $cachedHolds, array $activeHolds, AccountSummary $accountSummary) : array {

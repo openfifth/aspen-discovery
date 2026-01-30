@@ -75,6 +75,7 @@ class User extends DataObject {
 	public $pickupSublocationId;
 	public $rememberHoldPromptForEdition;
 	public $holdPromptForEdition;
+	public $promptToFreezeHoldsImmediately;
 
 	public $lastListUsed;
 	public $lastListGroupAdded;
@@ -253,16 +254,55 @@ class User extends DataObject {
 	}
 	
 	function getUnassignedListsForListGroups() {
+		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
+		$includePagination = false;
+		if (isset($_REQUEST['includePagination'])) {
+			$includePagination = $_REQUEST['includePagination'];
+		}
+
+		$listsPerPage = 20;
+		if (isset($_REQUEST['limit'])) {
+			$listsPerPage = $_REQUEST['limit'];
+		}
+
+		$page = $_REQUEST['pageUnassigned'] ?? 1;
+
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();
 		$userList->listGroupId = -1;
 		$userList->user_id = $this->id;
 		$userList->orderBy('title ASC');
+		if ($includePagination) {
+			$userList->limit(($page - 1) * $listsPerPage, $listsPerPage);
+			$listCount = $userList->count();
+		}
 		$userList->find();
 		$lists = [];
+
+
+		if ($includePagination) {
+			$options = [
+				'totalItems' => $listCount,
+				'perPage' => $listsPerPage,
+			];
+
+			require_once ROOT_DIR . '/sys/Pager.php';
+			$pager = new Pager($options);
+		}
+
 		while ($userList->fetch()) {
 			$lists[] = clone $userList;
 		}
+
+		if ($includePagination) {
+			return [
+				'page_current' => (int)$pager->getCurrentPage(),
+				'totalResults' => (int)$pager->getTotalItems(),
+				'page_total' => (int)$pager->getTotalPages(),
+				'lists' => $lists,
+			];
+		}
+
 		return $lists;
 	}
 
@@ -1654,6 +1694,7 @@ class User extends DataObject {
 		$this->__set('rememberHoldPickupLocation', (isset($_POST['rememberHoldPickupLocation']) && $_POST['rememberHoldPickupLocation'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPromptForEdition', (isset($_POST['rememberHoldPromptForEdition']) && $_POST['rememberHoldPromptForEdition'] == 'on') ? 1 : 0);
 		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
+		$this->__set('promptToFreezeHoldsImmediately', (isset($_POST['promptToFreezeHoldsImmediately']) && $_POST['promptToFreezeHoldsImmediately'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
@@ -1694,12 +1735,12 @@ class User extends DataObject {
 		if ($saveResult === false) {
 			return [
 				'success' => false,
-				'message' => 'Could not save to the database',
+				'message' => 'Could not save to the database.',
 			];
 		} else {
 			return [
 				'success' => true,
-				'message' => 'Your preferences were updated successfully',
+				'message' => 'Your preferences were updated successfully.',
 			];
 		}
 	}
@@ -2056,6 +2097,7 @@ class User extends DataObject {
 		require_once ROOT_DIR . "/sys/User/Hold.php";
 		$hold = new Hold();
 		$hold->userId = $this->id;
+		$hold->cancelled = 0;
 		$hold->find();
 		while ($hold->fetch()) {
 			$cacheKey = "$hold->source:$hold->recordId";
@@ -3393,6 +3435,7 @@ class User extends DataObject {
 				$summary->totalYearlyCheckouts = $readingHistoryDB->count();
 
 				// Top author
+				$authors = [];
 				$readingHistoryDB->find();
 				while ($readingHistoryDB->fetch()) {
 					$author = strtolower(preg_replace('/[.|,]/', "", $readingHistoryDB->author));
@@ -4258,7 +4301,7 @@ class User extends DataObject {
 				'Administer Community Engagement Module',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Admin View', 'View progress and manage rewards.', '/CommunityEngagement/AdminView'), [
-				'View Community Engagement Dashboard',
+				'View Community Engagement Admin View',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Dashboard', 'View usage dashboard for Community Engagement.', '/CommunityEngagement/Dashboard'), [
 				'View Community Engagement Dashboard',
@@ -4773,6 +4816,14 @@ class User extends DataObject {
 			}
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Settings', 'Define settings for self-check in Aspen LiDA.', '/AspenLiDA/SelfCheckSettings'), 'Administer Aspen LiDA Self-Check Settings');
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Completion Messages', 'Define messages to show when self-check checkouts are completed in Aspen LiDA.', '/AspenLiDA/SelfCheckCompletionMessages'), 'Administer Aspen LiDA Self-Check Settings');
+			$sections['aspen_lida']->addAction(new AdminAction('Home Screen Link Groups', 'Define settings for home screen link groups in Aspen LiDA.', '/AspenLiDA/HomeScreenLinkGroups'), [
+				'Administer All Aspen LiDA Home Screen Links',
+				'Administer Library Aspen LiDA Home Screen Links'
+			]);
+			$sections['aspen_lida']->addAction(new AdminAction('Home Screen Links', 'Define settings for home screen links in Aspen LiDA.', '/AspenLiDA/HomeScreenLinks'), [
+				'Administer All Aspen LiDA Home Screen Links',
+				'Administer Library Aspen LiDA Home Screen Links'
+			]);
 		}
 		if (array_key_exists('Series', $enabledModules)) {
 			$sections['series'] = new AdminSection("Series Search");
@@ -5359,8 +5410,28 @@ class User extends DataObject {
 			uasort($holdsToReturn['available'], $holdSort);
 		}
 		if (!empty($holdsToReturn['cancelled'])) {
-			uasort($holdsToReturn['cancelled'], $holdSort);
-			arsort($holdsToReturn['cancelled']);
+			$cancelledHoldSort = function (Hold $a, Hold $b) {
+				$titleA = $a->getSortTitle();
+				$titleB = $b->getSortTitle();
+
+				$dateA = (!empty($a->expirationDate) && $a->expirationDate > 0) ? $a->expirationDate : null;
+				$dateB = (!empty($b->expirationDate) && $b->expirationDate > 0) ? $b->expirationDate : null;
+
+				if ($dateA !== null && $dateB !== null) {
+					if ($dateA == $dateB) {
+						return strnatcasecmp($titleA, $titleB);
+					}
+					return $dateB <=> $dateA;
+				}
+				if ($dateA !== null && $dateB === null) {
+					return -1;
+				}
+				if ($dateA === null && $dateB !== null) {
+					return 1;
+				}
+				return strnatcasecmp($titleA, $titleB);
+			};
+			uasort($holdsToReturn['cancelled'], $cancelledHoldSort);
 		}
 		if (!empty($holdsToReturn['unavailable'])) {
 			if ($unavailableSort === 'reactivate') {

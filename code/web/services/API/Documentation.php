@@ -4,42 +4,69 @@ global $configArray;
 require_once ROOT_DIR . '/Action.php';
 
 class API_Documentation extends Action {
-	function launch() {
-		global $interface;
+    function launch() : void {
+        global $interface;
 
-		$apiFile = "/openapi/aspen_openapi.json";
-		
-		$interface->assign('showBreadcrumbs', true);
-		$interface->assign('showContentAsFullWidth', true);
-		$interface->assign('apiFile', $apiFile);
+        $openApiPath = ROOT_DIR . '/openapi';
+        $apiFiles = [];
 
-		if (UserAccount::isLoggedIn() && count(UserAccount::getActivePermissions()) > 0) {
-			$adminActions = UserAccount::getActiveUserObj()->getAdminActions();
-			$interface->assign('adminActions', $adminActions);
-			$interface->assign('activeAdminSection', $this->getActiveAdminSection());
-			$interface->assign('activeMenuOption', 'admin');
-			$sidebar = 'Admin/admin-sidebar.tpl';
-		} else {
-			$sidebar = '';
-		}
-		$this->display('apiDocumentation.tpl', 'Aspen API Documentation', $sidebar);
-	}
+        if (is_dir($openApiPath)) {
+            foreach (scandir($openApiPath) as $apiFile) {
+                if (preg_match('/_openapi\.json$/i', $apiFile) && is_file($openApiPath . '/' . $apiFile)) {
+                    $apiFiles[str_ireplace('_openapi.json', '', $apiFile)] = $apiFile;
+                }
+            }
+        }
 
-	function getBreadcrumbs(): array {
-		$breadcrumbs = [];
-		if (UserAccount::isLoggedIn() && count(UserAccount::getActivePermissions()) > 0) {
-			$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-			$breadcrumbs[] = new Breadcrumb('/Admin/Home#support', 'Aspen Discovery Support');
-		}
-		$breadcrumbs[] = new Breadcrumb('', 'API Documentation');
-		return $breadcrumbs;
-	}
+        if (empty($apiFiles)) {
+            $activeApiFile = '';
+            $activeApiFileFullPath = '';
+        } else {
+            if (isset($_REQUEST['api']) && array_key_exists($_REQUEST['api'], $apiFiles)) {
+                $activeApiFile = $_REQUEST['api'];
+            } else {
+                $keys = array_keys($apiFiles);
+                $activeApiFile = $keys[0];
+            }
+            $activeApiFileFullPath = '/openapi/' . $apiFiles[$activeApiFile];
+        }
 
-	function getActiveAdminSection(): string {
-		return 'support';
-	}
+        $apiBasePath = "/API/$activeApiFile?method=";
 
-	function canView(): bool {
-		return true;
-	}
+        $interface->assign('apiFiles', $apiFiles);
+        $interface->assign('activeApiFile', $activeApiFile);
+        $interface->assign('activeApiFileFullPath', $activeApiFileFullPath);
+        $interface->assign('apiBasePath', $apiBasePath);
+        $interface->assign('showBreadcrumbs', true);
+        $interface->assign('showContentAsFullWidth', true);
+
+        if (UserAccount::isLoggedIn() && count(UserAccount::getActivePermissions()) > 0) {
+            $adminActions = UserAccount::getActiveUserObj()->getAdminActions();
+            $interface->assign('adminActions', $adminActions);
+            $interface->assign('activeAdminSection', $this->getActiveAdminSection());
+            $interface->assign('activeMenuOption', 'admin');
+            $sidebar = 'Admin/admin-sidebar.tpl';
+        } else {
+            $sidebar = '';
+        }
+        $this->display('apiDocumentation.tpl', 'Aspen API Documentation', $sidebar);
+    }
+
+    function getBreadcrumbs(): array {
+        $breadcrumbs = [];
+        if (UserAccount::isLoggedIn() && count(UserAccount::getActivePermissions()) > 0) {
+            $breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
+            $breadcrumbs[] = new Breadcrumb('/Admin/Home#support', 'Aspen Discovery Support');
+        }
+        $breadcrumbs[] = new Breadcrumb('', 'API Documentation');
+        return $breadcrumbs;
+    }
+
+    function getActiveAdminSection(): string {
+        return 'support';
+    }
+
+    function canView(): bool {
+        return true;
+    }
 }
