@@ -65,12 +65,12 @@ function getGaleUpdates()
 			'description' => 'Add a table to track how often a particular user uses Gale.',
 			'sql' => [
 				"CREATE TABLE user_gale_usage (
-				    id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-				    userId INT(11) NOT NULL,
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					userId INT(11) NOT NULL,
 					instance VARCHAR(100) DEFAULT NULL,
-				    month INT(2) NOT NULL,
-				    year INT(4) NOT NULL,
-				    usageCount INT(11),
+					month INT(2) NOT NULL,
+					year INT(4) NOT NULL,
+					usageCount INT(11),
 					KEY year (year, month, instance, userId)
 				) ENGINE = InnoDB",
 			],
@@ -89,7 +89,7 @@ function getGaleUpdates()
 					`timesUsed` int(11) NOT NULL,
 					PRIMARY KEY (`id`),
 					KEY `galeId` (`galeId`,`year`,`instance`,`month`)
-				  ) ENGINE=InnoDB",
+				) ENGINE=InnoDB",
 			],
 		],
 		'display_explore_more_bar_in_gale' => [

@@ -18,9 +18,9 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	/** @var SimpleXMLElement[] */
 	private array $lastSearchResults = [];
 	private ?SimpleXMLElement $lastResponse = null;
-    private $curl_connection;
+	private $curl_connection;
 
-    /**Track query time info */
+	/**Track query time info */
 	protected $queryStartTime = null;
 	protected $queryEndTime = null;
 	protected $queryTime = null;
@@ -101,24 +101,22 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		];
 	}
 
-    /**
+	/**
 	 * Create an instance of the Gale Searcher
 	 * @return SearchObject_GaleSearcher
 	 */
-    public static function getInstance(): SearchObject_GaleSearcher {
+	public static function getInstance(): SearchObject_GaleSearcher {
 		if (SearchObject_GaleSearcher::$instance == null) {
 			SearchObject_GaleSearcher::$instance = new SearchObject_GaleSearcher();
 		}
 		return SearchObject_GaleSearcher::$instance;
 	}
 
-    // Getsettings is where i left off for tomorrow
-
 	public function getEngineName() {
 		return 'Gale';
 	}
 
-    public function getCurlConnection() {
+	public function getCurlConnection() {
 		if ($this->curl_connection == null) {
 			$this->curl_connection = curl_init();
 			curl_setopt($this->curl_connection, CURLOPT_CONNECTTIMEOUT, 15);
@@ -132,7 +130,7 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 	}
 
 	public function processSearch(bool $returnIndexErrors = false, bool $recommendations = false, bool $preventQueryModification = false): AspenError|SimpleXMLElement|array|null {
-        $galeSettings = $this->getSettings();
+		$galeSettings = $this->getSettings();
 		if ($galeSettings == null || empty($galeSettings->locationId)) {
 			return new AspenError('Gale searching is not configured for this library.');
 		}
@@ -325,7 +323,7 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 
 	public function getSearchIndexes(): array {
 		return [
-    		'Keyword' => translate([
+			'Keyword' => translate([
 				'text' => 'Keyword',
 				'isPublicFacing' => true,
 				'inAttribute' => true,
@@ -598,7 +596,7 @@ class SearchObject_GaleSearcher extends SearchObject_BaseSearcher {
 		return $date;
 	}
 
-    public function __destruct() {
+	public function __destruct() {
 		if ($this->curl_connection) {
 			curl_close($this->curl_connection);
 		}

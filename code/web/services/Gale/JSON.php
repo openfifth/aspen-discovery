@@ -60,7 +60,7 @@ class Gale_JSON extends JSON_Action {
 		];
 	}
 
-    function getTitleAuthor(): array {
+	function getTitleAuthor(): array {
 		$result = [
 			'success' => false,
 			'title' => 'Unknown',
