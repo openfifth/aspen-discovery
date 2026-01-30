@@ -68,7 +68,7 @@ class SearchInterpreterSetting extends DataObject {
 			'formatSection' => [
 				'property' => 'formatSection',
 				'type' => 'section',
-				'label' => 'Formats (applies format facet)',
+				'label' => 'Formats (applies the Format facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -113,7 +113,7 @@ class SearchInterpreterSetting extends DataObject {
 			'formatCategoriesSection' => [
 				'property' => 'formatCategoriesSection',
 				'type' => 'section',
-				'label' => 'Format Categories (applies format_category facet)',
+				'label' => 'Format Categories (applies the Format Category facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -139,7 +139,7 @@ class SearchInterpreterSetting extends DataObject {
 			'audienceSection' => [
 				'property' => 'audienceSection',
 				'type' => 'section',
-				'label' => 'Audiences (applies target_audience facet)',
+				'label' => 'Audiences (applies the Audience facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -181,7 +181,7 @@ class SearchInterpreterSetting extends DataObject {
 			'fictionSection' => [
 				'property' => 'fictionSection',
 				'type' => 'section',
-				'label' => 'Fiction/Non-Fiction (applies literary_form facet)',
+				'label' => 'Fiction/Non-Fiction (applies the Form facet)',
 				'hideInLists' => true,
 				'expandByDefault' => true,
 				'properties' => [
@@ -205,7 +205,7 @@ class SearchInterpreterSetting extends DataObject {
 					'processNew' => [
 						'property' => 'processNew',
 						'type' => 'checkbox',
-						'label' => 'Process New Modifier (applies publishDateSort facet)',
+						'label' => 'Process New Modifier (applies the Earliest Publication Year facet)',
 						'description' => 'Whether the search should be checked for new searches.',
 						'hideInLists' => true,
 						'default' => 1,
@@ -213,7 +213,7 @@ class SearchInterpreterSetting extends DataObject {
 					'processAvailable' => [
 						'property' => 'processAvailable',
 						'type' => 'checkbox',
-						'label' => 'Process Available Modifier (applies availability_toggle facet)',
+						'label' => 'Process Available Modifier (applies the Search Within facet)',
 						'description' => 'Whether the search should be checked for available searches.',
 						'hideInLists' => true,
 						'default' => 1,

@@ -49,7 +49,8 @@ class SystemAPI extends AbstractAPI {
 					'getLibraryLinks',
 					'getCatalogStatus',
 					'getLocations',
-					'getMaterialsRequestForm'
+					'getMaterialsRequestForm',
+					'getHomeScreenLinks',
 				])) {
 					$result = [
 						'result' => $this->$method(),
@@ -1216,6 +1217,108 @@ class SystemAPI extends AbstractAPI {
 			'message' => 'Loaded materials request form',
 			'form' => $materialsRequest,
 		];
+	}
+
+	/** @noinspection PhpUnused */
+	public function getHomeScreenLinks(): array {
+		if (isset($_REQUEST['locationId']) || isset($_REQUEST['libraryId'])) {
+			$homeScreenLinks = [];
+			if (isset($_REQUEST['libraryId'])) {
+				$library = new Library();
+				$library->libraryId = $_REQUEST['libraryId'];
+				if ($library->find(true)) {
+					require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+					$homeScreenLinkGroup = new HomeScreenLinkGroup();
+					$homeScreenLinkGroup->id = $library->lidaHomeScreenLinkGroupId;
+					if ($homeScreenLinkGroup->find(true)) {
+						$homeScreenLinkGroupEntries = [];
+						require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroupEntry.php';
+						$homeScreenLinkGroupEntry = new HomeScreenLinkGroupEntry();
+						$homeScreenLinkGroupEntry->homeScreenLinkGroupId = $homeScreenLinkGroup->id;
+						$homeScreenLinkGroupEntry->orderBy('weight');
+						$homeScreenLinkGroupEntry->find();
+						while ($homeScreenLinkGroupEntry->fetch()) {
+							$homeScreenLinkGroupEntries[] = $homeScreenLinkGroupEntry->homeScreenLinkId;
+						}
+
+						foreach ($homeScreenLinkGroupEntries as $homeScreenLinkId) {
+							require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLink.php';
+							$homeScreenLink = new HomeScreenLink();
+							$homeScreenLink->id = $homeScreenLinkId;
+							$homeScreenLink->orderBy('weight');
+							$homeScreenLink->find();
+							while ($homeScreenLink->fetch()) {
+								$homeScreenLinks[] = $homeScreenLink;
+							}
+						}
+					}
+				} else {
+					return [
+						'success' => false,
+						'message' => 'No library found with provided id',
+					];
+				}
+			} else if (isset($_REQUEST['locationId'])) {
+				$location = new Location();
+				$location->locationId = $_REQUEST['locationId'];
+				if ($location->find(true)) {
+					require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+					$homeScreenLinkGroup = new HomeScreenLinkGroup();
+					$homeScreenLinkGroup->id = $location->lidaHomeScreenLinkGroupId;
+					if ($homeScreenLinkGroup->find(true)) {
+						$homeScreenLinkGroupEntries = [];
+						require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroupEntry.php';
+						$homeScreenLinkGroupEntry = new HomeScreenLinkGroupEntry();
+						$homeScreenLinkGroupEntry->homeScreenLinkGroupId = $homeScreenLinkGroup->id;
+						$homeScreenLinkGroupEntry->orderBy('weight');
+						$homeScreenLinkGroupEntry->find();
+						while ($homeScreenLinkGroupEntry->fetch()) {
+							$homeScreenLinkGroupEntries[] = $homeScreenLinkGroupEntry->homeScreenLinkId;
+						}
+
+						foreach ($homeScreenLinkGroupEntries as $homeScreenLinkId) {
+							require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLink.php';
+							$homeScreenLink = new HomeScreenLink();
+							$homeScreenLink->id = $homeScreenLinkId;
+							$homeScreenLink->orderBy('weight');
+							$homeScreenLink->find();
+							while ($homeScreenLink->fetch()) {
+								$homeScreenLinks[] = $homeScreenLink;
+							}
+						}
+					}
+				} else {
+					return [
+						'success' => false,
+						'message' => 'No location found with provided id',
+					];
+				}
+			}
+			return [
+				'success' => true,
+				'links' => $homeScreenLinks
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => 'Must provide either a Location Id or Library Id',
+			];
+		}
+	}
+
+	public function getHomeScreenLinksByGroup(array $localHomeScreenLinks = null): array {
+		$homeScreenLinks = [];
+		if ($localHomeScreenLinks) {
+			foreach ($localHomeScreenLinks as $homeScreenLink) {
+				require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLink.php';
+				$link = new HomeScreenLink();
+				$link->id = $homeScreenLink->homeScreenLinkId;
+				$link->find(true);
+				$homeScreenLinks[] = $link;
+			}
+		}
+
+		return $homeScreenLinks;
 	}
 
 	function getBreadcrumbs(): array {
