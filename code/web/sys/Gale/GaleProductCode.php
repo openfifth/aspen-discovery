@@ -34,7 +34,7 @@ class GaleProductCode extends DataObject {
 			'displayName' => [
 				'property' => 'displayName',
 				'type' => 'text',
-				'label' => 'Display Name',
+				'label' => 'Facet Display Name',
 				'description' => 'Label shown in the facet list.',
 				'maxLength' => 255,
 				'required' => true,
