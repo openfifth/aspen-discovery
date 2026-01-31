@@ -95,7 +95,7 @@ class HomeScreenLink extends DataObject {
 				'property' => 'typeOfIcon',
 				'type' => 'enum',
 				'values' => [
-					'imageUpload' => 'Image Upload',
+					'uploadIcon' => 'Image Upload',
 					'materialIcon' => 'Material Icon',
 				],
 				'label' => 'Type of Icon',
@@ -122,8 +122,8 @@ class HomeScreenLink extends DataObject {
 				'type' => 'enum',
 				'label' => 'On tap, send user to',
 				'values' => [
-					0 => 'A specific screen in the app',
-					1 => 'An external website',
+					"deepLink" => 'A specific screen in the app',
+					"externalLink" => 'An external website',
 				],
 				'default' => 0,
 				'onchange' => 'return AspenDiscovery.Admin.getUrlOptions();',
