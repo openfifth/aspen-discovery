@@ -478,6 +478,7 @@ class Library extends DataObject {
 	//LiDA settings
 	public $lidaNotificationSettingId;
 	public $lidaGeneralSettingId;
+	public $lidaHomeScreenLinkGroupId;
 
 	public $accountProfileId;
 
@@ -1002,6 +1003,16 @@ class Library extends DataObject {
 		$appGeneralSettings[-1] = 'none';
 		while ($appGeneralSetting->fetch()) {
 			$appGeneralSettings[$appGeneralSetting->id] = $appGeneralSetting->name;
+		}
+
+		require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+		$homeScreenLinkGroup = new HomeScreenLinkGroup();
+		$homeScreenLinkGroup->orderBy('name');
+		$homeScreenLinkGroups = [];
+		$homeScreenLinkGroup->find();
+		$homeScreenLinkGroups[-1] = 'none';
+		while ($homeScreenLinkGroup->fetch()) {
+			$homeScreenLinkGroups[$homeScreenLinkGroup->id] = $homeScreenLinkGroup->name;
 		}
 
 		require_once ROOT_DIR . '/sys/Authentication/SSOSetting.php';
@@ -4809,6 +4820,15 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => -1,
 					],
+					'lidaHomeScreenLinkGroupId' => [
+						'property' => 'lidaHomeScreenLinkGroupId',
+						'type' => 'enum',
+						'values' => $homeScreenLinkGroups,
+						'label' => 'Home Screen Link Group',
+						'description' => 'The Home Screen Link Group to use for Aspen LiDA for this library',
+						'hideInLists' => true,
+						'default' => -1,
+					],
 				],
 			],
 
@@ -6802,5 +6822,19 @@ class Library extends DataObject {
 			'showAlternateLibraryCardPassword' => $this->showAlternateLibraryCardPassword,
 			'useAlternateLibraryCardForCloudLibrary' => $useAlternateLibraryCardForCloudLibrary,
 		];
+	}
+
+	protected $_homeScreenLinkGroup = null;
+
+	public function getHomeScreenLinkGroup(): ?HomeScreenLinkGroup {
+		if ($this->_homeScreenLinkGroup == null) {
+			require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+			$homeScreenLinkGroup = new HomeScreenLinkGroup();
+			$homeScreenLinkGroup->id = $this->lidaHomeScreenLinkGroupId;
+			if ($homeScreenLinkGroup->find(true)) {
+				$this->_homeScreenLinkGroup = $homeScreenLinkGroup;
+			}
+		}
+		return $this->_homeScreenLinkGroup;
 	}
 }
