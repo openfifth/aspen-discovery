@@ -21,6 +21,7 @@ class SystemVariables extends DataObject {
 	public $storeRecordDetailsInDatabase;
 	/** @noinspection PhpUnused */
 	public $deletionCommitInterval;
+	public $indexCommitInterval;
 	/** @noinspection PhpUnused */
 	public $waitAfterDeleteCommit;
 	/** @noinspection PhpUnused */
@@ -208,6 +209,15 @@ class SystemVariables extends DataObject {
 						'required' => true,
 						'default' => 1000,
 						'min' => 250,
+					],
+					'indexCommitInterval' => [
+						'property' => 'indexCommitInterval',
+						'type' => 'integer',
+						'label' => 'Indexing Commit Interval (# of records)',
+						'description' => 'Based on this setting, Aspen will call a solr commit after the specified number of records are processed',
+						'required' => true,
+						'default' => 10000,
+						'min' => 10000,
 					],
 					'waitAfterDeleteCommit' => [
 						'property' => 'waitAfterDeleteCommit',
