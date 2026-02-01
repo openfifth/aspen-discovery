@@ -155,6 +155,7 @@ class Location extends DataObject {
 	//LiDA Settings
 	public $lidaLocationSettingId;
 	public $lidaSelfCheckSettingId;
+	public $lidaHomeScreenLinkGroupId;
 
 	//Facet Settings
 	public $openArchivesFacetSettingId;
@@ -1456,6 +1457,16 @@ class Location extends DataObject {
 				$appSelfCheckSettings[$appSelfCheckSetting->id] = $appSelfCheckSetting->name;
 			}
 
+			require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+			$homeScreenLinkGroup = new HomeScreenLinkGroup();
+			$homeScreenLinkGroup->orderBy('name');
+			$homeScreenLinkGroups = [];
+			$homeScreenLinkGroup->find();
+			$homeScreenLinkGroups[-1] = 'none';
+			while ($homeScreenLinkGroup->fetch()) {
+				$homeScreenLinkGroups[$homeScreenLinkGroup->id] = $homeScreenLinkGroup->name;
+			}
+
 			$structure['aspenLiDASection'] = [
 				'property' => 'aspenLiDASection',
 				'type' => 'section',
@@ -1481,7 +1492,16 @@ class Location extends DataObject {
 						'description' => 'The self-check settings to use for Aspen LiDA',
 						'hideInLists' => true,
 						'default' => -1,
-					]
+					],
+					'lidaHomeScreenLinkGroupId' => [
+						'property' => 'lidaHomeScreenLinkGroupId',
+						'type' => 'enum',
+						'values' => $homeScreenLinkGroups,
+						'label' => 'Home Screen Link Group',
+						'description' => 'The Home Screen Link Group to use for Aspen LiDA for this location',
+						'hideInLists' => true,
+						'default' => -1,
+					],
 				]
 			];
 		}
@@ -3306,5 +3326,27 @@ class Location extends DataObject {
 		}
 
 		return $structure;
+	}
+
+	protected $_homeScreenLinkGroup = null;
+
+	/**
+	 * @return HomeScreenLinkGroup|null
+	 * @noinspection PhpUnused
+	 */
+	public function getHomeScreenLinkGroup(): ?HomeScreenLinkGroup {
+		if ($this->_homeScreenLinkGroup == null) {
+			if ($this->lidaHomeScreenLinkGroupId == -1) {
+				$this->_homeScreenLinkGroup = $this->getParentLibrary()->getHomeScreenLinkGroup();
+			} else {
+				require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+				$homeScreenLinkGroup = new HomeScreenLinkGroup();
+				$homeScreenLinkGroup->id = $this->lidaHomeScreenLinkGroupId;
+				if ($homeScreenLinkGroup->find(true)) {
+					$this->_homeScreenLinkGroup = $homeScreenLinkGroup;
+				}
+			}
+		}
+		return $this->_homeScreenLinkGroup;
 	}
 }

@@ -36,6 +36,7 @@ public class GroupedWorkIndexer {
 	private final Logger logger;
 	private final Long indexStartTime;
 	private int deletionCommitInterval = 1000;
+	private int indexCommitInterval = 10000;
 	private boolean waitAfterDeleteCommit = false;
 	private boolean removeTheWordSeriesFromEndOfSeries;
 	private int totalRecordsHandled = 0;
@@ -236,7 +237,7 @@ public class GroupedWorkIndexer {
 
 		//Check to see if we should store record details in Solr
 		try{
-			PreparedStatement systemVariablesStmt = dbConn.prepareStatement("SELECT storeRecordDetailsInSolr, storeRecordDetailsInDatabase, indexVersion, searchVersion, processEmptyGroupedWorks, enableNovelistSeriesIntegration, deletionCommitInterval, waitAfterDeleteCommit, removeTheWordSeriesFromEndOfSeries, hooplaVersion from system_variables");
+			PreparedStatement systemVariablesStmt = dbConn.prepareStatement("SELECT storeRecordDetailsInSolr, storeRecordDetailsInDatabase, indexVersion, searchVersion, processEmptyGroupedWorks, enableNovelistSeriesIntegration, deletionCommitInterval, waitAfterDeleteCommit, removeTheWordSeriesFromEndOfSeries, hooplaVersion, indexCommitInterval from system_variables");
 			ResultSet systemVariablesRS = systemVariablesStmt.executeQuery();
 			if (systemVariablesRS.next()){
 				this.storeRecordDetailsInSolr = systemVariablesRS.getBoolean("storeRecordDetailsInSolr");
@@ -245,6 +246,7 @@ public class GroupedWorkIndexer {
 				this.searchVersion = systemVariablesRS.getInt("searchVersion");
 				this.enableNovelistSeriesIntegration = systemVariablesRS.getBoolean("enableNovelistSeriesIntegration");
 				this.deletionCommitInterval = systemVariablesRS.getInt("deletionCommitInterval");
+				this.indexCommitInterval = systemVariablesRS.getInt("indexCommitInterval");
 				this.waitAfterDeleteCommit = systemVariablesRS.getBoolean("waitAfterDeleteCommit");
 				if (fullReindex) {
 					this.processEmptyGroupedWorks = systemVariablesRS.getBoolean("processEmptyGroupedWorks");
@@ -836,7 +838,7 @@ public class GroupedWorkIndexer {
 					scheduledWorksRS.close();
 					break;
 				}
-				if (numWorksProcessed % 10000 == 0) {
+				if (numWorksProcessed % this.indexCommitInterval == 0) {
 					this.commitChanges();
 				}
 			}
@@ -964,7 +966,7 @@ public class GroupedWorkIndexer {
 					//Testing shows that regular commits do seem to improve performance.
 					//However, we can't do it too often, or we get errors with too many searchers warming.
 					//This is happening now with the auto commit settings in solrconfig.xml
-					if (numWorksProcessed % 10000 == 0) {
+					if (numWorksProcessed % indexCommitInterval == 0) {
 						try {
 							logger.info("Doing a regular commit during full indexing");
 							updateServer.commit(false, false, true);
@@ -1030,7 +1032,7 @@ public class GroupedWorkIndexer {
 			}else {
 				deleteRecord(permanentId, groupedWorkId);
 				numDeleted++;
-				if (numDeleted % 10000 == 0) {
+				if (numDeleted % this.deletionCommitInterval == 0) {
 					try {
 						updateServer.commit(false, false, true);
 					} catch (Exception e) {
@@ -1064,7 +1066,7 @@ public class GroupedWorkIndexer {
 			}
 			getGroupedWorkInfoRS.close();
 			totalRecordsHandled++;
-			if (totalRecordsHandled % 1000 == 0) {
+			if (totalRecordsHandled % this.indexCommitInterval == 0) {
 				updateServer.commit(false, false, true);
 			}
 		} catch (Exception e) {

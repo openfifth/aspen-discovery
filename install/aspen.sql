@@ -5717,6 +5717,7 @@ CREATE TABLE `system_variables` (
   `enableNovelistSeriesIntegration` tinyint(4) DEFAULT 1,
   `enableGrapesEditor` tinyint(1) DEFAULT 0,
   `deletionCommitInterval` int(11) DEFAULT 1000,
+  `indexCommitInterval` int(11) DEFAULT 10000,
   `waitAfterDeleteCommit` tinyint(4) DEFAULT 0,
   `disableIpSpammyControl` tinyint(1) DEFAULT 0,
   `useOriginalCoverUrls` tinyint(1) DEFAULT 0,
