@@ -255,9 +255,6 @@ div.striped > div:nth-child(odd), div.striped > div:nth-child(odd){ldelim}
 .browse-category-feed-item .btn-group > .btn:focus{ldelim}
 	border-color: {$primaryForegroundColor};
 	--webkit-box-shadow: inset 0 1px 1px {$primaryForegroundColor}, 0 0 8px {$primaryForegroundColor};
-	outline: thin dotted;
-	outline: 5px auto -webkit-focus-ring-color;
-	outline-offset: -2px;
 {rdelim}
 
 .swiper-button-next, .swiper-button-prev {ldelim}
@@ -597,8 +594,14 @@ div.striped > div:nth-child(odd), div.striped > div:nth-child(odd){ldelim}
 	color: {$bodyTextColor};
 	border-color: {$primaryForegroundColor};
 	--webkit-box-shadow: inset 0 1px 1px {$primaryForegroundColor}, 0 0 8px {$primaryForegroundColor};
-	outline: thin dotted;
-	outline: 5px auto -webkit-focus-ring-color;
+{rdelim}
+
+:focus {ldelim}
+    {if !empty($focusBorderWidth)}
+        outline: {$focusBorderWidth} solid {$focusColor};
+    {else}
+        outline: 2px solid {$focusColor} !important;
+    {/if}
 	outline-offset: -2px;
 {rdelim}
 
