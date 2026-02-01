@@ -108,7 +108,10 @@ class Location extends DataObject {
 	public $automaticTimeoutLengthLoggedOut;
 	public $additionalCss;
 	public $showEmailThis;
-	public $showShareOnExternalSites;
+	public $showShareOnX;
+	public $showShareOnFacebook;
+	public $showShareOnPinterest;
+	public $showShareOnLink;
 	public $showFavorites;
 	public /** @noinspection PhpUnused */
 		$econtentLocationsToInclude;
@@ -1081,11 +1084,35 @@ class Location extends DataObject {
 						'hideInLists' => true,
 						'default' => 1,
 					],
-					'showShareOnExternalSites' => [
-						'property' => 'showShareOnExternalSites',
+					'showShareOnX' => [
+						'property' => 'showShareOnX',
 						'type' => 'checkbox',
-						'label' => 'Show Sharing To External Sites',
-						'description' => 'Whether or not sharing on external sites (Twitter, Facebook, Pinterest, etc. is shown)',
+						'label' => 'Show Sharing To Twitter/X',
+						'description' => 'Whether or not sharing on Twitter/X is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnFacebook' => [
+						'property' => 'showShareOnFacebook',
+						'type' => 'checkbox',
+						'label' => 'Show Sharing To Facebook',
+						'description' => 'Whether or not sharing on Facebook is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnPinterest' => [
+						'property' => 'showShareOnPinterest',
+						'type' => 'checkbox',
+						'label' => 'Show Sharing To Pinterest',
+						'description' => 'Whether or not sharing on Pinterest is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnLink' => [
+						'property' => 'showShareOnLink',
+						'type' => 'checkbox',
+						'label' => 'Show Generic Sharing Link',
+						'description' => 'Whether or not a generic sharing link is shown',
 						'hideInLists' => true,
 						'default' => 1,
 					],
