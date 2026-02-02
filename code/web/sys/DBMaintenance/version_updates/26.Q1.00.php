@@ -45,6 +45,13 @@ function getUpdates26_Q1_00(): array {
 				"ALTER TABLE indexing_profiles MODIFY COLUMN indexingClass varchar(50) NOT NULL DEFAULT ''",
 			]
 		], //indexing_profiles_add_default_values
-		
+		'sierra_phone_fields' => [
+			'title' => 'Sierra Phone Fields',
+			'description' => 'Add configurable phone fields for Sierra Phone and Work Phone',
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN phoneField CHAR(1) DEFAULT 't'",
+				"ALTER TABLE library ADD COLUMN workPhoneField CHAR(1) DEFAULT 'p'"
+			]
+		], //sierra_phone_fields
 	];
 }
