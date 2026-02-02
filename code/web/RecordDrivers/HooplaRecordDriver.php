@@ -343,8 +343,11 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return  array
 	 */
 	function getEditions() {
-		// No specific information provided by Hoopla
-		return [];
+		if ((isset($this->hooplaRawMetadata->isAbridged) && $this->hooplaRawMetadata->isAbridged) || (isset($this->hooplaRawMetadata->abridged) && $this->hooplaRawMetadata->abridged)) {
+			return ['Abridged'];
+		} else {
+			return ['Unabridged'];
+		}
 	}
 
 	/**
