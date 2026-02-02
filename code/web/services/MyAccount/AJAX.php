@@ -12632,7 +12632,7 @@ class MyAccount_AJAX extends JSON_Action {
 				flush();
 			}
 
-			require_once ROOT_DIR . '/sys/Events/UserAspenEventNotification.php';
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventNotifications.php';
 			$eventNotifications = new UserAspenEventNotification();
 			$eventNotifications->userId = $patron->id;
 			$eventNotifications->toastShown = 0;
@@ -12734,7 +12734,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		if ($notificationId) {
-			require_once ROOT_DIR . '/sys/Events/UserAspenEventNotification.php';
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventNotifications.php';
 			
 			$notification = new UserAspenEventNotification();
 			$notification->id = $notificationId;
@@ -12903,7 +12903,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	private function createEventChangeToastNotification($user, $eventInstance, $changeType): void {
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventNotification.php';
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventNotifications.php';
 
 		$notification = new UserAspenEventNotification();
 		$notification->userId = $user->id;
