@@ -246,6 +246,13 @@ class ListAPI extends AbstractAPI {
 			$checkIfValid = $_REQUEST['checkIfValid'];
 		}
 
+		$listsPerPage = 20;
+		if (isset($_REQUEST['limit'])) {
+			$listsPerPage = $_REQUEST['limit'];
+		}
+
+		$page = $_REQUEST['page'] ?? 1;
+
 		global $configArray;
 		$userId = $user->id;
 
@@ -253,8 +260,19 @@ class ListAPI extends AbstractAPI {
 		$list = new UserList();
 		$list->user_id = $userId;
 		$list->deleted = 0;
+		$list->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		$listCount = $list->count();
 		$list->find();
 		$results = [];
+
+		$options = [
+			'totalItems' => $listCount,
+			'perPage' => $listsPerPage,
+		];
+
+		require_once ROOT_DIR . '/sys/Pager.php';
+		$pager = new Pager($options);
+
 		if ($list->getNumResults() > 0) {
 			while ($list->fetch()) {
 				if ($checkIfValid == "true") {
@@ -303,17 +321,19 @@ class ListAPI extends AbstractAPI {
 				];
 			}
 		}
+
 		return [
 			'success' => true,
+			'page_current' => (int)$pager->getCurrentPage(),
+			'totalResults' => (int)$pager->getTotalItems(),
+			'page_total' => (int)$pager->getTotalPages(),
 			'lists' => $results,
-			'count' => $count,
+			'count' => $count
 		];
 	}
 
 	function getUserListGroups(): array {
 		$user = $this->getUserForApiCall();
-		global $configArray;
-
 		if ($user === false) {
 			return [
 				'success' => false,
@@ -324,28 +344,12 @@ class ListAPI extends AbstractAPI {
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$listGroup = new UserListGroup();
 		$listGroups = $listGroup->getListGroups($user);
-		$unassignedLists = $user->getUnassignedListsForListGroups();
-
-		$lists = [];
-		foreach ($unassignedLists as $userList) {
-			$lists[] = [
-				'id' => $userList->id,
-				'title' => $userList->title,
-				'description' => $userList->description,
-				'displayListAuthor' => $userList->displayListAuthor == 1,
-				'numTitles' => $userList->numValidListItems(),
-				'public' => $userList->public == 1,
-				'created' => $userList->created,
-				'dateUpdated' => $userList->dateUpdated,
-				'cover' => $configArray['Site']['url'] . "/bookcover.php?type=list&id={$userList->id}&size=medium",
-				'listGroupId' => $userList->listGroupId,
-			];
-		}
+		$unassignedLists = $user->getNumUnassignedLists() ?? 0;
 
 		return [
 			'success' => true,
 			'groups' => $listGroups,
-			'unassigned' => $lists,
+			'unassigned' => $unassignedLists,
 		];
 	}
 
@@ -2018,6 +2022,18 @@ class ListAPI extends AbstractAPI {
 		if ($user && !($user instanceof AspenError)) {
 			global $configArray;
 			if (isset($_REQUEST['groupId'])) {
+				// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
+				$includePagination = false;
+				if (isset($_REQUEST['includePagination'])) {
+					$includePagination = $_REQUEST['includePagination'];
+				}
+
+				$listsPerPage = 20;
+				if (isset($_REQUEST['limit'])) {
+					$listsPerPage = $_REQUEST['limit'];
+				}
+
+				$page = $_REQUEST['page'] ?? 1;
 				$groupId = $_REQUEST['groupId'];
 				$user->lastListGroupViewed = $groupId;
 				$user->update();
@@ -2029,7 +2045,7 @@ class ListAPI extends AbstractAPI {
 					$activeListGroupDetails->title = 'Unassigned Lists';
 					$activeListGroupDetails->id = -1;
 					$lists = [];
-					foreach ($activeListGroup as $userList) {
+					foreach ($activeListGroup['lists'] as $userList) {
 						$lists[] = [
 							'id' => $userList->id,
 							'title' => $userList->title,
@@ -2044,6 +2060,16 @@ class ListAPI extends AbstractAPI {
 						];
 					}
 
+					if ($includePagination) {
+						return [
+							'success' => true,
+							'listGroupDetails' => $activeListGroupDetails,
+							'listsInGroup' => $lists,
+							'page_current' => $activeListGroup['page_current'],
+							'totalResults' => $activeListGroup['totalResults'],
+							'page_total' => $activeListGroup['page_total'],
+						];
+					}
 					return [
 						'success' => true,
 						'listGroupDetails' => $activeListGroupDetails,
@@ -2059,7 +2085,12 @@ class ListAPI extends AbstractAPI {
 						$userList = new UserList();
 						$userList->user_id = $user->id;
 						$userList->listGroupId = $listGroup->id;
+						$totalLists = $userList->count();
+						if ($includePagination) {
+							$userList->limit(($page - 1) * $listsPerPage, $listsPerPage);
+						}
 						$userList->find();
+
 						while ($userList->fetch()) {
 							$activeListGroup[] = [
 								'id' => $userList->id,
@@ -2074,6 +2105,26 @@ class ListAPI extends AbstractAPI {
 								'listGroupId' => $userList->listGroupId,
 							];
 						}
+
+						if ($includePagination) {
+							$options = [
+								'totalItems' => $totalLists,
+								'perPage' => $listsPerPage,
+							];
+
+							require_once ROOT_DIR . '/sys/Pager.php';
+							$pager = new Pager($options);
+
+							return [
+								'success' => true,
+								'listGroupDetails' => $listGroupDetails,
+								'listsInGroup' => $activeListGroup,
+								'page_current' => (int)$pager->getCurrentPage(),
+								'totalResults' => (int)$pager->getTotalItems(),
+								'page_total' => (int)$pager->getTotalPages(),
+							];
+						}
+
 					} else {
 						$activeListGroup = UserListGroup::getLastViewedGroupForUser($user);
 						$listGroupDetails = UserListGroup::getLastViewedGroupDetailsForUser($user);

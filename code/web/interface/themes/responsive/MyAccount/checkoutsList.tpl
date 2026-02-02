@@ -16,7 +16,7 @@
 			</div>
 		</div>
 
-		{if count($transList) > 1 && ($source=='all' || $source=='ils')}
+		{if count($transList) > 1 && $renewableCheckouts >= 1 && ($source=='all' || $source=='ils')}
 			<div class="row">
 				<div class="col-xs-12">
 					<label for="selectAll_{$source}" class="control-label checkbox"> {translate text="Select/Deselect All" isPublicFacing=true} <input id="selectAll_{$source}" type="checkbox" onclick="$('#renewForm_{$source} .titleSelect').prop('checked', $('#selectAll_{$source}').is(':checked'));"></label>

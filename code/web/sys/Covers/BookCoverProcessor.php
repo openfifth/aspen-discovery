@@ -1486,7 +1486,7 @@ class BookCoverProcessor {
 		return false;
 	}
 
-	private function loadGroupedWork() : GroupedWorkDriver|false {
+	private function loadGroupedWork() : GroupedWorkDriver|false|null {
 		if ($this->groupedWork == null) {
 			// Include Search Engine Class
 			require_once ROOT_DIR . '/sys/SolrConnector/Solr.php';
