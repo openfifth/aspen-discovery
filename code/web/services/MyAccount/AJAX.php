@@ -12040,11 +12040,11 @@ class MyAccount_AJAX extends JSON_Action {
 			$waitingList->toastShown = 0;
 			$waitingList->whereAdd("expiresAt >= NOW()");
 			$waitingList->orderBy('expiresAt ASC');
-			$waitingList->limit(10);
 
 			if ($waitingList->find()) {
-				while ($waitingList->fetch()) {
-
+				$count = 0;
+				while ($waitingList->fetch() && $count < 10) {
+					$count++;
 					// Skip if we already sent this one in this session
 					if (in_array($waitingList->id, $sentThisSession)) {
 						continue;
@@ -12101,10 +12101,11 @@ class MyAccount_AJAX extends JSON_Action {
 			$eventNotifications->userId = $patron->id;
 			$eventNotifications->toastShown = 0;
 			$eventNotifications->orderBy('createdAt ASC');
-			$eventNotifications->limit(10);
 
 			if ($eventNotifications->find()) {
-				while ($eventNotifications->fetch()) {
+				$notificationCount = 0;
+				while ($eventNotifications->fetch() && $notificationCount < 10) {
+					$notificationCount++;
 
 					// Avoid duplicates in same SSE session
 					if (in_array('event_' . $eventNotifications->id, $sentThisSession)) {
