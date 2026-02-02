@@ -4,14 +4,14 @@
 	<form enctype="multipart/form-data" method="post" id="listEntryEditForm" action="/MyAccount/AJAX" class="form-horizontal">
 		<input type="hidden" name="listEntry" value="{$listEntry}">
 		<input type="hidden" name="listId" value="{$listId}">
-		{if $list->defaultSort != 'custom'}<input type="hidden" name="position" value="{if !empty($listEntry->weight)}{$listEntry->weight}{else}0{/if}">{/if}
+		{if $list->defaultSort != 'custom' || !empty($listHasFiltersApplied)}<input type="hidden" name="position" value="{if !empty($listEntry->weight)}{$listEntry->weight}{else}0{/if}">{/if}
 		<div>
 			<div class="form-group">
 				<label for="listName" class="col-sm-3">{translate text='List' isPublicFacing=true} </label>
 				<div class="col-sm-9">{$list->title}</div>
 			</div>
 
-			{if $list->defaultSort == 'custom'}
+			{if $list->defaultSort == 'custom' && empty($listHasFiltersApplied)}
 			<div class="form-group">
 				<label for="listPosition" class="col-sm-3">{translate text='Position' isPublicFacing=true} </label>
 				<div class="col-sm-9"><input type="number" class="form-control" value="{$listEntry->weight}" name="position" min="1" max="{$maxListPosition}"></div>
@@ -21,7 +21,7 @@
 			<div class="form-group">
 				<label for="listCopy" class="col-sm-3">{translate text='Copy to List' isPublicFacing=true} </label>
 				<div class="col-sm-9">
-					<select class="form-control" name="copyTo">
+					<select class="form-control" name="copyTo" aria-labelledby="listCopy">
 						<option value="null"></option>
 						{foreach from=$lists item="list" key="resultIndex"}
 							{if $list->id != $listId}
@@ -35,7 +35,7 @@
 			<div class="form-group">
 				<label for="listMove" class="col-sm-3">{translate text='Move to List' isPublicFacing=true} </label>
 				<div class="col-sm-9">
-					<select class="form-control" name="moveTo">
+					<select class="form-control" name="moveTo" aria-labelledby="listMove">
 						<option value="null"></option>
 						{foreach from=$lists item="list" key="resultIndex"}
 							{if ($list->id != $listId)}

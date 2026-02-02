@@ -262,7 +262,7 @@ class SearchObject_GenealogySearcher extends SearchObject_SolrSearcher {
 	 * @access  protected
 	 * @return  string   Base URL
 	 */
-	protected function getBaseUrl() {
+	protected function getBaseUrl() : string {
 		// Base URL is different for author searches:
 //		return '/Genealogy/Results?';
 		return '/Union/Search?';

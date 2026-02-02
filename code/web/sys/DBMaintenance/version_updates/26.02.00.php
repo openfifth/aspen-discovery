@@ -3,6 +3,8 @@
 
 /** @noinspection PhpUnused */
 function getUpdates26_02_00(): array {
+	$now = time();
+
 	return [
 		/*'name' => [
 			 'title' => '',
@@ -14,6 +16,13 @@ function getUpdates26_02_00(): array {
 		 ], //name*/
 
 		//mark n
+		'force_reindex_of_all_titles_in_lists' => [
+			'title' => 'Force Reindex of All Titles in Lists',
+			'description' => 'Force Reindex of All Titles in Lists',
+			'sql' => [
+				"INSERT INTO grouped_work_scheduled_index (permanent_id, indexAfter) SELECT sourceId, UNIX_TIMESTAMP() from user_list_entry where source = 'GroupedWork'"
+			]
+		], //force_reindex_of_all_titles_in_lists
 
 		//kirstien
 		'aspen_lida_home_screen_links_permissions' => [
