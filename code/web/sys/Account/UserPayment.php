@@ -1057,7 +1057,6 @@ class UserPayment extends DataObject {
 				$userPayment->update();
 			} else {
 				// transaction completed
-				$userPayment->completed = 1;
 				$userPayment->totalPaid = $payload['total_amount'];
 				$userPayment->update();
 
@@ -1072,6 +1071,7 @@ class UserPayment extends DataObject {
 							'text' => 'Your donation payment has been completed. ',
 							'isPublicFacing' => true,
 						]);
+						$userPayment->completed = 1;
 						$userPayment->message .= 'Donation payment completed, TransactionId = ' . $payload['transaction_id'] . ', TotalAmount = ' . $payload['total_amount'] . '.';
 						$userPayment->update();
 
@@ -1095,13 +1095,17 @@ class UserPayment extends DataObject {
 								'isPublicFacing' => true,
 							]);
 							$userPayment->message .= 'Payment completed, TransactionId = ' . $payload['transaction_id'] . ', TotalAmount = ' . $payload['total_amount'] . '.';
+							$userPayment->completed = 1;
+							$userPayment->update();
 						} else {
 							$userPayment->error = true;
 							$userPayment->message .= $completePayment['message'];
+							$userPayment->update();
 						}
 					} else {
 						$userPayment->error = true;
 						$userPayment->message .= 'Could not find user to mark the fine paid in the ILS. ';
+						$userPayment->update();
 					}
 				}
 			}

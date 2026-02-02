@@ -1179,9 +1179,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			$user->whereAdd('homeLocationId = ' . $libraryId);
 		}
 
-		$user->orderBy('displayname ASC');
-		$user->limit(0, 500);
-
 		$users = array();
 
 		if($user->find()) {
@@ -1192,6 +1189,25 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				);
 			} 
 		}
+
+		usort($users, function ($a, $b) {
+			$aName = trim((string)$a['displayName']);
+			$bName = trim((string)$b['displayName']);
+
+			if ($aName === '' && $bName === '') {
+				return 0;
+			}
+
+			if ($aName === '') {
+				return 1;
+			}
+			if ($bName === '') {
+				return -1;
+			}
+
+			return strcasecmp($bName, $aName);
+		});
+
 		return $users;
 	}
 

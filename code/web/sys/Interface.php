@@ -683,7 +683,10 @@ class UInterface extends Smarty {
 			$this->assign('showComments', $groupedWorkDisplaySettings->showComments);
 			$this->assign('showEmailThis', $location->showEmailThis && $library->showEmailThis);
 			$showStaffView = $groupedWorkDisplaySettings->showStaffView;
-			$this->assign('showShareOnExternalSites', $location->showShareOnExternalSites && $library->showShareOnExternalSites);
+			$this->assign('showShareOnX', $location->showShareOnX && $library->showShareOnX);
+			$this->assign('showShareOnFacebook', $location->showShareOnFacebook && $library->showShareOnFacebook);
+			$this->assign('showShareOnPinterest', $location->showShareOnPinterest && $library->showShareOnPinterest);
+			$this->assign('showShareOnLink', $location->showShareOnLink && $library->showShareOnLink);
 			$this->assign('showGoodReadsReviews', $groupedWorkDisplaySettings->showGoodReadsReviews);
 			$showHoldButton = (($location->showHoldButton == 1) && ($library->showHoldButton == 1)) ? 1 : 0;
 			$showHoldButtonInSearchResults = (($location->showHoldButton == 1) && ($library->showHoldButtonInSearchResults == 1)) ? 1 : 0;
@@ -701,7 +704,10 @@ class UInterface extends Smarty {
 			$showHoldButtonInSearchResults = $library->showHoldButtonInSearchResults;
 			$this->assign('showComments', $groupedWorkDisplaySettings->showComments);
 			$this->assign('showEmailThis', $library->showEmailThis);
-			$this->assign('showShareOnExternalSites', $library->showShareOnExternalSites);
+			$this->assign('showShareOnX', $library->showShareOnX);
+			$this->assign('showShareOnFacebook', $library->showShareOnFacebook);
+			$this->assign('showShareOnPinterest', $library->showShareOnPinterest);
+			$this->assign('showShareOnLink', $library->showShareOnLink);
 			$showStaffView = $library->getGroupedWorkDisplaySettings()->showStaffView;
 			$this->assign('showSimilarTitles', $groupedWorkDisplaySettings->showSimilarTitles);
 			$this->assign('showSimilarAuthors', $groupedWorkDisplaySettings->showSimilarAuthors);

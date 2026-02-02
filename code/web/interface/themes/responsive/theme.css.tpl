@@ -252,6 +252,13 @@ div.striped > div:nth-child(odd), div.striped > div:nth-child(odd){ldelim}
 .browse-category-feed-item .swiper{ldelim}
     width: 100%;
 {rdelim}
+.browse-category-feed-item .btn-group > .btn:focus{ldelim}
+	border-color: {$primaryForegroundColor};
+	--webkit-box-shadow: inset 0 1px 1px {$primaryForegroundColor}, 0 0 8px {$primaryForegroundColor};
+	outline: thin dotted;
+	outline: 5px auto -webkit-focus-ring-color;
+	outline-offset: -2px;
+{rdelim}
 
 .swiper-button-next, .swiper-button-prev {ldelim}
     background-color: {$selectedBrowseCategoryBackgroundColor} !important;
@@ -589,8 +596,10 @@ div.striped > div:nth-child(odd), div.striped > div:nth-child(odd){ldelim}
 #horizontal-search-box #lookfor:focus, #horizontal-search-box .searchSourceHorizontal:focus, #horizontal-search-box .searchTypeHorizontal:focus{ldelim}
 	color: {$bodyTextColor};
 	border-color: {$primaryForegroundColor};
-	--webkit-box-shadow: inset 0 1px 1px {$primaryForegroundColor}, 0 0 8px {$primaryForegroundColor}
-	box-shadow: inset 0 1px 1px {$primaryForegroundColor}, 0 0 8px {$primaryForegroundColor}
+	--webkit-box-shadow: inset 0 1px 1px {$primaryForegroundColor}, 0 0 8px {$primaryForegroundColor};
+	outline: thin dotted;
+	outline: 5px auto -webkit-focus-ring-color;
+	outline-offset: -2px;
 {rdelim}
 
 .form-control:focus{ldelim}
