@@ -108,7 +108,10 @@ class Location extends DataObject {
 	public $automaticTimeoutLengthLoggedOut;
 	public $additionalCss;
 	public $showEmailThis;
-	public $showShareOnExternalSites;
+	public $showShareOnX;
+	public $showShareOnFacebook;
+	public $showShareOnPinterest;
+	public $showShareOnLink;
 	public $showFavorites;
 	public /** @noinspection PhpUnused */
 		$econtentLocationsToInclude;
@@ -152,6 +155,7 @@ class Location extends DataObject {
 	//LiDA Settings
 	public $lidaLocationSettingId;
 	public $lidaSelfCheckSettingId;
+	public $lidaHomeScreenLinkGroupId;
 
 	//Facet Settings
 	public $openArchivesFacetSettingId;
@@ -1080,11 +1084,35 @@ class Location extends DataObject {
 						'hideInLists' => true,
 						'default' => 1,
 					],
-					'showShareOnExternalSites' => [
-						'property' => 'showShareOnExternalSites',
+					'showShareOnX' => [
+						'property' => 'showShareOnX',
 						'type' => 'checkbox',
-						'label' => 'Show Sharing To External Sites',
-						'description' => 'Whether or not sharing on external sites (Twitter, Facebook, Pinterest, etc. is shown)',
+						'label' => 'Show Sharing To Twitter/X',
+						'description' => 'Whether or not sharing on Twitter/X is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnFacebook' => [
+						'property' => 'showShareOnFacebook',
+						'type' => 'checkbox',
+						'label' => 'Show Sharing To Facebook',
+						'description' => 'Whether or not sharing on Facebook is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnPinterest' => [
+						'property' => 'showShareOnPinterest',
+						'type' => 'checkbox',
+						'label' => 'Show Sharing To Pinterest',
+						'description' => 'Whether or not sharing on Pinterest is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnLink' => [
+						'property' => 'showShareOnLink',
+						'type' => 'checkbox',
+						'label' => 'Show Generic Sharing Link',
+						'description' => 'Whether or not a generic sharing link is shown',
 						'hideInLists' => true,
 						'default' => 1,
 					],
@@ -1429,6 +1457,16 @@ class Location extends DataObject {
 				$appSelfCheckSettings[$appSelfCheckSetting->id] = $appSelfCheckSetting->name;
 			}
 
+			require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+			$homeScreenLinkGroup = new HomeScreenLinkGroup();
+			$homeScreenLinkGroup->orderBy('name');
+			$homeScreenLinkGroups = [];
+			$homeScreenLinkGroup->find();
+			$homeScreenLinkGroups[-1] = 'none';
+			while ($homeScreenLinkGroup->fetch()) {
+				$homeScreenLinkGroups[$homeScreenLinkGroup->id] = $homeScreenLinkGroup->name;
+			}
+
 			$structure['aspenLiDASection'] = [
 				'property' => 'aspenLiDASection',
 				'type' => 'section',
@@ -1454,7 +1492,16 @@ class Location extends DataObject {
 						'description' => 'The self-check settings to use for Aspen LiDA',
 						'hideInLists' => true,
 						'default' => -1,
-					]
+					],
+					'lidaHomeScreenLinkGroupId' => [
+						'property' => 'lidaHomeScreenLinkGroupId',
+						'type' => 'enum',
+						'values' => $homeScreenLinkGroups,
+						'label' => 'Home Screen Link Group',
+						'description' => 'The Home Screen Link Group to use for Aspen LiDA for this location',
+						'hideInLists' => true,
+						'default' => -1,
+					],
 				]
 			];
 		}
@@ -3279,5 +3326,27 @@ class Location extends DataObject {
 		}
 
 		return $structure;
+	}
+
+	protected $_homeScreenLinkGroup = null;
+
+	/**
+	 * @return HomeScreenLinkGroup|null
+	 * @noinspection PhpUnused
+	 */
+	public function getHomeScreenLinkGroup(): ?HomeScreenLinkGroup {
+		if ($this->_homeScreenLinkGroup == null) {
+			if ($this->lidaHomeScreenLinkGroupId == -1) {
+				$this->_homeScreenLinkGroup = $this->getParentLibrary()->getHomeScreenLinkGroup();
+			} else {
+				require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroup.php';
+				$homeScreenLinkGroup = new HomeScreenLinkGroup();
+				$homeScreenLinkGroup->id = $this->lidaHomeScreenLinkGroupId;
+				if ($homeScreenLinkGroup->find(true)) {
+					$this->_homeScreenLinkGroup = $homeScreenLinkGroup;
+				}
+			}
+		}
+		return $this->_homeScreenLinkGroup;
 	}
 }

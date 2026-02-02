@@ -105,7 +105,14 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 
 		$rawData = $this->hooplaRawMetadata;
 		if (IPAddress::showDebuggingInformation()) {
-			$interface->assign('price', $rawData->price ?? 0);
+			if (isset($this->hooplaExtract->ppuPrice)) {
+				$price = $this->hooplaExtract->ppuPrice;
+			} elseif (isset($this->hooplaExtract->price)) {
+				$price = $this->hooplaExtract->price;
+			} else {
+				$price = 0;
+			}
+			$interface->assign('price', $price);
 		}
 		unset($rawData->price);
 
@@ -336,8 +343,11 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	 * @return  array
 	 */
 	function getEditions() {
-		// No specific information provided by Hoopla
-		return [];
+		if ((isset($this->hooplaRawMetadata->isAbridged) && $this->hooplaRawMetadata->isAbridged) || (isset($this->hooplaRawMetadata->abridged) && $this->hooplaRawMetadata->abridged)) {
+			return ['Abridged'];
+		} else {
+			return ['Unabridged'];
+		}
 	}
 
 	/**
