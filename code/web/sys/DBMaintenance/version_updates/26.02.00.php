@@ -24,11 +24,11 @@ function getUpdates26_02_00(): array {
 			'sql' => [
 				"CREATE TABLE IF NOT EXISTS cloudsource_setting (
 					id INT(11) AUTO_INCREMENT PRIMARY KEY,
-					name VARCHAR(255) NOT NULL,
-					baseUrl VARCHAR(255) NOT NULL,
+					name VARCHAR(255),
+					baseUrl VARCHAR(255),
 					accessToken VARCHAR(255),
 					profileKey VARCHAR(255),
-					showInExploreMore TINYINT(1) DEFAULT 1,
+					showInExploreMore tinyint(1) DEFAULT 1
 				) ENGINE=INNODB",
 			]
 		], //create_cloudsource_table
