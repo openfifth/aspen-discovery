@@ -265,16 +265,16 @@ class User extends DataObject {
 			$listsPerPage = $_REQUEST['limit'];
 		}
 
-		$page = $_REQUEST['pageUnassigned'] ?? 1;
+		$page = $_REQUEST['page'] ?? 1;
 
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();
 		$userList->listGroupId = -1;
 		$userList->user_id = $this->id;
 		$userList->orderBy('title ASC');
+		$listCount = $userList->count();
 		if ($includePagination) {
 			$userList->limit(($page - 1) * $listsPerPage, $listsPerPage);
-			$listCount = $userList->count();
 		}
 		$userList->find();
 		$lists = [];
@@ -3378,6 +3378,14 @@ class User extends DataObject {
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$lists = new UserList();
 		$lists->user_id = $this->id;
+		return $lists->count();
+	}
+
+	function getNumUnassignedLists() {
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$lists = new UserList();
+		$lists->user_id = $this->id;
+		$lists->listGroupId = -1;
 		return $lists->count();
 	}
 
