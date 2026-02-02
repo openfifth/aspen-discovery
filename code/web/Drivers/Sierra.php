@@ -2186,7 +2186,11 @@ class Sierra extends AbstractIlsDriver {
 					$address->lines = [];
 					$address->type = 'a';
 					$address->lines[] = $_REQUEST['street'];
-					$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					if ($selfRegistrationForm->noCommaInAddress){
+						$cityStateZip = $_REQUEST['city'] . ' ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					} else {
+						$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					}
 					$address->lines[] = $cityStateZip;
 
 					$params['addresses'][] = $address;

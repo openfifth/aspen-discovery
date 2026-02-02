@@ -89,6 +89,13 @@ function getUpdates26_02_00(): array {
 		//aspen_lida_home_screen_links_group_id_storage
 
 		//kodi
+		'sierra_self_registration_form_no_comma' => [
+			'title' => 'Update Sierra Self Registration Form - no comma',
+			'description' => 'Add option for Sierra Self Registration Form - disabling the comma between city and state',
+			'sql' => [
+				"ALTER TABLE self_registration_form_sierra ADD COLUMN noCommaInAddress tinyint(1) DEFAULT 0",
+			]
+		], //sierra_self_registration_form_no_comma
 
 		//yanjun
 
