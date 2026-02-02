@@ -142,6 +142,26 @@ function getUpdates26_02_00(): array {
 				"ALTER TABLE user ADD COLUMN promptToFreezeHoldsImmediately tinyint(1) NOT NULL DEFAULT 0",
 			]
 		], //offer_immediate_hold_freeze
+		'share_tools_add_granularity' => [
+			'title' => 'Library and Locations - Add more granularity to the sharing tools (Facebook, X, etc.)',
+			'description' => 'Within Library Settings (and location settings), libraries can now choose specifically which social platforms they allow their customers to share on.',
+			'sql' => [
+				"ALTER TABLE library CHANGE COLUMN showShareOnExternalSites showShareOnX TINYINT DEFAULT 1",
+				"ALTER TABLE location CHANGE COLUMN showShareOnExternalSites showShareOnX TINYINT DEFAULT 1",
+				"ALTER TABLE library ADD showShareOnFacebook TINYINT DEFAULT 1",
+				"UPDATE library SET showShareOnFacebook = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE location ADD showShareOnFacebook TINYINT DEFAULT 1",
+				"UPDATE location SET showShareOnFacebook = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE library ADD showShareOnPinterest TINYINT DEFAULT 1",
+				"UPDATE library SET showShareOnPinterest = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE location ADD showShareOnPinterest TINYINT DEFAULT 1",
+				"UPDATE location SET showShareOnPinterest = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE library ADD showShareOnLink TINYINT DEFAULT 1",
+				"UPDATE library SET showShareOnLink = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE location ADD showShareOnLink TINYINT DEFAULT 1",
+				"UPDATE location SET showShareOnLink = IF(showShareOnX = 1, 1, 0)",
+			]
+		],  //share_tools_add_granularity
 
 		//lucas
 

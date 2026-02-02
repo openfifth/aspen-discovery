@@ -313,7 +313,10 @@ class Library extends DataObject {
 		$preventExpiredCardLogin;
 	public /** @noinspection PhpUnused */
 		$showLibraryHoursNoticeOnAccountPages;
-	public $showShareOnExternalSites;
+	public $showShareOnX;
+	public $showShareOnFacebook;
+	public $showShareOnPinterest;
+	public $showShareOnLink;
 	public /** @noinspection PhpUnused */
 		$barcodePrefix;
 	public $libraryCardBarcodeStyle;
@@ -3706,11 +3709,35 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => 1,
 					],
-					'showShareOnExternalSites' => [
-						'property' => 'showShareOnExternalSites',
+					'showShareOnX' => [
+						'property' => 'showShareOnX',
 						'type' => 'checkbox',
-						'label' => 'Show Sharing To External Sites',
-						'description' => 'Whether or not sharing on external sites (Twitter, Facebook, Pinterest, etc.) is shown',
+						'label' => 'Show Sharing To Twitter/X',
+						'description' => 'Whether or not sharing on Twitter/X is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnFacebook' => [
+						'property' => 'showShareOnFacebook',
+						'type' => 'checkbox',
+						'label' => 'Show Sharing To Facebook',
+						'description' => 'Whether or not sharing on Facebook is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnPinterest' => [
+						'property' => 'showShareOnPinterest',
+						'type' => 'checkbox',
+						'label' => 'Show Sharing To Pinterest',
+						'description' => 'Whether or not sharing on Pinterest is shown',
+						'hideInLists' => true,
+						'default' => 1,
+					],
+					'showShareOnLink' => [
+						'property' => 'showShareOnLink',
+						'type' => 'checkbox',
+						'label' => 'Show Generic Sharing Link',
+						'description' => 'Whether or not a generic sharing link is shown',
 						'hideInLists' => true,
 						'default' => 1,
 					],
@@ -6406,7 +6433,10 @@ class Library extends DataObject {
 			'allowProfileUpdates' => $this->allowProfileUpdates,
 			'enableForgotPasswordLink' => $this->enableForgotPasswordLink,
 			'enableForgotBarcode' => $this->enableForgotBarcode,
-			'showShareOnExternalSites' => $this->showShareOnExternalSites,
+			'showShareOnX' => $this->showShareOnX,
+			'showShareOnFacebook' => $this->showShareOnFacebook,
+			'showShareOnPinterest' => $this->showShareOnPinterest,
+			'showShareOnLink' => $this->showShareOnLink,
 			'discoveryVersion' => $interface->getVariable('aspenVersion'),
 			'usernameLabel' => $this->loginFormUsernameLabel ?? 'Library Card Number',
 			'passwordLabel' => $this->loginFormPasswordLabel ?? 'PIN or Password',
