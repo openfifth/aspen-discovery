@@ -1069,7 +1069,7 @@ public class RecordGroupingProcessor {
 			}
 			getHooplaRecordRS.close();
 		}catch (Exception e){
-			logEntry.incErrors("Error grouping hoopla record " + hooplaId, e);
+			logEntry.incErrors("Error grouping Hoopla record " + hooplaId, e);
 		}
 		return null;
 	}
