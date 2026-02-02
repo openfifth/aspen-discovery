@@ -41,7 +41,7 @@
 		<div class="col-xs-2 col-sm-2 col-md-2 col-lg-2 text-right">
 			{if !empty($listEditAllowed)}
 				<div class="btn-group-vertical" role="group">
-					<a href="/MyAccount/Edit?listEntryId={$listEntryId|escape:"url"}{if !is_null($listSelected)}&amp;listId={$listSelected|escape:"url"}{/if}" class="btn btn-default">{translate text='Edit' isPublicFacing=true}</a>
+					<a href="#" onclick="return AspenDiscovery.Account.getEditListForm({$listEntryId}, {$listSelected}, {$listHasFiltersApplied})" class="btn btn-default">{translate text='Edit' isPublicFacing=true}</a>
 					<a href="#" onclick="AspenDiscovery.confirm('Delete Title?', 'Are you sure you want to delete this?', 'Yes', 'No', true, 'AspenDiscovery.Lists.deleteEntryFromList({$listSelected}, {$listEntryId})', 'btn-danger');" class="btn btn-danger">{translate text='Delete' isPublicFacing=true}</a>
 				</div>
 

@@ -3,6 +3,9 @@
 
 	<form action="/MyAccount/CiteList" method="get" class="form" id="citeListForm">
 		<input type="hidden" name="listId" value="{$listId|escape}">
+		<input type="hidden" name="selectedResourceTypes" id="selectedResourceTypes" value="{$selectedResourceTypes|escape:"html"}">
+		<input type="hidden" name="activeFilters" id="activeFilters" value="{$activeFilters|escape:"html"}">
+
 		<div class="form-group">
 			<label for="citationFormat">{translate text='Citation Format' isPublicFacing=true}</label>
 			<select name="citationFormat" id="citationFormat" class="form-control">

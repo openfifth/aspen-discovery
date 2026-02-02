@@ -8404,6 +8404,10 @@ ul.account-submenu {
 .btn-wrap {
   white-space: normal !important;
 }
+.btn-toolbar .btn-group,
+.btn-toolbar .btn {
+  margin-bottom: 3px;
+}
 .label-wrap {
   white-space: normal !important;
 }
@@ -10231,6 +10235,10 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   margin-right: 6px;
   margin-top: 2px;
   vertical-align: top;
+}
+#listActions {
+  border-bottom: 3px solid #d5d6da;
+  padding-bottom: 6px;
 }
 /**
  * Additional Styling related to the help system

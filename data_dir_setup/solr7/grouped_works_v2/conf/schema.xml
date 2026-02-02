@@ -269,6 +269,7 @@
 		<!-- Fields to determine availability -->
 		<field name="available_at" type="unchanged_string" indexed="true" stored="true" multiValued="true"/>
 		<field name="availability_toggle" type="unchanged_string" indexed="true" stored="true" multiValued="true"/>
+		<dynamicField name="available_copies_*" type="integer" indexed="true" docValues="true" stored="false" multiValued="true"/>
 
 		<!-- Language Related Fields -->
 		<field name="language" type="unchanged_string" indexed="true" stored="true" multiValued="true" omitNorms="true" docValues="true"/>
@@ -378,6 +379,10 @@
 		<field name="user_rating_link" type="integer" indexed="true" stored="false" multiValued="true"/>
 		<field name="user_not_interested_link" type="integer" indexed="true" stored="false" multiValued="true"/>
 		<field name="user_reading_history_link" type="integer" indexed="true" stored="false" multiValued="true"/>
+
+		<field name="list_link" type="integer" indexed="true" stored="false" multiValued="true"/>
+		<dynamicField name="list_entry_weight_*" type="integer" indexed="true" docValues="true" stored="false" multiValued="true"/>
+		<dynamicField name="list_entry_date_added_*" type="integer" indexed="true" docValues="true" stored="false" multiValued="true"/>
 
 		<!-- Edition -->
 		<field name="edition_info" type="unchanged_string" indexed="true" stored="false" multiValued="true" docValues="false"/>
