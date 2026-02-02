@@ -723,7 +723,15 @@ AspenDiscovery.Events = (function(){
 				registrationNumberOfSeats.style.display = '';
 				return;
 			}
+			AspenDiscovery.Events.unsetNumberOfSeats();
 			registrationNumberOfSeats.style.display = 'none';
+		},
+		unsetNumberOfSeats: function () {
+			let numberofSeats = document.getElementById('numberOfSeats');
+			if (!numberofSeats) {
+				return;
+			}
+			numberofSeats.value = null;
 		},
 		saveEventsForType: function(doFullSave){
 			if (doFullSave) {
