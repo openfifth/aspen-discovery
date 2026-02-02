@@ -9371,14 +9371,6 @@ class MyAccount_AJAX extends JSON_Action {
 			$this->saveUserEventEntry($sourceId, $viewerId, $recordDriver);	
 		}
 
-		if (!$eventInstance->hasAvailableSeats(1)) {
-			$result['message'] = translate([
-				'text' => 'This event is full. No seats available.',
-				'isPublicFacing' => true
-			]);
-			return $result;
-		}
-
 		// register the user (or undo a registration cancellation)
 		$registration->cancelled = 0;
 		$registration->update();
