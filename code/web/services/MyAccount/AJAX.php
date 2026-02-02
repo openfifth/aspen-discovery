@@ -9017,6 +9017,51 @@ class MyAccount_AJAX extends JSON_Action {
 					'text' => 'You must log in to register to events.',
 					'isPublicFacing' => true,
 				]);
+
+				$catalog = CatalogFactory::getCatalogConnectionInstance();
+				if (!$catalog->hasMandatorySelfRegistrationFields()) {
+					return $result;
+				}
+
+				if ($library->enableSelfRegistration == 0) {
+					$this->display('selfRegistrationNotAllowed.tpl', 'Register for a Library Card', '');
+					return $result;
+				}
+
+				if ($library->enableSelfRegistration == 1) {
+					$result['title'] = translate([
+						'text' => 'Join our library to register for events',
+						'isPublicFacing' => true,
+					]);
+					$result['success'] = true;
+					$selfRegFields = $catalog->getMandatorySelfRegistrationFormStructure();
+
+					$interface->assign('submitUrl', '/MyAccount/SelfReg');
+					$interface->assign('saveButtonText', 'Register');
+					$interface->assign('isSelfRegistration', true);
+					$interface->assign('formLabel', 'Self Registration');
+					$interface->assign('structure', $selfRegFields);
+					$fieldsForm = $interface->fetch('DataObjectUtil/objectEditForm.tpl');
+					$interface->assign('minimalSelfRegForm', $fieldsForm);
+					$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
+					$result['body'] = $body;
+					return $result;
+				}
+				
+				if ($library->enableSelfRegistration == 2) {
+					$result['title'] = translate([
+						'text' => 'Join our library to register for events',
+						'isPublicFacing' => true,
+					]);
+					if (!empty($library->selfRegistrationUrl)) {
+						header("Location: {$library->selfRegistrationUrl}");
+						exit;
+					}
+					$this->display('selfRegistrationNotAllowed.tpl', 'Register for a Library Card', '');
+					$result['success'] = true;
+					return $result;
+				}
+
 				return $result;
 			}
 			
