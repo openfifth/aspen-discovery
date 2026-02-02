@@ -6012,8 +6012,10 @@ class User extends DataObject {
 			$selfCheckCompletionMessage->whereAdd("$escapedOwningLocationCode REGEXP owningLocations");
 			$selfCheckCompletionMessage->whereAdd("$escapedCheckoutLocationCode REGEXP checkoutLocations");
 			$result['completionMessage'] = '';
+			$result['mustConfirmCompletionMessage'] = false;
 			if ($selfCheckCompletionMessage->find(true)) {
 				$result['completionMessage'] = $selfCheckCompletionMessage->getTextBlockTranslation('completionMessage', $this->interfaceLanguage);
+				$result['mustConfirmCompletionMessage'] = $selfCheckCompletionMessage->requireConfirmation;
 			}
 
 			$accountSummary = $this->getCachedAccountSummary('hoopla');
