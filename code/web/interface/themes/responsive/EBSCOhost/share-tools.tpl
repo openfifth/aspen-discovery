@@ -2,13 +2,8 @@
 	{if !empty($showEmailThis) || !empty($showShareOnX) || !empty($showShareOnFacebook) || !empty($showShareOnPinterest) || !empty($showShareOnLink)}
 	<div class="share-tools">
 		<span class="share-tools-label hidden-inline-xs">{translate text="SHARE" isPublicFacing=true}</span>
-		{if !empty($showEmailThis)}
-			<a href="#" onclick="return AspenDiscovery.GroupedWork.showEmailForm(this, '{$recordDriver->getPermanentId()|escape:"url"}')" title="{translate text="Share via email" inAttribute=true isPublicFacing=true}">
-				<i class="fas fa-envelope-square fa-2x fa-fw"></i>
-			</a>
-		{/if}
 		{if !empty($showShareOnX)}
-			<a href="https://twitter.com/intent/tweet?text={$recordDriver->getTitle()|urlencode}+{$url}/GroupedWork/{$recordDriver->getPermanentId()}/Home" target="_blank" title="{translate text="Share on X" inAttribute=true isPublicFacing=true}" aria-label="{translate text="Share on X" isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})">
+			<a href="https://twitter.com/intent/tweet?text={$recordDriver->getTitle()|urlencode}+{$url}/{$recordDriver->getLinkUrl()|escape:'url'}" target="_blank" title="{translate text="Share on X" inAttribute=true isPublicFacing=true}" aria-label="{translate text="Share on X" isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})">
 				<i class="fa-brands fa-square-x-twitter fa-2x fa-fw"></i>
 			</a>
 		{/if}
