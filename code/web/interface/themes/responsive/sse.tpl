@@ -18,12 +18,14 @@
 				{
 					eventSource: '/MyAccount/AJAX?method=AspenEventRegistrationNotificationsSSE',
 					eventName: 'aspen_event_registration_notification'
-				},
+				}
+			);
+			AspenDiscovery.ToastNotifications.listenToSSE(
 				{
 					eventSource: '/MyAccount/AJAX?method=AspenEventRegistrationNotificationsSSE',
 					eventName: 'aspen_event_change_notification'
 				}
-			);
+			)
 		</script>
 	{/if}
 {/if}
