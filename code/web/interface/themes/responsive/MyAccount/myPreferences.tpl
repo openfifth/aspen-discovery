@@ -235,7 +235,7 @@
 							</div>
 						{/if}
 
-						{if !empty($isAssociatedWithILS) || !empty($showAlternateLibraryOptions)}
+						{if !empty($isAssociatedWithILS)}
 							<div class="panel" id="holdPreferencesPanel">
 								<a data-toggle="collapse" href="#holdPreferencesPanelBody" class="active">
 									<div class="panel-heading">
