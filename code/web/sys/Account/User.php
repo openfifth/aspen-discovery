@@ -257,7 +257,7 @@ class User extends DataObject {
 		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
 		$includePagination = false;
 		if (isset($_REQUEST['includePagination'])) {
-			$includePagination = $_REQUEST['includePagination'];
+			$includePagination = (bool)$_REQUEST['includePagination'];
 		}
 
 		$listsPerPage = 20;
