@@ -29,6 +29,7 @@ class SierraSelfRegistrationForm extends DataObject {
 	public $selfRegUsePatronIdBarcode;
 	public $selfRegNoticePrefOptions;
 	public $addSelfRegNote;
+	public $cityDropdown;
 
 
 	private $_fields;
@@ -253,6 +254,14 @@ class SierraSelfRegistrationForm extends DataObject {
 				'description' => 'Automatically add a dated Circ Note in Sierra when patrons self register.',
 				'hideInLists' => true,
 				'default' => 1,
+			],
+			'cityDropdown' => [
+				'property' => 'cityDropdown',
+				'type' => 'checkbox',
+				'label' => 'City Dropdown',
+				'description' => 'Use a dropdown select option for city using municipalities defined below.',
+				'hideInLists' => true,
+				'default' => 0,
 			],
 			'municipalities' => [
 				'property' => 'municipalities',
