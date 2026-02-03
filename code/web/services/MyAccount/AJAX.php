@@ -12527,6 +12527,13 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		$patron = UserAccount::getActiveUserObj();
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		$freshPatron = new User();
+		$freshPatron->id = $patron->id;
+		if ($freshPatron->find(true)) {
+			$patron = $freshPatron;
+		}
+
 		$homeLibrary = Library::getPatronHomeLibrary();
 		if (is_null($homeLibrary)) {
 			global $library;
