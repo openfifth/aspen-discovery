@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
-class UserAspenEventInstanceWaitingList extends DataObject {
+class UserAspenEventNotification extends DataObject {
 	public $__table = 'user_aspen_event_notifications';
 	public $id;
 	public $userId;
