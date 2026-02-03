@@ -1,0 +1,67 @@
+<?php
+
+require_once ROOT_DIR . '/JSON_Action.php';
+
+class CloudSource_JSON extends JSON_Action {
+	/**@noinspection PhpUnused */
+	
+	public function trackCloudSourceUsage(): array {
+		global $library;
+		if (!isset($_REQUEST['id'])) {
+			return [
+				'success' => false,
+				'message' => 'ID was not provided',
+			];
+		}
+		$id = $_REQUEST['id'];
+
+		require_once ROOT_DIR . '/sys/Summon/SummonRecordUsage.php';
+		$summonRecordUsage = new SummonRecordUsage();
+		global $aspenUsage;
+		$summonRecordUsage->instance = $aspenUsage->getInstance();
+		$summonRecordUsage->summonId = $id;
+		$summonRecordUsage->year = date('Y');
+		$summonRecordUsage->month = date('n');
+		if ($summonRecordUsage->find(true)) {
+			$summonRecordUsage->timesUsed++;
+			$ret = $summonRecordUsage->update();
+			if ($ret == 0) {
+				echo ("Unable to update times used");
+			}
+		} else {
+			$summonRecordUsage->timesViewedInSearch = 0;
+			$summonRecordUsage->timesUsed = 1;
+			$summonRecordUsage->insert();
+		}
+		$userId = UserAccount::getActiveUserId();
+		if ($userId) {
+			$userObj = UserAccount::getActiveUserObj();
+			$userSummonTracking = $userObj->userCookiePreferenceLocalAnalytics;
+			if ($userSummonTracking) {
+				//Track usage for the user
+				require_once ROOT_DIR . '/sys/Summon/UserSummonUsage.php';
+				$userSummonUsage = new UserSummonUsage();
+				global $aspenUsage;
+				$userSummonUsage->instance = $aspenUsage->getInstance();
+				$userSummonUsage->userId = $userId;
+				$userSummonUsage->year = date('Y');
+				$userSummonUsage->month = date('n');
+	
+				if ($userSummonUsage->find(true)) {
+					$userSummonUsage->usageCount++;
+					$userSummonUsage->update();
+				} else {
+					$userSummonUsage->usageCount = 1;
+					$userSummonUsage->insert();
+				}
+			}
+		}
+		
+		
+
+		return [
+			'success' => true,
+			'message' => 'Updated usage for CloudSource record ' . $id,
+		];
+	}
+}

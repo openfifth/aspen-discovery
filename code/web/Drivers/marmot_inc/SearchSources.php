@@ -14,6 +14,7 @@ class SearchSources {
 		$searchObject = match ($source) {
 			'ebsco_eds' => SearchObjectFactory::initSearchObject('EbscoEds'),
 			'summon' => SearchObjectFactory::initSearchObject('Summon'),
+			'cloudsource' => SearchObjectFactory::initSearchObject('CloudSource'),
 			'events' => SearchObjectFactory::initSearchObject('Events'),
 			'genealogy' => SearchObjectFactory::initSearchObject('Genealogy'),
 			'lists' => SearchObjectFactory::initSearchObject('Lists'),
@@ -78,6 +79,7 @@ class SearchSources {
 			$searchEbscoEDS = array_key_exists('EBSCO EDS', $enabledModules) && $library->edsSettingsId != -1;
 			$searchEbscohost = array_key_exists('EBSCOhost', $enabledModules) && $library->ebscohostSearchSettingId != -1;
 			$searchSummon = array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1;
+			$searchCloudSource = array_key_exists('CloudSource', $enabledModules);
 			$searchOpenArchives = array_key_exists('Open Archives', $enabledModules) && $library->enableOpenArchives == 1;
 			$searchTalpa = array_key_exists('Talpa Search', $enabledModules) && $library->enableTalpaSearch == 1;
 			$searchCourseReserves = $library->enableCourseReserves == 2;
@@ -202,14 +204,14 @@ class SearchSources {
 				];
 			}
 
-			// if ($searchSummon) {
-			// 	$searchOptions['summon'] = [
-			// 		'name' => 'Articles & Databases',
-			// 		'description' => 'Summon - Articles and Database',
-			// 		'catalogType' => 'summon',
-			// 		'hasAdvancedSearch' => false,
-			// 	];
-			// }
+			if ($searchCloudSource) {
+				$searchOptions['cloudsource'] = [
+					'name' => 'Articles & Databases',
+					'description' => 'CloudSource - Articles and Database',
+					'catalogType' => 'cloudsource',
+					'hasAdvancedSearch' => false,
+				];
+			}
 
 			if (array_key_exists('Events', $enabledModules)) {
 				require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';

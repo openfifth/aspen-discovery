@@ -98,6 +98,51 @@ function getUpdates26_02_00(): array {
 		//aspen_lida_home_screen_links_group_id_storage
 
 		//kodi
+		'create_cloudsource_table' => [
+			'title' => 'Create CloudSource OA Table',
+			'description' => 'Create DB table for CloudSource OA',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS cloudsource_setting (
+					id INT(11) AUTO_INCREMENT PRIMARY KEY,
+					name VARCHAR(255),
+					baseUrl VARCHAR(255),
+					accessToken VARCHAR(255),
+					profileKey VARCHAR(255),
+					showInExploreMore tinyint(1) DEFAULT 1
+				) ENGINE=INNODB",
+			]
+		], //create_cloudsource_table
+		'add_cloudsource_permissions' => [
+			'title' => 'Add Cloud Source Permissions',
+			'description' => 'Add Cloud Source Permissions',
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('', 'Administer CloudSource OA', 'CloudSource', 40, 'Allows users to administer CloudSource OA settings.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer CloudSource OA'))",
+			]
+		], //add_cloudsource_permissions
+		'add_cloudsource_module' => [
+			'title' => 'Create CloudSource OA module',
+			'description' => 'Setup module for CloudSource OA',
+			'sql' => [
+				"INSERT INTO modules (name) VALUES ('CloudSource')",
+			],
+		], //add_cloudsource_module
+		'library_location_cloudsource_settings' => [
+			'title' => 'Library Location CloudSource Settings',
+			'description' => 'Create tables for library and location CloudSource OA settings',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS library_cloudsource_setting (
+					id INT(11) AUTO_INCREMENT PRIMARY KEY,
+					libraryId INT(11),
+					cloudsourceSettingId INT(11)
+				) ENGINE=INNODB",
+				"CREATE TABLE IF NOT EXISTS location_cloudsource_setting (
+					id INT(11) AUTO_INCREMENT PRIMARY KEY,
+					locationId INT(11),
+					cloudsourceSettingId INT(11)
+				) ENGINE=INNODB",
+			]
+		], //library_location_cloudsource_settings
 
 		//yanjun
 
