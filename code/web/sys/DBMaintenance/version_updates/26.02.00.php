@@ -96,6 +96,16 @@ function getUpdates26_02_00(): array {
 			],
 		],
 		//aspen_lida_home_screen_links_group_id_storage
+		'add_require_confirmation_to_sco_custom_message' => [
+			'title' => 'Add option to require confirmation to self-checkout completion messages',
+			'description' => 'Add option to require patron to confirm the self-checkout completion message.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE self_check_completion_message ADD COLUMN requireConfirmation TINYINT DEFAULT 0",
+			]
+		],
+		//add_require_confirmation_to_sco_custom_message
+
 
 		//kodi
 		'create_cloudsource_table' => [
