@@ -671,8 +671,8 @@ public class KohaExportMain {
 				kohaConnectionJDBC = "jdbc:mysql://" +
 						host + ":" + port +
 						"/" + databaseName +
-						"?user=" + user +
-						"&password=" + password +
+						"?user=" + URLEncoder.encode(user, StandardCharsets.UTF_8) +
+						"&password=" + URLEncoder.encode(password, StandardCharsets.UTF_8) +
 						"&useUnicode=yes&characterEncoding=UTF-8";
 				if (timezone != null && !timezone.isEmpty()) {
 					kohaConnectionJDBC += "&serverTimezone=" + URLEncoder.encode(timezone, StandardCharsets.UTF_8);

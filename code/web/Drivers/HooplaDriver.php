@@ -518,7 +518,7 @@ class HooplaDriver extends AbstractEContentDriver {
 								'isPublicFacing' => true,
 							]),
 							'message' => translate([
-								'text' => 'We are unable to find a hoopla digital account for your library card. Please register to continue.',
+								'text' => 'We are unable to find a Hoopla digital account for your library card. Please register to continue.',
 								'isPublicFacing' => true,
 							]),
 							'buttons' => '<a class="btn btn-primary" href="' . $registrationUrl . '" target="_blank">' . translate(['text' => 'Register at Hoopla', 'isPublicFacing' => true]) . '</a>',
@@ -528,7 +528,7 @@ class HooplaDriver extends AbstractEContentDriver {
 									'isPublicFacing' => true,
 								]),
 								'message' => translate([
-									'text' => 'We are unable to find a hoopla digital account for your library card. Please register at %1%',
+									'text' => 'We are unable to find a Hoopla digital account for your library card. Please register at %1%',
 									1 => $registrationUrl,
 									'isPublicFacing' => true,
 								])
@@ -1001,7 +1001,7 @@ class HooplaDriver extends AbstractEContentDriver {
 								'isPublicFacing' => true,
 							]),
 							'message' => translate([
-								'text' => 'We are unable to find a hoopla digital account for your library card. Please register to continue.',
+								'text' => 'We are unable to find a Hoopla digital account for your library card. Please register to continue.',
 								'isPublicFacing' => true,
 							]),
 							'buttons' => '<a class="btn btn-primary" href="' . $registrationUrl . '" target="_blank">' .
@@ -1013,7 +1013,7 @@ class HooplaDriver extends AbstractEContentDriver {
 									'isPublicFacing' => true,
 								]),
 								'message' => translate([
-									'text' => 'We are unable to find a hoopla digital account for your library card. Please register at %1%',
+									'text' => 'We are unable to find a Hoopla digital account for your library card. Please register at %1%',
 									1 => $registrationUrl,
 									'isPublicFacing' => true,
 								])

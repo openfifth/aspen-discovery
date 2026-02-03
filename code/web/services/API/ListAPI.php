@@ -602,7 +602,7 @@ class ListAPI extends AbstractAPI {
 		}
 	}
 
-	public function _getUserListTitles($listId, $numTitlesToShow, $user, $page, $sort) {
+	public function _getUserListTitles($listId, $numTitlesToShow, $user, $page, $sort): array {
 		global $configArray;
 		$listTitles = [];
 		//The list is a patron generated list

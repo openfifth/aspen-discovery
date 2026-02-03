@@ -345,6 +345,13 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 			doc.addField("user_rating_link", userRatingLink);
 			doc.addField("user_not_interested_link", userNotInterestedLink);
 			doc.addField("user_reading_history_link", userReadingHistoryLink);
+			doc.addField("list_link", listLink);
+			for (Long listId : listEntryWeights.keySet()) {
+				doc.addField("list_entry_weight_" + listId, listEntryWeights.get(listId));
+			}
+			for (Long listId : listEntryDatesAdded.keySet()) {
+				doc.addField("list_entry_date_added_" + listId, listEntryDatesAdded.get(listId));
+			}
 
 			doc.addField("description", Util.getCRSeparatedString(description));
 			doc.addField("display_description", displayDescription);
@@ -400,6 +407,8 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 		AvailabilityToggleInfo availabilityToggleForItem = new AvailabilityToggleInfo();
 		for (String scopeName : relatedScopes.keySet()){
 			try{
+				int numAvailableCopies = 0;
+
 				HashSet<String> scopingDetailsForScope = new HashSet<>();
 
 				HashSet<String> localCallNumbersForScope = new HashSet<>();
@@ -456,6 +465,7 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 							owningLibraries.add(scopePrefix + trimmedEContentSource);
 							if (isAvailable) {
 								availableAtForItem.add(trimmedEContentSource);
+								numAvailableCopies += curItem.getNumCopies();
 							}
 							eContentSources.add(scopePrefix + trimmedEContentSource);
 						} else { //physical materials
@@ -506,6 +516,9 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 								}
 								addAllOwningLocations = true;
 							}
+							if (isAvailable) {
+								numAvailableCopies += curItem.getNumCopies();
+							}
 						}
 
 						if (addAllOwningLocations){
@@ -524,7 +537,6 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 						availabilityToggleForScope.availableOnline = availabilityToggleForScope.availableOnline || availabilityToggleForItem.availableOnline;
 
 						loadScopedEditionInformation(editionInfo, scopePrefix, formatsForItem, formatsCategoriesForItem, availableAtForItem, availabilityToggleForItem);
-
 
 						if (locallyOwned || libraryOwned || scopeDisplaySettings.isIncludeAllRecordsInShelvingFacets()) {
 							String collection = curItem.getCollection();
@@ -597,6 +609,7 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 				doc.addField("lib_boost_" + scopeName, libBoost);
 				doc.addField("local_callnumber_" + scopeName, localCallNumbersForScope);
 				doc.addField("callnumber_sort_" + scopeName, sortableCallNumberForScope);
+				doc.addField("available_copies_" + scopeName, numAvailableCopies);
 
 				for (String availabilityToggleValue : availabilityToggleForScope.getValues()){
 					availabilityToggleValues.add(scopePrefix + availabilityToggleValue);

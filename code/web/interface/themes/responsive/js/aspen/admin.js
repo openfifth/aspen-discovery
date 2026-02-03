@@ -1826,7 +1826,7 @@ AspenDiscovery.Admin = (function () {
 			$('#propertyRowdeepLinkFullPath').hide();
 
 			var linkType = $("#linkTypeSelect").val();
-			if (linkType === "0" || linkType === 0) {
+			if (linkType === "0" || linkType === 0 || linkType === "deepLink") {
 				$('#propertyRowctaUrl').hide();
 				$('#propertyRowlinkUrl').hide();
 				$('#propertyRowdeepLinkId').hide();
@@ -3031,7 +3031,7 @@ AspenDiscovery.Admin = (function () {
 			$('#propertyRowuploadIcon').hide();
 
 			var linkType = $("#typeOfIconSelect").val();
-			if (linkType === "imageUpload") {
+			if (linkType === "uploadIcon") {
 				$('#propertyRowmaterialIcon').hide();
 				$('#propertyRowuploadIcon').show();
 			} else {

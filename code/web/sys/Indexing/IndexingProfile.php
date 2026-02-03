@@ -930,7 +930,7 @@ class IndexingProfile extends DataObject {
 								'property' => 'doAutomaticEcontentSuppression',
 								'type' => 'checkbox',
 								'label' => 'Do Automatic eContent Suppression',
-								'description' => 'Whether or not eContent suppression for overdrive and hoopla records is done automatically',
+								'description' => 'Whether or not eContent suppression for OverDrive and Hoopla records is done automatically',
 								'default' => false,
 								'forcesReindex' => true,
 							],

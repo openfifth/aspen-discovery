@@ -326,6 +326,11 @@ class HooplaProcessor2 {
 					logger.warn("Could not translate format boost for " + primaryFormat + " create translation map format_boost_hoopla");
 				}
 				hooplaRecord.setFormatBoost(formatBoost);
+				if (rawResponse.optBoolean("isAbridged") || rawResponse.optBoolean("abridged")) {
+					hooplaRecord.setEdition("Abridged");
+				} else {
+					hooplaRecord.setEdition("Unabridged");
+				}
 				if (rawResponse.has("artists")) {
 					JSONArray artists = rawResponse.getJSONArray("artists");
 					HashSet<String> artistsToAdd = new HashSet<>();

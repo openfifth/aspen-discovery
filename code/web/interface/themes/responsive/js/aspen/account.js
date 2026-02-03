@@ -2529,8 +2529,8 @@ AspenDiscovery.Account = (function () {
 				});
 			}
 		},
-		getEditListForm: function (listEntryId, listId) {
-			var url = Globals.path + "/MyAccount/AJAX?method=getEditListForm&listEntryId=" + listEntryId + "&listId=" + listId;
+		getEditListForm: function (listEntryId, listId, listHasFiltersApplied) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListForm&listEntryId=" + listEntryId + "&listId=" + listId + "&listHasFiltersApplied=" + listHasFiltersApplied;
 			$.getJSON(url, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}

@@ -3,6 +3,8 @@
 
 /** @noinspection PhpUnused */
 function getUpdates26_02_00(): array {
+	$now = time();
+
 	return [
 		/*'name' => [
 			 'title' => '',
@@ -14,6 +16,13 @@ function getUpdates26_02_00(): array {
 		 ], //name*/
 
 		//mark n
+		'force_reindex_of_all_titles_in_lists' => [
+			'title' => 'Force Reindex of All Titles in Lists',
+			'description' => 'Force Reindex of All Titles in Lists',
+			'sql' => [
+				"INSERT INTO grouped_work_scheduled_index (permanent_id, indexAfter) SELECT sourceId, UNIX_TIMESTAMP() from user_list_entry where source = 'GroupedWork'"
+			]
+		], //force_reindex_of_all_titles_in_lists
 
 		//kirstien
 		'aspen_lida_home_screen_links_permissions' => [
@@ -87,8 +96,63 @@ function getUpdates26_02_00(): array {
 			],
 		],
 		//aspen_lida_home_screen_links_group_id_storage
+		'add_require_confirmation_to_sco_custom_message' => [
+			'title' => 'Add option to require confirmation to self-checkout completion messages',
+			'description' => 'Add option to require patron to confirm the self-checkout completion message.',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE self_check_completion_message ADD COLUMN requireConfirmation TINYINT DEFAULT 0",
+			]
+		],
+		//add_require_confirmation_to_sco_custom_message
+
 
 		//kodi
+		'create_cloudsource_table' => [
+			'title' => 'Create CloudSource OA Table',
+			'description' => 'Create DB table for CloudSource OA',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS cloudsource_setting (
+					id INT(11) AUTO_INCREMENT PRIMARY KEY,
+					name VARCHAR(255),
+					baseUrl VARCHAR(255),
+					accessToken VARCHAR(255),
+					profileKey VARCHAR(255),
+					showInExploreMore tinyint(1) DEFAULT 1
+				) ENGINE=INNODB",
+			]
+		], //create_cloudsource_table
+		'add_cloudsource_permissions' => [
+			'title' => 'Add Cloud Source Permissions',
+			'description' => 'Add Cloud Source Permissions',
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('', 'Administer CloudSource OA', 'CloudSource', 40, 'Allows users to administer CloudSource OA settings.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer CloudSource OA'))",
+			]
+		], //add_cloudsource_permissions
+		'add_cloudsource_module' => [
+			'title' => 'Create CloudSource OA module',
+			'description' => 'Setup module for CloudSource OA',
+			'sql' => [
+				"INSERT INTO modules (name) VALUES ('CloudSource')",
+			],
+		], //add_cloudsource_module
+		'library_location_cloudsource_settings' => [
+			'title' => 'Library Location CloudSource Settings',
+			'description' => 'Create tables for library and location CloudSource OA settings',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS library_cloudsource_setting (
+					id INT(11) AUTO_INCREMENT PRIMARY KEY,
+					libraryId INT(11),
+					cloudsourceSettingId INT(11)
+				) ENGINE=INNODB",
+				"CREATE TABLE IF NOT EXISTS location_cloudsource_setting (
+					id INT(11) AUTO_INCREMENT PRIMARY KEY,
+					locationId INT(11),
+					cloudsourceSettingId INT(11)
+				) ENGINE=INNODB",
+			]
+		], //library_location_cloudsource_settings
 
 		//yanjun
 
@@ -142,6 +206,26 @@ function getUpdates26_02_00(): array {
 				"ALTER TABLE user ADD COLUMN promptToFreezeHoldsImmediately tinyint(1) NOT NULL DEFAULT 0",
 			]
 		], //offer_immediate_hold_freeze
+		'share_tools_add_granularity' => [
+			'title' => 'Library and Locations - Add more granularity to the sharing tools (Facebook, X, etc.)',
+			'description' => 'Within Library Settings (and location settings), libraries can now choose specifically which social platforms they allow their customers to share on.',
+			'sql' => [
+				"ALTER TABLE library CHANGE COLUMN showShareOnExternalSites showShareOnX TINYINT DEFAULT 1",
+				"ALTER TABLE location CHANGE COLUMN showShareOnExternalSites showShareOnX TINYINT DEFAULT 1",
+				"ALTER TABLE library ADD showShareOnFacebook TINYINT DEFAULT 1",
+				"UPDATE library SET showShareOnFacebook = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE location ADD showShareOnFacebook TINYINT DEFAULT 1",
+				"UPDATE location SET showShareOnFacebook = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE library ADD showShareOnPinterest TINYINT DEFAULT 1",
+				"UPDATE library SET showShareOnPinterest = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE location ADD showShareOnPinterest TINYINT DEFAULT 1",
+				"UPDATE location SET showShareOnPinterest = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE library ADD showShareOnLink TINYINT DEFAULT 1",
+				"UPDATE library SET showShareOnLink = IF(showShareOnX = 1, 1, 0)",
+				"ALTER TABLE location ADD showShareOnLink TINYINT DEFAULT 1",
+				"UPDATE location SET showShareOnLink = IF(showShareOnX = 1, 1, 0)",
+			]
+		],  //share_tools_add_granularity
 
 		//lucas
 

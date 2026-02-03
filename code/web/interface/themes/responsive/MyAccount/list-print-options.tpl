@@ -1,6 +1,8 @@
 {strip}
 	<input type="hidden" name="print" id="print" value="true">
 	<input type="hidden" name="listId" id="listId" value="{$printListId}">
+	<input type="hidden" name="selectedResourceTypes" id="selectedResourceTypes" value="{$selectedResourceTypes|escape:"html"}">
+	<input type="hidden" name="activeFilters" id="activeFilters" value="{$activeFilters|escape:"html"}">
 	<div class="row">
 		<div class="col-xs-12">
 			<p>{translate text="Select the elements you would like to print." isPublicFacing=true}</p>
