@@ -147,7 +147,6 @@ class EventInstance extends DataObject {
 			require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
 
 			if (!$supressIndividualNotifications) {
-				$logger->log("i have bben triggered b the delete in event", Logger::LOG_ERROR);
 				$AJAX = new MyAccount_AJAX();
 				$AJAX->sendEventInstanceLevelNotifications($this->id, 'deleted');
 			}
