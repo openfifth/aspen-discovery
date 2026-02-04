@@ -371,7 +371,7 @@ class UserListIndexer {
 								}
 							}
 						} else if (source.equals("Summon")) {
-							//Get title and authoe with a JSON request
+							//Get title and author with a JSON request
 							URL getTitleAuthorUrl = new URL(baseUrl + "/Summon/JSON?method=getTitleAuthor&id=" + sourceId);
 							Object titleAuthorRaw = getTitleAuthorUrl.getContent();
 							if (titleAuthorRaw instanceof InputStream) {
@@ -383,9 +383,22 @@ class UserListIndexer {
 							} else {
 								logEntry.incErrors("Unhandled source " + source);
 							}
-							//TODO: Handle other types of objects within a User List
-							//people, etc.
+						} else if (source.equals("CloudSource")) {
+							//Get title and author with a JSON request
+							URL getTitleAuthorUrl = new URL(baseUrl + "/CloudSource/JSON?method=getTitleAuthor&id=" + sourceId);
+							Object titleAuthorRaw = getTitleAuthorUrl.getContent();
+							if (titleAuthorRaw instanceof InputStream) {
+								String titleAuthorJson = AspenStringUtils.convertStreamToString((InputStream) titleAuthorRaw);
+								JSONObject titleAuthorResult = new JSONObject(titleAuthorJson);
+								if (titleAuthorResult.getBoolean("success")) {
+									userListSolr.addListTitle(source, sourceId, titleAuthorResult.getString("title"), titleAuthorResult.getString("author"));
+								}
+							} else {
+								logEntry.incErrors("Unhandled source " + source);
+							}
 						}
+						//TODO: Handle other types of objects within a User List
+						//people, etc.
 					}
 				}
 				getListDisplayNameAndAuthorStmt.close();
@@ -429,7 +442,7 @@ class UserListIndexer {
 		try {
 			PreparedStatement getDeletedListsStmt = dbConn.prepareStatement("SELECT id FROM user_list WHERE deleteFromIndex = 1");
 			ResultSet deletedListsRS = getDeletedListsStmt.executeQuery();
-			
+
 			int cleanedUpCount = 0;
 			while (deletedListsRS.next()) {
 				long listId = deletedListsRS.getLong("id");
@@ -443,20 +456,20 @@ class UserListIndexer {
 					removeListStmt.setLong(1, listId);
 					removeListStmt.executeUpdate();
 					removeListStmt.close();
-					
+
 				} catch (Exception e) {
 					logEntry.incErrors("Error cleaning up deleted list " + listId + " from Solr index: ", e);
 				}
 			}
-			
+
 			deletedListsRS.close();
 			getDeletedListsStmt.close();
-			
+
 			if (cleanedUpCount > 0) {
 				logEntry.addNote("Cleaned up " + cleanedUpCount + " permanently deleted list(s) from Solr index and database.");
 				updateServer.commit(false, false, true);
 			}
-			
+
 		} catch (Exception e) {
 			logEntry.incErrors("Error during deleted lists cleanup: " + e.getMessage());
 		}

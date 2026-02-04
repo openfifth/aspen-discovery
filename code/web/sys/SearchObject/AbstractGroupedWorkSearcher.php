@@ -352,7 +352,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	 */
 	public function getSearchIndex() : ?string {
 		// Use normal parent method for non-advanced searches.
-		if ($this->searchType == $this->basicSearchType || $this->searchType == 'author') {
+		if ($this->searchType == $this->basicSearchType || $this->searchType == 'author' || $this->searchType == 'list') {
 			return parent::getSearchIndex();
 		} else {
 			if ($this->isAdvanced()) {
@@ -802,6 +802,12 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 					$params[] = "lookfor=" . urlencode($this->searchTerms[0]['lookfor']);
 				}
 				$params[] = "basicSearchType=Author";
+				break;
+			case "list" :
+				$selectedResourceTypes = $_REQUEST['resourceTypes'] ?? [];
+				foreach ($selectedResourceTypes as $resourceType) {
+					$params[] = "resourceTypes[]=$resourceType";
+				}
 				break;
 			// New Items or Reserves modules may have a few extra parameters to preserve:
 			default:

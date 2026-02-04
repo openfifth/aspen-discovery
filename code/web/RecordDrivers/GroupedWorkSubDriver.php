@@ -582,7 +582,11 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 		if ($bookcoverInfo->find(true)) {
 			return $bookcoverInfo;
 		} else {
-			return $this->getGroupedWorkDriver()->getBookcoverInfo();
+			if ($this->getGroupedWorkDriver() != null) {
+				return $this->getGroupedWorkDriver()->getBookcoverInfo();
+			}else{
+				return null;
+			}
 		}
 	}
 

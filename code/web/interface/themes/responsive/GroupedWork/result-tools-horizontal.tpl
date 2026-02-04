@@ -1,5 +1,5 @@
 {strip}
-	{if $showComments || $showFavorites || $showEmailThis || $showShareOnExternalSites}
+	{if $showComments || $showFavorites || !empty($showEmailThis) || !empty($showShareOnX) || !empty($showShareOnFacebook) || !empty($showShareOnPinterest) || !empty($showShareOnLink)}
 		<div class="result-tools-horizontal btn-toolbar" role="toolbar">
 			{if $showNotInterested == true}
 			{if empty($showCovers)}

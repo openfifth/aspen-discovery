@@ -8630,8 +8630,8 @@ AspenDiscovery.Account = (function () {
 				});
 			}
 		},
-		getEditListForm: function (listEntryId, listId) {
-			var url = Globals.path + "/MyAccount/AJAX?method=getEditListForm&listEntryId=" + listEntryId + "&listId=" + listId;
+		getEditListForm: function (listEntryId, listId, listHasFiltersApplied) {
+			var url = Globals.path + "/MyAccount/AJAX?method=getEditListForm&listEntryId=" + listEntryId + "&listId=" + listId + "&listHasFiltersApplied=" + listHasFiltersApplied;
 			$.getJSON(url, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}
@@ -11077,7 +11077,7 @@ AspenDiscovery.Admin = (function () {
 			$('#propertyRowdeepLinkFullPath').hide();
 
 			var linkType = $("#linkTypeSelect").val();
-			if (linkType === "0" || linkType === 0) {
+			if (linkType === "0" || linkType === 0 || linkType === "deepLink") {
 				$('#propertyRowctaUrl').hide();
 				$('#propertyRowlinkUrl').hide();
 				$('#propertyRowdeepLinkId').hide();
@@ -12282,7 +12282,7 @@ AspenDiscovery.Admin = (function () {
 			$('#propertyRowuploadIcon').hide();
 
 			var linkType = $("#typeOfIconSelect").val();
-			if (linkType === "imageUpload") {
+			if (linkType === "uploadIcon") {
 				$('#propertyRowmaterialIcon').hide();
 				$('#propertyRowuploadIcon').show();
 			} else {
@@ -16277,9 +16277,8 @@ $(() => {
 AspenDiscovery.Lists = (function(){
 	// noinspection JSUnusedGlobalSymbols
 	return {
-		addToHomePage: function(listId){
-			AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getAddBrowseCategoryFromListForm&listId=' + listId, true);
-			return false;
+		addToHomePage: function(listId, selectedResourceTypes, activeFilters){
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getAddBrowseCategoryFromListForm&listId=' + listId + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters, true);
 		},
 
 		editListAction: function (){
@@ -16338,12 +16337,14 @@ AspenDiscovery.Lists = (function(){
 			return this.submitListForm('saveList');
 		},
 
-		emailListAction: function (listId) {
+		emailListAction: function (listId, selectedResourceTypes, activeFilters) {
 			var urlToDisplay = Globals.path + '/MyAccount/AJAX';
 			AspenDiscovery.loadingMessage();
 			$.getJSON(urlToDisplay, {
-					method  : 'getEmailMyListForm'
-					,listId : listId
+					method  : 'getEmailMyListForm',
+					listId : listId,
+					selectedResourceTypes: selectedResourceTypes,
+					activeFilters: activeFilters
 				},
 				function(data){
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
@@ -16357,11 +16358,13 @@ AspenDiscovery.Lists = (function(){
 
 			$.getJSON(url,
 				{ // form inputs passed as data
-					listId   : $('#emailListForm input[name="listId"]').val()
-					,to      : $('#emailListForm input[name="to"]').val()
-					,from    : $('#emailListForm input[name="from"]').val()
-					,message : $('#emailListForm textarea[name="message"]').val()
-					,method  : 'sendMyListEmail'
+					listId   : $('#emailListForm input[name="listId"]').val(),
+					selectedResourceTypes: $('#emailListForm input[name="selectedResourceTypes"]').val(),
+					activeFilters: $('#emailListForm input[name="activeFilters"]').val(),
+					to      : $('#emailListForm input[name="to"]').val(),
+					from    : $('#emailListForm input[name="from"]').val(),
+					message : $('#emailListForm textarea[name="message"]').val(),
+					method  : 'sendMyListEmail'
 				},
 				function(data) {
 					if (data.result) {
@@ -16373,10 +16376,8 @@ AspenDiscovery.Lists = (function(){
 			);
 		},
 
-		citeListAction: function (id) {
-			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getCitationFormatsForm&listId=' + id, false);
-			//return false;
-			//TODO: ajax call not working
+		citeListAction: function (id, selectedResourceTypes, activeFilters) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getCitationFormatsForm&listId=' + id + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters, false);
 		},
 
 		processCiteListForm: function(){
@@ -16385,7 +16386,6 @@ AspenDiscovery.Lists = (function(){
 
 		batchAddToListAction: function (id){
 			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getBulkAddToListForm&listId=' + id);
-			//return false;
 		},
 
 		processBulkAddForm: function(){
@@ -16511,14 +16511,15 @@ AspenDiscovery.Lists = (function(){
 			return false;
 		},
 
-		getPrintListOptions: function (listId) {
-			AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getListPrintOptions&listId=' + listId);
-			return false;
+		getPrintListOptions: function (listId, selectedResourceTypes, activeFilters) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getListPrintOptions&listId=' + listId + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters);
 		},
 
 		buildAndOpenPrintUrl: function () {
 			const print = document.getElementById('print').value;
 			const listId = document.getElementById('listId').value;
+			const selectedResourceTypes = document.getElementById('selectedResourceTypes').value;
+			const activeFilters = document.getElementById('activeFilters').value;
 
 			const baseUrl = Globals.path + '/MyAccount/MyList/' + listId;
 
@@ -16540,7 +16541,9 @@ AspenDiscovery.Lists = (function(){
 
 			// Build URL params object
 			const params = {
-				print
+				print,
+				selectedResourceTypes,
+				activeFilters
 			};
 
 			checkboxIds.forEach(id => {
@@ -16567,38 +16570,42 @@ AspenDiscovery.Lists = (function(){
 			}
 		},
 
-		exportToCSV(listId) {
+		exportToCSV(listId, selectedResourceTypes, activeFilters) {
 			const url = `${Globals.path}/MyAccount/AJAX`;
 			$.getJSON(url, {
 				method: 'exportUserListCSV',
-				listId: listId
+				listId: listId,
+				selectedResourceTypes: selectedResourceTypes,
+				activeFilters: activeFilters
 			}).done((data) => {
 				if (data.success === false) {
 					AspenDiscovery.showMessage(data.title, data.message);
 				} else {
-					window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListCSV&listId=${listId}`;
+					window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListCSV&listId=${listId}` + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters;
 				}
 			}).fail(() => {
 				// If the AJAX call itself failed, still try the download.
-				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListCSV&listId=${listId}`;
+				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListCSV&listId=${listId}` + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters;
 			});
 			return false;
 		},
 
-		exportToRIS(listId) {
+		exportToRIS(listId, selectedResourceTypes, activeFilters) {
 			const url = `${Globals.path}/MyAccount/AJAX`;
 			$.getJSON(url, {
 				method: 'exportUserListRIS',
-				listId: listId
+				listId: listId,
+				selectedResourceTypes: selectedResourceTypes,
+				activeFilters: activeFilters
 			}).done((data) => {
 				if (data.success === false) {
 					AspenDiscovery.showMessage(data.title, data.message);
 				} else {
-					window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}`;
+					window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}` + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters;
 				}
 			}).fail(() => {
 				// If the AJAX call itself failed, still try the download.
-				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}`;
+				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}` + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters;
 			});
 			return false;
 		}
@@ -16606,8 +16613,8 @@ AspenDiscovery.Lists = (function(){
 }(AspenDiscovery.Lists || {}));
 AspenDiscovery.CollectionSpotlights = (function(){
 	return {
-		createSpotlightFromList: function (listId){
-			AspenDiscovery.Account.ajaxLightbox(Globals.path + '/Admin/AJAX?method=getAddToSpotlightForm&source=list&id=' + listId, true);
+		createSpotlightFromList: function (listId, selectedResourceTypes, activeFilters){
+			AspenDiscovery.Account.ajaxLightbox(Globals.path + '/Admin/AJAX?method=getAddToSpotlightForm&source=list&id=' + listId + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters, true);
 			return false;
 		},
 		createSpotlightFromCourseReserve: function (courseReserveId){

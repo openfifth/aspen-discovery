@@ -115,6 +115,10 @@ class HomeScreenLink extends DataObject {
 				'type' => 'image',
 				'label' => 'Upload an Icon',
 				'description' => 'An uploaded icon to represent the link',
+				'note' => 'Recommended size is 52x52 pixels',
+				'maxWidth' => 52,
+				'maxHeight' => 52,
+				'thumbWidth' => 52,
 				'hideInLists' => true,
 			],
 			'linkType' => [
