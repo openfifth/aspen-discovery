@@ -33,9 +33,9 @@ function getGaleUpdates()
 			'title' => 'Add Permissions For Gale Module',
 			'description' => 'Add permissions for the Gale Module',
 			'sql' => [
-				"INSERT INTO permissions (id, name, sectionName, requiredModule, weight, description) VALUES (253, 'Administer Gale', 'Cataloging & eContent', 'Gale', 125, 'Allows the user to administer Gale integration for all libraries.');",
+				"INSERT INTO permissions (name, sectionName, requiredModule, weight, description) VALUES ('Administer Gale', 'Cataloging & eContent', 'Gale', 125, 'Allows the user to administer Gale integration for all libraries.');",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer Gale'))",
-				"INSERT INTO permissions (id, name, sectionName, requiredModule, weight, description) VALUES (263, 'Library Gale Options', 'Primary Configuration - Library Fields', '', 49, 'Configure Library fields related to Gale content.');",
+				"INSERT INTO permissions (name, sectionName, requiredModule, weight, description) VALUES ('Library Gale Options', 'Primary Configuration - Library Fields', '', 49, 'Configure Library fields related to Gale content.');",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Library Gale Options'))",
 			],
 		],
