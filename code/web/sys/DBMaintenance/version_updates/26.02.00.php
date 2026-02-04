@@ -237,6 +237,15 @@ function getUpdates26_02_00(): array {
 				"ALTER TABLE user ADD COLUMN promptToFreezeHoldsImmediately tinyint(1) NOT NULL DEFAULT 0",
 			]
 		], //offer_immediate_hold_freeze
+		'allow_focus_color_set_for_themes' => [
+			'title' => 'Theme - Add the Ability to Set a Focus Color',
+			'description' => 'Within themes, libraries can now set a color that will be used for focus states. This would be useful for accessibility purposes and if the patron is using keyboard navigation.',
+			'sql' => [
+				"ALTER TABLE themes ADD COLUMN focusColor char(7) DEFAULT '#3174AF'",
+				"ALTER TABLE themes ADD COLUMN focusColorDefault TINYINT(1) DEFAULT 1",
+				"ALTER TABLE themes ADD COLUMN focusBorderWidth varchar(6) DEFAULT NULL",
+			]
+		], //allow_focus_color_set_for_themes
 		'share_tools_add_granularity' => [
 			'title' => 'Library and Locations - Add more granularity to the sharing tools (Facebook, X, etc.)',
 			'description' => 'Within Library Settings (and location settings), libraries can now choose specifically which social platforms they allow their customers to share on.',
