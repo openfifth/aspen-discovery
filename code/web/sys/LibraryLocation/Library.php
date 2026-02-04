@@ -3710,7 +3710,21 @@ class Library extends DataObject {
 							'2' => "Events that occur at one of this library's locations",
 						],
 						'default' => '2',
-					]
+					],
+					'eventsDefaultCalendarView' => [
+						'property' => 'eventsDefaultCalendarView',
+						'permissions' => ['Administer Events for All Locations'],
+						'type' =>'enum',
+						'values' => [
+							'0' => 'All',
+							'1' => 'Home library of the user',
+							'2' => 'First alphabetical library'
+						],
+						'default' => '0',
+						'label' => 'Default Calendar View',
+						'description' => 'The default page your events calendar will load to',
+						'hideInLists' => true,
+					],
 				]
 			],
 
@@ -4912,29 +4926,6 @@ class Library extends DataObject {
 						'description' => 'The single sign-on settings to use for this library',
 						'hideInLists' => true,
 						'default' => -1,
-					],
-				],
-			],
-			'eventsSection' => [
-				'property' => 'eventsSection',
-				'type' => 'section',
-				'label' => 'Events',
-				'renderAsHeading' => true,
-				'hideInLists' => true,
-				'permissions' => ['Administer Events for All Locations'],
-				'properties' => [
-					'eventsDefaultCalendarView' => [
-						'property' => 'eventsDefaultCalendarView',
-						'type' =>'enum',
-						'values' => [
-							'0' => 'All',
-							'1' => 'Home library of the user',
-							'2' => 'First alphabetical library'
-						],
-						'default' => '0',
-						'label' => 'Default Calendar View',
-						'description' => 'The default page your events calendar will load to',
-						'hideInLists' => true,
 					],
 				],
 			],
