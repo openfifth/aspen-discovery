@@ -253,6 +253,11 @@ class ListAPI extends AbstractAPI {
 
 		$page = $_REQUEST['page'] ?? 1;
 
+		$includePagination = false;
+		if (isset($_REQUEST['includePagination'])) {
+			$includePagination = (bool)$_REQUEST['includePagination'];
+		}
+
 		global $configArray;
 		$userId = $user->id;
 
@@ -260,7 +265,9 @@ class ListAPI extends AbstractAPI {
 		$list = new UserList();
 		$list->user_id = $userId;
 		$list->deleted = 0;
-		$list->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		if ($includePagination) {
+			$list->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		}
 		$listCount = $list->count();
 		$list->find();
 		$results = [];
@@ -322,14 +329,21 @@ class ListAPI extends AbstractAPI {
 			}
 		}
 
-		return [
+		$result = [
 			'success' => true,
-			'page_current' => (int)$pager->getCurrentPage(),
-			'totalResults' => (int)$pager->getTotalItems(),
-			'page_total' => (int)$pager->getTotalPages(),
 			'lists' => $results,
 			'count' => $count
 		];
+
+		if ($includePagination) {
+			$result = array_merge($result, [
+				'page_current' => (int)$pager->getCurrentPage(),
+				'totalResults' => (int)$pager->getTotalItems(),
+				'page_total' => (int)$pager->getTotalPages(),
+			]);
+		}
+
+		return $result;
 	}
 
 	function getUserListGroups(): array {
@@ -588,7 +602,7 @@ class ListAPI extends AbstractAPI {
 		}
 	}
 
-	public function _getUserListTitles($listId, $numTitlesToShow, $user, $page, $sort) {
+	public function _getUserListTitles($listId, $numTitlesToShow, $user, $page, $sort): array {
 		global $configArray;
 		$listTitles = [];
 		//The list is a patron generated list
@@ -2025,7 +2039,7 @@ class ListAPI extends AbstractAPI {
 				// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
 				$includePagination = false;
 				if (isset($_REQUEST['includePagination'])) {
-					$includePagination = $_REQUEST['includePagination'];
+					$includePagination = (bool)$_REQUEST['includePagination'];
 				}
 
 				$listsPerPage = 20;

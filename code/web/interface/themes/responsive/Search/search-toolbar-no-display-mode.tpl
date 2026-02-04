@@ -2,7 +2,7 @@
 	{* User's viewing mode toggle switch *}
 	<div class="row visible-md visible-lg" style="padding-top: .5em;">{* browse styling replicated here *}
 		<div class="col-md-4">
-			{if !empty($recordCount)}
+			{if !empty($recordCount) && !empty($sortList)}
 				{* <span class="sidebar-label">
 					   <label for="results-sort">{translate text='Sort'}</label></span> *}
 				<label for="results-sort" style="margin-right: .5rem">{translate text='Sort by' isPublicFacing=true}</label>

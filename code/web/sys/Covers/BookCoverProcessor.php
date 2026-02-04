@@ -12,6 +12,7 @@ class BookCoverProcessor {
 	private ?string $isn;
 	private ?string $issn;
 	private ?string $upc;
+	private ?string $cloudSourceIndex;
 	private string $type;
 	private string $cacheName;
 	private string $cacheFile;
@@ -115,6 +116,10 @@ class BookCoverProcessor {
 			}
 		} elseif ($this->type == 'summon') {
 			if ($this->getSummonCover($this->id)) {
+				return true;
+			}
+		} elseif ($this->type == 'cloudsource') {
+			if ($this->getCloudSourceCover($this->id)) {
 				return true;
 			}
 		} else {
@@ -2217,6 +2222,30 @@ class BookCoverProcessor {
 			];
 			$coverBuilder->getCover($title, $this->cacheFile, $props);
 			return $this->processImageURL('default_summon', $this->cacheFile, false);
+		} else {
+			return false;
+		}
+	}
+
+	private function getCloudSourceCover($id) : bool {
+		//Build a cover based on the title of the page
+		require_once ROOT_DIR . '/sys/Covers/DefaultCoverImageBuilder.php';
+		$coverBuilder = new DefaultCoverImageBuilder();
+		require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+
+		$cloudSourceRecordDriver = new CloudSourceRecordDriver($id);
+		if ($cloudSourceRecordDriver->isValid()) {
+			$title = $cloudSourceRecordDriver->getTitle();
+			$author = $cloudSourceRecordDriver->getAuthor();
+
+			if (empty($image)) {
+				$coverBuilder->getCover($title, $author, $this->cacheFile);
+			} else {
+				$image = ROOT_DIR . '/files/original/' . $image;
+				$coverBuilder->getCover($title, $author, $this->cacheFile, $image);
+			}
+
+			return $this->processImageURL('default_cloudsource', $this->cacheFile, false);
 		} else {
 			return false;
 		}

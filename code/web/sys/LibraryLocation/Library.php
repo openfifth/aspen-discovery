@@ -912,7 +912,7 @@ class Library extends DataObject {
 			'type' => 'enum',
 			'values' => $hooplaScopes,
 			'label' => 'Hoopla Scope',
-			'description' => 'The hoopla scope to use',
+			'description' => 'The Hoopla scope to use',
 			'hideInLists' => true,
 			'default' => -1,
 			'forcesReindex' => true,

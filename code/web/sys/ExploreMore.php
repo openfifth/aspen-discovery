@@ -134,6 +134,10 @@ class ExploreMore {
 			$exploreMoreOptions = $this->loadSummonOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
 		};
 
+		if (array_key_exists('CloudSource', $enabledModules)) {
+			$exploreMoreOptions = $this->loadCloudSourceOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
+		};
+
 		if (array_key_exists('Events', $enabledModules)) {
 			$exploreMoreOptions = $this->loadEventOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
 		}
@@ -836,6 +840,63 @@ class ExploreMore {
 						'link' => '/Summon/Results?lookfor=' . urlencode($searchTerm),
 						'openInNewWindow' => false,
 					];
+				}
+			}
+		}
+		return $exploreMoreOptions;
+	}
+
+	/**
+	 * @param $activeSection
+	 * @param $searchTerm
+	 * @param $exploreMoreOptions
+	 * @return array
+	 */
+	public function loadCloudSourceOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme) {
+		global $library;
+		global $enabledModules;
+		if (!empty($searchTerm) && array_key_exists('CloudSource', $enabledModules)) {
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $library->libraryId;
+			if ($libraryCloudSourceSetting->find(true)){
+				require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
+				$cloudSourceSetting = new CloudSourceSetting();
+				$cloudSourceSetting->id = $libraryCloudSourceSetting->cloudsourceSettingId;
+				if ($cloudSourceSetting->find(true) && $cloudSourceSetting->showInExploreMore){
+					//Load Cloud Source Options
+					/** @var SearchObject_CloudSourceSearcher $cloudSourceSearcher */
+					$cloudSourceSearcher = SearchObjectFactory::initSearchObject('CloudSource');
+					$cloudSourceSearcher->setSearchTerms([
+						'lookfor' => $searchTerm,
+					]);
+					$cloudSourceResults = $cloudSourceSearcher->processSearch();
+					if ($cloudSourceResults != null) {
+						$exploreMoreOptions['sampleRecords']['cloudsource'] = [];
+						$numMatches = $cloudSourceSearcher->getresultsTotal();
+						if ($numMatches > 1) {
+							if ($appliedTheme != null && !empty($appliedTheme->articlesDBImage)) {
+								$image = '/files/origional/' . $appliedTheme->articlesDBImage;
+							} else {
+								$image = '/interface/themes/responsive/images/cloudsource.png';
+							}
+							$exploreMoreOptions['searchLinks'][] = [
+								'label' => translate([
+									'text' => "All CloudSource OA Results (%1%)",
+									1 => $numMatches,
+									'isPublicFacing' => true,
+								]),
+								'description' => translate([
+									'text' => "All Results in CloudSource OA related to %1%",
+									1 => $searchTerm,
+									'isPublicFacing' => true,
+								]),
+								'image' => $image,
+								'link' => '/CloudSource/Results?lookfor=' . urlencode($searchTerm),
+								'openInNewWindow' => false,
+							];
+						}
+					}
 				}
 			}
 		}
