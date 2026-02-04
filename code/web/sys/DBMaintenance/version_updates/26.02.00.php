@@ -155,6 +155,37 @@ function getUpdates26_02_00(): array {
 		], //library_location_cloudsource_settings
 
 		//yanjun
+		'overdrive_qr_sessions' => [
+			'title' => 'OverDrive QR Sessions Table',
+			'description' => 'Store QR code authentication tokens for OverDrive/Sora users.',
+			'continueOnError' => false,
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS overdrive_qr_sessions (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					userId INT NOT NULL,
+					settingId INT NOT NULL,
+					accessToken TEXT,
+					refreshToken TEXT,
+					tokenType VARCHAR(50),
+					scope TEXT,
+					expiresAt INT,
+					created INT,
+					updated INT,
+					UNIQUE KEY user_setting (userId, settingId),
+					INDEX settingId (settingId),
+					CONSTRAINT fk_overdrive_qr_user FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+					CONSTRAINT fk_overdrive_qr_setting FOREIGN KEY (settingId) REFERENCES overdrive_settings(id) ON DELETE CASCADE
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+			]
+		], //overdrive_qr_sessions
+		'overdrive_settings_enable_qr' => [
+			'title' => 'Enable QR authentication flag',
+			'description' => 'Add flag to OverDrive settings to toggle QR code authentication features.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE overdrive_settings ADD COLUMN enableQRCodeAuth TINYINT(1) DEFAULT 0"
+			]
+		], //overdrive_settings_enable_qr
 
 		//imani
 		'add_configuration_for_index_process' => [
