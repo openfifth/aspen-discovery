@@ -2045,6 +2045,22 @@ class Sierra extends AbstractIlsDriver {
 							'isPublicFacing' => true,
 						]),
 					];
+				} elseif ($customField->ilsName == 'city' && $selfRegistrationForm->cityDropdown) {
+					$cityOptions = [];
+					$validCities = new SierraSelfRegistrationMunicipalityValues();
+					$validCities->municipalityType = 'city';
+					$validCities->find();
+					while ($validCities->fetch()) {
+						$cityOptions[$validCities->municipality] = $validCities->municipality;
+					}
+					$fields[$customField->section]['properties'][] = [
+						'property' => $customField->ilsName,
+						'type' => 'enum',
+						'values' => $cityOptions,
+						'label' => $customField->displayName,
+						'required' => $customField->required,
+						'note' => $customField->note,
+					];
 				} elseif ($customField->ilsName == 'state') {
 					if (!empty($library->validSelfRegistrationStates)){
 						$validStates = explode('|', $library->validSelfRegistrationStates);
@@ -2186,7 +2202,11 @@ class Sierra extends AbstractIlsDriver {
 					$address->lines = [];
 					$address->type = 'a';
 					$address->lines[] = $_REQUEST['street'];
-					$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					if ($selfRegistrationForm->noCommaInAddress){
+						$cityStateZip = $_REQUEST['city'] . ' ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					} else {
+						$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					}
 					$address->lines[] = $cityStateZip;
 
 					$params['addresses'][] = $address;
