@@ -1899,6 +1899,13 @@ class UserList extends DataObject {
 					$author = $curDoc->getPrimaryAuthor() ?? '';
 					//Set other values to empty string
 					$isbn = $curDoc->getPrimaryISBN() ?? '';
+				} elseif ($curDoc instanceof GaleRecordDriver) {
+					// Hyperlink to Gale record
+					$link = $curDoc->getLinkUrl() ?? '';
+					// Title
+					$title = $curDoc->getTitle() ?? '';
+					// Primary Author
+					$author = $curDoc->getAuthor() ?? '';
 
 				} elseif ($curDoc instanceof WebsitePageRecordDriver) {
 					// Hyperlink

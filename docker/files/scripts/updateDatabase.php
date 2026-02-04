@@ -76,8 +76,10 @@ function getDatabaseUpdates(): array {
 	$communityEngagementUpdates = getCommunityEngagementUpdates();
 	require_once ROOT_DIR . '/sys/DBMaintenance/talpa_updates.php';
 	$talpaUpdates = getTalpaUpdates();
+	require_once ROOT_DIR . '/sys/DBMaintenance/gale_updates.php';
+	$galeUpdates = getGaleUpdates();
 	
-	$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates);
+	$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $galeUpdates);
 	//Get version updates
 	require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 	$versionUpdates = scandir(ROOT_DIR . '/sys/DBMaintenance/version_updates', SCANDIR_SORT_ASCENDING);

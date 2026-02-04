@@ -23,6 +23,7 @@ class SearchSources {
 			'websites' => SearchObjectFactory::initSearchObject('Websites'),
 			'series' => SearchObjectFactory::initSearchObject('Series'),
 			'talpa' => SearchObjectFactory::initSearchObject("Talpa"),
+			'gale' => SearchObjectFactory::initSearchObject('Gale'),
 			default => SearchObjectFactory::initSearchObject(),
 		};
 		$searchObject->init();
@@ -78,6 +79,7 @@ class SearchSources {
 			$repeatCourseReserves = $library->enableCourseReserves == 1;
 			$searchEbscoEDS = array_key_exists('EBSCO EDS', $enabledModules) && $library->edsSettingsId != -1;
 			$searchEbscohost = array_key_exists('EBSCOhost', $enabledModules) && $library->ebscohostSearchSettingId != -1;
+			$searchGale = array_key_exists('Gale', $enabledModules) && $library->galeSettingsId != -1;
 			$searchSummon = array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1;
 			$searchCloudSource = array_key_exists('CloudSource', $enabledModules);
 			$searchOpenArchives = array_key_exists('Open Archives', $enabledModules) && $library->enableOpenArchives == 1;
@@ -191,6 +193,15 @@ class SearchSources {
 					'name' => 'Articles & Databases',
 					'description' => 'EBSCOhost - Articles and Database',
 					'catalogType' => 'ebscohost',
+					'hasAdvancedSearch' => false,
+				];
+			}
+
+			if ($searchGale) {
+				$searchOptions['gale'] = [
+					'name' => 'Articles & Databases',
+					'description' => 'Gale - Articles and Database',
+					'catalogType' => 'gale',
 					'hasAdvancedSearch' => false,
 				];
 			}

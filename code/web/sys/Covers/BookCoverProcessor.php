@@ -118,6 +118,10 @@ class BookCoverProcessor {
 			if ($this->getSummonCover($this->id)) {
 				return true;
 			}
+		} elseif ($this->type == 'gale') {
+			if ($this->getGaleCover($this->id)) {
+        return true;
+      }
 		} elseif ($this->type == 'cloudsource') {
 			if ($this->getCloudSourceCover($this->id)) {
 				return true;
@@ -491,7 +495,7 @@ class BookCoverProcessor {
 				$this->type = 'ils';
 			}
 		}
-		if (strpos($this->id, ':') > 0 && $this->type != 'ebsco_eds' && $this->type != 'ebscohost' && $this->type !='summon') {
+		if (strpos($this->id, ':') > 0 && $this->type != 'ebsco_eds' && $this->type != 'ebscohost' && $this->type !='summon' && $this->type != 'gale') {
 			[
 				$this->type,
 				$this->id,
@@ -2225,6 +2229,23 @@ class BookCoverProcessor {
 		} else {
 			return false;
 		}
+	}
+	private function getGaleCover($id): bool {
+		require_once ROOT_DIR . '/sys/Covers/GaleCoverBuilder.php';
+		$coverBuilder = new GaleCoverBuilder();
+
+		require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+		$galeRecordDriver = new GaleRecordDriver($id);
+
+		if ($galeRecordDriver->isValid()) {
+			$title = $galeRecordDriver->getTitle();
+			$props = [
+				'format' => $galeRecordDriver->getFormats(),
+			];
+			$coverBuilder->getCover($title, $this->cacheFile, $props);
+			return $this->processImageURL('default_gale', $this->cacheFile, false);
+		}
+		return false;
 	}
 
 	private function getCloudSourceCover($id) : bool {
