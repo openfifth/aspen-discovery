@@ -9,7 +9,7 @@
 			);
 		</script>
 	{/if}
-	{if array_key_exists('Events', $enabledModules)}
+	{* {if array_key_exists('Events', $enabledModules)}
 		<script type="text/javascript">
 			let toastDataArray = JSON.parse(sessionStorage.getItem('toastDataArray')) || [];
 			toastDataArray = toastDataArray.filter(notification => !notification.id.startsWith('event_waiting_list_'));
@@ -27,5 +27,5 @@
 				}
 			)
 		</script>
-	{/if}
+	{/if} *}
 {/if}
