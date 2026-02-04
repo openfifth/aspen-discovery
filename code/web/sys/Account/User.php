@@ -5172,6 +5172,10 @@ class User extends DataObject {
 				}
 			}
 			$result = $this->placeHold($selectedRequestCandidate->sourceId, $pickupBranch, $cancelDate);
+			// Add confirmation as needed.
+			if ($result['confirmationNeeded'] == TRUE) {
+				$result = $this->confirmHold($selectedRequestCandidate->sourceId, $result['confirmationId']);
+			}
 			$responseMessage = strip_tags($result['api']['message']);
 			$responseMessage = trim($responseMessage);
 			return [
