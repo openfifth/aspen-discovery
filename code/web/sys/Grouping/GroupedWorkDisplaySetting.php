@@ -1,6 +1,5 @@
 <?php
 /** @noinspection PhpMissingFieldTypeInspection - can't do field types for DataObjects because we access fields before initialization */
-require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFacetGroup.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkMoreDetails.php';
 require_once ROOT_DIR . '/sys/Grouping/GroupedWorkFormatSortingGroup.php';

@@ -23,6 +23,26 @@ function getUpdates26_02_00(): array {
 				"INSERT INTO grouped_work_scheduled_index (permanent_id, indexAfter) SELECT sourceId, UNIX_TIMESTAMP() from user_list_entry where source = 'GroupedWork'"
 			]
 		], //force_reindex_of_all_titles_in_lists
+		'admin_property_search_index' => [
+			'title' => 'Admin Property Search Index',
+			'description' => 'Create a table to store the admin property search index',
+			'sql' => [
+				"DROP TABLE IF EXISTS `admin_property_search_entries`",
+				"CREATE TABLE IF NOT EXISTS admin_property_search_entries (
+					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					module VARCHAR(100) NOT NULL,
+					action VARCHAR(100) NOT NULL,
+					toolTitle VARCHAR(100) NOT NULL,
+					section VARCHAR(255) DEFAULT '',
+					propertyName VARCHAR(100) NOT NULL,
+					label VARCHAR(100) NOT NULL,
+					keywords TEXT NOT NULL,
+					requiredModule VARCHAR(100) NOT NULL DEFAULT '',
+					requiredPermissions TEXT NOT NULL DEFAULT '',
+					UNIQUE KEY property (module, action, propertyName)
+				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
+			]
+		], //admin_property_search_index
 
 		//kirstien
 		'aspen_lida_home_screen_links_permissions' => [
@@ -108,6 +128,13 @@ function getUpdates26_02_00(): array {
 
 
 		//kodi
+		'sierra_self_registration_form_no_comma' => [
+			'title' => 'Update Sierra Self Registration Form - no comma',
+			'description' => 'Add option for Sierra Self Registration Form - disabling the comma between city and state',
+			'sql' => [
+				"ALTER TABLE self_registration_form_sierra ADD COLUMN noCommaInAddress tinyint(1) DEFAULT 0",
+			]
+		], //sierra_self_registration_form_no_comma
 		'create_cloudsource_table' => [
 			'title' => 'Create CloudSource OA Table',
 			'description' => 'Create DB table for CloudSource OA',
@@ -153,8 +180,46 @@ function getUpdates26_02_00(): array {
 				) ENGINE=INNODB",
 			]
 		], //library_location_cloudsource_settings
+		'sierra_self_registation_form_city_dropdown' => [
+			'title' => 'Update Sierra Self Registration Form - City Dropdown Selection',
+			'description' => 'Add toggle to use cities defined in municipalities as a dropdown option in the Sierra Self Registration Form.',
+			'sql' => [
+				"ALTER TABLE self_registration_form_sierra ADD COLUMN cityDropdown tinyint(1) DEFAULT 0",
+			]
+		], //sierra_self_registation_form_city_dropdown
 
 		//yanjun
+		'overdrive_qr_sessions' => [
+			'title' => 'OverDrive QR Sessions Table',
+			'description' => 'Store QR code authentication tokens for OverDrive/Sora users.',
+			'continueOnError' => false,
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS overdrive_qr_sessions (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					userId INT NOT NULL,
+					settingId INT NOT NULL,
+					accessToken TEXT,
+					refreshToken TEXT,
+					tokenType VARCHAR(50),
+					scope TEXT,
+					expiresAt INT,
+					created INT,
+					updated INT,
+					UNIQUE KEY user_setting (userId, settingId),
+					INDEX settingId (settingId),
+					CONSTRAINT fk_overdrive_qr_user FOREIGN KEY (userId) REFERENCES user(id) ON DELETE CASCADE,
+					CONSTRAINT fk_overdrive_qr_setting FOREIGN KEY (settingId) REFERENCES overdrive_settings(id) ON DELETE CASCADE
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+			]
+		], //overdrive_qr_sessions
+		'overdrive_settings_enable_qr' => [
+			'title' => 'Enable QR authentication flag',
+			'description' => 'Add flag to OverDrive settings to toggle QR code authentication features.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE overdrive_settings ADD COLUMN enableQRCodeAuth TINYINT(1) DEFAULT 0"
+			]
+		], //overdrive_settings_enable_qr
 
 		//imani
 		'add_configuration_for_index_process' => [
@@ -206,6 +271,15 @@ function getUpdates26_02_00(): array {
 				"ALTER TABLE user ADD COLUMN promptToFreezeHoldsImmediately tinyint(1) NOT NULL DEFAULT 0",
 			]
 		], //offer_immediate_hold_freeze
+		'allow_focus_color_set_for_themes' => [
+			'title' => 'Theme - Add the Ability to Set a Focus Color',
+			'description' => 'Within themes, libraries can now set a color that will be used for focus states. This would be useful for accessibility purposes and if the patron is using keyboard navigation.',
+			'sql' => [
+				"ALTER TABLE themes ADD COLUMN focusColor char(7) DEFAULT '#3174AF'",
+				"ALTER TABLE themes ADD COLUMN focusColorDefault TINYINT(1) DEFAULT 1",
+				"ALTER TABLE themes ADD COLUMN focusBorderWidth varchar(6) DEFAULT NULL",
+			]
+		], //allow_focus_color_set_for_themes
 		'share_tools_add_granularity' => [
 			'title' => 'Library and Locations - Add more granularity to the sharing tools (Facebook, X, etc.)',
 			'description' => 'Within Library Settings (and location settings), libraries can now choose specifically which social platforms they allow their customers to share on.',

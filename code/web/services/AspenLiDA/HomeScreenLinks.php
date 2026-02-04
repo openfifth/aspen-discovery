@@ -77,12 +77,12 @@ class AspenLiDA_HomeScreenLinks extends ObjectEditor {
 	function getActiveAdminSection(): string {
 		return 'aspen_lida';
 	}
-	
-	function canView(): bool {
-		return UserAccount::userHasPermission([
+
+	public function getViewPermissions() : array {
+		return [
 			'Administer All Aspen LiDA Home Screen Links',
 			'Administer Library Aspen LiDA Home Screen Links'
-		]);
+		];
 	}
 
 	function canBatchEdit(): bool {
@@ -124,5 +124,9 @@ class AspenLiDA_HomeScreenLinks extends ObjectEditor {
 
 	public function hasRecordLocking(): bool {
 		return true;
+	}
+
+	public function getRequiredModule(): ?string {
+		return 'Aspen LiDA';
 	}
 }
