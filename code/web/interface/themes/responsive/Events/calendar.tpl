@@ -10,7 +10,7 @@
 		<div class="col-xs-6 calendar-nav-cell"><a class="btn btn-default" href="" onclick='return AspenDiscovery.Events.getPrintListOptions({if !empty($weekNumber)}{$weekNumber}{else}""{/if}, {if !empty($monthNumber)}{$monthNumber}{else}""{/if}, {$yearNumber})'>{translate text="Print Options" isPublicFacing=true} </a></div>
 		<div class="col-xs-6 text-right">
 			<form method="get" id="locationFilter">
-			<label for="location">Filter by location:</label>
+			<label for="location">{translate text="Filter by location" isPublicFacing=true}</label>
 			<select name="location" id="location" class="form-control" onchange="document.getElementById('locationFilter').submit()">
 				<option value="all"{if $selectedLocation == 'all'} selected{/if}>All Locations</option>
 				{foreach from=$locations key=code item=name}
