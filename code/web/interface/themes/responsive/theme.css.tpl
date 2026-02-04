@@ -598,7 +598,7 @@ div.striped > div:nth-child(odd), div.striped > div:nth-child(odd){ldelim}
 
 :focus {ldelim}
     {if !empty($focusBorderWidth)}
-        outline: {$focusBorderWidth} solid {$focusColor};
+        outline: {$focusBorderWidth} solid {$focusColor} !important;
     {else}
         outline: 2px solid {$focusColor} !important;
     {/if}
