@@ -257,7 +257,7 @@ class User extends DataObject {
 		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
 		$includePagination = false;
 		if (isset($_REQUEST['includePagination'])) {
-			$includePagination = $_REQUEST['includePagination'];
+			$includePagination = (bool)$_REQUEST['includePagination'];
 		}
 
 		$listsPerPage = 20;
@@ -265,16 +265,16 @@ class User extends DataObject {
 			$listsPerPage = $_REQUEST['limit'];
 		}
 
-		$page = $_REQUEST['pageUnassigned'] ?? 1;
+		$page = $_REQUEST['page'] ?? 1;
 
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();
 		$userList->listGroupId = -1;
 		$userList->user_id = $this->id;
 		$userList->orderBy('title ASC');
+		$listCount = $userList->count();
 		if ($includePagination) {
 			$userList->limit(($page - 1) * $listsPerPage, $listsPerPage);
-			$listCount = $userList->count();
 		}
 		$userList->find();
 		$lists = [];
@@ -3381,6 +3381,14 @@ class User extends DataObject {
 		return $lists->count();
 	}
 
+	function getNumUnassignedLists() {
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$lists = new UserList();
+		$lists->user_id = $this->id;
+		$lists->listGroupId = -1;
+		return $lists->count();
+	}
+
 	function getNumNotInterested() {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/NotInterested.php';
 		$obj = new NotInterested();
@@ -4582,6 +4590,11 @@ class User extends DataObject {
 				'View Dashboards',
 				'View System Reports',
 			]);
+		}
+
+		if (array_key_exists('CloudSource', $enabledModules)) {
+			$sections['cloudsource'] = new AdminSection('CloudSource OA');
+			$sections['cloudsource']->addAction(new AdminAction('Settings', 'Define connection information for CloudSource OA and Aspen Discovery.', '/CloudSource/CloudSourceSettings'), 'Administer CloudSource OA');
 		}
 
 		if (array_key_exists('EBSCO EDS', $enabledModules)) {
@@ -6013,8 +6026,10 @@ class User extends DataObject {
 			$selfCheckCompletionMessage->whereAdd("$escapedOwningLocationCode REGEXP owningLocations");
 			$selfCheckCompletionMessage->whereAdd("$escapedCheckoutLocationCode REGEXP checkoutLocations");
 			$result['completionMessage'] = '';
+			$result['mustConfirmCompletionMessage'] = false;
 			if ($selfCheckCompletionMessage->find(true)) {
 				$result['completionMessage'] = $selfCheckCompletionMessage->getTextBlockTranslation('completionMessage', $this->interfaceLanguage);
+				$result['mustConfirmCompletionMessage'] = $selfCheckCompletionMessage->requireConfirmation;
 			}
 
 			$accountSummary = $this->getCachedAccountSummary('hoopla');

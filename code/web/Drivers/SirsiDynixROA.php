@@ -4188,7 +4188,10 @@ class SirsiDynixROA extends AbstractIlsDriver {
 				$location->automaticTimeoutLength = 90;
 				$location->automaticTimeoutLengthLoggedOut = 450;
 				$location->showEmailThis = 1;
-				$location->showShareOnExternalSites = 1;
+				$location->showShareOnX = 1;
+				$location->showShareOnFacebook = 1;
+				$location->showShareOnPinterest = 1;
+				$location->showShareOnLink = 1;
 				$location->showFavorites = 1;
 				$location->includeLibraryRecordsToInclude = 1;
 

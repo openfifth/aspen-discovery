@@ -2,8 +2,8 @@
 require_once ROOT_DIR . '/RecordDrivers/IndexRecordDriver.php';
 
 class ListsRecordDriver extends IndexRecordDriver {
-	private $listObject;
-	private $valid = true;
+	private null|UserList|false $listObject = null;
+	private bool $valid = true;
 
 	public function __construct($record) {
 		// Call the parent's constructor...
@@ -18,7 +18,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 				} else {
 					parent::__construct($fields);
 				}
-			} catch (Exception $e) {
+			} catch (Exception) {
 				$this->valid = false;
 			}
 			enableErrorHandler();
@@ -27,7 +27,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 		}
 	}
 
-	public function isValid() {
+	public function isValid() : bool {
 		return $this->valid;
 	}
 
@@ -39,7 +39,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 			$bookCoverUrl = '';
 		}
 		$id = $this->getId();
-		return $bookCoverUrl . "/bookcover.php?type=list&id={$id}&size={$size}";
+		return $bookCoverUrl . "/bookcover.php?type=list&id=$id&size=$size";
 	}
 
 	/**
@@ -52,7 +52,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 	 * @param bool $showListsAppearingOn
 	 * @return  string              Name of Smarty template file to display.
 	 */
-	public function getSearchResult($view = 'list', $showListsAppearingOn = true) {
+	public function getSearchResult($view = 'list', bool $showListsAppearingOn = true) : string {
 		if ($view == 'covers') { // Displaying Results as bookcover tiles
 			return $this->getBrowseResult();
 		}
@@ -62,7 +62,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 		$interface->assign('summId', $id);
 		$interface->assign('bookCoverUrl', $this->getBookcoverUrl('medium'));
 		$interface->assign('summShortId', $id);
-		$interface->assign('summTitle', $this->getTitle(true));
+		$interface->assign('summTitle', $this->getTitle());
 		$interface->assign('summAuthor', $this->getPrimaryAuthor());
 		if (isset($this->fields['description'])) {
 			$interface->assign('summDescription', $this->getDescription());
@@ -74,11 +74,11 @@ class ListsRecordDriver extends IndexRecordDriver {
 		} else {
 			$interface->assign('summNumTitles', 0);
 		}
-		$interface->assign('summDateUpdated', $this->getListObject()->dateUpdated);
+		$listObject = $this->getListObject();
+		$interface->assign('summDateUpdated', !$listObject ? '' : $listObject->dateUpdated);
 		$interface->assign('summUrl', $this->getAbsoluteUrl());
 
-		$listObject = $this->getListObject();
-		$interface->assign('displayListAuthor', $listObject->displayListAuthor);
+		$interface->assign('displayListAuthor', !$listObject ? '' : $listObject->displayListAuthor);
 
 		if ($showListsAppearingOn) {
 			//Check to see if there are lists the record is on
@@ -90,12 +90,12 @@ class ListsRecordDriver extends IndexRecordDriver {
 		return 'RecordDrivers/List/result.tpl';
 	}
 
-	public function getMoreDetailsOptions() {
+	public function getMoreDetailsOptions() : array {
 		return [];
 	}
 
 	// initially taken From GroupedWorkDriver.php getBrowseResult();
-	public function getBrowseResult() {
+	public function getBrowseResult() : string {
 		global $interface;
 		$id = $this->getUniqueID();
 		$interface->assign('summId', $id);
@@ -110,7 +110,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 		global $interface;
 		$appliedTheme = $interface->getAppliedTheme();
 
-		$interface->assign('bookCoverUrl', $this->getBookcoverUrl('small'));
+		$interface->assign('bookCoverUrl', $this->getBookcoverUrl());
 
 		$accessibleBrowseCategories = 0;
 
@@ -131,7 +131,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 		return 'RecordDrivers/List/cover_result.tpl';
 	}
 
-	function getFormat() {
+	function getFormat() : array {
 		// overwrites class IndexRecordDriver getFormat() so that getBookCoverURL() call will work without warning notices
 		return ['List'];
 	}
@@ -139,17 +139,10 @@ class ListsRecordDriver extends IndexRecordDriver {
 	/**
 	 * Get the full title of the record.
 	 *
-	 * @param bool $useHighlighting
 	 * @return  string
 	 */
-	public function getTitle($useHighlighting = false) {
+	public function getTitle() : string {
 		// Don't check for highlighted values if highlighting is disabled:
-		if ($this->highlight && $useHighlighting) {
-			if (isset($this->fields['_highlighting']['title_display'][0])) {
-				return $this->fields['_highlighting']['title_display'][0];
-			}
-		}
-
 		if (isset($this->fields['title_display'])) {
 			return $this->fields['title_display'];
 		}
@@ -162,12 +155,12 @@ class ListsRecordDriver extends IndexRecordDriver {
 	 * user's favorites list.
 	 *
 	 * @access  public
-	 * @param int $listId ID of list containing desired tags/notes (or
-	 *                              null to show tags/notes from all user's lists).
+	 * @param int $listId ID of list containing desired tags/notes - or
+	 *                              null to show tags/notes from all user's lists.
 	 * @param bool $allowEdit Should we display edit controls?
 	 * @return  string              Name of Smarty template file to display.
 	 */
-	public function getListEntry($listId = null, $allowEdit = true) {
+	public function getListEntry($listId = null, $allowEdit = true) : string {
 		//Use getSearchResult to do the bulk of the assignments
 		$this->getSearchResult('list', false);
 
@@ -185,9 +178,9 @@ class ListsRecordDriver extends IndexRecordDriver {
 	 * View tab of the record view page.
 	 *
 	 * @access  public
-	 * @return  string              Name of Smarty template file to display.
+	 * @return  ?string              Name of Smarty template file to display.
 	 */
-	public function getStaffView() {
+	public function getStaffView() : ?string {
 		return null;
 	}
 
@@ -195,7 +188,7 @@ class ListsRecordDriver extends IndexRecordDriver {
 		return !empty($this->fields['description']) ? $this->fields['description'] : '';
 	}
 
-	private function getListObject() {
+	private function getListObject() : UserList|false {
 		if ($this->listObject == null) {
 			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 			$this->listObject = new UserList();

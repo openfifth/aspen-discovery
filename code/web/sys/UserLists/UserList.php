@@ -91,10 +91,8 @@ class UserList extends DataObject {
 			'dateAdded' => 'Date Added (Oldest First)',
 			'recentlyAdded' => 'Date Added (Newest First)',
 			'call_number' => 'Call Number',
-			'availability' => 'Availability (Available First)',
-			'availability_desc' => 'Availability (Unavailable First)',
-			'copies_available' => 'Number of Copies (Most First)',
-			'copies_available_asc' => 'Number of Copies (Least First)',
+			'copies_available' => 'Available Copies (Most First)',
+			'copies_available_asc' => 'Available Copies (Least First)',
 			'custom' => 'User Defined Order',
 		];
 
@@ -157,10 +155,13 @@ class UserList extends DataObject {
 		return self::$_objectStructure[$context];
 	}
 
-	function numValidListItems() {
+	function numValidListItems(array $selectedResourceTypes = []) {
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
+		if (!empty($selectedResourceTypes)) {
+			$listEntry->whereAddIn('source', $selectedResourceTypes, true);
+		}
 
 		return $listEntry->count();
 	}
@@ -258,10 +259,10 @@ class UserList extends DataObject {
 	 * @param int $appVersion
 	 * @param int $start
 	 * @param int $numItems
-	 * @param array $activeFilters Optional format filters to apply to the list.
+	 * @param array $selectedResourceTypes optional
 	 * @return array
 	 */
-	function getListEntries($sort = null, $forLiDA = false, $appVersion = 0, $start = 0, $numItems = 0, array $activeFilters = []) : array {
+	function getListEntries($sort = null, bool $forLiDA = false, int $appVersion = 0, int $start = 0, int $numItems = 0, array $selectedResourceTypes = []) : array {
 		global $interface;
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$listEntry = new UserListEntry();
@@ -272,14 +273,8 @@ class UserList extends DataObject {
 			}
 		}
 
-		$formatFilterEnabled = !empty($activeFilters) && !empty($activeFilters['format']) && is_array($activeFilters['format']);
-		$formatInClause = '';
-		if ($formatFilterEnabled) {
-			$escapedFormats = [];
-			foreach ($activeFilters['format'] as $format) {
-				$escapedFormats[] = $listEntry->escape($format);
-			}
-			$formatInClause = '(' . implode(',', $escapedFormats) . ')';
+		if (!empty($selectedResourceTypes)) {
+			$listEntry->whereAddIn('source', $selectedResourceTypes, true);
 		}
 
 		if (!empty($sort)) {
@@ -325,19 +320,14 @@ class UserList extends DataObject {
 					$gwRecords = new GroupedWorkRecord();
 					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
 
-					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
-					$indexedFormat = new IndexedFormat();
-					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
-
 					require_once ROOT_DIR . '/sys/Indexing/IndexedPublicationDate.php';
 					$indexedPubDate = new IndexedPublicationDate();
 					$listEntry->joinAdd($indexedPubDate, "LEFT", 'indexedPubDate', 'gwRecords.publicationDateId', 'id');
 
-					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
 					// Use MIN for oldest first, MAX for newest first to handle multiple records per grouped work.
 					$aggregate = $sort == "publication_date" ? "MIN" : "MAX";
 					$yearExpression = "CASE
-						WHEN user_list_entry.source = 'GroupedWork' $fmtGate
+						WHEN user_list_entry.source = 'GroupedWork'
 							AND indexedPubDate.publicationDate IS NOT NULL
 							AND indexedPubDate.publicationDate REGEXP '[0-9]{4}' THEN
 							CAST(REGEXP_SUBSTR(indexedPubDate.publicationDate, '[0-9]{4}') AS UNSIGNED)
@@ -384,14 +374,11 @@ class UserList extends DataObject {
 					$shelfLocation = new IndexedShelfLocation();
 					$listEntry->joinAdd($shelfLocation, "LEFT", 'shelfLoc', 'gwItems.shelfLocationId', 'id');
 
-					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
-
 					$listEntry->selectAdd("
 						MIN(
 							CASE
 								WHEN user_list_entry.source = 'GroupedWork'
 									AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0)
-									$fmtGate
 									AND indexedCallNumber.callNumber IS NOT NULL
 									AND indexedCallNumber.callNumber != ''
 								THEN indexedCallNumber.callNumber
@@ -409,7 +396,6 @@ class UserList extends DataObject {
 						CASE
 							WHEN user_list_entry.source = 'GroupedWork'
 								AND (gwVariation.eContentSourceId IS NULL OR gwVariation.eContentSourceId <= 0)
-								$fmtGate
 								AND indexedCallNumber.callNumber IS NOT NULL
 								AND indexedCallNumber.callNumber != ''
 							THEN indexedCallNumber.callNumber
@@ -437,36 +423,6 @@ class UserList extends DataObject {
 					// Availability sort: Sorts by total number of available copies.
 					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
 					// Items with more available copies appear first; non-GroupedWork records fall to bottom.
-				} elseif ($sort == "availability" || $sort == "availability_desc") {
-					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
-					$groupedWorkInfo = new GroupedWork();
-					$listEntry->joinAdd($groupedWorkInfo, "LEFT", 'groupedWork', 'sourceId', 'permanent_id');
-
-					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkRecord.php';
-					$gwRecords = new GroupedWorkRecord();
-					$listEntry->joinAdd($gwRecords, "LEFT", 'gwRecords', 'groupedWork.id', 'groupedWorkId');
-
-					require_once ROOT_DIR . '/sys/Grouping/GroupedWorkItem.php';
-					$gwItems = new GroupedWorkItem();
-					$listEntry->joinAdd($gwItems, "LEFT", 'gwItems', 'gwRecords.id', 'groupedWorkRecordId');
-
-					require_once ROOT_DIR . '/sys/Indexing/IndexedFormat.php';
-					$indexedFormat = new IndexedFormat();
-					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
-
-					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
-					$listEntry->selectAdd("
-					CASE WHEN user_list_entry.source = 'GroupedWork' THEN
-						COALESCE(SUM(CASE WHEN gwItems.available = 1 $fmtGate THEN gwItems.numCopies ELSE 0 END), 0)
-					ELSE 0 END AS TotalAvailableCopies
-				");
-					$listEntry->groupBy('user_list_entry.id');
-					$order = $sort == "availability" ? "DESC" : "ASC";
-					$listEntry->orderBy("CASE WHEN user_list_entry.source != 'GroupedWork' THEN 1 ELSE 0 END ASC, TotalAvailableCopies $order");
-
-					// Copies available sort: Sorts by total number of available copies across all items.
-					// Sums numCopies for all items where available = 1; groups by list entry to prevent duplicates.
-					// Non-GroupedWork records are assigned 0 copies and sorted to bottom.
 				} elseif ($sort == "copies_available" || $sort == "copies_available_asc") {
 					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 					$groupedWorkInfo = new GroupedWork();
@@ -484,10 +440,9 @@ class UserList extends DataObject {
 					$indexedFormat = new IndexedFormat();
 					$listEntry->joinAdd($indexedFormat, "LEFT", 'fmt', 'gwRecords.formatId', 'id');
 
-					$fmtGate = $formatFilterEnabled ? " AND fmt.format IN $formatInClause " : "";
 					$listEntry->selectAdd("
 					CASE WHEN user_list_entry.source = 'GroupedWork' THEN
-						COALESCE(SUM(CASE WHEN gwItems.available = 1 $fmtGate THEN gwItems.numCopies ELSE 0 END), 0)
+						COALESCE(SUM(CASE WHEN gwItems.available = 1 THEN gwItems.numCopies ELSE 0 END), 0)
 					ELSE 0 END AS TotalAvailableCopies
 				");
 					$listEntry->groupBy('user_list_entry.id');
@@ -498,20 +453,6 @@ class UserList extends DataObject {
 					$listEntry->orderBy(self::$__userListSortOptions[$sort]);
 				}
 			}
-		}
-
-		// Drop grouped works with no matching formats.
-		if ($formatFilterEnabled) {
-			$filterConditions = [];
-			$filterConditions[] = "user_list_entry.source != 'GroupedWork'";
-			$filterConditions[] = "(user_list_entry.source = 'GroupedWork' AND EXISTS (
-				SELECT 1 FROM grouped_work gw2
-				JOIN grouped_work_records gwr2 ON gw2.id = gwr2.groupedWorkId
-				JOIN indexed_format if2 ON gwr2.formatId = if2.id
-				WHERE gw2.permanent_id = user_list_entry.sourceId
-				AND if2.format IN $formatInClause
-			))";
-			$listEntry->whereAdd('(' . implode(' OR ', $filterConditions) . ')');
 		}
 
 		if ($numItems > 0) {
@@ -553,6 +494,98 @@ class UserList extends DataObject {
 		return [
 			'listEntries' => $listEntries,
 			'idsBySource' => $idsBySource,
+		];
+	}
+
+	/**
+	 * @param null $sort Optional SQL for the query's ORDER BY clause.
+	 * @param int $start
+	 * @param int $numItems
+	 * @param array $filterParams facets to be applied to the list
+	 * @return array
+	 */
+	function getListEntriesUsingSolr($sort = null, int $start = 0, int $numItems = 0, array $filterParams = []) : array {
+		if ($numItems < 0) {
+			$numItems = $this->numValidListItems(['GroupedWork']);
+		}
+		// Cannot use the current search globals since we may change the search term above
+		// Display of query is not right when reusing the global search object
+		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
+		$searchObject = SearchObjectFactory::initSearchObject();
+		$searchObject->init('local', '');
+		$searchObject->setSearchTerms([
+			'lookfor' => $this->id,
+			'index' => 'list_link',
+		]);
+		$searchObject->disableBoosting();
+		$searchObject->setPrimarySearch(false);
+		$searchObject->setFieldsToReturn('id');
+		$searchObject->setPage(($start / $numItems) + 1);
+		$searchObject->setLimit($numItems);
+		foreach ($filterParams as $filter) {
+			if (!empty($filter) && !is_array($filter)) {
+				$searchObject->addFilter(strip_tags($filter));
+			}
+		}
+
+		$searchObject->setSort($this->getSolrSort($sort));
+
+		$result = $searchObject->processSearch(true, true);
+
+		global $interface;
+		$searchObject->close();
+		$interface->assign('time', round($searchObject->getTotalSpeed(), 2));
+		$interface->assign('savedSearch', $searchObject->isSavedSearch());
+		$interface->assign('searchId', $searchObject->getSearchId());
+
+		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+		$listEntries = [];
+		$idsBySource = [];
+		$entryPosition = $start; // Track the actual position.
+
+		if (isset($result['response']['docs'])) {
+			foreach ($result['response']['docs'] as $curDoc) {
+				$entryPosition++;
+
+				$listEntry = new UserListEntry();
+				$listEntry->listId = $this->id;
+				$listEntry->source = 'GroupedWork';
+				$listEntry->sourceId = $curDoc['id'];
+				if ($listEntry->find(true)) {
+					if (!array_key_exists($listEntry->source, $idsBySource)) {
+						$idsBySource[$listEntry->source] = [];
+					}
+					$idsBySource[$listEntry->source][] = $listEntry->sourceId;
+					$tmpListEntry = [
+						'source' => $listEntry->source,
+						'sourceId' => $listEntry->sourceId,
+						'title' => $listEntry->title,
+						'notes' => $listEntry->getNotes(),
+						'listEntryId' => $listEntry->id,
+						'listEntry' => $this->cleanListEntry(clone($listEntry)),
+						'weight' => $listEntry->weight,
+					];
+
+					$listEntries[] = $tmpListEntry;
+				}
+			}
+		}else{
+			//TODO: Handle display of errors
+		}
+
+		if (($interface != null) && (($entryPosition != '') || ($entryPosition != null))) {
+			$interface->assign('listEntryCount', $entryPosition);
+		}
+
+		if ($interface != null){
+			$interface->assign('topRecommendations', $searchObject->getRecommendationsTemplates());
+			$interface->assign('sideRecommendations', $searchObject->getRecommendationsTemplates('side'));
+		}
+
+		return [
+			'listEntries' => $listEntries,
+			'idsBySource' => $idsBySource,
+			'numFilteredEntries' => $result['response']['numFound'],
 		];
 	}
 
@@ -620,10 +653,10 @@ class UserList extends DataObject {
 	}
 
 	/**
-	 * @param String $listEntryToRemove
+	 * @param String|UserListEntry $listEntryToRemove
 	 * @param bool $updateBrowseCategories
 	 */
-	function removeListEntry($listEntryToRemove, $updateBrowseCategories = true) {
+	function removeListEntry(string|UserListEntry $listEntryToRemove, bool $updateBrowseCategories = true) : void {
 		// Remove the Saved List Entry
 		if ($listEntryToRemove instanceof UserListEntry) {
 			$listEntryToRemove->delete(false, $updateBrowseCategories);
@@ -673,6 +706,7 @@ class UserList extends DataObject {
 		return $this->_cleanDescription;
 	}
 
+	/** @noinspection PhpUnused */
 	function getListAuthor(): ?string {
 		if ($this->user_id != null) {
 			$user = new User();
@@ -698,64 +732,24 @@ class UserList extends DataObject {
 	/**
 	 * @param int $start Position of first list item to fetch (0 based)
 	 * @param int $numItems Number of items to fetch for this result.
-	 * @param boolean $allowEdit Whether or not the list should be editable.
+	 * @param boolean $allowEdit Whether the list should be editable.
 	 * @param string $format The format of the records; valid values are html, summary, recordDrivers, and citation.
 	 * @param string|null $citationFormat How citations should be formatted.
 	 * @param string|null $sortName How records should be sorted, if no sort is provided, will use the default for the list.
-	 * @param boolean $forLiDA Whether or not the records are being requested by Aspen LiDA.
+	 * @param boolean $forLiDA Whether the records are being requested by Aspen LiDA.
 	 * @param float|int $appVersion If LiDA, include the version to ensure proper filtering when needed.
 	 * @return array Array of HTML to display to the user.
 	 */
 	public function getListRecords(
 		int $start, int $numItems, bool $allowEdit, string $format, string $citationFormat = null,
-		string $sortName = null, bool $forLiDA = false, float|int $appVersion = 0, array $activeFilters = []
+		string $sortName = null, bool $forLiDA = false, float|int $appVersion = 0, array $selectedResourceTypes = []
 	): array {
 		if ($sortName == null) {
 			$sortName = $this->defaultSort;
 		}
 
-		// Because the DB does not persist an "author" column on the list itself,
-		// pull it from the underlying record when the sort of list is rendered.
-		/*if ($sortName === 'author') {
-			$allEntriesInfo = $this->getListEntries(null, $forLiDA, $appVersion, 0, 0);
-			$allEntries = $allEntriesInfo['listEntries'];
-			$idsBySource = $allEntriesInfo['idsBySource'];
-			$authorMap = [];
-			foreach ($idsBySource as $sourceType => $sourceIds) {
-				$searchObject = SearchObjectFactory::initSearchObject($sourceType);
-				if ($searchObject !== false) {
-					$records = $searchObject->getRecords($sourceIds);
-					foreach ($records as $recordDriver) {
-						$authorMap[$sourceType][$recordDriver->getId()] = trim($recordDriver->getPrimaryAuthor() ?? '');
-					}
-				}
-			}
-
-			$emptyFirst = [];
-			$authorList = [];
-			foreach ($allEntries as $idx => $entry) {
-				$src = $entry['source'];
-				$id = $entry['sourceId'];
-				$auth = $authorMap[$src][$id] ?? '';
-				$authorList[$idx] = $auth;
-				$emptyFirst[$idx] = ($auth === '') ? 1 : 0;
-			}
-
-			array_multisort(
-				$emptyFirst, SORT_ASC, SORT_NUMERIC,
-				$authorList, SORT_ASC, SORT_NATURAL | SORT_FLAG_CASE,
-				$allEntries
-			);
-
-			if ($numItems > 0) {
-				$filteredListEntries = array_slice($allEntries, $start, $numItems);
-			} else {
-				$filteredListEntries = $allEntries;
-			}
-		} else {*/
-			$listEntryInfo = $this->getListEntries($sortName, $forLiDA, $appVersion, $start, $numItems, $activeFilters);
-			$filteredListEntries = $listEntryInfo['listEntries'];
-		//}
+		$listEntryInfo = $this->getListEntries($sortName, $forLiDA, $appVersion, $start, $numItems, $selectedResourceTypes);
+		$filteredListEntries = $listEntryInfo['listEntries'];
 
 		global $library;
 		global $interface;
@@ -781,7 +775,7 @@ class UserList extends DataObject {
 			} else {
 				$records = $searchObject->getRecords($sourceIds);
 				if ($format == 'html') {
-					$listResults = $listResults + $this->getResultListHTML($records, $filteredListEntries, $allowEdit, $start, $activeFilters);
+					$listResults = $listResults + $this->getResultListHTML($records, $filteredListEntries, $allowEdit, $start);
 				} elseif ($format == 'summary') {
 					$listResults = $listResults + $this->getResultListSummary($records, $filteredListEntries);
 				} elseif ($format == 'recordDrivers') {
@@ -806,28 +800,28 @@ class UserList extends DataObject {
 					$interface->assign('bookCoverUrl', '');
 
 					if ($listEntryInfo['source'] = "Events"){ //get covers for past events
-						if (preg_match('`^communico`', $listEntryInfo['sourceId'])){
+						if (str_starts_with($listEntryInfo['sourceId'], 'communico')){
 							$id = explode("communico_1_", $listEntryInfo['sourceId']);
 							$id = $id[1];
-							$coverUrl = "/bookcover.php?id={$id}&size=medium&type=communico_event";
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=communico_event";
 
 							$interface->assign('bookCoverUrl', $coverUrl);
-						} elseif (preg_match('`^libcal`', $listEntryInfo['sourceId'])){
+						} elseif (str_starts_with($listEntryInfo['sourceId'], 'libcal')){
 							$id = explode("libcal_1_", $listEntryInfo['sourceId']);
 							$id = $id[1];
-							$coverUrl = "/bookcover.php?id={$id}&size=medium&type=springshare_libcal_event";
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=springshare_libcal_event";
 
 							$interface->assign('bookCoverUrl', $coverUrl);
-						} elseif (preg_match('`^lc_`', $listEntryInfo['sourceId'])){
+						} elseif (str_starts_with($listEntryInfo['sourceId'], 'lc_')){
 							$id = explode("lc_1_", $listEntryInfo['sourceId']);
 							$id = $id[1];
-							$coverUrl = "/bookcover.php?id={$id}&size=medium&type=library_calendar_event";
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=library_calendar_event";
 
 							$interface->assign('bookCoverUrl', $coverUrl);
-						} elseif (preg_match('`^assabet`', $listEntryInfo['sourceId'])){
+						} elseif (str_starts_with($listEntryInfo['sourceId'], 'assabet')){
 							$id = explode("assabet_1_", $listEntryInfo['sourceId']);
 							$id = $id[1];
-							$coverUrl = "/bookcover.php?id={$id}&size=medium&type=assabet_event";
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=assabet_event";
 
 							$interface->assign('bookCoverUrl', $coverUrl);
 						}
@@ -848,6 +842,120 @@ class UserList extends DataObject {
 	}
 
 	/**
+	 * @param int $start Position of first list item to fetch (0 based)
+	 * @param int $numItems Number of items to fetch for this result.
+	 * @param boolean $allowEdit Whether the list should be editable.
+	 * @param string $format The format of the records; valid values are html, summary, recordDrivers, and citation.
+	 * @param string|null $citationFormat How citations should be formatted.
+	 * @param string|null $sortName How records should be sorted, if no sort is provided, will use the default for the list.
+	 * @param array $filterParams Parameters to filter the search by
+	 * @return array Array of HTML to display to the user.
+	 */
+	public function getListRecordsUsingSolr(
+		int $start, int $numItems, bool $allowEdit, string $format, string $citationFormat = null,
+		string $sortName = null, array $filterParams = []
+	): array {
+		if ($sortName == null) {
+			$sortName = $this->defaultSort;
+		}
+
+		$listEntryInfoFromSolr = $this->getListEntriesUsingSolr($sortName, $start, $numItems, $filterParams);
+		$filteredListEntries = $listEntryInfoFromSolr['listEntries'];
+
+		global $library;
+		global $interface;
+		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
+		foreach ($groupedWorkDisplaySettings->showInSearchResultsMainDetails as $detailOption) {
+			$interface->assign($detailOption, true);
+		}
+
+		$filteredIdsBySource = [];
+		foreach ($filteredListEntries as $listItemEntry) {
+			if (!array_key_exists($listItemEntry['source'], $filteredIdsBySource)) {
+				$filteredIdsBySource[$listItemEntry['source']] = [];
+			}
+			$filteredIdsBySource[$listItemEntry['source']][] = $listItemEntry['sourceId'];
+		}
+
+		//Load the actual items from each source
+		$listResults = [];
+		foreach ($filteredIdsBySource as $sourceType => $sourceIds) {
+			$searchObject = SearchObjectFactory::initSearchObject($sourceType);
+			if ($searchObject === false) {
+				AspenError::raiseError("Unknown List Entry Source $sourceType");
+			} else {
+				$records = $searchObject->getRecords($sourceIds);
+				if ($format == 'html') {
+					$listResults = $listResults + $this->getResultListHTML($records, $filteredListEntries, $allowEdit, $start);
+				} elseif ($format == 'summary') {
+					$listResults = $listResults + $this->getResultListSummary($records, $filteredListEntries);
+				} elseif ($format == 'recordDrivers') {
+					$listResults = $listResults + $this->getResultListRecordDrivers($records, $filteredListEntries);
+				} elseif ($format == 'citations') {
+					$listResults = $listResults + $this->getResultListCitations($records, $filteredListEntries, $citationFormat);
+				} else {
+					AspenError::raiseError("Unknown display format $format in getListRecords");
+				}
+			}
+		}
+
+		if ($format == 'html') {
+			//Add in non-owned results for anything that is left
+			global $interface;
+			foreach ($filteredListEntries as $listPosition => $listEntryInfo) {
+				if (!array_key_exists($listPosition, $listResults)) {
+					$interface->assign('recordIndex', $listPosition + 1);
+					$interface->assign('resultIndex', $listPosition + $start + 1);
+					$interface->assign('listEntryId', $listEntryInfo['listEntryId']);
+					$interface->assign('listEntrySource', $listEntryInfo['source']);
+					$interface->assign('bookCoverUrl', '');
+
+					if ($listEntryInfo['source'] = "Events"){ //get covers for past events
+						if (str_starts_with($listEntryInfo['sourceId'], 'communico')){
+							$id = explode("communico_1_", $listEntryInfo['sourceId']);
+							$id = $id[1];
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=communico_event";
+
+							$interface->assign('bookCoverUrl', $coverUrl);
+						} elseif (str_starts_with($listEntryInfo['sourceId'], 'libcal')){
+							$id = explode("libcal_1_", $listEntryInfo['sourceId']);
+							$id = $id[1];
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=springshare_libcal_event";
+
+							$interface->assign('bookCoverUrl', $coverUrl);
+						} elseif (str_starts_with($listEntryInfo['sourceId'], 'lc_')){
+							$id = explode("lc_1_", $listEntryInfo['sourceId']);
+							$id = $id[1];
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=library_calendar_event";
+
+							$interface->assign('bookCoverUrl', $coverUrl);
+						} elseif (str_starts_with($listEntryInfo['sourceId'], 'assabet')){
+							$id = explode("assabet_1_", $listEntryInfo['sourceId']);
+							$id = $id[1];
+							$coverUrl = "/bookcover.php?id=$id&size=medium&type=assabet_event";
+
+							$interface->assign('bookCoverUrl', $coverUrl);
+						}
+					}
+
+					if (!empty($listEntryInfo['title'])) {
+						$interface->assign('deletedEntryTitle', $listEntryInfo['title']);
+					} else {
+						$interface->assign('deletedEntryTitle', '');
+					}
+					$listResults[$listPosition] = $interface->fetch('MyAccount/deletedListEntry.tpl');
+				}
+			}
+		}
+
+		ksort($listResults);
+		return [
+			'numFilteredEntries' => $listEntryInfoFromSolr['numFilteredEntries'],
+			'formattedRecords' => $listResults
+		];
+	}
+
+	/**
 	 * Use the record driver to build an array of HTML displays from the search
 	 * results suitable for use while displaying lists
 	 *
@@ -856,10 +964,9 @@ class UserList extends DataObject {
 	 * @param bool $allowEdit
 	 * @param array $allListEntryIds optional list of IDs to re-order the records by (ie User List sorts)
 	 * @param int $startRecord The first record being displayed
-	 * @param array $activeFilters Active format filters to apply to manifestations
 	 * @return array Array of HTML chunks for individual records.
 	 */
-	private function getResultListHTML($records, $allListEntryIds, $allowEdit, $startRecord = 0, $activeFilters = []): array {
+	private function getResultListHTML(array $records, array $allListEntryIds, bool $allowEdit, int $startRecord = 0): array {
 		global $interface;
 		$html = [];
 		//Reorder the documents based on the list of id's
@@ -867,7 +974,7 @@ class UserList extends DataObject {
 			// use $IDList as the order guide for the html
 			$current = null; // empty out in case we don't find the matching record
 			reset($records);
-			foreach ($records as $docIndex => $recordDriver) {
+			foreach ($records as $recordDriver) {
 				if ($recordDriver->getId() == $currentListEntry['sourceId']) {
 					$recordDriver->setListNotes($currentListEntry['notes']);
 					$recordDriver->setListEntryId($currentListEntry['listEntryId']);
@@ -885,11 +992,6 @@ class UserList extends DataObject {
 				$interface->assign('listEntryId', $current->getListEntryId());
 				$interface->assign('listEntryWeight', $current->getListEntryWeight());
 				$interface->assign('listEditAllowed', $allowEdit);
-
-				// Pass active filters to the record driver for manifestation filtering
-				if (!empty($activeFilters)) {
-					$current->setActiveFilters($activeFilters);
-				}
 
 				$interface->assign('recordDriver', $current);
 				$html[$listPosition] = $interface->fetch($current->getListEntry($this->id, $allowEdit));
@@ -934,7 +1036,7 @@ class UserList extends DataObject {
 			 * @var int $docIndex
 			 * @var IndexRecordDriver $recordDriver
 			 */
-			foreach ($records as $docIndex => $recordDriver) {
+			foreach ($records as $recordDriver) {
 				if ($recordDriver->getId() == $currentId['sourceId']) {
 					$current = $recordDriver;
 					break;
@@ -977,7 +1079,7 @@ class UserList extends DataObject {
 	 * @param int $numItems Number of items to fetch for this result
 	 * @return array     Array of HTML to display to the user
 	 */
-	public function getBrowseRecords($start, $numItems): array {
+	public function getBrowseRecords(int $start, int $numItems): array {
 		$listEntryInfo = $this->getListEntries($this->defaultSort, false, 0, $start, $numItems);
 		$filteredListEntries = $listEntryInfo['listEntries'];
 
@@ -1012,7 +1114,7 @@ class UserList extends DataObject {
 	 * @param int $numItems Number of items to fetch for this result
 	 * @return array     Array of HTML to display to the user
 	 */
-	public function getBrowseRecordsRaw($start, $numItems, $forLiDA = false, $appVersion = 0): array {
+	public function getBrowseRecordsRaw(int $start, int $numItems, bool $forLiDA = false, int $appVersion = 0): array {
 		global $configArray;
 
 		//Get all entries for the list
@@ -1045,7 +1147,7 @@ class UserList extends DataObject {
 		foreach ($filteredIdsBySource as $sourceType => $sourceIds) {
 			if($sourceType == 'Events') {
 				require_once ROOT_DIR . '/sys/SolrConnector/EventsSolrConnector.php';
-				$searchLibrary = Library::getSearchLibrary(null);
+				$searchLibrary = Library::getSearchLibrary();
 				require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
 				$libraryEventsSetting = new LibraryEventsSetting();
 				$libraryEventsSetting->libraryId = $searchLibrary->libraryId;
@@ -1188,7 +1290,6 @@ class UserList extends DataObject {
 							// $browseRecords[$key]['placesOfPublication'] = $groupedWorkDriver->getPlacesOfPublication();
 						} else {
 							//not a valid record, skip it
-							continue;
 						}
 
 					}
@@ -1212,7 +1313,7 @@ class UserList extends DataObject {
 	 * @param int $start
 	 * @return array Array of HTML chunks for individual records.
 	 */
-	private function getBrowseRecordHTML($records, $allListEntryIds, $start): array {
+	private function getBrowseRecordHTML(array $records, array $allListEntryIds, int $start): array {
 		global $interface;
 		$html = [];
 		//Reorder the documents based on the list of id's
@@ -1530,14 +1631,14 @@ class UserList extends DataObject {
 		return false;
 	}
 
-	public function isValidForDisplay() {
+	public function isValidForDisplay() : bool {
 		if ($this->isDismissed()) {
 			return false;
 		}
 		return true;
 	}
 
-	public function fixWeights() {
+	public function fixWeights() : void {
 		$changeMade = false;
 
 		$listEntries = new UserListEntry();
@@ -1635,14 +1736,16 @@ class UserList extends DataObject {
 		];
 	}
 
-	/**
-	 * Turns list into a CSV document.
-	 *
-	 * @param array $activeFilters
-	 */
-	public function buildCSV(array $activeFilters = []) : void {
+	public function buildCSV(array $selectedResourceTypes = [], array $activeFilters = []) : void {
 		try {
-			$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers', null, null, false, 0, $activeFilters); // get all titles for email list, not just a page's worth
+			//Set the ID of the list so it can be used to build URLs
+			$_GET['id'] = $this->id;
+			if (count($selectedResourceTypes) && in_array('GroupedWork', $selectedResourceTypes) && !empty($activeFilters)) {
+				$titleDetailInfo = $this->getListRecordsUsingSolr(0, 1000, false, 'recordDrivers', null, null, $activeFilters);
+				$titleDetails = $titleDetailInfo['formattedRecords'];
+			}else{
+				$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers', null, null, false, 0, $selectedResourceTypes);
+			}
 
 			header("Last-Modified: " . gmdate("D, d M Y H:i:s") . " GMT");
 			header("Cache-Control: no-store, no-cache, must-revalidate");
@@ -1656,6 +1759,16 @@ class UserList extends DataObject {
 			fputcsv($fp, $fields);
 
 			foreach ($titleDetails as $curDoc) {
+				$output = null;
+				$link = '';
+				$title = '';
+				$author = '';
+				$publishers = '';
+				$publishDate = '';
+				$uniqueFormats = '';
+				$isbn = '';
+				$upc = '';
+				$output = [''];
 				if ($curDoc instanceof GroupedWorkDriver) {
 					if ($curDoc->isValid()) {
 						// Hyperlink to title
@@ -1683,7 +1796,6 @@ class UserList extends DataObject {
 						} else {
 							$publishDates = $curDoc->getPublicationDates();
 						}
-						$publishDate = '';
 						if (count($publishDates) == 1) {
 							$publishDate = $publishDates[0];
 						} elseif (count($publishDates) > 1) {
@@ -1740,13 +1852,7 @@ class UserList extends DataObject {
 					}else{
 						$link = "No Link Available";
 						$title = $curDoc['title_display'];
-						$author = '';
-						$publishers = '';
-						$publishDate = '';
-						$uniqueFormats = '';
 						$output = ["No copies currently owned by this library"];
-						$isbn = '';
-						$upc = '';
 					}
 				} elseif ($curDoc instanceof ListsRecordDriver) {
 					// Hyperlink to title
@@ -1756,39 +1862,16 @@ class UserList extends DataObject {
 					// Author
 					$fields = $curDoc->getFields();
 					$author = $fields['author_display'] ?? '';
-					//Set other values to empty string
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = '';
-					$upc = '';
-					$output = [''];
 				} elseif ($curDoc instanceof PersonRecord) {
 					// Hyperlink to Person Record
 					$link = $curDoc->getLinkUrl() ?? '';
 					// Person Name
 					$title = $curDoc->getName() ?? '';
-					//Set other values to empty string
-					$author = '';
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = '';
-					$upc = '';
-					$output = [''];
 				} elseif ($curDoc instanceof OpenArchivesRecordDriver) {
 					// Hyperlink to Open Archive target
 					$link = $curDoc->getLinkUrl();
 					// Title
 					$title = $curDoc->getTitle() ?? '';
-					//Set other values to empty string
-					$author = '';
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = '';
-					$upc = '';
-					$output = [''];
 				} elseif ($curDoc instanceof EbscohostRecordDriver) {
 					// Hyperlink to EBSCOHost record
 					$link = $curDoc->getLinkUrl() ?? '';
@@ -1796,13 +1879,6 @@ class UserList extends DataObject {
 					$title = $curDoc->getTitle() ?? '';
 					// Primary Author
 					$author = $curDoc->getPrimaryAuthor() ?? '';
-					//Set other values to empty string
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = $curDoc->getPrimaryISBN() ?? '';
-					$upc = '';
-					$output = [''];
 
 				} elseif ($curDoc instanceof EbscoRecordDriver) {
 					// Hyperlink to EBSCO record
@@ -1812,12 +1888,7 @@ class UserList extends DataObject {
 					// Primary Author
 					$author = $curDoc->getPrimaryAuthor() ?? '';
 					//Set other values to empty string
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
 					$isbn = $curDoc->getPrimaryISBN() ?? '';
-					$upc = '';
-					$output = [''];
 
 				} elseif ($curDoc instanceof SummonRecordDriver) {
 					// Hyperlink to Summon record
@@ -1827,12 +1898,7 @@ class UserList extends DataObject {
 					// Primary Author
 					$author = $curDoc->getPrimaryAuthor() ?? '';
 					//Set other values to empty string
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
 					$isbn = $curDoc->getPrimaryISBN() ?? '';
-					$upc = '';
-					$output = [''];
 				} elseif ($curDoc instanceof GaleRecordDriver) {
 					// Hyperlink to Gale record
 					$link = $curDoc->getLinkUrl() ?? '';
@@ -1840,45 +1906,32 @@ class UserList extends DataObject {
 					$title = $curDoc->getTitle() ?? '';
 					// Primary Author
 					$author = $curDoc->getAuthor() ?? '';
-					//Set other values to empty string
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = '';
-					$upc = '';
-					$output = [''];
 
 				} elseif ($curDoc instanceof WebsitePageRecordDriver) {
 					// Hyperlink
 					$link = $curDoc->getLinkUrl() ?? '';
 					// Title
 					$title = $curDoc->getTitle() ?? '';
-					//Set other values to empty string
-					$author = '';
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = '';
-					$upc = '';
-					$output = [''];
 
 				} elseif ($curDoc instanceof WebResourceRecordDriver) {
 					// Hyperlink
 					$link = $curDoc->getLinkUrl() ?? '';
 					// Title
 					$title = $curDoc->getTitle() ?? '';
-					//Set other values to empty string
-					$author = '';
-					$publishers = '';
-					$publishDate = '';
-					$uniqueFormats = '';
-					$isbn = '';
-					$upc = '';
-					$output = [''];
 				}
 
 				$output = implode(', ', $output);
-				$row = array ($link, $title, $author, $publishers, $publishDate, $uniqueFormats, $output, $isbn, $upc);
+				$row = array(
+					$link,
+					$title,
+					$author,
+					$publishers,
+					$publishDate,
+					$uniqueFormats,
+					$output,
+					$isbn,
+					$upc
+				);
 				fputcsv($fp, $row);
 			}
 			exit();
@@ -1888,10 +1941,17 @@ class UserList extends DataObject {
 		}
 	}
 
-	public function buildRIS(array $activeFilters = []): void {
+	public function buildRIS(array $selectedResourceTypes = [], array $activeFilters = []): void {
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		try {
-			$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers', null, null, false, 0, $activeFilters); // get all titles for export, not just a page's worth
+			//Set the ID of the list so it can be used to build URLs
+			$_GET['id'] = $this->id;
+			if (count($selectedResourceTypes) && in_array('GroupedWork', $selectedResourceTypes) && !empty($activeFilters)) {
+				$titleDetailInfo = $this->getListRecordsUsingSolr(0, 1000, false, 'recordDrivers', null, null, $activeFilters);
+				$titleDetails = $titleDetailInfo['formattedRecords'];
+			}else{
+				$titleDetails = $this->getListRecords(0, 1000, false, 'recordDrivers', null, null, false, 0, $selectedResourceTypes);
+			}
 
 			$risCitations = array();
 
@@ -1924,5 +1984,33 @@ class UserList extends DataObject {
 
 	public function supportsSoftDelete(): bool {
 		return true;
+	}
+
+	public function getListSources() : array {
+		$listEntry = new UserListEntry();
+		$listEntry->listId = $this->id;
+		$listEntry->selectAdd('DISTINCT source');
+		return $listEntry->fetchAll('source', 'source');
+	}
+
+	public function getNumListEntriesBySource(string $listSource) : int {
+		$listEntry = new UserListEntry();
+		$listEntry->listId = $this->id;
+		$listEntry->source = $listSource;
+		return $listEntry->count();
+	}
+
+	private function getSolrSort(string $sort) : string {
+		global $solrScope;
+		return match ($sort) {
+			'title' => 'title asc',
+			'author' => 'author asc,title asc',
+			'dateAdded' => "list_entry_date_added_$this->id asc",
+			'recentlyAdded' => "list_entry_date_added_$this->id desc",
+			'call_number' => 'callnumber_sort',
+			'copies_available' => "available_copies_$solrScope desc,title asc",
+			'copies_available_asc' => "available_copies_$solrScope asc,title asc",
+			'custom' => "list_entry_weight_$this->id asc"
+		};
 	}
 }

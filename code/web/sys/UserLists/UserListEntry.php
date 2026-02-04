@@ -22,13 +22,16 @@ class UserListEntry extends DataObject {
 	}
 
 	public function insert(string $context = '') : int|bool {
-		if($this->source == "GroupedWork" && $this->title == null)
-		{
+		if($this->source == "GroupedWork") {
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 			$groupedWork = new GroupedWork();
 			$groupedWork->permanent_id = $this->sourceId;
 			if ($groupedWork->find(true)) {
-				$this->title = mb_substr($groupedWork->full_title, 0, 50);
+				if ($this->title == null) {
+					$this->title = mb_substr($groupedWork->full_title, 0, 50);
+				}
+				//Force reindex so facets will update
+				$groupedWork->forceReindex();
 			}
 		}
 		$result = parent::insert();
@@ -49,12 +52,32 @@ class UserListEntry extends DataObject {
 		global $memCache;
 		$memCache->delete('user_list_data_' . UserAccount::getActiveUserId());
 
+		//Force reindex so facets will update
+		if ($this->source == "GroupedWork") {
+			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+			$groupedWork = new GroupedWork();
+			$groupedWork->permanent_id = $this->sourceId;
+			if ($groupedWork->find(true)) {
+				$groupedWork->forceReindex();
+			}
+		}
+
 		$this->updateParentListDateUpdated();
 
 		return $result;
 	}
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
+		//Force reindex so facets will update
+		if ($this->source == "GroupedWork") {
+			require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+			$groupedWork = new GroupedWork();
+			$groupedWork->permanent_id = $this->sourceId;
+			if ($groupedWork->find(true)) {
+				$groupedWork->forceReindex();
+			}
+		}
+
 		$result = parent::delete($useWhere, $hardDelete);
 		global $memCache;
 		$memCache->delete('user_list_data_' . UserAccount::getActiveUserId());

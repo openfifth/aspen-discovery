@@ -413,15 +413,15 @@ abstract class SearchObject_BaseSearcher {
 	 * @param string $filterValue The value to filter on
 	 * @return  string   URL of a new search
 	 */
-	public function renderLinkWithFilter($field, $filterValue) {
+	public function renderLinkWithFilter(string $field, string $filterValue) : string {
 		// Stash our old data for a minute
 		$oldFilterList = $this->filterList;
 		$oldPage = $this->page;
 		// Availability facet can have only one item selected at a time
 		$disallowReplacements = false;
-		if (strpos($field, 'availability_toggle') === 0) {
+		if (str_starts_with($field, 'availability_toggle')) {
 			foreach ($this->filterList as $name => $value) {
-				if (strpos($name, 'availability_toggle') === 0) {
+				if (str_starts_with($name, 'availability_toggle')) {
 					unset ($this->filterList[$name]);
 					$disallowReplacements = true;
 				}
@@ -491,8 +491,8 @@ abstract class SearchObject_BaseSearcher {
 	 * @access  protected
 	 * @return  string   Base URL
 	 */
-	protected function getBaseUrl() {
-		return "/{$this->resultsModule}/{$this->resultsAction}?";
+	protected function getBaseUrl() : string {
+		return "/$this->resultsModule/$this->resultsAction?";
 	}
 
 	/**
@@ -1110,7 +1110,7 @@ abstract class SearchObject_BaseSearcher {
 		}
 	}
 
-	public function setSort($sort) {
+	public function setSort(string $sort) : void {
 		$this->sort = $sort;
 	}
 
@@ -1180,7 +1180,7 @@ abstract class SearchObject_BaseSearcher {
 	 * @param bool $includePaginationAndSortParameters
 	 * @return  string   URL of a search
 	 */
-	public function renderSearchUrl(bool $includePaginationAndSortParameters = true) {
+	public function renderSearchUrl(bool $includePaginationAndSortParameters = true) : string {
 		// Get the base URL and initialize the parameters attached to it:
 		$url = $this->getBaseUrl();
 		$params = $this->getSearchParams();
@@ -1191,7 +1191,7 @@ abstract class SearchObject_BaseSearcher {
 				foreach ($filter as $value) {
 					if (empty($value) || $value == '""') {
 						$params[] = "filter[]=$field:(\"\")";
-					} elseif (preg_match('/\\[.*?\\sTO\\s.*?\\]/', $value)) {
+					} elseif (preg_match('/\\[.*?\\sTO\\s.*?]/', $value)) {
 						$params[] = "filter[]=$field:$value";
 					} elseif (preg_match('/^\\(.*?\\)$/', $value)) {
 						$params[] = "filter[]=$field:$value";

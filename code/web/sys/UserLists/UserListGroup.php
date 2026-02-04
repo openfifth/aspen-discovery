@@ -135,35 +135,10 @@ class UserListGroup extends DataObject {
 	}
 
 	function getListGroups(user $user) : array {
-		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
-		$includePagination = false;
-		if (isset($_REQUEST['includePagination'])) {
-			$includePagination = $_REQUEST['includePagination'];
-		}
-
-		$listsPerPage = 20;
-		if (isset($_REQUEST['limit'])) {
-			$listsPerPage = $_REQUEST['limit'];
-		}
-
-		$page = $_REQUEST['pageGroups'] ?? 1;
-
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$group = new UserListGroup();
 		$group->userId = $user->id;
 		$group->orderBy('title DESC');
-		if ($includePagination) {
-			$group->limit(($page - 1) * $listsPerPage, $listsPerPage);
-			$listCount = $group->count();
-
-			$options = [
-				'totalItems' => $listCount,
-				'perPage' => $listsPerPage,
-			];
-
-			require_once ROOT_DIR . '/sys/Pager.php';
-			$pager = new Pager($options);
-		}
 
 		$allGroups = [];
 		if ($group->find()) {
@@ -199,15 +174,6 @@ class UserListGroup extends DataObject {
 		uasort($groups, function($a, $b) {
 			return strnatcasecmp($a->title, $b->title);
 		});
-
-		if ($includePagination) {
-			return [
-				'page_current' => (int)$pager->getCurrentPage(),
-				'totalResults' => (int)$pager->getTotalItems(),
-				'page_total' => (int)$pager->getTotalPages(),
-				'groups' => $groups,
-			];
-		}
 
 		return $groups;
 	}

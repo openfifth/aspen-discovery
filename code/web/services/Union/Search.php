@@ -113,6 +113,14 @@ class Union_Search extends ResultsAction {
 			$interface->assign('action', $action);
 			$this->searchResultsAction = new Gale_Results();
 			$this->searchResultsAction->launch();
+		} elseif ($searchSource == 'cloudsource') {
+			require_once(ROOT_DIR . '/services/CloudSource/Results.php');
+			$module = 'CloudSource';
+			$interface->assign('module', $module);
+			$action = 'Results';
+			$interface->assign('action', $action);
+			$this->searchResultsAction = new CloudSource_Results();
+			$this->searchResultsAction->launch();
 		} elseif ($searchSource == 'combined') {
 			require_once(ROOT_DIR . '/services/Union/CombinedResults.php');
 			$module = 'Union';

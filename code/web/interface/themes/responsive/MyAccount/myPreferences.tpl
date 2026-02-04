@@ -245,7 +245,7 @@
 							</div>
 						{/if}
 
-						{if !empty($isAssociatedWithILS) && ((!empty($allowRememberPickupLocation) && count($pickupLocations) > 1) || !empty($showAlternateLibraryOptions) || !empty($allowRememberPickupLocation))}
+						{if !empty($isAssociatedWithILS)}
 							<div class="panel" id="holdPreferencesPanel">
 								<a data-toggle="collapse" href="#holdPreferencesPanelBody" class="active">
 									<div class="panel-heading">

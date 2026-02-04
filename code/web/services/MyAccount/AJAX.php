@@ -25,7 +25,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getAddBrowseCategoryFromListForm() {
+	function getAddBrowseCategoryFromListForm() : array {
 		global $interface;
 
 		// Select List Creation using Object Editor functions
@@ -2488,9 +2488,11 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getCitationFormatsForm() {
+	function getCitationFormatsForm() : array {
 		global $interface;
 		$interface->assign('listId', $_REQUEST['listId']);
+		$interface->assign('selectedResourceTypes', $_REQUEST['selectedResourceTypes']);
+		$interface->assign('activeFilters', $_REQUEST['activeFilters']);
 		$citationFormats = CitationBuilder::getCitationFormats();
 		$interface->assign('citationFormats', $citationFormats);
 		$pageContent = $interface->fetch('MyAccount/getCitationFormatPopup.tpl');
@@ -2509,14 +2511,14 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function sendMyListEmail() {
+	function sendMyListEmail() : array {
 		global $interface;
 
 		// Get data from AJAX request
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) { // validly formatted List Id
 			$listId = $_REQUEST['listId'];
 			$to = $_REQUEST['to'];
-			$from = isset($_REQUEST['from']) ? $_REQUEST['from'] : '';
+			$from = $_REQUEST['from'] ?? '';
 			$message = $_REQUEST['message'];
 
 			//Load the list
@@ -2524,19 +2526,24 @@ class MyAccount_AJAX extends JSON_Action {
 			$list = new UserList();
 			$list->id = $listId;
 			if ($list->find(true)) {
-				// Build Favorites List
-				$listEntries = $list->getListTitles();
-				$interface->assign('listEntries', $listEntries);
-
 				// Load the User object for the owner of the list (if necessary):
-				if ($list->public == true || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+					$_GET['id'] = $list->id;
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+
 					//The user can access the list
-					$titleDetails = $list->getListRecords(0, -1, false, 'recordDrivers');
+					if (count($selectedResourceTypes) && in_array('GroupedWork', $selectedResourceTypes) && !empty($activeFilters)) {
+						$titleDetailInfo = $list->getListRecordsUsingSolr(0, -1, false, 'recordDrivers', null, null, $activeFilters);
+						$titleDetails = $titleDetailInfo['formattedRecords'];
+					}else{
+						$titleDetails = $list->getListRecords(0, -1, false, 'recordDrivers', null, null, false, 0, $selectedResourceTypes);
+					}
 					// get all titles for email list, not just a page's worth
 					$interface->assign('titles', $titleDetails);
 					$interface->assign('list', $list);
 
-					if (strpos($message, 'http') === false && strpos($message, 'mailto') === false && $message == strip_tags($message)) {
+					if (!str_contains($message, 'http') && !str_contains($message, 'mailto') && $message == strip_tags($message)) {
 						$interface->assign('from', $from);
 						$interface->assign('message', $message);
 						$body = $interface->fetch('Emails/my-list.tpl');
@@ -2550,11 +2557,6 @@ class MyAccount_AJAX extends JSON_Action {
 							$result = [
 								'result' => true,
 								'message' => 'Your email was sent successfully.',
-							];
-						} elseif (($emailResult instanceof AspenError)) {
-							$result = [
-								'result' => false,
-								'message' => "Your email message could not be sent: {$emailResult->getMessage()}.",
 							];
 						} else {
 							$result = [
@@ -2595,12 +2597,14 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getEmailMyListForm() {
+	function getEmailMyListForm() : array {
 		global $interface;
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
 			$listId = $_REQUEST['listId'];
 
 			$interface->assign('listId', $listId);
+			$interface->assign('selectedResourceTypes', $_REQUEST['selectedResourceTypes']);
+			$interface->assign('activeFilters', $_REQUEST['activeFilters']);
 
 			return [
 				'title' => 'Email a list',
@@ -9684,10 +9688,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function deleteListItems() {
+	function deleteListItems() : array {
 		$result = [
 			'success' => false,
-			'message' => 'Something went wrong.',
 		];
 
 		$listId = htmlspecialchars($_GET["id"]);
@@ -9695,15 +9698,16 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$list = new UserList();
 		$list->id = $listId;
+		$userCanEdit = false;
 		if ($list->find(true)) {
 			//Perform an action on the list, but verify that the user has permission to do so.
-			$userCanEdit = false;
 			$userObj = UserAccount::getActiveUserObj();
-			if ($userObj != false) {
+			if ($userObj !== false) {
 				$userCanEdit = $userObj->canEditList($list);
 			}
 		} else {
 			$result['message'] = "Sorry, that list wasn't found.";
+			return $result;
 		}
 
 		if ($userCanEdit) {
@@ -9724,8 +9728,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$list->update();
 			$this->reloadCover();
-			$result['success'] = true;
-			$result['message'] = 'Items removed from the list successfully';
 		} else {
 			$result['message'] = "Sorry, you don't have permissions to edit this list.";
 		}
@@ -9879,9 +9881,11 @@ class MyAccount_AJAX extends JSON_Action {
 		if (isset($_REQUEST['listId']) && isset($_REQUEST['listEntryId'])) {
 			$listId = $_REQUEST['listId'];
 			$listEntry = $_REQUEST['listEntryId'];
+			$listHasFiltersApplied = $_REQUEST['listHasFiltersApplied'] ?? 0;
 
 			$interface->assign('listId', $listId);
 			$interface->assign('listEntry', $listEntry);
+			$interface->assign('listHasFiltersApplied', $listHasFiltersApplied);
 
 			if (is_array($listId)) {
 				$listId = array_pop($listId);
@@ -9906,25 +9910,8 @@ class MyAccount_AJAX extends JSON_Action {
 				if ($userList->find(true)) {
 					$userObj = UserAccount::getActiveUserObj();
 					if ($userObj) {
-						$this->listId = $userList->id;
-						$this->listTitle = $userList->title;
 						$userCanEdit = $userObj->canEditList($userList);
 						if ($userCanEdit) {
-							if (isset($_POST['submit'])) {
-								$this->saveChanges();
-
-								// After changes are saved, send the user back to an appropriate page;
-								// either the list they were viewing when they started editing, or the
-								// overall favorites list.
-								if (isset($listId)) {
-									$nextAction = 'MyList/' . $listId;
-								} else {
-									$nextAction = 'Home';
-								}
-								header('Location: /MyAccount/' . $nextAction);
-								exit();
-							}
-
 							$interface->assign('list', $userList);
 
 							$listEntryId = $_REQUEST['listEntryId'];
@@ -9975,7 +9962,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function editListItem(): array {
-		/** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -10481,16 +10467,10 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($list->find(true)) {
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					// Get user's saved filters if logged in.
-					$activeFilters = [];
-					if (UserAccount::isLoggedIn()) {
-						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
-						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
-						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
-							$formatFilters = explode(',', $pageDefaults->userListFilters);
-							$activeFilters['format'] = array_filter($formatFilters);
-						}
-					}
-					$list->buildCSV($activeFilters);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+
+					$list->buildCSV($selectedResourceTypes, $activeFilters);
 					// If buildCSV succeeds, it exits.
 				} else {
 					$result['message'] = translate([
@@ -10532,16 +10512,9 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($list->find(true)) {
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					// Get user's saved filters if logged in.
-					$activeFilters = [];
-					if (UserAccount::isLoggedIn()) {
-						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
-						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
-						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
-							$formatFilters = explode(',', $pageDefaults->userListFilters);
-							$activeFilters['format'] = array_filter($formatFilters);
-						}
-					}
-					$list->buildRIS($activeFilters);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+					$list->buildRIS($selectedResourceTypes, $activeFilters);
 					// If buildRIS succeeds, it exits.
 				} else {
 					$result['message'] = translate([
@@ -11503,6 +11476,8 @@ class MyAccount_AJAX extends JSON_Action {
 	function getListPrintOptions(): array {
 		global $interface;
 		$interface->assign('printListId', strip_tags($_REQUEST['listId']));
+		$interface->assign('selectedResourceTypes', empty($_REQUEST['selectedResourceTypes']) ? '' : $_REQUEST['selectedResourceTypes']);
+		$interface->assign('activeFilters', empty($_REQUEST['activeFilters']) ? '' : $_REQUEST['activeFilters']);
 
 		return [
 			'title' => translate([
@@ -11818,7 +11793,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$userList->update();
 					}
 
-					// Unassign any sub-groups that were in this group
+					// Unassign any subgroups that were in this group
 					$subGroup = new UserListGroup();
 					$subGroup->parentGroupId = $groupId;
 					$subGroup->userId = UserAccount::getActiveUserId();
