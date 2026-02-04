@@ -2045,6 +2045,22 @@ class Sierra extends AbstractIlsDriver {
 							'isPublicFacing' => true,
 						]),
 					];
+				} elseif ($customField->ilsName == 'city' && $selfRegistrationForm->cityDropdown) {
+					$cityOptions = [];
+					$validCities = new SierraSelfRegistrationMunicipalityValues();
+					$validCities->municipalityType = 'city';
+					$validCities->find();
+					while ($validCities->fetch()) {
+						$cityOptions[$validCities->municipality] = $validCities->municipality;
+					}
+					$fields[$customField->section]['properties'][] = [
+						'property' => $customField->ilsName,
+						'type' => 'enum',
+						'values' => $cityOptions,
+						'label' => $customField->displayName,
+						'required' => $customField->required,
+						'note' => $customField->note,
+					];
 				} elseif ($customField->ilsName == 'state') {
 					if (!empty($library->validSelfRegistrationStates)){
 						$validStates = explode('|', $library->validSelfRegistrationStates);

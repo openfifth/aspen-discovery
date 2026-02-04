@@ -160,6 +160,13 @@ function getUpdates26_02_00(): array {
 				) ENGINE=INNODB",
 			]
 		], //library_location_cloudsource_settings
+		'sierra_self_registation_form_city_dropdown' => [
+			'title' => 'Update Sierra Self Registration Form - City Dropdown Selection',
+			'description' => 'Add toggle to use cities defined in municipalities as a dropdown option in the Sierra Self Registration Form.',
+			'sql' => [
+				"ALTER TABLE self_registration_form_sierra ADD COLUMN cityDropdown tinyint(1) DEFAULT 0",
+			]
+		], //sierra_self_registation_form_city_dropdown
 
 		//yanjun
 		'overdrive_qr_sessions' => [
