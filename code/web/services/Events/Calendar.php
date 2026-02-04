@@ -118,12 +118,33 @@ class Events_Calendar extends Action {
 
 		global $library;
 		$locations = Location::getLocationList(false, true);
+		if ($library->aspenEventsToInclude == 2) {
+			$libraryLocations = [];
+
+			foreach ($locations as $code => $name) {
+				$location = new Location();
+				$location->code = $code;
+
+				if ($location->find(true) && $location->libraryId == $library->libraryId) {
+					$libraryLocations[$code] = $name;
+				}
+			}
+			$locations = $libraryLocations;
+			$showAllLocations = false;
+			$selectedLocation = key($locations);
+
+		} else {
+			$showAllLocations = true;
+			$selectedLocation = 'all';
+		}
+		if ($selectedLocation != 'all' && !empty($locations[$selectedLocation])) {
+			$searchObject->addHiddenFilter('branch', '"' . $locations[$selectedLocation] . '"');
+		}
 		asort($locations);
 
-		$selectedLocation = 'all';
 		$eventsDefaultCalendarView = $library->eventsDefaultCalendarView ?? 0;
 
-		if ($eventsDefaultCalendarView == 1 ) {
+		if ($eventsDefaultCalendarView == 1 && $library->aspenEventsToInclude != 2) {
 			if (UserAccount::isLoggedIn()) {
 				$user = userAccount::getActiveUserObj();
 				if ($user) {
@@ -134,13 +155,13 @@ class Events_Calendar extends Action {
 					}
 				}
 			}
-			$selectedLocation = array_search($selectedLocation, $locations);
+			$selectedCode = array_search($selectedLocation, $locations);
 			if ($selectedCode !== false) {
 				$selectedLocation = $selectedCode;
 			} else {
-				$selectedCode = 'all';
+				$selectedLocation = 'all';
 			}
-		} elseif ($eventsDefaultCalendarView == 2 ) {
+		} elseif ($eventsDefaultCalendarView == 2 && $library->aspenEventsToInclude != 2) {
 			reset($locations);
 			$selectedLocation = key($locations);
 		} else {
@@ -162,6 +183,7 @@ class Events_Calendar extends Action {
 		if (isset($weekLink)) $weekLink .= $locationParam;
 		if (isset($monthLink)) $monthLink .= $locationParam;
 
+		$interface->assign('showAllLocations', $showAllLocations);
 		$interface->assign('locations', $locations);
 		$interface->assign('selectedLocation', $selectedLocation);
 
