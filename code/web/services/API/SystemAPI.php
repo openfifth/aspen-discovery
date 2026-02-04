@@ -2,7 +2,7 @@
 require_once ROOT_DIR . '/services/API/AbstractAPI.php';
 
 class SystemAPI extends AbstractAPI {
-	function launch() {
+	function launch() : void {
 		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
 
 		//Set Headers
@@ -21,7 +21,7 @@ class SystemAPI extends AbstractAPI {
 		}
 
 		if ($method === 'getLogoFile') {
-			return $this->$method();
+			$this->$method();
 		}else if ($method === 'getTranslation' || $method === 'getTranslationWithValues' || $method === 'getBulkTranslations') {
 			//These methods don't need additional authentication, just return the data.
 			$result = [
@@ -90,8 +90,6 @@ class SystemAPI extends AbstractAPI {
 		} else {
 			$this->forbidAPIAccess();
 		}
-
-		return '';
 	}
 
 	/** @noinspection PhpUnused */
@@ -425,13 +423,9 @@ class SystemAPI extends AbstractAPI {
 	public function getPendingDatabaseUpdates() : array {
 		$availableUpdates = $this->getDatabaseUpdates();
 		$availableUpdates = $this->checkWhichUpdatesHaveRun($availableUpdates);
-		$pendingUpdates = [];
-		foreach ($availableUpdates as $key => $update) {
-			if (!$update['alreadyRun']) {
-				$pendingUpdates[$key] = $update;
-			}
-		}
-		return $pendingUpdates;
+		return array_filter($availableUpdates, function ($update) {
+			return !$update['alreadyRun'];
+		});
 	}
 
 	public function runDatabaseUpdate(&$availableUpdates, $updateName) : array {
@@ -488,6 +482,7 @@ class SystemAPI extends AbstractAPI {
 		} catch (PDOException $e) {
 			$update['success'] = false;
 			if (isset($update['continueOnError']) && $update['continueOnError']) {
+				/** @noinspection PhpConditionAlreadyCheckedInspection */
 				if (!isset($update['status'])) {
 					$update['status'] = '';
 				}
@@ -501,10 +496,10 @@ class SystemAPI extends AbstractAPI {
 		return $updateOk;
 	}
 
-	private function markUpdateAsRun($update_key) {
+	private function markUpdateAsRun($update_key) : void {
 		global $aspen_db;
 		$result = $aspen_db->query("SELECT * from db_update where update_key = " . $aspen_db->quote($update_key));
-		if ($result->rowCount() != false) {
+		if ($result->rowCount()) {
 			//Update the existing value
 			$aspen_db->query("UPDATE db_update SET date_run = CURRENT_TIMESTAMP WHERE update_key = " . $aspen_db->quote($update_key));
 		} else {
@@ -512,7 +507,7 @@ class SystemAPI extends AbstractAPI {
 		}
 	}
 
-	public function runPendingDatabaseUpdates() {
+	public function runPendingDatabaseUpdates() : array {
 		$pendingUpdates = $this->getPendingDatabaseUpdates();
 		$numRun = 0;
 		$numFailed = 0;
@@ -535,6 +530,8 @@ class SystemAPI extends AbstractAPI {
 				$systemVariables->update();
 			}
 		}
+
+		$this->updateAdminPropertiesSearchIndex();
 
 		if ($numFailed == 0) {
 			return [
@@ -562,7 +559,7 @@ class SystemAPI extends AbstractAPI {
 		foreach ($availableUpdates as $key => $update) {
 			$update['alreadyRun'] = false;
 			$result = $aspen_db->query("SELECT * from db_update where update_key = " . $aspen_db->quote($key));
-			if ($result != false && $result->rowCount() > 0) {
+			if ($result !== false && $result->rowCount() > 0) {
 				$update['alreadyRun'] = true;
 			}
 			$availableUpdates[$key] = $update;
@@ -570,7 +567,7 @@ class SystemAPI extends AbstractAPI {
 		return $availableUpdates;
 	}
 
-	function doesKeyFileExist() {
+	function doesKeyFileExist() : bool {
 		global $serverName;
 		$passkeyFile = ROOT_DIR . "/../../sites/$serverName/conf/passkey";
 		if (!file_exists($passkeyFile)) {
@@ -589,7 +586,8 @@ class SystemAPI extends AbstractAPI {
 		return false;
 	}
 
-	public function getLogoFile() {
+	/** @noinspection PhpUnused */
+	public function getLogoFile() : void {
 		if (isset($_REQUEST['type'])) {
 			global $configArray;
 			$type = strip_tags($_REQUEST['type']);
@@ -642,7 +640,7 @@ class SystemAPI extends AbstractAPI {
 			$fullPath = $dataPath . $fileName;
 			$extension = pathinfo($fileName, PATHINFO_EXTENSION);
 
-			if ($file = @fopen($fullPath, 'r')) {
+			if (@fopen($fullPath, 'r')) {
 				set_time_limit(300);
 				$chunkSize = 2 * (1024 * 1024);
 
@@ -678,7 +676,8 @@ class SystemAPI extends AbstractAPI {
 	}
 
 
-	function getTranslation() {
+	/** @noinspection PhpUnused */
+	function getTranslation() : array {
 		if (isset($_REQUEST['term'])) {
 			$terms[] = $_REQUEST['term'];
 		} elseif (isset($_REQUEST['terms'])) {
@@ -728,7 +727,8 @@ class SystemAPI extends AbstractAPI {
 		return $response;
 	}
 
-	function getTranslationWithValues() {
+	/** @noinspection PhpUnused */
+	function getTranslationWithValues() : array {
 		if (isset($_REQUEST['term'])) {
 			$term = $_REQUEST['term'];
 		} else {
@@ -1024,6 +1024,7 @@ class SystemAPI extends AbstractAPI {
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
 	public function getSelfCheckSettings(): array {
 		if (isset($_REQUEST['locationId'])) {
 			$location = new Location();
@@ -1200,7 +1201,8 @@ class SystemAPI extends AbstractAPI {
 		}
 	}
 
-	function getMaterialsRequestForm() {
+	/** @noinspection PhpUnused */
+	function getMaterialsRequestForm() : array {
 		if(!isset($_REQUEST['libraryId'])) {
 			return [
 				'success' => false,
@@ -1319,6 +1321,126 @@ class SystemAPI extends AbstractAPI {
 		}
 
 		return $homeScreenLinks;
+	}
+
+	function updateAdminPropertiesSearchIndex() : array {
+		global $updatingSearchIndex;
+		$updatingSearchIndex = true;
+		require_once ROOT_DIR . '/sys/Administration/AdminPropertySearchEntry.php';
+		$serviceDirectories = scandir(ROOT_DIR . '/services');
+		foreach ($serviceDirectories as $serviceDirectory) {
+			if ($serviceDirectory != '..' && $serviceDirectory != '.') {
+				if (is_dir(ROOT_DIR . '/services/' . $serviceDirectory)) {
+					$serviceFiles = scandir(ROOT_DIR . '/services/' . $serviceDirectory);
+					foreach ($serviceFiles as $serviceFile) {
+						$fullServiceFilePath = ROOT_DIR . '/services/' . $serviceDirectory . '/' . $serviceFile;
+						if (is_file($fullServiceFilePath)) {
+							$serviceFileShort = substr($serviceFile, 0, strrpos($serviceFile, '.'));
+							$serviceClassName = $serviceDirectory . '_' . $serviceFileShort;
+							$isObjectEditor = false;
+							$serviceClassCodeFhnd = fopen($fullServiceFilePath, 'r');
+							while ($serviceClassCodeLine = fgets($serviceClassCodeFhnd)) {
+								if (str_contains($serviceClassCodeLine, 'class')) {
+									if (str_contains($serviceClassCodeLine, 'extends ObjectEditor')) {
+										$isObjectEditor = true;
+									}
+								}
+							}
+							fclose($serviceClassCodeFhnd);
+							if ($isObjectEditor) {
+								//echo("Processing $serviceClassName\n");
+								//ob_flush();
+								try {
+									require_once $fullServiceFilePath;
+									$serviceClass = new $serviceClassName();
+									$objectStructure = $serviceClass->getObjectStructure();
+									$requiredPermissions = $serviceClass->getViewPermissions();
+									$requiredModule = $serviceClass->getRequiredModule();
+
+									if ($requiredModule == 'Greenhouse') {
+										continue;
+									}
+
+									//Get a list of existing properties for the service class
+									$searchEntry = new AdminPropertySearchEntry();
+									$searchEntry->module = $serviceClass->getModule();
+									$searchEntry->action = $serviceClass->getToolName();
+									$existingProperties = $searchEntry->fetchAll('propertyName', 'propertyName');
+
+									foreach ($objectStructure as $property) {
+										$section = '';
+										$this->updateAdminSearchIndexForProperty($serviceClass, $section, $property, $requiredPermissions, $requiredModule, $existingProperties);
+									}
+
+									//Delete any properties that no longer exist in the service class
+									foreach ($existingProperties as $existingProperty) {
+										$searchEntry = new AdminPropertySearchEntry();
+										$searchEntry->module = $serviceClass->getModule();
+										$searchEntry->action = $serviceClass->getToolName();
+										$searchEntry->propertyName = $existingProperty;
+										$searchEntry->delete(true);
+									}
+								}catch (Exception $e) {
+									global $logger;
+									$logger->log("Error processing $serviceClassName\n", $e);
+								}
+							}else{
+								//echo("Skipping $serviceDirectory/$serviceFile\n");
+								//ob_flush();
+							}
+						}
+					}
+				}
+			}
+		}
+		return [
+			'success' => true,
+			'message' => 'Admin Property Search Index Updated'
+		];
+	}
+
+	private function updateAdminSearchIndexForProperty(ObjectEditor $serviceClass, $section, array $property, array $requiredPermissions, ?string $requiredModule, array &$existingProperties) : void {
+		require_once ROOT_DIR . '/sys/Administration/AdminPropertySearchEntry.php';
+		if ($property['type'] == 'section') {
+			if (!empty($section)) {
+				$section .= ' > ';
+			}
+			$section .= $property['label'];
+			foreach ($property['properties'] as $subProperty) {
+				$this->updateAdminSearchIndexForProperty($serviceClass, $section, $subProperty, $requiredPermissions, $requiredModule, $existingProperties);
+			}
+		}elseif ($property['type'] != 'method' && $property['type'] != 'hidden'){
+			$searchEntry = new AdminPropertySearchEntry();
+			//Set the unique properties
+			$searchEntry->module = $serviceClass->getModule();
+			$searchEntry->action = $serviceClass->getToolName();
+			$searchEntry->propertyName = $property['property'];
+			$propertyExistsInEntry = false;
+			if ($searchEntry->find(true)) {
+				$propertyExistsInEntry = true;
+			}
+			//Update additional information
+			$searchEntry->section = $section;
+			$searchEntry->toolTitle = $serviceClass->getPageTitle();
+			$searchEntry->label = $property['label'];
+			$searchEntry->keywords = "{$property['property']} {$property['label']}";
+			if (!empty($property['description'])) {
+				$searchEntry->keywords .= ' ' . $property['description'];
+			}
+			if (!empty($property['note'])) {
+				$searchEntry->keywords .= ' ' . $property['note'];
+			}
+			$searchEntry->requiredModule = $requiredModule ?? '';
+			$searchEntry->requiredPermissions = implode('|', $requiredPermissions);
+
+			$propertyExistsInEntry ? $searchEntry->update() : $searchEntry->insert();
+
+			unset($existingProperties[$property['property']]);
+
+			if ($property['type'] == 'oneToMany') {
+				//TODO: Index One To Many objects as well, similar to sections?
+			}
+		}
 	}
 
 	function getBreadcrumbs(): array {

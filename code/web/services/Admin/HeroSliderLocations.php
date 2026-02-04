@@ -114,11 +114,11 @@ class Admin_HeroSliderLocations extends ObjectEditor {
 		return 'local_enrichment';
 	}
 
-	function canView(): bool {
-		return UserAccount::userHasPermission([
+	public function getViewPermissions() : array {
+		return [
 			'Administer All Hero Sliders',
 			'Administer Library Hero Sliders',
-		]);
+		];
 	}
 
 	function getInitializationJs(): string {

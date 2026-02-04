@@ -32,7 +32,7 @@ class Admin_DBMaintenance extends Admin_Admin {
 
 		$availableUpdates = $systemAPI->getDatabaseUpdates();
 
-		if (isset($_REQUEST['selected']) && !empty($_REQUEST['selected'])) {
+		if (!empty($_REQUEST['selected'])) {
 			$interface->assign('showStatus', true);
 
 			//Process the updates

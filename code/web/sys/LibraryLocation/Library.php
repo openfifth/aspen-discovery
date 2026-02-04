@@ -1,7 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
-require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryCombinedResultSection.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryTheme.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryUserDefinedField.php';

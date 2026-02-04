@@ -3498,6 +3498,7 @@ class User extends DataObject {
 				$searchObject->setQueryIDs(array_slice($groupedWorkIds, 0, 500));
 				$searchObject->setPage(1);
 				$searchObject->setLimit(10);
+				require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 				$genreFacet = new LibraryFacetSetting();
 				$genreFacet->facetName = 'genre_facet';
 				$genreFacet->displayName = 'genre';
