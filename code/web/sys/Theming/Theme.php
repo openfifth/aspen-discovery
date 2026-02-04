@@ -62,6 +62,11 @@ class Theme extends DataObject {
 	public /** @noinspection PhpUnused */
 		$headerForegroundColorDefault;
 	public $headerBottomBorderWidth;
+	public static $defaultFocusColor = '#3174AF';
+	public $focusColor;
+	public /** @noinspection PhpUnused */
+		$focusColorDefault;
+	public $focusBorderWidth;
 	public $headerBackgroundImage;
 	public $headerBackgroundImageSize;
 	public $headerBackgroundImageRepeat;
@@ -863,6 +868,23 @@ class Theme extends DataObject {
 				'type' => 'text',
 				'label' => 'Header Bottom Border Width',
 				'description' => 'Header Bottom Border Width',
+				'required' => false,
+				'hideInLists' => true,
+			],
+			'focusColor' => [
+				'property' => 'focusColor',
+				'type' => 'color',
+				'label' => 'Focus Color',
+				'description' => 'When elements receive focus on the page, they will get a border that is this color.',
+				'required' => false,
+				'hideInLists' => true,
+				'default' => '#3174AF',
+			],
+			'focusBorderWidth' => [
+				'property' => 'focusBorderWidth',
+				'type' => 'text',
+				'label' => 'Focus Border Width',
+				'description' => 'How wide should the border be when an element receives focus?',
 				'required' => false,
 				'hideInLists' => true,
 			],
@@ -2851,6 +2873,7 @@ class Theme extends DataObject {
 		$this->getValueForPropertyUsingDefaults('resultValueColor', Theme::$defaultResultValueColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('headerBackgroundColor', Theme::$defaultHeaderBackgroundColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('headerForegroundColor', Theme::$defaultHeaderForegroundColor, $appliedThemes);
+		$this->getValueForPropertyUsingDefaults('focusColor', Theme::$defaultFocusColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('breadcrumbsBackgroundColor', Theme::$defaultBreadcrumbsBackgroundColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('breadcrumbsForegroundColor', Theme::$defaultBreadcrumbsForegroundColor, $appliedThemes);
 		$this->getValueForPropertyUsingDefaults('searchToolsBackgroundColor', Theme::$defaultSearchToolsBackgroundColor, $appliedThemes);
@@ -2984,6 +3007,7 @@ class Theme extends DataObject {
 		$this->applyDefaults();
 		$interface->assign('headerBackgroundColor', $this->headerBackgroundColor);
 		$interface->assign('headerForegroundColor', $this->headerForegroundColor);
+		$interface->assign('focusColor', $this->focusColor);
 		$interface->assign('headerBackgroundImage', $this->headerBackgroundImage);
 		$interface->assign('headerBackgroundImageSize', $this->headerBackgroundImageSize);
 		$interface->assign('headerBackgroundImageRepeat', $this->headerBackgroundImageRepeat);
@@ -3163,6 +3187,13 @@ class Theme extends DataObject {
 					$headerBottomBorderWidth = $headerBottomBorderWidth . 'px';
 				}
 				$interface->assign('headerBottomBorderWidth', $headerBottomBorderWidth);
+			}
+			if ($interface->getVariable('focusBorderWidth') == null && $theme->focusBorderWidth != null) {
+				$focusBorderWidth = $theme->focusBorderWidth;
+				if (is_numeric($focusBorderWidth)) {
+					$focusBorderWidth = $focusBorderWidth . 'px';
+				}
+				$interface->assign('focusBorderWidth', $focusBorderWidth);
 			}
 			if ($interface->getVariable('buttonRadius') == null && $theme->buttonRadius != null) {
 				$buttonRadius = $theme->buttonRadius;

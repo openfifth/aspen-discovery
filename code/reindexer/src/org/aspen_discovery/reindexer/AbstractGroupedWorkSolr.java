@@ -109,6 +109,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected final HashSet<Long> userRatingLink = new HashSet<>();
 	protected final HashSet<Long> userNotInterestedLink = new HashSet<>();
 
+	protected final HashSet<Long> listLink = new HashSet<>();
+	protected final HashMap<Long, Long> listEntryWeights = new HashMap<>();
+	protected final HashMap<Long, Long> listEntryDatesAdded = new HashMap<>();
+
 	protected final HashSet<String> parentRecords = new HashSet<>();
 
 	protected final HashMap<Integer, Set<String>> customFacetValues = new HashMap<>();
@@ -1579,6 +1583,12 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 
 	public void addReadingHistoryLink(long userId) {
 		this.userReadingHistoryLink.add(userId);
+	}
+
+	public void addListLink(long listId, long weight, long dateAdded) {
+		this.listLink.add(listId);
+		this.listEntryWeights.put(listId, weight);
+		this.listEntryDatesAdded.put(listId, dateAdded);
 	}
 
 	public void addRatingLink(long userId){

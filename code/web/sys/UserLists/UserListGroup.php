@@ -139,6 +139,7 @@ class UserListGroup extends DataObject {
 		$group = new UserListGroup();
 		$group->userId = $user->id;
 		$group->orderBy('title DESC');
+
 		$allGroups = [];
 		if ($group->find()) {
 			while ($group->fetch()) {

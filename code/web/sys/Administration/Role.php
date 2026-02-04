@@ -135,6 +135,7 @@ class Role extends DataObject {
 				'Administer All Themes',
 				'Administer Boundless',
 				'Administer Cloud Library',
+				'Administer CloudSource OA',
 				'Administer EBSCO EDS',
 				'Administer Community Engagement Module',
 				'Administer Summon',
@@ -185,6 +186,7 @@ class Role extends DataObject {
 				'View Offline Holds Report',
 				'View OverDrive Test Interface',
 				'View System Reports',
+				'View Community Engagement Admin View',
 			],
 			'userAdmin' => [
 				'Administer Permissions',

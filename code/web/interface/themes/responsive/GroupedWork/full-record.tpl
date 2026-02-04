@@ -162,3 +162,6 @@
 
 	</div>
 {/strip}
+<script>
+	AspenDiscovery.OverDrive.checkAutoAction();
+</script>

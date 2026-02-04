@@ -18,7 +18,9 @@ class AccountSummary extends DataObject {
 	//This determines if the data stored with account summary is stale so we can force a reload
 	public $dataIsStale;
 	public $holdsAreStale;
+	public $holdCacheTime;
 	public $checkoutsAreStale;
+	public $checkoutCacheTime;
 
 	protected $_materialsRequests;
 	protected $_readingHistory;
@@ -38,7 +40,9 @@ class AccountSummary extends DataObject {
 			'hasUpdatedSavedSearches',
 			'dataIsStale',
 			'holdsAreStale',
+			'holdCacheTime',
 			'checkoutsAreStale',
+			'checkoutCacheTime',
 		];
 	}
 
@@ -177,13 +181,18 @@ class AccountSummary extends DataObject {
 		$this->update();
 	}
 
+	public function areHoldsStale() : bool {
+		return $this->holdsAreStale || ((time() - $this->holdCacheTime) > 5 * 60);
+	}
 	public function markHoldsStale() : void {
 		$this->__set('holdsAreStale', 1);
 		$this->update();
 	}
 
 	public function clearHoldsStale() : void {
+
 		$this->__set('holdsAreStale', 0);
+		$this->__set('holdCacheTime', time());
 		$this->update();
 	}
 
@@ -195,6 +204,10 @@ class AccountSummary extends DataObject {
 	public function decrementUnavailableHolds() : void {
 		$this->__set('numUnavailableHolds', --$this->numUnavailableHolds);
 		$this->update();
+	}
+
+	public function areCheckoutsStale() : bool {
+		return $this->checkoutsAreStale || ((time() - $this->checkoutCacheTime) > 5 * 60);
 	}
 
 	public function incrementNumberOfCheckouts() : void {
@@ -220,6 +233,7 @@ class AccountSummary extends DataObject {
 
 	public function clearCheckoutsStale() : void {
 		$this->__set('checkoutsAreStale', 0);
+		$this->__set('checkoutCacheTime', time());
 		$this->update();
 	}
 }

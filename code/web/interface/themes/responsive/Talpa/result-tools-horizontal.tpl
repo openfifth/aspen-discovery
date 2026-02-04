@@ -1,5 +1,5 @@
 {strip}
-	{if $showEmailThis || $showShareOnExternalSites}
+	{if !empty($showEmailThis) || !empty($showShareOnX) || !empty($showShareOnFacebook) || !empty($showShareOnPinterest) || !empty($showShareOnLink)}
 		<div class="result-tools-horizontal btn-toolbar" role="toolbar">
 			{* More Info Link, only if we are showing other data *}
 			{if !empty($showMoreInfo)}

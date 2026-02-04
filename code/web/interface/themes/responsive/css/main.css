@@ -7633,6 +7633,16 @@ a.bg-overdue:focus {
 .char-counter.outside {
   bottom: 0;
 }
+rapi-doc::part(textbox) {
+  max-width: 100%;
+  margin-bottom: 2em;
+}
+rapi-doc::part(textbox):focus {
+  border-color: #66afe9;
+  outline: 0;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
+}
 .ui-rater > span {
   vertical-align: top;
 }
@@ -8393,6 +8403,10 @@ ul.account-submenu {
 }
 .btn-wrap {
   white-space: normal !important;
+}
+.btn-toolbar .btn-group,
+.btn-toolbar .btn {
+  margin-bottom: 3px;
 }
 .label-wrap {
   white-space: normal !important;
@@ -10221,6 +10235,10 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   margin-right: 6px;
   margin-top: 2px;
   vertical-align: top;
+}
+#listActions {
+  border-bottom: 3px solid #d5d6da;
+  padding-bottom: 6px;
 }
 /**
  * Additional Styling related to the help system

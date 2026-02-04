@@ -1785,4 +1785,14 @@ abstract class ObjectEditor extends Admin_Admin {
 
 		$this->viewIndividualObject($structure);
 	}
+
+	public function getRequiredModule() : ?string {
+		return null;
+	}
+
+	function canView(): bool {
+		return UserAccount::userHasPermission($this->getViewPermissions());
+	}
+
+	abstract function getViewPermissions() : array;
 }

@@ -28,8 +28,11 @@
 	 	 	{/if}
 			<div class="col-xs-12">
 				<div style="padding-bottom:1em;">
-					<button class="btn btn-default btn-sm" onclick="return AspenDiscovery.Account.showCreateListGroupForm('{$activeListGroupDetails->id}')">{translate text="Create a New List Group" isPublicFacing=true}</button>
 					<button class="btn btn-sm btn-default" onclick="return AspenDiscovery.Account.showCreateListForm(undefined, undefined, '{$activeListGroupDetails->id}')">{translate text="Create a New List" isPublicFacing=true}</button>
+					<button class="btn btn-default btn-sm" onclick="return AspenDiscovery.Account.showCreateListGroupForm('{$activeListGroupDetails->id}')">{translate text="Create a New List Group" isPublicFacing=true}</button>
+					{if !empty($showConvertListsFromClassic)}
+						<a href="/MyAccount/ImportListsFromClassic" class="btn btn-sm btn-default">{translate text="Import From Old Catalog" isPublicFacing=true}</a>
+					{/if}
 				</div>
 			</div>
 		</div>

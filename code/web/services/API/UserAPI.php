@@ -6253,6 +6253,7 @@ class UserAPI extends AbstractAPI {
 								'message' => $result['api']['message'],
 								'itemData' => $result['itemData'],
 								'completionMessage' => $result['completionMessage'] ?? '',
+								'mustConfirmCompletionMessage' => $result['mustConfirmCompletionMessage'] ?? false,
 							];
 						} else {
 							return [

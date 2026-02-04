@@ -4,6 +4,9 @@
 	<form id="emailListForm" class="form form-horizontal">
 		<div class="form-group">
 			<input type="hidden" name="listId" value="{$listId|escape}">
+			<input type="hidden" name="selectedResourceTypes" id="selectedResourceTypes" value="{$selectedResourceTypes|escape:"html"}">
+			<input type="hidden" name="activeFilters" id="activeFilters" value="{$activeFilters|escape:"html"}">
+
 			<label for="to" class="control-label col-xs-2">{translate text='To' isPublicFacing=true}</label>
 			<div class="col-xs-10">
 				<input type="text" name="to" id="to" size="40" class="required email form-control">

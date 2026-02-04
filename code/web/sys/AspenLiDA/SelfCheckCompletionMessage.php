@@ -6,6 +6,8 @@ class SelfCheckCompletionMessage extends DataObject {
 	public $formats;
 	public $owningLocations;
 	public $checkoutLocations;
+
+	public $requireConfirmation;
 	public $_completionMessage;
 
 	static $_objectStructure = [];
@@ -47,6 +49,13 @@ class SelfCheckCompletionMessage extends DataObject {
 //				'required' => false,
 //				'default' => '.*',
 //			],
+			'requireConfirmation' => [
+				'property' => 'requireConfirmation',
+				'type' => 'checkbox',
+				'label' => 'Require Confirmation of Message',
+				'description' => 'Require the patron to confirm they have read the message before completing the checkout',
+				'required' => false,
+			],
 			'completionMessage' => [
 				'property' => 'completionMessage',
 				'type' => 'translatablePlainTextBlock',

@@ -235,7 +235,7 @@
 							</div>
 						{/if}
 
-						{if !empty($isAssociatedWithILS) && ((!empty($allowRememberPickupLocation) && count($pickupLocations) > 1) || !empty($showAlternateLibraryOptions) || !empty($allowRememberPickupLocation))}
+						{if !empty($isAssociatedWithILS)}
 							<div class="panel" id="holdPreferencesPanel">
 								<a data-toggle="collapse" href="#holdPreferencesPanelBody" class="active">
 									<div class="panel-heading">
@@ -344,6 +344,17 @@
 													<input type="checkbox" class="form-control" name="showHoldHelpMessages" id="showHoldHelpMessages" {if $profile->showHoldHelpMessages==1}checked='checked'{/if} data-switch="">
 												{else}
 													{if $profile->showHoldHelpMessages==0}{translate text="No" isPublicFacing=true}{else}{translate text="Yes" isPublicFacing=true}{/if}
+												{/if}
+											</div>
+										{/if}
+
+										{if !empty($offerImmediateHoldFreeze)  && !empty($isAssociatedWithILS)}
+											<div class="form-group propertyRow">
+												<label for="promptToFreezeHoldsImmediately" class="control-label">{translate text='Prompt to Freeze Holds Immediately' isPublicFacing=true}</label>&nbsp;
+												{if $edit == true}
+													<input type="checkbox" class="form-control" name="promptToFreezeHoldsImmediately" id="promptToFreezeHoldsImmediately" {if $profile->promptToFreezeHoldsImmediately==1}checked='checked'{/if} data-switch="">
+												{else}
+													{if $profile->promptToFreezeHoldsImmediately==0}{translate text="No" isPublicFacing=true}{else}{translate text="Yes" isPublicFacing=true}{/if}
 												{/if}
 											</div>
 										{/if}

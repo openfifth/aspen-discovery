@@ -7,7 +7,7 @@
 			<div class="col-xs-3 col-sm-4 col-md-3 checkedOut-covers-column">
 				<div class="row">
 					<div class="selectTitle hidden-xs col-sm-1">
-						&nbsp;{* Can't renew hoopla titles*}
+						&nbsp;{* Can't renew Hoopla titles*}
 					</div>
 					<div class="{*coverColumn *}text-center col-xs-12 col-sm-10">
 						{if $disableCoverArt != 1}{*TODO: should become part of $showCovers *}
@@ -26,7 +26,7 @@
 			</div>
 		{else}
 			<div class="col-xs-1">
-				&nbsp;{* Can't renew hoopla titles*}
+				&nbsp;{* Can't renew Hoopla titles*}
 			</div>
 		{/if}
 

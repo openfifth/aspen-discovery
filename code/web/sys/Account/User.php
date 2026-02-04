@@ -66,6 +66,8 @@ class User extends DataObject {
 	private $_permissions;
 	private $_masqueradingRoles;
 	private $_additionalAdministrationLocations;
+	/** @var UserOverDriveQRCodeToken[] */
+	private $_overDriveQrTokens = null;
 
 	public $interfaceLanguage;
 	public $searchPreferenceLanguage;
@@ -75,6 +77,7 @@ class User extends DataObject {
 	public $pickupSublocationId;
 	public $rememberHoldPromptForEdition;
 	public $holdPromptForEdition;
+	public $promptToFreezeHoldsImmediately;
 
 	public $lastListUsed;
 	public $lastListGroupAdded;
@@ -253,16 +256,55 @@ class User extends DataObject {
 	}
 	
 	function getUnassignedListsForListGroups() {
+		// Determine if pagination is to be included to help with supporting different Aspen LiDA versions
+		$includePagination = false;
+		if (isset($_REQUEST['includePagination'])) {
+			$includePagination = (bool)$_REQUEST['includePagination'];
+		}
+
+		$listsPerPage = 20;
+		if (isset($_REQUEST['limit'])) {
+			$listsPerPage = $_REQUEST['limit'];
+		}
+
+		$page = $_REQUEST['page'] ?? 1;
+
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		$userList = new UserList();
 		$userList->listGroupId = -1;
 		$userList->user_id = $this->id;
 		$userList->orderBy('title ASC');
+		$listCount = $userList->count();
+		if ($includePagination) {
+			$userList->limit(($page - 1) * $listsPerPage, $listsPerPage);
+		}
 		$userList->find();
 		$lists = [];
+
+
+		if ($includePagination) {
+			$options = [
+				'totalItems' => $listCount,
+				'perPage' => $listsPerPage,
+			];
+
+			require_once ROOT_DIR . '/sys/Pager.php';
+			$pager = new Pager($options);
+		}
+
 		while ($userList->fetch()) {
 			$lists[] = clone $userList;
 		}
+
+		if ($includePagination) {
+			return [
+				'page_current' => (int)$pager->getCurrentPage(),
+				'totalResults' => (int)$pager->getTotalItems(),
+				'page_total' => (int)$pager->getTotalPages(),
+				'lists' => $lists,
+			];
+		}
+
 		return $lists;
 	}
 
@@ -917,6 +959,13 @@ class User extends DataObject {
 						$overDriveSettings = $userHomeLibrary->getLibraryOverdriveSettings();
 						foreach ($overDriveSettings as $libraryOverDriveSetting) {
 							if ($libraryOverDriveSetting->circulationEnabled) {
+								return true;
+							}
+
+							require_once ROOT_DIR . '/sys/OverDrive/OverDriveSetting.php';
+							$overDriveSetting = new OverDriveSetting();
+							$overDriveSetting->id = $libraryOverDriveSetting->settingId;
+							if ($overDriveSetting->find(true) && !empty($overDriveSetting->enableQRCodeAuth)) {
 								return true;
 							}
 						}
@@ -1654,6 +1703,7 @@ class User extends DataObject {
 		$this->__set('rememberHoldPickupLocation', (isset($_POST['rememberHoldPickupLocation']) && $_POST['rememberHoldPickupLocation'] == 'on') ? 1 : 0);
 		$this->__set('rememberHoldPromptForEdition', (isset($_POST['rememberHoldPromptForEdition']) && $_POST['rememberHoldPromptForEdition'] == 'on') ? 1 : 0);
 		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
+		$this->__set('promptToFreezeHoldsImmediately', (isset($_POST['promptToFreezeHoldsImmediately']) && $_POST['promptToFreezeHoldsImmediately'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
@@ -1694,12 +1744,12 @@ class User extends DataObject {
 		if ($saveResult === false) {
 			return [
 				'success' => false,
-				'message' => 'Could not save to the database',
+				'message' => 'Could not save to the database.',
 			];
 		} else {
 			return [
 				'success' => true,
-				'message' => 'Your preferences were updated successfully',
+				'message' => 'Your preferences were updated successfully.',
 			];
 		}
 	}
@@ -2115,6 +2165,7 @@ class User extends DataObject {
 				'url' => "/MyAccount/CheckedOut",
 				'requireLogin' => false,
 				'btnType' => 'btn-info',
+				'type' => $source . '_checked_out',
 			];
 		} elseif ($this->isRecordOnHold($source, $recordId)) {
 			$actions[] = [
@@ -2129,7 +2180,8 @@ class User extends DataObject {
 				'url' => "/MyAccount/Holds",
 				'requireLogin' => false,
 				'btnType' => 'btn-info',
-				'id' => 'onHoldAction' . $recordId
+				'id' => 'onHoldAction' . $recordId,
+				'type' => $source . '_on_hold',
 			];
 		}
 		if (!$loadingLinkedUser) {
@@ -3340,6 +3392,14 @@ class User extends DataObject {
 		return $lists->count();
 	}
 
+	function getNumUnassignedLists() {
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$lists = new UserList();
+		$lists->user_id = $this->id;
+		$lists->listGroupId = -1;
+		return $lists->count();
+	}
+
 	function getNumNotInterested() {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/NotInterested.php';
 		$obj = new NotInterested();
@@ -3394,6 +3454,7 @@ class User extends DataObject {
 				$summary->totalYearlyCheckouts = $readingHistoryDB->count();
 
 				// Top author
+				$authors = [];
 				$readingHistoryDB->find();
 				while ($readingHistoryDB->fetch()) {
 					$author = strtolower(preg_replace('/[.|,]/', "", $readingHistoryDB->author));
@@ -3437,6 +3498,7 @@ class User extends DataObject {
 				$searchObject->setQueryIDs(array_slice($groupedWorkIds, 0, 500));
 				$searchObject->setPage(1);
 				$searchObject->setLimit(10);
+				require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 				$genreFacet = new LibraryFacetSetting();
 				$genreFacet->facetName = 'genre_facet';
 				$genreFacet->displayName = 'genre';
@@ -3742,6 +3804,62 @@ class User extends DataObject {
 		return $overDriveDriver->getOptions($this);
 	}
 
+	public function getOverDriveQrToken(int $settingId): ?UserOverDriveQRCodeToken {
+		if ($this->_overDriveQrTokens === null) {
+			$this->loadOverDriveQrTokens();
+		}
+		return $this->_overDriveQrTokens[$settingId] ?? null;
+	}
+
+	private function loadOverDriveQrTokens(): void {
+		$this->_overDriveQrTokens = [];
+		require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveQRCodeToken.php';
+		$token = new UserOverDriveQRCodeToken();
+		$token->userId = $this->id;
+		if ($token->find()) {
+			while ($token->fetch()) {
+				$this->_overDriveQrTokens[$token->settingId] = clone $token;
+			}
+		}
+	}
+
+	public function saveOverDriveQrToken(int $settingId, stdClass $tokenData): void {
+		require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveQRCodeToken.php';
+		$token = $this->getOverDriveQrToken($settingId);
+		if ($token === null) {
+			$token = new UserOverDriveQRCodeToken();
+			$token->userId = $this->id;
+			$token->settingId = $settingId;
+		}
+		$token->applyTokenResponse($tokenData);
+		if (empty($token->id)) {
+			$token->insert();
+		} else {
+			$token->update();
+		}
+		$this->_overDriveQrTokens[$settingId] = $token;
+	}
+
+	public function deleteOverDriveQrToken(int $settingId): void {
+		if ($this->_overDriveQrTokens === null) {
+			$this->loadOverDriveQrTokens();
+		}
+		if (isset($this->_overDriveQrTokens[$settingId])) {
+			$token = $this->_overDriveQrTokens[$settingId];
+			if (!empty($token->id)) {
+				$token->delete();
+			}
+			unset($this->_overDriveQrTokens[$settingId]);
+		} else {
+			require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveQRCodeToken.php';
+			$token = new UserOverDriveQRCodeToken();
+			$token->userId = $this->id;
+			$token->settingId = $settingId;
+			if ($token->find(true) && !empty($token->id)) {
+				$token->delete();
+			}
+		}
+	}
 	function completeFinePayment(UserPayment $payment): array {
 		if (
 			$payment->completed ||
@@ -4245,7 +4363,7 @@ class User extends DataObject {
 				'Administer Community Engagement Module',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Admin View', 'View progress and manage rewards.', '/CommunityEngagement/AdminView'), [
-				'View Community Engagement Dashboard',
+				'View Community Engagement Admin View',
 			]);
 			$sections['communityEngagement']->addAction(new AdminAction('Dashboard', 'View usage dashboard for Community Engagement.', '/CommunityEngagement/Dashboard'), [
 				'View Community Engagement Dashboard',
@@ -4528,6 +4646,11 @@ class User extends DataObject {
 			]);
 		}
 
+		if (array_key_exists('CloudSource', $enabledModules)) {
+			$sections['cloudsource'] = new AdminSection('CloudSource OA');
+			$sections['cloudsource']->addAction(new AdminAction('Settings', 'Define connection information for CloudSource OA and Aspen Discovery.', '/CloudSource/CloudSourceSettings'), 'Administer CloudSource OA');
+		}
+
 		if (array_key_exists('EBSCO EDS', $enabledModules)) {
 			$sections['ebsco'] = new AdminSection('EBSCO EDS');
 			$sections['ebsco']->addAction(new AdminAction('Settings', 'Define connection information between EBSCO EDS and Aspen Discovery.', '/EBSCO/EDSSettings'), 'Administer EBSCO EDS');
@@ -4760,6 +4883,14 @@ class User extends DataObject {
 			}
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Settings', 'Define settings for self-check in Aspen LiDA.', '/AspenLiDA/SelfCheckSettings'), 'Administer Aspen LiDA Self-Check Settings');
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Completion Messages', 'Define messages to show when self-check checkouts are completed in Aspen LiDA.', '/AspenLiDA/SelfCheckCompletionMessages'), 'Administer Aspen LiDA Self-Check Settings');
+			$sections['aspen_lida']->addAction(new AdminAction('Home Screen Link Groups', 'Define settings for home screen link groups in Aspen LiDA.', '/AspenLiDA/HomeScreenLinkGroups'), [
+				'Administer All Aspen LiDA Home Screen Links',
+				'Administer Library Aspen LiDA Home Screen Links'
+			]);
+			$sections['aspen_lida']->addAction(new AdminAction('Home Screen Links', 'Define settings for home screen links in Aspen LiDA.', '/AspenLiDA/HomeScreenLinks'), [
+				'Administer All Aspen LiDA Home Screen Links',
+				'Administer Library Aspen LiDA Home Screen Links'
+			]);
 		}
 		if (array_key_exists('Series', $enabledModules)) {
 			$sections['series'] = new AdminSection("Series Search");
@@ -5946,8 +6077,10 @@ class User extends DataObject {
 			$selfCheckCompletionMessage->whereAdd("$escapedOwningLocationCode REGEXP owningLocations");
 			$selfCheckCompletionMessage->whereAdd("$escapedCheckoutLocationCode REGEXP checkoutLocations");
 			$result['completionMessage'] = '';
+			$result['mustConfirmCompletionMessage'] = false;
 			if ($selfCheckCompletionMessage->find(true)) {
 				$result['completionMessage'] = $selfCheckCompletionMessage->getTextBlockTranslation('completionMessage', $this->interfaceLanguage);
+				$result['mustConfirmCompletionMessage'] = $selfCheckCompletionMessage->requireConfirmation;
 			}
 
 			$accountSummary = $this->getCachedAccountSummary('hoopla');
