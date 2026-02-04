@@ -44,6 +44,9 @@ body {
 a {
   background: transparent;
 }
+a:focus {
+  outline: thin dotted;
+}
 a:active,
 a:hover {
   outline: 0;
@@ -284,6 +287,11 @@ a:hover,
 a:focus {
   color: #204c73;
   text-decoration: underline;
+}
+a:focus {
+  outline: thin dotted;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
 }
 img {
   vertical-align: middle;
@@ -1932,6 +1940,13 @@ select optgroup {
   font-style: inherit;
   font-family: inherit;
 }
+input[type="file"]:focus,
+input[type="radio"]:focus,
+input[type="checkbox"]:focus {
+  outline: thin dotted;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
+}
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
   height: auto;
@@ -1964,6 +1979,7 @@ output {
 }
 .form-control:focus {
   border-color: #66afe9;
+  outline: 0;
   -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
   box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
 }
@@ -2253,6 +2269,7 @@ textarea.input-lg {
 }
 .form-check-input:focus {
   border-color: #66afe9;
+  outline: 0;
   box-shadow: 0 0 0 0.25rem rgba(49, 116, 175, 0.25);
 }
 .form-check-input:checked {
@@ -2338,6 +2355,11 @@ textarea.input-lg {
   -ms-user-select: none;
   -o-user-select: none;
   user-select: none;
+}
+.btn:focus {
+  outline: thin dotted;
+  outline: 5px auto -webkit-focus-ring-color;
+  outline-offset: -2px;
 }
 .btn:hover,
 .btn:focus {
@@ -3343,6 +3365,9 @@ input[type="button"].btn-block {
 .dropdown {
   position: relative;
 }
+.dropdown-toggle:focus {
+  outline: 0;
+}
 .dropdown-menu {
   position: absolute;
   top: 100%;
@@ -3400,6 +3425,7 @@ input[type="button"].btn-block {
 .dropdown-menu > .active > a:focus {
   color: #fff;
   text-decoration: none;
+  outline: 0;
   background-color: #3174AF;
 }
 .dropdown-menu > .disabled > a,
@@ -3486,6 +3512,10 @@ input[type="button"].btn-block {
 .btn-group > .btn.active,
 .btn-group-vertical > .btn.active {
   z-index: 2;
+}
+.btn-group > .btn:focus,
+.btn-group-vertical > .btn:focus {
+  outline: none;
 }
 .btn-group .btn + .btn,
 .btn-group .btn + .btn-group,
@@ -5812,6 +5842,7 @@ button.close {
 }
 .carousel-control:hover,
 .carousel-control:focus {
+  outline: none;
   color: #fff;
   text-decoration: none;
   opacity: 0.9;
@@ -7608,6 +7639,7 @@ rapi-doc::part(textbox) {
 }
 rapi-doc::part(textbox):focus {
   border-color: #66afe9;
+  outline: 0;
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
 }
@@ -8222,6 +8254,7 @@ hr.menu {
 #horizontal-menu-bar-container .menu-icon:hover,
 #horizontal-menu-bar-container .menu-icon:focus {
   text-decoration: none;
+  outline: none;
 }
 #horizontal-menu-bar-container .menu-icon .menu-bar-label {
   font-weight: bold;
@@ -8630,6 +8663,12 @@ a.placard-image-link {
   color: #00a4e3;
   z-index: 2;
   box-shadow: white 0px 0px 0px 0px;
+}
+#explore-more-body .jcarousel-control-prev:focus,
+.exploreMoreBar .jcarousel-control-prev:focus,
+#explore-more-body .jcarousel-control-next:focus,
+.exploreMoreBar .jcarousel-control-next:focus {
+  outline: none;
 }
 #explore-more-body .jcarousel-control-prev .glyphicon,
 .exploreMoreBar .jcarousel-control-prev .glyphicon,
@@ -9059,6 +9098,7 @@ a.placard-image-link {
 }
 #horizontal-search-box #lookfor:focus {
   border-color: #66afe9;
+  outline: 0;
   -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
   box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
 }
@@ -9072,6 +9112,7 @@ a.placard-image-link {
 #horizontal-search-box .searchSourceHorizontal:focus,
 #horizontal-search-box .searchTypeHorizontal:focus {
   border-color: #66afe9;
+  outline: 0;
   -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
   box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102, 175, 233, 0.6);
 }
@@ -9333,6 +9374,7 @@ a.placard-image-link {
 #browse-category-picker .jcarousel-control-prev:focus,
 #browse-category-picker .jcarousel-control-next:focus {
   text-decoration: none;
+  outline: none;
 }
 #browse-category-picker .jcarousel-control-prev:hover,
 #browse-category-picker .jcarousel-control-next:hover {
@@ -9377,6 +9419,8 @@ a.placard-image-link {
   margin-right: auto;
 }
 .browse-category div:focus {
+  outline: 2px solid #3174af;
+  outline-offset: -2px;
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
 }
 .browse-category div:hover {
@@ -9387,6 +9431,8 @@ a.placard-image-link {
   font-size: 20px;
 }
 .browse-category.selected div:focus {
+  outline: 2px solid #3174af;
+  outline-offset: -2px;
   box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.4);
 }
 #selected-browse-label {
@@ -9755,6 +9801,9 @@ a.browse-thumbnail.active {
 #browse-sub-category-menu button.selected {
   color: #fff;
   background-color: #0d8ec7;
+}
+#browse-sub-category-menu button:focus {
+  outline: none;
 }
 .selected-browse-sub-category-label-search-text::before {
   content: ' \00bb \00a0';
@@ -10381,6 +10430,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
 .moreLikeThisWrapper .jcarousel-control-next:focus,
 .seriesWrapper .jcarousel-control-next:focus {
   text-decoration: none;
+  outline: none;
 }
 .horizontalCarouselSpotlightWrapper .jcarousel-control-prev:hover,
 .moreLikeThisWrapper .jcarousel-control-prev:hover,
@@ -12257,6 +12307,10 @@ html.hero-slider-website {
 .hero-slider .swiper-button-pause:hover {
   background: rgba(0, 0, 0, 0.7);
   transform: scale(1.1);
+}
+.hero-slider .swiper-button-pause:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
 }
 body.hero-slider-signage,
 html.hero-slider-signage {

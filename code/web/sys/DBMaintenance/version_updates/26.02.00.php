@@ -23,6 +23,26 @@ function getUpdates26_02_00(): array {
 				"INSERT INTO grouped_work_scheduled_index (permanent_id, indexAfter) SELECT sourceId, UNIX_TIMESTAMP() from user_list_entry where source = 'GroupedWork'"
 			]
 		], //force_reindex_of_all_titles_in_lists
+		'admin_property_search_index' => [
+			'title' => 'Admin Property Search Index',
+			'description' => 'Create a table to store the admin property search index',
+			'sql' => [
+				"DROP TABLE IF EXISTS `admin_property_search_entries`",
+				"CREATE TABLE IF NOT EXISTS admin_property_search_entries (
+					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					module VARCHAR(100) NOT NULL,
+					action VARCHAR(100) NOT NULL,
+					toolTitle VARCHAR(100) NOT NULL,
+					section VARCHAR(255) DEFAULT '',
+					propertyName VARCHAR(100) NOT NULL,
+					label VARCHAR(100) NOT NULL,
+					keywords TEXT NOT NULL,
+					requiredModule VARCHAR(100) NOT NULL DEFAULT '',
+					requiredPermissions TEXT NOT NULL DEFAULT '',
+					UNIQUE KEY property (module, action, propertyName)
+				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
+			]
+		], //admin_property_search_index
 
 		//kirstien
 		'aspen_lida_home_screen_links_permissions' => [

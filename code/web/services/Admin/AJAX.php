@@ -1845,4 +1845,41 @@ class Admin_AJAX extends JSON_Action {
 		return $resultsHTML;
 	}
 
+	/** @noinspection PhpUnused */
+	public function searchAdminSettings() : array {
+		require_once ROOT_DIR . '/sys/Administration/AdminPropertySearchEntry.php';
+		global $interface;
+		$error = '';
+		if (empty($_REQUEST['searchTerm'])) {
+			$error = 'Please enter a search term.';
+		}else{
+			$searchEntry = new AdminPropertySearchEntry();
+			$escapedRelease = $searchEntry->escape('%' . $_REQUEST['searchTerm'] . '%');
+			$searchEntry->whereAdd('keywords LIKE ' . $escapedRelease);
+			//Filter by modules that are active
+			global $enabledModules;
+			$escapedModules = implode("','", $enabledModules);
+			$searchEntry->whereAdd("requiredModule = '' OR requiredModule IN ('$escapedModules')");
+			$searchEntry->orderBy('label');
+			$searchEntry->limit(0, 200);
+			$matchingSettings = $searchEntry->fetchAll();
+
+			//Post Process to remove things by permission
+			foreach ($matchingSettings as $index => $matchingSetting) {
+				$requiredPermissions = explode('|', $matchingSetting->requiredPermissions);
+				if (!UserAccount::userHasPermission($requiredPermissions)) {
+					unset($matchingSettings[$index]);
+				}
+			}
+
+			$interface->assign('matchingSettings', $matchingSettings);
+		}
+		$interface->assign('error', $error);
+
+		$results = $interface->fetch('Admin/adminSettingSearchResults.tpl');
+		return [
+			'success' => false,
+			'results' => $results
+		];
+	}
 }

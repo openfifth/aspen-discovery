@@ -2142,44 +2142,74 @@ AspenDiscovery.Admin = (function () {
 		},
 
 		searchSettings: function () {
+			var searchType = $("#settingsSearchType option:selected").val();
 			var searchValue = $("#settingsSearch").val();
-			var searchRegex = new RegExp(searchValue, 'i');
-			if (searchValue.length === 0) {
-				$(".adminAction").show();
-				$(".adminSection").show();
-			} else {
-				var allAdminSections = $(".adminSection");
-				allAdminSections.each(function () {
-					var curSection = $(this);
-					var sectionLabel = curSection.find(".adminSectionLabel");
-					var adminSectionLabel = sectionLabel.text();
-					var actionsInSection = curSection.find(".adminAction");
-					if (searchRegex.test(adminSectionLabel)) {
-						curSection.show();
-						actionsInSection.show();
-					} else {
-						var numVisibleActions = 0;
-						actionsInSection.each(function () {
-							var curAction = $(this);
-							var title = curAction.find(".adminActionLabel").text();
-							var description = curAction.find(".adminActionDescription").text();
-							var titleMatches = searchRegex.test(title);
-							var descriptionMatches = searchRegex.test(description);
-							if (!titleMatches && !descriptionMatches) {
-								curAction.hide();
-							} else {
-								curAction.show();
-								numVisibleActions++;
-							}
-						});
-						if (numVisibleActions > 0) {
+			var adminSections = $("#adminSections");
+			var settingSearchSection = $("#settingSearchSection");
+			if (searchType === "page") {
+				adminSections.show();
+				settingSearchSection.hide();
+				var searchRegex = new RegExp(searchValue, 'i');
+				if (searchValue.length === 0) {
+					$(".adminAction").show();
+					$(".adminSection").show();
+				} else {
+					var allAdminSections = $(".adminSection");
+					allAdminSections.each(function () {
+						var curSection = $(this);
+						var sectionLabel = curSection.find(".adminSectionLabel");
+						var adminSectionLabel = sectionLabel.text();
+						var actionsInSection = curSection.find(".adminAction");
+						if (searchRegex.test(adminSectionLabel)) {
 							curSection.show();
+							actionsInSection.show();
 						} else {
-							curSection.hide();
+							var numVisibleActions = 0;
+							actionsInSection.each(function () {
+								var curAction = $(this);
+								var title = curAction.find(".adminActionLabel").text();
+								var description = curAction.find(".adminActionDescription").text();
+								var titleMatches = searchRegex.test(title);
+								var descriptionMatches = searchRegex.test(description);
+								if (!titleMatches && !descriptionMatches) {
+									curAction.hide();
+								} else {
+									curAction.show();
+									numVisibleActions++;
+								}
+							});
+							if (numVisibleActions > 0) {
+								curSection.show();
+							} else {
+								curSection.hide();
+							}
 						}
-					}
-				});
+					});
+				}
+			}else{
+				//Search for properties
+				adminSections.hide();
+				settingSearchSection.show();
+				settingSearchSection.html("");
+				if (this.settingSearchDebounceTimer != null) {
+					clearTimeout(this.settingSearchDebounceTimer);
+				}
+
+				this.settingSearchDebounceTimer = setTimeout(() => {
+					this.doSettingsSearch(searchValue);
+				}, 500);
 			}
+		},
+		settingSearchDebounceTimer: null,
+		doSettingsSearch: function (searchValue) {
+			var params = {
+				method: 'searchAdminSettings',
+				searchTerm: searchValue
+			}
+			var url = Globals.path + "/Admin/AJAX";
+			$.getJSON(url, params, function (data) {
+				$("#settingSearchSection").html(data.results);
+			});
 		},
 		searchPermissions: function () {
 			var searchValue = $("#searchPermissions").val();
