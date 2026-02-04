@@ -30,6 +30,7 @@ class SierraSelfRegistrationForm extends DataObject {
 	public $selfRegNoticePrefOptions;
 	public $addSelfRegNote;
 	public $cityDropdown;
+	public $noCommaInAddress;
 
 
 	private $_fields;
@@ -260,6 +261,14 @@ class SierraSelfRegistrationForm extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'City Dropdown',
 				'description' => 'Use a dropdown select option for city using municipalities defined below.',
+        'hideInLists' => true,
+				'default' => 0,
+			],
+			'noCommaInAddress' => [
+				'property' => 'noCommaInAddress',
+				'type' => 'checkbox',
+				'label' => 'Disable City/State Comma Separation',
+				'description' => 'Do not add a comma between city and state for patron address',
 				'hideInLists' => true,
 				'default' => 0,
 			],

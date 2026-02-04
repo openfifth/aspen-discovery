@@ -66,6 +66,8 @@ class User extends DataObject {
 	private $_permissions;
 	private $_masqueradingRoles;
 	private $_additionalAdministrationLocations;
+	/** @var UserOverDriveQRCodeToken[] */
+	private $_overDriveQrTokens = null;
 
 	public $interfaceLanguage;
 	public $searchPreferenceLanguage;
@@ -957,6 +959,13 @@ class User extends DataObject {
 						$overDriveSettings = $userHomeLibrary->getLibraryOverdriveSettings();
 						foreach ($overDriveSettings as $libraryOverDriveSetting) {
 							if ($libraryOverDriveSetting->circulationEnabled) {
+								return true;
+							}
+
+							require_once ROOT_DIR . '/sys/OverDrive/OverDriveSetting.php';
+							$overDriveSetting = new OverDriveSetting();
+							$overDriveSetting->id = $libraryOverDriveSetting->settingId;
+							if ($overDriveSetting->find(true) && !empty($overDriveSetting->enableQRCodeAuth)) {
 								return true;
 							}
 						}
@@ -2156,6 +2165,7 @@ class User extends DataObject {
 				'url' => "/MyAccount/CheckedOut",
 				'requireLogin' => false,
 				'btnType' => 'btn-info',
+				'type' => $source . '_checked_out',
 			];
 		} elseif ($this->isRecordOnHold($source, $recordId)) {
 			$actions[] = [
@@ -2170,7 +2180,8 @@ class User extends DataObject {
 				'url' => "/MyAccount/Holds",
 				'requireLogin' => false,
 				'btnType' => 'btn-info',
-				'id' => 'onHoldAction' . $recordId
+				'id' => 'onHoldAction' . $recordId,
+				'type' => $source . '_on_hold',
 			];
 		}
 		if (!$loadingLinkedUser) {
@@ -3806,6 +3817,62 @@ class User extends DataObject {
 		return $overDriveDriver->getOptions($this);
 	}
 
+	public function getOverDriveQrToken(int $settingId): ?UserOverDriveQRCodeToken {
+		if ($this->_overDriveQrTokens === null) {
+			$this->loadOverDriveQrTokens();
+		}
+		return $this->_overDriveQrTokens[$settingId] ?? null;
+	}
+
+	private function loadOverDriveQrTokens(): void {
+		$this->_overDriveQrTokens = [];
+		require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveQRCodeToken.php';
+		$token = new UserOverDriveQRCodeToken();
+		$token->userId = $this->id;
+		if ($token->find()) {
+			while ($token->fetch()) {
+				$this->_overDriveQrTokens[$token->settingId] = clone $token;
+			}
+		}
+	}
+
+	public function saveOverDriveQrToken(int $settingId, stdClass $tokenData): void {
+		require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveQRCodeToken.php';
+		$token = $this->getOverDriveQrToken($settingId);
+		if ($token === null) {
+			$token = new UserOverDriveQRCodeToken();
+			$token->userId = $this->id;
+			$token->settingId = $settingId;
+		}
+		$token->applyTokenResponse($tokenData);
+		if (empty($token->id)) {
+			$token->insert();
+		} else {
+			$token->update();
+		}
+		$this->_overDriveQrTokens[$settingId] = $token;
+	}
+
+	public function deleteOverDriveQrToken(int $settingId): void {
+		if ($this->_overDriveQrTokens === null) {
+			$this->loadOverDriveQrTokens();
+		}
+		if (isset($this->_overDriveQrTokens[$settingId])) {
+			$token = $this->_overDriveQrTokens[$settingId];
+			if (!empty($token->id)) {
+				$token->delete();
+			}
+			unset($this->_overDriveQrTokens[$settingId]);
+		} else {
+			require_once ROOT_DIR . '/sys/OverDrive/UserOverDriveQRCodeToken.php';
+			$token = new UserOverDriveQRCodeToken();
+			$token->userId = $this->id;
+			$token->settingId = $settingId;
+			if ($token->find(true) && !empty($token->id)) {
+				$token->delete();
+			}
+		}
+	}
 	function completeFinePayment(UserPayment $payment): array {
 		if (
 			$payment->completed ||
