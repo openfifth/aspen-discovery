@@ -22,6 +22,8 @@ class Events_Calendar extends Action {
 		$lastDayInMonth = 0;
 		$formattedWeekYear = '';
 		$formattedMonthYear = '';
+		$interface->assign('monthNumber', '');
+		$interface->assign('weekNumber', '');
 		if (!empty($_REQUEST['week'])) {
 			$week = $_REQUEST['week'];
 			$interface->assign("weekNumber", $week);
