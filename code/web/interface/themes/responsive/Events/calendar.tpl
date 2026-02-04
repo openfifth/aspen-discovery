@@ -11,7 +11,7 @@
 		<div class="col-xs-6 text-right">
 			<form method="get" id="locationFilter">
 			<label for="location">Filter by location:</label>
-			<select name="location" id="location" onchange="document.getElementById('locationFilter').submit()">
+			<select name="location" id="location" class="form-control" onchange="document.getElementById('locationFilter').submit()">
 				<option value="all"{if $selectedLocation == 'all'} selected{/if}>All Locations</option>
 				{foreach from=$locations key=code item=name}
 					<option value="{$code}"{if $selectedLocation == $code} selected{/if}>{$name}</option>
