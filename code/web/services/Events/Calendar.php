@@ -168,9 +168,24 @@ class Events_Calendar extends Action {
 			$selectedLocation = $_REQUEST['location'];
 		}
 
-		if ($selectedLocation != 'all' && !empty($selectedLocation)) {
-			$branchName = $locations[$selectedLocation] ?? $selectedLocation;
-			$searchObject->addHiddenFilter('branch', '"' . $branchName . '"');
+		if (isset($_REQUEST['location'])) {
+			$selectedLocation = $_REQUEST['location'];
+		}
+
+		if ($selectedLocation === 'all') {
+			if ($library->aspenEventsToInclude == 2) {
+				$libraryBranches = $locations;
+				unset($libraryBranches['all']);
+				$branchNames = array_values($libraryBranches);
+				if (!empty($branchNames)) {
+					$searchObject->addHiddenFilter('branch', '("' . implode('" OR "', $branchNames) . '")');
+				}
+			}
+		} else {
+			if (!empty($locations[$selectedLocation])) {
+				$branchName = $locations[$selectedLocation];
+				$searchObject->addHiddenFilter('branch', '"' . $branchName . '"');
+			}
 		}
 
 		$locationParam = '&location=' . urlencode($selectedLocation);
