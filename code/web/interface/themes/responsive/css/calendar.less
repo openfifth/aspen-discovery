@@ -3,12 +3,12 @@
 }
 @media screen and (max-width: 550px) {
   #fullScreenCalendar {
-    display: none;
+	display: none;
   }
 }
 @media screen and (min-width: 550px) {
   #smallScreenCalendar {
-    display: none;
+	display: none;
   }
 }
 .calendar-nav{
@@ -403,4 +403,10 @@
 
 [data-context="print-layout"] {
 	.print-styles();
+}
+
+@media (max-width: 767px) {
+	.calendar-location-filter {
+		text-align: left !important;
+	}
 }
