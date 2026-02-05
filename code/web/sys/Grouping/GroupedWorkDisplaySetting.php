@@ -827,7 +827,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 			unset($structure['fullRecordSection']['properties']['showCopiesForPeriodicalsWithNoItems']);
 		}
 
-		if (!UserAccount::getActiveUserObj()->isAspenAdminUser()) {
+		if (!UserAccount::isLoggedIn() || !UserAccount::getActiveUserObj()->isAspenAdminUser()) {
 			unset($structure['searchingSection']['properties']['searchAlgorithm']);
 		}
 

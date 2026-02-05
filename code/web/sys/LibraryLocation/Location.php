@@ -206,7 +206,9 @@ class Location extends DataObject {
 		$library->orderBy('displayName');
 		if (!UserAccount::userHasPermission('Administer All Libraries')) {
 			$homeLibrary = Library::getPatronHomeLibrary();
-			$library->libraryId = $homeLibrary->libraryId;
+			if (!empty($homeLibrary)) {
+				$library->libraryId = $homeLibrary->libraryId;
+			}
 		}
 		$library->find();
 		$libraryList = [];
