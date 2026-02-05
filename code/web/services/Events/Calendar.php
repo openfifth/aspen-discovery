@@ -131,11 +131,9 @@ class Events_Calendar extends Action {
 				}
 			}
 			$locations = $libraryLocations;
-			$showAllLocations = false;
 			$selectedLocation = key($locations);
 
 		} else {
-			$showAllLocations = true;
 			$selectedLocation = 'all';
 		}
 		if ($selectedLocation != 'all' && !empty($locations[$selectedLocation])) {
@@ -184,7 +182,6 @@ class Events_Calendar extends Action {
 		if (isset($weekLink)) $weekLink .= $locationParam;
 		if (isset($monthLink)) $monthLink .= $locationParam;
 
-		$interface->assign('showAllLocations', $showAllLocations);
 		$interface->assign('locations', $locations);
 		$interface->assign('selectedLocation', $selectedLocation);
 
