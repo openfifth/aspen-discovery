@@ -5157,12 +5157,12 @@ class Library extends DataObject {
 	}
 
 	/**
-	 * @param User|null $tmpUser
+	 * @param User|null|false $tmpUser
 	 * @return Library|null
 	 */
-	static function getPatronHomeLibrary(?User $tmpUser = null) : ?Library {
+	static function getPatronHomeLibrary(User|null|bool $tmpUser = null) : ?Library {
 		//Finally, check to see if the user has logged in and if so, use that library
-		if ($tmpUser != null) {
+		if (!empty($tmpUser)) {
 			return self::getLibraryForLocation($tmpUser->homeLocationId);
 		}
 		if (UserAccount::isLoggedIn()) {

@@ -70,8 +70,8 @@ class Gale_GaleSettings extends ObjectEditor {
 		return 'gale';
 	}
 
-	function canView(): bool {
-		return UserAccount::userHasPermission('Administer Gale');
+	function getViewPermissions(): array {
+		return ['Administer Gale'];
 	}
 
 	function viewIndividualObject($structure): void {

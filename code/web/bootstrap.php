@@ -13,6 +13,7 @@ require_once ROOT_DIR . '/sys/DB/DataObject.php';
 require_once ROOT_DIR . '/sys/Interface.php';
 require_once ROOT_DIR . '/sys/AspenError.php';
 require_once ROOT_DIR . '/sys/Module.php';
+require_once ROOT_DIR . '/sys/Administration/Permission.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
 require_once ROOT_DIR . '/sys/SystemVariables.php';
 require_once ROOT_DIR . '/sys/SystemLogging/UsageByIPAddress.php';
