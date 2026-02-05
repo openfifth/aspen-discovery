@@ -14,9 +14,7 @@
 			<form method="get" id="locationFilter" style="display: inline-block; margin: 0;">
 				<label for="location" style="display: inline-block; margin-right: 5px; margin-bottom: 0;">{translate text="Filter by location" isPublicFacing=true}</label>
 				<select name="location" id="location" class="form-control" onchange="document.getElementById('locationFilter').submit()" style="display: inline-block; width: auto;">
-					{if $showAllLocations}
-						<option value="all"{if $selectedLocation == 'all'} selected{/if}>{translate text="All Locations" isPublicFacing=true}</option>
-					{/if}
+					<option value="all"{if $selectedLocation == 'all'} selected{/if}>{translate text="All Locations" isPublicFacing=true}</option>
 					{foreach from=$locations key=code item=name}
 						<option value="{$code}"{if $selectedLocation == $code} selected{/if}>{$name}</option>
 					{/foreach}
