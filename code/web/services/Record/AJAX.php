@@ -1142,25 +1142,34 @@ class Record_AJAX extends Action {
 					if (isset($return['items'])) {
 						$results = $this->getItemHoldForm($pickupBranch, $return, $shortId, $patron);
 					} else { // Completed Hold Attempt
-						$interface->assign('message', $return['message']);
-						$interface->assign('success', $return['success']);
-
 						// Freeze the hold immediately if requested.
 						$freezeHoldImmediately = FALSE;
 						if (isset($_REQUEST['freezeHoldImmediately']) && $_REQUEST['freezeHoldImmediately'] == 'true') {
 							$freezeHoldImmediately = TRUE;
 						}
 						$dateToReactivate = isset($_REQUEST['reactivationDate']) ? (string)$_REQUEST['reactivationDate'] : null;
-						if ($freezeHoldImmediately == TRUE) {
+						if ($freezeHoldImmediately) {
 							$holds = $patron->getHolds();
 							// Find the holdId for use in the freezing process.
+							$holdId = null;
+							/** @var Hold $hold **/
 							foreach ($holds['unavailable'] as $hold) {
 								if ($hold->recordId == $shortId) {
-									$holdId = $hold->sourceId;
+									$holdId = $hold->cancelId;
 								}
 							}
-							$patron->freezeHold($shortId, $holdId, $dateToReactivate);
+							if ($holdId) {
+								$freezeResult = $patron->freezeHold($shortId, $holdId, $dateToReactivate);
+								if (!$freezeResult['success']) {
+									$return['message'] .= '<br/>' . $freezeResult['message'];
+								}
+							}else{
+								$return['message'] .= '<br/>' . translate(['text'=>'Could not freeze your hold.', 'isPublicFacing' => true]);
+							}
 						}
+
+						$interface->assign('message', $return['message']);
+						$interface->assign('success', $return['success']);
 
 						$confirmationNeeded = false;
 						if ($return['success']) {
@@ -1945,6 +1954,9 @@ class Record_AJAX extends Action {
 		if ($maxHolds != -1 && ($currentHolds + 1 > $maxHolds)) {
 			$interface->assign('showOverHoldLimit', true);
 		}
+
+		$showDateWhenSuspending = $user->showDateWhenSuspending();
+		$interface->assign('showDateWhenSuspending', $showDateWhenSuspending);
 
 		//Check to see if the user has linked users that we can place holds for as well
 		//If there are linked users, we will add pickup locations for them as well
