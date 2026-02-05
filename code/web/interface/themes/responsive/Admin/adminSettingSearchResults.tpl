@@ -38,7 +38,7 @@
 			</table>
 		</div>
 		<div class="col-xs-12">
-			{translate text="Showing %1% Results" 2=count($matchingSettings)}
+			{translate text="Showing %1% Results" 1=count($matchingSettings)}
 		</div>
 	{/if}
 </div>
