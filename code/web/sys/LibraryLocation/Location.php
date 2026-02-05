@@ -3360,4 +3360,18 @@ class Location extends DataObject {
 		}
 		return $this->_homeScreenLinkGroup;
 	}
+
+	private ?int $_cloudSourceSettingId = null;
+	public function getCloudSourceSettingId() : int{
+		if ($this->_cloudSourceSettingId == null) {
+			require_once ROOT_DIR . '/sys/CloudSource/LocationCloudSourceSetting.php';
+			$locationCloudSourceSetting = new LocationCloudSourceSetting();
+			$locationCloudSourceSetting->locationId = $this->locationId;
+			$this->_cloudSourceSettingId = -1;
+			if ($locationCloudSourceSetting->find(true)) {
+				$this->_cloudSourceSettingId = $locationCloudSourceSetting->cloudsourceSettingId;
+			}
+		}
+		return $this->_cloudSourceSettingId;
+	}
 }
