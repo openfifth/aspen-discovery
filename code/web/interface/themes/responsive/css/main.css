@@ -11400,6 +11400,16 @@ td[data-entry-id]:has(.date-edit:focus)::after {
 .calendar {
   margin: 10px;
 }
+@media screen and (max-width: 550px) {
+  #fullScreenCalendar {
+    display: none;
+  }
+}
+@media screen and (min-width: 550px) {
+  #smallScreenCalendar {
+    display: none;
+  }
+}
 .calendar-nav {
   display: flex;
   flex-direction: row;
@@ -11664,7 +11674,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   }
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-title,
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-time,
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event-field
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event-field,
   .calendar-row .calendar-day-cell .calendar-events .calendar-event-location {
     overflow: clip;
     white-space: nowrap;
@@ -11686,7 +11696,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   .calendar-row .calendar-day-cell .calendar-events .calendar-event .show-end-time {
     white-space: nowrap;
   }
-  .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time .calendar-event-location {
+  .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time {
     font-weight: bold;
   }
   html,
@@ -11853,7 +11863,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   }
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-title,
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-time,
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field 
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-field,
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events.wrap-title .calendar-event-location {
     overflow: visible;
     white-space: normal;
@@ -11891,7 +11901,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event .show-end-time {
     white-space: nowrap;
   }
-  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time .calendar-event-location {
+  [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event .calendar-event-time {
     font-weight: bold;
   }
   [data-context="print-layout"] html,
@@ -11952,6 +11962,11 @@ td[data-entry-id]:has(.date-edit:focus)::after {
 @media (min-width: 768px) and (min-width: 2800px) {
   [data-context="print-layout"] .calendar-row .calendar-day-cell .calendar-events .calendar-event div {
     font-size: 2.5rem;
+  }
+}
+@media (max-width: 767px) {
+  .calendar-location-filter {
+    text-align: left !important;
   }
 }
 .blockhead {
