@@ -10547,30 +10547,30 @@ class MyAccount_AJAX extends JSON_Action {
 							exit();
 						}
 
-						# Handle milestone progress notification
-						echo "event: ce_notification\n";
-						echo "data: " . json_encode(
-								array(
-									'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_progress',
-									'title'=> translate(
-										[
-											'text' => 'Milestone progress! Good job!',
-											'isPublicFacing' => true
-										]
-									),
-									'body' => $campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
-									'icon' => "fa-chart-line",
-									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-										[
-											'text' => 'View all campaigns',
-											'isPublicFacing' => true
-										]
-									)]
-								)
-							) . "\n\n";
-
+						# Handle campaign completion notification
+						if ($userCampaign->completed && !$wantedOverflowProgress) {
+							echo "event: ce_notification\n";
+							echo "data: " . json_encode(
+									array(
+										'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
+										'title'=> translate(
+											[
+												'text' => 'Campaign completed! Awesome!',
+												'isPublicFacing' => true
+											]
+										),
+										'body' => $campaign->name,
+										'icon' => "fa-medal",
+										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+											[
+												'text' => 'View all campaigns',
+												'isPublicFacing' => true
+											]
+										)]
+									)
+								) . "\n\n";
 						# Handle milestone completion notification
-						if ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
+						}elseif ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
 									array(
@@ -10591,22 +10591,20 @@ class MyAccount_AJAX extends JSON_Action {
 										)]
 									)
 								) . "\n\n";
-						}
-
-						# Handle campaign completion notification
-						if ($userCampaign->completed && !$wantedOverflowProgress) {
+						}else{
+							# Handle milestone progress notification
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
 									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
+										'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_progress',
 										'title'=> translate(
 											[
-												'text' => 'Campaign completed! Awesome!',
+												'text' => 'Milestone progress! Good job!',
 												'isPublicFacing' => true
 											]
 										),
-										'body' => $campaign->name,
-										'icon' => "fa-medal",
+										'body' => $campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
+										'icon' => "fa-chart-line",
 										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 											[
 												'text' => 'View all campaigns',
