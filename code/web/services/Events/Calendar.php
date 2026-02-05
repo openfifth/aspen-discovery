@@ -135,9 +135,6 @@ class Events_Calendar extends Action {
 		} else {
 			$selectedLocation = 'all';
 		}
-		if ($selectedLocation != 'all' && !empty($locations[$selectedLocation])) {
-			$searchObject->addHiddenFilter('branch', '"' . $locations[$selectedLocation] . '"');
-		}
 		asort($locations);
 
 		$eventsDefaultCalendarView = $library->eventsDefaultCalendarView ?? 0;
