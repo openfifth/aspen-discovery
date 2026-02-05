@@ -6906,4 +6906,18 @@ class Library extends DataObject {
 		}
 		return $this->_homeScreenLinkGroup;
 	}
+
+	private ?int $_cloudSourceSettingId = null;
+	public function getCloudSourceSettingId() : int{
+		if ($this->_cloudSourceSettingId == null) {
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $this->libraryId;
+			$this->_cloudSourceSettingId = -1;
+			if ($libraryCloudSourceSetting->find(true)) {
+				$this->_cloudSourceSettingId = $libraryCloudSourceSetting->cloudsourceSettingId;
+			}
+		}
+		return $this->_cloudSourceSettingId;
+	}
 }

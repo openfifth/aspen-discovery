@@ -82,6 +82,14 @@ class SearchSources {
 			$searchGale = array_key_exists('Gale', $enabledModules) && $library->galeSettingsId != -1;
 			$searchSummon = array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1;
 			$searchCloudSource = array_key_exists('CloudSource', $enabledModules);
+			if ($searchCloudSource) {
+				//Check to see if we have active settings for the library/location
+				if ($location != null) {
+					$searchCloudSource = $location->getCloudSourceSettingId() > 0;
+				}else{
+					$searchCloudSource = $library->getCloudSourceSettingId() > 0;
+				}
+			}
 			$searchOpenArchives = array_key_exists('Open Archives', $enabledModules) && $library->enableOpenArchives == 1;
 			$searchTalpa = array_key_exists('Talpa Search', $enabledModules) && $library->enableTalpaSearch == 1;
 			$searchCourseReserves = $library->enableCourseReserves == 2;
