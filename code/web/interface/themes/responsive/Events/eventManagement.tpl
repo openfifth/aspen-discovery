@@ -88,6 +88,14 @@
 				<h3>{translate text="Registered Patrons" isAdminFacing=true}</h3>
 				<div id="registrationsList">
 					{if !empty($registrations)}
+						<div style="margin-bottom: 15px;">
+							<button type="button" class="btn btn-sm btn-default" onclick="AspenDiscovery.Events.downloadAsList()">
+								{translate text="Download as List" isAdminFacing=true}
+							</button>
+							<button type="button" class="btn btn-sm btn-default" onclick="AspenDiscovery.Events.downloadAsCSV()">
+								{translate text="Download as CSV" isAdminFacing=true}
+							</button>
+						</div>
 						<table class="table table-striped table-bordered" id="registrationsTable">
 							<thead>
 								<tr>
