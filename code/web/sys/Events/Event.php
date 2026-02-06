@@ -160,7 +160,7 @@ class Event extends DataObject {
 						'label' => 'Enable Registration ?',
 						'default' => false,
 						'description' => 'Enable registration for this event and mark is as required',
-						'onclick' => 'AspenDiscovery.Events.handleRegistrationEnabledToggle()',
+						'onchange' => 'AspenDiscovery.Events.handleRegistrationEnabledToggle()',
 					],
 					'numberOfSeats' => [
 						'property' => 'numberOfSeats',
