@@ -10320,10 +10320,12 @@ AspenDiscovery.Events = (function(){
 						setTimeout(function() {
 							AspenDiscovery.Events.displayWaitingListEnable();
 							AspenDiscovery.Events.displayWaitingListNumberOfSeats();
+							AspenDiscovery.Events.displayRegistrationNumberOfSeats();
 
 							$('#registrationRequired').off('change').on('change', function() {
 								AspenDiscovery.Events.displayWaitingListEnable();
 								AspenDiscovery.Events.displayWaitingListNumberOfSeats();
+								AspenDiscovery.Events.displayRegistrationNumberOfSeats();
 							});
 							$('#waitingList').off('change').on('change', function() {
 								AspenDiscovery.Events.displayWaitingListNumberOfSeats();
