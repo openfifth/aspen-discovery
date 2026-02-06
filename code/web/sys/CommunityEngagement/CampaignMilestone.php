@@ -85,56 +85,64 @@ class CampaignMilestone extends DataObject {
 	}
 
 
-	public static function getMilestoneByCampaign($campaignId) {
-	global $activeLanguageCode;
+	//TODO: Rename all instances of getMilestoneByCampaign($campaignId) to this
+	/**
+     * Fetch all campaign milestones for a given campaign,
+     * augmented with milestone and reward data.
+     * @param int $campaignId
+     * @return array Array of CampaignMilestone objects
+     */
+    public static function getCampaignMilestoneByCampaign($campaignId) {
+        global $activeLanguageCode;
 
-	  $milestones = [];
-	  $campaignMilestone = new CampaignMilestone();
-	  $campaignMilestone->whereAdd('campaignId = ' . $campaignId);
-	  $campaignMilestone->find();
+        $campaignMilestones = [];
+        $campaignMilestone = new CampaignMilestone();
+        $campaignMilestone->campaignId = $campaignId;
+        $campaignMilestone->find();
 
-	  $milestoneIds = [];
-	  $rewardMapping = [];
-	  while ($campaignMilestone->fetch()) {
-		$milestoneIds[] = $campaignMilestone->milestoneId;
-		$rewardMapping[$campaignMilestone->milestoneId] = $campaignMilestone->reward;
-		$milestoneWeights[$campaignMilestone->milestoneId] = $campaignMilestone->weight;
-	  }
+        while ($campaignMilestone->fetch()) {
+            // This is the specific record from ce_campaign_milestones
+            $campaignMilestoneObj = clone $campaignMilestone;
 
-	  if (!empty($milestoneIds)) {
-		$milestone = new Milestone();
-		$milestone->whereAddIn('id', $milestoneIds, true);
-		$milestone->find();
+            // 1. Augment with the actual Milestone data
+            $milestone = new Milestone();
+            $milestone->id = $campaignMilestoneObj->milestoneId;
 
-		while ($milestone->fetch()) {
-		  $milestoneObj = clone $milestone;
+            if ($milestone->find(true)) {
+                // Inject properties into the campaignMilestoneObj
+                $campaignMilestoneObj->name = $milestone->name;
+                $campaignMilestoneObj->description = $milestone->description;
+                $campaignMilestoneObj->milestoneType = $milestone->milestoneType;
+            }
 
-		  //Fetch reward name
-		  $rewardId = $rewardMapping[$milestone->id] ?? null;
-		  if ($rewardId) {
-			$reward = new Reward();
-			$reward->id = $rewardId;
-			if ($reward->find(true)) {
-				$milestoneObj->rewardName = $reward->name;
-				$milestoneObj->displayName = $reward->displayName;
-				$milestoneObj->rewardType = $reward->rewardType;
-				$milestoneObj->rewardId = $reward->id;
-				$milestoneObj->awardAutomatically = $reward->awardAutomatically;
-				$milestoneObj->rewardImage = $reward->getDisplayUrl();
-				$milestoneObj->rewardDescription = $reward->getTextBlockTranslation('description', $activeLanguageCode);
-				if (!empty($reward->badgeImage)) {
-					$milestoneObj->rewardExists = true;
-				} else {
-					$milestoneObj->rewardExists = false;
-				}
-			}
-		  }
-		  $milestoneObj->weight = $milestoneWeights[$milestone->id] ?? null;
-		  $milestones[] = $milestoneObj;
-		}
-	  }
-	  return $milestones;
-	}
+            // 2. Augment with the related Reward data
+            if (!empty($campaignMilestoneObj->reward)) {
+                require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
+                $reward = new Reward();
+                $reward->id = $campaignMilestoneObj->reward;
+
+                if ($reward->find(true)) {
+                    $campaignMilestoneObj->rewardName = $reward->name;
+                    $campaignMilestoneObj->rewardId = $reward->id;
+                    $campaignMilestoneObj->rewardImage = $reward->getDisplayUrl();
+                    $campaignMilestoneObj->rewardExists = !empty($reward->badgeImage);
+                    $campaignMilestoneObj->rewardDescription = $reward->getTextBlockTranslation('description', $activeLanguageCode);
+
+                    // Maintain standard attributes for the UI
+                    $campaignMilestoneObj->displayName = $reward->displayName;
+                    $campaignMilestoneObj->rewardType = $reward->rewardType;
+                    $campaignMilestoneObj->awardAutomatically = $reward->awardAutomatically;
+                }
+            } else {
+                $campaignMilestoneObj->rewardName = '';
+                $campaignMilestoneObj->rewardExists = false;
+            }
+
+            $campaignMilestones[] = $campaignMilestoneObj;
+        }
+
+        return $campaignMilestones;
+    }
 
 	public static function getMilestoneGoalCountByCampaign($campaignId, $milestoneId) {
 
