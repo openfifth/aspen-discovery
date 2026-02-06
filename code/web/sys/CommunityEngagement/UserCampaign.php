@@ -104,23 +104,23 @@ class UserCampaign extends DataObject {
 	}
 
 	public function checkMilestoneCompletionStatus() {
-		$milestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
-		$milestoneCompletionStatus = [];
+		$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($this->campaignId);
+		$campaignMilestoneCompletionStatus = [];
 
-		foreach ($milestones as $milestone) {
-			//User's progress for this milestone
-			$userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->campaignId, $this->userId);
+		foreach ($campaignMilestones as $campaignMilestone) {
+			//User's progress for this campaign milestone
+			$userProgress = CampaignMilestoneUsersProgress::getProgressByCampaignMilestoneId($campaignMilestone->id, $this->userId);
 
-			//Goal for this milestone
-			$goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
-			//Check if milestone is complete
-			$isMilestoneComplete = ($userProgress >= $goal);
+			//Goal for this campaign milestone
+			$goal = CampaignMilestone::getCampaignMilestoneGoalCountByCampaignMilestone($campaignMilestone->id);
+			//Check if campaign milestone is complete
+			$isCampaignMilestoneComplete = ($userProgress >= $goal);
 
 			//Add to array
-			$milestoneCompletionStatus[$milestone->id] = $isMilestoneComplete;
+			$campaignMilestoneCompletionStatus[$campaignMilestone->id] = $isCampaignMilestoneComplete;
 		}
 
-		return $milestoneCompletionStatus;
+		return $campaignMilestoneCompletionStatus;
 	}
 
 	 /**
