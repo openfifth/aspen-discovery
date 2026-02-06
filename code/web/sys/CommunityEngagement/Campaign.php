@@ -584,37 +584,6 @@ class Campaign extends DataObject {
 		return $campaignList;
 	}
 
-	public static function getMilestoneRewards(int $campaignId, int $userId): array {
-		$milestoneRewards = [];
-		$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
-
-		foreach ($milestones as $milestone) {
-			$reward = new Reward();
-			$reward->id = $milestone->rewardId;
-			$rewardName = null;
-			if ($reward->find(true)) {
-				$rewardName = $reward->name;
-			}
-
-			$rewardGiven = 0;
-
-			$userCampaign = new UserCampaign();
-			$userCampaign->userId = $userId;
-			$userCampaign->campaignId = $campaignId;
-
-			if ($userCampaign->find(true)) {
-				$rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $campaignId, $userId);
-			}
-
-			$milestoneRewards[$milestone->id] = [
-				'name'=> $milestone->name,
-				'rewardName' => $rewardName,
-				'rewardGiven' => $rewardGiven
-			];
-		}
-		return $milestoneRewards;
-	}
-
 	public static function getAllUsersInCampaigns(): array {
 		require_once ROOT_DIR . '/sys/Account/User.php';
 	
