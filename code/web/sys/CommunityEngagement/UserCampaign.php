@@ -88,13 +88,13 @@ class UserCampaign extends DataObject {
 
 	//Check if the user has completed the campaign
 	public function checkCompletionStatus() {
-		//Get milestones for campaign
-		$milestones = CampaignMilestone::getMilestoneByCampaign($this->campaignId);
+		//Get campaign milestones for campaign
+		$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($this->campaignId);
 		$isComplete = true;
 
-		foreach ($milestones as $milestone) {
-			$userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $this->campaignId, $this->userId);
-			$goal = CampaignMilestone::getMilestoneGoalCountByCampaign($this->campaignId, $milestone->id);
+		foreach ($campaignMilestones as $campaignMilestone) {
+			$userProgress = CampaignMilestoneUsersProgress::getProgressByCampaignMilestoneId($campaignMilestone->id, $this->userId);
+			$goal = CampaignMilestone::getCampaignMilestoneGoalCountByCampaignMilestone($campaignMilestone->id);
 			if ($userProgress < $goal) {
 				$isComplete = false;
 				break;
