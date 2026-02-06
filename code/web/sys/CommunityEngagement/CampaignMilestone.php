@@ -144,25 +144,23 @@ class CampaignMilestone extends DataObject {
         return $campaignMilestones;
     }
 
-	public static function getMilestoneGoalCountByCampaign($campaignId, $milestoneId) {
+	public static function getCampaignMilestoneGoalCountByCampaign($campaignMilestoneId) {
 
 		$campaignMilestone = new CampaignMilestone();
-		$campaignMilestone->whereAdd('campaignId = ' . $campaignId);
-		$campaignMilestone->whereAdd('milestoneId = ' . $milestoneId);
+		$campaignMilestone->id = $campaignMilestoneId;
 		$campaignMilestone->find(true);
 
 		return $campaignMilestone->goal;
 	}
 
-   public static function getMilestoneProgress($campaignId, $userId, $milestoneId) {
-		$campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
+    public static function getCampaignMilestoneProgress($campaignMilestoneId, $userId) {
 		$campaignMilestone = new CampaignMilestone();
 
 		//Get goal total
-		$goal = $campaignMilestone->getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
+		$goal = $campaignMilestone->getCampaignMilestoneGoalCountByCampaign($campaignMilestoneId);
 
 		//Number of completed goals for this milestone
-		$userCompletedGoalCount = $campaignMilestoneUsersProgress->getProgressByMilestoneId($milestoneId, $campaignId, $userId);
+		$userCompletedGoalCount = CampaignMilestoneUsersProgress::getProgressByCampaignMilestoneId($campaignMilestoneId, $userId);
 
         if ($goal > 0) {
            $extraProgress = 0;
@@ -245,8 +243,7 @@ class CampaignMilestone extends DataObject {
 
 		# Check if this campaign milestone already has progress for this user
 		$campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
-		$campaignMilestoneUsersProgress->ce_milestone_id = $this->milestoneId;
-		$campaignMilestoneUsersProgress->ce_campaign_id = $this->campaignId;
+		$campaignMilestoneUsersProgress->ce_campaign_milestone_id = $this->id;
 		$campaignMilestoneUsersProgress->userId = $userId;
 
 		# Create campaign milestone if doesn't exist yet
