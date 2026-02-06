@@ -83,10 +83,10 @@ class Campaign extends DataObject {
 				'property' => 'availableMilestones',
 				'type' => 'oneToMany',
 				'label' => 'Milestones',
-				'note' => 'Each milestone can only be used once per campaign',
+				'note' => 'Multiple instances of the same milestone can be used in a campaign',
 				'renderAsHeading' => true,
 				'description' => 'The Milestones to be linked to this campaign',
-				'keyThis' => 'campaignId',
+				'keyThis' => 'id',
 				'keyOther' => 'campaignId',
 				'subObjectType' => 'CampaignMilestone',
 				'structure' => $milestoneStructure,
@@ -649,8 +649,8 @@ class Campaign extends DataObject {
 				}
 	
 				// Fetch campaign milestones and their rewards using mapping
-				$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
-				$pastCampaignList[$campaign->id]->milestones = $milestones;
+				$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($campaign->id);
+				$pastCampaignList[$campaign->id]->milestones = $campaignMilestones;
 				$extraCreditActivities = $this->getFormattedExtraCreditActivities($campaign->id, $userId);
 				$pastCampaignList[$campaign->id]->extraCreditActivities = $extraCreditActivities;
 				$pastCampaignList[$campaign->id]->numExtraCreditActivities = count($extraCreditActivities);
@@ -670,19 +670,19 @@ class Campaign extends DataObject {
 					$userCampaign->campaignId = $campaign->id;
 	
 					if ($userCampaign->find(true)) {
-						$milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
+						$milestoneCompletionStatus = $userCampaign->checkCampaignMilestoneCompletionStatus();
 						$pastCampaignList[$campaign->id]->campaignRewardGiven = (int)$userCampaign->rewardGiven;
 						$pastCampaignList[$campaign->id]->isComplete = $userCampaign->checkCompletionStatus();
 
 	
 						// Update milestone details based on user progress
-						foreach ($pastCampaignList[$campaign->id]->milestones as $milestone) {
-							$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $userId, $milestone->id);
-							$milestone->userProgress = CampaignMilestoneUsersProgress::getProgressByMilestoneId($milestone->id, $campaign->id, $userId);
-							$milestone->isComplete = $milestoneCompletionStatus[$milestone->id] ?? false;
-							$milestone->rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $userId, $campaign->id);
-							$milestone->progress = $milestoneProgress['progress'];
-							$milestone->extraProgress = $milestoneProgress['extraProgress'];
+						foreach ($pastCampaignList[$campaign->id]->milestones as $campaignMilestone) {
+							$campaignMilestoneProgress = CampaignMilestone::getCampaignMilestoneProgress($campaignMilestone->id, $userId);
+							$campaignMilestone->userProgress = CampaignMilestoneUsersProgress::getProgressByCampaignMilestoneId($campaignMilestone->id, $userId);
+							$campaignMilestone->isComplete = $milestoneCompletionStatus[$campaignMilestone->id] ?? false;
+							$campaignMilestone->rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForCampaignMilestone($campaignMilestone->id, $userId);
+							$campaignMilestone->progress = $campaignMilestoneProgress['progress'];
+							$campaignMilestone->extraProgress = $campaignMilestoneProgress['extraProgress'];
 						}
 					}
 				}
@@ -736,22 +736,10 @@ class Campaign extends DataObject {
 
 	public function saveMilestones() {
 		if (isset($this->_availableMilestones) && is_array($this->_availableMilestones)) {
-			$seen = [];
-			$filtered = [];
-	
-			foreach ($this->_availableMilestones as $milestoneData) {
-				$milestoneId = $milestoneData->milestoneId ?? null;
-	
-				if ($milestoneId && !isset($seen[$milestoneId])) {
-					$seen[$milestoneId] = true;
-					$filtered[] = $milestoneData;
-				}
-			}
-	
-			$this->saveOneToManyOptions($filtered, 'campaignId');
+			$this->saveOneToManyOptions($this->_availableMilestones, 'campaignId');
 			unset($this->_availableMilestones);
 
-			$campaignMilestones = CampaignMilestone::getMilestoneByCampaign($this->id);
+			$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($this->id);
 
 			$userCampaign = new UserCampaign();
 			$userCampaign->campaignId = $this->id;
@@ -762,8 +750,7 @@ class Campaign extends DataObject {
 
 				foreach ($campaignMilestones as $campaignMilestone) {
 					$progress = new CampaignMilestoneUsersProgress();
-					$progress->ce_milestone_id = $campaignMilestone->milestoneId;
-					$progress->ce_campaign_id = $this->id;
+					$progress->ce_campaign_milestone_id = $campaignMilestone->id;
 					$progress->userId = $userId;
 
 					if (!$progress->find(true)) {
@@ -811,7 +798,7 @@ class Campaign extends DataObject {
 			if ($user->optInToAllCampaignLeaderboards == 0) {
 				continue;
 			}
-			$totalCompletedMilestones = $userCampaign->calculateUserCompletedMilestones($user->id);
+			$totalCompletedMilestones = $userCampaign->calculateUserCompletedCampaignMilestones($user->id);
 			$leaderboard[] = [
 				'user' => $user->displayName,
 				'completedMilestones' => $totalCompletedMilestones
@@ -870,7 +857,7 @@ class Campaign extends DataObject {
 		if ($userCampaignRecord->optInToCampaignLeaderboard === 0 ||($userCampaignRecord->optInToCampaignLeaderboard === null && $user->optInToAllCampaignLeaderboards === 0)) {
 			continue;
 		}
-			$milestoneCompletionStatus = $userCampaignRecord->checkMilestoneCompletionStatus();
+			$milestoneCompletionStatus = $userCampaignRecord->checkCampaignMilestoneCompletionStatus();
 			$completedMilestones = count(array_filter($milestoneCompletionStatus, function($status) {
 				return $status === true;
 			}));
@@ -926,7 +913,7 @@ class Campaign extends DataObject {
 		$branchMilestones = [];
 
 		foreach ($users as $user) {
-			$totalCompletedMilestones = $userCampaign->calculateUserCompletedMilestones($user->id);
+			$totalCompletedMilestones = $userCampaign->calculateUserCompletedCampaignMilestones($user->id);
 			$branch = $user->getHomeLocationName();
 
 			if (!isset($branchMilestones[$branch])) {
@@ -990,7 +977,7 @@ class Campaign extends DataObject {
 		}
 
 		foreach ($userCampaignRecords as $userCampaignRecord) {
-			$milestoneCompletionStatus = $userCampaignRecord->checkMilestoneCompletionStatus();
+			$milestoneCompletionStatus = $userCampaignRecord->checkCampaignMilestoneCompletionStatus();
 			$userId = $userCampaignRecord->userId;
 
 			$user = new User();
@@ -1097,7 +1084,7 @@ class Campaign extends DataObject {
 			}
 
 				//Fetch milestones for this campaign
-				$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+				$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($campaignId);
 				$completedMilestonesCount = 0;
 				$numCampaignMilestones = 0;
 				$milestoneProgressData = [];
@@ -1106,13 +1093,13 @@ class Campaign extends DataObject {
 				$campaign->milestoneProgress = [];
 
 
-				foreach ($milestones as $milestone) {
-					$milestoneId = $milestone->id;
+				foreach ($campaignMilestones as $campaignMilestone) {
+					$milestoneId = $campaignMilestone->id;
 					$numCampaignMilestones++;
 
-					//Calculate milestone progress
-					$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaignId, $userId, $milestone->id);
-					$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($userId, $milestoneId, $campaignId);
+					//Calculate campaign milestone progress
+					$milestoneProgress = CampaignMilestone::getCampaignMilestoneProgress($campaignMilestone->id, $userId);
+					$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByCampaignMilestoneId($userId, $campaignMilestone->id);
 					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 					require_once ROOT_DIR . '/sys/LocalEnrichment/UserWorkReview.php';
 					foreach ($progressData as &$entry) {
@@ -1138,21 +1125,21 @@ class Campaign extends DataObject {
 						$bDate = $b['checkoutDate'] ?? '';
 						return $aDate <=> $bDate;
 					});
-					$milestone->progress = $milestoneProgress['progress'];
-					$milestone->extraProgress = $milestoneProgress['extraProgress'];
-					$milestone->completedGoals = $milestoneProgress['completed'];
-					$milestone->totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaignId, $milestoneId);
-					$milestone->progressData = $progressData;
-					$milestone->rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $userId, $campaign->id);
+					$campaignMilestone->progress = $milestoneProgress['progress'];
+					$campaignMilestone->extraProgress = $milestoneProgress['extraProgress'];
+					$campaignMilestone->completedGoals = $milestoneProgress['completed'];
+					$campaignMilestone->totalGoals = CampaignMilestone::getCampaignMilestoneGoalCountByCampaign($campaignMilestone->id);
+					$campaignMilestone->progressData = $progressData;
+					$campaignMilestone->rewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForCampaignMilestone($campaignMilestone->id, $userId);
 
 
-					if ($milestone->completedGoals >= $milestone->totalGoals) {
-						$milestone->milestoneComplete = true;
+					if ($campaignMilestone->completedGoals >= $campaignMilestone->totalGoals) {
+						$campaignMilestone->milestoneComplete = true;
 					} else {
-						$milestone->milestoneComplete = false;
+						$campaignMilestone->milestoneComplete = false;
 					}
 				}
-				usort($milestones, function($a, $b) {
+				usort($campaignMilestones, function($a, $b) {
 					return $a->weight <=> $b->weight;
 				});
 				//Add completed milestones count to campaign object
@@ -1187,11 +1174,11 @@ class Campaign extends DataObject {
 						$campaign->optInToCampaignEmailNotifications = $userCampaign->optInToCampaignEmailNotifications;
 					}
 				}
-				$milestoneCompletionStatus = $userCampaign->checkMilestoneCompletionStatus();
+				$milestoneCompletionStatus = $userCampaign->checkCampaignMilestoneCompletionStatus();
 				$campaign->numCompletedMilestones = count(array_filter($milestoneCompletionStatus));
 
 				//Add milestones to campaign object
-				$campaign->milestones = $milestones;
+				$campaign->milestones = $campaignMilestones;
 				$campaign->extraCreditActivities = $extraCreditActivities;
 				$campaign->translatedDescription = $campaign->getTextBlockTranslation('description', $activeLanguage->code);
 
@@ -1263,16 +1250,16 @@ class Campaign extends DataObject {
 						(!$campaign->enrollmentStartDate || $currentDate >= $campaign->enrollmentStartDate) &&
 						(!$campaign->enrollmentEndDate || $currentDate <= $campaign->enrollmentEndDate)
 					);
-					$milestones = CampaignMilestone::getMilestoneByCampaign($campaign->id);
-					$numCampaignMilestones = count($milestones);
+					$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($campaign->id);
+					$numCampaignMilestones = count($campaignMilestones);
 					$numCompletedMilestones = 0;
 					$milestoneRewards = [];
 
-					foreach ($milestones as $milestone) {
-						$milestoneProgress = CampaignMilestone::getMilestoneProgress($campaign->id, $linkedUser->id, $milestone->id);
+					foreach ($campaignMilestones as $campaignMilestone) {
+						$milestoneProgress = CampaignMilestone::getCampaignMilestoneProgress($campaignMilestone->id, $linkedUser->id);
 						$completedGoals = $milestoneProgress['completed'];
-						$totalGoals = CampaignMilestone::getMilestoneGoalCountByCampaign($campaign->id, $milestone->id);
-						$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByMilestoneId($linkedUser->id, $milestone->id, $campaign->id);
+						$totalGoals = CampaignMilestone::getCampaignMilestoneGoalCountByCampaign($campaignMilestone->id);
+						$progressData = CampaignMilestoneProgressEntry::getUserProgressDataByCampaignMilestoneId($linkedUser->id, $campaignMilestone->id);
 						require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 						require_once ROOT_DIR . '/sys/LocalEnrichment/UserWorkReview.php';
 						foreach ($progressData as &$entry) {
@@ -1299,7 +1286,7 @@ class Campaign extends DataObject {
 							return $aDate <=> $bDate;
 						});
 
-						$milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForMilestone($milestone->id, $linkedUser->id, $campaign->id);
+						$milestoneRewardGiven = CampaignMilestoneUsersProgress::getRewardGivenForCampaignMilestone($campaignMilestone->id, $linkedUser->id);
 
 						if ($milestoneProgress['progress'] >= 100) {
 							$numCompletedMilestones++;
@@ -1307,24 +1294,24 @@ class Campaign extends DataObject {
 
 
 						$milestoneRewards[] = [
-							'id' => $milestone->id,
-							'weight' => $milestone->weight,
-							'milestoneName' => $milestone->name,
-							'rewardName' => $milestone->rewardName, 
-							'rewardType' => $milestone->rewardType, 
-							'awardAutomatically' => $milestone->awardAutomatically, 
-							'displayName' => $milestone->displayName,
-							'badgeImage' => $milestone->rewardImage,
-							'rewardExists' => $milestone->rewardExists,
-							'rewardDescription' => $milestone->rewardDescription,
+							'id' => $campaignMilestone->id,
+							'weight' => $campaignMilestone->weight,
+							'milestoneName' => $campaignMilestone->name,
+							'rewardName' => $campaignMilestone->rewardName, 
+							'rewardType' => $campaignMilestone->rewardType, 
+							'awardAutomatically' => $campaignMilestone->awardAutomatically, 
+							'displayName' => $campaignMilestone->displayName,
+							'badgeImage' => $campaignMilestone->rewardImage,
+							'rewardExists' => $campaignMilestone->rewardExists,
+							'rewardDescription' => $campaignMilestone->rewardDescription,
 							'progress' => $milestoneProgress['progress'],
 							'extraProgress' => $milestoneProgress['extraProgress'],
 							'completedGoals' => $completedGoals,
 							'totalGoals' => $totalGoals,
 							'progressData' => $progressData,
 							// 'progressData' => $milestoneProgress['data'],
-							'progressBeyondOneHundredPercent' => $milestone->progressBeyondOneHundredPercent,
-							'allowPatronProgressInput' => $milestone->allowPatronProgressInput,
+							'progressBeyondOneHundredPercent' => $campaignMilestone->progressBeyondOneHundredPercent,
+							'allowPatronProgressInput' => $campaignMilestone->allowPatronProgressInput,
 							'milestoneComplete' => ($completedGoals >= $totalGoals),
 							'rewardGiven' => $milestoneRewardGiven,
 						];
@@ -1375,12 +1362,12 @@ class Campaign extends DataObject {
 		$rewardDetails = $campaign->getRewardDetails();
 		$campaignReward = $rewardDetails['name'] ?? 'None';
 
-		$milestones = CampaignMilestone::getMilestoneByCampaign($campaignId);
+		$campaignMilestones = CampaignMilestone::getCampaignMilestoneByCampaign($campaignId);
 		$milestoneSummaryLines = [];
 
-		foreach ($milestones as $milestone) {
-			$name = $milestone->name;
-			$reward = $milestone->rewardName ?? 'None';
+		foreach ($campaignMilestones as $campaignMilestone) {
+			$name = $campaignMilestone->name;
+			$reward = $campaignMilestone->rewardName ?? 'None';
 			$milestoneSummaryLines[] = "$name -> $reward";
 		}
 
