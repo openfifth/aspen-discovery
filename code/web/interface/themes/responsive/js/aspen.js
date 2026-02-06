@@ -10907,6 +10907,9 @@ AspenDiscovery.Events = (function(){
 				}
 			})
 		},
+		handleRegistrationEnabledToggle: function () {
+			AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+		},
 		displayRegistrationNumberOfSeats: function () {
 			const requireEventRegistration = document.getElementById('registrationRequired');
 			if (!requireEventRegistration) {
