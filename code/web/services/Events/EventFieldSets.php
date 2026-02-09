@@ -75,7 +75,13 @@ class Events_EventFieldSets extends ObjectEditor {
 		return UserAccount::userHasPermission(['Administer Field Sets']);
 	}
 
+
 	public function getRequiredModule(): ?string {
 		return 'Events';
+	}
+
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.Events.displayFieldOptionsForSelectedUse();';
+
 	}
 }
