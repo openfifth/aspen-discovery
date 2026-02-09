@@ -167,18 +167,23 @@ class Events_EventManagement extends Admin_Admin {
 		echo "Total Registrations: " . count($registrations) . "\n";
 		echo str_repeat("=", 80) . "\n\n";
 
+		// Table header
+		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Status", 12) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
+		echo str_repeat("-", 137) . "\n";
+
 		foreach ($registrations as $registration) {
 			$user = $registration->getUser();
 			$staffUser = $registration->getStaffUser();
 
-			echo "Patron Name: " . ($user ? $user->getDisplayName() : 'Unknown') . "\n";
-			echo "Barcode: " . ($user ? $user->ils_barcode : '') . "\n";
-			echo "Email: " . ($user ? $user->email : '') . "\n";
-			echo "Status: " . ($registration->cancelled ? 'Cancelled' :  'Active') . "\n";
-			echo "Registered By: " . ($registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self') . "\n";
-			echo "Date Registered: " . ($registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-') . "\n";
-			echo "Attended: " . ($registration->attended ? 'Yes' : 'No') . "\n";
-			echo str_repeat("-", 80) . "\n";
+			$patronName = $user ? $user->getDisplayName() : 'Unknown';
+			$barcode = $user ? $user->ils_barcode : '';
+			$email = $user ? $user->email : '';
+			$status = $registration->cancelled ? 'Cancelled' : 'Active';
+			$registeredBy = $registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self';
+			$dateRegistered = $registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-';
+			$attended = '[ ]';
+
+			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($status, 12) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . $attended . "\n";
 		}
 		exit;
 	}
