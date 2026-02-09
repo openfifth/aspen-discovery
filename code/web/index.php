@@ -924,9 +924,9 @@ if ($isInvalidUrl || !is_dir(ROOT_DIR . "/services/$module")) {
 		try {
 			$service->launch();
 		} catch (Error $e) {
-			AspenError::raiseError(new AspenError($e->getMessage(), $e->getTrace()));
+			AspenError::raiseError(new AspenError($e->getMessage(), $e->getTrace(), $e->getLine(), $e->getFile()));
 		} catch (Exception $e) {
-			AspenError::raiseError(new AspenError($e->getMessage(), $e->getTrace()));
+			AspenError::raiseError(new AspenError($e->getMessage(), $e->getTrace(), $e->getLine(), $e->getFile()));
 		}
 		$timer->logTime('Finish launch of action');
 	} else {
