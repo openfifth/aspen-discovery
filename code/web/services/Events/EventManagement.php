@@ -33,6 +33,16 @@ class Events_EventManagement extends Action {
 			return;
 		}
 
+		if (isset($_GET['download_list']) && $_GET['download_list'] === 'true') {
+			$this->downloadRegistrationsList($eventInstanceId);
+			return;
+		}
+
+		if (isset($_GET['download_csv']) && $_GET['download_csv'] === 'true') {
+			$this->downloadRegistrationsCSV($eventInstanceId);
+			return;
+		}
+
 		$interface->assign('eventInstanceId', $eventInstanceId);
 		$interface->assign('eventTitle', $parentEvent->title);
 		$interface->assign('eventDate', $eventInstance->date);
@@ -132,5 +142,82 @@ class Events_EventManagement extends Action {
 
 	function canView(): bool {
 		return EventRegistrationService::canStaffRegisterUsers();
+	}
+
+	private function downloadRegistrationsList($eventInstanceId) {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return;
+		}
+
+		$parentEvent = $eventInstance->getParentEvent();
+		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
+
+		header('Content-Type: text/plain');
+		header('Content-Disposition: attachment; filename="registrations_list_' . $eventInstanceId . '.txt"');
+
+		echo "Event: " . $parentEvent->title . "\n";
+		echo "Date: " . $eventInstance->date . " " . $eventInstance->time . "\n";
+		echo "Location: " . $eventInstance->getLocation() . "\n";
+		echo "Total Registrations: " . count($registrations) . "\n";
+		echo str_repeat("=", 80) . "\n\n";
+
+		foreach ($registrations as $registration) {
+			$user = $registration->getUser();
+			$staffUser = $registration->getStaffUser();
+
+			echo "Patron Name: " . ($user ? $user->getDisplayName() : 'Unknown') . "\n";
+			echo "Barcode: " . ($user ? $user->ils_barcode : '') . "\n";
+			echo "Email: " . ($user ? $user->email : '') . "\n";
+			echo "Status: " . ($registration->cancelled ? 'Cancelled' :  'Active') . "\n";
+			echo "Registered By: " . ($registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self') . "\n";
+			echo "Date Registered: " . ($registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-') . "\n";
+			echo "Attended: " . ($registration->attended ? 'Yes' : 'No') . "\n";
+			echo str_repeat("-", 80) . "\n";
+		}
+		exit;
+	}
+
+	private function downloadRegistrationsCSV($eventInstanceId) {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return;
+		}
+
+		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
+
+		header('Content-Type: text/csv');
+		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
+
+		$output = fopen('php://output', 'w');
+
+		fputcsv($output, [
+			'Patron Name',
+			'Barcode',
+			'Email',
+			'Status', 
+			'Registered By',
+			'Date Registered',
+			'Attended'
+		]);
+
+		foreach ($registrations as $registration) {
+			$user = $registration->getUser();
+			$staffUser = $registration->getStaffUser();
+
+			fputcsv($output, [
+				$user ? $user->getDisplayName() : 'Unknown',
+				$user ? $user->ils_barcode : '',
+				$user ? $user->email : '',
+				$registration->cancelled ? 'Cancelled' : 'Active',
+				$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
+				$registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-',
+				$registration->attended ? 'Yes' : 'No'
+			]);
+		}
+		fclose($output);
+		exit;
 	}
 }
