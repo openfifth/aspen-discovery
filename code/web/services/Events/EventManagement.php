@@ -195,14 +195,17 @@ class Events_EventManagement extends Admin_Admin {
 			return;
 		}
 
+		$parentEvent = $eventInstance->getParentEvent();	
 		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
+
+		$customFields = $this->getEventRegistrationFields($parentEvent);
 
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
 
 		$output = fopen('php://output', 'w');
 
-		fputcsv($output, [
+		$headers = [
 			'Patron Name',
 			'Barcode',
 			'Email',
@@ -210,13 +213,19 @@ class Events_EventManagement extends Admin_Admin {
 			'Registered By',
 			'Date Registered',
 			'Attended'
-		]);
+		];
+		
+		foreach ($customFields as $field) {
+			$headers[] = $field['label'];
+		}
+
+		fputcsv($output, $headers);
 
 		foreach ($registrations as $registration) {
 			$user = $registration->getUser();
 			$staffUser = $registration->getStaffUser();
 
-			fputcsv($output, [
+			$row = [
 				$user ? $user->getDisplayName() : 'Unknown',
 				$user ? $user->ils_barcode : '',
 				$user ? $user->email : '',
@@ -224,9 +233,81 @@ class Events_EventManagement extends Admin_Admin {
 				$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
 				$registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-',
 				$registration->attended ? 'Yes' : 'No'
-			]);
+			];
+
+			$customFieldValues = $this->getRegistrationFieldValues($registration->id);
+			foreach ($customFields as $field) {
+				$row[] = $customFieldValues[$field['id']] ?? '';
+			}
+
+			fputcsv($output, $row);
 		}
+
 		fclose($output);
 		exit;
+	}
+
+	private function getEventRegistrationFields($event) {
+		global $logger;
+		$fields = [];
+
+		$fieldSetId = $event->eventRegistrationFieldSetId ?? null;
+		
+		if (empty($fieldSetId) && !empty($event->eventTypeId)) {
+			require_once ROOT_DIR . '/sys/Events/EventType.php';
+			$eventType = new EventType();
+			$eventType->id = $event->eventTypeId;
+			if ($eventType->find(true)) {
+				$fieldSetId = $eventType->eventRegistrationFieldSetId ?? null;
+			}
+		}
+
+		if (empty($fieldSetId)) {
+			return $fields;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventFieldSet.php';
+		require_once ROOT_DIR . '/sys/Events/EventFieldSetField.php';
+		require_once ROOT_DIR . '/sys/Events/EventField.php';
+
+		$fieldSet = new EventFieldSet();
+		$fieldSet->id = $fieldSetId;
+
+		if ($fieldSet->find(true)) {
+			$fieldSetField = new EventFieldSetField();
+			$fieldSetField->eventFieldSetId = $fieldSet->id;
+			$fieldSetField->find();
+			
+			while ($fieldSetField->fetch()) {
+				$eventField = new EventField();
+				$eventField->id = $fieldSetField->eventFieldId;
+				if ($eventField->find(true)) {
+					$fields[] = [
+						'id' => $eventField->id,
+						'label' => $eventField->name,
+						'fieldType' => $eventField->type
+					];
+				}
+			}
+		} else {
+			global $logger;
+			$logger->log("Field set not found with ID: " . $fieldSetId, Logger::LOG_ERROR);
+		}
+		return $fields;
+	}
+
+	private function getRegistrationFieldValues($registrationId) {
+		$values = [];
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
+
+		$registrationField = new UserAspenEventInstanceRegistrationEventField();
+		$registrationField->eventInstanceRegistrationId = $registrationId;
+		$registrationField->find();
+
+		while ($registrationField->fetch()) {
+			$values[$registrationField->eventFieldId] = $registrationField->value;
+		}
+		return $values;
 	}
 }
