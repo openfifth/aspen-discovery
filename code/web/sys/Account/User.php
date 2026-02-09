@@ -3228,7 +3228,7 @@ class User extends DataObject {
 		return $relatedPTypes;
 	}
 
-	function importListsFromIls() {
+	function importListsFromIls() : array {
 		return $this->getCatalogDriver()->importListsFromIls($this);
 	}
 
