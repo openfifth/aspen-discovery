@@ -10194,29 +10194,35 @@ AspenDiscovery.Events = (function(){
 		},
 
 		//For Aspen Events
-		displayFieldOptionsForSelectedUse: function(fieldUse) {
-			$(document).ready(
-				() => {
-					const fieldSetId = document.getElementById('id').value;
-					if (fieldSetId) {
-						const url = Globals.path + '/Events/AJAX';
-						const params = {
-							method: 'getFieldSetFields',
-							fieldSetId
-						};
-						$.getJSON(url, params, function (data) {
-							if (!data.success) {
-								AspenDiscovery.showMessage('An error occurred ', data.message);
-								return;
-							}
-							AspenDiscovery.Events.getFieldOptionsByUse(fieldUse, data.selectedFields)
-							return;
-						});	
-						return;
-					}
-					AspenDiscovery.Events.getFieldOptionsByUse(fieldUse)
+		displayFieldOptionsForSelectedUse: function(selectedFieldUse) {
+			const fieldUse = selectedFieldUse ?? document.getElementById('fieldSetUseSelect')?.value;
+			if (!fieldUse || fieldUse === "0") {
+				return;
+			}
+	
+			const fieldSetId = document.getElementById('id').value;
+
+			// handle new fieldset creation
+			if (!fieldSetId) {
+				AspenDiscovery.Events.getFieldOptionsByUse(fieldUse)
+				return;
+			}
+
+			// loads existing fieldset
+			const url = Globals.path + '/Events/AJAX';
+			const params = {
+				method: 'getFieldSetFields',
+				fieldSetId
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (!data.success) {
+					AspenDiscovery.showMessage('An error occurred ', data.message);
+					return;
 				}
-			)
+				AspenDiscovery.Events.getFieldOptionsByUse(fieldUse, data.selectedFields)
+				return;
+			});	
 		},
 
 		getFieldOptionsByUse: function(fieldUse, selectedFields = null) {
