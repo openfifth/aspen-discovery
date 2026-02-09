@@ -591,9 +591,9 @@ class Sierra extends AbstractIlsDriver {
 
 		if ($this->lastResponseCode == 200 || $this->lastResponseCode == 204) {
 			$result['success'] = true;
-			$result['message'] = 'Reading history has been disabled in the ILS.';
+			$result['message'] = translate(['text' => 'Reading history has been disabled in the ILS.', 'isPublicFacing'=>true]);
 		} else {
-			$result['message'] = 'Failed to disable reading history in the ILS.';
+			$result['message'] = translate(['text' => 'Failed to disable reading history in the ILS.', 'isPublicFacing'=>true]);
 		}
 
 		return $result;
