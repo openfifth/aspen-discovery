@@ -74,4 +74,8 @@ class Events_EventFieldSets extends ObjectEditor {
 	function canBatchEdit(): bool {
 		return UserAccount::userHasPermission(['Administer Field Sets']);
 	}
+
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.Events.displayFieldOptionsForSelectedUse();';
+	}
 }
