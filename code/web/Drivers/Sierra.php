@@ -1820,7 +1820,6 @@ class Sierra extends AbstractIlsDriver {
 		];
 
 		if ($canUpdateContactInfo) {
-			global $library;
 			$params = [];
 
 			$userHomeLibrary = $patron->getHomeLibrary();
@@ -1828,7 +1827,7 @@ class Sierra extends AbstractIlsDriver {
 				$patron->email = $_REQUEST['email'];
 				$params['emails'] = [$_REQUEST['email']];
 			}
-			if ($library->allowPatronPhoneNumberUpdates) {
+			if ($userHomeLibrary->allowPatronPhoneNumberUpdates) {
 				$params['phones'] = [];
 				if (isset($_REQUEST['phone'])) {
 					$patron->phone = $_REQUEST['phone'];
@@ -1838,7 +1837,7 @@ class Sierra extends AbstractIlsDriver {
 					$params['phones'][] = $tmpPhone;
 				}
 			}
-			if ($library->allowPatronWorkPhoneNumberUpdates) {
+			if ($userHomeLibrary->allowPatronWorkPhoneNumberUpdates) {
 				if (!array_key_exists('phones', $params)) {
 					$params['phones'] = [];
 				}
@@ -1850,14 +1849,24 @@ class Sierra extends AbstractIlsDriver {
 					$params['phones'][] = $tmpPhone;
 				}
 			}
-			if ($library->allowPatronAddressUpdates) {
+			if ($userHomeLibrary->allowPatronAddressUpdates) {
 				$params['addresses'] = [];
 				$address = new stdClass();
 				$address->lines = [];
 				$address->type = 'a';
 				$address->lines[] = $_REQUEST['address1'];
-				$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
-				$address->lines[] = $cityStateZip;
+				//Add blank lines as needed
+				for ($i = 2; $i < $userHomeLibrary->sierraAddressLineForCityState; $i++) {
+					$address->lines[] = '';
+				}
+				if ($userHomeLibrary->sierraZipOnSameLineAsCityState) {
+					$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					$address->lines[] = $cityStateZip;
+				}else{
+					$cityState = $_REQUEST['city'] . ', ' . $_REQUEST['state'];
+					$address->lines[] = $cityState;
+					$address->lines[] = $_REQUEST['zip'];
+				}
 
 				$params['addresses'][] = $address;
 			}
@@ -2202,12 +2211,22 @@ class Sierra extends AbstractIlsDriver {
 					$address->lines = [];
 					$address->type = 'a';
 					$address->lines[] = $_REQUEST['street'];
-					if ($selfRegistrationForm->noCommaInAddress){
-						$cityStateZip = $_REQUEST['city'] . ' ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
-					} else {
-						$cityStateZip = $_REQUEST['city'] . ', ' . $_REQUEST['state'] . ' ' . $_REQUEST['zip'];
+					//Add blank lines as needed
+					for ($i = 2; $i < $library->sierraAddressLineForCityState; $i++) {
+						$address->lines[] = '';
 					}
-					$address->lines[] = $cityStateZip;
+					if ($selfRegistrationForm->noCommaInAddress){
+						$cityState = $_REQUEST['city'] . ' ' . $_REQUEST['state'];
+					} else {
+						$cityState = $_REQUEST['city'] . ', ' . $_REQUEST['state'];
+					}
+					if ($library->sierraZipOnSameLineAsCityState) {
+						$cityStateZip = $cityState . ' ' . $_REQUEST['zip'];
+						$address->lines[] = $cityStateZip;
+					}else{
+						$address->lines[] = $cityState;
+						$address->lines[] = $_REQUEST['zip'];
+					}
 
 					$params['addresses'][] = $address;
 				}
@@ -2988,40 +3007,59 @@ class Sierra extends AbstractIlsDriver {
 	}
 
 	private function loadContactInformationFromApiResult(User $user, stdClass $patronInfo) : void {
+		$userHomeLibrary = $user->getHomeLibrary();
 		$user->_fullname = reset($patronInfo->names);
 		if (!empty($patronInfo->addresses)) {
 			$primaryAddress = reset($patronInfo->addresses);
 			$user->_address1 = $primaryAddress->lines[0];
-			if (array_key_exists(1, $primaryAddress->lines)) {
-				$line2 = $primaryAddress->lines[1];
-				if (strpos($line2, ',')) {
-					$user->_city = substr($line2, 0, strrpos($line2, ','));
-					$stateZip = trim(substr($line2, strrpos($line2, ',') + 1));
-					if (strpos($stateZip, ' ')) {
-						$user->_state = substr($stateZip, 0, strrpos($stateZip, ' '));
-						$user->_zip = substr($stateZip, strrpos($stateZip, ' '));
-					} else {
-						$user->_state = trim($stateZip);
-					}
-				} else {
-					$parts = preg_split('/\s+/', $line2);
-					if (count($parts) >= 3) {
-						$lastpart = array_pop($parts);
-						if (is_numeric($lastpart)) {
-							$user->_zip = $lastpart;
-							$user->_state = array_pop($parts);
+			if (array_key_exists($userHomeLibrary->sierraAddressLineForCityState - 1, $primaryAddress->lines)) {
+				//Get the correct address line for the city/state/zip
+				$line2 = $primaryAddress->lines[$userHomeLibrary->sierraAddressLineForCityState - 1];
+				if ($userHomeLibrary->sierraZipOnSameLineAsCityState) {
+					if (strpos($line2, ',')) {
+						$user->_city = substr($line2, 0, strrpos($line2, ','));
+						$stateZip = trim(substr($line2, strrpos($line2, ',') + 1));
+						if (strpos($stateZip, ' ')) {
+							$user->_state = substr($stateZip, 0, strrpos($stateZip, ' '));
+							$user->_zip = substr($stateZip, strrpos($stateZip, ' '));
 						} else {
-							$user->_state = $lastpart;
+							$user->_state = trim($stateZip);
 						}
-						$user->_city = implode(' ', $parts);
 					} else {
-						$user->_city = $line2;
+						$parts = preg_split('/\s+/', $line2);
+						if (count($parts) >= 3) {
+							$lastpart = array_pop($parts);
+							if (is_numeric($lastpart)) {
+								$user->_zip = $lastpart;
+								$user->_state = array_pop($parts);
+							} else {
+								$user->_state = $lastpart;
+							}
+							$user->_city = implode(' ', $parts);
+						} else {
+							$user->_city = $line2;
+						}
+					}
+				}else{
+					if (strpos($line2, ',')) {
+						$user->_city = substr($line2, 0, strrpos($line2, ','));
+						$user->_state = trim(substr($line2, strrpos($line2, ',') + 1));
+					}else {
+						$parts = preg_split('/\s+/', $line2);
+						if (count($parts) >= 2) {
+							$user->_state = array_pop($parts);
+							$user->_city = implode(' ', $parts);
+						} else {
+							$user->_city = $line2;
+						}
+					}
+					if (array_key_exists($userHomeLibrary->sierraAddressLineForCityState, $primaryAddress->lines)) {
+						$user->_zip = $primaryAddress->lines[$userHomeLibrary->sierraAddressLineForCityState];
 					}
 				}
 			}
 		}
 		if (!empty($patronInfo->phones)) {
-			$userHomeLibrary = $user->getHomeLibrary();
 			foreach ($patronInfo->phones as $phoneInfo) {
 				if ($phoneInfo->type == $userHomeLibrary->phoneField) {
 					$user->phone = $phoneInfo->number;
