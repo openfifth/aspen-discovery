@@ -54,6 +54,7 @@ class EventFieldSet extends DataObject {
 				'hiddenByDefault' => true,
 			],
 		];
+		$structure['eventFields']['values'] = EventField::getEventFieldList();
 
 		self::$_objectStructure[$context] = $structure;
 		return self::$_objectStructure[$context];
