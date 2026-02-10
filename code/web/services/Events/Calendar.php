@@ -193,8 +193,6 @@ class Events_Calendar extends Action {
 		if (isset($weekLink)) $weekLink .= $locationParam;
 		if (isset($monthLink)) $monthLink .= $locationParam;
 
-		$interface->assign('locations', $locations);
-		$interface->assign('selectedLocation', $selectedLocation);
 
 		
 		if (isset($prevLink)) $interface->assign('prevLink', $prevLink);
@@ -251,6 +249,59 @@ class Events_Calendar extends Action {
 		$searchObject->close();
 
 		$searchResults = $searchObject->getResultRecordSet();
+		$allLocations = $locations;
+
+		$dropdownSearchObject = SearchObjectFactory::initSearchObject('Events');
+		$dropdownSearchObject->init();
+		$dropdownSearchObject->setPrimarySearch(false);
+		$dropdownSearchObject->setLimit(1000);
+		$dropdownSearchObject->clearHiddenFilters();
+
+		if ($useWeek) {
+			$dropdownSearchObject->addHiddenFilter("event_week", '"' . $weekFilter . '"');
+		} else {
+			$dropdownSearchObject->addHiddenFilter("event_month", '"' . $monthFilter . '"');
+		}
+
+		if ($selectedLocation === 'all' && $library->aspenEventsToInclude == 2) {
+			$libraryBranches = $allLocations;
+			unset($libraryBranches['all']);
+			$branchNames = array_values($libraryBranches);
+			if (!empty($branchNames)) {
+				$dropdownSearchObject->addHiddenFilter('branch', '("' . implode('" OR "', $branchNames) . '")');
+			}
+		}
+
+		$dropdownSearchObject->processSearch(true, true);
+		$allEvents = $dropdownSearchObject->getResultRecordSet();
+		$dropdownSearchObject->close();
+
+		$locationsWithEvents = [];
+		foreach ($allEvents as $result) {
+			if (!empty($result['branch'])) {
+				foreach ($result['branch'] as $branchName) {
+					$locationCode = array_search($branchName, $allLocations);
+					if ($locationCode !== false && !isset($locationsWithEvents[$locationCode])) {
+						$locationsWithEvents[$locationCode] = $branchName;
+					}
+				}
+			}
+		}
+
+		if (!empty($locationsWithEvents)) {
+			if (isset($allLocations['all'])) {
+				$locationsWithEvents = ['all' => $allLocations['all']] + $locationsWithEvents;
+			}
+			asort($locationsWithEvents);
+			$locations = $locationsWithEvents;
+			
+			if (!isset($locations[$selectedLocation])) {
+				$selectedLocation = 'all';
+			}
+		}
+
+		$interface->assign('locations', $locations);
+		$interface->assign('selectedLocation', $selectedLocation);
 
 		$defaultTimezone = new DateTimeZone(date_default_timezone_get());
 
