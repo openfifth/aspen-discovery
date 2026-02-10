@@ -1538,7 +1538,14 @@ function checkForMaliciouslyFormattedParameters(): void {
 	}
 }
 
-function checkForTooManyFailedLogins(){
+function checkForTooManyFailedLogins() : void {
+	$activeIP = IPAddress::getActiveIp();
+	$subnet = IPAddress::getIPAddressForIP($activeIP);
+
+	if ($subnet !== false && $subnet->bypassFailedLoginChecks) {
+		return;
+	}
+
 	//Check to see if the request should be slowed or blocked due to failed logins
 	try {
 		$currentTime = time();
