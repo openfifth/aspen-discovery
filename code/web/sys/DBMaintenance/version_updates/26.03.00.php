@@ -157,6 +157,14 @@ function getUpdates26_03_00(): array {
 
 		//lucas
 
+		//nick
+		'account_profiles_add_carlXSolutionVersion' => [
+			'title' => 'Account profiles - add carlXSolutionVersion',
+			'description' => 'Within Account Profiles, libraries can specify the version of Carl Solution which will determine if extar information is required for API requests.',
+			'sql' => [
+				"ALTER TABLE  account_profiles ADD COLUMN `carlXSolutionVersion` enum('','2025r2') NOT NULL DEFAULT '' AFTER `carlXViewVersion`",
+			]
+		],  //account_profiles_add_carlXSolutionVersion
 
 		//tomas
 

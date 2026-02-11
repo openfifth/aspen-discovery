@@ -84,6 +84,7 @@ CREATE TABLE `account_profiles` (
   `iiiLoginConfiguration` enum('','barcode_pin','name_barcode','name_barcode_pin') NOT NULL DEFAULT '',
   `overrideCode` varchar(50) DEFAULT '',
   `carlXViewVersion` enum('','v','v2') NOT NULL DEFAULT '',
+  `carlXSolutionVersion` enum('','2025r2') NOT NULL DEFAULT '',
   `enableFetchingIlsMessages` tinyint(1) DEFAULT 0,
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
