@@ -15960,30 +15960,69 @@ AspenDiscovery.CommunityEngagement = function() {
 			resultsDiv.style.display = 'block';
 		},
 		selectUser: function (userId, userName) {
-			document.getElementById('user_search').value = userName;
-			document.getElementById('selected_user_id').value = userId;
-			document.getElementById('user_search_results').style.display = 'none';
+		
+		var searchInput = document.getElementById('user_search');
+		var hiddenInput = document.getElementById('selected_user_id');
+		var resultsDiv = document.getElementById('user_search_results');
 
-			AspenDiscovery.CommunityEngagement.filterDropdownOptions('user');
+			if (!searchInput || !hiddenInput) {
+				console.error('Required elements not found');
+				return;
+			}
 
+			var originalOninput = searchInput.oninput;
+			
+			searchInput.oninput = null;
+			
+			searchInput.value = userName;
+			hiddenInput.value = userId;
+			
+			if (resultsDiv) {
+				resultsDiv.style.display = 'none';
+			}
+
+			setTimeout(function() {
+				searchInput.oninput = originalOninput;
+				AspenDiscovery.CommunityEngagement.filterDropdownOptions('user');
+			}, 100);
 		},
 		searchUsers: function (query) {
 			const resultsDiv = document.getElementById('user_search_results');
 			const hiddenInput = document.getElementById('selected_user_id');
 
-			if (query.length < 2) {
-				resultsDiv.style.display = 'none';
-				hiddenInput.value = '';
-				return;
+			if (!this.searchUsers._cache) {
+				this.searchUsers._cache = {
+					users: null,
+					timer: null
+				};
 			}
 
-			hiddenInput.value = '';
-			AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
-				const filteredUsers = users.filter(user =>
-					user.displayName.toLowerCase().includes(query.toLowerCase()) || (user.ils_barcode && user.ils_barcode.toLowerCase().includes(query.toLowerCase()))
-				);
-				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
-			});
+			clearTimeout(this.searchUsers._cache.timer);
+
+			this.searchUsers._cache.timer = setTimeout(() => {
+				if (query.length < 2) {
+					resultsDiv.style.display = 'none';
+					hiddenInput.value = '';
+					return;
+				}
+
+				hiddenInput.value = '';
+
+				fetch('/CommunityEngagement/AJAX?method=searchUsers&query=' + encodeURIComponent(query))
+					.then(response => response.json())
+					.then(data => {
+						if (data.sucess) {
+							this.displaySearchResults(data.users);
+						} else {
+							console.error(data.message);
+							this.displaySearchResults(data.users);
+						}
+					})
+					.catch(error => {
+						console.error('Search error:', error);
+						this.displaySearchResults([]);
+					});
+			}, 300);
 		},
 		loadCheckoutsForUser: function(userId, callback) {
 			let url = Globals.path + "/MyAccount/AJAX";
