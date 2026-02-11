@@ -1244,8 +1244,8 @@ class SystemAPI extends AbstractAPI {
 		{
 			return [
 				'success' => true,
-				'settings' => $settings->getFirebaseSettings()
-							'error' => 'no settings found'
+				'settings' => $settings->getFirebaseSettings(),
+				'error' => 'no settings found'
 			];
 		}
 	}
