@@ -21,16 +21,11 @@ class SystemAPI extends AbstractAPI {
 		}
 
 		if ($method === 'getLogoFile') {
-<<<<<<< DIS-1404-progressive-web-application
-			return $this->$method();
+			$this->$method();
 		}else if ($method === 'getTranslation' 
 			|| $method === 'getTranslationWithValues' 
 			|| $method === 'getBulkTranslations'
 			|| $method === 'getFirebaseSettings') {// TODO determine if firebase methods need authentication
-=======
-			$this->$method();
-		}else if ($method === 'getTranslation' || $method === 'getTranslationWithValues' || $method === 'getBulkTranslations') {
->>>>>>> 26.02.00
 			//These methods don't need additional authentication, just return the data.
 			$result = [
 				'result' => $this->$method(),
@@ -58,11 +53,8 @@ class SystemAPI extends AbstractAPI {
 					'getCatalogStatus',
 					'getLocations',
 					'getMaterialsRequestForm',
-<<<<<<< DIS-1404-progressive-web-application
 					'getFirebaseSettings'
-=======
 					'getHomeScreenLinks',
->>>>>>> 26.02.00
 				])) {
 					$result = [
 						'result' => $this->$method(),
@@ -1245,7 +1237,6 @@ class SystemAPI extends AbstractAPI {
 		];
 	}
 
-<<<<<<< DIS-1404-progressive-web-application
 	function getFirebaseSettings() {
 		require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
 		$settings = new AspenMobileSetting();
@@ -1254,7 +1245,11 @@ class SystemAPI extends AbstractAPI {
 			return [
 				'success' => true,
 				'settings' => $settings->getFirebaseSettings()
-=======
+							'error' => 'no settings found'
+			];
+		}
+	}
+
 	/** @noinspection PhpUnused */
 	public function getHomeScreenLinks(): array {
 		if (isset($_REQUEST['locationId']) || isset($_REQUEST['libraryId'])) {
@@ -1333,19 +1328,11 @@ class SystemAPI extends AbstractAPI {
 			return [
 				'success' => true,
 				'links' => $homeScreenLinks
->>>>>>> 26.02.00
 			];
 		} else {
 			return [
 				'success' => false,
-<<<<<<< DIS-1404-progressive-web-application
 				'error' => 'no settings found'
-			];
-		}
-	}
-
-=======
-				'message' => 'Must provide either a Location Id or Library Id',
 			];
 		}
 	}
@@ -1484,8 +1471,6 @@ class SystemAPI extends AbstractAPI {
 			}
 		}
 	}
-
->>>>>>> 26.02.00
 	function getBreadcrumbs(): array {
 		return [];
 	}
