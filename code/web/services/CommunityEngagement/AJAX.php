@@ -1586,4 +1586,35 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		}
 		exit;
 	}
+
+	public function searchUsers() {
+		require_once ROOT_DIR . '/sys/Account/User.php';
+
+		 $query = $_GET['query'] ?? '';
+		if (strlen($query) < 2) {
+			echo json_encode(['success' => false, 'message' => 'Query too short', 'users' => []]);
+			exit();
+		}
+
+		$user = new User();
+		$escapedQuery = str_replace(['\\','%','_'], ['\\\\','\\%','\\_'], $query);
+		$user->whereAdd("displayName LIKE '%$escapedQuery%' OR ils_barcode LIKE '%$escapedQuery%'");
+		$user->limit(0, 20);
+		$user->find();
+
+		$results = [];
+		while ($user->fetch()) {
+			$results[] = [
+				'id' => $user->id,
+				'displayName' => $user->displayName,
+				'ils_barcode' => $user->ils_barcode
+			];
+		}
+
+		echo json_encode([
+			'success' => true, 
+			'users' => $results
+		]);
+		exit();
+	}
 }
