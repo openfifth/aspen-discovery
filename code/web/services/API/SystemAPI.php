@@ -53,7 +53,7 @@ class SystemAPI extends AbstractAPI {
 					'getCatalogStatus',
 					'getLocations',
 					'getMaterialsRequestForm',
-					'getFirebaseSettings'
+					'getFirebaseSettings',
 					'getHomeScreenLinks',
 				])) {
 					$result = [
