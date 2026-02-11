@@ -67,4 +67,8 @@ class AspenMobile_Settings extends ObjectEditor {
 		// TODO should we change this to a Aspen Mobile specific Permission?
 		return UserAccount::userHasPermission('Administer Aspen LiDA Settings');
 	}
+
+	function getViewPermissions() : array {
+		return ['Administer Aspen LiDA Settings'];
+	}
 }
