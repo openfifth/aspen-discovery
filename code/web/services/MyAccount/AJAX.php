@@ -11048,8 +11048,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$campaignMilestoneUsersProgress->find(true);
 
 						$campaignMilestone = new CampaignMilestone();
-						$campaignMilestone->campaignId = $campaignMilestoneProgressEntry->ce_campaign_id;
-						$campaignMilestone->milestoneId = $campaignMilestoneProgressEntry->ce_milestone_id;
+						$campaignMilestone->id = $campaignMilestoneProgressEntry->ce_campaign_milestone_id;
 						$campaignMilestone->find(true);
 
 						$userCampaign = new UserCampaign();
