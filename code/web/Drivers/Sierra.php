@@ -4512,7 +4512,7 @@ class Sierra extends AbstractIlsDriver {
 		//Check to see if we got a good zip
 		if (empty($user->_zip) || !preg_match('/^(\d{5}(-\d{4})?|[A-Z]\d[A-Z] ?\d[A-Z]\d)$/', $user->_zip)) {
 			//Scan the lines from 2-5 to see if we can get a good match for the zip code
-			for ($i = 1; $i < $primaryAddress->lines; $i++) {
+			for ($i = 1; $i < count($primaryAddress->lines); $i++) {
 				$addressLine = $primaryAddress->lines[$i];
 				if (preg_match('/^(\d{5}(-\d{4})?|[A-Z]\d[A-Z] ?\d[A-Z]\d)$/', $addressLine)) {
 					//This looks like a zip/postal code
