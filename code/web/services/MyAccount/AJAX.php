@@ -11020,6 +11020,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		while (true) {
 
+			$foundSomething = false;
 			if( $debug ){
 				global $logger;
 				$logger->log("RUNNING SSE ", Logger::LOG_ERROR);
@@ -11066,6 +11067,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 					# Handle campaign completion notification
 					if ($userCampaign->completed && !$wantedOverflowProgress) {
+						$foundSomething = true;
 						echo "event: ce_notification\n";
 						echo "data: " . json_encode(
 								array(
@@ -11088,6 +11090,7 @@ class MyAccount_AJAX extends JSON_Action {
 							) . "\n\n";
 					# Handle milestone completion notification
 					}elseif ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
+						$foundSomething = true;
 						echo "event: ce_notification\n";
 						echo "data: " . json_encode(
 								array(
@@ -11109,6 +11112,7 @@ class MyAccount_AJAX extends JSON_Action {
 								)
 							) . "\n\n";
 					}else{
+						$foundSomething = true;
 						# Handle milestone progress notification
 						echo "event: ce_notification\n";
 						echo "data: " . json_encode(
@@ -11132,7 +11136,9 @@ class MyAccount_AJAX extends JSON_Action {
 							) . "\n\n";
 					}
 				}
-			}else{
+			}
+			
+			if (!$foundSomething){
 				echo "event: heart_beat\n";
 				echo "data: No notifications found\n\n";
 			}
