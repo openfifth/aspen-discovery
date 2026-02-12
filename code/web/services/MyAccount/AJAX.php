@@ -11021,6 +11021,9 @@ class MyAccount_AJAX extends JSON_Action {
 		while (true) {
 
 			$foundSomething = false;
+			$campaignsNotifiedThisIteration = [];
+        	$milestonesNotifiedThisIteration = [];
+			$progressNotifiedThisIteration = [];
 			if( $debug ){
 				global $logger;
 				$logger->log("RUNNING SSE ", Logger::LOG_ERROR);
@@ -11067,6 +11070,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 					# Handle campaign completion notification
 					if ($userCampaign->completed && !$wantedOverflowProgress) {
+
+						if (in_array($campaign->id, $campaignsNotifiedThisIteration)) {
+							continue;
+						}
+						$campaignsNotifiedThisIteration[] = $campaign->id;
 						$foundSomething = true;
 						echo "event: ce_notification\n";
 						echo "data: " . json_encode(
@@ -11090,6 +11098,10 @@ class MyAccount_AJAX extends JSON_Action {
 							) . "\n\n";
 					# Handle milestone completion notification
 					}elseif ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
+						if (in_array($campaignMilestone->id, $milestonesNotifiedThisIteration)) {
+							continue;
+						}
+						$milestonesNotifiedThisIteration[] = $campaignMilestone->id;
 						$foundSomething = true;
 						echo "event: ce_notification\n";
 						echo "data: " . json_encode(
@@ -11112,6 +11124,10 @@ class MyAccount_AJAX extends JSON_Action {
 								)
 							) . "\n\n";
 					}else{
+						if (in_array($campaignMilestone->id, $progressNotifiedThisIteration)) {
+							continue;
+						}
+						$progressNotifiedThisIteration[] = $campaignMilestone->id;
 						$foundSomething = true;
 						# Handle milestone progress notification
 						echo "event: ce_notification\n";
