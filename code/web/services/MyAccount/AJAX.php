@@ -10545,7 +10545,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$unwantedOverflowProgress = $campaignMilestoneUsersProgress->progress > $campaignMilestone->goal &&  !$milestone->progressBeyondOneHundredPercent;
 					$wantedOverflowProgress = $campaignMilestoneUsersProgress->progress > $campaignMilestone->goal &&  $milestone->progressBeyondOneHundredPercent;
 					if( $unwantedOverflowProgress ){
-						exit();
+						continue;
 					}
 
 					# Handle campaign completion notification
