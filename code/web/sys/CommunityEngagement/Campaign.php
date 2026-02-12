@@ -1406,7 +1406,7 @@ class Campaign extends DataObject {
 		$this->joinAdd(new CampaignLibraryAccess(), 'LEFT', 'ce_campaign_library_access', 'id', 'campaignId');
 		$this->whereAdd("ce_campaign_library_access.libraryId = '" . $user->getHomeLibrary()->libraryId . "' OR NOT EXISTS (SELECT 1 FROM ce_campaign_library_access WHERE ce_campaign_library_access.campaignId = ce_campaign.id)");
 
-		$homeLocation = UserAccount::getActiveUserObj()->getHomeLocation();
+		$homeLocation = $user->getHomeLocation();
 		if ($homeLocation != null) {
 			$this->joinAdd(new CampaignLocationAccess(), 'LEFT', 'ce_campaign_location_access', 'id', 'campaignId');
 			$this->whereAdd("ce_campaign_location_access.locationId = '{$homeLocation->locationId}' OR NOT EXISTS (SELECT 1 FROM ce_campaign_location_access WHERE ce_campaign_location_access.campaignId = ce_campaign.id)");
