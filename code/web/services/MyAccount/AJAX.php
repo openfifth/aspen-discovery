@@ -11024,25 +11024,25 @@ class MyAccount_AJAX extends JSON_Action {
 				while ($campaignMilestoneProgressEntry->fetch()) {
 
 					# Prepare data
+					$campaignMilestone = new CampaignMilestone();
+					$campaignMilestone->id = $campaignMilestoneProgressEntry->ce_campaign_milestone_id;
+					$campaignMilestone->find(true);
+
 					$campaign = new Campaign();
-					$campaign->id = $campaignMilestoneProgressEntry->ce_campaign_id;
+					$campaign->id = $campaignMilestone->campaignId;
 					$campaign->find(true);
 
 					$milestone = new Milestone();
-					$milestone->id = $campaignMilestoneProgressEntry->ce_milestone_id;
+					$milestone->id = $campaignMilestone->milestoneId;
 					$milestone->find(true);
 
 					$campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
 					$campaignMilestoneUsersProgress->id = $campaignMilestoneProgressEntry->ce_campaign_milestone_users_progress_id;
 					$campaignMilestoneUsersProgress->find(true);
 
-					$campaignMilestone = new CampaignMilestone();
-					$campaignMilestone->id = $campaignMilestoneProgressEntry->ce_campaign_milestone_id;
-					$campaignMilestone->find(true);
-
 					$userCampaign = new UserCampaign();
 					$userCampaign->userId = $patron->id;
-					$userCampaign->campaignId = $campaignMilestoneProgressEntry->ce_campaign_id;
+					$userCampaign->campaignId = $campaignMilestone->campaignId;
 					$userCampaign->find(true);
 
 					$unwantedOverflowProgress = $campaignMilestoneUsersProgress->progress > $campaignMilestone->goal &&  !$milestone->progressBeyondOneHundredPercent;
