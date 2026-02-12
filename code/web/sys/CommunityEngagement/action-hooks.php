@@ -51,6 +51,22 @@ function _processCampaignMilestoneProgress($value, $objectType, $userId, $date, 
 			continue;
 		}
 
+		$milestone = new Milestone();
+        $milestone->id = $campaignMilestone->milestoneId;
+        $milestone->find(true);
+
+        if (!$milestone->progressBeyondOneHundredPercent) {
+            $currentProgress = new CampaignMilestoneUsersProgress();
+            $currentProgress->userId = $userId;
+            $currentProgress->ce_campaign_milestone_id = $campaignMilestone->id;
+
+            if ($currentProgress->find(true)) {
+                if ($currentProgress->progress >= $campaignMilestone->goal) {
+                    continue;
+                }
+            }
+        }
+
 		$campaignMilestone->addCampaignMilestoneProgressEntry($value, $userId, $groupedId);
 
 		$userCampaign = new UserCampaign();
