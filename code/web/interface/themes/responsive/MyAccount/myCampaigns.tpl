@@ -552,6 +552,7 @@
 									<thead>
 										<tr>
 											<th>{translate text="Milestone" isPublicFacing=true}</th>
+											<th>{translate text="Goal" isPublicFacing=true}</th>
 											<th>{translate text="Milestone Reward" isPublicFacing=true}</th>
 										</tr>
 									</thead>
@@ -559,6 +560,7 @@
 										{foreach from=$campaign->milestones item="milestone"}
 											<tr>
 												<td>{$milestone->name}</td>
+												<td>{$milestone->goal}</td>
 												<td>
 													<div style="display: flex; flex-direction: column; align-items: center; text-align: center;">
 														{if $milestone->displayName}
