@@ -51,7 +51,7 @@ class EventCoverBuilder extends AbstractCoverBuilder {
 	 * @param DateTime $eventDate
 	 * @param false|int $textColor
 	 */
-	protected function drawEventText($imageCanvas, $title, $eventDate, $textColor, $branch = '', $displayBranchOnTumbnail) {
+	protected function drawEventText($imageCanvas, $title, $eventDate, $textColor, $branch = '', $displayBranchOnThumbnail) {
 		$title_font_size = $this->imageWidth * 0.08;
 
 		$x = 17;
@@ -75,7 +75,7 @@ class EventCoverBuilder extends AbstractCoverBuilder {
 		$dayOfMonth = $eventDate->format('j');
 		$y = addCenteredWrappedTextToImage($imageCanvas, $this->titleFont, $dayOfMonth, $title_font_size * 5, $title_font_size * .15 * 5, $x, $y, $this->imageWidth - 30, $textColor);
 
-		if (!empty($branch && $displayBranchOnTumbnail)) {
+		if (!empty($branch) && $displayBranchOnThumbnail) {
 			$y += 15;
 			$branch = StringUtils::trimStringToLengthAtWordBoundary($branch, 50, true);
 			$branch_font_size = $title_font_size * 1.0;
