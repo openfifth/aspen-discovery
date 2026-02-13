@@ -1,0 +1,236 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Aspen Native Events API",
+    "version": "1.0.0",
+    "description": "API for querying Aspen native events directly from the database with recurrence information."
+  },
+  "servers": [
+    {
+      "url": "https://{aspenDomain}/API/AspenEventAPI?method=",
+      "variables": {
+        "aspenDomain": {
+          "default": "example.aspendiscovery.org",
+          "description": "The URL of the Aspen instance"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "getAspenEvents": {
+      "get": {
+        "summary": "Get public Aspen native events",
+        "description": "Returns a paginated list of public (non-private) Aspen native events queried directly from the database with recurrence information.",
+        "x-aspen-authorization": {
+          "scope": "user"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination."
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of results per page (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "locationId",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter events by location ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of public Aspen events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedEventResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or access denied."
+          }
+        }
+      }
+    },
+    "getPrivateAspenEvents": {
+      "get": {
+        "summary": "Get all Aspen native events including private",
+        "description": "Returns a paginated list of all Aspen native events (including private) queried directly from the database with recurrence information. Requires permission to view private events.",
+        "x-aspen-authorization": {
+          "scope": "user",
+          "permissions": [
+            "View Private Events for All Locations",
+            "View Private Events for Home Library Locations",
+            "View Private Events for Home Location"
+          ]
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination."
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of results per page (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "locationId",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter events by location ID."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of all Aspen events including private.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedEventResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or access denied."
+          },
+          "403": {
+            "description": "Forbidden - User does not have required permissions."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaginatedEventResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "totalResults": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AspenEvent"
+            }
+          }
+        }
+      },
+      "AspenEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "private": {
+            "type": "boolean"
+          },
+          "location": {
+            "type": "object",
+            "properties": {
+              "locationId": {
+                "type": "integer"
+              },
+              "room": {
+                "type": "string"
+              }
+            }
+          },
+          "scheduling": {
+            "type": "object",
+            "properties": {
+              "startDate": {
+                "type": "string"
+              },
+              "startTime": {
+                "type": "string"
+              },
+              "endDate": {
+                "type": "string"
+              },
+              "endTime": {
+                "type": "string"
+              },
+              "allDay": {
+                "type": "boolean"
+              }
+            }
+          },
+          "registration": {
+            "type": "object",
+            "properties": {
+              "required": {
+                "type": "boolean"
+              },
+              "url": {
+                "type": "string"
+              }
+            }
+          },
+          "recurrence": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
