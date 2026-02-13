@@ -7,7 +7,7 @@ class API_Documentation extends Action {
 	function launch() {
 		global $interface;
 
-		$apiFile = "/openapi/aspen_openapi.json";
+		$apiFile = "/openapi/merged_openapi.php";
 		
 		$interface->assign('showBreadcrumbs', true);
 		$interface->assign('showContentAsFullWidth', true);
