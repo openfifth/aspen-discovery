@@ -38,6 +38,17 @@ function getUpdates26_03_00(): array {
 
 		//tomas
 
+		// stephen
+
+		'add_success_button_to_theme' => [
+			'title' => 'Add Success button to theme options',
+			'description' => 'Add configuration to the Theme page for the Bootstrap Success button',
+			'continueOnError' => true,
+			'sql' => [
+				//"ALTER TABLE Theme ADD COLUMN successButtonBackgroundColor varchar(7) DEFAULT #",
+			]
+		],
+
 		//other
 
 
