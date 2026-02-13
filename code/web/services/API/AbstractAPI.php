@@ -390,4 +390,72 @@ abstract class AbstractAPI extends Action{
 	protected function isSuperuserScope(): bool {
 		return $this->authorizedScope === 'superuser';
 	}
+
+	/**
+	 * Parse pagination parameters from the request.
+	 *
+	 * @param int $defaultPageSize Default number of items per page (default 100)
+	 * @param int $maxPageSize     Maximum allowed page size (default 100)
+	 * @return array{page: int, pageSize: int, offset: int}
+	 */
+	protected function getPaginationParams(int $defaultPageSize = 100, int $maxPageSize = 100): array {
+		$page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
+		$pageSize = isset($_REQUEST['pageSize']) ? min($maxPageSize, max(1, (int)$_REQUEST['pageSize'])) : $defaultPageSize;
+		$offset = ($page - 1) * $pageSize;
+
+		return [
+			'page' => $page,
+			'pageSize' => $pageSize,
+			'offset' => $offset,
+		];
+	}
+
+	/**
+	 * Apply pagination to a DataObject query and return a paginated result set.
+	 *
+	 * The DataObject should have any filter properties (e.g. deleted, private, locationId)
+	 * set BEFORE calling this method. The method will count matching rows, validate the
+	 * requested page, apply limit/offset + orderBy, then iterate with fetch() and pass
+	 * each row to the provided callback.
+	 *
+	 * @param DataObject $dataObject   Pre-filtered DataObject (filters set, not yet find()'d)
+	 * @param string     $orderBy      SQL ORDER BY clause (e.g. 'title ASC, id DESC')
+	 * @param callable   $formatRow    Callback that receives a DataObject row and returns an
+	 *                                 array (the formatted item) or null to skip the row
+	 * @param int        $defaultPageSize Default items per page
+	 * @param int        $maxPageSize     Maximum allowed page size
+	 * @return array Standardised response with pagination metadata and items
+	 */
+	protected function paginateQuery(DataObject $dataObject, string $orderBy, callable $formatRow, int $defaultPageSize = 100, int $maxPageSize = 100): array {
+		$params = $this->getPaginationParams($defaultPageSize, $maxPageSize);
+		$page = $params['page'];
+		$pageSize = $params['pageSize'];
+		$offset = $params['offset'];
+
+		$totalResults = $dataObject->count();
+		$totalPages = $totalResults > 0 ? (int)ceil($totalResults / $pageSize) : 0;
+
+		if ($page <= $totalPages) {
+			$dataObject->limit($offset, $pageSize);
+			$dataObject->orderBy($orderBy);
+			$dataObject->find();
+		}
+
+		$items = [];
+		while ($dataObject->fetch()) {
+			$formatted = $formatRow($dataObject);
+			if ($formatted !== null) {
+				$items[] = $formatted;
+			}
+		}
+
+		return [
+			'success' => true,
+			'totalResults' => $totalResults,
+			'page' => $page,
+			'pageSize' => $pageSize,
+			'totalPages' => $totalPages,
+			'items' => $items,
+		];
+	}
 }
