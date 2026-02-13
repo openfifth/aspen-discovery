@@ -55,6 +55,49 @@ class Event extends DataObject {
 	protected $_libraries;
 	protected $_locations;
 
+	public static function getRecurrenceTypes(): array {
+		return [
+			1 => 'none',
+			2 => 'daily',
+			3 => 'weekly',
+			4 => 'monthly',
+			5 => 'annually',
+			6 => 'weekdays',
+			7 => 'custom',
+		];
+	}
+
+	public static function getRecurrenceFrequencies(): array {
+		return [
+			1 => 'daily',
+			2 => 'weekly',
+			3 => 'monthly',
+			4 => 'annually',
+		];
+	}
+
+	public static function getDayNames(): array {
+		return [
+			0 => 'Sunday',
+			1 => 'Monday',
+			2 => 'Tuesday',
+			3 => 'Wednesday',
+			4 => 'Thursday',
+			5 => 'Friday',
+			6 => 'Saturday',
+		];
+	}
+
+	public static function getWeekNumbers(): array {
+		return [
+			1 => '1st',
+			2 => '2nd',
+			3 => '3rd',
+			4 => '4th',
+			5 => '5th',
+			-1 => 'Last',
+		];
+	}
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -340,15 +383,7 @@ class Event extends DataObject {
 						'type' => 'multiSelect',
 						'listStyle' => 'checkbox',
 						'label' => 'Day(s) to Repeat On',
-						'values' => [
-							'0' => 'Sunday',
-							'1' => 'Monday',
-							'2' => 'Tuesday',
-							'3' => 'Wednesday',
-							'4' => 'Thursday',
-							'5' => 'Friday',
-							'6' => 'Saturday',
-						],
+						'values' => self::getDayNames(),
 						'onchange' => "return AspenDiscovery.Events.calculateRecurrenceDates();",
 					],
 				],
@@ -374,29 +409,14 @@ class Event extends DataObject {
 						'property' => 'weekNumber',
 						'type' => 'enum',
 						'label' => 'Week Number',
-						'values' => [
-							'1' => '1st',
-							'2' => '2nd',
-							'3' => '3rd',
-							'4' => '4th',
-							'5' => '5th',
-							'-1' => 'Last',
-						],
+						'values' => self::getWeekNumbers(),
 						'onchange' => "return AspenDiscovery.Events.calculateRecurrenceDates();",
 					],
 					'monthDay' => [
 						'property' => 'monthDay',
 						'type' => 'enum',
 						'label' => 'Day to Repeat On',
-						'values' => [
-							'0' => 'Sunday',
-							'1' => 'Monday',
-							'2' => 'Tuesday',
-							'3' => 'Wednesday',
-							'4' => 'Thursday',
-							'5' => 'Friday',
-							'6' => 'Saturday',
-						],
+						'values' => self::getDayNames(),
 						'onchange' => "return AspenDiscovery.Events.calculateRecurrenceDates();",
 					],
 					'monthDate' => [
@@ -960,6 +980,121 @@ class Event extends DataObject {
 			return $endDate;
 		}
 		return null;
+	}
+
+	public function getTags(): array {
+		$tags = [];
+		
+		$eventType = $this->getEventType();
+		if ($eventType && !empty($eventType->title)) {
+			$tags[] = $eventType->title;
+		}
+		
+		require_once ROOT_DIR . '/sys/Events/EventField.php';
+		$fields = $this->getAllTypeFields();
+		foreach ($fields as $fieldId => $value) {
+			if (empty($value)) {
+				continue;
+			}
+			$field = new EventField();
+			$field->id = $fieldId;
+			if ($field->find(true) && $field->facetName > 0) {
+				$tags[] = $value;
+			}
+		}
+		
+		return array_unique($tags);
+	}
+
+	public function toApiResponse(): array {
+		$location = new Location();
+		$location->locationId = $this->locationId;
+		$locationData = null;
+		if ($location->find(true)) {
+			$locationData = [
+				'id' => (int)$location->locationId,
+				'name' => $location->displayName,
+				'address' => $location->address,
+				'phone' => $location->phone,
+			];
+		}
+
+		$eventType = $this->getEventType();
+
+		return [
+			'id' => (int)$this->id,
+			'title' => $this->title,
+			'description' => strip_tags($this->description),
+			'cover' => $this->cover,
+			'private' => (bool)$this->private,
+			'eventType' => $eventType ? $eventType->title : null,
+			'location' => $locationData,
+			'startDate' => $this->startDate,
+			'startTime' => $this->hideTimestamps ? null : $this->startTime,
+			'endDate' => $this->hideTimestamps ? null : $this->calculateEnd('endDate'),
+			'endTime' => $this->hideTimestamps ? null : $this->calculateEnd('endTime'),
+			'eventLength' => (int)$this->eventLength,
+			'hideTimestamps' => (bool)$this->hideTimestamps,
+			'registrationRequired' => (bool)$this->registrationRequired,
+			'numberOfSeats' => $this->numberOfSeats ? (int)$this->numberOfSeats : null,
+			'waitingList' => (bool)$this->waitingList,
+			'upcomingInstanceCount' => (int)$this->getInstanceCount(),
+			'recurrence' => $this->getRecurrence(),
+		];
+	}
+
+	public function getRecurrence(): ?array {
+		$recurrenceOption = (int)$this->recurrenceOption;
+
+		if ($recurrenceOption <= 1) {
+			return null;
+		}
+
+		$recurrenceTypes = self::getRecurrenceTypes();
+		$dayNames = self::getDayNames();
+
+		$recurrence = [
+			'type' => $recurrenceTypes[$recurrenceOption] ?? 'unknown',
+		];
+
+		if ($recurrenceOption === 7) {
+			$frequencyLabels = self::getRecurrenceFrequencies();
+			$frequency = (int)$this->recurrenceFrequency;
+			$recurrence['frequency'] = $frequencyLabels[$frequency] ?? 'unknown';
+			$recurrence['interval'] = (int)$this->recurrenceInterval;
+
+			if ($frequency === 2 && !empty($this->weekDays)) {
+				$weekDays = is_array($this->weekDays) ? $this->weekDays : explode(',', $this->weekDays);
+				$recurrence['weekDays'] = array_map(function ($d) use ($dayNames) {
+					return $dayNames[(int)$d] ?? $d;
+				}, array_values($weekDays));
+			}
+
+			if ($frequency === 3) {
+				$monthlyOption = (int)$this->monthlyOption;
+				if ($monthlyOption === 1) {
+					$weekNumbers = self::getWeekNumbers();
+					$recurrence['monthlyPattern'] = 'byWeekday';
+					$recurrence['weekNumber'] = $weekNumbers[(int)$this->weekNumber] ?? (string)$this->weekNumber;
+					$recurrence['monthDay'] = $dayNames[(int)$this->monthDay] ?? $this->monthDay;
+					if ((int)$this->monthOffset !== 0) {
+						$recurrence['monthOffset'] = (int)$this->monthOffset;
+					}
+				} elseif ($monthlyOption === 2) {
+					$recurrence['monthlyPattern'] = 'byDate';
+					$recurrence['monthDate'] = (int)$this->monthDate;
+				}
+			}
+		}
+
+		$endOption = (int)$this->endOption;
+		if ($endOption === 1 && !empty($this->recurrenceEnd)) {
+			$recurrence['endsOn'] = $this->recurrenceEnd;
+		} elseif ($endOption === 2 && !empty($this->recurrenceCount)) {
+			$recurrence['endsAfter'] = (int)$this->recurrenceCount;
+		}
+
+		return $recurrence;
 	}
 
 	public function updateStructureForEditingObject($structure) : array {

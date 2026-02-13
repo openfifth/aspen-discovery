@@ -20,12 +20,12 @@ class EventAPI extends AbstractAPI {
 
 		if (isset($_SERVER['PHP_AUTH_USER'])) {
 			if ($this->grantTokenAccess()) {
-				if (in_array($method, [
-					'getEventDetails',
-					'saveEvent',
-					'removeSavedEvent',
-					'getSavedEvents'
-				])) {
+			if (in_array($method, [
+				'getEventDetails',
+				'saveEvent',
+				'removeSavedEvent',
+				'getSavedEvents'
+			])) {
 					header('Cache-Control: max-age=10800');
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
 					APIUsage::incrementStat('EventAPI', $method);
