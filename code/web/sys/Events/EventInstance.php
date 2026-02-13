@@ -301,4 +301,13 @@ class EventInstance extends DataObject {
 
 		return $eventType;
 	}
+
+	public function getStartDateTime(): DateTime {
+		return new DateTime($this->date . ' ' . ($this->time ?: '00:00:00'));
+	}
+
+	public function getEndDateTime(): DateTime {
+		$length = $this->length > 0 ? $this->length : ($this->getParentEvent()->eventLength ?? 60);
+		return (clone $this->getStartDateTime())->modify("+{$length} minutes");
+	}
 }
