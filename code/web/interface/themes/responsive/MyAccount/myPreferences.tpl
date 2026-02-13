@@ -441,7 +441,7 @@
 										</select>
 									</div>
 									<div class="form-group propertyRow">
-										<label for="notifySavedSearches" class="control-label">{translate text='Notify me by email when new titles are added to my saved searches.' isPublicFacing=true}</label>&nbsp;
+										<label for="notifySavedSearches" class="control-label">{translate text='Notify me by email when new titles are added to my saved searches' isPublicFacing=true}</label>&nbsp;
 											{if $edit == true}
 												<input type="checkbox" class="form-control" name="notifySavedSearches" id="notifySavedSearches" {if $profile->notifySavedSearches==1}checked='checked'{/if} data-switch="">
 											{else}
