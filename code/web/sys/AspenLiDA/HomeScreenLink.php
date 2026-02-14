@@ -181,7 +181,7 @@ class HomeScreenLink extends DataObject {
 		];
 
 		if (!$this->textId || strlen($this->textId) == 0) {
-			$this->textId = $this->label . ' ' . $this->sharing;
+			$this->textId = $this->title . ' ' . $this->sharing;
 			if ($this->sharing == 'private') {
 				$this->textId .= '_' . $this->userId;
 			} elseif ($this->sharing == 'location') {
