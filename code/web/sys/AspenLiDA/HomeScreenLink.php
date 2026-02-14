@@ -219,7 +219,13 @@ class HomeScreenLink extends DataObject {
 		if ($this->sharing == 'everyone') {
 			return UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links') || ($this->userId == UserAccount::getActiveUserId());
 		}
-		return true;
+		if (UserAccount::userHasPermission('Administer Selected Aspen LiDA Home Screen Link Groups')) {
+			//only allow editing the ones the user created
+			return $this->userId == UserAccount::getActiveUserId();
+		} else {
+			//Don't need to limit for the library since the user will need Administer Library Aspen LiDA Home Screen Links to even view them.
+			return true;
+		}
 	}
 
 	public function toArray($includeRuntimeProperties = true, $encryptFields = false): array {
