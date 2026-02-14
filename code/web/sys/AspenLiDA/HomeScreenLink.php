@@ -42,6 +42,9 @@ class HomeScreenLink extends DataObject {
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links'));
 		$libraryList[-1] = 'No Library Selected';
 
+		$deepLinks = LocationSetting::getDeepLinks();
+		unset($deepLinks['home']);
+
 		$structure = [
 			'id' => [
 				'property' => 'id',
@@ -139,7 +142,7 @@ class HomeScreenLink extends DataObject {
 				'property' => 'deepLinkPath',
 				'type' => 'enum',
 				'label' => 'Aspen LiDA Screen',
-				'values' => LocationSetting::getDeepLinks(),
+				'values' => $deepLinks,
 				'default' => 'home',
 				'onchange' => 'return AspenDiscovery.Admin.getDeepLinkFullPath();',
 				'hideInLists' => true,
