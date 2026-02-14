@@ -144,9 +144,8 @@ function getUpdates26_02_00(): array {
 				"CREATE TABLE IF NOT EXISTS `aspen_lida_home_screen_link_group_users` (
 				`id` int(11) NOT NULL AUTO_INCREMENT,
 				`homeScreenLinkGroupId` int(11),
-    			`userId` int(11),
-				PRIMARY KEY (`id`)
-				) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
+				`userId` int(11),
+				PRIMARY KEY (`id`)) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
 			],
 		],
 		//aspen_lida_home_screen_link_group_users_table
