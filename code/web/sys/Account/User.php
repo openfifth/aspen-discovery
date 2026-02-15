@@ -6621,6 +6621,14 @@ class User extends DataObject {
 
 		$this->update();
 	}
+
+	public function canSaveSearches(): bool {
+		$userLibrary = $this->getHomeLibrary();
+		if ($userLibrary) {
+			return $userLibrary->enableSavedSearches == 1;
+		}
+		return false;
+	}
 }
 
 function modifiedEmpty($var): bool {

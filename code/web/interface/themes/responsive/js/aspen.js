@@ -6704,6 +6704,13 @@ AspenDiscovery.Account = (function () {
 					$(".enrolled-campaigns-placeholder").html(data.numCampaigns);
 				}
 			})
+			var userSearchesUrl = Globals.path + "/MyAccount/AJAX?method=getMenuDataSearches&activeModule=" + Globals.activeModule + '&activeAction=' + Globals.activeAction;
+			$.getJSON(userSearchesUrl, function (data) {
+				if (data.success) {
+					$(".saved-searches-count-placeholder").html(data.numSavedSearches);
+					$(".recent-searches-count-placeholder").html(data.numRecentSearches);
+				}
+			})
 			return false;
 		},
 
@@ -7627,7 +7634,7 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		showSaveSearchForm: function (searchId) {
+		showSaveSearchForm: function (searchId, reload = false) {
 			if (Globals.loggedIn) {
 				$('#searchToolsModal').modal('hide');
 				AspenDiscovery.loadingMessage();
@@ -7639,7 +7646,7 @@ AspenDiscovery.Account = (function () {
 
 				// noinspection JSUnresolvedFunction
 				$.getJSON(url, params, function (data) {
-					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, reload);
 				}).fail(AspenDiscovery.ajaxFail);
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
@@ -9245,6 +9252,30 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
+		loadSearchHistory: function (type, page, limit, sort, filter) {
+			const url = Globals.path + '/MyAccount/AJAX';
+			const params = {
+				method: 'getSearchHistory',
+				type: type,
+				page: page || 1,
+				limit: limit || 20,
+				sort: sort || 'id',
+				filter: filter || ''
+			};
+			const placeholderId = type === 'saved' ? '#savedSearchesPlaceholder' : '#recentSearchesPlaceholder';
+			const paginationId = type === 'saved' ? '#savedSearchesPagination' : '#recentSearchesPagination';
+			$.getJSON(url, params)
+				.done(function (data) {
+					if (data.success) {
+						$(placeholderId).html(data.searches);
+						$(paginationId).html(data.pagination);
+						AspenDiscovery.Account.loadMenuData();
+					} else {
+						$(placeholderId).html('<div class="alert alert-info">' + data.message + '</div>');
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		}
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {
@@ -17360,6 +17391,33 @@ AspenDiscovery.OverDrive = (function(){
 				}
 			);
 			return false;
+		},
+
+		checkAutoAction() {
+			const urlParams = new URLSearchParams(window.location.search);
+			const autoAction = urlParams.get('autoAction');
+			const autoRecordId = urlParams.get('autoRecordId');
+
+			if (autoAction && autoRecordId) {
+				// Remove parameters from URL to prevent re-triggering on refresh.
+				const cleanUrl = window.location.pathname + window.location.search
+					.replace(/[?&]autoAction=[^&]*/g, '')
+					.replace(/[?&]autoRecordId=[^&]*/g, '')
+					.replace(/^\?&/, '?')
+					.replace(/^&/, '?')
+					.replace(/\?$/, '');
+				if (window.history?.replaceState) {
+					window.history.replaceState({}, '', cleanUrl);
+				}
+
+				setTimeout(() => {
+					if (autoAction === 'checkout') {
+						AspenDiscovery.OverDrive.checkOutTitle(autoRecordId, null);
+					} else if (autoAction === 'hold') {
+						AspenDiscovery.OverDrive.placeHold(autoRecordId, null);
+					}
+				}, 500); // Small delay to ensure page is fully loaded.
+			}
 		}
 	}
 }(AspenDiscovery.OverDrive || {}));
@@ -22353,3 +22411,11 @@ AspenDiscovery.FormFields = (function() {
 		initializeCharacterCounters: initializeCharacterCounters
 	};
 }());
+AspenDiscovery.Gale = (function () {
+	return {
+		trackGaleUsage: function (id) {
+			var ajaxUrl = Globals.path + "/Gale/JSON?method=trackGaleUsage&id=" + id;
+			$.getJSON(ajaxUrl);
+		}
+	}
+}(AspenDiscovery.Gale || {}));
