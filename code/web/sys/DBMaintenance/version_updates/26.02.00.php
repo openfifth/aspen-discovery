@@ -187,6 +187,13 @@ function getUpdates26_02_00(): array {
 				"ALTER TABLE self_registration_form_sierra ADD COLUMN cityDropdown tinyint(1) DEFAULT 0",
 			]
 		], //sierra_self_registation_form_city_dropdown
+		'fix_cloudsource_permissions' => [
+			'title' => 'Add Cloud Source Permission Section',
+			'description' => 'Add Cloud Source permission section so it does not appear under a blank accordion',
+			'sql' => [
+				"UPDATE permissions SET sectionName = 'CloudSource OA' WHERE name = 'Administer CloudSource OA'",
+			]
+		], //add_cloudsource_permissions
 
 		//yanjun
 		'overdrive_qr_sessions' => [
