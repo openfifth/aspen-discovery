@@ -131,8 +131,7 @@ class CloudSourceRecordDriver extends RecordInterface {
 		return 'RecordDrivers/CloudSource/result.tpl';
 	}
 
-	public function getBrowseResult()
-	{
+	public function getBrowseResult() {
 		global $interface;
 
 		$interface->assign('summId', $this->getUniqueID());
