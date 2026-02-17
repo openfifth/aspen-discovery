@@ -42,6 +42,9 @@ class HomeScreenLink extends DataObject {
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links'));
 		$libraryList[-1] = 'No Library Selected';
 
+		$deepLinks = LocationSetting::getDeepLinks();
+		unset($deepLinks['home']);
+
 		$structure = [
 			'id' => [
 				'property' => 'id',
@@ -139,7 +142,7 @@ class HomeScreenLink extends DataObject {
 				'property' => 'deepLinkPath',
 				'type' => 'enum',
 				'label' => 'Aspen LiDA Screen',
-				'values' => LocationSetting::getDeepLinks(),
+				'values' => $deepLinks,
 				'default' => 'home',
 				'onchange' => 'return AspenDiscovery.Admin.getDeepLinkFullPath();',
 				'hideInLists' => true,
@@ -178,7 +181,7 @@ class HomeScreenLink extends DataObject {
 		];
 
 		if (!$this->textId || strlen($this->textId) == 0) {
-			$this->textId = $this->label . ' ' . $this->sharing;
+			$this->textId = $this->title . ' ' . $this->sharing;
 			if ($this->sharing == 'private') {
 				$this->textId .= '_' . $this->userId;
 			} elseif ($this->sharing == 'location') {
@@ -200,11 +203,29 @@ class HomeScreenLink extends DataObject {
 		return $validationResults;
 	}
 
+	public function delete(bool $useWhere = false, bool $hardDelete = false): bool|int {
+		$ret = parent::delete($useWhere, $hardDelete);
+		if ($ret && !empty($this->textId)) {
+			//Remove from any groups that use it.
+			require_once ROOT_DIR . '/sys/AspenLiDA/HomeScreenLinkGroupEntry.php';
+			$homeScreenLinkGroup = new HomeScreenLinkGroupEntry();
+			$homeScreenLinkGroup->homeScreenLinkId = $this->id;
+			$homeScreenLinkGroup->delete(true);
+		}
+		return $ret;
+	}
+
 	public function canActiveUserEdit(): bool {
 		if ($this->sharing == 'everyone') {
 			return UserAccount::userHasPermission('Administer All Aspen LiDA Home Screen Links') || ($this->userId == UserAccount::getActiveUserId());
 		}
-		return true;
+		if (UserAccount::userHasPermission('Administer Selected Aspen LiDA Home Screen Link Groups')) {
+			//only allow editing the ones the user created
+			return $this->userId == UserAccount::getActiveUserId();
+		} else {
+			//Don't need to limit for the library since the user will need Administer Library Aspen LiDA Home Screen Links to even view them.
+			return true;
+		}
 	}
 
 	public function toArray($includeRuntimeProperties = true, $encryptFields = false): array {
