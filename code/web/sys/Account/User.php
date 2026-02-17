@@ -4909,8 +4909,9 @@ class User extends DataObject {
 		$sections['support']->addAction(new AdminAction('Release Notes', 'View release notes for Aspen Discovery which contain information about new functionality and fixes for each release.', '/Admin/ReleaseNotes'), true);
 		
 		if (array_key_exists('Aspen Mobile', $enabledModules)){
-			require_once ROOT_DIR . '/services/AspenMobile/Admin.php';
-			$sections['Aspen Mobile'] = AspenMobile_Admin::getAdminSection();
+			$sections['Aspen Mobile'] = new AdminSection('Aspen Mobile');
+			$sections['Aspen Mobile']->addAction(new AdminAction('Notification Test Tool', 'Aspen Mobile notification test tool', '/AspenMobile/NotificationTestingTool'), [true]);
+			$sections['Aspen Mobile']->addAction(new AdminAction('Settings', 'Aspen Mobile settings', '/AspenMobile/Settings'), [true]);
 		}
 		$sorter = function (AdminSection $a, AdminSection $b) {
 			return strcasecmp($a->getTranslatedLabel(), $b->getTranslatedLabel());
