@@ -3532,7 +3532,7 @@ class SearchAPI extends AbstractAPI {
 					$items[$recordKey]['source'] = $eventSource;
 					$items[$recordKey]['title'] = $record['title'];
 					$items[$recordKey]['author'] = null;
-					$items[$recordKey]['image'] = $configArray['Site']['url'] . '/bookcover.php?id=' . $record['id'] . '&size=medium&type=' . $eventSource . '_event';
+					$items[$recordKey]['image'] = $configArray['Site']['url'] . '/bookcover.php?id=' . $record['id'] . '&size=medium&type=' . $eventSource === 'aspenEvents' ? 'aspenEvent' : $eventSource . '_event';
 					$items[$recordKey]['language'] = null;
 					$items[$recordKey]['summary'] = isset($record['description']) ? strip_tags($record['description']) : null;
 					$items[$recordKey]['registration_required'] = $registrationRequired;
