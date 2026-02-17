@@ -2654,6 +2654,11 @@ class SearchAPI extends AbstractAPI {
 						$sourceList->id = $browseCategory->sourceListId;
 						if ($sourceList->find(true)) {
 							$records = $sourceList->getBrowseRecordsRaw(($pageToLoad - 1) * $pageSize, $pageSize, $isLida, $appVersion);
+							// Convert to indexed array if it's an associative array
+							if (is_array($records) && !empty($records)) {
+								$records = array_values($records);
+							}
+
 							$response['message'] = 'Results found for browse category';
 						} else {
 							$records = [];
