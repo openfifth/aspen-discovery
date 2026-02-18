@@ -149,7 +149,7 @@ class AspenMobileSetting extends DataObject {
 			],
 			'serviceAccount' => [
 				'property' => 'serviceAccount',
-				'type' => 'textarea',
+				'type' => 'storedPassword',
 				'label' => 'Service Account',
 				'description' => 'Contents of your Service Account json file from firebase. Service Accounts > Generate new private key > copy contents of the downloaded file into this field.',
 				'maxLength' => 5000,
