@@ -1,5 +1,6 @@
 <?php
 require_once ROOT_DIR . '/Action.php';
+require_once ROOT_DIR . '/services/API/SystemAPI.php';
 
 /**
  * This class exists because PWABuilder.com did not except
