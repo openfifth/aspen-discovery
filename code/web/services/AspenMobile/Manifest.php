@@ -35,8 +35,8 @@ class AspenMobile_Manifest extends Action {
 			'description' => 'testing this',
 			'icons' => [
 				[
-					//'src' => '/API/SystemAPI?method=getLogoFile&themeId=1&type=appIcon&slug='.$setting->slug,
-					'src' => 'https://placehold.co/512x512?text='.$setting->slug,
+					// extension=.png included on url to get past PWABuilder thinking the link isnt a png
+					'src' => '/API/SystemAPI?method=getLogoFile&themeId=1&type=logoApp&extension=.png',
 					'type' => 'image/png',
 					'sizes' => '512x512',
 					'purpose' => 'any'
