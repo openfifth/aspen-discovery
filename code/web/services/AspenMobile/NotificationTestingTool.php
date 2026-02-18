@@ -44,7 +44,7 @@ class AspenMobile_NotificationTestingTool extends Admin_Admin {
 	}
 
 	function getInstructions(): string {
-		return 'https://docs.expo.dev/push-notifications/sending-notifications/#errors';
+		return '';
 	}
 
 	function getBreadcrumbs(): array {
