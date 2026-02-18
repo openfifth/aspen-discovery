@@ -43,6 +43,13 @@ function getUpdates26_02_00(): array {
 				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
 			]
 		], //admin_property_search_index
+		'force_regrouping_of_hoopla' => [
+			'title' => 'Force Regrouping of Hoopla',
+			'description' => 'Force Regrouping of Hoopla',
+			'sql' => [
+				"UPDATE hoopla_settings set regroupAllRecords = 1"
+			]
+		], //force_regrouping_of_hoopla
 
 		//kirstien
 		'aspen_lida_home_screen_links_permissions' => [
