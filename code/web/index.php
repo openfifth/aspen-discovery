@@ -1291,7 +1291,16 @@ function loadModuleActionId() {
 				$_GET['action'] = "Firebase";
 				$_REQUEST['module'] = "AspenMobile";
 				$_REQUEST['action'] = "Firebase";
-			} 
+			}
+			else if($requestURI == "/pwa-icon.png")
+			{
+				global $logger;
+				$logger->log("processing pwa-icon.png", Logger::LOG_ERROR);
+				$_GET['module'] = "AspenMobile";
+				$_GET['action'] = "Icon";
+				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['action'] = "Icon";
+			}
 		}
 	}catch (Exception $e) {
 		//TODO mirroring web builder here maybe we want to conditionally log something though?

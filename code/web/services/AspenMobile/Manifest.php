@@ -35,8 +35,7 @@ class AspenMobile_Manifest extends Action {
 			'description' => 'testing this',
 			'icons' => [
 				[
-					// extension=.png included on url to get past PWABuilder thinking the link isnt a png
-					'src' => '/API/SystemAPI?method=getLogoFile&themeId=1&type=logoApp&extension=.png',
+					'src' => '/pwa-icon.png',
 					'type' => 'image/png',
 					'sizes' => '512x512',
 					'purpose' => 'any'
