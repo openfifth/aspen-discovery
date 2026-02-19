@@ -24,15 +24,23 @@ class AspenMobile_Manifest extends Action {
 		{
 			return ['success' => false,'message'=>'settings not found'];
 		}
+		$theme = new Theme();
+		$theme->id = $setting->themeId;
+		$theme = $theme->find(true);
+		$themeColor = '#000000'; //fallback value
+		if($theme)
+		{
+			$themeColor = $theme->primaryForegroundColor;	
+		}
 
 		return [
 
 			'id' => $setting->manifestID,
-			'name' => 'Aspen Mobile',
-			'short_name' => 'Aspen Mobile',
-			'theme_color' => '#000000',
+			'name' => $setting->name,
+			'short_name' => $setting->shortName,
+			'theme_color' => $themeColor,
 			'start_url' => $setting->startURL,
-			'description' => 'testing this',
+			'description' => $setting->description,
 			'icons' => [
 				[
 					'src' => '/pwa-icon.png',

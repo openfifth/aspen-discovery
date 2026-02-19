@@ -4,6 +4,9 @@ class AspenMobileSetting extends DataObject {
 	public $__table = 'aspen_mobile_settings';
 	public $id;
 	public $name;
+	public $shortName;
+	public $description;
+	public $themeId;
 	public $autoRotateCard;
 	public $enableSelfRegistration;
 	public $showMoreInfoBtn;
@@ -28,6 +31,15 @@ class AspenMobileSetting extends DataObject {
 	}
 
 	static function getObjectStructure($context = ''): array {
+
+		require_once ROOT_DIR . '/sys/Theming/Theme.php';
+		$theme = new Theme();
+		$availableThemes = [];
+		$theme->orderBy('themeName');
+		$theme->find();
+		while ($theme->fetch()) {
+			$availableThemes[$theme->id] = $theme->themeName;
+		}
 		$structure = [
 			'id' => [
 				'property' => 'id',
@@ -39,9 +51,35 @@ class AspenMobileSetting extends DataObject {
 				'property' => 'name',
 				'type' => 'text',
 				'label' => 'Name',
-				'description' => 'The name for these settings',
+				'description' => 'The name to use in the app manifest',
 				'maxLength' => 50,
 				'required' => true,
+				'default' => 'Aspen Mobile'
+			],
+			'shortName' => [
+				'property' => 'shortName',
+				'type' => 'text',
+				'label' => 'Short Name',
+				'description' => 'The short_name to use in the app manifest',
+				'maxLength' => 50,
+				'required' => true,
+				'default' => 'Aspen Mobile'
+			],
+			'description' => [
+				'property' => 'description',
+				'type' => 'text',
+				'label' => 'Description',
+				'description' => 'The description to use in the app manifest',
+				'maxLength' => 200,
+				'required' => true,
+				'default' => 'A progressive web application for Aspen Discovery'
+			],
+			'themeId' => [
+				'property' => 'themeId',
+				'type' => 'enum',
+				'label' => 'Theme',
+				'values' => $availableThemes,
+				'description' => 'The theme which should be used for the application',
 			],
 			'manifestID' => [
 				'property' => 'manifestID',
@@ -153,7 +191,7 @@ class AspenMobileSetting extends DataObject {
 				'label' => 'Service Account',
 				'description' => 'Contents of your Service Account json file from firebase. Service Accounts > Generate new private key > copy contents of the downloaded file into this field.',
 				'maxLength' => 5000,
-				'required' => true,
+				'required' => false,
 			]
 		];
 

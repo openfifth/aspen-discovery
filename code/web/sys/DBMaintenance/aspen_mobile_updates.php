@@ -16,6 +16,9 @@ function getAspenMobileUpdates() {
 				"CREATE TABLE IF NOT EXISTS aspen_mobile_settings (
 					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					name varchar(50) NOT NULL,
+					shortName varchar(50) NOT NULL,
+					description varchar(200) NOT NULL,
+					themeId int(11) NOT NULL,
 					manifestID varchar(50) NOT NULL,
 					startURL  varchar(50) DEFAULT '/',
 					slug  varchar(50) NOT NULL,

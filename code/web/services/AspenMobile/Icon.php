@@ -12,9 +12,19 @@ class AspenMobile_Icon extends Action {
 
     function launch()
     {
+        $setting = new AspenMobileSetting();
+		$success = true;
+		//TODO we should return an error code instead of 200
+		// if we have no settings
+		if($setting->find(true))
+		{
+			$_REQUEST['themeId'] = $setting->themeId;
+		} else {
+            $_REQUEST['themeId'] = 1;
+        }
+
         $api = new SystemAPI('internal');
         $_REQUEST['type'] = "logoApp";
-        $_REQUEST['themeId'] = 1;
         $api->getLogoFile();
     }
 
