@@ -1,6 +1,7 @@
 <?php
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/API/SystemAPI.php';
+require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
 
 /**
  * This class exists because PWABuilder.com did not except

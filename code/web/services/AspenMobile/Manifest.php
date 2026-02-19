@@ -28,7 +28,7 @@ class AspenMobile_Manifest extends Action {
 		$theme->id = $setting->themeId;
 		$theme = $theme->find(true);
 		$themeColor = '#000000'; //fallback value
-		if($theme)
+		if($theme && $theme->primaryForegroundColor)
 		{
 			$themeColor = $theme->primaryForegroundColor;	
 		}
