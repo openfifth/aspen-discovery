@@ -73,7 +73,9 @@
 					{if count($record->author) > 1}
 						<li>{translate text="Authors: " isPublicFacing=true}
 							{foreach from=$record->author item=$author}
-								<ul>{$author->name}</ul>
+								<ul>
+									<li>{$author->name}</li>
+								</ul>
 							{/foreach}
 						</li>
 					{else}
@@ -96,7 +98,9 @@
 					{if count($record->publicationCountry) > 1}
 						<li>{translate text="Country of Publication: " isPublicFacing=true}
 							{foreach from=$record->publicationCountry item=$publicationCountry}
-								<ul>{$publicationCountry}</ul>
+								<ul>
+									<li>{$publicationCountry}</li>
+								</ul>
 							{/foreach}
 						</li>
 					{else}
@@ -111,7 +115,9 @@
 						{if count($record->publication->issn) > 1}
 							<li>{translate text="ISSNs: " isPublicFacing=true}
 								{foreach from=$record->publication->issn item=$issn}
-									<ul>{$issn}</ul>
+									<ul>
+										<li>{$issn}</li>
+									</ul>
 								{/foreach}
 							</li>
 						{else}
@@ -122,7 +128,9 @@
 						{if count($record->publication->alternateName) > 1}
 							<li>{translate text="Alternate Names: " isPublicFacing=true}
 								{foreach from=$record->publication->alternateName item=$alternateName}
-									<ul>{$alternateName}</ul>
+									<ul>
+										<li>{$alternateName}</li>
+									</ul>
 								{/foreach}
 							</li>
 						{else}
