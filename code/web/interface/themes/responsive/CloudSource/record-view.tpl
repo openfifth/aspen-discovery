@@ -77,7 +77,7 @@
 							{/foreach}
 						</li>
 					{else}
-						<li>{translate text="Author: " isPublicFacing=true}{$author[0]->name}</li>
+						<li>{translate text="Author: " isPublicFacing=true}{$record->author[0]->name}</li>
 					{/if}
 				{/if}
 				{if !empty($record->peerReviewed)}
@@ -100,9 +100,7 @@
 							{/foreach}
 						</li>
 					{else}
-						{foreach from=$record->publicationCountry item=$publicationCountry}
-						<li>{translate text="Country of Publication: " isPublicFacing=true}{$publicationCountry}</li>
-						{/foreach}
+						<li>{translate text="Country of Publication: " isPublicFacing=true}{$record->publicationCountry[0]}</li>
 					{/if}
 				{/if}
 				{if !empty($record->license)}
@@ -117,9 +115,7 @@
 								{/foreach}
 							</li>
 						{else}
-							{foreach from=$record->publication->issn item=$issn}
-								<li>{translate text="ISSN: " isPublicFacing=true}{$issn}</li>
-							{/foreach}
+							<li>{translate text="ISSN: " isPublicFacing=true}{$record->publication->issn[0]}</li>
 						{/if}
 					{/if}
 					{if !empty($record->publication->alternateName)}
@@ -130,9 +126,7 @@
 								{/foreach}
 							</li>
 						{else}
-							{foreach from=$record->publication->alternateName item=$alternateName}
-								<li>{translate text="Alternate Name: " isPublicFacing=true}{$alternateName}</li>
-							{/foreach}
+							<li>{translate text="Alternate Name: " isPublicFacing=true}{$record->publication->alternateName[0]}</li>
 						{/if}
 					{/if}
 					{if !empty($record->publication->volume)}
