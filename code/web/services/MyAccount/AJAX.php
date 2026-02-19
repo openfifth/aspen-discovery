@@ -7608,7 +7608,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$updateDebtInIls = false;
 	
 		if ($rc == 'A') {
-			$payment->completed = true;
 			if ($recNo) {
 				$payment->heyCentricPaymentReferenceNumber = $recNo;
 			}
@@ -7621,14 +7620,14 @@ class MyAccount_AJAX extends JSON_Action {
 			$payment->declined = true;
 		}
 
-		$payment->update(); // update user payment status in Aspen db
+		$payment->update(); // update user payment status in Aspen db if the payment failed
 
 		$params = "Rc=$rc&Pmt=$pmt";
 		if ($updateDebtInIls) {
 			$params .= "&RecNo=$recNo";
 			$payment->find(true);
 			$patron = UserAccount::getActiveUserObj();
-			$patron->completeFinePayment($payment); // updated debt status in ILS
+			$patron->completeFinePayment($payment); //  updates user payment status in Aspen db and debt status in ILS
 		}
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
 	}
