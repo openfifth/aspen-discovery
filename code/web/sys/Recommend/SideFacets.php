@@ -181,6 +181,24 @@ class SideFacets implements RecommendationInterface {
 				$sideFacets = $this->applyFacetSettings($facetKey, $sideFacets, $facetSetting, $lockedFacets);
 			}
 		}
+		// Add locked facets to the side facets
+		$lockedFacetKeys = array_keys($lockedFacets);
+		$missingLockedFacets = array_diff($lockedFacetKeys, array_keys($sideFacets));
+		if (!empty($missingLockedFacets)) {
+			foreach ($missingLockedFacets as $facetKey) {
+				$facetSetting = $this->facetSettings[$facetKey] ?? null;
+				$label = ($facetSetting instanceof FacetSetting) ? $facetSetting->displayName : $facetKey;
+				$sideFacets[$facetKey] = [
+					'label' => $label,
+					'list' => [],
+					'locked' => true,
+					'collapseByDefault' => true,
+					'canLock' => true,
+					'valuesToShow' => 5,
+				];
+			}
+		}
+
 
 		$interface->assign('sideFacetSet', $sideFacets);
 	}
