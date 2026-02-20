@@ -9301,4 +9301,8 @@ class Koha extends AbstractIlsDriver {
 	public function hasAdditionalFineFields(): bool {
 		return true;
 	}
+
+	public function hasCardRenewalSupport(): bool {
+		return true;
+	}
 }
