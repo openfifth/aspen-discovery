@@ -2409,7 +2409,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				$allHidden = true;
 				foreach ($seriesMembers as $seriesMember) {
 					$series = $seriesMember->getSeries();
-					if ($series != null) {
+					if ($series != null && $series->deleted == 0) {
 						if ($first) {
 							$seriesInfo = [
 								'seriesTitle' => $series->displayName,
