@@ -2538,16 +2538,20 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('showRenewalLink', $showRenewalLink);
 			if ($showRenewalLink) {
 				$userLibrary = $user->getHomeLibrary();
-				if ($userLibrary->enableCardRenewal == 2) {
+				if ($userLibrary->enableCardRenewal == 1) {
+					$interface->assign('useILSCardRenewalFlow', true);
+				} elseif ($userLibrary->enableCardRenewal == 2) {
 					if (!empty($userLibrary->cardRenewalUrl)) {
 						$interface->assign('cardRenewalLink', $userLibrary->cardRenewalUrl);
 					}
+					$interface->assign('useILSCardRenewalFlow', false);
 				} elseif ($userLibrary->enableCardRenewal == 3) {
 					require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
 					$quipuECardSettings = new QuipuECardSetting();
 					if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
 						$interface->assign('cardRenewalLink', "/MyAccount/eRENEW");
 					}
+					$interface->assign('useILSCardRenewalFlow', false);
 				}
 			}
 
