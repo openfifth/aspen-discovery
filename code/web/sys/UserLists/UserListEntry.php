@@ -143,6 +143,9 @@ class UserListEntry extends DataObject {
 		} elseif ($this->source == 'Summon') {
 			require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
 			return new SummonRecordDriver($this->sourceId);
+		} elseif ($this->source == 'CloudSource') {
+			require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+			return new CloudSourceRecordDriver($this->sourceId);
 		} elseif ($this->source == 'Gale') {
 			require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
 			return new GaleRecordDriver($this->sourceId);
