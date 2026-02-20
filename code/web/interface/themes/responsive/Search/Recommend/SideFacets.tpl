@@ -26,20 +26,20 @@
 			<h3 id="narrow-search-label" class="sidebar-label">{translate text='Narrow Search' isPublicFacing=true}</h3>
 			<div id="facet-accordion" class="accordion">
 				{foreach from=$sideFacetSet item=cluster key=title name=facetSet}
-					{if count($cluster.list) > 0}
+					{if count($cluster.list) > 0 || !empty($cluster.locked)}
 						<div class="facetList">
-							<div id="facetToggle_{$title}" aria-controls="facetDetails_{$title}" class="facetTitle panel-title {if !empty($cluster.collapseByDefault) && empty($cluster.hasApplied)}collapsed{else}expanded{/if}" tabindex="0" role="button" aria-expanded="{if !empty($cluster.collapseByDefault) && empty($cluster.hasApplied)}false{else}true{/if}">
+							<div id="facetToggle_{$title}" aria-controls="facetDetails_{$title}" class="facetTitle panel-title {if !empty($cluster.locked)}expanded{elseif !empty($cluster.collapseByDefault) && empty($cluster.hasApplied)}collapsed{else}expanded{/if}" tabindex="0" role="button" aria-expanded="{if !empty($cluster.locked)}true{elseif !empty($cluster.collapseByDefault) && empty($cluster.hasApplied)}false{else}true{/if}">
 								{translate text=$cluster.label isPublicFacing=true}
 
 								{if !empty($cluster.canLock)}
-									<span class="facetLock pull-right" id="facetLock_{$title}" {if empty($cluster.hasApplied)}style="display: none"{/if} title="{translate text="Locking a facet will retain the selected filters in new searches until they are cleared" inAttribute=true isPublicFacing=true}">
+									<span class="facetLock pull-right" id="facetLock_{$title}" {if empty($cluster.hasApplied) && empty($cluster.locked)}style="display: none"{/if} title="{translate text="Locking a facet will retain the selected filters in new searches until they are cleared" inAttribute=true isPublicFacing=true}">
 										<a id="facetLock_lockIcon_{$title}" {if !empty($cluster.locked)}style="display: none"{/if} onclick="return AspenDiscovery.Searches.lockFacet('{$title}');"><i class="fas fa-lock-open fa-lg fa-fw" style="vertical-align: middle"></i></a>
 										<a id="facetLock_unlockIcon_{$title}" {if empty($cluster.locked)}style="display: none"{/if} onclick="return AspenDiscovery.Searches.unlockFacet('{$title}');"><i class="fas fa-lock fa-lg fa-fw" style="vertical-align: middle"></i></a>
 									</span>
 								{/if}
 
 							</div>
-							<div id="facetDetails_{$title}" class="facetDetails" {if !empty($cluster.collapseByDefault) && empty($cluster.hasApplied)}style="display:none"{/if} role="region" aria-labelledby="facetToggle_{$title}">
+							<div id="facetDetails_{$title}" class="facetDetails" {if !empty($cluster.locked)}style="display:block"{elseif !empty($cluster.collapseByDefault) && empty($cluster.hasApplied)}style="display:none"{/if} role="region" aria-labelledby="facetToggle_{$title}">
 
 								{if $title == 'publishDate' || $title == 'birthYear' || $title == 'deathYear' || $title == 'publishDateSort'}
 									{include file="Search/Recommend/yearFacetFilter.tpl" cluster=$cluster title=$title}
