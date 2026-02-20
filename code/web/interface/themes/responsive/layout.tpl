@@ -55,7 +55,6 @@
 		{if (array_key_exists('Aspen Mobile', $enabledModules))}
 			{* manifest.json produced from code/web/services/AspenMobile/manifest.php *}
 			<link rel="manifest" href="/manifest.json"/>
-			<script type="module" src="/interface/themes/responsive/js/aspen/initFCM.js"></script>
 		{/if}
 		{if !empty($themeCss)}{$themeCss}{/if}
 		{if !empty($loadRecaptcha)}

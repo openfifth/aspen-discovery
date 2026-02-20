@@ -9,4 +9,11 @@ class AspenMobile_AJAX extends JSON_Action {
 		$api = new UserAPI('internal');
 		return $api->saveNotificationPushToken();
 	}
+
+	function setNotificationPreference()
+	{
+		require_once ROOT_DIR . '/services/API/UserAPI.php';
+		$api = new UserAPI('internal');
+		return $api->setNotificationPreference();
+	}
 }

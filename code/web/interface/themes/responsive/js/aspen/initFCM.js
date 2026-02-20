@@ -3,8 +3,8 @@ import { getMessaging } from "https://www.gstatic.com/firebasejs/12.1.0/firebase
 import { getToken } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js";
 import * as UAP from "../lib/ua-parser-min.js";
 //import '../lib/apisauce.min.js';
-
-function initialize() {
+export var appToken = "default";
+export function initialize() {
 	fetch("/API/SystemAPI?method=getFirebaseSettings").then(function (response) {
 		return response.json();
 	}).then(function (data) {
@@ -22,12 +22,15 @@ function initialize() {
 			getToken(messaging, { vapidKey: firebaseConfig['vapidKey'] }).then((currentToken) => {
 				console.log(currentToken);
 				if (currentToken) {
+					appToken = currentToken;
 					// TODO send the token to your server and update the UI if necessary
 					//https://firebase.google.com/docs/cloud-messaging/js/first-message#web
 					//https://console.firebase.google.com/project/aspen-pwa-test/notification/compose
 					console.log(currentToken);
 					Notification.requestPermission().then((permission) => {
 						if (permission === 'granted') {
+							$(".grant-notification-permissions").hide();
+							$(".notification-permission-controls").show();
 							console.log('Notification permission granted.');
 							// TODO change this to use UserAPI savePushNotification instead
 							//saveNotificationPushToken
@@ -69,12 +72,12 @@ function initialize() {
 	});
 }
 
-$(document).ready(function(){
-	if(Globals.loggedIn)
-	{
-		initialize();
-	}
-});
+// $(document).ready(function(){
+// 	if(Globals.loggedIn)
+// 	{
+// 		initialize();
+// 	}
+// });
 self.addEventListener('fetch', event => {
 	console.log("fetch...");
 	console.log(event);
