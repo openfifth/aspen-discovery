@@ -1083,4 +1083,8 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	public function hasHoldFeeMessage(): bool {
 		return false;
 	}
+
+	public function hasCardRenewalSupport(): bool {
+		return false;
+	}
 }
