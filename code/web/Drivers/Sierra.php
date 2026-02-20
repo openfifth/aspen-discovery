@@ -2007,7 +2007,7 @@ class Sierra extends AbstractIlsDriver {
 			//Use self registration fields
 			/** @var SelfRegistrationFormValues $customField */
 			foreach ($customFields as $customField) {
-				if ($customField->ilsName == 'library') {
+				if ($customField->ilsName == 'homeLibraryCode' || $customField->ilsName == 'home_library_code') {
 					if (count($pickupLocations) == 1) {
 						$fields['librarySection'] = [
 							'property' => 'librarySection',
@@ -2173,9 +2173,6 @@ class Sierra extends AbstractIlsDriver {
 					}
 					$params['names'] = [$fullName];
 				}
-				elseif ($field == 'birthDate') {
-					$params['birthDate'] = $_REQUEST['birthDate'];
-				}
 				elseif ($field == 'guardian') {
 					if (!empty($_REQUEST['guardian'])) {
 						$params['varFields'][] = [
@@ -2214,8 +2211,11 @@ class Sierra extends AbstractIlsDriver {
 				elseif ($field == 'barcode') {
 					$params['barcodes'] = [$_REQUEST['barcode']];
 				}
-				elseif ($field == 'pin') {
-					$params['pin'] = $_REQUEST['pin'];
+				elseif ($field == 'homeLibraryCode' || $field == 'home_library_code') {
+					$params[$field] = $_REQUEST['pickupLocation'];
+				}
+				elseif ($field == 'pin' || $field == 'birthDate') {
+					$params[$field] = $_REQUEST[$field];
 				}
 			}
 
@@ -2252,7 +2252,6 @@ class Sierra extends AbstractIlsDriver {
 			$expirationDate->add(new DateInterval('P' . $expirationDays . 'D'));
 			$params['expirationDate'] = $expirationDate->format('Y-m-d');
 
-			$params['homeLibraryCode'] = $_REQUEST['pickupLocation'];
 			$params['patronType'] = (int)$selfRegistrationForm->selfRegPatronType;
 			$params['patronCodes'] = [
 				'pcode1' => $selfRegistrationForm->selfRegPcode1,
