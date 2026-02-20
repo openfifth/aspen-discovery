@@ -9407,4 +9407,8 @@ class Koha extends AbstractIlsDriver {
 		}
 		return'No description available';
 	}
+
+	public function hasCardRenewalSupport(): bool {
+		return true;
+	}
 }
