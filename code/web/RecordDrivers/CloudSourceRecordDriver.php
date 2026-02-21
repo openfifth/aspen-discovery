@@ -146,6 +146,8 @@ class CloudSourceRecordDriver extends RecordInterface {
 		if ($appliedTheme) {
 			if ($appliedTheme->browseCategoryImageSize == 1) {
 				$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('large'));
+			} else {
+				$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('medium'));
 			}
 			$accessibleBrowseCategories = $appliedTheme->accessibleBrowseCategories;
 		} else {
