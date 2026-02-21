@@ -188,7 +188,12 @@ class HomeScreenLink extends DataObject {
 				$location = Location::getUserHomeLocation();
 				$this->textId .= '_' . $location->code;
 			} elseif ($this->sharing == 'library') {
-				$this->textId .= '_' . Library::getPatronHomeLibrary()->subdomain;
+				if (Library::getPatronHomeLibrary()) {
+					$this->textId .= '_' . Library::getPatronHomeLibrary()->subdomain;
+				} else {
+					global $library;
+					$this->textId .= '_' . $library->subdomain;
+				}
 			}
 		}
 
