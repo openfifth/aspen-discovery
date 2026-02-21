@@ -445,7 +445,7 @@ div.striped > div:nth-child(odd), div.striped > div:nth-child(odd){ldelim}
     border-color: {$defaultButtonBorderColor};
 {rdelim}
 
-.btn-default:hover, .btn-default:focus, .btn-default a:hover, .btn-default a:focus{ldelim}
+.btn-default:hover, .btn-default:focus, .btn-default a:hover, a.btn-default:hover, .btn-default a:focus, a.btn-default:focus{ldelim}
     background-color: {$defaultButtonHoverBackgroundColor} !important;
     color: {$defaultButtonHoverForegroundColor} !important;
     border-color: {$defaultButtonHoverBorderColor};
