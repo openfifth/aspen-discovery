@@ -1748,7 +1748,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$return['message'] = "You must provide a title for the list";
 			} else {
 				//If the record is not valid, skip the whole thing since the title could be bad too
-				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events') {
+				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events' && $_REQUEST['source'] != 'CloudSource') {
 					$recordToAdd = urldecode($_REQUEST['sourceId']);
 					if (!preg_match("/^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}|[A-Z0-9_-]+:[A-Z0-9_-]+|\d+$/i", $recordToAdd)) {
 						$return['success'] = false;
@@ -1896,6 +1896,13 @@ class MyAccount_AJAX extends JSON_Action {
 						} elseif ($userListEntry->source == 'Summon') {
 							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
 							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'CloudSource') {
+							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
 							if ($recordDriver->isValid()) {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
@@ -9301,6 +9308,13 @@ class MyAccount_AJAX extends JSON_Action {
 						} elseif ($userListEntry->source == 'Summon') {
 							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
 							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'CloudSource') {
+							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
 							if ($recordDriver->isValid()) {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
