@@ -5059,9 +5059,6 @@ class Library extends DataObject {
 		if (!$catalog || !$catalog->hasIlsConsentSupport()) {
 			unset($structure['dataProtectionRegulations']['properties']['ilsConsentEnabled']);
 		}
-		if (!array_key_exists('Events', $enabledModules)) {
-			unset($structure['eventsSection']);
-		}
 
 		self::$_objectStructure[$context] = $structure;
 		return self::$_objectStructure[$context];
