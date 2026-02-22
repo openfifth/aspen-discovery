@@ -340,6 +340,14 @@ function getUpdates26_02_00(): array {
 		],  //share_tools_add_granularity
 
 		//lucas
+		'nightly_index_trigger_tracking' => [
+			'title' => 'Nightly Index Trigger Tracking',
+			'description' => 'Add a column to system_variables to track what triggered the nightly reindex.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE system_variables ADD COLUMN nightlyIndexTrigger TEXT DEFAULT NULL",
+			]
+		], //nightly_index_trigger_tracking
 
 
 		//tomas

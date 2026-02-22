@@ -919,6 +919,10 @@ pre a{ldelim}
     color: {$primaryForegroundColor};
 {rdelim}
 
+.calendar-event-location{ldelim}
+    color: {$primaryForegroundColor};
+{rdelim}
+
 {* Accessiblity *}
 {if $themeIsHighContrast}
 	html{ldelim}
