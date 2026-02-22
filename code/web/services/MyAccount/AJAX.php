@@ -11029,6 +11029,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ob_end_flush();
 
 			$interval = 10;
+			global $interface;
 
 			while (true) {
 
@@ -11088,9 +11089,15 @@ class MyAccount_AJAX extends JSON_Action {
 											'isPublicFacing' => true
 										]
 									),
-									'body' => $campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
-									'icon' => "fa-chart-line",
-									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+								'body' => translate([
+									'text' => '%1% of %2% progressed!',
+									1=> $milestone->name,
+									2=> $campaign->name,
+									'isPublicFacing' => true,
+								]),
+								$campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
+								'icon' => "fa-chart-line",
+								'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 										[
 											'text' => 'View all campaigns',
 											'isPublicFacing' => true
@@ -11103,48 +11110,57 @@ class MyAccount_AJAX extends JSON_Action {
 						if ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
-									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
-										'title'=> translate(
-											[
-												'text' => 'Milestone completed! Well done!',
-												'isPublicFacing' => true
-											]
-										),
-										'body' => $milestone->name,
-										'icon' => "fa-clipboard-check",
-										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-											[
-												'text' => 'View all campaigns',
-												'isPublicFacing' => true
-											]
-										)]
-									)
-								) . "\n\n";
+								array(
+									'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
+									'title'=> translate(
+										[
+											'text' => 'Milestone completed! Well done!',
+											'isPublicFacing' => true
+										]
+									),
+									'body' => translate([
+										'text' => '%1% of %2% complete.',
+										1 =>$milestone->name,
+										2=>$campaign->name,
+										'isPublicFacing' => true,
+									]),
+									'icon' => "fa-clipboard-check",
+									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+										[
+											'text' => 'View all campaigns',
+											'isPublicFacing' => true
+										]
+									)]
+								)
+							) . "\n\n";
 						}
 
 						# Handle campaign completion notification
 						if ($userCampaign->completed && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
-									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
-										'title'=> translate(
-											[
-												'text' => 'Campaign completed! Awesome!',
-												'isPublicFacing' => true
-											]
-										),
-										'body' => $campaign->name,
-										'icon' => "fa-medal",
-										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-											[
-												'text' => 'View all campaigns',
-												'isPublicFacing' => true
-											]
-										)]
-									)
-								) . "\n\n";
+								array(
+									'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
+									'title'=> translate(
+										[
+											'text' => 'Campaign completed! Awesome!',
+											'isPublicFacing' => true
+										]
+									),
+									'body' => translate([
+										'text' => '%1% campaign complete!',
+										1 => $campaign->name,
+										'isPublicFacing' => true
+									]),
+									'icon' => "fa-medal",
+									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+										[
+											'text' => 'View all campaigns',
+											'isPublicFacing' => true
+										]
+									)]
+								)
+							) . "\n\n";
 						}
 					}
 				}else{
