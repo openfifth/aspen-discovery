@@ -2029,7 +2029,7 @@ class SearchAPI extends AbstractAPI {
 			$categoryInformation = new BrowseCategory();
 			$categoryInformation->id = $curCategory->browseCategoryId;
 			if ($categoryInformation->find(true)) {
-				if ($categoryInformation->isValidForDisplayInApp($appUser) && ($categoryInformation->source == 'GroupedWork' || $categoryInformation->source == 'List')) {
+				if ($categoryInformation->isValidForDisplayInApp($appUser) && ($categoryInformation->source == 'GroupedWork' || $categoryInformation->source == 'List' || $categoryInformation->source == 'Events')) {
 					if ($categoryInformation->textId == ('system_saved_searches') && $appUser && !($appUser instanceof AspenError)) {
 						$savedSearches = $listApi->getSavedSearches($appUser->id);
 						$allSearches = $savedSearches['searches'];
@@ -2654,6 +2654,11 @@ class SearchAPI extends AbstractAPI {
 						$sourceList->id = $browseCategory->sourceListId;
 						if ($sourceList->find(true)) {
 							$records = $sourceList->getBrowseRecordsRaw(($pageToLoad - 1) * $pageSize, $pageSize, $isLida, $appVersion);
+							// Convert to indexed array if it's an associative array
+							if (is_array($records) && !empty($records)) {
+								$records = array_values($records);
+							}
+
 							$response['message'] = 'Results found for browse category';
 						} else {
 							$records = [];
@@ -3532,7 +3537,7 @@ class SearchAPI extends AbstractAPI {
 					$items[$recordKey]['source'] = $eventSource;
 					$items[$recordKey]['title'] = $record['title'];
 					$items[$recordKey]['author'] = null;
-					$items[$recordKey]['image'] = $configArray['Site']['url'] . '/bookcover.php?id=' . $record['id'] . '&size=medium&type=' . $eventSource . '_event';
+					$items[$recordKey]['image'] = $configArray['Site']['url'] . '/bookcover.php?id=' . $record['id'] . '&size=medium&type=' . $eventSource === 'aspenEvents' ? 'aspenEvent' : $eventSource . '_event';
 					$items[$recordKey]['language'] = null;
 					$items[$recordKey]['summary'] = isset($record['description']) ? strip_tags($record['description']) : null;
 					$items[$recordKey]['registration_required'] = $registrationRequired;
