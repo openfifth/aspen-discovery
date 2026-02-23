@@ -86,6 +86,8 @@ class History extends Action {
 		$interface->assign('page', $page);
 		$limit = $_REQUEST['limit'] ?? 20;
 		$interface->assign('limit', $limit);
+		$sort = $_REQUEST['sort'] ?? 'id';
+		$interface->assign('sort', $sort);
 
 
 		if (UserAccount::isLoggedIn()) {
