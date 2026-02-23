@@ -873,8 +873,8 @@ public class HooplaExporter2 {
 				JSONObject availability = availabilityInfo.getJSONObject("availability");
 				if (!availability.isEmpty()) {
 					String status = availability.getString("status");
-					int holdsQueueSize = status.equals("BORROW") ? 0 : availability.getInt("holdsQueueSize");
-					int availableCopies = availability.getInt("availableCopies");
+					int holdsQueueSize = status.equals("BORROW") ? 0 : (availability.has("holdsQueueSize")  ? availability.getInt("holdsQueueSize") : 0);
+					int availableCopies = availability.has("availableCopies")  ? availability.getInt("availableCopies") : 0;
 					int totalCopies = availability.getInt("totalCopies");
 
 					boolean availabilityChanged = false;
