@@ -6,6 +6,9 @@
 			</div>
 		{/if}
 
+		{if !empty($accountMessages)}
+			{include file='systemMessages.tpl' messages=$accountMessages}
+		{/if}
 
 		<h1>{translate text="Your Searches" isPublicFacing=true}</h1>
 
