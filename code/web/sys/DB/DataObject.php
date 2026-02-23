@@ -1611,10 +1611,10 @@ abstract class DataObject implements JsonSerializable {
 			if (!empty($propertyStructure['forcesReindex'])) {
 				require_once ROOT_DIR . '/sys/SystemVariables.php';
 				global $logger;
-				SystemVariables::forceNightlyIndex();
-
 				$objectType = get_class($this);
 				$objectId = $this->getPrimaryKeyValue() ?: 'new';
+				SystemVariables::forceNightlyIndex("Property Change: $propertyName on $objectType ($objectId)");
+
 				$safeOldValue = is_array($oldValue) ? 'array' : (is_object($oldValue) ? 'object' : ($oldValue ?? 'empty'));
 				$safeNewValue = is_array($newValue) ? 'array' : (is_object($newValue) ? 'object' : ($newValue ?? 'empty'));
 				$userId = UserAccount::getActiveUserId() ?: 'system';

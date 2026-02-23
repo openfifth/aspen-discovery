@@ -36,6 +36,7 @@ if ($search->getNumResults() > 0) {
 	$searchUpdateLogEntry->update();
 	$allSearches = $search->fetchAll('id');
 	$numProcessed = 0;
+	$usersWithUpdatesToEmail = [];
 	foreach ($allSearches as $searchId) {
 		$searchEntry = new SearchEntry();
 		$searchEntry->id = $searchId;
@@ -115,6 +116,15 @@ if ($search->getNumResults() > 0) {
 						$notificationToken->__destruct();
 						$notificationToken = null;
 					}
+					// If the user wishes to receive saved search emails, keep track of those here.
+					if ($userForSearch->notifySavedSearches == TRUE) {
+						if (array_key_exists($userForSearch->email, $usersWithUpdatesToEmail)) {
+							$usersWithUpdatesToEmail[$userForSearch->email][] = $searchEntry->title;
+						}
+						else {
+							$usersWithUpdatesToEmail[$userForSearch->email] = [$searchEntry->title];
+						}
+					}
 				}
 			} else {
 				if ($searchEntry->hasNewResults) {
@@ -138,7 +148,33 @@ $searchUpdateLogEntry->addNote("Finished updating saved searches");
 $searchUpdateLogEntry->endTime = time();
 $searchUpdateLogEntry->update();
 
-$cronLogEntry->notes .= "<br/>Updated a total of " . $searchUpdateLogEntry->numUpdated. " searches";
+// Now that we know all of the searches that have updates, let's send a single email to each distinct email address from that set.
+require_once ROOT_DIR . '/sys/Email/Mailer.php';
+$mailer = new Mailer();
+foreach ($usersWithUpdatesToEmail as $emailAddress => $searchTitles) {
+	$body = translate([
+		'text' => 'There are new results appearing in your saved searches!',
+		'isPublicFacing' => true,
+	]) . "\r\n" . $configArray['Site']['url'] . '/Search/History';
+	$htmlBody = '<p>' . translate([
+		'text' => 'There are new results appearing in %1%your saved searches%2%!',
+		1 => '<a href="' . $configArray['Site']['url'] . '/Search/History">',
+		2 => '</a>',
+		'isPublicFacing' => true,
+	]) . '</p><ul>';
+	foreach ($searchTitles as $searchTitle) {
+		$body .= "\r\n" . $searchTitle;
+		$htmlBody .= '<li>' . $searchTitle . '</li>';
+	}
+	$htmlBody .= '</ul>';
+	$result = $mailer->send($emailAddress, translate([
+		'text' => "New Results in Your Saved Searches",
+		'isPublicFacing' => true,
+	]), $body, null, $htmlBody);
+}
+
+$numUpdated = ($searchUpdateLogEntry->numUpdated > 0) ? $searchUpdateLogEntry->numUpdated : 0;
+$cronLogEntry->notes .= "<br/>Updated a total of " . $numUpdated . " searches.";
 $cronLogEntry->endTime = time();
 $cronLogEntry->update();
 

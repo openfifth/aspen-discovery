@@ -57,6 +57,7 @@ class User extends DataObject {
 	public $checkoutInfoLastLoaded;
 	public $optInToAllCampaignLeaderboards;
 	public $campaignNotificationsByEmail;
+	public $notifySavedSearches;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
@@ -1705,6 +1706,7 @@ class User extends DataObject {
 		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
 		$this->__set('promptToFreezeHoldsImmediately', (isset($_POST['promptToFreezeHoldsImmediately']) && $_POST['promptToFreezeHoldsImmediately'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
+		$this->__set('notifySavedSearches', (isset($_POST['notifySavedSearches']) && $_POST['notifySavedSearches'] == 'on') ? 1 : 0);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
 			$this->__set('enableCostSavings', (isset($_POST['enableCostSavings']) && $_POST['enableCostSavings'] == 'on') ? 1 : 0);
@@ -2144,6 +2146,10 @@ class User extends DataObject {
 
 	public function areCirculationActionsDisabled(): bool {
 		return !$this->hasIlsConnection() || $this->disableCirculationActions;
+	}
+
+	public function areSavedSearchNotificationsEnabled(): bool {
+		return $this->notifySavedSearches;
 	}
 
 	public function getCirculatedRecordActions(string $source, string $recordId, bool $loadingLinkedUser = false): array {
