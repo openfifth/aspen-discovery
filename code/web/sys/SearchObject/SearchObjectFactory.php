@@ -152,6 +152,9 @@ class SearchObjectFactory {
 			case 'summon':
 				$source = 'Summon';
 				break;
+			case 'cloudsource':
+				$source = 'CloudSource';
+				break;
 			case 'series' :
 				$source = 'Series';
 				break;
