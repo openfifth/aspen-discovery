@@ -53,7 +53,7 @@
 							{if !empty($translationModeActive)}
 								<a onclick="return AspenDiscovery.changeTranslationMode(false)" class="btn btn-primary btn-xs active" role="button">{translate text="Exit Translation Mode" isPublicFacing=true}</a>
 							{else}
-								<a onclick="return AspenDiscovery.changeTranslationMode(true)" class="btn btn-primary btn-xs" role="button">{translate text="Start Translation Mode" isPublicFacing=true}</a>
+								<a onclick="return AspenDiscovery.changeTranslationMode(true)" class="btn btn-primary btn-xs" tabindex="0" role="button">{translate text="Start Translation Mode" isPublicFacing=true}</a>
 							{/if}
 						</div>
 					{/if}
@@ -82,7 +82,7 @@
 								{if !empty($translationModeActive)}
 									<a onclick="return AspenDiscovery.changeTranslationMode(false)" class="btn btn-primary btn-xs active" role="button">{translate text="Exit Translation Mode" isPublicFacing=true}</a>
 								{else}
-									<a onclick="return AspenDiscovery.changeTranslationMode(true)" class="btn btn-primary btn-xs" role="button">{translate text="Start Translation Mode" isPublicFacing=true}</a>
+									<a onclick="return AspenDiscovery.changeTranslationMode(true)" class="btn btn-primary btn-xs" tabindex="0" role="button">{translate text="Start Translation Mode" isPublicFacing=true}</a>
 								{/if}
 							</div>
 						{/if}
@@ -103,7 +103,7 @@
 								{if !empty($translationModeActive)}
 									<a onclick="return AspenDiscovery.changeTranslationMode(false)" class="btn btn-primary btn-xs active" role="button">{translate text="Exit Translation Mode" isPublicFacing=true}</a>
 								{else}
-									<a onclick="return AspenDiscovery.changeTranslationMode(true)" class="btn btn-primary btn-xs" role="button">{translate text="Start Translation Mode" isPublicFacing=true}</a>
+									<a onclick="return AspenDiscovery.changeTranslationMode(true)" class="btn btn-primary btn-xs" tabindex="0" role="button">{translate text="Start Translation Mode" isPublicFacing=true}</a>
 								{/if}
 							</div>
 						{/if}
