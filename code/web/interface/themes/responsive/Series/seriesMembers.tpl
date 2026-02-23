@@ -52,7 +52,6 @@
 					{else}
 						<div class="clearer"></div>
 						<div id="listTopButtons" class="btn-toolbar">
-
 							<div class="btn-group" role="group">
 								<button type="button" class="btn btn-sm btn-default btn-info dropdown-toggle listViewButton" data-toggle="dropdown" aria-expanded="false">{translate text='Sort by' isPublicFacing=true}&nbsp;<span class="caret"></span></button>
 								<ul class="dropdown-menu dropdown-menu-left" role="menu">
@@ -68,6 +67,7 @@
 							</div>
 
 							<div class="btn-group btn-group-sm">
+								<button value="addToList" id="SeriesAddToList" class="btn btn-sm btn-default listViewButton" onclick="return AspenDiscovery.Account.showSaveToListForm(this, 'Series', {$series->id});">{translate text='Add to List' isPublicFacing=true}</button>
 								<button value="emailList" id="SeriesEmail" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Series.emailAction("{$series->id}")'>{translate text='Email' isPublicFacing=true}</button>
 								<button value="printList" id="SeriesPrint" class="btn btn-sm btn-default listViewButton" onclick='return AspenDiscovery.Series.printAction()'>{translate text='Print' isPublicFacing=true}</button>
 							</div>
