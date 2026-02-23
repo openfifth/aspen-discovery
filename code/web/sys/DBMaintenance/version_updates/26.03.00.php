@@ -24,7 +24,13 @@ function getUpdates26_03_00(): array {
 		//yanjun
 
 		//imani
-
+		'lida_general_settings_add_idefinite_hold_freeze' => [
+			'title' => 'Add option in Aspen LiDA General Settings to allow indefinite hold freezes in the app',
+			'description' => 'Add option in Aspen LiDA General Settings to allow indefinite hold freezes in the app',
+			'sql' => [
+				"ALTER TABLE aspen_lida_general_settings add COLUMN allowIndefiniteHoldFreezes TINYINT(1) DEFAULT 0"
+			]
+		],
 		//galen
 
 		//alexander

@@ -7,6 +7,7 @@ class GeneralSetting extends DataObject {
 	public $autoRotateCard;
 	public $enableSelfRegistration;
 	public $showMoreInfoBtn;
+	public $allowIndefiniteHoldFreezes;
 
 	private $_libraries;
 
@@ -54,6 +55,13 @@ class GeneralSetting extends DataObject {
 				'note' => 'This button opens up an in-app Aspen Discovery session to see additional record information.',
 				'description' => 'Whether or not to display a More Info button in Aspen LiDA on the Grouped Work screen.',
 				'hideInLists' => true,
+			],
+			'allowIndefiniteHoldFreezes' => [
+				'property' => 'allowIndefiniteHoldFreezes',
+				'type' => 'checkbox',
+				'label' => 'Allow hold freezes in LiDA without an end date',
+				'note' => 'If checked freezes in app with no end date or date set to the current day will be indefinite.',
+				'description' => 'Allow hold freezes to be indefinite, otherwise they will default to 30 days from the freezing.',
 			],
 			'libraries' => [
 				'property' => 'libraries',
