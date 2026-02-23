@@ -37,13 +37,13 @@
                 {literal}
 		        $(document).ready(function() {
 			        $("a[href='#saved']").on('show.bs.tab', function (e) {
-				        AspenDiscovery.Account.loadSearchHistory('saved', {/literal}{$page}{literal}, {/literal}{$limit}{literal}, {/literal}{$sort}{literal});
+				        AspenDiscovery.Account.loadSearchHistory('saved', {/literal}{$page}{literal}, {/literal}{$limit}{literal}, '{/literal}{$sort}{literal}');
 			        });
 			        $("a[href='#recent']").on('show.bs.tab', function (e) {
 				        AspenDiscovery.Account.loadSearchHistory('recent', {/literal}{$page}{literal}, {/literal}{$limit}{literal}, 'id');
 			        });
                     {/literal}{if $numSavedSearches > 0}{literal}
-			        AspenDiscovery.Account.loadSearchHistory('saved', {/literal}{$page}{literal}, {/literal}{$limit}{literal}, {/literal}{$sort}{literal});
+			        AspenDiscovery.Account.loadSearchHistory('saved', {/literal}{$page}{literal}, {/literal}{$limit}{literal}, '{/literal}{$sort}{literal}');
 					 {/literal}{else}{literal}
                     AspenDiscovery.Account.loadSearchHistory('recent', {/literal}{$page}{literal}, {/literal}{$limit}{literal}, 'id');
 			        {/literal}{/if}{literal}
