@@ -1748,7 +1748,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$return['message'] = "You must provide a title for the list";
 			} else {
 				//If the record is not valid, skip the whole thing since the title could be bad too
-				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events') {
+				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events' && $_REQUEST['source'] != 'CloudSource') {
 					$recordToAdd = urldecode($_REQUEST['sourceId']);
 					if (!preg_match("/^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}|[A-Z0-9_-]+:[A-Z0-9_-]+|\d+$/i", $recordToAdd)) {
 						$return['success'] = false;
@@ -1896,6 +1896,13 @@ class MyAccount_AJAX extends JSON_Action {
 						} elseif ($userListEntry->source == 'Summon') {
 							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
 							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'CloudSource') {
+							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
 							if ($recordDriver->isValid()) {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
@@ -9306,6 +9313,13 @@ class MyAccount_AJAX extends JSON_Action {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
 							}
+						} elseif ($userListEntry->source == 'CloudSource') {
+							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
 						} elseif ($userListEntry->source == 'Gale') {
 							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
 							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
@@ -11016,6 +11030,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ob_end_flush();
 
 			$interval = 10;
+			global $interface;
 
 			while (true) {
 
@@ -11075,9 +11090,15 @@ class MyAccount_AJAX extends JSON_Action {
 											'isPublicFacing' => true
 										]
 									),
-									'body' => $campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
-									'icon' => "fa-chart-line",
-									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+								'body' => translate([
+									'text' => '%1% of %2% progressed!',
+									1=> $milestone->name,
+									2=> $campaign->name,
+									'isPublicFacing' => true,
+								]),
+								$campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
+								'icon' => "fa-chart-line",
+								'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 										[
 											'text' => 'View all campaigns',
 											'isPublicFacing' => true
@@ -11090,48 +11111,57 @@ class MyAccount_AJAX extends JSON_Action {
 						if ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
-									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
-										'title'=> translate(
-											[
-												'text' => 'Milestone completed! Well done!',
-												'isPublicFacing' => true
-											]
-										),
-										'body' => $milestone->name,
-										'icon' => "fa-clipboard-check",
-										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-											[
-												'text' => 'View all campaigns',
-												'isPublicFacing' => true
-											]
-										)]
-									)
-								) . "\n\n";
+								array(
+									'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
+									'title'=> translate(
+										[
+											'text' => 'Milestone completed! Well done!',
+											'isPublicFacing' => true
+										]
+									),
+									'body' => translate([
+										'text' => '%1% of %2% complete.',
+										1 =>$milestone->name,
+										2=>$campaign->name,
+										'isPublicFacing' => true,
+									]),
+									'icon' => "fa-clipboard-check",
+									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+										[
+											'text' => 'View all campaigns',
+											'isPublicFacing' => true
+										]
+									)]
+								)
+							) . "\n\n";
 						}
 
 						# Handle campaign completion notification
 						if ($userCampaign->completed && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
-									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
-										'title'=> translate(
-											[
-												'text' => 'Campaign completed! Awesome!',
-												'isPublicFacing' => true
-											]
-										),
-										'body' => $campaign->name,
-										'icon' => "fa-medal",
-										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-											[
-												'text' => 'View all campaigns',
-												'isPublicFacing' => true
-											]
-										)]
-									)
-								) . "\n\n";
+								array(
+									'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
+									'title'=> translate(
+										[
+											'text' => 'Campaign completed! Awesome!',
+											'isPublicFacing' => true
+										]
+									),
+									'body' => translate([
+										'text' => '%1% campaign complete!',
+										1 => $campaign->name,
+										'isPublicFacing' => true
+									]),
+									'icon' => "fa-medal",
+									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+										[
+											'text' => 'View all campaigns',
+											'isPublicFacing' => true
+										]
+									)]
+								)
+							) . "\n\n";
 						}
 					}
 				}else{
