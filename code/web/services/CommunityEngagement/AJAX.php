@@ -386,11 +386,26 @@ class CommunityEngagement_AJAX extends JSON_Action {
 	}
 	
 	public function restoreCampaignForUser() {
+
+		if (!UserAccount::userHasPermission('View Community Engagement Admin View')) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'You do not have the correct permissions to carry out this action',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
 		$userId = $_REQUEST['userId'] ?? null;
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 
 		if (!$userId) {
-			$response = [
+			return [
 				'success' => false,
 				'title' => translate([
 					'text' => 'Error',
@@ -401,13 +416,10 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 			];
-			header('Content-Type: application/json');
-			echo json_encode($response);
-			exit;
 		}
 
 		if (!$campaignId) {
-			$respone = [
+			return [
 				'success' => false,
 				'title' => translate([
 					'text' => 'Error',
@@ -418,18 +430,15 @@ class CommunityEngagement_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 			];
-			header('Content-Type: application/json');
-			echo json_encode($response);
-			exit;
 		}
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserRemovedCampaign.php';
 
-		$removed = new userRemovedCampaign();
+		$removed = new UserRemovedCampaign();
 		$removed->campaignId = $campaignId;
 		$removed->userId = $userId;
 		if ($removed->find(true)) {
 			$removed->delete();
-			$response = [
+			return [
 				'success' => true,
 				'title' => translate([
 					'text' => 'Campaign Restored',
@@ -441,7 +450,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				]),	
 			];
 		} else {
-			$response = [
+			return [
 				'success' => false,
 				'title' => translate([
 					'text' => 'Error',
@@ -453,9 +462,6 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				]),
 			];
 		}
-		header('Content-Type: application/json');
-		echo json_encode($response);
-		exit;
 	}
 
 	public function filterLeaderboardCampaigns() {
