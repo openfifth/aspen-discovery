@@ -279,10 +279,6 @@ class ListAPI extends AbstractAPI {
 				'lists' => $results,
 			];
 		}
-		return [
-			'success' => false,
-			'lists' => [],
-		];
 	}
 
 	/**
