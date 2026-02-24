@@ -397,23 +397,20 @@ public class PalaceProjectExtractor {
 
 								for (int i = 0; i < responseTitles.length(); i++) {
 									JSONObject curTitle = responseTitles.getJSONObject(i);
-									if (!collection.hasCirculation) {
-										String lastModified = curTitle.getJSONObject("metadata").getString("modified");
-										try {
-											Date lastModifiedDate = dateModifiedFormatter.parse(lastModified);
-											if (lastModifiedDate.getTime() / 1000 > collection.lastIndexed) {
-												titlesToProcess.add(curTitle);
-											}
-										} catch (ParseException e) {
-											logEntry.incErrors("Could not parse date modified " + lastModified, e);
+									String lastModified = curTitle.getJSONObject("metadata").getString("modified");
+									try {
+										Date lastModifiedDate = dateModifiedFormatter.parse(lastModified);
+										if (lastModifiedDate.getTime() / 1000 > collection.lastIndexed) {
+											titlesToProcess.add(curTitle);
 										}
-									} else {
-										titlesToProcess.add(curTitle);
+									} catch (ParseException e) {
+										logEntry.incErrors("Could not parse date modified " + lastModified, e);
 									}
 								}
 								updateTitlesInDB(collectionName, collection.id, titlesToProcess, titlesForCollection, doFullReload);
-								if (!doFullReload && !collection.hasCirculation) {
-									//If the collection does not have circulation, we only need to index records
+								if (!doFullReload) {
+									//We only need to index records changed since the last time
+									// the feed from Palace Project is sorted based on the time metadata or circulation changed
 									try {
 										JSONObject lastTitle = responseTitles.getJSONObject(responseTitles.length() - 1);
 										String lastTitleModified = lastTitle.getJSONObject("metadata").getString("modified");
