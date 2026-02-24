@@ -57,6 +57,7 @@ class User extends DataObject {
 	public $checkoutInfoLastLoaded;
 	public $optInToAllCampaignLeaderboards;
 	public $campaignNotificationsByEmail;
+	public $notifySavedSearches;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
@@ -1705,6 +1706,7 @@ class User extends DataObject {
 		$this->__set('showHoldHelpMessages', (isset($_POST['showHoldHelpMessages']) && $_POST['showHoldHelpMessages'] == 'on') ? 1 : 0);
 		$this->__set('promptToFreezeHoldsImmediately', (isset($_POST['promptToFreezeHoldsImmediately']) && $_POST['promptToFreezeHoldsImmediately'] == 'on') ? 1 : 0);
 		$this->__set('disableCirculationActions', (isset($_POST['disableCirculationActions']) && $_POST['disableCirculationActions'] == 'on') ? 0 : 1);
+		$this->__set('notifySavedSearches', (isset($_POST['notifySavedSearches']) && $_POST['notifySavedSearches'] == 'on') ? 1 : 0);
 		$homeLibrary = $this->getHomeLibrary();
 		if ($homeLibrary !== null && $homeLibrary->enableCostSavings) {
 			$this->__set('enableCostSavings', (isset($_POST['enableCostSavings']) && $_POST['enableCostSavings'] == 'on') ? 1 : 0);
@@ -2144,6 +2146,10 @@ class User extends DataObject {
 
 	public function areCirculationActionsDisabled(): bool {
 		return !$this->hasIlsConnection() || $this->disableCirculationActions;
+	}
+
+	public function areSavedSearchNotificationsEnabled(): bool {
+		return $this->notifySavedSearches;
 	}
 
 	public function getCirculatedRecordActions(string $source, string $recordId, bool $loadingLinkedUser = false): array {
@@ -3280,7 +3286,7 @@ class User extends DataObject {
 		return $relatedPTypes;
 	}
 
-	function importListsFromIls() {
+	function importListsFromIls() : array {
 		return $this->getCatalogDriver()->importListsFromIls($this);
 	}
 
@@ -4908,11 +4914,13 @@ class User extends DataObject {
 			$sections['aspen_lida']->addAction(new AdminAction('Self-Check Completion Messages', 'Define messages to show when self-check checkouts are completed in Aspen LiDA.', '/AspenLiDA/SelfCheckCompletionMessages'), 'Administer Aspen LiDA Self-Check Settings');
 			$sections['aspen_lida']->addAction(new AdminAction('Home Screen Link Groups', 'Define settings for home screen link groups in Aspen LiDA.', '/AspenLiDA/HomeScreenLinkGroups'), [
 				'Administer All Aspen LiDA Home Screen Links',
-				'Administer Library Aspen LiDA Home Screen Links'
+				'Administer Library Aspen LiDA Home Screen Links',
+				'Administer Selected Aspen LiDA Home Screen Link Groups'
 			]);
 			$sections['aspen_lida']->addAction(new AdminAction('Home Screen Links', 'Define settings for home screen links in Aspen LiDA.', '/AspenLiDA/HomeScreenLinks'), [
 				'Administer All Aspen LiDA Home Screen Links',
-				'Administer Library Aspen LiDA Home Screen Links'
+				'Administer Library Aspen LiDA Home Screen Links',
+				'Administer Selected Aspen LiDA Home Screen Link Groups'
 			]);
 		}
 		if (array_key_exists('Series', $enabledModules)) {

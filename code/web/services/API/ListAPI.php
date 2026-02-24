@@ -567,14 +567,16 @@ class ListAPI extends AbstractAPI {
 							$imageUrl .= "&isn=" . $suggestion['titleInfo']['isbn10'];
 						}
 						if (isset($suggestion['titleInfo']['upc'])) {
-							$imageUrl .= "&upc=" . $suggestion['titleInfo']['upc'];
+							$imageUrl .= "&upc=" . is_array($suggestion['titleInfo']['upc']) ? reset($suggestion['titleInfo']['upc']) : $suggestion['titleInfo']['upc'];
 						}
 						if (isset($suggestion['titleInfo']['format_category'])) {
-							if (is_array($suggestion['titleInfo']['format_category'])) {
-								$imageUrl .= "&category=" . reset($suggestion['titleInfo']['format_category']);
-							}else{
-								$imageUrl .= "&category=" . $suggestion['titleInfo']['format_category'];
-							}
+							$category = explode(
+								'#',
+								is_array($suggestion['titleInfo']['format_category'])
+									? reset($suggestion['titleInfo']['format_category'])
+									: $suggestion['titleInfo']['format_category']
+							);
+							$imageUrl .= "&category=" . end($category);
 						}
 						$smallImageUrl = $imageUrl . "&size=small";
 						$imageUrl .= "&size=medium";

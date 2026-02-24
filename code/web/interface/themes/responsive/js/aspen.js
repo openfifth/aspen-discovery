@@ -6088,12 +6088,6 @@ AspenDiscovery.ToastNotifications = function() {
 			setTimeout(() => {
 				toast.style.opacity = 1;
 			}, 10);
-			setTimeout(() => {
-				toast.style.opacity = 0;
-				setTimeout(() => {
-				toast.remove();
-				}, 300);
-			}, 9000);
 		},
 	}
 	
@@ -16312,6 +16306,8 @@ AspenDiscovery.Lists = (function(){
 		editListAction: function (){
 			$('#listDescription,#listTitle,#FavEdit,.listViewButton').hide();
 			$('#listEditControls,#FavSave,.listEditButton').show();
+			const element = document.getElementById('listEditControls');
+			element.scrollIntoView();
 			return false;
 		},
 
@@ -16445,9 +16441,11 @@ AspenDiscovery.Lists = (function(){
 		},
 
 		importListsFromClassic: function (){
-			if (confirm("This will import any lists you had defined in the old catalog.  This may take several minutes depending on the size of your lists. Are you sure you want to continue?")){
-				window.location = Globals.path + "/MyAccount/ImportListsFromClassic";
-			}
+			AspenDiscovery.confirm("Import Lists?", "This will import any lists you had defined in the old catalog.  This may take several minutes depending on the size of your lists. Are you sure you want to continue?", "Yes", "No", true, "AspenDiscovery.Lists.doImportListsFromClassic()");
+			return false;
+		},
+		doImportListsFromClassic: function() {
+			window.location = Globals.path + "/MyAccount/ImportListsFromClassic";
 			return false;
 		},
 		getUploadListCoverForm: function (id){
