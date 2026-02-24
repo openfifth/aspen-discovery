@@ -11837,25 +11837,25 @@ class MyAccount_AJAX extends JSON_Action {
 
 	}
 
-		public function removeCampaignModal() {
-		$userId = $_REQUEST['userId'] ?? null;
-		$campaignId = $_REQUEST['campaignId'] ?? null;
-
-		if (!$userId) {
+	public function removeCampaignModal() {
+		$activeUser = UserAccount::getActiveUserObj();
+		 if (!$activeUser) {
 			return [
-				'sucess' =>false,
+				'success' => false,
 				'title' => translate([
 					'text' => 'Error',
 					'isPublicFacing' => true,
 				]),
-				'message' -> translate([
-					'text' => 'Cannot find a user for this campaign',
+				'message' => translate([
+					'text' => 'You must be logged in.',
 					'isPublicFacing' => true,
 				]),
 			];
 		}
 
-		
+		$userId = $activeUser->id;
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
 		if (!$campaignId) {
 			return [
 				'sucess' =>false,
