@@ -77,7 +77,7 @@ class EventCoverBuilder extends AbstractCoverBuilder {
 
 		if (!empty($branch) && $displayBranchOnThumbnail) {
 			$y += 15;
-			$branch = StringUtils::trimStringToLengthAtWordBoundary($branch, 50, true);
+			$branch = StringUtils::trimStringToLengthAtWordBoundary($branch, 150, true);
 			$branch_font_size = $title_font_size * 1.0;
 
 			[
