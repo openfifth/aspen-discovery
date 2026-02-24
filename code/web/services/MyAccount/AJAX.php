@@ -11907,6 +11907,22 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	public function removeCampaignFromUI() {
+
+		$activeUser = UserAccount::getActiveUserObj();
+		if (!$activeUser) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'You must be logged in.',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
 		$userId = $_REQUEST['userId'] ?? null;
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 
@@ -11923,6 +11939,24 @@ class MyAccount_AJAX extends JSON_Action {
 				]),
 			];
 		}
+
+		$isAdmin = UserAccount::userHasPermission('View Community Engagement Admin View');
+		$isSelf  = ($activeUser->id == $userId);
+
+		 if (!$isAdmin && !$isSelf) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'You do not have permission to perform this action.',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserRemovedCampaign.php';
 
 		$removedCampaign = new UserRemovedCampaign();
