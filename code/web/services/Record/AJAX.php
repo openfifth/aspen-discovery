@@ -2198,6 +2198,7 @@ class Record_AJAX extends Action {
 		$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
 		$interface->assign('rememberHoldPromptForEdition', $user->rememberHoldPromptForEdition);
 		$interface->assign('userHoldPromptForEditionPreference', $user->holdPromptForEdition);
+		$interface->assign('allowFreezeHolds', $library->allowFreezeHolds);
 		$interface->assign('promptToFreezeHoldsImmediately', $user->promptToFreezeHoldsImmediately);
 		$interface->assign('onlyValidPickupLocation', $onlyValidPickupLocation ?? null);
 

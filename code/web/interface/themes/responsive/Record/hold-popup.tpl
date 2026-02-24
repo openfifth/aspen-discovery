@@ -151,7 +151,7 @@
 						{/if}
 					{/if}
 
-					{if $promptToFreezeHoldsImmediately}
+					{if $promptToFreezeHoldsImmediately && $allowFreezeHolds}
 						<div class="controls">
 							<div class="form-group">
 								<label for="freezeHoldImmediately" class="checkbox"><input type="checkbox" name="freezeHoldImmediately" id="freezeHoldImmediately" onchange="$('#reactivationDateGroup').toggle()"> {translate text="Freeze this hold immediately." isPublicFacing=true}</label>
