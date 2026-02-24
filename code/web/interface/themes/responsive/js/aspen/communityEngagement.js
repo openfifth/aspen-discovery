@@ -496,11 +496,21 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 
 			hiddenInput.value = '';
-			AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
-				const filteredUsers = users.filter(user =>
-					user.displayName.toLowerCase().includes(query.toLowerCase()) || (user.ils_barcode && user.ils_barcode.toLowerCase().includes(query.toLowerCase()))
-				);
-				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
+			const url = Globals.path + '/CommunityEngagement/AJAX';
+			const params = {
+				method: 'searchUsers',
+				query: query
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
+				} else {
+					resultsDiv.style.display = 'none';
+					console.warn('No users found or error in AJAX call');
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				console.error('AJAX Error: ', textStatus, errorThrown);
 			});
 		},
 		loadCheckoutsForUser: function(userId, callback) {

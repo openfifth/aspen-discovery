@@ -17358,6 +17358,33 @@ AspenDiscovery.OverDrive = (function(){
 				}
 			);
 			return false;
+		},
+
+		checkAutoAction() {
+			const urlParams = new URLSearchParams(window.location.search);
+			const autoAction = urlParams.get('autoAction');
+			const autoRecordId = urlParams.get('autoRecordId');
+
+			if (autoAction && autoRecordId) {
+				// Remove parameters from URL to prevent re-triggering on refresh.
+				const cleanUrl = window.location.pathname + window.location.search
+					.replace(/[?&]autoAction=[^&]*/g, '')
+					.replace(/[?&]autoRecordId=[^&]*/g, '')
+					.replace(/^\?&/, '?')
+					.replace(/^&/, '?')
+					.replace(/\?$/, '');
+				if (window.history?.replaceState) {
+					window.history.replaceState({}, '', cleanUrl);
+				}
+
+				setTimeout(() => {
+					if (autoAction === 'checkout') {
+						AspenDiscovery.OverDrive.checkOutTitle(autoRecordId, null);
+					} else if (autoAction === 'hold') {
+						AspenDiscovery.OverDrive.placeHold(autoRecordId, null);
+					}
+				}, 500); // Small delay to ensure page is fully loaded.
+			}
 		}
 	}
 }(AspenDiscovery.OverDrive || {}));
@@ -21641,11 +21668,21 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 
 			hiddenInput.value = '';
-			AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
-				const filteredUsers = users.filter(user =>
-					user.displayName.toLowerCase().includes(query.toLowerCase()) || (user.ils_barcode && user.ils_barcode.toLowerCase().includes(query.toLowerCase()))
-				);
-				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
+			const url = Globals.path + '/CommunityEngagement/AJAX';
+			const params = {
+				method: 'searchUsers',
+				query: query
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
+				} else {
+					resultsDiv.style.display = 'none';
+					console.warn('No users found or error in AJAX call');
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				console.error('AJAX Error: ', textStatus, errorThrown);
 			});
 		},
 		loadCheckoutsForUser: function(userId, callback) {
@@ -22351,3 +22388,11 @@ AspenDiscovery.FormFields = (function() {
 		initializeCharacterCounters: initializeCharacterCounters
 	};
 }());
+AspenDiscovery.Gale = (function () {
+	return {
+		trackGaleUsage: function (id) {
+			var ajaxUrl = Globals.path + "/Gale/JSON?method=trackGaleUsage&id=" + id;
+			$.getJSON(ajaxUrl);
+		}
+	}
+}(AspenDiscovery.Gale || {}));
