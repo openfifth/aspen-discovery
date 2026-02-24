@@ -54,7 +54,9 @@
 									<span class="btn btn-xs btn-warning" onclick="return AspenDiscovery.Account.deleteSavedEvent('{$event.sourceId}', {$page}, '{$eventsFilter|escape}');">{translate text="Remove" isPublicFacing=true}</span>					
 								</td>
 								<td class="myAccountCell">	
-									{include file='AspenEvents/manageButton.tpl'}
+									{if $event.regRequired}
+										{include file='AspenEvents/manageButton.tpl'}
+									{/if}
 								</td>
 							</tr>
 							<tr id='aspen-events-registration-button-{$event.sourceId}-wrapper' hidden='true'>
