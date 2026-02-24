@@ -94,14 +94,16 @@
 							{/if}
 						</li>
 					{/if}
-					<li>
-					{translate text="Waiting List: " isPublicFacing=true}
-					{if $recordDriver->isWaitingListFull()}
-						<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
-					{else}
-						{$recordDriver->getDisplayWaitingListSeats()}
+					{if $recordDriver->isWaitingListEnabled()}
+						<li>
+							{translate text="Waiting List: " isPublicFacing=true}
+							{if $recordDriver->isWaitingListFull()}
+								<span class="label label-danger">{translate text="Full" isPublicFacing=true}</span>
+							{else}
+								{$recordDriver->getDisplayWaitingListSeats()}
+							{/if}
+						</li>
 					{/if}
-					</li>
 					{if $private}
 						<li>
 							<span class="label label-default">{translate text="Private" isPublicFacing=true}</span>
