@@ -8957,8 +8957,10 @@ class MyAccount_AJAX extends JSON_Action {
 
 			$user = UserAccount::getLoggedInUser();
 			if (empty($user)) {
-				unset($result['buttons']);
-				$result['message'] = translate([
+				// Marking this as 'success' as there is no server error, and we do want the user to access the login button
+				$result['success'] = true;
+				$result['buttons'] = $interface->fetch('AspenEvents/loginToRegisterButton.tpl');
+				$result['body'] = translate([
 					'text' => 'You must log in to register to events.',
 					'isPublicFacing' => true,
 				]);
