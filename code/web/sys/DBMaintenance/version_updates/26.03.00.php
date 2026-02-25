@@ -30,6 +30,14 @@ function getUpdates26_03_00(): array {
 				'ALTER TABLE palace_project_settings ADD COLUMN requirePin TINYINT(1) DEFAULT 1',
 			]
 		], //allow_require_pin_for_palace_project
+		'clean_up_event_fields_allowable_values' => [
+			'title' => 'Clean up Event Fields Allowable Values when type is not select lists',
+			'description' => 'Clean up Event Fields Allowable Values when type is not select lists',
+			'continueOnError' => false,
+			'sql' => [
+				"UPDATE event_field SET allowableValues = '' WHERE type <> 3",
+			]
+		], //clean_up_event_fields_allowable_values
 
 		//imani
 
