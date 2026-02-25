@@ -135,6 +135,9 @@
 								{/if}
 							{elseif $recordDriver->isEventFull()}
 								<span class="btn btn-sm btn-default btn-wrap disabled" style="width:70%">{translate text="Event Full" isPublicFacing=true}</span>
+								{if !$recordDriver->isWaitingListFull()}
+									<a class="btn btn-sm btn-action btn-wrap btn-register" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');" style="width:70%">{translate text="Join Waiting List" isPublicFacing=true}</a>
+								{/if}
 							{else}
 								{if !empty($recordDriver->getRegistrationModalBody())}
 									<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:70%">{translate text="Registration Information" isPublicFacing=true}
