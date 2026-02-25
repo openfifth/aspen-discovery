@@ -192,10 +192,14 @@ class ListAPI extends AbstractAPI {
 	function getSearchableLists() {
 		$useSolr = $_REQUEST['useSolr'] ?? false;
 		if ($useSolr) {
+			$titleFilter = $_REQUEST['title'] ?? null;
 			global $timer;
 			/** @var SearchObject_ListsSearcher $searchObject */
 			$searchObject = SearchObjectFactory::initSearchObject('Lists');
 			$searchObject->init();
+			if (!empty($titleFilter)) {
+				$searchObject->addFilter('title:' . $titleFilter);
+			}
 			$results = $searchObject->processSearch(true, false);
 			if ($results == null) {
 				return [
