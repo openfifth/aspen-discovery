@@ -197,8 +197,12 @@ class ListAPI extends AbstractAPI {
 			/** @var SearchObject_ListsSearcher $searchObject */
 			$searchObject = SearchObjectFactory::initSearchObject('Lists');
 			$searchObject->init();
+			$searchObject->clearFacets();
 			if (!empty($titleFilter)) {
-				$searchObject->addFilter('title:' . $titleFilter);
+				$searchObject->setSearchTerms([
+					'index' => 'title',
+					'lookfor' => $titleFilter,
+				]);
 			}
 			$results = $searchObject->processSearch(true, false);
 			if ($results == null) {
