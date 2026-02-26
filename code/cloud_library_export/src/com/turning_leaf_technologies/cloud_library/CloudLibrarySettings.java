@@ -13,7 +13,7 @@ public class CloudLibrarySettings {
 	private final long lastExtractTime;
 	private final long lastExtractTimeAll;
 	private final boolean reindexOnSunday;
-	private final boolean isSunday;
+	private final boolean shouldRunSundayReindex;
 
 
 	public CloudLibrarySettings(ResultSet getSettingsRS) throws SQLException {
@@ -33,7 +33,10 @@ public class CloudLibrarySettings {
 		Calendar calendar = new GregorianCalendar();
 		int dayOfWeek = calendar.get(Calendar.DAY_OF_WEEK);
 		int hourOfDay = calendar.get(Calendar.HOUR_OF_DAY);
-		isSunday = dayOfWeek == Calendar.SUNDAY && hourOfDay >= 20;
+		boolean isSunday = dayOfWeek == Calendar.SUNDAY && hourOfDay >= 20;
+
+		// we only want to reindex on Sunday if lastExtractTimeAll was more than 24 hours ago
+		shouldRunSundayReindex = reindexOnSunday && isSunday && (System.currentTimeMillis() - lastExtractTimeAll > 24 * 60 * 60 * 1000);
 
 	}
 
@@ -73,7 +76,7 @@ public class CloudLibrarySettings {
 		return reindexOnSunday;
 	}
 
-	public boolean isSunday() {
-		return isSunday;
+	public boolean shouldRunSundayReindex() {
+		return shouldRunSundayReindex;
 	}
 }
