@@ -44,6 +44,8 @@ class CloudLibraryMarcHandler extends DefaultHandler {
 	private final HashMap<String, CloudLibraryTitle> existingRecords;
 	private final long startTimeForLogging;
 	private final long settingId;
+	private final boolean reindexOnSunday;
+	private final boolean isSunday;
 
 	private int numDocuments = 0;
 	private org.marc4j.marc.Record marcRecord;
@@ -54,7 +56,7 @@ class CloudLibraryMarcHandler extends DefaultHandler {
 
 	private static final CRC32 checksumCalculator = new CRC32();
 
-	CloudLibraryMarcHandler(CloudLibraryExporter exporter, long settingId, HashMap<String, CloudLibraryTitle> existingRecords, boolean doFullReload, long startTimeForLogging, Connection dbConn, RecordGroupingProcessor recordGroupingProcessor, GroupedWorkIndexer indexer, CloudLibraryExtractLogEntry logEntry, Logger logger) {
+	CloudLibraryMarcHandler(CloudLibraryExporter exporter, long settingId, HashMap<String, CloudLibraryTitle> existingRecords, boolean doFullReload, long startTimeForLogging, Connection dbConn, RecordGroupingProcessor recordGroupingProcessor, GroupedWorkIndexer indexer, CloudLibraryExtractLogEntry logEntry, Logger logger, boolean reindexOnSunday, boolean isSunday) {
 		this.exporter = exporter;
 		this.settingId = settingId;
 		this.recordGroupingProcessor = recordGroupingProcessor;
@@ -65,6 +67,8 @@ class CloudLibraryMarcHandler extends DefaultHandler {
 		this.existingRecords = existingRecords;
 		this.doFullReload = doFullReload;
 		this.startTimeForLogging = startTimeForLogging;
+		this.reindexOnSunday = reindexOnSunday;
+		this.isSunday = isSunday;
 
 		try {
 			updateCloudLibraryItemStmt = dbConn.prepareStatement(
@@ -332,7 +336,7 @@ class CloudLibraryMarcHandler extends DefaultHandler {
 				}
 			}
 		}
-		if (metadataChanged || doFullReload) {
+		if (metadataChanged || doFullReload || (reindexOnSunday && isSunday)) {
 			logEntry.incMetadataChanges();
 			try {
 				//Update the database
@@ -356,7 +360,7 @@ class CloudLibraryMarcHandler extends DefaultHandler {
 			}
 		}
 
-		if (availabilityChanged || doFullReload) {
+		if (availabilityChanged || doFullReload || (reindexOnSunday && isSunday)) {
 			try {
 				logEntry.incAvailabilityChanges();
 				updateCloudLibraryAvailabilityStmt.setString(1, cloudLibraryId);
@@ -379,10 +383,10 @@ class CloudLibraryMarcHandler extends DefaultHandler {
 		}
 
 		String groupedWorkId = null;
-		if (metadataChanged || doFullReload) {
+		if (metadataChanged || doFullReload || (reindexOnSunday && isSunday)) {
 			groupedWorkId = groupCloudLibraryRecord(title, subtitle, author, format, primaryLanguage, cloudLibraryId);
 		}
-		if (metadataChanged || availabilityChanged || doFullReload) {
+		if (metadataChanged || availabilityChanged || doFullReload || (reindexOnSunday && isSunday)) {
 			logEntry.incUpdated();
 			if (groupedWorkId == null) {
 				groupedWorkId = recordGroupingProcessor.getPermanentIdForRecord("cloud_library", cloudLibraryId);

@@ -85,7 +85,7 @@ public class CloudLibraryExporter {
 		//Get a list of all existing records in the database
 		loadExistingTitles(settings.getSettingsId());
 
-		CloudLibraryMarcHandler handler = new CloudLibraryMarcHandler(this, settings.getSettingsId(), existingRecords, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger);
+		CloudLibraryMarcHandler handler = new CloudLibraryMarcHandler(this, settings.getSettingsId(), existingRecords, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger, settings.isReindexOnSunday(), settings.isSunday());
 
 		int curOffset = 1;
 		boolean moreRecords = true;
@@ -141,10 +141,10 @@ public class CloudLibraryExporter {
 		}
 
 		//Handle events to determine status changes when the bibs don't change.
-		//Events status can be CHECKIN, CHECKOUT, HOLD, REMOVED, RESERVED, 
+		//Events status can be CHECKIN, CHECKOUT, HOLD, REMOVED, RESERVED,
 		//and PURCHASE(this could be another copy of the currently owned item)
 		if (!settings.isDoFullReload()) {
-			CloudLibraryEventHandler eventHandler = new CloudLibraryEventHandler(this, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger);
+			CloudLibraryEventHandler eventHandler = new CloudLibraryEventHandler(this, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger, settings.isReindexOnSunday(), settings.isSunday());
 
 			String currentStartDate = startDate;
 
@@ -217,7 +217,7 @@ public class CloudLibraryExporter {
 		//Update the last time we ran the update in settings.  This is always done since cloudLibrary has some expected errors.
 		PreparedStatement updateExtractTime;
 		String columnToUpdate = "lastUpdateOfChangedRecords";
-		if (settings.isDoFullReload()) {
+		if (settings.isDoFullReload() || (settings.isReindexOnSunday() && settings.isSunday())) {
 			columnToUpdate = "lastUpdateOfAllRecords";
 		}
 		try {
@@ -274,7 +274,7 @@ public class CloudLibraryExporter {
 		logEntry.addNote("Extracting single CloudLibrary record: " + singleRecordId + ".");
 		logEntry.saveResults();
 
-		CloudLibraryMarcHandler handler = new CloudLibraryMarcHandler(this, settings.getSettingsId(), existingRecords, true, startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger);
+		CloudLibraryMarcHandler handler = new CloudLibraryMarcHandler(this, settings.getSettingsId(), existingRecords, true, startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger, settings.getReindexOnSunday(), settings.isSunday());
 		String apiPath = "/cirrus/library/" + settings.getLibraryId() + "/data/marc/" + singleRecordId;
 
 		for (int curTry = 1; curTry <= 4; curTry++) {
