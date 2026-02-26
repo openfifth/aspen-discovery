@@ -62,19 +62,6 @@ class SideFacets implements RecommendationInterface {
 		$interface->assign('hasSearchableFacets', $this->searchObject->hasSearchableFacets());
 		$interface->assign('removeAllFiltersUrl', $this->searchObject->getRemoveAllFiltersUrl());
 
-		//Get applied facets
-		$filterList = $this->searchObject->getFilterList();
-		foreach ($filterList as $facetKey => $facet) {
-			//Remove any top facets since the removal links are displayed above results
-			if (str_starts_with($facet[0]['field'], 'availability_toggle')) {
-				unset($filterList[$facetKey]);
-			}
-		}
-		$interface->assign('filterList', $filterList);
-		//Process the side facet set to handle the Added In Last facet which we only want to be
-		//visible if there is not a value selected for the facet (makes it single select
-		$sideFacets = $this->searchObject->getFacetList($this->mainFacets);
-
 		$lockSection = $this->searchObject->getSearchName();
 		if (UserAccount::isLoggedIn()) {
 			$user = UserAccount::getActiveUserObj();
@@ -83,6 +70,42 @@ class SideFacets implements RecommendationInterface {
 			$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 		}
 		$lockedFacets = $lockedFacets[$lockSection] ?? [];
+		$lockedValuesByUnscoped = [];
+		foreach ($lockedFacets as $lockedFacetKey => $lockedValues) {
+			$unscopedKey = $this->searchObject->getUnscopedFieldName($lockedFacetKey);
+			if (!isset($lockedValuesByUnscoped[$unscopedKey])) {
+				$lockedValuesByUnscoped[$unscopedKey] = [];
+			}
+			if (is_array($lockedValues)) {
+				$lockedValuesByUnscoped[$unscopedKey] = array_values(array_unique(array_merge($lockedValuesByUnscoped[$unscopedKey], $lockedValues)));
+			}
+		}
+
+		//Get applied facets
+		$filterList = $this->searchObject->getFilterList();
+		foreach ($filterList as $facetKey => &$facet) {
+			//Remove any top facets since the removal links are displayed above results
+			if (str_starts_with($facet[0]['field'], 'availability_toggle')) {
+				unset($filterList[$facetKey]);
+				continue;
+			}
+			foreach ($facet as &$filter) {
+				if (!empty($filter['field']) && array_key_exists('value', $filter)) {
+					$unscopedField = $this->searchObject->getUnscopedFieldName($filter['field']);
+					$filter['unscopedField'] = $unscopedField;
+					$lockedValues = $lockedFacets[$filter['field']] ?? ($lockedValuesByUnscoped[$unscopedField] ?? []);
+					if (!empty($lockedValues) && in_array($filter['value'], $lockedValues)) {
+						$filter['isLocked'] = true;
+					}
+				}
+			}
+			unset($filter);
+		}
+		unset($facet);
+		$interface->assign('filterList', $filterList);
+		//Process the side facet set to handle the Added In Last facet which we only want to be
+		//visible if there is not a value selected for the facet (makes it single select
+		$sideFacets = $this->searchObject->getFacetList($this->mainFacets);
 
 		//Figure out which counts to show.
 		$searchSource = $_REQUEST['searchSource'];
