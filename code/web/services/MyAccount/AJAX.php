@@ -8562,10 +8562,15 @@ class MyAccount_AJAX extends JSON_Action {
 		// add the event to saved events if it has not yet been saved
 		$recordDriver->saveUserEventEntry($sourceId, $userId);
 
-		// so they may manage it, also add the event to the active user's saved events if the user this was added for is a linked user
+		// so the registered may manage their registration, also add the event to the active user's saved events if the user this was added for is a linked user
 		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
 			$recordDriver->saveUserEventEntry($sourceId, $activeUserId);	
+		}
+
+		// so the parent linked account display all events their linked user is registered to, save the event if the user registering have had their account linked.
+		foreach ($user->getViewerIds() as $viewerId) {
+			$recordDriver->saveUserEventEntry($sourceId, $viewerId);	
 		}
 
 		if (!$eventInstance->hasAvailableSeats(1)) {
