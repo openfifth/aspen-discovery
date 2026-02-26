@@ -19,8 +19,8 @@ function getUpdates26_03_00(): array {
 
 		//kirstien
 		'add_cloud_library_sunday_reindex_option' => [
-			'title' => 'Add option for Cloud Library to reindex on Sundays',
-			'description' => 'Add option for Cloud Library to reindex on Sundays to Cloud Library Settings',
+			'title' => 'Add option for cloudLibrary to reindex on Sundays',
+			'description' => 'Add checkbox for cloudLibrary to reindex on Sundays at 8PM to cloudLibrary Settings',
 			'continueOnError' => false,
 			'sql' => [
 				'ALTER TABLE cloud_library_settings ADD COLUMN reindexOnSunday TINYINT(1) DEFAULT 1',
