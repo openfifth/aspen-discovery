@@ -2,6 +2,8 @@ package com.turning_leaf_technologies.cloud_library;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 
 public class CloudLibrarySettings {
 	private final long settingsId;
