@@ -102,6 +102,7 @@ class User extends DataObject {
 	/** @var User[] $linkedUsers */
 	private $linkedUsers;
 	private $viewers;
+	private $viewerIds;
 
 	//Data that we load, but don't store in the User table
 	public $_fullname;
@@ -1044,6 +1045,48 @@ class User extends DataObject {
 			}
 		}
 		return $this->viewers;
+	}
+
+	/**
+	 * Fetches and sets the list of ids of users that can view this account
+	 */
+	/** @noinspection PhpUnused */
+	function setViewerIds(): void {
+		if (!is_null($this->viewerIds)) {
+			return;
+		}
+
+		$this->viewerIds = [];
+
+		global $library;
+		if (!$this->id || !$library->allowLinkedAccounts) {
+			return;
+		}
+
+		require_once ROOT_DIR . '/sys/Account/UserLink.php';
+		$userLink = new UserLink();
+		$userLink->linkedAccountId = $this->id;
+		$userLink->find();
+
+		while ($userLink->fetch()) {
+			$viewer = new User();
+			$viewer->id = $userLink->primaryAccountId;
+			if (!$viewer->isBlockedAccount($this->id)) {
+				$this->viewerIds[] = $userLink->primaryAccountId;
+			}
+		}
+		return;
+	}
+
+	/**
+	 * Returns a list of ids of users that can view this account
+	 */
+	/** @noinspection PhpUnused */
+	function getViewerIds(): array {
+		if (is_null($this->viewerIds)) {
+			$this->setViewerIds();
+		}
+		return $this->viewerIds;
 	}
 
 	/**
