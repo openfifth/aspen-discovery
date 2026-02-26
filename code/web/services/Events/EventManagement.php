@@ -1,11 +1,11 @@
 <?php
 
-require_once ROOT_DIR . '/Action.php';
+require_once ROOT_DIR . '/services/Admin/Admin.php';
 require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 require_once ROOT_DIR . '/sys/Events/Event.php';
 
-class Events_EventManagement extends Action {
+class Events_EventManagement extends Admin_Admin {
 
 	function launch() {
 		global $interface;
@@ -131,6 +131,10 @@ class Events_EventManagement extends Action {
 	}
 
 	function canView(): bool {
-		return EventRegistrationService::canStaffRegisterUsers();
+		return  UserAccount::userHasPermission([
+			'Register Users for Events for All Locations',
+			'Register Users for Events for Home Library Locations',
+			'Register Users for Events for Home Location',
+		]);
 	}
 }
