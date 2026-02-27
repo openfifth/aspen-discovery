@@ -74,7 +74,7 @@ public class CloudLibraryExporter {
 	public int extractRecords(){
 		int numChanges = 0;
 		String startDate = "2000-01-01";
-		if (!settings.isDoFullReload()) {
+		if (!settings.isDoFullReload() && !settings.shouldRunSundayReindex()) {
 			long lastExtractTime = Math.max(settings.getLastExtractTime(), settings.getLastExtractTimeAll());
 
 			SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
@@ -143,7 +143,7 @@ public class CloudLibraryExporter {
 		//Handle events to determine status changes when the bibs don't change.
 		//Events status can be CHECKIN, CHECKOUT, HOLD, REMOVED, RESERVED,
 		//and PURCHASE(this could be another copy of the currently owned item)
-		if (!settings.isDoFullReload()) {
+		if (!settings.isDoFullReload() && !settings.shouldRunSundayReindex()) {
 			CloudLibraryEventHandler eventHandler = new CloudLibraryEventHandler(this, settings.isDoFullReload(), startTimeForLogging, aspenConn, getRecordGroupingProcessor(), getGroupedWorkIndexer(), logEntry, logger, settings.shouldRunSundayReindex());
 
 			String currentStartDate = startDate;
@@ -200,7 +200,7 @@ public class CloudLibraryExporter {
 			}
 		}
 
-		if (settings.isDoFullReload() && !logEntry.hasErrors()) {
+		if ((settings.isDoFullReload() || settings.shouldRunSundayReindex()) && !logEntry.hasErrors()) {
 			try {
 				//Un mark that a full update needs to be done
 				PreparedStatement updateSettingsStmt = aspenConn.prepareStatement("UPDATE cloud_library_settings set runFullUpdate = 0 where id = ?");
