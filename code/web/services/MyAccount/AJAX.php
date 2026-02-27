@@ -8988,7 +8988,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$userWaitingList->whereAdd('status IN ("waiting", "notified")');
 			$userOnWaitingList = $userWaitingList->find(true);
 			$userWaitingListPosition = null;
-
+			$userCanRegister = false;
 
 			if ($userOnWaitingList) {
 				$userOnWaitingList = true;
@@ -9001,6 +9001,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('userCanRegister', $userCanRegister);
 			$interface->assign('userOnWaitingList', $userOnWaitingList);
 			$interface->assign('userWaitingListPosition', $userWaitingListPosition);
+			$interface->assign('userIsRegistered', false);
 
 			$user = UserAccount::getLoggedInUser();
 			if (empty($user)) {
