@@ -38,7 +38,7 @@ public class CloudLibrarySettings {
 		boolean isSunday = dayOfWeek == Calendar.SUNDAY && hourOfDay >= 20;
 
 		// we only want to reindex on Sunday if lastExtractTimeAll was more than 24 hours ago
-		shouldRunSundayReindex = reindexOnSunday && isSunday && (System.currentTimeMillis() - lastExtractTimeAll < 24 * 60 * 60 * 1000);
+		shouldRunSundayReindex = reindexOnSunday && isSunday && (System.currentTimeMillis() - lastExtractTimeAll > 24 * 60 * 60 * 1000);
 
 	}
 
