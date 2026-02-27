@@ -17,6 +17,11 @@ class CommunityEngagementSSE {
         }
 
         $patron = UserAccount::getActiveUserObj();
+
+        if (session_id()) {
+            session_write_close();
+        }
+
         $interval = 10;
 
         // 1. Send initial connection headers

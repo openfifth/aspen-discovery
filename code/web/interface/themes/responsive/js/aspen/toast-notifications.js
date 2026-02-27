@@ -11,25 +11,28 @@ AspenDiscovery.ToastNotifications = function() {
 		 */
 
 		listenToSSE: function(args) {
-			const eventSource = new EventSource(args.eventSource);
+			// --- NEW: Use SharedWorker instead of new EventSource ---
+			const worker = new SharedWorker('/interface/themes/responsive/js/sse-worker.js');
+			
+			worker.port.start();
+			worker.port.postMessage({
+				action: 'start', 
+				url: args.eventSource, 
+				eventName: args.eventName
+			});
 
-			const closeEventSource = () => {
-				eventSource.close();
-			};
-			window.addEventListener('beforeunload', closeEventSource);
-
-			eventSource.addEventListener(args.eventName, e => {
+			// This replaces eventSource.addEventListener
+			worker.port.onmessage = e => {
+				const data = JSON.parse(e.data);
+				// --- REST OF YOUR ORIGINAL CODE UNTOUCHED ---
 				const toastDataArray = JSON.parse(sessionStorage.getItem('toastDataArray')) || [];
-				const notificationAlreadyShown = toastDataArray.some(notification => notification.id === JSON.parse(e.data).id && notification.type === JSON.parse(e.data).type);
+				const notificationAlreadyShown = toastDataArray.some(notification => notification.id === data.id);
+				
 				if (!notificationAlreadyShown || debug) {
-					toastDataArray.push(JSON.parse(e.data));
+					toastDataArray.push(data);
 					sessionStorage.setItem('toastDataArray', JSON.stringify(toastDataArray));
-					AspenDiscovery.ToastNotifications.showToast(JSON.parse(e.data));
+					AspenDiscovery.ToastNotifications.showToast(data);
 				}
-			})
-
-			eventSource.onclose = () => {
-				window.removeEventListener('beforeunload', closeEventSource);
 			};
 		},
 
