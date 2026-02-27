@@ -116,25 +116,30 @@
 					{if $recordDriver->isRegistrationRequired()}
 						<div class="btn-group btn-group-vertical btn-block">
 							{if $recordDriver->isRegisteredForEvent()}
-								<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text="opens in a new window" isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
-							{elseif $userOnWaitingList}
-								{if $userCanRegister}
-									{if !empty($recordDriver->getRegistrationModalBody())}
-										<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:70%">{translate text="Complete Your Registration" isPublicFacing=true}
-										</a>
-									{else}
-										<a href="{$recordDriver->getExternalUrl()}" class="btn btn-sm btn-action btn-register btn-wrap" target="_blank" style="width:70%"aria-label="{translate text="Complete Your Registration" isPublicFacing=true inAttribute=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="Complete Your Registration" isPublicFacing=true}</a>
-									{/if}
-								{else}
-									{if $recordDriver->isEventFull()}
-										<span class="btn btn-sm btn-default btn-wrap disabled" style="width:70%">{translate text="Event Full" isPublicFacing=true}</span>
-									{/if}
-									<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" style="width:70%" aria-label="{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true inAttribute=true}">{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true}</a>
-								{/if}
-							{elseif $recordDriver->isEventFull()}
+								<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="You Are Registered" isPublicFacing=true inAttribute=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="You Are Registered" isPublicFacing=true}</a>
+							{elseif $recordDriver->isEventFull() && ($waitingList == true)}
 								<span class="btn btn-sm btn-default btn-wrap disabled" style="width:70%">{translate text="Event Full" isPublicFacing=true}</span>
-								{if !$recordDriver->isWaitingListFull()}
-									<a class="btn btn-sm btn-action btn-wrap btn-register" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');" style="width:70%">{translate text="Join Waiting List" isPublicFacing=true}</a>
+								{if $userOnWaitingList}
+									{if $userCanRegister}
+										{if !empty($recordDriver->getRegistrationModalBody())}
+											<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:70%">{translate text="Complete Your Registration" isPublicFacing=true}
+											</a>
+										{else}
+											<a href="{$recordDriver->getExternalUrl()}" class="btn btn-sm btn-action btn-register btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="Complete Your Registration" isPublicFacing=true inAttribute=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="Complete Your Registration" isPublicFacing=true}</a>
+										{/if}
+									{else}
+										<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" aria-label="{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true inAttribute=true}" style="width:70%">{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true}</a>
+									{/if}
+								{elseif (!$isWaitingListFull)}
+									<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');" style="width:70%">{translate text="Join Waiting List" isPublicFacing=true}
+									</a>
+								{/if}
+							{else}
+								{if !empty($recordDriver->getRegistrationModalBody())}
+									<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:70%">{translate text="Registration Information" isPublicFacing=true}
+									</a>
+								{else}
+									<a href="{$recordDriver->getExternalUrl()}" class="btn btn-sm btn-action btn-register btn-wrap" target="_blank" style="width:70%" aria-label="{translate text="Registration Information" isPublicFacing=true inAttribute=true} ({translate text='opens in new window' isPublicFacing=true inAttribute=true})"><i class="fas fa-external-link-alt" role="presentation"></i> {translate text="Registration Information" isPublicFacing=true}</a>
 								{/if}
 							{/if}
 							<a href="/MyAccount/MyEvents?page=1&eventsFilter=upcoming" class="btn btn-sm btn-action btn-wrap" style="width:70%">{translate text="Go To Your Events" isPublicFacing=true}</a>
