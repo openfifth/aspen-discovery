@@ -7788,8 +7788,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$createInvoice->InvoiceNumber = $token;
 				$createInvoice->TypeID = intval($invoiceCloudSetting->invoiceTypeId);
 				$createInvoice->BalanceDue = $payment->totalPaid;
-				$createInvoice->CCServiceFee = $invoiceCloudSetting->ccServiceFee;
-				$createInvoice->ACHServiceFee = $invoiceCloudSetting->ccServiceFee;
+				$ccServiceFee = $invoiceCloudSetting->ccServiceFee;
+				if (isset($ccServiceFee) && str_contains($ccServiceFee, '%')) {
+					$percent = floatval(str_replace('%', '', $ccServiceFee));
+					$ccServiceFee = round($payment->totalPaid * ($percent / 100), 2);
+				}
+				$createInvoice->CCServiceFee = $ccServiceFee;
+				$createInvoice->ACHServiceFee = $ccServiceFee;
 				$createInvoice->DueDate = date('m/d/Y');
 				$createInvoice->InvoiceDate = date('m/d/Y');
 
