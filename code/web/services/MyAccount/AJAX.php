@@ -10478,7 +10478,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	public function CommunityEngagementSSE() {
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CommunityEngagementSSE.php';
-		$debug = true; // Set to true to enable debug mode. true for dev only.
+		$debug = false; // Set to true to enable debug mode. true for dev only.
 		$sse = new CommunityEngagementSSE($debug);
 		$sse->CommunityEngagementSSE();
 	}

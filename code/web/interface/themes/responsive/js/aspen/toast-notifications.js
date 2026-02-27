@@ -11,29 +11,57 @@ AspenDiscovery.ToastNotifications = function() {
 		 */
 
 		listenToSSE: function(args) {
-			// --- NEW: Use SharedWorker instead of new EventSource ---
-			const worker = new SharedWorker('/interface/themes/responsive/js/sse-worker.js');
-			
-			worker.port.start();
-			worker.port.postMessage({
-				action: 'start', 
-				url: args.eventSource, 
+			// 1. Check for SharedWorker support
+			if (typeof SharedWorker !== 'undefined') {
+				this.setupSharedWorker(args);
+			} else {
+				// 2. Fallback to standard SSE
+				console.warn("SharedWorker not supported. Falling back to individual SSE connections.");
+				this.setupStandardSSE(args);
+			}
+		},
+
+		setupSharedWorker: function(args) {
+			const myWorker = new SharedWorker('/interface/themes/responsive/js/sse-worker.js');
+			myWorker.port.start();
+			myWorker.port.postMessage({
+				action: 'start',
+				url: args.eventSource,
 				eventName: args.eventName
 			});
 
-			// This replaces eventSource.addEventListener
-			worker.port.onmessage = e => {
-				const data = JSON.parse(e.data);
-				// --- REST OF YOUR ORIGINAL CODE UNTOUCHED ---
-				const toastDataArray = JSON.parse(sessionStorage.getItem('toastDataArray')) || [];
-				const notificationAlreadyShown = toastDataArray.some(notification => notification.id === data.id);
-				
-				if (!notificationAlreadyShown || debug) {
-					toastDataArray.push(data);
-					sessionStorage.setItem('toastDataArray', JSON.stringify(toastDataArray));
-					AspenDiscovery.ToastNotifications.showToast(data);
-				}
+			myWorker.port.onmessage = (e) => {
+				console.log("Worker sent to tab:", e.data);
+				this.processSSEData(e.data);
 			};
+		},
+
+		setupStandardSSE: function(args) {
+			const eventSource = new EventSource(args.eventSource);
+			
+			const closeEventSource = () => eventSource.close();
+			window.addEventListener('beforeunload', closeEventSource);
+
+			eventSource.addEventListener(args.eventName, e => {
+				console.log('found data');
+				console.log(e.data);
+				this.processSSEData(e.data);
+			});
+		},
+
+		processSSEData: function(rawData) {
+			const data = JSON.parse(rawData);
+			const toastDataArray = JSON.parse(sessionStorage.getItem('toastDataArray')) || [];
+			
+			const notificationAlreadyShown = toastDataArray.some(n => 
+				n.id === data.id && n.type === data.type
+			);
+
+			if (!notificationAlreadyShown || debug) {
+				toastDataArray.push(data);
+				sessionStorage.setItem('toastDataArray', JSON.stringify(toastDataArray));
+				this.showToast(data);
+			}
 		},
 
 		/**

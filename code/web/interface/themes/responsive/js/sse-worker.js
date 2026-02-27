@@ -7,13 +7,14 @@ onconnect = function (e) {
   ports.add(port);
 
   port.onmessage = function (msg) {
-    // Start the SSE only once
-    if (msg.data.action === "start" && !eventSource) {
-      eventSource = new EventSource(msg.data.url);
-      eventSource.addEventListener(msg.data.eventName, (e) => {
-        // Send the data to all open tabs
-        ports.forEach((p) => p.postMessage(e.data));
-      });
+    if (msg.data.action === "start") {
+      if (!eventSource) {
+        eventSource = new EventSource(msg.data.url);
+        eventSource.addEventListener(msg.data.eventName, (event) => {
+          // Broadcast raw string to all tabs
+          ports.forEach((p) => p.postMessage(event.data));
+        });
+      }
     }
   };
   port.start();
