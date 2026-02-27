@@ -2029,7 +2029,7 @@ class SearchAPI extends AbstractAPI {
 			$categoryInformation = new BrowseCategory();
 			$categoryInformation->id = $curCategory->browseCategoryId;
 			if ($categoryInformation->find(true)) {
-				if ($categoryInformation->isValidForDisplayInApp($appUser) && ($categoryInformation->source == 'GroupedWork' || $categoryInformation->source == 'List')) {
+				if ($categoryInformation->isValidForDisplayInApp($appUser) && ($categoryInformation->source == 'GroupedWork' || $categoryInformation->source == 'List' || $categoryInformation->source == 'Events')) {
 					if ($categoryInformation->textId == ('system_saved_searches') && $appUser && !($appUser instanceof AspenError)) {
 						$savedSearches = $listApi->getSavedSearches($appUser->id);
 						$allSearches = $savedSearches['searches'];
