@@ -5260,6 +5260,8 @@ class Library extends DataObject {
 			return $this->getILLItemTypes();
 		} elseif ($name == 'userDefinedFields') {
 			return $this->getUserDefinedFields();
+		} elseif ($name == 'baseUrl') {
+			return $this->getBaseUrl();
 		} else {
 			return parent::__get($name);
 		}
@@ -5920,6 +5922,14 @@ class Library extends DataObject {
 		$location->libraryId = $this->libraryId;
 		$location->createSearchInterface = 1;
 		return $location->count();
+	}
+
+	public function getBaseUrl() {
+		global $configArray;
+		if (empty($this->baseUrl)) {
+			return $configArray['Site']['url'];
+		}
+		return $this->baseUrl;
 	}
 
 	protected $_browseCategoryGroup = null;
