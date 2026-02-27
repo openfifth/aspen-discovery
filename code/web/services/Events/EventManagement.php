@@ -201,7 +201,7 @@ class Events_EventManagement extends Admin_Admin {
 		$parentEvent = $eventInstance->getParentEvent();	
 		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
 
-		$customFields = $this->getEventRegistrationFields($parentEvent);
+		$customFields = $this->getEventCustomFields($parentEvent);
 
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
@@ -243,8 +243,23 @@ class Events_EventManagement extends Admin_Admin {
 				$registration->attended ? 'Yes' : 'No'
 			];
 
-			$customFieldValues = $this->getRegistrationFieldValues($registration->id);
+			$customRegistrationFieldValues = $this->getRegistrationFieldValues($registration->id) ?? [];
+			$customInformationFieldValues = $this->getInformationFieldValues($eventInstance->eventId) ?? [];
+			$customFieldValues = array_merge($customRegistrationFieldValues, $customInformationFieldValues);
+
 			foreach ($customFields as $field) {
+				// FIXME: change the way select values are saved as this does not handle field being modified after the event was created
+				if ($field['fieldType'] == '3') {
+					$allowableValues = explode("\n", $field['allowableValues']);
+					$index = $customFieldValues[$field['id']];
+
+					if (array_key_exists($index, $allowableValues)) { // prevents skipping index 0
+						$row[] = $allowableValues[$index] ?? '';
+					} else {
+						$row[] = '';
+					}
+					continue;
+				} 
 				$row[] = $customFieldValues[$field['id']] ?? '';
 			}
 
@@ -255,22 +270,25 @@ class Events_EventManagement extends Admin_Admin {
 		exit;
 	}
 
-	private function getEventRegistrationFields($event) {
+	private function getEventCustomFields($event) {
 		global $logger;
 		$fields = [];
+		$fieldSetIds = [];
 
-		$fieldSetId = $event->eventRegistrationFieldSetId ?? null;
-		
-		if (empty($fieldSetId) && !empty($event->eventTypeId)) {
+		if (!empty($event->eventRegistrationFieldSetId)) $fieldSetIds[] = $event->eventRegistrationFieldSetId;
+		if (!empty($event->eventInformationFieldSetId)) $fieldSetIds[] = $event->eventInformationFieldSetId;
+	
+		if (empty($fieldSetIds) && !empty($event->eventTypeId)) {
 			require_once ROOT_DIR . '/sys/Events/EventType.php';
 			$eventType = new EventType();
 			$eventType->id = $event->eventTypeId;
 			if ($eventType->find(true)) {
-				$fieldSetId = $eventType->eventRegistrationFieldSetId ?? null;
+				$fieldSetIds[] = $eventType->eventRegistrationFieldSetId;
+				$fieldSetIds[] = $eventType->eventInformationFieldSetId;
 			}
 		}
 
-		if (empty($fieldSetId)) {
+		if (empty($fieldSetIds)) {
 			return $fields;
 		}
 
@@ -278,28 +296,31 @@ class Events_EventManagement extends Admin_Admin {
 		require_once ROOT_DIR . '/sys/Events/EventFieldSetField.php';
 		require_once ROOT_DIR . '/sys/Events/EventField.php';
 
-		$fieldSet = new EventFieldSet();
-		$fieldSet->id = $fieldSetId;
+		foreach ($fieldSetIds as $fieldSetId) {
+			$fieldSet = new EventFieldSet();
+			$fieldSet->id = $fieldSetId;
 
-		if ($fieldSet->find(true)) {
-			$fieldSetField = new EventFieldSetField();
-			$fieldSetField->eventFieldSetId = $fieldSet->id;
-			$fieldSetField->find();
-			
-			while ($fieldSetField->fetch()) {
-				$eventField = new EventField();
-				$eventField->id = $fieldSetField->eventFieldId;
-				if ($eventField->find(true)) {
-					$fields[] = [
-						'id' => $eventField->id,
-						'label' => $eventField->name,
-						'fieldType' => $eventField->type
-					];
+			if ($fieldSet->find(true)) {
+				$fieldSetField = new EventFieldSetField();
+				$fieldSetField->eventFieldSetId = $fieldSet->id;
+				$fieldSetField->find();
+	
+				while ($fieldSetField->fetch()) {
+					$eventField = new EventField();
+					$eventField->id = $fieldSetField->eventFieldId;
+					if ($eventField->find(true)) {
+						$fields[] = [
+							'id' => $eventField->id,
+							'label' => $eventField->name,
+							'fieldType' => $eventField->type,
+							'allowableValues' => $eventField->allowableValues ?? '',
+						];
+					}
 				}
+			} else {
+				global $logger;
+				$logger->log("Field set not found with ID: " . $fieldSetId, Logger::LOG_ERROR);
 			}
-		} else {
-			global $logger;
-			$logger->log("Field set not found with ID: " . $fieldSetId, Logger::LOG_ERROR);
 		}
 		return $fields;
 	}
@@ -315,6 +336,21 @@ class Events_EventManagement extends Admin_Admin {
 
 		while ($registrationField->fetch()) {
 			$values[$registrationField->eventFieldId] = $registrationField->value;
+		}
+		return $values;
+	}
+
+	private function getInformationFieldValues($eventId) {
+		$values = [];
+
+		require_once ROOT_DIR . '/sys/Events/EventEventField.php';
+
+		$informationField = new EventEventField();
+		$informationField->eventId = $eventId;
+		$informationField->find();
+
+		while ($informationField->fetch()) {
+			$values[$informationField->eventFieldId] = $informationField->value;
 		}
 		return $values;
 	}
