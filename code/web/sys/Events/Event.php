@@ -844,15 +844,22 @@ class Event extends DataObject {
 			$this->clearFields();
 
 			foreach ($this->_typeFields as $fieldId => $field) {
-				$eventField = new EventEventField();
-				$eventField->eventFieldId = $fieldId;
-				$eventField->eventId = $this->id;
-				if ($field == "on") { // Handle checkboxes
-					$eventField->value = 1;
+				$eventEventField = new EventEventField();
+				$eventEventField->eventFieldId = $fieldId;
+				$eventEventField->eventId = $this->id;
+
+				$eventField = new EventField();
+				$eventField->id = $fieldId;
+
+				if ($eventField->type == '3') {
+					$allowableValues = explode("\n", $eventField->allowableValues);
+					$eventEventField->value = $allowableValues[$field];
+				} else if ($field == "on") { // Handle checkboxes
+					$eventEventField->value = 1;
 				} else {
-					$eventField->value = $field;
+					$eventEventField->value = $field;
 				}
-				$eventField->update();
+				$eventEventField->update();
 			}
 			unset($this->_typeFields);
 		}
