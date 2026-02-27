@@ -52,6 +52,7 @@ class AspenEvents_Event extends Action {
 		$interface->assign('userOnWaitingList', $this->recordDriver->isUserOnWaitingList());
 		$interface->assign('userWaitingListPosition', $this->recordDriver->getUserWaitingListPosition());
 		$interface->assign('userCanRegister', $this->recordDriver->getUserCanRegister());
+		$interface->assign('waitingList', $this->recordDriver->isWaitingListEnabled());
 		// Display Page
 		$this->display('event.tpl', $this->recordDriver->getTitle(), null, false);
 	}
