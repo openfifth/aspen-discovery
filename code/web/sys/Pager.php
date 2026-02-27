@@ -27,7 +27,7 @@ class Pager {
 			'urlVar' => 'page',
 			'totalItems' => 0,
 			'canChangeRecordsPerPage' => false,
-			'canJumpToPage' => false,
+			'canJumpToPage' => true,
 		];
 
 		// Override defaults with user-provided values:
