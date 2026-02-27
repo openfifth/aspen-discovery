@@ -168,7 +168,7 @@ class Events_EventManagement extends Admin_Admin {
 		echo str_repeat("=", 80) . "\n\n";
 
 		// Table header
-		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Post Code", 12)  . str_pad("Status", 12) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
+		echo str_pad("Patron Name", 30) . str_pad("ILS Barcode", 15) . str_pad("Email", 40) . str_pad("Post Code", 12)  . str_pad("Status", 12) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
 		echo str_repeat("-", 137) . "\n";
 
 		foreach ($registrations as $registration) {
@@ -209,7 +209,7 @@ class Events_EventManagement extends Admin_Admin {
 
 		$headers = [
 			'Patron Name',
-			'Barcode',
+			'ILS Barcode',
 			'Email',
 			'Post Code',
 			'Status', 
