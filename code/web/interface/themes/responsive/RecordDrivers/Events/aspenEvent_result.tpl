@@ -104,14 +104,9 @@
 												{else}
 													<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" aria-label="{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true inAttribute=true}">{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true}</a>
 												{/if}
-											{else}
-												{if (!$isWaitingListFull)}
-													<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
-													</a>
-												{else}
-													<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:100%">{translate text="Registration Information" isPublicFacing=true}
-													</a>
-												{/if}
+											{elseif (!$isWaitingListFull)}
+												<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
+												</a>
 											{/if}
 										{else}
 											{if !empty($recordDriver->getRegistrationModalBody())}
@@ -149,14 +144,9 @@
 													{else}
 														<a href="{$recordDriver->getExternalUrl(true)}" class="btn btn-sm btn-action btn-wrap" aria-label="{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true inAttribute=true}">{translate text="You are number %1% on the waiting list" 1=$userWaitingListPosition isPublicFacing=true}</a>
 													{/if}
-												{else}
-													{if (!$isWaitingListFull)}
-														<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
-														</a>
-													{else}
-														<a class="btn btn-sm btn-action btn-register btn-wrap" onclick="return AspenDiscovery.Account.regInfoModal(this, 'Events', '{$recordDriver->getUniqueID()|escape}', 'aspenEvents', '{$recordDriver->getExternalUrl()}');" style="width:100%">{translate text="Registration Information" isPublicFacing=true}
-														</a>
-													{/if}
+												{elseif (!$isWaitingListFull)}
+													<a class="btn btn-sm btn-action btn-register btn-wrap" aria-label="{translate text="Join the waiting list"}" onclick="return AspenDiscovery.Account.joinEventWaitingList('{$recordDriver->getIdentifier()|escape}');">{translate text="Join Waiting List" isPublicFacing=true}
+													</a>
 												{/if}
 											{/if}
 										{elseif !empty($recordDriver->getRegistrationModalBody())}
