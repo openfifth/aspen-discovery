@@ -2008,9 +2008,11 @@ class UserList extends DataObject {
 			'dateAdded' => "list_entry_date_added_$this->id asc",
 			'recentlyAdded' => "list_entry_date_added_$this->id desc",
 			'call_number' => 'callnumber_sort',
-			'copies_available' => "available_copies_$solrScope desc,title asc",
-			'copies_available_asc' => "available_copies_$solrScope asc,title asc",
-			'custom' => "list_entry_weight_$this->id asc"
+			'copies_available', 'availability_desc' => "available_copies_$solrScope desc,title asc",
+			'copies_available_asc', 'availability' => "available_copies_$solrScope asc,title asc",
+			'custom' => "list_entry_weight_$this->id asc",
+			'publication_date' => "year asc,title asc",
+			'publication_date_desc' => "year desc,title asc"
 		};
 	}
 }
