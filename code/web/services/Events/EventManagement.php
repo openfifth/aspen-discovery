@@ -199,6 +199,11 @@ class Events_EventManagement extends Admin_Admin {
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();	
+		$eventType = null;
+		if(!empty($parentEvent)) {
+			$eventType = $parentEvent->getEventType();
+		}
+
 		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
 
 		$customFields = $this->getEventCustomFields($parentEvent);
@@ -209,6 +214,11 @@ class Events_EventManagement extends Admin_Admin {
 		$output = fopen('php://output', 'w');
 
 		$headers = [
+			'Event date',
+			'Event title',
+			'Event start time',
+			'Library location',
+			'Event Type',
 			'Patron Name',
 			'ILS Barcode',
 			'Email',
@@ -232,6 +242,11 @@ class Events_EventManagement extends Admin_Admin {
 			$staffUser = $registration->getStaffUser();
 
 			$row = [
+				$eventInstance ? $eventInstance->date : '',
+				$parentEvent ? $parentEvent->title : '',
+				$eventInstance ? $eventInstance->time : '',
+				$eventInstance ? $eventInstance->getLocation() : '',
+				$eventType ? $eventType->title : '',
 				$user ? $user->getDisplayName() : 'Unknown',
 				$user ? $user->ils_barcode : '',
 				$user ? $user->email : '',
@@ -245,7 +260,7 @@ class Events_EventManagement extends Admin_Admin {
 
 			$customRegistrationFieldValues = $this->getRegistrationFieldValues($registration->id) ?? [];
 			$customInformationFieldValues = $this->getInformationFieldValues($eventInstance->eventId) ?? [];
-			$customFieldValues = array_merge($customRegistrationFieldValues, $customInformationFieldValues);
+			$customFieldValues = $customInformationFieldValues + $customRegistrationFieldValues;
 
 			foreach ($customFields as $field) {
 				// FIXME: change the way select values are saved as this does not handle field being modified after the event was created
