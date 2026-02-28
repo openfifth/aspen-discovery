@@ -1148,7 +1148,7 @@ class Record_AJAX extends Action {
 						if (isset($_REQUEST['freezeHoldImmediately']) && $_REQUEST['freezeHoldImmediately'] == 'true') {
 							$freezeHoldImmediately = TRUE;
 						}
-						$dateToReactivate = isset($_REQUEST['reactivationDate']) ? (string)$_REQUEST['reactivationDate'] : null;
+						$reactivationDate = isset($_REQUEST['reactivationDate']) ? (string)$_REQUEST['reactivationDate'] : null;
 						if ($freezeHoldImmediately) {
 							$holds = $patron->getHolds();
 							// Find the holdId for use in the freezing process.
@@ -1160,7 +1160,7 @@ class Record_AJAX extends Action {
 								}
 							}
 							if ($holdId) {
-								$freezeResult = $patron->freezeHold($shortId, $holdId, $dateToReactivate);
+								$freezeResult = $patron->freezeHold($shortId, $holdId, $reactivationDate);
 								if (!$freezeResult['success']) {
 									$return['message'] .= '<br/>' . $freezeResult['message'];
 								}
@@ -2198,6 +2198,7 @@ class Record_AJAX extends Action {
 		$interface->assign('rememberHoldPickupLocation', $rememberHoldPickupLocation);
 		$interface->assign('rememberHoldPromptForEdition', $user->rememberHoldPromptForEdition);
 		$interface->assign('userHoldPromptForEditionPreference', $user->holdPromptForEdition);
+		$interface->assign('allowFreezeHolds', $library->allowFreezeHolds);
 		$interface->assign('promptToFreezeHoldsImmediately', $user->promptToFreezeHoldsImmediately);
 		$interface->assign('onlyValidPickupLocation', $onlyValidPickupLocation ?? null);
 

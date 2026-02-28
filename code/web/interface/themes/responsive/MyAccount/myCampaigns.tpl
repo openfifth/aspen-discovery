@@ -1,4 +1,7 @@
 {strip}
+	{if !empty($accountMessages)}
+		{include file='systemMessages.tpl' messages=$accountMessages}
+	{/if}
 	<h1 id="my-campaigns-title">{translate text="Campaigns" isPublicFacing=true}</h1>
 	{if $webBuilderEnabled && $displayCampaignLeaderboard}
 		<h3 id="campaigns-leaderboard-link"><a href="/CommunityEngagement/Leaderboard">See the Leaderboard</a></h3>
@@ -79,7 +82,7 @@
 												<button class="btn btn-primary btn-sm campaign-btn campaign-btn-leave-leaderboard" aria-label="{$smarty.capture.leaveLeaderboard|strip_tags|escape:'html'}" onclick="AspenDiscovery.CommunityEngagement.optOutOfCampaignLeaderboard({$campaign->id}, {$userId});">{translate text="Leave Leaderboard " isPublicFacing=true}</button>
 											{/if}
 										{/if}
-									
+
 										{if $campaign->optInToCampaignEmailNotifications}
 											<button class="btn btn-primary btn-sm campaign-btn campaign-btn-email-opt-out" aria-label="{$smarty.capture.emailOptOut|strip_tags|escape:'html'}" onclick="AspenDiscovery.CommunityEngagement.optOutOfCampaignEmailNotifications({$campaign->id}, {$userId});">{translate text="Email Notifications Opt Out" isPublicFacing=true}</button>
 										{else}
@@ -1151,7 +1154,7 @@
 			if (campaignId) {
 				const targetRow = document.getElementById('campaign_' + campaignId);
 				const referenceButton = document.querySelector('.btn-primary');
-				
+
 				if (targetRow) {
 					setTimeout(() => {
 						targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
