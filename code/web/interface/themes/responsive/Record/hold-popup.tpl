@@ -245,7 +245,7 @@
 							<div class="row horizontalEditionSelector">
 								<div class="col-xs-12">
 									<div class="slider-container" role="region" id="slider-edition">
-										<button type="button" class="slider-button slider-button-prev btn btn-primary" id="slider-prev-edition"></button>
+										<button type="button" class="slider-button slider-button-prev btn btn-editions" id="slider-prev-edition"></button>
 										<div class="slider-wrapper" role="listbox" aria-activedescendant="slide-edition-0">
 											{assign var=firstEdition value=""}
 											{foreach from=$editionOptions item=edition name=editions}
@@ -270,7 +270,7 @@
 												</div>
 											{/foreach}
 										</div>
-										<button type="button" class="slider-button slider-button-next btn btn-primary" id="slider-next-edition"></button>
+										<button type="button" class="slider-button slider-button-next btn btn-editions" id="slider-next-edition"></button>
 								</div>
 									<script>
 										$(document).ready(function(){ldelim}
