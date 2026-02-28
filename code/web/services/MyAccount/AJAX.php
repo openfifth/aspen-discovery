@@ -915,6 +915,11 @@ class MyAccount_AJAX extends JSON_Action {
 				$cancelId = $hold->cancelId;
 				$holdType = $hold->source;
 				$isIll = $hold->isIll;
+				if ($hold->userId != $user->id) {
+					if ($user->getUserReferredTo($hold->userId)) {
+						$user = $user->getUserReferredTo($hold->userId);
+					}
+				}
 				if ($hold->cancelable) {
 					if ($holdType == 'ils') {
 						$tmpResult = $user->cancelHold($recordId, $cancelId, $isIll);

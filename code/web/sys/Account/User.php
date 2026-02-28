@@ -2685,7 +2685,11 @@ class User extends DataObject {
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
-
+				if ($hold->userId != $user->id) {
+					if ($user->getUserReferredTo($hold->userId)) {
+						$user = $user->getUserReferredTo($hold->userId);
+					}
+				}
 				if ($frozen == 0 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
 						$tmpResult = $user->freezeHold($recordId, $holdId, $reactivationDate);
@@ -2804,6 +2808,11 @@ class User extends DataObject {
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
+				if ($hold->userId != $user->id) {
+					if ($user->getUserReferredTo($hold->userId)) {
+						$user = $user->getUserReferredTo($hold->userId);
+					}
+				}
 
 				if ($frozen == 1 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
