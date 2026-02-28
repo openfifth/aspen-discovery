@@ -9471,6 +9471,8 @@ class MyAccount_AJAX extends JSON_Action {
 				$bookCoverInfo->mediumLoaded = 0;
 				$bookCoverInfo->largeLoaded = 0;
 				$bookCoverInfo->update();
+				// Update dateUpdated to refresh cached image
+				$listEntry->updateParentListDateUpdated();
 			}
 
 			return [
