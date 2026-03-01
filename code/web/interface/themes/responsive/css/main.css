@@ -10820,6 +10820,7 @@ td[data-entry-id]:has(.date-edit:focus)::after {
 .applied-filters .facetValueBadge {
   margin: 3px 3px 3px 3px;
   padding: 2px 7px 2px 5px;
+  border: 1px solid #999999;
   border-radius: 15px;
   font-size: smaller;
   display: inline-block;
@@ -11214,10 +11215,6 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   display: flex;
   width: 100%;
 }
-.slider-button {
-  cursor: pointer;
-  z-index: 2;
-}
 .slider-wrapper {
   display: flex;
   overflow: hidden;
@@ -11237,7 +11234,6 @@ td[data-entry-id]:has(.date-edit:focus)::after {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #fff !important;
   border: 2px solid #000 !important;
   display: flex;
   align-items: center;
