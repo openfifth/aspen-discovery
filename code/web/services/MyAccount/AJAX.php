@@ -915,7 +915,9 @@ class MyAccount_AJAX extends JSON_Action {
 				$cancelId = $hold->cancelId;
 				$holdType = $hold->source;
 				$isIll = $hold->isIll;
-				if ($hold->cancelable) {
+				$patronId = $hold->patronId ?? $user->id;
+				$patron = $user->getUserReferredTo($patronId);
+				if ($patron && $hold->cancelable) {
 					if ($holdType == 'ils') {
 						$tmpResult = $user->cancelHold($recordId, $cancelId, $isIll);
 						if ($tmpResult['success']) {
@@ -9471,6 +9473,8 @@ class MyAccount_AJAX extends JSON_Action {
 				$bookCoverInfo->mediumLoaded = 0;
 				$bookCoverInfo->largeLoaded = 0;
 				$bookCoverInfo->update();
+				// Update dateUpdated to refresh cached image
+				$listEntry->updateParentListDateUpdated();
 			}
 
 			return [
