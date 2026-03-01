@@ -186,9 +186,9 @@
 						<div class="row horizontalEditionSelector">
 							<div class="col-xs-12">
 								<div class="slider-container" role="region" id="slider-edition">
-									<div class="slider-button slider-button-prev" id="slider-prev-edition"></div>
+									<button type="button" class="slider-button slider-button-prev btn btn-editions" id="slider-prev-edition"></button>
 									<div class="slider-wrapper" role="listbox" aria-activedescendant="slide-edition-0"></div>
-									<div class="slider-button slider-button-next" id="slider-next-edition"></div>
+									<button type="button" class="slider-button slider-button-next btn btn-editions" id="slider-next-edition"></button>
 								</div>
 							</div>
 						</div>
