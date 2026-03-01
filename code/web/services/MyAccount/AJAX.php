@@ -11946,8 +11946,6 @@ class MyAccount_AJAX extends JSON_Action {
 			'id' => 'Id (Default)',
 			'created_asc' => 'Date Saved (Oldest First)',
 			'created_desc' => 'Date Saved (Newest First)',
-			'query_asc' => 'Query (A-Z)',
-			'query_desc' => 'Query (Z-A)',
 			'title_asc' => 'Name (A-Z)',
 			'title_desc' => 'Name (Z-A)',
 		];
@@ -12005,12 +12003,6 @@ class MyAccount_AJAX extends JSON_Action {
 					break;
 				case 'created_desc':
 					$savedSearch->orderBy('created DESC');
-					break;
-				case 'query_asc':
-					$savedSearch->orderBy('description ASC');
-					break;
-				case 'query_desc':
-					$savedSearch->orderBy('description DESC');
 					break;
 				case 'source_asc':
 					$savedSearch->orderBy('searchSource ASC');
