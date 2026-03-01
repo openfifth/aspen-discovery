@@ -115,7 +115,7 @@
 								allowfullscreen=""
 								loading="lazy"
 								referrerpolicy="no-referrer-when-downgrade"
-								src="https://maps.google.com/?ie=UTF8&t=m&ll={$curLocation.latitude},{$curLocation.longitude}&spn=0.003381,0.017231&z=16&output=embed">
+								src="https://maps.google.com/?ie=UTF8&t=m&q={$curLocation.latitude},{$curLocation.longitude}&spn=0.003381,0.017231&z=16&output=embed">
 						</iframe>
 					</div>
 				{/if}
