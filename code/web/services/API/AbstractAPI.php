@@ -131,11 +131,22 @@ abstract class AbstractAPI extends Action{
 	 * @return array
 	 * @noinspection PhpUnused
 	 */
-	function getValidSourcesForLiDA(): array {
-		return [
-			'GroupedWork',
-			'List',
-			'Events'
-		];
+	public static function getValidSourcesForLiDA($context = 'browseCategory'): array {
+		if ($context == 'search') {
+			return [
+				'event_assabet',
+				'event_communico',
+				'event_libcal',
+				'library_calendar_event',
+				'event_aspenEvent',
+				'grouped_work'
+			];
+		} else {
+			return [
+				'GroupedWork',
+				'List',
+				'Events'
+			];
+		}
 	}
 }
