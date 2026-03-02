@@ -118,17 +118,12 @@ function addBillReasonTranslationMap(&$update): void {
 	$accountProfiles = new AccountProfile();
 	$accountProfiles->find();
 	while ($accountProfiles->fetch()) {
-		if ($accountProfiles->ils != 'na') {
-			$ils = $accountProfiles->ils;
-		}
-	}
-	if ($ils == 'symphony') {
-		require_once ROOT_DIR . '/sys/Indexing/IndexingProfile.php';
-		$indexingProfile = new IndexingProfile();
-		$indexingProfile->find();
-		while ($indexingProfile->fetch()) {
-			global $aspen_db;
-			$aspen_db->query("INSERT INTO translation_maps (indexingProfileId, name) VALUES ($indexingProfile->id, 'bill_reason')");
+		if ($accountProfiles->ils == 'symphony') {
+			$indexingProfile = $accountProfiles->getIndexingProfile();
+			if ($indexingProfile) {
+				global $aspen_db;
+				$aspen_db->query("INSERT INTO translation_maps (indexingProfileId, name) VALUES ($indexingProfile->id, 'bill_reason')");
+			}
 		}
 	}
 }
