@@ -190,8 +190,8 @@ class ListAPI extends AbstractAPI {
 	 * includes id, title, description, and number of titles
 	 */
 	function getSearchableLists() {
-		$useSolr = $_REQUEST['useSolr'] ?? false;
-		if ($useSolr) {
+		$restrictByLibrary = $_REQUEST['restrictByLibrary'] ?? false;
+		if ($restrictByLibrary) {
 			$titleFilter = $_REQUEST['title'] ?? null;
 			global $timer;
 			/** @var SearchObject_ListsSearcher $searchObject */
