@@ -310,4 +310,68 @@ class EventInstance extends DataObject {
 		$length = $this->length > 0 ? $this->length : ($this->getParentEvent()->eventLength ?? 60);
 		return (clone $this->getStartDateTime())->modify("+{$length} minutes");
 	}
+
+	public function toApiResponse(): array {
+		$event = $this->getParentEvent();
+
+		$location = new Location();
+		$location->locationId = $event->locationId;
+		$venueName = null;
+		$organizer = null;
+		if ($location->find(true)) {
+			$venueName = $location->displayName;
+			require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
+			$library = new Library();
+			$library->libraryId = $location->libraryId;
+			if ($library->find(true)) {
+				$organizer = $library->displayName;
+			}
+		}
+
+		$tags = [];
+		$fieldValues = $event->getAllTypeFields();
+		if (!empty($fieldValues)) {
+			require_once ROOT_DIR . '/sys/Events/EventField.php';
+			foreach ($fieldValues as $fieldId => $value) {
+				$fieldDef = new EventField();
+				$fieldDef->id = $fieldId;
+				if ($fieldDef->find(true) && !empty($value)) {
+					$tags[] = ['name' => $fieldDef->name, 'value' => $value];
+				}
+			}
+		}
+
+		$effectiveSeats = $this->numberOfSeats ?? $event->numberOfSeats;
+
+		$recurrence = $event->getRecurrence();
+
+		global $configArray;
+		$bookingUrl = $configArray['Site']['url'] . '/AspenEvents/aspenEvents_' . $this->eventId . '_' . $this->id . '/Event';
+
+		return [
+			'id' => (int)$this->id,
+			'eventId' => (int)$this->eventId,
+			'startDateTime' => $this->getStartDateTime()->format('c'),
+			'endDateTime' => $this->getEndDateTime()->format('c'),
+			'status' => (bool)$this->status,
+			'bookingUrl' => $bookingUrl,
+			'ticketAvailability' => [
+				'isSoldOut' => $effectiveSeats !== null && $effectiveSeats <= 0,
+				'hasAvailableTickets' => $effectiveSeats === null || $effectiveSeats > 0,
+			],
+			'event' => [
+				'title' => $event->title,
+				'description' => strip_tags($event->description),
+				'isFree' => true,
+				'venueName' => $venueName,
+				'organizer' => $organizer,
+				'eventImageURL' => $event->cover,
+				'tags' => $tags,
+				'isRecurring' => $recurrence !== null,
+				'recurrencePattern' => $recurrence['type'] ?? null,
+				'capacity' => $effectiveSeats ? (int)$effectiveSeats : null,
+				'private' => (bool)$event->private,
+			],
+		];
+	}
 }
