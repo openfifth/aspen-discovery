@@ -269,13 +269,13 @@ class Events_EventManagement extends Admin_Admin {
 					$index = $customFieldValues[$field['id']];
 
 					if (array_key_exists($index, $allowableValues)) { // prevents skipping index 0
-						$row[] = $allowableValues[$index] ?? '';
+						$row[] = trim($allowableValues[$index]) ?? '';
 					} else {
 						$row[] = '';
 					}
 					continue;
 				} 
-				$row[] = $customFieldValues[$field['id']] ?? '';
+				$row[] = trim($customFieldValues[$field['id']]) ?? '';
 			}
 
 			fputcsv($output, $row);
