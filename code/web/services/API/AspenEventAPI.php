@@ -49,11 +49,23 @@ class AspenEventAPI extends AbstractAPI {
 	function getPrivateAspenEvents(): array {
 		require_once ROOT_DIR . '/sys/Events/Event.php';
 
+		$user = $this->getAuthorizedUser();
 		$event = new Event();
 		$event->deleted = 0;
 
 		if (!empty($_REQUEST['locationId'])) {
 			$event->locationId = $_REQUEST['locationId'];
+		}
+
+		if (!$user->hasPermission('View Private Events for All Locations')) {
+			if ($user->hasPermission('View Private Events for Home Library Locations')) {
+				$locationsInLibrary = array_keys(Location::getLocationList(true));
+				$event->whereAdd("(private = 0 OR locationId IN (" . implode(", ", $locationsInLibrary) . "))");
+			} else {
+				$locations = array_keys($user->getAdditionalAdministrationLocations());
+				$locations[] = $user->homeLocationId;
+				$event->whereAdd("(private = 0 OR locationId IN (" . implode(", ", $locations) . "))");
+			}
 		}
 
 		return $this->paginateQuery($event, 'startDate ASC, startTime ASC', function ($row) {

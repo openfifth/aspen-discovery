@@ -1,0 +1,301 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Aspen Event Instances API",
+    "version": "1.0.0",
+    "description": "API for querying Aspen native event instances (occurrences) with event context for harvesting services."
+  },
+  "servers": [
+    {
+      "url": "https://{aspenDomain}/API/AspenEventInstanceAPI?method=",
+      "variables": {
+        "aspenDomain": {
+          "default": "example.aspendiscovery.org",
+          "description": "The URL of the Aspen instance"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "getEventInstances": {
+      "get": {
+        "summary": "Get instances from public Aspen native events",
+        "description": "Returns a paginated list of event instances (occurrences) from public Aspen native events with full event context for harvesting.",
+        "x-aspen-authorization": {
+          "scope": "user"
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination."
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of results per page (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "eventId",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter instances by event ID."
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Only return instances on or after this date (YYYY-MM-DD)."
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Only return instances on or before this date (YYYY-MM-DD)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of event instances.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedInstanceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or access denied."
+          }
+        }
+      }
+    },
+    "getPrivateEventInstances": {
+      "get": {
+        "summary": "Get all event instances including from private events",
+        "description": "Returns a paginated list of all event instances including those from private events. Results are scoped based on the user's permission tier.",
+        "x-aspen-authorization": {
+          "scope": "user",
+          "permissions": [
+            "View Private Events for All Locations",
+            "View Private Events for Home Library Locations",
+            "View Private Events for Home Location"
+          ]
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            },
+            "description": "Page number for pagination."
+          },
+          {
+            "in": "query",
+            "name": "pageSize",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Number of results per page (max 100)."
+          },
+          {
+            "in": "query",
+            "name": "eventId",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Filter instances by event ID."
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Only return instances on or after this date (YYYY-MM-DD)."
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "description": "Only return instances on or before this date (YYYY-MM-DD)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of all event instances including from private events.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedInstanceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid credentials or access denied."
+          },
+          "403": {
+            "description": "Forbidden - User does not have required permissions."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "PaginatedInstanceResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean"
+          },
+          "totalResults": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventInstance"
+            }
+          }
+        }
+      },
+      "EventInstance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "eventId": {
+            "type": "integer"
+          },
+          "startDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "boolean"
+          },
+          "bookingUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "ticketAvailability": {
+            "type": "object",
+            "properties": {
+              "isSoldOut": {
+                "type": "boolean"
+              },
+              "hasAvailableTickets": {
+                "type": "boolean"
+              }
+            }
+          },
+          "event": {
+            "$ref": "#/components/schemas/EventContext"
+          }
+        }
+      },
+      "EventContext": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "isFree": {
+            "type": "boolean"
+          },
+          "venueName": {
+            "type": "string"
+          },
+          "organizer": {
+            "type": "string"
+          },
+          "eventImageURL": {
+            "type": "string",
+            "nullable": true
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "isRecurring": {
+            "type": "boolean"
+          },
+          "recurrencePattern": {
+            "type": "string",
+            "nullable": true
+          },
+          "capacity": {
+            "type": "integer",
+            "nullable": true
+          },
+          "private": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  }
+}
