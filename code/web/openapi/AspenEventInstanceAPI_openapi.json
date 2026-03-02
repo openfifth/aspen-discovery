@@ -199,54 +199,17 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/EventInstance"
+              "$ref": "#/components/schemas/EventWithInstances"
             }
           }
         }
       },
-      "EventInstance": {
+      "EventWithInstances": {
         "type": "object",
         "properties": {
           "id": {
             "type": "integer"
           },
-          "eventId": {
-            "type": "integer"
-          },
-          "startDateTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "endDateTime": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "status": {
-            "type": "boolean"
-          },
-          "bookingUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "ticketAvailability": {
-            "type": "object",
-            "properties": {
-              "isSoldOut": {
-                "type": "boolean"
-              },
-              "hasAvailableTickets": {
-                "type": "boolean"
-              }
-            }
-          },
-          "event": {
-            "$ref": "#/components/schemas/EventContext"
-          }
-        }
-      },
-      "EventContext": {
-        "type": "object",
-        "properties": {
           "title": {
             "type": "string"
           },
@@ -293,6 +256,45 @@
           },
           "private": {
             "type": "boolean"
+          },
+          "instances": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventInstance"
+            }
+          }
+        }
+      },
+      "EventInstance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "startDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "endDateTime": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "status": {
+            "type": "boolean"
+          },
+          "bookingUrl": {
+            "type": "string"
+          },
+          "ticketAvailability": {
+            "type": "object",
+            "properties": {
+              "isSoldOut": {
+                "type": "boolean"
+              },
+              "hasAvailableTickets": {
+                "type": "boolean"
+              }
+            }
           }
         }
       }
