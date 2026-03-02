@@ -2279,7 +2279,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 					$fines[] = [
 						'fineId' => str_replace(':', '_', $block->key),
 						'reason' => translate([
-							'text' => $translatedValue,
+							'text' => $billReason,
 							'isPublicFacing' => true,
 							'isAdminEnteredData' => true,
 						]),
