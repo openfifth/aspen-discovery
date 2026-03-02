@@ -10819,7 +10819,6 @@ td[data-entry-id]:has(.date-edit:focus)::after {
 .applied-filters .facetValueBadge {
   margin: 3px 3px 3px 3px;
   padding: 2px 7px 2px 5px;
-  border: 1px solid #999999;
   border-radius: 15px;
   font-size: smaller;
   display: inline-block;
