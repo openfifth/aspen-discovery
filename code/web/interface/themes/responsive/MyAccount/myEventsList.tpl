@@ -55,7 +55,9 @@
 													<span>{translate text="On waiting list" isPublicFacing=true}</span>
 												{/if}
 											{else}
-												{if !$event.waitingListFull}
+												{if !$event.isEventFull}
+													<span>{translate text="Registration available" isPublicFacing=true}</span>
+												{elseif !$event.waitingListFull}
 													<span>{translate text="Waiting List available" isPublicFacing=true}</span>
 												{else}
 													<span>{translate text="Registration unavailable" isPublicFacing=true}</span>
