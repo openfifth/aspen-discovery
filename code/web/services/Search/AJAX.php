@@ -666,11 +666,35 @@ class AJAX extends Action {
 						$appliedFacetValues = $appliedFacets[$facetTitle];
 						ksort($appliedFacetValues);
 					}
+					$lockSection = $restoredSearch->getSearchName();
+					if (UserAccount::isLoggedIn()) {
+						$user = UserAccount::getActiveUserObj();
+						$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
+					} else {
+						$lockedFacets = $_SESSION['lockedFilters'] ?? [];
+					}
+					$lockedValues = $lockedFacets[$lockSection][$facetName] ?? [];
+					if (!empty($lockedValues)) {
+						foreach ($appliedFacetValues as &$appliedFacetValue) {
+							if (!empty($appliedFacetValue['value']) && in_array($appliedFacetValue['value'], $lockedValues, true)) {
+								$appliedFacetValue['isLocked'] = true;
+							}
+						}
+						unset($appliedFacetValue);
+					}
 					$interface->assign('appliedFacetValues', $appliedFacetValues);
 
 					$allFacets = $restoredSearch->getFacetList();
 					$topResults = $allFacets[$facetName];
 					ksort($topResults['list'], SORT_NATURAL | SORT_FLAG_CASE);
+					if (!empty($lockedValues)) {
+						foreach ($topResults['list'] as &$facetValue) {
+							if (!empty($facetValue['value']) && in_array($facetValue['value'], $lockedValues, true)) {
+								$facetValue['isLocked'] = true;
+							}
+						}
+						unset($facetValue);
+					}
 					$interface->assign('topResults', $topResults['list']);
 					$buttons = '';
 					if ($isMultiSelect) {
@@ -770,12 +794,36 @@ class AJAX extends Action {
 						$appliedFacetValues = $appliedFacets[$facetTitle];
 						ksort($appliedFacetValues, SORT_NATURAL | SORT_FLAG_CASE);
 					}
+					$lockSection = $restoredSearch->getSearchName();
+					if (UserAccount::isLoggedIn()) {
+						$user = UserAccount::getActiveUserObj();
+						$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
+					} else {
+						$lockedFacets = $_SESSION['lockedFilters'] ?? [];
+					}
+					$lockedValues = $lockedFacets[$lockSection][$facetName] ?? [];
+					if (!empty($lockedValues)) {
+						foreach ($appliedFacetValues as &$appliedFacetValue) {
+							if (!empty($appliedFacetValue['value']) && in_array($appliedFacetValue['value'], $lockedValues, true)) {
+								$appliedFacetValue['isLocked'] = true;
+							}
+						}
+						unset($appliedFacetValue);
+					}
 					$interface->assign('appliedFacetValues', $appliedFacetValues);
 
 					$allFacets = $newSearch->getFacetList();
 					if (isset($allFacets[$facetName])) {
 						$facetSearchResults = $allFacets[$facetName];
 						ksort($facetSearchResults['list'], SORT_NATURAL | SORT_FLAG_CASE);
+						if (!empty($lockedValues)) {
+							foreach ($facetSearchResults['list'] as &$facetValue) {
+								if (!empty($facetValue['value']) && in_array($facetValue['value'], $lockedValues, true)) {
+									$facetValue['isLocked'] = true;
+								}
+							}
+							unset($facetValue);
+						}
 						$interface->assign('facetSearchResults', $facetSearchResults['list']);
 						return [
 							'success' => true,
