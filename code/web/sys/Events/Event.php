@@ -1091,7 +1091,7 @@ class Event extends DataObject {
 
 		$instances = [];
 		while ($instanceQuery->fetch()) {
-			$solrId = 'aspenEvents_' . $this->id . '_' . $instanceQuery->id;
+			$solrId = 'aspenEvent_' . $this->id . '_' . $instanceQuery->id;
 			$effectiveSeats = $instanceQuery->numberOfSeats ?? $this->numberOfSeats;
 			$instances[] = [
 				'id' => (int)$instanceQuery->id,
@@ -1108,7 +1108,7 @@ class Event extends DataObject {
 
 		$eventImageURL = null;
 		if ($this->cover && !empty($instances)) {
-			$firstSolrId = 'aspenEvents_' . $this->id . '_' . $instances[0]['id'];
+			$firstSolrId = 'aspenEvent_' . $this->id . '_' . $instances[0]['id'];
 			$eventImageURL = $siteUrl . '/bookcover.php?id=' . $firstSolrId . '&size=medium&type=aspenEvent_event';
 		}
 
