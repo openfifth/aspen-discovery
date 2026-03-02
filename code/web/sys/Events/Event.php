@@ -1089,6 +1089,91 @@ class Event extends DataObject {
 		];
 	}
 
+	public function toHarvestApiResponse(array $dateFilters = []): array {
+		$location = new Location();
+		$location->locationId = $this->locationId;
+		$venueName = null;
+		$organizer = null;
+		if ($location->find(true)) {
+			$venueName = $location->displayName;
+			require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
+			$library = new Library();
+			$library->libraryId = $location->libraryId;
+			if ($library->find(true)) {
+				$organizer = $library->displayName;
+			}
+		}
+
+		$tags = [];
+		$fieldValues = $this->getAllTypeFields();
+		if (!empty($fieldValues)) {
+			require_once ROOT_DIR . '/sys/Events/EventField.php';
+			foreach ($fieldValues as $fieldId => $value) {
+				$fieldDef = new EventField();
+				$fieldDef->id = $fieldId;
+				if ($fieldDef->find(true) && !empty($value)) {
+					$tags[] = ['name' => $fieldDef->name, 'value' => $value];
+				}
+			}
+		}
+
+		$recurrence = $this->getRecurrence();
+
+		$instanceQuery = new EventInstance();
+		$instanceQuery->eventId = $this->id;
+		$instanceQuery->deleted = 0;
+		if (!empty($dateFilters['startDate'])) {
+			$instanceQuery->whereAdd("date >= " . $instanceQuery->escape($dateFilters['startDate']));
+		}
+		if (!empty($dateFilters['endDate'])) {
+			$instanceQuery->whereAdd("date <= " . $instanceQuery->escape($dateFilters['endDate']));
+		}
+		$instanceQuery->orderBy('date ASC, time ASC');
+		$instanceQuery->find();
+
+		global $configArray;
+		$siteUrl = $configArray['Site']['url'];
+
+		$instances = [];
+		while ($instanceQuery->fetch()) {
+			$solrId = 'aspenEvents_' . $this->id . '_' . $instanceQuery->id;
+			$effectiveSeats = $instanceQuery->numberOfSeats ?? $this->numberOfSeats;
+			$instances[] = [
+				'id' => (int)$instanceQuery->id,
+				'startDateTime' => $instanceQuery->getStartDateTime()->format('c'),
+				'endDateTime' => $instanceQuery->getEndDateTime()->format('c'),
+				'status' => (bool)$instanceQuery->status,
+				'bookingUrl' => $siteUrl . '/AspenEvents/' . $solrId . '/Event',
+				'ticketAvailability' => [
+					'isSoldOut' => $effectiveSeats !== null && $effectiveSeats <= 0,
+					'hasAvailableTickets' => $effectiveSeats === null || $effectiveSeats > 0,
+				],
+			];
+		}
+
+		$eventImageURL = null;
+		if ($this->cover && !empty($instances)) {
+			$firstSolrId = 'aspenEvents_' . $this->id . '_' . $instances[0]['id'];
+			$eventImageURL = $siteUrl . '/bookcover.php?id=' . $firstSolrId . '&size=medium&type=aspenEvent_event';
+		}
+
+		return [
+			'id' => (int)$this->id,
+			'title' => $this->title,
+			'description' => strip_tags($this->description),
+			'isFree' => true,
+			'venueName' => $venueName,
+			'organizer' => $organizer,
+			'eventImageURL' => $eventImageURL,
+			'tags' => $tags,
+			'isRecurring' => $recurrence !== null,
+			'recurrencePattern' => $recurrence['type'] ?? null,
+			'capacity' => $this->numberOfSeats ? (int)$this->numberOfSeats : null,
+			'private' => (bool)$this->private,
+			'instances' => $instances,
+		];
+	}
+
 	public function getRecurrence(): ?array {
 		$recurrenceOption = (int)$this->recurrenceOption;
 
