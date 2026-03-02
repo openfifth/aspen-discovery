@@ -251,7 +251,6 @@ class EventInstance extends DataObject {
 		}
 
 		$waitingListCount = $this->getWaitingListCount();
-		global $logger;
 		if ($waitingListCount > 0) {
 			return 0;
 		}
