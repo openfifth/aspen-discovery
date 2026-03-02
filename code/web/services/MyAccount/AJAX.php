@@ -12292,7 +12292,10 @@ class MyAccount_AJAX extends JSON_Action {
 			if (!($user->find(true))) {
 				continue;
 			}
-			$this->sendEventEmail($user, $changeType, $userInstances);
+
+			if ($user->eventRegistrationNotificationsByEmail == 1) {
+				$this->sendEventEmail($user, $changeType, $userInstances);
+			}
 
 			$homeLibrary = Library::getPatronHomeLibrary();
 			if (is_null($homeLibrary)){
@@ -12348,6 +12351,9 @@ class MyAccount_AJAX extends JSON_Action {
 			'changeType' => $changeType, 
 			'instances' => $formattedInstances, 
 		];
+
+		global $logger;
+		$logger->log('sendEmail called for use with Id: ' . $user->id, Logger::LOG_ERROR);
 
 			$emailTemplate->sendEmail($user->email, $parameters);
 	}
