@@ -325,12 +325,13 @@ AspenDiscovery.Searches = (function(){
 				var $badge = $(this);
 				var removalUrl = $badge.data("removal-url");
 				var display = $badge.data("filter-display");
+				var value = $badge.data("filter-value");
 				$badge.off("click.locked");
 				if (isLocked) {
 					$badge.attr("aria-label", "Unlock and remove Filter");
 					$badge.on("click.locked", function(e){
 						e.preventDefault();
-						AspenDiscovery.Searches.unlockFacetAndRemove(clusterName, removalUrl);
+						AspenDiscovery.Searches.unlockFacetAndRemove(clusterName, removalUrl, value);
 					});
 					$badge.html('<i class="fas fa-lock fa-lg fa-fw" style="display:inline; vertical-align: middle"></i> ' + display);
 				} else {
@@ -340,10 +341,15 @@ AspenDiscovery.Searches = (function(){
 			});
 		},
 
-		unlockFacetAndRemove: function (clusterName, removalUrl) {
+		unlockFacetAndRemove: function (clusterName, removalUrl, facetValue) {
 			event.stopPropagation();
 			var url = Globals.path + "/Search/AJAX";
-			var params = "method=unlockFacet&facet=" + encodeURIComponent(clusterName);
+			var params;
+			if (facetValue !== undefined && facetValue !== null && facetValue !== "") {
+				params = "method=unlockFacet&facet=" + encodeURIComponent(clusterName) + "&value=" + encodeURIComponent(facetValue);
+			} else {
+				params = "method=unlockFacet&facet=" + encodeURIComponent(clusterName);
+			}
 			var fullUrl = url + "?" + params;
 			$.getJSON(fullUrl,
 				function(data) {

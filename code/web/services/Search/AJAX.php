@@ -531,6 +531,7 @@ class AJAX extends Action {
 		$activeSearch = $searchObject->loadLastSearch();
 		$lockSection = $activeSearch->getSearchName();
 		$facetToUnlock = $_REQUEST['facet'];
+		$facetValueToUnlock = $_REQUEST['value'] ?? null;
 
 		if (UserAccount::isLoggedIn()) {
 			$user = UserAccount::getActiveUserObj();
@@ -540,7 +541,14 @@ class AJAX extends Action {
 		}
 
 		if (isset($lockedFacets[$lockSection][$facetToUnlock])) {
-			unset($lockedFacets[$lockSection][$facetToUnlock]);
+			if (!empty($facetValueToUnlock) && is_array($lockedFacets[$lockSection][$facetToUnlock])) {
+				$lockedFacets[$lockSection][$facetToUnlock] = array_values(array_diff($lockedFacets[$lockSection][$facetToUnlock], [$facetValueToUnlock]));
+				if (empty($lockedFacets[$lockSection][$facetToUnlock])) {
+					unset($lockedFacets[$lockSection][$facetToUnlock]);
+				}
+			} else {
+				unset($lockedFacets[$lockSection][$facetToUnlock]);
+			}
 			if (UserAccount::isLoggedIn()) {
 				$user = UserAccount::getActiveUserObj();
 				$user->lockedFacets = json_encode($lockedFacets);

@@ -13,7 +13,7 @@
 			<label for="{$title}_{$thisFacet.value|escapeCSS}">
 				<input type="checkbox" {if !empty($thisFacet.isApplied)}checked{/if} name="{$title}_{$thisFacet.value|escapeCSS}" id="{$title}_{$thisFacet.value|escapeCSS}"
 						{if !empty($thisFacet.isApplied) && !empty($thisFacet.isLocked)}
-							onclick="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}');" onkeypress="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}');"
+							onclick="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}', '{$thisFacet.value|escape:'javascript'}');" onkeypress="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}', '{$thisFacet.value|escape:'javascript'}');"
 						{else}
 							onclick="document.location = '{if !empty($thisFacet.isApplied)}{$thisFacet.removalUrl|escape}{else}{$thisFacet.url|escape}{/if}';" onkeypress="document.location = '{if !empty($thisFacet.isApplied)}{$thisFacet.removalUrl|escape}{else}{$thisFacet.url|escape}{/if}';"
 						{/if}>
@@ -66,7 +66,7 @@
 			<label for="{$title}_{$thisFacet.value|escapeCSS}">
 				<input type="checkbox" {if !empty($thisFacet.isApplied)}checked{/if} name="{$title}_{$thisFacet.value|escapeCSS}" id="{$title}_{$thisFacet.value|escapeCSS}"
 						{if !empty($thisFacet.isApplied) && !empty($thisFacet.isLocked)}
-							onclick="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}');" onkeypress="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}');"
+							onclick="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}', '{$thisFacet.value|escape:'javascript'}');" onkeypress="return AspenDiscovery.Searches.unlockFacetAndRemove('{$title}', '{$thisFacet.removalUrl|escape}', '{$thisFacet.value|escape:'javascript'}');"
 						{else}
 							onclick="document.location = '{if !empty($thisFacet.isApplied)}{$thisFacet.removalUrl|escape}{else}{$thisFacet.url|escape}{/if}';" onkeypress="document.location = '{if !empty($thisFacet.isApplied)}{$thisFacet.removalUrl|escape}{else}{$thisFacet.url|escape}{/if}';"
 						{/if}>
