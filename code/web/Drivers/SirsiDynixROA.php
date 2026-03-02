@@ -2247,6 +2247,14 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			$totalFinesOwed = 0;
 
 			if (!empty($blockList->fields->blockList)) {
+				$indexingProfileId = $this->getIndexingProfile()->id;
+				require_once ROOT_DIR . '/sys/Indexing/TranslationMap.php';
+				$billReasonTranslation = new TranslationMap();
+				$billReasonTranslation->name = "bill_reason";
+				$billReasonTranslation->indexingProfileId = $indexingProfileId;
+				$billReasonTranslation->find();
+				$billReasonTranslation->fetch();
+
 				foreach ($blockList->fields->blockList as $block) {
 					$fine = $block->fields;
 					$title = '';
@@ -2261,11 +2269,12 @@ class SirsiDynixROA extends AbstractIlsDriver {
 							$barcode = $fine->item->fields->barcode;
 						}
 					}
+					$translatedValue = $billReasonTranslation->translate($fine->block->key);
 
 					$fines[] = [
 						'fineId' => str_replace(':', '_', $block->key),
 						'reason' => translate([
-							'text' => $fine->block->key,
+							'text' => $translatedValue,
 							'isPublicFacing' => true,
 							'isAdminEnteredData' => true,
 						]),
