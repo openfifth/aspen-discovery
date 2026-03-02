@@ -16,6 +16,15 @@ function getUpdates26_03_00(): array {
 		 ], //name*/
 
 		//mark n
+		'add_locations_to_exclude_availability_for' => [
+			'title' => 'Add Locations to Exclude Availability For',
+			'description' => 'Add Locations to Exclude Availability For',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library add column locationsToExcludeAvailabilityFor varchar(255) NOT NULL DEFAULT ''",
+				"ALTER TABLE location add column locationsToExcludeAvailabilityFor varchar(255) NOT NULL DEFAULT ''",
+			]
+		], //add_locations_to_exclude_availability_for
 
 		//kirstien
 		'add_cloud_library_sunday_reindex_option' => [
