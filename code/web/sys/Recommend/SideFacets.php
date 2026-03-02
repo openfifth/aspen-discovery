@@ -73,6 +73,7 @@ class SideFacets implements RecommendationInterface {
 		$lockedValuesByUnscoped = [];
 		foreach ($lockedFacets as $lockedFacetKey => $lockedValues) {
 			$unscopedKey = $this->searchObject->getUnscopedFieldName($lockedFacetKey);
+			// To make sure the scoped field (e.g. available_at_main) still shows as locked even when the field names differ.
 			if (!isset($lockedValuesByUnscoped[$unscopedKey])) {
 				$lockedValuesByUnscoped[$unscopedKey] = [];
 			}
@@ -356,6 +357,10 @@ class SideFacets implements RecommendationInterface {
 		if ($facetSetting->sortMode == 'alphabetically') {
 			asort($sideFacets[$facetKey]['list']);
 		}
+		$lockedValues = $lockedFacets[$facetKey] ?? [];
+		if (!empty($sideFacets[$facetKey]['list'])) {
+			$sideFacets[$facetKey]['list'] = $this->reorderFacetValues($sideFacets[$facetKey]['list'], $lockedValues);
+		}
 		if ($facetSetting->numEntriesToShowByDefault > 0) {
 			$sideFacets[$facetKey]['valuesToShow'] = $facetSetting->numEntriesToShowByDefault;
 		}
@@ -369,18 +374,8 @@ class SideFacets implements RecommendationInterface {
 			$sideFacets[$facetKey]['showMoreFacetPopup'] = true;
 			$facetsList = $sideFacets[$facetKey]['list'];
 			if ($facetSetting->multiSelect) {
-				$tmpList = $sideFacets[$facetKey]['list'];
-				$sideFacets[$facetKey]['list'] = [];
-				//Make sure all applied facets are shown first
-				foreach ($tmpList as $key => $value) {
-					if ($value['isApplied']) {
-						$sideFacets[$facetKey]['list'][$key] = $value;
-						unset($sideFacets[$key]);
-					}
-				}
-				$tmpList = array_slice($facetsList, 0, $facetSetting->numEntriesToShowByDefault);
-				$sideFacets[$facetKey]['list'] = array_merge($sideFacets[$facetKey]['list'], $tmpList);
-				$sideFacets[$facetKey]['fullUnsortedList'] = array_merge($sideFacets[$facetKey]['list'], $facetsList);
+				$sideFacets[$facetKey]['list'] = array_slice($facetsList, 0, $facetSetting->numEntriesToShowByDefault);
+				$sideFacets[$facetKey]['fullUnsortedList'] = $facetsList;
 			} else {
 				$sideFacets[$facetKey]['list'] = array_slice($facetsList, 0, $facetSetting->numEntriesToShowByDefault);
 				$sideFacets[$facetKey]['fullUnsortedList'] = $facetsList;
@@ -401,5 +396,31 @@ class SideFacets implements RecommendationInterface {
 		$sideFacets[$facetKey]['canLock'] = $facetSetting->canLock;
 		$sideFacets[$facetKey]['displayNamePlural'] = empty($facetSetting->displayNamePlural) ? $facetSetting->displayName : $facetSetting->displayNamePlural;
 		return $sideFacets;
+	}
+
+	/**
+	 * Reorder the facet values to alwasy show applied values, then the other values
+	 * @param array $facetList
+	 * @param array $lockedValues
+	 * @return array
+	 */
+	private function reorderFacetValues(array $facetList, array $lockedValues): array {
+		if (empty($facetList)) {
+			return $facetList;
+		}
+		$applied = [];
+		$other = [];
+		foreach ($facetList as $key => $value) {
+			if (!empty($lockedValues) && isset($value['value']) && in_array($value['value'], $lockedValues, true)) {
+				$value['isLocked'] = true;
+			}
+			if (!empty($value['isApplied'])) {
+				$applied[$key] = $value;
+			} else {
+				$other[$key] = $value;
+			}
+		}
+		return $applied + $other;
+
 	}
 }
