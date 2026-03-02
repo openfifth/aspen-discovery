@@ -6611,6 +6611,7 @@ class Library extends DataObject {
 			$catalogRegistrationCapabilities = $catalog->getRegistrationCapabilities();
 			$suspendRequiresReactivationDate = $catalog->suspendRequiresReactivationDate();
 			$showDateWhenSuspending = $catalog->showDateWhenSuspending();
+			$reactivateDateNotRequired = $catalog->reactivateDateNotRequired();
 		}
 
 		$accountProfile = $this->getAccountProfile();
@@ -6626,6 +6627,7 @@ class Library extends DataObject {
 		$apiInfo['catalogRegistrationCapabilities'] = $catalogRegistrationCapabilities;
 		$apiInfo['suspendRequiresReactivationDate'] = $suspendRequiresReactivationDate;
 		$apiInfo['showDateWhenSuspending'] = $showDateWhenSuspending;
+		$apiInfo['reactivateDateNotRequired'] = $reactivateDateNotRequired;
 
 		$superScopeLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelSuperScope;
 		$localLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelLocal;
@@ -6655,12 +6657,10 @@ class Library extends DataObject {
 			$apiInfo['generalSettings']['autoRotateCard'] = 0;
 			$apiInfo['enableSelfRegistrationInApp'] = 0;
 			$apiInfo['showMoreInfoBtn'] = 0;
-			$apiInfo['allowIndefiniteHoldFreezes'] = 0;
 		} else {
 			$apiInfo['generalSettings']['autoRotateCard'] = $generalSettings->autoRotateCard ?? 0;
 			$apiInfo['enableSelfRegistrationInApp'] = $generalSettings->enableSelfRegistration ?? 0;
 			$apiInfo['showMoreInfoBtn'] = (int)$generalSettings->showMoreInfoBtn ?? 0;
-			$apiInfo['allowIndefiniteHoldFreezes'] = (int)$generalSettings->allowIndefiniteHoldFreezes ?? 0;
 		}
 
 		$apiInfo['hasEventSettings'] = $this->hasEventSettings();

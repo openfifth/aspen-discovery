@@ -207,8 +207,7 @@ CREATE TABLE `aspen_lida_general_settings` (
   `name` varchar(50) NOT NULL,
   `autoRotateCard` tinyint(1) DEFAULT 0,
   `enableSelfRegistration` tinyint(4) DEFAULT 0,
-  `showMoreInfoBtn` tinyint(1) DEFAULT 1,
-  `allowIndefiniteHoldFreezes` tinyint(1) DEFAULT 0
+  `showMoreInfoBtn` tinyint(1) DEFAULT 1
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 DROP TABLE IF EXISTS aspen_lida_location_settings;
