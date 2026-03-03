@@ -25,7 +25,7 @@ class SystemAPI extends AbstractAPI {
 		}else if ($method === 'getTranslation' 
 			|| $method === 'getTranslationWithValues' 
 			|| $method === 'getBulkTranslations'
-			|| $method === 'getFirebaseSettings') {// TODO determine if firebase methods need authentication
+			|| $method === 'getFirebaseMessagingConfig') {// TODO determine if firebase methods need authentication
 			//These methods don't need additional authentication, just return the data.
 			$result = [
 				'result' => $this->$method(),
@@ -53,7 +53,7 @@ class SystemAPI extends AbstractAPI {
 					'getCatalogStatus',
 					'getLocations',
 					'getMaterialsRequestForm',
-					'getFirebaseSettings',
+					'getFirebaseMessagingConfig',
 					'getHomeScreenLinks',
 				])) {
 					$result = [
@@ -1236,7 +1236,9 @@ class SystemAPI extends AbstractAPI {
 		];
 	}
 
-	function getFirebaseSettings() {
+	//only returns the portion of settings needed by
+	//the front end to get a token
+	function getFirebaseMessagingConfig() {
 		require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
 		$settings = new AspenMobileSetting();
 		if($settings->find(true))
@@ -1244,6 +1246,13 @@ class SystemAPI extends AbstractAPI {
 			return [
 				'success' => true,
 				'settings' => $settings->getFirebaseSettings(),
+			];
+		}
+		else 
+		{
+			http_response_code(404);
+			return [
+				'success' => false,
 				'error' => 'no settings found'
 			];
 		}

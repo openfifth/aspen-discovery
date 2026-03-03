@@ -1270,7 +1270,7 @@ function loadModuleActionId() {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
 	try {
-		if (array_key_exists('Aspen Mobile', $enabledModules))
+		if ($library->aspenMobileSettingId != -1)
 		{
 			if($requestURI == "/manifest.json") {
 				$_GET['module'] = "AspenMobile";

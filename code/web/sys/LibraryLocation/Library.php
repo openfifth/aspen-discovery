@@ -544,6 +544,9 @@ class Library extends DataObject {
 	// Gale Settings
 	public $galeSettingsId;
 
+	// Aspen Mobile Settings
+	public $aspenMobileSettingId;
+
 	/** @var Holiday[] */
 	private $_holidays;
 	/** @var LibrarySideLoadScope[] */
@@ -1064,6 +1067,16 @@ class Library extends DataObject {
 		$galeSettingsList[-1] = 'none';
 		while ($galeSettings->fetch()) {
 			$galeSettingsList[$galeSettings->id] = $galeSettings->name;
+		}
+
+		require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+		$aspenMobileSetting = new AspenMobileSetting();
+		$aspenMobileSetting->orderBy('name');
+		$aspenMobileSettings = [];
+		$aspenMobileSetting->find();
+		$aspenMobileSettings[-1] = 'none';
+		while ($aspenMobileSetting->fetch()) {
+			$aspenMobileSettings[$aspenMobileSetting->id] = $aspenMobileSetting->name;
 		}
 
 		$barcodeTypes = [
@@ -4714,7 +4727,7 @@ class Library extends DataObject {
 				'label' => 'Talpa Search',
 				'hideInLists' => true,
 				'renderAsHeading' => true,
-//				'permissions' => ['Library Web Builder Options'],
+				//'permissions' => ['Library Web Builder Options'],
 				'properties' => [
 					'enableTalpaSearch' => [
 						'property' => 'enableTalpaSearch',
@@ -4958,6 +4971,26 @@ class Library extends DataObject {
 						'values' => $ssoSettings,
 						'label' => 'Single Sign-on (SSO) Settings',
 						'description' => 'The single sign-on settings to use for this library',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+				],
+			],
+
+			'aspenMobileSection' => [
+				'property' => 'aspenMobileSection',
+				'type' => 'section',
+				'label' => 'Aspen Mobile',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'permissions' => ['Administer Aspen Mobile Settings'],
+				'properties' => [
+					'AspenMobileSettingId' => [
+						'property' => 'AspenMobileSettingId',
+						'type' => 'enum',
+						'values' => $aspenMobileSettings,
+						'label' => 'Aspen Mobile Settings',
+						'description' => 'The General Settings to use for Aspen Mobile',
 						'hideInLists' => true,
 						'default' => -1,
 					],

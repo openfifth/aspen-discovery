@@ -3151,6 +3151,7 @@ CREATE TABLE `library` (
   `showShareOnFacebook` TINYINT DEFAULT 1,
   `showShareOnPinterest` TINYINT DEFAULT 1,
   `showShareOnLink` TINYINT DEFAULT 1,
+  `aspenMobileSettingId` int(11) DEFAULT -1,
   PRIMARY KEY (`libraryId`),
   UNIQUE KEY `subdomain` (`subdomain`),
   KEY `isDefault` (`isDefault`),

@@ -14,7 +14,7 @@ const PRECACHE_ASSETS = [
 // 	"body":"test body", 
 // 	"path": "/myAccount/Home"}
 //}
-fetch("/API/SystemAPI?method=getFirebaseSettings").then(function (response) {
+fetch("/API/SystemAPI?method=getFirebaseMessagingConfig").then(function (response) {
 	return response.json();
 }).then(function (data) {
 	if(data.result?.success)

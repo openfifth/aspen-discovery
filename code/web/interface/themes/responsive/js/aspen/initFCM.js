@@ -5,7 +5,7 @@ import * as UAP from "../lib/ua-parser-min.js";
 //import '../lib/apisauce.min.js';
 export var appToken = "default";
 export function initialize() {
-	fetch("/API/SystemAPI?method=getFirebaseSettings").then(function (response) {
+	fetch("/API/SystemAPI?method=getFirebaseMessagingConfig").then(function (response) {
 		return response.json();
 	}).then(function (data) {
 		if (Globals.loggedIn && data.result?.success) {
@@ -35,9 +35,13 @@ export function initialize() {
 							// TODO change this to use UserAPI savePushNotification instead
 							//saveNotificationPushToken
 							// how do we get the device?
+							console.log("test");
 							let parser = new UAParser(window.navigator.userAgent);
+							console.log(parser);
 							let result = parser.getResult();
-							let modelName = result.device.model || "Unknown";
+							console.log(result);
+							let modelName = result.device.model || result.os.name+result.cpu || "Unknown";
+							console.log(modelName);
 							const postData = {
 								"pushToken": currentToken,
 								"deviceModel": modelName,

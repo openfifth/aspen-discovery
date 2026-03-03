@@ -1,4 +1,6 @@
 <?php
+//ALTER TABLE library add column `aspenMobileSettingId` int(11) Default -1;
+// insert into `permissions` VALUES (271,'Administer Aspen Mobile Settings','Aspen Mobile', 'Aspen Mobile', 10, 'Controls if the user can change Aspen Mobile Settings');
 /** @noinspection SqlResolve */
 function getAspenMobileUpdates() {
 	return [
@@ -52,6 +54,25 @@ function getAspenMobileUpdates() {
 
 					EXECUTE stmt;
 					DEALLOCATE PREPARE stmt;",
+			],
+		],
+		'alter_library_add_setting' => [
+			'title' => 'Add Aspen Mobile Setting Id',
+			'description' => 'update library to include aspen mobile setting ID to link to aspen mobile settings',
+			'sql' => [
+				"ALTER TABLE library add column `aspenMobileSettingId` int(11) Default -1;"
+			],
+		],
+		'insert_aspen_mobile_permissions' => [
+			'title' => 'Add Aspen Mobile permissions',
+			'description' => 'Add permisions for administering aspen mobile and sending notifications',
+			'sql' => [
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Administer Aspen Mobile Settings','Aspen Mobile', 'Aspen Mobile', 10, 'Controls if the user can change Aspen Mobile Settings.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to All Libraries','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from all libraries.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to All Locations','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from all locations.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to Home Library','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from their home library.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to Home Location','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from their home location.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to Home Library Locations','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users for all locations that are part of their home library.');",
 			],
 		]
 	];

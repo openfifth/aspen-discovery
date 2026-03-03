@@ -22,6 +22,7 @@ class AspenMobile_Manifest extends Action {
 		// if we have no settings
 		if(!$setting->find(true))
 		{
+			http_response_code(404);
 			return ['success' => false,'message'=>'settings not found'];
 		}
 		$theme = new Theme();

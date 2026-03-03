@@ -61,11 +61,11 @@ class AspenMobile_NotificationTestingTool extends Admin_Admin {
 
 	function canView(): bool {
 		return UserAccount::userHasPermission([
-			'Send Notifications to All Libraries',
-			'Send Notifications to All Locations',
-			'Send Notifications to Home Library',
-			'Send Notifications to Home Location',
-			'Send Notifications to Home Library Locations',
+			'Send Aspen Mobile Notifications to All Libraries',
+			'Send Aspen Mobile Notifications to All Locations',
+			'Send Aspen Mobile Notifications to Home Library',
+			'Send Aspen Mobile Notifications to Home Location',
+			'Send Aspen Mobile Notifications to Home Library Locations',
 		]);
 	}
 }
