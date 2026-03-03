@@ -519,6 +519,8 @@ class UserList extends DataObject {
 		]);
 		$searchObject->disableBoosting();
 		$searchObject->setPrimarySearch(false);
+		//Don't log this to search history
+		$searchObject->disableLogging();
 		$searchObject->setFieldsToReturn('id');
 		$searchObject->setPage(($start / $numItems) + 1);
 		$searchObject->setLimit($numItems);
