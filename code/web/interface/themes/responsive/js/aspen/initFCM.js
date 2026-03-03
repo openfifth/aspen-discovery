@@ -10,38 +10,22 @@ export function initialize() {
 	}).then(function (data) {
 		if (Globals.loggedIn && data.result?.success) {
 			//do things for getting settings here. 
-			console.log(data.result.settings);
 			const firebaseConfig = data.result.settings;
 			// Initialize Firebase
 			const app = initializeApp(firebaseConfig);
-			console.log(app);
 
 			// Initialize Firebase Cloud Messaging and get a reference to the service
 			const messaging = getMessaging(app);
-			console.log(messaging);
 			getToken(messaging, { vapidKey: firebaseConfig['vapidKey'] }).then((currentToken) => {
-				console.log(currentToken);
 				if (currentToken) {
 					appToken = currentToken;
-					// TODO send the token to your server and update the UI if necessary
-					//https://firebase.google.com/docs/cloud-messaging/js/first-message#web
-					//https://console.firebase.google.com/project/aspen-pwa-test/notification/compose
-					console.log(currentToken);
 					Notification.requestPermission().then((permission) => {
 						if (permission === 'granted') {
 							$(".grant-notification-permissions").hide();
 							$(".notification-permission-controls").show();
-							console.log('Notification permission granted.');
-							// TODO change this to use UserAPI savePushNotification instead
-							//saveNotificationPushToken
-							// how do we get the device?
-							console.log("test");
 							let parser = new UAParser(window.navigator.userAgent);
-							console.log(parser);
 							let result = parser.getResult();
-							console.log(result);
 							let modelName = result.device.model || result.os.name+result.cpu || "Unknown";
-							console.log(modelName);
 							const postData = {
 								"pushToken": currentToken,
 								"deviceModel": modelName,
@@ -54,12 +38,11 @@ export function initialize() {
 									'Cache-Control': 'no-cache'
 								},
 								body: new URLSearchParams(postData)
-							}).then(function (response) {
-								console.log(response.json());
 							});
 						}
 					});
-				} else {
+				} 
+				else {
 					//show permission request UI
 					// QUESTION when do we get here? when is token falsey
 					console.log('no registration token available. request permission to generate one.');
@@ -75,29 +58,3 @@ export function initialize() {
 		}
 	});
 }
-
-// $(document).ready(function(){
-// 	if(Globals.loggedIn)
-// 	{
-// 		initialize();
-// 	}
-// });
-self.addEventListener('fetch', event => {
-	console.log("fetch...");
-	console.log(event);
-	event.respondWith(async () => {
-		const cache = await caches.open(CACHE_NAME);
-
-		// match the request to our cache
-		const cachedResponse = await cache.match(event.request);
-
-		// check if we got a valid response
-		if (cachedResponse !== undefined) {
-			// Cache hit, return the resource
-			return cachedResponse;
-		} else {
-			// Otherwise, go to the network
-			return fetch(event.request)
-		};
-	});
-});
