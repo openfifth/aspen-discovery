@@ -1199,6 +1199,27 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					}
 				}
 			}
+			if (isset($this->fields['series_with_volume_untraced'])) {
+				$this->_indexedSeries = [];
+				$rawSeries = $this->fields['series_with_volume_untraced'];
+				if (is_string($rawSeries)) {
+					$rawSeriesTmp = [$rawSeries];
+					$rawSeries = $rawSeriesTmp;
+				}
+				foreach ($rawSeries as $seriesInfo) {
+					if (strpos($seriesInfo, '|') > 0) {
+						$seriesInfoSplit = explode('|', $seriesInfo);
+						$this->_indexedSeries[] = [
+							'seriesTitle' => $seriesInfoSplit[0],
+							'volume' => $seriesInfoSplit[1],
+						];
+					} else {
+						$this->_indexedSeries[] = [
+							'seriesTitle' => $seriesInfo,
+						];
+					}
+				}
+			}
 			$timer->logTime("Loaded indexed series information");
 		}
 
