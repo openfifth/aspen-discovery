@@ -475,6 +475,11 @@ public class MarcRecordFormatClassifier {
 		String titleField = MarcUtil.getFirstFieldVal(record, "245a");
 		if (titleField != null) {
 			return patternToLookFor.matcher(titleField).matches();
+		}else{
+			String titleField2 = MarcUtil.getFirstFieldVal(record, "246a");
+			if (titleField2 != null) {
+				return patternToLookFor.matcher(titleField2).matches();
+			}
 		}
 		return false;
 	}
