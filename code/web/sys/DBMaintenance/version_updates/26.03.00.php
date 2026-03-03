@@ -63,6 +63,14 @@ function getUpdates26_03_00(): array {
 		], //add_default_event_calendar_display_dropdown
 
 		//chloe
+		'update_aspenEventsToInclude_default' => [
+			'title' => 'Update AspenEventsToInclude Default',
+			'description' => 'Have aspenEventsToInclude default to 0 (do not display events as a search source)',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library MODIFY COLUMN aspenEventsToInclude INT DEFAULT 0",
+			],
+		], //update_aspenEventsToInclude_default
 
 		//mark j
 		'notify_saved_searches' => [
