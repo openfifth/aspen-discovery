@@ -46,6 +46,14 @@ function getUpdates26_03_00(): array {
 			]
 		],
 		//add_bill_reason_translation_map
+		'remove_unused_permission_loan_rules' => [
+			'title' => 'Remove unused permission loan rules',
+			'description' => 'Remove unused permission loan rules at all times',
+			'sql' => [
+				"DELETE FROM role_permissions WHERE permissionId = (SELECT id FROM permissions WHERE name = 'Administer Loan Rules')",
+				"DELETE FROM permissions WHERE name = 'Administer Loan Rules'",
+			]
+		], //remove_unused_permission_loan_rules
 
 		//yanjun
 		'require_pin_for_palace_project' => [
