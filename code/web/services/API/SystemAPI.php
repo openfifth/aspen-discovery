@@ -394,8 +394,6 @@ class SystemAPI extends AbstractAPI {
 		$communityEngagementUpdates = getCommunityEngagementUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/talpa_updates.php';
 		$talpaUpdates = getTalpaUpdates();
-		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_mobile_updates.php';
-		$aspenMobileUpdates = getAspenMobileUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/hoopla_version2_updates.php';
 		$hooplaVersion2Updates = getHooplaVersion2Updates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/pay360_updates.php';
@@ -412,7 +410,6 @@ class SystemAPI extends AbstractAPI {
 			$communityEngagementUpdates, 
 			$talpaUpdates, 
 			$heycentricUpdates,
-			$aspenMobileUpdates,
 			$hooplaVersion2Updates,
 			$pay360Updates,
 			$galeUpdates
