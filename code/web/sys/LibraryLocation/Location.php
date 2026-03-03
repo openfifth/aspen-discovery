@@ -58,6 +58,7 @@ class Location extends DataObject {
 	public $displayExploreMoreBarInEbscoEds;
 	public $displayExploreMoreBarInEbscoHost;
 	public $displayExploreMoreBarInCatalogSearch;
+	public $displayExploreMoreBarInGale;
 	public $headerText;
 	public $address;
 	public $phone;
@@ -205,7 +206,9 @@ class Location extends DataObject {
 		$library->orderBy('displayName');
 		if (!UserAccount::userHasPermission('Administer All Libraries')) {
 			$homeLibrary = Library::getPatronHomeLibrary();
-			$library->libraryId = $homeLibrary->libraryId;
+			if (!empty($homeLibrary)) {
+				$library->libraryId = $homeLibrary->libraryId;
+			}
 		}
 		$library->find();
 		$libraryList = [];
@@ -1062,6 +1065,14 @@ class Location extends DataObject {
 						'type' => 'checkbox',
 						'label' => 'Display Explore More Bar in Ebsco Host Search Results',
 						'description' => 'Whether to display the Explore More Bar in Ebsco Host search results',
+						'hideInLists' => true,
+						'default' => true,
+					],
+					'displayExploreMoreBarInGale' => [
+						'property' => 'displayExploreMoreBarInGale',
+						'type' => 'checkbox',
+						'label' => 'Display Explore More Bar in Gale Search Results',
+						'description' => 'Whether to display the Explore More Bar in Gale search results',
 						'hideInLists' => true,
 						'default' => true,
 					],
@@ -3348,5 +3359,19 @@ class Location extends DataObject {
 			}
 		}
 		return $this->_homeScreenLinkGroup;
+	}
+
+	private ?int $_cloudSourceSettingId = null;
+	public function getCloudSourceSettingId() : int{
+		if ($this->_cloudSourceSettingId == null) {
+			require_once ROOT_DIR . '/sys/CloudSource/LocationCloudSourceSetting.php';
+			$locationCloudSourceSetting = new LocationCloudSourceSetting();
+			$locationCloudSourceSetting->locationId = $this->locationId;
+			$this->_cloudSourceSettingId = -1;
+			if ($locationCloudSourceSetting->find(true)) {
+				$this->_cloudSourceSettingId = $locationCloudSourceSetting->cloudsourceSettingId;
+			}
+		}
+		return $this->_cloudSourceSettingId;
 	}
 }

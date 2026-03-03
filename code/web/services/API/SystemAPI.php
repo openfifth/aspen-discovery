@@ -400,8 +400,12 @@ class SystemAPI extends AbstractAPI {
 		$hooplaVersion2Updates = getHooplaVersion2Updates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/pay360_updates.php';
 		$pay360Updates = getPay360Updates();
-		
-		$baseUpdates = array_merge($library_location_updates, 
+		require_once ROOT_DIR . '/sys/DBMaintenance/gale_updates.php';
+		$galeUpdates = getGaleUpdates();
+
+		//having these on separate lines should make merges easier to manage
+		$baseUpdates = array_merge(
+			$library_location_updates, 
 			$summonUpdates, 
 			$cloudLibraryUpdates, 
 			$grapesWebBuilderUpdates, 
@@ -410,7 +414,8 @@ class SystemAPI extends AbstractAPI {
 			$heycentricUpdates,
 			$aspenMobileUpdates,
 			$hooplaVersion2Updates,
-			$pay360Updates
+			$pay360Updates,
+			$galeUpdates
 		);
 
 		//Get version updates
@@ -539,13 +544,7 @@ class SystemAPI extends AbstractAPI {
 
 		// make sure full nightly index is set to run after completing db updates
 		require_once ROOT_DIR . '/sys/SystemVariables.php';
-		$systemVariables = SystemVariables::getSystemVariables();
-		if ($systemVariables->find(true)) {
-			if($systemVariables->runNightlyFullIndex == 0) {
-				$systemVariables->runNightlyFullIndex = 1;
-				$systemVariables->update();
-			}
-		}
+		SystemVariables::forceNightlyIndex('System API DB Updates');
 
 		$this->updateAdminPropertiesSearchIndex();
 

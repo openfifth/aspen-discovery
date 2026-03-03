@@ -270,7 +270,7 @@ class OverDriveSetting extends DataObject {
 				],
 			],
 		];
-		if (!(UserAccount::getActiveUserObj()->isAspenAdminUser())) {
+		if (!UserAccount::isLoggedIn() || !(UserAccount::getActiveUserObj()->isAspenAdminUser())) {
 			unset($objectStructure['enableRequestLogging']);
 		}
 

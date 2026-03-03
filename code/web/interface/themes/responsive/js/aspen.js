@@ -6088,12 +6088,6 @@ AspenDiscovery.ToastNotifications = function() {
 			setTimeout(() => {
 				toast.style.opacity = 1;
 			}, 10);
-			setTimeout(() => {
-				toast.style.opacity = 0;
-				setTimeout(() => {
-				toast.remove();
-				}, 300);
-			}, 9000);
 		},
 	}
 	
@@ -6702,6 +6696,13 @@ AspenDiscovery.Account = (function () {
 			$.getJSON(campaignsUrl, function (data) {
 				if (data.success) {
 					$(".enrolled-campaigns-placeholder").html(data.numCampaigns);
+				}
+			})
+			var userSearchesUrl = Globals.path + "/MyAccount/AJAX?method=getMenuDataSearches&activeModule=" + Globals.activeModule + '&activeAction=' + Globals.activeAction;
+			$.getJSON(userSearchesUrl, function (data) {
+				if (data.success) {
+					$(".saved-searches-count-placeholder").html(data.numSavedSearches);
+					$(".recent-searches-count-placeholder").html(data.numRecentSearches);
 				}
 			})
 			return false;
@@ -7627,7 +7628,7 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		showSaveSearchForm: function (searchId) {
+		showSaveSearchForm: function (searchId, reload = false) {
 			if (Globals.loggedIn) {
 				$('#searchToolsModal').modal('hide');
 				AspenDiscovery.loadingMessage();
@@ -7639,7 +7640,7 @@ AspenDiscovery.Account = (function () {
 
 				// noinspection JSUnresolvedFunction
 				$.getJSON(url, params, function (data) {
-					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, reload);
 				}).fail(AspenDiscovery.ajaxFail);
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
@@ -7722,15 +7723,13 @@ AspenDiscovery.Account = (function () {
 		},
 
 		initiateMasquerade: function () {
-			var url = Globals.path + "/MyAccount/AJAX";
-			var usernameField = $("#username");
-			var username = '';
-			if (usernameField !== undefined) {
-				username = usernameField.val();
-			}
+			var url = Globals.path + "/MyAccount/AJAX";	
+			// Get the visible cardNumber field using filter
+			var cardNumber = $('[id="cardNumber"]').filter(':visible').val() || '';
+			var username = $('[id="username"]').filter(':visible').val() || '';
 			var params = {
 				method: "initiateMasquerade",
-				cardNumber: $('#cardNumber').val(),
+				cardNumber: cardNumber,
 				username: username
 			};
 			$('#masqueradeAsError').hide();
@@ -9247,6 +9246,30 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
+		loadSearchHistory: function (type, page, limit, sort, filter) {
+			const url = Globals.path + '/MyAccount/AJAX';
+			const params = {
+				method: 'getSearchHistory',
+				type: type,
+				page: page || 1,
+				limit: limit || 20,
+				sort: sort || 'id',
+				filter: filter || ''
+			};
+			const placeholderId = type === 'saved' ? '#savedSearchesPlaceholder' : '#recentSearchesPlaceholder';
+			const paginationId = type === 'saved' ? '#savedSearchesPagination' : '#recentSearchesPagination';
+			$.getJSON(url, params)
+				.done(function (data) {
+					if (data.success) {
+						$(placeholderId).html(data.searches);
+						$(paginationId).html(data.pagination);
+						AspenDiscovery.Account.loadMenuData();
+					} else {
+						$(placeholderId).html('<div class="alert alert-info">' + data.message + '</div>');
+					}
+				}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		}
 	};
 }(AspenDiscovery.Account || {}));
 AspenDiscovery.Admin = (function () {
@@ -12319,6 +12342,33 @@ AspenDiscovery.Admin = (function () {
 				$('#propertyRowmaterialIcon').show();
 				$('#propertyRowuploadIcon').hide();
 			}
+		},
+
+		getBatchUpdateHolidayForm: function (scope){
+			console.log(scope);
+			var url = Globals.path + "/Admin/AJAX?method=getBatchUpdateHolidayForm&scopeLevel=" + scope;
+			AspenDiscovery.Account.ajaxLightbox(url, true);
+		},
+
+		batchUpdateHolidays: function(holidayInfo, scope) {
+			//var holidayInfo = $('#holidayInformation').val();
+			var url = Globals.path + "/Admin/AJAX?method=batchUpdateHolidays&scope=" + scope;
+			var params = new FormData();
+			params.append('holidayInfo', holidayInfo);
+
+			$.ajax({
+				url: url,
+				type: 'POST',
+				data: params,
+				dataType: 'json',
+				success: function (data) {
+					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
+				},
+				async: false,
+				contentType: false,
+				processData: false
+			});
+			return false;
 		},
 	};
 }(AspenDiscovery.Admin || {}));
@@ -16043,7 +16093,7 @@ AspenDiscovery.GroupedWork = (function(){
 					html += '<div role="option" tabindex="0" class="slider-slide horizontal-edition-option' + (idx === 0 ? ' active' : '') + '">';
 					html += '<label for="editionOption' + idx + '">';
 					html += '<div class="edition-radio"><input type="radio" name="selectedEdition" id="editionOption' + idx + '" value="' + edition.id + '" ' + (idx === 0 ? 'checked' : '') + '> ' + edition.label + '</div>';
-					html += '<div class="edition-cover"><img src="' + edition.coverUrl + '" class="img-thumbnail" alt="Book Cover"></div>';
+					html += '<div class="edition-cover"><img src="' + edition.coverUrl + '" class="img-thumbnail" alt="Book Cover" role="presentation"></div>';
 					html += '<div class="edition-data">' + edition.publicationDate + '. ' + edition.publisher + '. ' + edition.physical + '.<br/>' + edition.statusIndicator + '<br/><span>' + current + ' of ' + count + ' editions</span></div>';
 					html += '</label></div>';
 				});
@@ -16314,6 +16364,8 @@ AspenDiscovery.Lists = (function(){
 		editListAction: function (){
 			$('#listDescription,#listTitle,#FavEdit,.listViewButton').hide();
 			$('#listEditControls,#FavSave,.listEditButton').show();
+			const element = document.getElementById('listEditControls');
+			element.scrollIntoView();
 			return false;
 		},
 
@@ -16447,9 +16499,11 @@ AspenDiscovery.Lists = (function(){
 		},
 
 		importListsFromClassic: function (){
-			if (confirm("This will import any lists you had defined in the old catalog.  This may take several minutes depending on the size of your lists. Are you sure you want to continue?")){
-				window.location = Globals.path + "/MyAccount/ImportListsFromClassic";
-			}
+			AspenDiscovery.confirm("Import Lists?", "This will import any lists you had defined in the old catalog.  This may take several minutes depending on the size of your lists. Are you sure you want to continue?", "Yes", "No", true, "AspenDiscovery.Lists.doImportListsFromClassic()");
+			return false;
+		},
+		doImportListsFromClassic: function() {
+			window.location = Globals.path + "/MyAccount/ImportListsFromClassic";
 			return false;
 		},
 		getUploadListCoverForm: function (id){
@@ -17360,6 +17414,33 @@ AspenDiscovery.OverDrive = (function(){
 				}
 			);
 			return false;
+		},
+
+		checkAutoAction() {
+			const urlParams = new URLSearchParams(window.location.search);
+			const autoAction = urlParams.get('autoAction');
+			const autoRecordId = urlParams.get('autoRecordId');
+
+			if (autoAction && autoRecordId) {
+				// Remove parameters from URL to prevent re-triggering on refresh.
+				const cleanUrl = window.location.pathname + window.location.search
+					.replace(/[?&]autoAction=[^&]*/g, '')
+					.replace(/[?&]autoRecordId=[^&]*/g, '')
+					.replace(/^\?&/, '?')
+					.replace(/^&/, '?')
+					.replace(/\?$/, '');
+				if (window.history?.replaceState) {
+					window.history.replaceState({}, '', cleanUrl);
+				}
+
+				setTimeout(() => {
+					if (autoAction === 'checkout') {
+						AspenDiscovery.OverDrive.checkOutTitle(autoRecordId, null);
+					} else if (autoAction === 'hold') {
+						AspenDiscovery.OverDrive.placeHold(autoRecordId, null);
+					}
+				}, 500); // Small delay to ensure page is fully loaded.
+			}
 		}
 	}
 }(AspenDiscovery.OverDrive || {}));
@@ -22353,3 +22434,11 @@ AspenDiscovery.FormFields = (function() {
 		initializeCharacterCounters: initializeCharacterCounters
 	};
 }());
+AspenDiscovery.Gale = (function () {
+	return {
+		trackGaleUsage: function (id) {
+			var ajaxUrl = Globals.path + "/Gale/JSON?method=trackGaleUsage&id=" + id;
+			$.getJSON(ajaxUrl);
+		}
+	}
+}(AspenDiscovery.Gale || {}));
