@@ -38,6 +38,14 @@ function getUpdates26_03_00(): array {
 		//add_cloud_library_sunday_reindex_option
 
 		//kodi
+		'add_bill_reason_translation_map' => [
+			'title' => 'Add Bill Reason Translation Map',
+			'description' => 'Add bill reason translation map for Symphony libraries',
+			'sql' => [
+				"addBillReasonTranslationMap",
+			]
+		],
+		//add_bill_reason_translation_map
 
 		//yanjun
 		'require_pin_for_palace_project' => [
@@ -112,4 +120,19 @@ function getUpdates26_03_00(): array {
 
 
 	];
+}
+function addBillReasonTranslationMap(&$update): void {
+	$ils = null;
+	require_once ROOT_DIR . '/sys/Account/AccountProfile.php';
+	$accountProfiles = new AccountProfile();
+	$accountProfiles->find();
+	while ($accountProfiles->fetch()) {
+		if ($accountProfiles->ils == 'symphony') {
+			$indexingProfile = $accountProfiles->getIndexingProfile();
+			if ($indexingProfile) {
+				global $aspen_db;
+				$aspen_db->query("INSERT INTO translation_maps (indexingProfileId, name) VALUES ($indexingProfile->id, 'bill_reason')");
+			}
+		}
+	}
 }
