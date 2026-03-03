@@ -11,9 +11,8 @@ require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
  */
 class AspenMobile_Icon extends Action {
 
-    function launch()
-    {
-        $setting = new AspenMobileSetting();
+	function launch()
+	{
 		$success = true;
 		//TODO we should return an error code instead of 200
 		// if we have no settings
@@ -21,15 +20,15 @@ class AspenMobile_Icon extends Action {
 		{
 			$_REQUEST['themeId'] = $setting->themeId;
 		} else {
-            $_REQUEST['themeId'] = 1;
-        }
+			$_REQUEST['themeId'] = 1;
+		}
 
-        $api = new SystemAPI('internal');
-        $_REQUEST['type'] = "logoApp";
-        $api->getLogoFile();
-    }
+		$api = new SystemAPI('internal');
+		$_REQUEST['type'] = "logoApp";
+		$api->getLogoFile();
+	}
 
-    function getBreadcrumbs(): array {
+	function getBreadcrumbs(): array {
 		return [];
 	}
 }
