@@ -188,6 +188,8 @@ class Library extends DataObject {
 	public /** @noinspection PhpUnused */
 		$systemsToRepeatIn;
 	public $additionalLocationsToShowAvailabilityFor;
+	public /** @noinspection PhpUnused */
+		$locationsToExcludeAvailabilityFor;
 	public $homeLink;
 	public $showAdvancedSearchbox;
 	public $showWebsiteSearch;
@@ -3493,8 +3495,17 @@ class Library extends DataObject {
 								'property' => 'additionalLocationsToShowAvailabilityFor',
 								'type' => 'text',
 								'label' => 'Additional Locations to Include in Available At Facet',
-								'description' => 'A list of library codes that you would like included in the available at facet separated by pipes |.',
-								'size' => '20',
+								'description' => 'A list of location codes that you would like included in the available at facet separated by pipes |.',
+								'maxLength' => '255',
+								'hideInLists' => true,
+								'forcesReindex' => true,
+							],
+							'locationsToExcludeAvailabilityFor' => [
+								'property' => 'locationsToExcludeAvailabilityFor',
+								'type' => 'regularExpression',
+								'label' => 'Locations to Exclude from Available At Facet',
+								'description' => 'A list of location names (facet values) that you would like excluded.',
+								'maxLength' => '255',
 								'hideInLists' => true,
 								'forcesReindex' => true,
 							],
