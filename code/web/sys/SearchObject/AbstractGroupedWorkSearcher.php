@@ -570,7 +570,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	 */
 	public function runSearchInterpreter(string $type, bool $enableSearchInterpreter, string $searchTerm): string {
 		$splitPattern = "/[|,]\s*/";
-		if ($type == 'Keyword' && $enableSearchInterpreter && !empty($searchTerm)) {
+		if ($type == 'Keyword' && $enableSearchInterpreter && !empty($searchTerm) && empty($this->filterList)) {
 			$changeMade = false;
 			$searchTermLower = strtolower($searchTerm);
 
