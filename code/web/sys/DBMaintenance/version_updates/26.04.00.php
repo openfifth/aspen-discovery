@@ -29,6 +29,14 @@ function getUpdates26_04_00(): array {
 		//galen
 
 		//chloe
+		'update_aspenEventsToInclude_default' => [
+			'title' => 'Update AspenEventsToInclude Default',
+			'description' => 'Have aspenEventsToInclude default to 0 (do not display events as a search source)',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library MODIFY COLUMN aspenEventsToInclude INT DEFAULT 0",
+			],
+		], //update_aspenEventsToInclude_default
 
 		//mark j
 
