@@ -51,5 +51,12 @@ function getUpdates26_Q1_00(): array {
 				'ALTER TABLE library ADD COLUMN sierraZipOnSameLineAsCityState TINYINT(1) DEFAULT 1',
 			]
 		], //sierra_address_line_for_city_state_zip
+		'force_regrouping_of_hoopla' => [
+			'title' => 'Force Regrouping of Hoopla',
+			'description' => 'Force Regrouping of Hoopla',
+			'sql' => [
+				"UPDATE hoopla_settings set regroupAllRecords = 1"
+			]
+		], //force_regrouping_of_hoopla
 	];
 }
