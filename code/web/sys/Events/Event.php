@@ -941,6 +941,10 @@ class Event extends DataObject {
 					$structure['scheduleSection']['properties']['eventLength']['readOnly'] = true;
 					$this->eventLength = $eventType->eventLength;
 				}
+				if (!$eventType->displayEventBranchOnThumbnailCustomizable) {
+					$structure['infoSection']['properties']['displayEventBranchOnThumbnail']['readOnly'] = true;
+					$this->displayEventBranchOnThumbnail = $eventType->displayEventBranchOnThumbnail;
+				}
 				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getFieldSetFields();
 				// Update scheduling sections
 				switch ($this->recurrenceOption) {
