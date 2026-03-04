@@ -36,6 +36,15 @@ function getUpdates26_03_00(): array {
 			]
 		],
 		//add_cloud_library_sunday_reindex_option
+		'add_generated_rtl_css_to_theme' => [
+			'title' => 'Add generated RTL CSS to theme',
+			'description' => 'Add generated RTL CSS column to theme to fetch if a RTL language is active',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE themes ADD COLUMN generatedRTLCss LONGTEXT',
+			]
+		],
+		//add_generated_rtl_css_to_theme
 
 		//kodi
 		'add_bill_reason_translation_map' => [
