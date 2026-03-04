@@ -104,7 +104,7 @@ class EventType extends DataObject {
 				'type' => 'checkbox',
 				'label' => 'Display Event Branch on Thumbnail Customizable?',
 				'default' => true,
-				'description' => 'Can users change the displayEventBranchOnThumbnail for individual events of this type?',
+				'description' => 'Can users change the display the event branch on the thubmnail image setting for individual events of this type?',
 			],
 			'cover' => [
 				'property' => 'cover',
