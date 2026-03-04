@@ -155,11 +155,11 @@ class HooplaProcessor2 {
 					groupedWork.addSeries(series);
 					if (rawResponse.has("episodeNumber")) {
 						String volume = rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
-						groupedWork.addSeriesWithVolume(series, volume, 2);
+						groupedWork.addSeriesWithVolume(series, volume, 2, false);
 					}
 					if (rawResponse.has("seriesNumber")) {
 						String volume = rawResponse.optString("seriesNumber", rawResponse.optString("volume", ""));
-						groupedWork.addSeriesWithVolume(series, volume, 2);
+						groupedWork.addSeriesWithVolume(series, volume, 2, false);
 					}
 				}
 
