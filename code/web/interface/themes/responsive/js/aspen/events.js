@@ -676,6 +676,7 @@ AspenDiscovery.Events = (function(){
 			var descriptionCustomizable = $("#descriptionCustomizable").is(':checked');
 			var coverCustomizable = $("#coverCustomizable").is(':checked');
 			var eventLengthCustomizable = $("#lengthCustomizable").is(':checked');
+			var displayBranchOnThumbnailCustomizable = $("#displayEventBranchOnThumbnailCustomizable").is(':checked');
 
 			var url = Globals.path + "/Events/AJAX";
 			var params = {
@@ -684,6 +685,7 @@ AspenDiscovery.Events = (function(){
 				descriptionCustomizable: descriptionCustomizable,
 				coverCustomizable: coverCustomizable,
 				eventLengthCustomizable: eventLengthCustomizable,
+				displayBranchOnThumbnailCustomizable: displayBranchOnThumbnailCustomizable,
 				objectId: $("#id").val()
 			};
 
