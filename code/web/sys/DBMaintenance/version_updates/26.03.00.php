@@ -66,17 +66,17 @@ function getUpdates26_03_00(): array {
 		], //clean_up_event_fields_allowable_values
 
 		//imani
-		// aspen mobile updates moved
+		// Aspen Progressive Web Application(PWA) updates moved
 		'create_aspen_mobile_module' => [
-			'title' => 'Create Aspen Mobile Module',
-			'description' => 'Setup Aspen Mobile (Progressive Web Application) module',
+			'title' => 'Create Aspen Progressive Web Application(PWA) Module',
+			'description' => 'Setup Aspen Progressive Web Application(PWA) (Progressive Web Application) module',
 			'sql' => [
-				"INSERT IGNORE INTO modules (name, indexName, backgroundProcess) VALUES ('Aspen Mobile', '', '')",
+				"INSERT IGNORE INTO modules (name, indexName, backgroundProcess) VALUES ('Aspen Progressive Web Application(PWA)', '', '')",
 			],
 		],
 		'create_aspen_mobile_settings' => [
-			'title' => 'Create Aspen Mobile Settings',
-			'description' => 'Create database table for Aspen Mobile settings',
+			'title' => 'Create Aspen Progressive Web Application(PWA) Settings',
+			'description' => 'Create database table for Aspen Progressive Web Application(PWA) settings',
 			'sql' => [
 				"CREATE TABLE IF NOT EXISTS aspen_mobile_settings (
 					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -120,22 +120,22 @@ function getUpdates26_03_00(): array {
 			],
 		],
 		'alter_library_add_setting' => [
-			'title' => 'Add Aspen Mobile Setting Id',
-			'description' => 'update library to include aspen mobile setting ID to link to aspen mobile settings',
+			'title' => 'Add Aspen Progressive Web Application(PWA) Setting Id',
+			'description' => 'update library to include Aspen Progressive Web Application(PWA) setting ID to link to Aspen Progressive Web Application(PWA) settings',
 			'sql' => [
-				"ALTER TABLE library add column `aspenMobileSettingId` int(11) Default -1;"
+				"ALTER TABLE library add column `AspenPWASettingId` int(11) Default -1;"
 			],
 		],
 		'insert_aspen_mobile_permissions' => [
-			'title' => 'Add Aspen Mobile permissions',
-			'description' => 'Add permisions for administering aspen mobile and sending notifications',
+			'title' => 'Add Aspen Progressive Web Application(PWA) permissions',
+			'description' => 'Add permisions for administering Aspen Progressive Web Application(PWA) and sending notifications',
 			'sql' => [
-				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Administer Aspen Mobile Settings','Aspen Mobile', 'Aspen Mobile', 10, 'Controls if the user can change Aspen Mobile Settings.');",
-				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to All Libraries','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from all libraries.');",
-				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to All Locations','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from all locations.');",
-				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to Home Library','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from their home library.');",
-				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to Home Location','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users from their home location.');",
-				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Mobile Notifications to Home Library Locations','Aspen Mobile', 'Aspen Mobile', 6, 'Controls if the user can send notifications to Aspen Mobile users for all locations that are part of their home library.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Administer Aspen Progressive Web Application(PWA) Settings','Aspen Progressive Web Application(PWA)', 'Aspen Progressive Web Application(PWA)', 10, 'Controls if the user can change Aspen Progressive Web Application(PWA) Settings.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Progressive Web Application(PWA) Notifications to All Libraries','Aspen Progressive Web Application(PWA)', 'Aspen Progressive Web Application(PWA)', 6, 'Controls if the user can send notifications to Aspen Progressive Web Application(PWA) users from all libraries.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Progressive Web Application(PWA) Notifications to All Locations','Aspen Progressive Web Application(PWA)', 'Aspen Progressive Web Application(PWA)', 6, 'Controls if the user can send notifications to Aspen Progressive Web Application(PWA) users from all locations.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Progressive Web Application(PWA) Notifications to Home Library','Aspen Progressive Web Application(PWA)', 'Aspen Progressive Web Application(PWA)', 6, 'Controls if the user can send notifications to Aspen Progressive Web Application(PWA) users from their home library.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Progressive Web Application(PWA) Notifications to Home Location','Aspen Progressive Web Application(PWA)', 'Aspen Progressive Web Application(PWA)', 6, 'Controls if the user can send notifications to Aspen Progressive Web Application(PWA) users from their home location.');",
+				"INSERT IGNORE into `permissions` (name, sectionName, requiredModule, weight, description) VALUES ('Send Aspen Progressive Web Application(PWA) Notifications to Home Library Locations','Aspen Progressive Web Application(PWA)', 'Aspen Progressive Web Application(PWA)', 6, 'Controls if the user can send notifications to Aspen Progressive Web Application(PWA) users for all locations that are part of their home library.');",
 			],
 		],
 		//galen

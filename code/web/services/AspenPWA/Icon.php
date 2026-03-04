@@ -1,7 +1,7 @@
 <?php
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/API/SystemAPI.php';
-require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
 
 /**
  * This class exists because PWABuilder.com did not except
@@ -9,7 +9,7 @@ require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
  * SystemAPI's get logofile works we are going to point
  * /pwa-icon.png to this function
  */
-class AspenMobile_Icon extends Action {
+class AspenPWA_Icon extends Action {
 
 	function launch()
 	{

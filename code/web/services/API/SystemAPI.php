@@ -1236,8 +1236,8 @@ class SystemAPI extends AbstractAPI {
 	//only returns the portion of settings needed by
 	//the front end to get a token
 	function getFirebaseMessagingConfig() {
-		require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
-		$settings = new AspenMobileSetting();
+		require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
+		$settings = new AspenPWASetting();
 		if($settings->find(true))
 		{
 			return [

@@ -1,9 +1,9 @@
 <?php
 
 require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
 
-class AspenMobile_Firebase extends Action {
+class AspenPWA_Firebase extends Action {
 
 	///firebase-messaging-sw.js redirects to here
 	function launch() {

@@ -1,9 +1,9 @@
 <?php
 
 require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
 
-class AspenMobile_Manifest extends Action {
+class AspenPWA_Manifest extends Action {
 
 	function launch() {
 		header('Content-type: application/json');
@@ -16,7 +16,7 @@ class AspenMobile_Manifest extends Action {
 
 	function build_manifest()
 	{
-		$setting = new AspenMobileSetting();
+		$setting = new AspenPWASetting();
 		$success = true;
 		//TODO we should return an error code instead of 200
 		// if we have no settings

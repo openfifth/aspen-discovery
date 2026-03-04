@@ -1,11 +1,11 @@
 <?php
 
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
 
-class AspenMobile_Settings extends ObjectEditor {
+class AspenPWA_Settings extends ObjectEditor {
 	function getObjectType(): string {
-		return 'AspenMobileSetting';
+		return 'AspenPWASetting';
 	}
 
 	function getToolName(): string {
@@ -13,17 +13,17 @@ class AspenMobile_Settings extends ObjectEditor {
 	}
 
 	function getModule(): string {
-		return 'AspenMobile';
+		return 'AspenPWA';
 	}
 
 	function getPageTitle(): string {
-		return 'Aspen Mobile Settings';
+		return 'Aspen Progressive Web Application(PWA) Settings';
 	}
 
 	function getAllObjects($page, $recordsPerPage): array {
 		$list = [];
 
-		$object = new AspenMobileSetting();
+		$object = new AspenPWASetting();
 		$object->orderBy($this->getSort());
 		$this->applyFilters($object);
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
@@ -40,7 +40,7 @@ class AspenMobile_Settings extends ObjectEditor {
 	}
 
 	function getObjectStructure($context = ''): array {
-		return AspenMobileSetting::getObjectStructure($context);
+		return AspenPWASetting::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -54,20 +54,20 @@ class AspenMobile_Settings extends ObjectEditor {
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#aspen-mobile', 'Aspen Mobile');
-		$breadcrumbs[] = new Breadcrumb('/AspenMobile/Settings', 'Aspen Mobile Settings');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#aspen-mobile', 'Aspen Progressive Web Application(PWA)');
+		$breadcrumbs[] = new Breadcrumb('/AspenPWA/Settings', 'Aspen Progressive Web Application(PWA) Settings');
 		return $breadcrumbs;
 	}
 
 	function getActiveAdminSection(): string {
-		return 'aspenMobile';
+		return 'AspenPWA';
 	}
 
 	function canView(): bool {
-		return UserAccount::userHasPermission('Administer Aspen Mobile Settings');
+		return UserAccount::userHasPermission('Administer Aspen Progressive Web Application(PWA) Settings');
 	}
 
 	function getViewPermissions() : array {
-		return ['Administer Aspen Mobile Settings'];
+		return ['Administer Aspen Progressive Web Application(PWA) Settings'];
 	}
 }

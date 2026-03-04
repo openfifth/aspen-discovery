@@ -1,7 +1,7 @@
 Setup
 1. run database maintenance to add module and settings
-2. enable the Aspen Mobile module
-3. add Aspen mobile settings
+2. enable the Aspen Progressive Web Application(PWA) module
+3. add Aspen Progressive Web Application(PWA) settings
 
 Settings:
 for most firebase settings:

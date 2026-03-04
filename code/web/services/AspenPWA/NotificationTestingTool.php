@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/services/API/GreenhouseAPI.php';
 require_once ROOT_DIR . '/sys/Greenhouse/AspenSiteCache.php';
 require_once ROOT_DIR . '/sys/CurlWrapper.php';
 //TODO add this page to admin section
-class AspenMobile_NotificationTestingTool extends Admin_Admin {
+class AspenPWA_NotificationTestingTool extends Admin_Admin {
 	function launch() : void {
 		global $interface;
 		$interface->assign('instructions', $this->getInstructions());
@@ -30,7 +30,7 @@ class AspenMobile_NotificationTestingTool extends Admin_Admin {
 		$interface->assign('receiptResponse', $receiptContents);
 		$interface->assign('notificationResponse', $notificationContents);
 
-		$this->display('NotificationTestingTool.tpl', 'Aspen Mobile Notification Testing Tool');
+		$this->display('NotificationTestingTool.tpl', 'Aspen Progressive Web Application(PWA) Notification Testing Tool');
 	}
 
 	function easy_printr($section, &$var) : string {
@@ -50,8 +50,8 @@ class AspenMobile_NotificationTestingTool extends Admin_Admin {
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#aspen_mobile', 'Aspen Mobile');
-		$breadcrumbs[] = new Breadcrumb('/AspenMobile/NotificationTestingTool', 'Notification Testing Tool');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#aspen_mobile', 'Aspen Progressive Web Application(PWA)');
+		$breadcrumbs[] = new Breadcrumb('/AspenPWA/NotificationTestingTool', 'Notification Testing Tool');
 		return $breadcrumbs;
 	}
 
@@ -61,11 +61,11 @@ class AspenMobile_NotificationTestingTool extends Admin_Admin {
 
 	function canView(): bool {
 		return UserAccount::userHasPermission([
-			'Send Aspen Mobile Notifications to All Libraries',
-			'Send Aspen Mobile Notifications to All Locations',
-			'Send Aspen Mobile Notifications to Home Library',
-			'Send Aspen Mobile Notifications to Home Location',
-			'Send Aspen Mobile Notifications to Home Library Locations',
+			'Send Aspen Progressive Web Application(PWA) Notifications to All Libraries',
+			'Send Aspen Progressive Web Application(PWA) Notifications to All Locations',
+			'Send Aspen Progressive Web Application(PWA) Notifications to Home Library',
+			'Send Aspen Progressive Web Application(PWA) Notifications to Home Location',
+			'Send Aspen Progressive Web Application(PWA) Notifications to Home Library Locations',
 		]);
 	}
 }

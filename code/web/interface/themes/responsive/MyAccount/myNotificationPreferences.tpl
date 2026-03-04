@@ -97,7 +97,7 @@
 							"type": type,
 							"value": value
 						};
-						fetch("/AspenMobile/AJAX?method=setNotificationPreference", {
+						fetch("/AspenPWA/AJAX?method=setNotificationPreference", {
 							method: "POST",
 							headers: {
 								'Cache-Control': 'no-cache'

@@ -1270,35 +1270,35 @@ function loadModuleActionId() {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
 	try {
-		if ($library->aspenMobileSettingId != -1)
+		if ($library->aspenPWASettingId != -1)
 		{
 			if($requestURI == "/manifest.json") {
-				$_GET['module'] = "AspenMobile";
+				$_GET['module'] = "AspenPWA";
 				$_GET['action'] = "Manifest";
-				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['module'] = "AspenPWA";
 				$_REQUEST['action'] = "Manifest";
 			}
 			else if($requestURI == "/.well-known/assetlinks.json")
 			{
-				$_GET['module'] = "AspenMobile";
+				$_GET['module'] = "AspenPWA";
 				$_GET['action'] = "AssetLinks";
-				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['module'] = "AspenPWA";
 				$_REQUEST['action'] = "AssetLinks";
 			}
 			else if($requestURI == "/firebase-messaging-sw.js")
 			{
-				$_GET['module'] = "AspenMobile";
+				$_GET['module'] = "AspenPWA";
 				$_GET['action'] = "Firebase";
-				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['module'] = "AspenPWA";
 				$_REQUEST['action'] = "Firebase";
 			}
 			else if($requestURI == "/pwa-icon.png")
 			{
 				global $logger;
 				$logger->log("processing pwa-icon.png", Logger::LOG_ERROR);
-				$_GET['module'] = "AspenMobile";
+				$_GET['module'] = "AspenPWA";
 				$_GET['action'] = "Icon";
-				$_REQUEST['module'] = "AspenMobile";
+				$_REQUEST['module'] = "AspenPWA";
 				$_REQUEST['action'] = "Icon";
 			}
 		}

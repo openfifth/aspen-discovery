@@ -1,6 +1,6 @@
 <?php
 
-class AspenMobileSetting extends DataObject {
+class AspenPWASetting extends DataObject {
 	public $__table = 'aspen_mobile_settings';
 	public $id;
 	public $name;
@@ -55,7 +55,7 @@ class AspenMobileSetting extends DataObject {
 				'description' => 'The name to use in the app manifest',
 				'maxLength' => 50,
 				'required' => true,
-				'default' => 'Aspen Mobile'
+				'default' => 'Aspen Progressive Web Application(PWA)'
 			],
 			'shortName' => [
 				'property' => 'shortName',
@@ -64,7 +64,7 @@ class AspenMobileSetting extends DataObject {
 				'description' => 'The short_name to use in the app manifest',
 				'maxLength' => 50,
 				'required' => true,
-				'default' => 'Aspen Mobile'
+				'default' => 'Aspen PWA'
 			],
 			'description' => [
 				'property' => 'description',
@@ -213,7 +213,7 @@ class AspenMobileSetting extends DataObject {
 			if (!isset($this->_libraries) && $this->id) {
 				$this->_libraries = [];
 				$obj = new Library();
-				$obj->aspenMobileSettingId = $this->id;
+				$obj->AspenPWASettingId = $this->id;
 				$obj->find();
 				while ($obj->fetch()) {
 					$this->_libraries[$obj->libraryId] = $obj->libraryId;
@@ -258,14 +258,14 @@ class AspenMobileSetting extends DataObject {
 				$library->find(true);
 				if (in_array($libraryId, $this->_libraries)) {
 					//We want to apply the scope to this library
-					if ($library->aspenMobileSettingId != $this->id) {
-						$library->aspenMobileSettingId = $this->id;
+					if ($library->AspenPWASettingId != $this->id) {
+						$library->AspenPWASettingId = $this->id;
 						$library->update();
 					}
 				} else {
 					//It should not be applied to this scope. Only change if it was applied to the scope
-					if ($library->aspenMobileSettingId == $this->id) {
-						$library->aspenMobileSettingId = -1;
+					if ($library->AspenPWASettingId == $this->id) {
+						$library->AspenPWASettingId = -1;
 						$library->update();
 					}
 				}

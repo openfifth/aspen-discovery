@@ -32,7 +32,7 @@ export function initialize() {
 								"tokenType": "firebase"
 							}
 
-							fetch("/AspenMobile/AJAX?method=saveNotificationPushToken", {
+							fetch("/AspenPWA/AJAX?method=saveNotificationPushToken", {
 								method: "POST",
 								headers: {
 									'Cache-Control': 'no-cache'

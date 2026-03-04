@@ -544,8 +544,8 @@ class Library extends DataObject {
 	// Gale Settings
 	public $galeSettingsId;
 
-	// Aspen Mobile Settings
-	public $aspenMobileSettingId;
+	// Aspen Progressive Web Application(PWA) Settings
+	public $AspenPWASettingId;
 
 	/** @var Holiday[] */
 	private $_holidays;
@@ -1069,14 +1069,14 @@ class Library extends DataObject {
 			$galeSettingsList[$galeSettings->id] = $galeSettings->name;
 		}
 
-		require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
-		$aspenMobileSetting = new AspenMobileSetting();
-		$aspenMobileSetting->orderBy('name');
-		$aspenMobileSettings = [];
-		$aspenMobileSetting->find();
-		$aspenMobileSettings[-1] = 'none';
-		while ($aspenMobileSetting->fetch()) {
-			$aspenMobileSettings[$aspenMobileSetting->id] = $aspenMobileSetting->name;
+		require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
+		$AspenPWASetting = new AspenPWASetting();
+		$AspenPWASetting->orderBy('name');
+		$AspenPWASettings = [];
+		$AspenPWASetting->find();
+		$AspenPWASettings[-1] = 'none';
+		while ($AspenPWASetting->fetch()) {
+			$AspenPWASettings[$AspenPWASetting->id] = $AspenPWASetting->name;
 		}
 
 		$barcodeTypes = [
@@ -4977,20 +4977,20 @@ class Library extends DataObject {
 				],
 			],
 
-			'aspenMobileSection' => [
-				'property' => 'aspenMobileSection',
+			'AspenPWASection' => [
+				'property' => 'AspenPWASection',
 				'type' => 'section',
-				'label' => 'Aspen Mobile',
+				'label' => 'Aspen Progressive Web Application(PWA)',
 				'hideInLists' => true,
 				'renderAsHeading' => true,
-				'permissions' => ['Administer Aspen Mobile Settings'],
+				'permissions' => ['Administer Aspen Progressive Web Application(PWA) Settings'],
 				'properties' => [
-					'AspenMobileSettingId' => [
-						'property' => 'AspenMobileSettingId',
+					'AspenPWASettingId' => [
+						'property' => 'AspenPWASettingId',
 						'type' => 'enum',
-						'values' => $aspenMobileSettings,
-						'label' => 'Aspen Mobile Settings',
-						'description' => 'The General Settings to use for Aspen Mobile',
+						'values' => $AspenPWASettings,
+						'label' => 'Aspen Progressive Web Application(PWA) Settings',
+						'description' => 'The General Settings to use for Aspen Progressive Web Application(PWA)',
 						'hideInLists' => true,
 						'default' => -1,
 					],

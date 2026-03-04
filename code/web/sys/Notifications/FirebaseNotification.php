@@ -2,7 +2,7 @@
 require_once ROOT_DIR . '/sys/Account/UserNotification.php';
 require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 require_once ROOT_DIR . '/sys/CurlWrapper.php';
-require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
 class FirebaseNotification extends DataObject {
 
 	public function sendPushNotification($message, $deviceToken, $userId, $notificationType) : void {
@@ -94,7 +94,7 @@ class FirebaseNotification extends DataObject {
 
 	function sendFCMessage($title, $body, $deviceToken)
 	{
-		$settings = new AspenMobileSetting();
+		$settings = new AspenPWASetting();
 		if($settings->find(true))
 		{
 			$serviceAccount = $settings->getServiceAccount();

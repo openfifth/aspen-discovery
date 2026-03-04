@@ -1,9 +1,9 @@
 <?php
 
 require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/sys/AspenMobile/Setting.php';
+require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
 
-class AspenMobile_AssetLinks extends Action {
+class AspenPWA_AssetLinks extends Action {
 
 	function launch() {
 		header('Content-type: application/json');
@@ -15,7 +15,7 @@ class AspenMobile_AssetLinks extends Action {
 
 	function build_links()
 	{
-		$setting = new AspenMobileSetting();
+		$setting = new AspenPWASetting();
 		$success = true;
 		if(!$setting->find(true))
 		{

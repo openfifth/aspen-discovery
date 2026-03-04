@@ -2,7 +2,7 @@
 
 require_once ROOT_DIR . '/JSON_Action.php';
 
-class AspenMobile_AJAX extends JSON_Action {
+class AspenPWA_AJAX extends JSON_Action {
 	function saveNotificationPushToken()
 	{
 		require_once ROOT_DIR . '/services/API/UserAPI.php';

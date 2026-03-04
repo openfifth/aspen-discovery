@@ -52,8 +52,8 @@
 		{/if}
 		<link rel="search" type="application/opensearchdescription+xml" title="{$site.title|escape} Catalog Search" href="/Search/OpenSearch?method=describe">
 		{include file="cssAndJsIncludes.tpl"}
-		{if $aspenMobileEnabled}
-			{* manifest.json produced from code/web/services/AspenMobile/manifest.php *}
+		{if $AspenPWAEnabled}
+			{* manifest.json produced from code/web/services/AspenPWA/manifest.php *}
 			<link rel="manifest" href="/manifest.json"/>
 		{/if}
 		{if !empty($themeCss)}{$themeCss}{/if}
