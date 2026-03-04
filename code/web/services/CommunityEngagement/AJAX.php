@@ -1544,11 +1544,18 @@ class CommunityEngagement_AJAX extends JSON_Action {
 	public function searchUsers() {
 		$query = $_REQUEST['query'] ?? '';
 
+		$response = [
+			'success' => false,
+			'message' => 'Sorry, you don\'t have permissions to search users'
+		];
+
+		if (!UserAccount::userHasPermission('View Community Engagement Admin View')) {
+			return $response;
+		}
+
 		if (strlen($query) < 2) {
-			return [
-				'success' => false,
-				'message' => 'Query too short'
-			];
+			$response['message'] = 'Query too short';
+			return $response;
 		}
 
 		require_once ROOT_DIR . '/sys/Account/User.php';
