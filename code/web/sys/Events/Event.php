@@ -154,7 +154,7 @@ class Event extends DataObject {
 						],
 						'description' => 'Private events are limited to those with permission to view private events',
 					],
-					'displayEventbranchOnThumbnail' => [
+					'displayEventBranchOnThumbnail' => [
 						'property' => 'displayEventBranchOnThumbnail',
 						'type' => 'checkbox',
 						'label' => 'Display Event Branch on Thumbnail',
