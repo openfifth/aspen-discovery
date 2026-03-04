@@ -331,15 +331,12 @@ function getUpdates26_02_00(): array {
 
 				// --- 3. MILESTONES: Cleanup and Constraint Enforcement ---
 				"ALTER TABLE `ce_campaign_milestone_users_progress`
-					MODIFY COLUMN `ce_campaign_milestone_id` int(11) NOT NULL,
 					DROP COLUMN `ce_campaign_id`,
 					DROP COLUMN `ce_milestone_id`",
 				"ALTER TABLE `ce_campaign_milestone_progress_entries`
-					MODIFY COLUMN `ce_campaign_milestone_id` int(11) NOT NULL,
 					DROP COLUMN `ce_campaign_id`,
 					DROP COLUMN `ce_milestone_id`",
 				"ALTER TABLE `ce_user_completed_milestones`
-					MODIFY COLUMN `ce_campaign_milestone_id` int(11) NOT NULL,
 					DROP COLUMN `campaignId`,
 					DROP COLUMN `milestoneId`",
 				"ALTER TABLE `ce_milestone` DROP COLUMN `campaignId`",
