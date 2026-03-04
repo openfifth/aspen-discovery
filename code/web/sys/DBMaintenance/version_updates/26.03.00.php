@@ -61,7 +61,14 @@ function getUpdates26_03_00(): array {
 			'sql' => [
 				"ALTER TABLE event_type ADD COLUMN displayEventBranchOnThumbnail TINYINT(1) DEFAULT 0",
 			]
-		], //add_option_to_set_display_event_location_on_event_type 
+		], //add_option_to_set_customizability_of_display_event_location_on_event_type
+		'add_option_to_set_customizability_of_display_event_location_on_event_type' => [
+			'title' => 'Add Option to Set Customizability Of Display Event Location On Event Type',
+			'description' => 'Add ability to choose the customizability of including event location to event thumbnail image at the event type level',
+			'sql' => [
+				"ALTER TABLE event_type ADD COLUMN displayEventBranchOnThumbnailCustomizable TINYINT(1) DEFAULT 0",
+			]
+		], //add_option_to_set_customizability_of_display_event_location_on_event_type
 
 		//mark j
 		'notify_saved_searches' => [
