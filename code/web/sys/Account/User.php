@@ -3743,10 +3743,16 @@ class User extends DataObject {
 			require_once ROOT_DIR . '/sys/Notifications/ExpoNotification.php';
 			require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 			$appScheme = 'aspen-lida';
-			require_once ROOT_DIR . '/sys/SystemVariables.php';
-			$systemVariables = SystemVariables::getSystemVariables();
-			if ($systemVariables && !empty($systemVariables->appScheme)) {
-				$appScheme = $systemVariables->appScheme;
+			require_once ROOT_DIR . '/sys/AspenLiDA/BrandedAppSetting.php';
+			$brandedSettings = new BrandedAppSetting();
+			if ($brandedSettings->find(true)) {
+				$appScheme = $brandedSettings->slugName;
+			} else {
+				require_once ROOT_DIR . '/sys/SystemVariables.php';
+				$systemVariables = SystemVariables::getSystemVariables();
+				if ($systemVariables && !empty($systemVariables->appScheme)) {
+					$appScheme = $systemVariables->appScheme;
+				}
 			}
 			$notificationToken = new UserNotificationToken();
 			$notificationToken->userId = $this->id;
@@ -3797,10 +3803,16 @@ class User extends DataObject {
 			require_once ROOT_DIR . '/sys/Notifications/ExpoNotification.php';
 			require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 			$appScheme = 'aspen-lida';
-			require_once ROOT_DIR . '/sys/SystemVariables.php';
-			$systemVariables = SystemVariables::getSystemVariables();
-			if ($systemVariables && !empty($systemVariables->appScheme)) {
-				$appScheme = $systemVariables->appScheme;
+			require_once ROOT_DIR . '/sys/AspenLiDA/BrandedAppSetting.php';
+			$brandedSettings = new BrandedAppSetting();
+			if ($brandedSettings->find(true)) {
+				$appScheme = $brandedSettings->slugName;
+			} else {
+				require_once ROOT_DIR . '/sys/SystemVariables.php';
+				$systemVariables = SystemVariables::getSystemVariables();
+				if ($systemVariables && !empty($systemVariables->appScheme)) {
+					$appScheme = $systemVariables->appScheme;
+				}
 			}
 			$notificationToken = new UserNotificationToken();
 			$notificationToken->userId = $this->id;
