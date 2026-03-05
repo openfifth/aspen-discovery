@@ -14849,6 +14849,7 @@ AspenDiscovery.Events = (function(){
 			var descriptionCustomizable = $("#descriptionCustomizable").is(':checked');
 			var coverCustomizable = $("#coverCustomizable").is(':checked');
 			var eventLengthCustomizable = $("#lengthCustomizable").is(':checked');
+			var displayBranchOnThumbnailCustomizable = $("#displayEventBranchOnThumbnailCustomizable").is(':checked');
 
 			var url = Globals.path + "/Events/AJAX";
 			var params = {
@@ -14857,6 +14858,7 @@ AspenDiscovery.Events = (function(){
 				descriptionCustomizable: descriptionCustomizable,
 				coverCustomizable: coverCustomizable,
 				eventLengthCustomizable: eventLengthCustomizable,
+				displayBranchOnThumbnailCustomizable: displayBranchOnThumbnailCustomizable,
 				objectId: $("#id").val()
 			};
 
@@ -14879,6 +14881,7 @@ AspenDiscovery.Events = (function(){
 				var descriptionCustomizable = $("#descriptionCustomizable").is(':checked');
 				var coverCustomizable = $("#coverCustomizable").is(':checked');
 				var eventLengthCustomizable = $("#lengthCustomizable").is(':checked');
+				var displayBranchOnThumbnailCustomizable = $("#displayEventBranchOnThumbnailCustomizable").is(':checked');
 
 				var eventLengthHoursToMinutes = $("#eventLength_hours").val() * 60;
 				var eventLengthMinutes = $("#eventLength_minutes").val();
@@ -14894,6 +14897,7 @@ AspenDiscovery.Events = (function(){
 					descriptionCustomizable: descriptionCustomizable,
 					coverCustomizable: coverCustomizable,
 					eventLengthCustomizable: eventLengthCustomizable,
+					displayBranchOnThumbnailCustomizable: displayBranchOnThumbnailCustomizable,
 					doFullSave: doFullSave
 				};
 				var url = Globals.path + '/Events/AJAX?method=saveEventsForType';
