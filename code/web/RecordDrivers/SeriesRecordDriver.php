@@ -86,7 +86,7 @@ class SeriesRecordDriver extends IndexRecordDriver {
 		$interface->assign('summUrl', $this->getAbsoluteUrl());
 
 		global $solrScope;
-		if ($this->fields["local_time_since_added_$solrScope"]) {
+		if (isset($this->fields["local_time_since_added_$solrScope"])) {
 			$interface->assign('isNew', $this->checkIfContainsNewTitles());
 		} else {
 			$interface->assign('isNew', false);
