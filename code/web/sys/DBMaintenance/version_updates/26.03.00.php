@@ -87,6 +87,14 @@ function getUpdates26_03_00(): array {
 		//galen
 
 		//alexander
+		'add_option_to_add_location_to_event_thumbail_image' => [
+			'title' => 'Add Option to Add Location to Event Thumnail Image',
+			'description' => 'Add ability to choose to add event location to event thumbnail image',
+			'sql' => [
+				"ALTER TABLE event ADD COLUMN displayEventBranchOnThumbnail TINYINT(1) DEFAULT 0",
+				"ALTER TABLE user_events_entry ADD COLUMN displayEventBranchOnThumbnail TINYINT(1) DEFAULT 0"
+			]
+		], //add_option_to_add_location_to_event_thumbnail_image 
 		'add_default_event_calendar_display_dropdown' => [
 			'title' => 'Add Default Event Calendar Display Dropdown',
 			'description' => 'Add the option of selecting the default display for the native events calendar',
@@ -111,7 +119,22 @@ function getUpdates26_03_00(): array {
 			]
 		],// add_user_removed_campaigns_table
 
+
 		//chloe
+		'add_option_to_set_display_event_location_on_event_type' => [
+			'title' => 'Add Option to Set Display Event Location On Event Type',
+			'description' => 'Add ability to choose to add event location to event thumbnail image at the event type level',
+			'sql' => [
+				"ALTER TABLE event_type ADD COLUMN displayEventBranchOnThumbnail TINYINT(1) DEFAULT 0",
+			]
+		], //add_option_to_set_customizability_of_display_event_location_on_event_type
+		'add_option_to_set_customizability_of_display_event_location_on_event_type' => [
+			'title' => 'Add Option to Set Customizability Of Display Event Location On Event Type',
+			'description' => 'Add ability to choose the customizability of including event location to event thumbnail image at the event type level',
+			'sql' => [
+				"ALTER TABLE event_type ADD COLUMN displayEventBranchOnThumbnailCustomizable TINYINT(1) DEFAULT 0",
+			]
+		], //add_option_to_set_customizability_of_display_event_location_on_event_type
 
 		//mark j
 		'notify_saved_searches' => [
