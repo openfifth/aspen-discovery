@@ -343,7 +343,11 @@ class UInterface extends Smarty {
 		$this->assign('hasOptionalUpdates', $hasOptionalUpdates);
 		$this->assign('shouldShowAdminAlert', $hasSqlUpdates || $hasOptionalUpdates);
 
-		$isRTL = $activeLanguage->isRTL();
+		if (empty($activeLanguage)) {
+			$isRTL = false;
+		}else {
+			$isRTL = $activeLanguage->isRTL();
+		}
 		$this->assign('isRTL', $isRTL);
 
 		$this->assign('allActiveThemes', []);
