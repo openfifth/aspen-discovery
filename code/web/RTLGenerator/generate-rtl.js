@@ -39,6 +39,10 @@ const RTL_PROPERTIES = {
     if (value === 'left') return 'right';
     if (value === 'right') return 'left';
     return value;
+  },
+  'content': (value) => {
+    // Handle directional characters in content property
+    return transformContentForRTL(value);
   }
 };
 
@@ -59,6 +63,131 @@ const IGNORE_PROPERTIES = new Set([
 ]);
 
 /**
+ * Font Awesome directional icons that need flipping for RTL
+ * Each icon maps to its opposite direction counterpart
+ */
+const FONT_AWESOME_RTL_MAPPING = new Map([
+  // Chevrons
+  ['\\f053', '\\f054'], // fa-chevron-left -> fa-chevron-right
+  ['\\f054', '\\f053'], // fa-chevron-right -> fa-chevron-left
+  ['\\f104', '\\f105'], // fa-angle-left -> fa-angle-right
+  ['\\f105', '\\f104'], // fa-angle-right -> fa-angle-left
+
+  // Double chevrons
+  ['\\f100', '\\f101'], // fa-angle-double-left -> fa-angle-double-right
+  ['\\f101', '\\f100'], // fa-angle-double-right -> fa-angle-double-left
+
+  // Arrows
+  ['\\f060', '\\f061'], // fa-arrow-left -> fa-arrow-right
+  ['\\f061', '\\f060'], // fa-arrow-right -> fa-arrow-left
+  ['\\f177', '\\f178'], // fa-arrow-circle-left -> fa-arrow-circle-right
+  ['\\f178', '\\f177'], // fa-arrow-circle-right -> fa-arrow-circle-left
+  ['\\f0a8', '\\f0a9'], // fa-arrow-circle-o-left -> fa-arrow-circle-o-right
+  ['\\f0a9', '\\f0a8'], // fa-arrow-circle-o-right -> fa-arrow-circle-o-left
+
+  // Hand/pointer
+  ['\\f0a4', '\\f0a5'], // fa-hand-o-left -> fa-hand-o-right
+  ['\\f0a5', '\\f0a4'], // fa-hand-o-right -> fa-hand-o-left
+
+  // Step/skip
+  ['\\f048', '\\f051'], // fa-step-backward -> fa-step-forward
+  ['\\f051', '\\f048'], // fa-step-forward -> fa-step-backward
+  ['\\f04a', '\\f04e'], // fa-fast-backward -> fa-fast-forward
+  ['\\f04e', '\\f04a'], // fa-fast-forward -> fa-fast-backward
+
+  // Caret
+  ['\\f0d9', '\\f0da'], // fa-caret-left -> fa-caret-right
+  ['\\f0da', '\\f0d9'], // fa-caret-right -> fa-caret-left
+  ['\\f150', '\\f152'], // fa-caret-square-o-left -> fa-caret-square-o-right
+  ['\\f152', '\\f150'], // fa-caret-square-o-right -> fa-caret-square-o-left
+
+  // Indent
+  ['\\f03c', '\\f03b'], // fa-indent -> fa-outdent
+  ['\\f03b', '\\f03c'], // fa-outdent -> fa-indent
+]);
+
+/**
+ * Common directional characters that need flipping in content
+ */
+const DIRECTIONAL_CHARS = {
+  '←': '→',
+  '→': '←',
+  '‹': '›',
+  '›': '‹',
+  '«': '»',
+  '»': '«',
+  '⟨': '⟩',
+  '⟩': '⟨',
+  '❮': '❯',
+  '❯': '❮',
+  '◀': '▶',
+  '▶': '◀',
+  '◄': '►',
+  '►': '◄',
+  '⇐': '⇒',
+  '⇒': '⇐',
+  '⇦': '⇨',
+  '⇨': '⇦'
+};
+
+/**
+ * Transform content property for RTL by flipping directional characters and Font Awesome icons
+ */
+function transformContentForRTL(value) {
+  let transformedValue = value;
+
+  // Handle quoted strings (both single and double quotes)
+  if ((value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))) {
+    const quote = value[0];
+    const content = value.slice(1, -1);
+    let newContent = content;
+
+    // Replace Font Awesome icons
+    for (const [ltr, rtl] of FONT_AWESOME_RTL_MAPPING) {
+      // Handle both single and double backslash patterns
+      const singleLtr = ltr.replace('\\\\', '\\');
+      const singleRtl = rtl.replace('\\\\', '\\');
+
+      // Check for exact match or pattern match
+      if (newContent === singleLtr) {
+        newContent = singleRtl;
+        break; // Only one transformation per content
+      }
+    }
+
+    // Replace directional characters
+    for (const [ltr, rtl] of Object.entries(DIRECTIONAL_CHARS)) {
+      newContent = newContent.replace(new RegExp(ltr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), rtl);
+    }
+
+    transformedValue = quote + newContent + quote;
+  }
+
+  return transformedValue;
+}
+
+/**
+ * Check if a selector contains ::before or ::after pseudo-elements
+ */
+function hasPseudoElements(selector) {
+  return /::?(before|after)\b/.test(selector);
+}
+
+/**
+ * Check if a selector or its declarations are RTL-relevant
+ */
+function isRTLRelevant(selector, declarations) {
+  // Always include ::before and ::after pseudo-elements as they often contain directional content
+  if (hasPseudoElements(selector)) {
+    return true;
+  }
+
+  // Check if any declarations are RTL-relevant
+  return declarations.length > 0;
+}
+
+/**
  * Parse CSS and extract only RTL-relevant rules
  */
 function generateRTLCSS(cssContent) {
@@ -77,15 +206,17 @@ function generateRTLCSS(cssContent) {
       continue;
     }
 
+
     const rtlDeclarations = [];
 
     // Parse individual declarations
-    const declRegex = /([^:;]+):\s*([^:;]+)(?:;|$)/g;
+    const declRegex = /([^:;]+):\s*([^:;!]+)(\s*!important)?(?:;|$)/g;
     let declMatch;
 
     while ((declMatch = declRegex.exec(declarations)) !== null) {
       const property = declMatch[1].trim();
       const value = declMatch[2].trim();
+      const important = declMatch[3] ? declMatch[3].trim() : '';
 
       // Skip if property should be ignored
       if (IGNORE_PROPERTIES.has(property)) {
@@ -99,11 +230,13 @@ function generateRTLCSS(cssContent) {
         if (typeof transform === 'function') {
           const newValue = transform(value);
           if (newValue !== value) {
-            rtlDeclarations.push(`  ${property}: ${newValue}`);
+            const importantStr = important ? ` ${important}` : '';
+            rtlDeclarations.push(`  ${property}: ${newValue}${importantStr}`);
           }
         } else {
           // Simple property name mapping
-          rtlDeclarations.push(`  ${transform}: ${value}`);
+          const importantStr = important ? ` ${important}` : '';
+          rtlDeclarations.push(`  ${transform}: ${value}${importantStr}`);
         }
       }
 
@@ -111,7 +244,8 @@ function generateRTLCSS(cssContent) {
       else if (property === 'margin' || property === 'padding') {
         const newValue = transformShorthandValue(value);
         if (newValue !== value) {
-          rtlDeclarations.push(`  ${property}: ${newValue}`);
+          const importantStr = important ? ` ${important}` : '';
+          rtlDeclarations.push(`  ${property}: ${newValue}${importantStr}`);
         }
       }
 
@@ -119,7 +253,8 @@ function generateRTLCSS(cssContent) {
       else if (property === 'border-radius') {
         const newValue = transformBorderRadius(value);
         if (newValue !== value) {
-          rtlDeclarations.push(`  ${property}: ${newValue}`);
+          const importantStr = important ? ` ${important}` : '';
+          rtlDeclarations.push(`  ${property}: ${newValue}${importantStr}`);
         }
       }
 
@@ -127,16 +262,44 @@ function generateRTLCSS(cssContent) {
       else if (property === 'transform' && value.includes('translate')) {
         const newValue = transformTranslate(value);
         if (newValue !== value) {
-          rtlDeclarations.push(`  ${property}: ${newValue}`);
+          const importantStr = important ? ` ${important}` : '';
+          rtlDeclarations.push(`  ${property}: ${newValue}${importantStr}`);
         }
       }
     }
 
-    // Add rule if it has RTL-relevant declarations
-    if (rtlDeclarations.length > 0) {
-      rtlRules.push(`${selector} {\n${rtlDeclarations.join(';\n')};\n}`);
+
+    // Check if this rule is RTL-relevant (either has RTL declarations or is a pseudo-element)
+    if (isRTLRelevant(selector, rtlDeclarations)) {
+      // For pseudo-elements, include content property transformations even if no other RTL properties exist
+      if (hasPseudoElements(selector) && rtlDeclarations.length === 0) {
+        // Parse declarations again but look for content property specifically
+        const declRegex = /([^:;]+):\s*([^:;!]+)(\s*!important)?(?:;|$)/g;
+        let declMatch;
+
+        while ((declMatch = declRegex.exec(declarations)) !== null) {
+          const property = declMatch[1].trim();
+          const value = declMatch[2].trim();
+          const important = declMatch[3] ? declMatch[3].trim() : '';
+
+          // Check content property for Font Awesome icons and directional characters
+          if (property === 'content') {
+            const transformedValue = transformContentForRTL(value);
+            if (transformedValue !== value) {
+              const importantStr = important ? ` ${important}` : '';
+              rtlDeclarations.push(`  ${property}: ${transformedValue}${importantStr}`);
+            }
+          }
+        }
+      }
+
+      // Add rule if it has any declarations
+      if (rtlDeclarations.length > 0) {
+        rtlRules.push(`${selector} {\n${rtlDeclarations.join(';\n')};\n}`);
+      }
     }
   }
+
 
   // Handle @media queries
   const mediaQueries = extractMediaQueries(cssContent);
@@ -261,4 +424,4 @@ if (require.main === module) {
   process.exit(success ? 0 : 1);
 }
 
-module.exports = { processCSS, generateRTLCSS };
+module.exports = {processCSS, generateRTLCSS, transformContentForRTL};

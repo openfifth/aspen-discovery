@@ -38,15 +38,20 @@ elif [ "$EXTENSION" = "less" ]; then
         INITIAL_TIME=0
         if [ -f "$CSS_FILE" ]; then
             INITIAL_TIME=$(stat -f %m "$CSS_FILE" 2>/dev/null || stat -c %Y "$CSS_FILE" 2>/dev/null || echo 0)
+            echo "Initial CSS file time: $INITIAL_TIME"
+        else
+            echo "CSS file does not exist yet: $CSS_FILE"
         fi
 
-        # Wait up to 10 seconds for CSS file to be updated
-        for i in {1..20}; do
+        # Wait up to 5 seconds for CSS file to be updated
+        echo "Waiting for CSS file update..."
+        for i in {1..10}; do
             if [ -f "$CSS_FILE" ]; then
                 CURRENT_TIME=$(stat -f %m "$CSS_FILE" 2>/dev/null || stat -c %Y "$CSS_FILE" 2>/dev/null || echo 0)
+                echo "Check $i: Current time: $CURRENT_TIME, Initial time: $INITIAL_TIME"
                 if [ "$CURRENT_TIME" -gt "$INITIAL_TIME" ]; then
                     echo "CSS file updated, generating RTL..."
-                    sleep 0.5  # Brief delay to ensure file write is complete
+                    sleep 0.3  # Brief delay to ensure file write is complete
                     node "$SCRIPT_DIR/generate-rtl.js" "$CSS_FILE" "$RTL_FILE"
                     exit $?
                 fi
@@ -54,7 +59,14 @@ elif [ "$EXTENSION" = "less" ]; then
             sleep 0.5
         done
 
-        echo "Timeout waiting for CSS file update"
+        # If no update detected, try processing the current CSS file anyway
+        echo "No update detected, processing existing CSS file..."
+        if [ -f "$CSS_FILE" ]; then
+            node "$SCRIPT_DIR/generate-rtl.js" "$CSS_FILE" "$RTL_FILE"
+            exit $?
+        fi
+
+        echo "Timeout waiting for CSS file update and no existing CSS file found"
         exit 1
     else
         # Immediate mode - process CSS file if it exists
