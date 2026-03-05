@@ -471,7 +471,7 @@ AspenDiscovery.CommunityEngagement = function() {
 			} else {
 				resultsDiv.innerHTML = users.map(user =>
 					`<div class="search-result-item" onclick="AspenDiscovery.CommunityEngagement.selectUser('${user.id}', '${user.displayName.replace(/'/g, "\\'")}')">
-						${user.displayName}
+						${user.displayName}${user.ils_barcode ? ' (' + user.ils_barcode + ')' : ''}
 					</div>`
 				).join('');
 			}
@@ -496,11 +496,21 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 
 			hiddenInput.value = '';
-			AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
-				const filteredUsers = users.filter(user =>
-					user.displayName.toLowerCase().includes(query.toLowerCase())
-				);
-				AspenDiscovery.CommunityEngagement.displaySearchResults(filteredUsers);
+			const url = Globals.path + '/CommunityEngagement/AJAX';
+			const params = {
+				method: 'searchUsers',
+				query: query
+			};
+
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
+				} else {
+					resultsDiv.style.display = 'none';
+					console.warn('No users found or error in AJAX call');
+				}
+			}).fail(function(jqXHR, textStatus, errorThrown) {
+				console.error('AJAX Error: ', textStatus, errorThrown);
 			});
 		},
 		loadCheckoutsForUser: function(userId, callback) {

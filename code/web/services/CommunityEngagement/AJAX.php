@@ -1146,6 +1146,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 				$users[] = array(
 					'id' => $user->id,
 					'displayName' => $user->displayName,
+					'ils_barcode' => $user->ils_barcode,
 				);
 			} 
 		}
@@ -1465,5 +1466,47 @@ class CommunityEngagement_AJAX extends JSON_Action {
 			echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 		}
 		exit;
+	}
+
+	public function searchUsers() {
+		$query = $_REQUEST['query'] ?? '';
+
+		$response = [
+			'success' => false,
+			'message' => 'Sorry, you don\'t have permissions to search users'
+		];
+
+		if (!UserAccount::userHasPermission('View Community Engagement Admin View')) {
+			return $response;
+		}
+
+		if (strlen($query) < 2) {
+			$response['message'] = 'Query too short';
+			return $response;
+		}
+
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		$user = new User();
+
+		$escapedQuery = addslashes($query);
+
+		$user->whereAdd("displayName LIKE '%$escapedQuery%' OR ils_barcode LIKE '%$escapedQuery%'");
+
+		$user->limit(0, 25);
+
+		$matches = [];
+		if ($user->find()) {
+			while ($user->fetch()) {
+				$matches[] = [
+					'id' => $user->id,
+					'displayName' => $user->displayName,
+					'ils_barcode' => $user->ils_barcode
+				];
+			}
+		}
+		return [
+			'success' => true,
+			'users' => $matches
+		];
 	}
 }
