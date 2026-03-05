@@ -46,6 +46,10 @@ function smarty_function_css($params, &$smarty) {
 		if (file_exists("{$local}/interface/themes/responsive/css/{$rtlFilename}")) {
 			$rtlCss = "/interface/themes/responsive/css/{$rtlFilename}";
 			$output .= "\n<link rel=\"stylesheet\" type=\"text/css\"{$media} href=\"{$rtlCss}?v={$version}\" />";
+			if (file_exists("{$local}/interface/themes/responsive/css/main-rtl-supplement.css")) {
+				$supRtlCss = "/interface/themes/responsive/css/main-rtl-supplement.css";
+				$output .= "\n<link rel=\"stylesheet\" type=\"text/css\"{$media} href=\"{$supRtlCss}?v={$version}\" />";
+			}
 		}
 	}
 
