@@ -5442,14 +5442,14 @@ class User extends DataObject {
 				foreach ($holds as $holdSection) {
 					/** @var Hold $hold */
 					foreach ($holdSection as $hold) {
-						if (!empty($hold->outOfHoldGroupMessage)) {
+						if ($hold->isLocalILL) {
 							$numLocalIllRequests++;
 						}
 					}
 				}
-				$checkouts = $this->getCatalogDriver()->getCheckouts($this);
+				$checkouts = $this->getCatalogDriver()->getCheckouts($this, true);
 				foreach ($checkouts as $checkout) {
-					if (!empty($checkout->outOfHoldGroupMessage)) {
+					if ($checkout->isLocalILL) {
 						$numLocalIllRequests++;
 					}
 				}
