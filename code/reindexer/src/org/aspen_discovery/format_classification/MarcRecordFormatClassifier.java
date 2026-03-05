@@ -1485,6 +1485,9 @@ public class MarcRecordFormatClassifier {
 		if (printFormats.contains("BoardBook")){
 			printFormats.remove("Book");
 		}
+		if (printFormats.contains("PictureBook")){
+			printFormats.remove("Book");
+		}
 		if (printFormats.contains("Journal")){
 			printFormats.remove("Book");
 		}
