@@ -25,6 +25,16 @@ function getUpdates26_03_00(): array {
 				"ALTER TABLE location add column locationsToExcludeAvailabilityFor varchar(255) NOT NULL DEFAULT ''",
 			]
 		], //add_locations_to_exclude_availability_for
+		'local_ill_handle_remote_pickups' => [
+			'title' => 'Local ILL handle remote pickups',
+			'description' => 'Add settings to handle remote pickups of materials',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user_checkout ADD COLUMN isLocalILL TINYINT(1) DEFAULT 0',
+				'ALTER TABLE user_hold ADD COLUMN isLocalILL TINYINT(1) DEFAULT 0',
+				'ALTER TABLE library ADD COLUMN includeRemoteCheckoutsInMaxLocalIllRequests TINYINT(1) DEFAULT 1',
+			]
+		], //local_ill_handle_remote_pickups
 
 		//kirstien
 		'add_cloud_library_sunday_reindex_option' => [
