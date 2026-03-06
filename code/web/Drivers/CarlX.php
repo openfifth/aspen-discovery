@@ -74,7 +74,7 @@ class CarlX extends AbstractIlsDriver {
 				$result['message'] = 'No Staff Username configured in Account Profile';
 				return $result;
 			}
-			$staff = $this->accountProfile->staffUserName;
+			$staff = $this->accountProfile->staffUsername;
 			$request->Modifiers->StaffID = $staff;
 		}
 		while (!$connectionPassed && $numTries < 2) {
