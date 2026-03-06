@@ -357,6 +357,25 @@ class Events_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function doCopyEvent() : array {
+		if(!UserAccount::isLoggedIn()) {
+			return[
+				'success' => false,
+				'message' => translate([
+					'text' => "Access unauthorized.",
+					'isAdminFacing' => true,
+				])
+			];
+		}
+
+		if(!UserAccount::userHasPermission([ 'Administer Events for All Locations', 'Administer Events for Home Library Locations', 'Administer Events for Home Location'])){
+			return[
+				'success' => false,
+				'message' => translate([
+					'text' => "Access denied - you do not have the required permissions.",
+					'isAdminFacing' => true,
+				])
+			];
+		}
 
 		if (!empty($_REQUEST['name']) && !empty($_REQUEST['locationId']) && !empty($_REQUEST['date'])) {
 			$eventInstancesCreated = 0;
@@ -496,6 +515,26 @@ class Events_AJAX extends JSON_Action {
 	}
 	/** @noinspection PhpUnused */
 	function checkEventsForType() : array {
+		if(!UserAccount::isLoggedIn()) {
+			return[
+				'success' => false,
+				'message' => translate([
+					'text' => "Access unauthorized.",
+					'isAdminFacing' => true,
+				])
+			];
+		}
+
+		if(!UserAccount::userHasPermission([ 'Administer Events for All Locations', 'Administer Events for Home Library Locations', 'Administer Events for Home Location'])){
+			return[
+				'success' => false,
+				'message' => translate([
+					'text' => "Access denied - you do not have the required permissions.",
+					'isAdminFacing' => true,
+				])
+			];
+		}
+
 		$titleCustomizable = (isset($_REQUEST['titleCustomizable']) && $_REQUEST['titleCustomizable'] == 'true') ? 1 : 0;
 		$descriptionCustomizable = (isset($_REQUEST['descriptionCustomizable']) && $_REQUEST['descriptionCustomizable'] == 'true') ? 1 : 0;
 		$coverCustomizable = (isset($_REQUEST['coverCustomizable']) && $_REQUEST['coverCustomizable'] == 'true') ? 1 : 0;
@@ -557,6 +596,26 @@ class Events_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function saveEventsForType() : array {
+		if(!UserAccount::isLoggedIn()) {
+			return[
+				'success' => false,
+				'message' => translate([
+					'text' => "Access unauthorized.",
+					'isAdminFacing' => true,
+				])
+			];
+		}
+
+		if(!UserAccount::userHasPermission([ 'Administer Events for All Locations', 'Administer Events for Home Library Locations', 'Administer Events for Home Location'])){
+			return[
+				'success' => false,
+				'message' => translate([
+					'text' => "Access denied - you do not have the required permissions.",
+					'isAdminFacing' => true,
+				])
+			];
+		}
+
 		$result = [
 			'success' => true,
 		];
