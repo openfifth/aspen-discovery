@@ -6641,6 +6641,7 @@ class Library extends DataObject {
 			$catalogRegistrationCapabilities = $catalog->getRegistrationCapabilities();
 			$suspendRequiresReactivationDate = $catalog->suspendRequiresReactivationDate();
 			$showDateWhenSuspending = $catalog->showDateWhenSuspending();
+			$reactivateDateNotRequired = $catalog->reactivateDateNotRequired();
 		}
 
 		$accountProfile = $this->getAccountProfile();
@@ -6656,6 +6657,7 @@ class Library extends DataObject {
 		$apiInfo['catalogRegistrationCapabilities'] = $catalogRegistrationCapabilities;
 		$apiInfo['suspendRequiresReactivationDate'] = $suspendRequiresReactivationDate;
 		$apiInfo['showDateWhenSuspending'] = $showDateWhenSuspending;
+		$apiInfo['reactivateDateNotRequired'] = $reactivateDateNotRequired;
 
 		$superScopeLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelSuperScope;
 		$localLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelLocal;
