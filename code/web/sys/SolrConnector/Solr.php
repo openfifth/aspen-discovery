@@ -298,12 +298,22 @@ abstract class Solr {
 			require_once ROOT_DIR . '/sys/Yaml.php';
 			try {
 				$yaml = new Yaml();
-				Solr::$_searchSpecs[$this->host] = $yaml->load($this->getSearchSpecsFile());
+				Solr::$_searchSpecs[$this->host] = $yaml->load($this->getSearchSpecs());
 			} catch (Exception $e) {
 				require_once ROOT_DIR . '/sys/AspenError.php';
 				AspenError::raiseError('Could not load search specs, check the configuration ' . $e->getMessage());
 			}
 		}
+	}
+
+	/**
+	 * place to overwrite for children who may get
+	 * specs from places other then a file
+	 * @return string
+	 */
+	function getSearchSpecs()
+	{
+		return $this->getSearchSpecsFile();
 	}
 
 	/**
