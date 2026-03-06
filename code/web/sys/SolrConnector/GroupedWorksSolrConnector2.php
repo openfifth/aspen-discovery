@@ -13,18 +13,20 @@ class GroupedWorksSolrConnector2 extends Solr {
 		/** @var Library $library */
 		global $library;
 
-		if (isset($library) && !empty($library->customGroupedWorkSearchSpecs)) {
-			$specs = $library->customGroupedWorkSearchSpecs;
-			if (!file_exist(specs) ||!is_readable(specs))
-			{
-				// Log warning if file doesn't exist or isn't readable
-				global $logger;
-				$logger->log("Custom grouped work search specs is not an accessible file. Interpreting as yaml text instead of a path for library {$library->subdomain}", Logger::LOG_WARNING);
-			}
-			return $specs;			
+		$useCustomSearchSpecs = isset($library) && !empty($library->customGroupedWorkSearchSpecs);
+		if(!$useCustomSearchSpecs)
+		{
+			// Fall back to default grouped work search specs
+			return $this->getSearchSpecsFile();
 		}
-		// Fall back to default grouped work search specs
-		return $this->getSearchSpecsFile();
+		$specs = $library->customGroupedWorkSearchSpecs;
+		if (!file_exist(specs) ||!is_readable(specs))
+		{
+			// Log warning if file doesn't exist or isn't readable
+			global $logger;
+			$logger->log("Custom grouped work search specs is not an accessible file. Interpreting as yaml text instead of a path for library {$library->subdomain}", Logger::LOG_WARNING);
+		}
+		return $specs;			
 	}
 
 	/**
