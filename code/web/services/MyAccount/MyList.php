@@ -40,7 +40,7 @@ class MyAccount_MyList extends MyAccount {
 		$groupedWorkDisplaySettings = $library->getGroupedWorkDisplaySettings();
 		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
 		$interface->assign('hideManifestationsInMobileView', $groupedWorkDisplaySettings->hideManifestationsInMobileView);
-
+		$interface->assign('facetCountsToShow', $groupedWorkDisplaySettings->facetCountsToShow);
 		// Fetch the List object
 		$listId = $_REQUEST['id'];
 		$_SESSION['returnToModule'] = 'MyAccount';
@@ -74,7 +74,7 @@ class MyAccount_MyList extends MyAccount {
 		$interface->assign('printEntryRating', $printEntryRating);
 
 		//If the list does not exist, create a new My Favorites List
-		if (!$list->find(true)) {
+		if (empty($listId) || !is_numeric($listId) || !$list->find(true)) {
 			global $interface;
 			$interface->assign('module', 'Error');
 			$interface->assign('action', 'Handle404');
@@ -107,6 +107,8 @@ class MyAccount_MyList extends MyAccount {
 
 		//Perform an action on the list, but verify that the user has permission to do so.
 		$userCanEdit = false;
+		//Only show list groups if the active user has the
+		$showListGroup = false;
 		$userObj = UserAccount::getActiveUserObj();
 		if ($userObj !== false) {
 			$userCanEdit = $userObj->canEditList($list);
@@ -116,7 +118,11 @@ class MyAccount_MyList extends MyAccount {
 				$hasUploadedCover = file_exists($customCoverPath);
 				$interface->assign('hasUploadedCover', $hasUploadedCover);
 			}
+			if ($userObj->id == $list->user_id) {
+				$showListGroup = true;
+			}
 		}
+		$interface->assign('showListGroup', $showListGroup);
 
 		if ($userCanEdit && (isset($_REQUEST['myListActionHead']) || isset($_REQUEST['myListActionItem']) || isset($_GET['delete']))) {
 			if (isset($_REQUEST['myListActionHead']) && strlen($_REQUEST['myListActionHead']) > 0) {
@@ -132,7 +138,9 @@ class MyAccount_MyList extends MyAccount {
 						$list->searchable = isset($_REQUEST['searchable']) && ($_REQUEST['searchable'] == 'true' || $_REQUEST['searchable'] == 'on');
 						$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && ($_REQUEST['displayListAuthor'] == 'true' || $_REQUEST['displayListAuthor'] == 'on');
 					}
-					$list->listGroupId = isset($_REQUEST['listGroupSelect']) ? intval($_REQUEST['listGroupSelect']) : -1;
+					if ($showListGroup) {
+						$list->listGroupId = isset($_REQUEST['listGroupSelect']) ? intval($_REQUEST['listGroupSelect']) : -1;
+					}
 					$this->reloadCover();
 					$list->update();
 					$list->fixWeights();
@@ -167,19 +175,70 @@ class MyAccount_MyList extends MyAccount {
 		//Check to see if we have page defaults
 		$defaultPageSize = 20;
 		$defaultSort = $list->defaultSort;
-		$defaultFilters = '';
 		if ($userObj !== false) {
 			$pageDefaults = PageDefaults::getPageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id);
 			if ($pageDefaults != null) {
 				$defaultPageSize = $pageDefaults->pageSize ?? $defaultPageSize;
 				$defaultSort = $pageDefaults->pageSort ?? $defaultSort;
-				$defaultFilters = $pageDefaults->userListFilters ?? $defaultFilters;
 			}
 		}
 
 		// Send the list to the template so title/description can be displayed:
 		$interface->assign('userList', $list);
 		$interface->assign('listSelected', $list->id);
+
+		//Get the types of records on the list and create a
+		$selectedResourceTypes = $_REQUEST['resourceTypes'] ?? [];
+		$activeListSources = $list->getListSources();
+		$listSources = [];
+		$activeUrl = $_SERVER['REQUEST_URI'];
+		foreach ($activeListSources as $listSource) {
+			$isApplied = empty($selectedResourceTypes) || in_array($listSource, $selectedResourceTypes);
+			if ($isApplied) {
+				$url = $activeUrl;
+				if (empty($selectedResourceTypes)) {
+					//Removing is adding everything except this
+					$removalUrl = $activeUrl;
+					foreach ($activeListSources as $listSource2) {
+						if ($listSource2 != $listSource) {
+							$removalUrl .= (str_contains($removalUrl, '?') ? '&' : '?') . "resourceTypes[]=$listSource2";
+						}
+					}
+				}else{
+					$tmpRemovalUrl = str_replace([
+						"&resourceTypes[]=$listSource",
+						"?resourceTypes[]=$listSource"
+					], '', $activeUrl);
+					if (str_contains($tmpRemovalUrl, '&') && !str_contains($tmpRemovalUrl, '?')) {
+						$tmpRemovalUrl = preg_replace("/resourceTypes\[]=$listSource&?/", '', $activeUrl);
+					}
+					$removalUrl = $tmpRemovalUrl;
+				}
+			}else{
+				$url = $activeUrl . (str_contains($activeUrl, '?') ? '&' : '?') . "resourceTypes[]=$listSource";
+				$removalUrl = $activeUrl;
+			}
+			$sourceDisplayName = $listSource;
+			if ($listSource == 'GroupedWork') {
+				$sourceDisplayName = 'Library Materials';
+			}elseif ($listSource == 'OpenArchives') {
+				$sourceDisplayName = 'History & Archives';
+			}
+			$listSources[] = [
+				'value' => $listSource,
+				'display' => $sourceDisplayName,
+				'isApplied' => $isApplied,
+				'url' => $url,
+				'removalUrl' => $removalUrl,
+				'countIsApproximate' => false,
+				'count' => $list->getNumListEntriesBySource($listSource),
+			];
+		}
+		$interface->assign('listSources', $listSources);
+		if (empty($selectedResourceTypes)) {
+			$selectedResourceTypes = $activeListSources;
+		}
+		$interface->assign('selectedResourceTypes', implode('|', $selectedResourceTypes));
 
 		global $library;
 		$interface->assign('enableListDescriptions', $library->enableListDescriptions);
@@ -238,31 +297,10 @@ class MyAccount_MyList extends MyAccount {
 			$list->update();
 		}
 
-		$availableFilters = $list->getAvailableFormatFilters();
-		$interface->assign('availableFilters', $availableFilters);
-		$activeFilters = [];
-
-		if (isset($_REQUEST['filters'])) {
-			$filterString = $_REQUEST['filters'];
-			if (!empty($filterString)) {
-				$formatFilters = explode(',', $filterString);
-				$activeFilters['format'] = array_filter($formatFilters);
-			}
-			if ($userObj !== false) {
-				PageDefaults::updatePageDefaultsForUser($userObj->id, 'MyAccount', 'MyList', $list->id, null, null, $filterString);
-			}
-		} elseif (!empty($defaultFilters)) {
-			// Use saved filters from user preferences.
-			$formatFilters = explode(',', $defaultFilters);
-			$activeFilters['format'] = array_filter($formatFilters);
-		}
-		$interface->assign('activeFilters', $activeFilters);
-
 		$inListGroup = false;
 		if ($list->listGroupId > 0) {
 			$inListGroup = true;
 		}
-		$interface->assign('inListGroup', $inListGroup);
 
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$listGroupInfo = null;
@@ -271,25 +309,48 @@ class MyAccount_MyList extends MyAccount {
 			$listGroup->id = $list->listGroupId;
 			if ($listGroup->find(true)) {
 				$listGroupInfo = clone $listGroup;
+			}else{
+				//The list group was deleted
+				$inListGroup = false;
 			}
 		}
+		$interface->assign('inListGroup', $inListGroup);
 		$interface->assign('listGroupInfo', $listGroupInfo);
 
 		$userListGroups = [];
-		if ($userCanEdit) {
+		if ($userCanEdit && $showListGroup) {
 			$listGroup = new UserListGroup();
 			$userListGroups = $listGroup->getListGroups(UserAccount::getActiveUserObj());
 		}
 		$interface->assign('userListGroups', $userListGroups);
 
+		$listHasFiltersApplied = 0;
+		if (count($listSources) != count($selectedResourceTypes)) {
+			$listHasFiltersApplied = 1;
+		}
+		$filterParams = [];
+		if (array_key_exists('filter', $_REQUEST)) {
+			$filterParams = $_REQUEST['filter'];
+		}elseif (array_key_exists('activeFilters', $_REQUEST)) {
+			$filterParams = explode('|',$_REQUEST['activeFilters']);
+		}
+		if (!empty($filterParams)) {
+			$listHasFiltersApplied = 1;
+		}
+		$interface->assign('listHasFiltersApplied', $listHasFiltersApplied);
+		$activeFilters = empty($filterParams) ? '' : implode('|', $filterParams);
+		$interface->assign('activeFilters', $activeFilters);
 
-		$this->buildListForDisplay($list, $userCanEdit, $activeSort, $defaultPageSize, $activeFilters);
+		$this->buildListForDisplay($list, $userCanEdit, $activeSort, $defaultPageSize, $selectedResourceTypes, $filterParams);
 
-		if (UserAccount::isLoggedIn()) {
-			$sidebar = 'Search/home-sidebar.tpl';
-		} else {
+		$numValidListItems = $list->numValidListItems();
+		$interface->assign('numValidListItems', $numValidListItems);
+		if ($numValidListItems > 0) {
+			$sidebar = 'MyAccount/list-sidebar.tpl';
+		}else{
 			$sidebar = '';
 		}
+
 		$this->display('../MyAccount/list.tpl', $list->title ?? translate([
 			'text' => 'My List',
 			'isPublicFacing' => true,
@@ -304,9 +365,10 @@ class MyAccount_MyList extends MyAccount {
 	 * @param bool $allowEdit
 	 * @param string $sortName
 	 * @param int $pageSize
-	 * @param array $activeFilters
+	 * @param array $selectedResourceTypes
+	 * @param array $filterParams
 	 */
-	private function buildListForDisplay(UserList $list, bool $allowEdit, string $sortName, int $pageSize, array $activeFilters = []) : void {
+	private function buildListForDisplay(UserList $list, bool $allowEdit, string $sortName, int $pageSize, array $selectedResourceTypes, array $filterParams) : void {
 		global $interface;
 
 		$printInterface = isset($_REQUEST['print']) && filter_var($_REQUEST['print'], FILTER_VALIDATE_BOOLEAN);
@@ -323,8 +385,8 @@ class MyAccount_MyList extends MyAccount {
 						$name,
 						$value,
 					] = $parts;
-					if ($name != 'sort') {
-						$queryParams[$name] = urldecode($value);
+					if ($name != 'sort' && $name != 'searchSource') {
+						$queryParams[urldecode($name)] = urldecode($value);
 					}
 				}
 			}
@@ -343,50 +405,57 @@ class MyAccount_MyList extends MyAccount {
 		$interface->assign('userSort', ($sortName == 'custom')); // switch for when users can sort their list
 
 		// Calculate total records considering active filters.
-		if (!empty($activeFilters)) {
-			$allFilteredEntries = $list->getListEntries($sortName, false, 0, 0, 0, $activeFilters);
-			$totalRecords = count($allFilteredEntries['listEntries']);
-		} else {
-			$totalRecords = $list->numValidListItems();
-		}
 		$page = $_REQUEST['page'] ?? 1;
 		$startRecord = ($page - 1) * $pageSize;
 		if ($startRecord < 0) {
 			$startRecord = 0;
 		}
-		$endRecord = $page * $pageSize;
-		if ($endRecord > $totalRecords) {
-			$endRecord = $totalRecords;
-		}
 		if ($printInterface) {
 			// When printing, show all results on one page
 			$startRecord = 0;
-			$endRecord = $totalRecords;
-			$pageSize = $totalRecords;
+			$pageSize = $list->numValidListItems();
+		}
+
+		if (count($selectedResourceTypes) == 1 && in_array('GroupedWork', $selectedResourceTypes)) {
+			//Because all records may not be indexed within Solr, and some records may have been weeded, we want to show all entries if no filters are applied
+			//But, we still want to do the solr search to load the facets.
+			$resourceList = $list->getListRecordsUsingSolr($startRecord, $pageSize, $allowEdit, 'html', null, $sortName, $filterParams);
+			$numFilteredResults = $resourceList['numFilteredEntries'];
+			$totalResults = $resourceList['numFilteredEntries'];
+			$formattedRecords = $resourceList['formattedRecords'];
+
+			if (empty($filterParams)) {
+				$resourceList = $list->getListRecords($startRecord, $pageSize, $allowEdit, 'html', null, $sortName, false, 0, $selectedResourceTypes);
+				$numFilteredResults = $list->numValidListItems($selectedResourceTypes);
+				$totalResults = $numFilteredResults;
+				$formattedRecords = $resourceList;
+			}
+		}else{
+			$resourceList = $list->getListRecords($startRecord, $pageSize, $allowEdit, 'html', null, $sortName, false, 0,$selectedResourceTypes);
+			$numFilteredResults = $list->numValidListItems($selectedResourceTypes);
+			$totalResults = $numFilteredResults;
+			$formattedRecords = $resourceList;
+		}
+
+		$endRecord = $page * $pageSize;
+		if ($endRecord > $numFilteredResults) {
+			$endRecord = $numFilteredResults;
 		}
 		$pageInfo = [
-			'resultTotal' => $totalRecords,
 			'startRecord' => $startRecord,
 			'endRecord' => $endRecord,
 			'perPage' => $pageSize,
+			'resultTotal' => $numFilteredResults
 		];
-		$resourceList = $list->getListRecords($startRecord, $pageSize, $allowEdit, 'html', null, $sortName, false, 0, $activeFilters);
-		$interface->assign('resourceList', $resourceList);
+		$interface->assign('resourceList', $formattedRecords);
 
 		// Set up paging of list contents:
 		$interface->assign('recordCount', $pageInfo['resultTotal']);
-		$interface->assign('recordStart', $pageInfo['startRecord']);
+		$interface->assign('recordStart', $pageInfo['startRecord'] + 1);
 		$interface->assign('recordEnd', $pageInfo['endRecord']);
 		$interface->assign('recordsPerPage', $pageInfo['perPage']);
 
 		$link = $_SERVER['REQUEST_URI'];
-		if (preg_match('/[&?]page=/', $link)) {
-			$link = preg_replace("/page=\\d+/", "page=%d", $link);
-		} elseif (strpos($link, "?") > 0) {
-			$link .= "&page=%d";
-		} else {
-			$link .= "?page=%d";
-		}
 		$options = [
 			'totalItems' => $pageInfo['resultTotal'],
 			'perPage' => $pageInfo['perPage'],
@@ -463,12 +532,42 @@ class MyAccount_MyList extends MyAccount {
 	}
 
 	function getBreadcrumbs(): array {
+		global $interface;
+
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/MyAccount/Home', 'Your Account');
 		if (UserAccount::isLoggedIn()) {
 			$breadcrumbs[] = new Breadcrumb('/MyAccount/Lists', 'Lists');
 		}
 		$breadcrumbs[] = new Breadcrumb('', 'List');
+
+		$recordCount = $interface->getVariable('recordCount');
+		if (empty($recordCount)) {
+			$resultCountText = translate([
+				'text' => "No Results Found",
+				"isPublicFacing" => true,
+			]);
+		}else{
+			$recordStart = number_format($interface->getVariable('recordStart'));
+			$recordEnd = number_format($interface->getVariable('recordEnd'));
+			$recordCount = number_format($interface->getVariable('recordCount'));
+			$resultCountText = translate([
+				'text' => "Showing %1% - %2% of %3%",
+				1 => $recordStart,
+				2 => $recordEnd,
+				3 => $recordCount,
+				"isPublicFacing" => true,
+			]);
+		}
+
+		$numValidListItems = $interface->getVariable('numValidListItems');
+		$resultCountText .= ' ('. translate([
+			'text' => "%1% total entries",
+			1 => $numValidListItems,
+			"isPublicFacing" => true,
+		]) .')';
+
+		$breadcrumbs[] = new Breadcrumb(null, $resultCountText, false);
 		return $breadcrumbs;
 	}
 }

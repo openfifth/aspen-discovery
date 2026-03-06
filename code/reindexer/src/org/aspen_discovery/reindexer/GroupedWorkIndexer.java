@@ -21,6 +21,7 @@ import java.sql.*;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.CRC32;
 
 import org.apache.logging.log4j.Logger;
@@ -64,8 +65,10 @@ public class GroupedWorkIndexer {
 	private PreparedStatement getDisplayInfoStmt;
 
 	private PreparedStatement getUserReadingHistoryLinkStmt;
+	private PreparedStatement getListLinkStmt;
 	private PreparedStatement getUserRatingLinkStmt;
 	private PreparedStatement getUserNotInterestedLinkStmt;
+	private static final AtomicBoolean setupMessageLogged = new AtomicBoolean(false);
 
 	private PreparedStatement forceReindexOfRecordStmt;
 
@@ -381,7 +384,9 @@ public class GroupedWorkIndexer {
 		}
 
 		//Initialize the updateServer and solr server
-		logEntry.addNote("Setting up update server and solr server");
+		if (setupMessageLogged.compareAndSet(false, true)) {
+			logEntry.addNote("Setting up update server and solr server");
+		}
 
 		String solrUrl;
 		if (indexVersion == 1) {
@@ -563,6 +568,7 @@ public class GroupedWorkIndexer {
 			getNovelistStmt = dbConn.prepareStatement("SELECT * from novelist_data where groupedRecordPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			getDisplayInfoStmt = dbConn.prepareStatement("SELECT * from grouped_work_display_info where permanent_id = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			getUserReadingHistoryLinkStmt = dbConn.prepareStatement("SELECT DISTINCT userId from user_reading_history_work where groupedWorkPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			getListLinkStmt = dbConn.prepareStatement("SELECT listId, weight, dateAdded from user_list_entry where source = 'GroupedWork' and sourceId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			getUserRatingLinkStmt = dbConn.prepareStatement("SELECT DISTINCT userId from user_work_review where groupedRecordPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			getUserNotInterestedLinkStmt = dbConn.prepareStatement("SELECT DISTINCT userId from user_not_interested where groupedRecordPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 		} catch (SQLException e) {
@@ -1389,6 +1395,7 @@ public class GroupedWorkIndexer {
 			loadReadingHistoryLinksForUsers(groupedWork);
 			loadRatingLinksForUsers(groupedWork);
 			loadNotInterestedLinksForUsers(groupedWork);
+			loadListLinksForUsers(groupedWork);
 		}catch (Exception e){
 			logEntry.incErrors("Unable to load user linkages", e);
 		}
@@ -1422,6 +1429,16 @@ public class GroupedWorkIndexer {
 			groupedWork.addReadingHistoryLink(userReadingHistoryRS.getLong("userId"));
 		}
 		userReadingHistoryRS.close();
+	}
+
+	private void loadListLinksForUsers (AbstractGroupedWorkSolr groupedWork) throws SQLException {
+		//Add users with the work in their reading history
+		getListLinkStmt.setString(1, groupedWork.getId());
+		ResultSet userListLinkRS = getListLinkStmt.executeQuery();
+		while (userListLinkRS.next()){
+			groupedWork.addListLink(userListLinkRS.getLong("listId"), userListLinkRS.getLong("weight"), userListLinkRS.getLong("dateAdded"));
+		}
+		userListLinkRS.close();
 	}
 
 	private void loadNovelistInfo(AbstractGroupedWorkSolr groupedWork){

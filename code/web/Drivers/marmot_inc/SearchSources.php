@@ -14,6 +14,7 @@ class SearchSources {
 		$searchObject = match ($source) {
 			'ebsco_eds' => SearchObjectFactory::initSearchObject('EbscoEds'),
 			'summon' => SearchObjectFactory::initSearchObject('Summon'),
+			'cloudsource' => SearchObjectFactory::initSearchObject('CloudSource'),
 			'events' => SearchObjectFactory::initSearchObject('Events'),
 			'genealogy' => SearchObjectFactory::initSearchObject('Genealogy'),
 			'lists' => SearchObjectFactory::initSearchObject('Lists'),
@@ -22,6 +23,7 @@ class SearchSources {
 			'websites' => SearchObjectFactory::initSearchObject('Websites'),
 			'series' => SearchObjectFactory::initSearchObject('Series'),
 			'talpa' => SearchObjectFactory::initSearchObject("Talpa"),
+			'gale' => SearchObjectFactory::initSearchObject('Gale'),
 			default => SearchObjectFactory::initSearchObject(),
 		};
 		$searchObject->init();
@@ -77,7 +79,17 @@ class SearchSources {
 			$repeatCourseReserves = $library->enableCourseReserves == 1;
 			$searchEbscoEDS = array_key_exists('EBSCO EDS', $enabledModules) && $library->edsSettingsId != -1;
 			$searchEbscohost = array_key_exists('EBSCOhost', $enabledModules) && $library->ebscohostSearchSettingId != -1;
+			$searchGale = array_key_exists('Gale', $enabledModules) && $library->galeSettingsId != -1;
 			$searchSummon = array_key_exists('Summon', $enabledModules) && $library->summonSettingsId != -1;
+			$searchCloudSource = array_key_exists('CloudSource', $enabledModules);
+			if ($searchCloudSource) {
+				//Check to see if we have active settings for the library/location
+				if ($location != null) {
+					$searchCloudSource = $location->getCloudSourceSettingId() > 0;
+				}else{
+					$searchCloudSource = $library->getCloudSourceSettingId() > 0;
+				}
+			}
 			$searchOpenArchives = array_key_exists('Open Archives', $enabledModules) && $library->enableOpenArchives == 1;
 			$searchTalpa = array_key_exists('Talpa Search', $enabledModules) && $library->enableTalpaSearch == 1;
 			$searchCourseReserves = $library->enableCourseReserves == 2;
@@ -193,6 +205,15 @@ class SearchSources {
 				];
 			}
 
+			if ($searchGale) {
+				$searchOptions['gale'] = [
+					'name' => 'Articles & Databases',
+					'description' => 'Gale - Articles and Database',
+					'catalogType' => 'gale',
+					'hasAdvancedSearch' => false,
+				];
+			}
+
 			if ($searchSummon) {
 				$searchOptions['summon'] = [
 					'name' => 'Articles & Databases',
@@ -202,14 +223,14 @@ class SearchSources {
 				];
 			}
 
-			// if ($searchSummon) {
-			// 	$searchOptions['summon'] = [
-			// 		'name' => 'Articles & Databases',
-			// 		'description' => 'Summon - Articles and Database',
-			// 		'catalogType' => 'summon',
-			// 		'hasAdvancedSearch' => false,
-			// 	];
-			// }
+			if ($searchCloudSource) {
+				$searchOptions['cloudsource'] = [
+					'name' => 'Articles & Databases',
+					'description' => 'CloudSource - Articles and Database',
+					'catalogType' => 'cloudsource',
+					'hasAdvancedSearch' => false,
+				];
+			}
 
 			if (array_key_exists('Events', $enabledModules)) {
 				require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';

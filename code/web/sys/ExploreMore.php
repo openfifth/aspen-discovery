@@ -65,6 +65,10 @@ class ExploreMore {
 		if (count($summonMatches) > 0) {
 			$interface->assign('relatedArticles', $summonMatches);
 		}
+		$galeMatches = $this->loadGaleOptions('', [], $searchTerm);
+		if (count($galeMatches) > 0) {
+			$interface->assign('relatedArticles', $galeMatches);
+		}
 
 		if ($activeSection != 'catalog') {
 			$relatedWorks = $this->getRelatedWorks($quotedSubjectsForSearching, $relatedCatalogContent);
@@ -132,6 +136,14 @@ class ExploreMore {
 
 		if (array_key_exists('Summon', $enabledModules)) {
 			$exploreMoreOptions = $this->loadSummonOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
+		};
+
+		if (array_key_exists('Gale', $enabledModules)) {
+			$exploreMoreOptions = $this->loadGaleOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
+		}
+
+    if (array_key_exists('CloudSource', $enabledModules)) {
+			$exploreMoreOptions = $this->loadCloudSourceOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
 		};
 
 		if (array_key_exists('Events', $enabledModules)) {
@@ -233,14 +245,15 @@ class ExploreMore {
 					foreach ($results['response']['docs'] as $doc) {
 						/** @var ListsRecordDriver $driver */
 						$driver = $searchObjectSolr->getRecordDriverForResult($doc);
+						$id = str_replace('WebResource:', '', $driver->getId());
 						if ($numCatalogResultsAdded < $this->numEntriesToAdd) {
 							//Add a link to the actual title
 							$exploreMoreOptions['sampleRecords']['websites'][] = [
 								'label' => $driver->getTitle(),
 								'description' => $driver->getTitle(),
 								'image' => $driver->getBookcoverUrl('medium'),
-								'link' => $driver->getLinkUrl(),
-								'onclick' => 'AspenDiscovery.Websites.trackUsage(' . $driver->getId() . ')',
+								'link' => 'javascript:;',
+								'onclick' => "AspenDiscovery.WebBuilder.getWebResource('{$id}'); AspenDiscovery.Websites.trackUsage('{$driver->getId()}');",
 								'usageCount' => 1,
 								'openInNewWindow' => false,
 							];
@@ -836,6 +849,112 @@ class ExploreMore {
 						'link' => '/Summon/Results?lookfor=' . urlencode($searchTerm),
 						'openInNewWindow' => false,
 					];
+				}
+			}
+		}
+		return $exploreMoreOptions;
+	}
+
+
+	/**
+	 * @param $activeSection
+	 * @param $searchTerm
+	 * @param $exploreMoreOptions
+	 * @return array
+	 */
+	public function loadGaleOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme) {
+		global $library;
+		global $enabledModules;
+		if (!empty($searchTerm) && array_key_exists('Gale', $enabledModules) && $library->galeSettingsId != -1 && $activeSection != 'gale') {
+			//Load Gale Options
+			/** @var SearchObject_GaleSearcher $galeSearcher */
+			$galeSearcher = SearchObjectFactory::initSearchObject('Gale');
+			$galeSearcher->setSearchTerms([
+				'lookfor' => $searchTerm,
+				'index' => 'Keyword',
+			]);
+			$galeResults = $galeSearcher->processSearch(true, false);
+			if ($galeResults != null) {
+				$exploreMoreOptions['sampleRecords']['gale'] = [];
+				$numMatches = $galeSearcher->getResultSummary()['resultTotal'];
+				if ($numMatches > 1) {
+					if ($appliedTheme != null && !empty($appliedTheme->articlesDBImage)) {
+						$image = '/files/origional/' . $appliedTheme->articlesDBImage;
+					} else {
+						$image = '/interface/themes/responsive/images/gale.png';
+					}
+					$exploreMoreOptions['searchLinks'][] = [
+						'label' => translate([
+							'text' => "All Gale Results (%1%)",
+							1 => $numMatches,
+							'isPublicFacing' => true,
+						]),
+						'description' => translate([
+							'text' => "All Results in Gale related to %1%",
+							1 => $searchTerm,
+							'isPublicFacing' => true,
+						]),
+						'image' => $image,
+						'link' => '/Gale/Results?lookfor=' . urlencode($searchTerm),
+						'openInNewWindow' => false,
+					];
+				}
+			}
+		}
+		return $exploreMoreOptions;
+	}
+
+	/**
+	 * @param $activeSection
+	 * @param $searchTerm
+	 * @param $exploreMoreOptions
+	 * @return array
+	 */
+	public function loadCloudSourceOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme) {
+		global $library;
+		global $enabledModules;
+		if (!empty($searchTerm) && array_key_exists('CloudSource', $enabledModules)) {
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $library->libraryId;
+			if ($libraryCloudSourceSetting->find(true)){
+				require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
+				$cloudSourceSetting = new CloudSourceSetting();
+				$cloudSourceSetting->id = $libraryCloudSourceSetting->cloudsourceSettingId;
+				if ($cloudSourceSetting->find(true) && $cloudSourceSetting->showInExploreMore){
+					//Load Cloud Source Options
+					/** @var SearchObject_CloudSourceSearcher $cloudSourceSearcher */
+					$cloudSourceSearcher = SearchObjectFactory::initSearchObject('CloudSource');
+					$cloudSourceSearcher->setSearchTerms([
+						'lookfor' => $searchTerm,
+					]);
+					$cloudSourceResults = $cloudSourceSearcher->processSearch();
+					if ($cloudSourceResults != null) {
+						$exploreMoreOptions['sampleRecords']['cloudsource'] = [];
+						$numMatches = $cloudSourceSearcher->getresultsTotal();
+						if ($numMatches > 1) {
+							if ($appliedTheme != null && !empty($appliedTheme->articlesDBImage)) {
+								$image = '/files/origional/' . $appliedTheme->articlesDBImage;
+							} else {
+								$image = '/interface/themes/responsive/images/cloudsource.png';
+							}
+							$exploreMoreOptions['searchLinks'][] = [
+								'label' => translate([
+									'text' => "All CloudSource OA Results (%1%)",
+									1 => $numMatches,
+									'isPublicFacing' => true,
+								]),
+								'description' => translate([
+									'text' => "All Results in CloudSource OA related to %1%",
+									1 => $searchTerm,
+									'isPublicFacing' => true,
+								]),
+								'image' => $image,
+								'link' => '/CloudSource/Results?lookfor=' . urlencode($searchTerm),
+								'openInNewWindow' => false,
+							];
+						}
+					}
 				}
 			}
 		}

@@ -25,7 +25,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getAddBrowseCategoryFromListForm() {
+	function getAddBrowseCategoryFromListForm() : array {
 		global $interface;
 
 		// Select List Creation using Object Editor functions
@@ -915,7 +915,9 @@ class MyAccount_AJAX extends JSON_Action {
 				$cancelId = $hold->cancelId;
 				$holdType = $hold->source;
 				$isIll = $hold->isIll;
-				if ($hold->cancelable) {
+				$patronId = $hold->patronId ?? $user->id;
+				$patron = $user->getUserReferredTo($patronId);
+				if ($patron && $hold->cancelable) {
 					if ($holdType == 'ils') {
 						$tmpResult = $user->cancelHold($recordId, $cancelId, $isIll);
 						if ($tmpResult['success']) {
@@ -1748,7 +1750,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$return['message'] = "You must provide a title for the list";
 			} else {
 				//If the record is not valid, skip the whole thing since the title could be bad too
-				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events') {
+				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events' && $_REQUEST['source'] != 'CloudSource') {
 					$recordToAdd = urldecode($_REQUEST['sourceId']);
 					if (!preg_match("/^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}|[A-Z0-9_-]+:[A-Z0-9_-]+|\d+$/i", $recordToAdd)) {
 						$return['success'] = false;
@@ -1896,6 +1898,20 @@ class MyAccount_AJAX extends JSON_Action {
 						} elseif ($userListEntry->source == 'Summon') {
 							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
 							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'CloudSource') {
+							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'Gale') {
+							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
 							if ($recordDriver->isValid()) {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
@@ -2481,9 +2497,11 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getCitationFormatsForm() {
+	function getCitationFormatsForm() : array {
 		global $interface;
 		$interface->assign('listId', $_REQUEST['listId']);
+		$interface->assign('selectedResourceTypes', $_REQUEST['selectedResourceTypes']);
+		$interface->assign('activeFilters', $_REQUEST['activeFilters']);
 		$citationFormats = CitationBuilder::getCitationFormats();
 		$interface->assign('citationFormats', $citationFormats);
 		$pageContent = $interface->fetch('MyAccount/getCitationFormatPopup.tpl');
@@ -2502,14 +2520,14 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function sendMyListEmail() {
+	function sendMyListEmail() : array {
 		global $interface;
 
 		// Get data from AJAX request
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) { // validly formatted List Id
 			$listId = $_REQUEST['listId'];
 			$to = $_REQUEST['to'];
-			$from = isset($_REQUEST['from']) ? $_REQUEST['from'] : '';
+			$from = $_REQUEST['from'] ?? '';
 			$message = $_REQUEST['message'];
 
 			//Load the list
@@ -2517,19 +2535,24 @@ class MyAccount_AJAX extends JSON_Action {
 			$list = new UserList();
 			$list->id = $listId;
 			if ($list->find(true)) {
-				// Build Favorites List
-				$listEntries = $list->getListTitles();
-				$interface->assign('listEntries', $listEntries);
-
 				// Load the User object for the owner of the list (if necessary):
-				if ($list->public == true || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
+					$_GET['id'] = $list->id;
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+
 					//The user can access the list
-					$titleDetails = $list->getListRecords(0, -1, false, 'recordDrivers');
+					if (count($selectedResourceTypes) && in_array('GroupedWork', $selectedResourceTypes) && !empty($activeFilters)) {
+						$titleDetailInfo = $list->getListRecordsUsingSolr(0, -1, false, 'recordDrivers', null, null, $activeFilters);
+						$titleDetails = $titleDetailInfo['formattedRecords'];
+					}else{
+						$titleDetails = $list->getListRecords(0, -1, false, 'recordDrivers', null, null, false, 0, $selectedResourceTypes);
+					}
 					// get all titles for email list, not just a page's worth
 					$interface->assign('titles', $titleDetails);
 					$interface->assign('list', $list);
 
-					if (strpos($message, 'http') === false && strpos($message, 'mailto') === false && $message == strip_tags($message)) {
+					if (!str_contains($message, 'http') && !str_contains($message, 'mailto') && $message == strip_tags($message)) {
 						$interface->assign('from', $from);
 						$interface->assign('message', $message);
 						$body = $interface->fetch('Emails/my-list.tpl');
@@ -2543,11 +2566,6 @@ class MyAccount_AJAX extends JSON_Action {
 							$result = [
 								'result' => true,
 								'message' => 'Your email was sent successfully.',
-							];
-						} elseif (($emailResult instanceof AspenError)) {
-							$result = [
-								'result' => false,
-								'message' => "Your email message could not be sent: {$emailResult->getMessage()}.",
 							];
 						} else {
 							$result = [
@@ -2588,12 +2606,14 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getEmailMyListForm() {
+	function getEmailMyListForm() : array {
 		global $interface;
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
 			$listId = $_REQUEST['listId'];
 
 			$interface->assign('listId', $listId);
+			$interface->assign('selectedResourceTypes', $_REQUEST['selectedResourceTypes']);
+			$interface->assign('activeFilters', $_REQUEST['activeFilters']);
 
 			return [
 				'title' => 'Email a list',
@@ -9294,6 +9314,20 @@ class MyAccount_AJAX extends JSON_Action {
 								$title = $recordDriver->getTitle();
 								$userListEntry->title = mb_substr($title, 0, 50);
 							}
+						} elseif ($userListEntry->source == 'CloudSource') {
+							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
+						} elseif ($userListEntry->source == 'Gale') {
+							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
+							if ($recordDriver->isValid()) {
+								$title = $recordDriver->getTitle();
+								$userListEntry->title = mb_substr($title, 0, 50);
+							}
 						}
 						$existingEntry = false;
 						if ($userListEntry->find(true)) {
@@ -9439,6 +9473,8 @@ class MyAccount_AJAX extends JSON_Action {
 				$bookCoverInfo->mediumLoaded = 0;
 				$bookCoverInfo->largeLoaded = 0;
 				$bookCoverInfo->update();
+				// Update dateUpdated to refresh cached image
+				$listEntry->updateParentListDateUpdated();
 			}
 
 			return [
@@ -9670,10 +9706,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function deleteListItems() {
+	function deleteListItems() : array {
 		$result = [
 			'success' => false,
-			'message' => 'Something went wrong.',
 		];
 
 		$listId = htmlspecialchars($_GET["id"]);
@@ -9681,15 +9716,16 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		$list = new UserList();
 		$list->id = $listId;
+		$userCanEdit = false;
 		if ($list->find(true)) {
 			//Perform an action on the list, but verify that the user has permission to do so.
-			$userCanEdit = false;
 			$userObj = UserAccount::getActiveUserObj();
-			if ($userObj != false) {
+			if ($userObj !== false) {
 				$userCanEdit = $userObj->canEditList($list);
 			}
 		} else {
 			$result['message'] = "Sorry, that list wasn't found.";
+			return $result;
 		}
 
 		if ($userCanEdit) {
@@ -9710,8 +9746,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$list->update();
 			$this->reloadCover();
-			$result['success'] = true;
-			$result['message'] = 'Items removed from the list successfully';
 		} else {
 			$result['message'] = "Sorry, you don't have permissions to edit this list.";
 		}
@@ -9865,9 +9899,11 @@ class MyAccount_AJAX extends JSON_Action {
 		if (isset($_REQUEST['listId']) && isset($_REQUEST['listEntryId'])) {
 			$listId = $_REQUEST['listId'];
 			$listEntry = $_REQUEST['listEntryId'];
+			$listHasFiltersApplied = $_REQUEST['listHasFiltersApplied'] ?? 0;
 
 			$interface->assign('listId', $listId);
 			$interface->assign('listEntry', $listEntry);
+			$interface->assign('listHasFiltersApplied', $listHasFiltersApplied);
 
 			if (is_array($listId)) {
 				$listId = array_pop($listId);
@@ -9892,25 +9928,8 @@ class MyAccount_AJAX extends JSON_Action {
 				if ($userList->find(true)) {
 					$userObj = UserAccount::getActiveUserObj();
 					if ($userObj) {
-						$this->listId = $userList->id;
-						$this->listTitle = $userList->title;
 						$userCanEdit = $userObj->canEditList($userList);
 						if ($userCanEdit) {
-							if (isset($_POST['submit'])) {
-								$this->saveChanges();
-
-								// After changes are saved, send the user back to an appropriate page;
-								// either the list they were viewing when they started editing, or the
-								// overall favorites list.
-								if (isset($listId)) {
-									$nextAction = 'MyList/' . $listId;
-								} else {
-									$nextAction = 'Home';
-								}
-								header('Location: /MyAccount/' . $nextAction);
-								exit();
-							}
-
 							$interface->assign('list', $userList);
 
 							$listEntryId = $_REQUEST['listEntryId'];
@@ -9961,7 +9980,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function editListItem(): array {
-		/** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -10467,16 +10485,10 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($list->find(true)) {
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					// Get user's saved filters if logged in.
-					$activeFilters = [];
-					if (UserAccount::isLoggedIn()) {
-						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
-						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
-						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
-							$formatFilters = explode(',', $pageDefaults->userListFilters);
-							$activeFilters['format'] = array_filter($formatFilters);
-						}
-					}
-					$list->buildCSV($activeFilters);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+
+					$list->buildCSV($selectedResourceTypes, $activeFilters);
 					// If buildCSV succeeds, it exits.
 				} else {
 					$result['message'] = translate([
@@ -10518,16 +10530,9 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($list->find(true)) {
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					// Get user's saved filters if logged in.
-					$activeFilters = [];
-					if (UserAccount::isLoggedIn()) {
-						require_once ROOT_DIR . '/sys/User/PageDefaults.php';
-						$pageDefaults = PageDefaults::getPageDefaultsForUser(UserAccount::getActiveUserId(), 'MyAccount', 'MyList', $list->id);
-						if ($pageDefaults != null && !empty($pageDefaults->userListFilters)) {
-							$formatFilters = explode(',', $pageDefaults->userListFilters);
-							$activeFilters['format'] = array_filter($formatFilters);
-						}
-					}
-					$list->buildRIS($activeFilters);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+					$list->buildRIS($selectedResourceTypes, $activeFilters);
 					// If buildRIS succeeds, it exits.
 				} else {
 					$result['message'] = translate([
@@ -11028,6 +11033,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ob_end_flush();
 
 			$interval = 10;
+			global $interface;
 
 			while (true) {
 
@@ -11087,9 +11093,15 @@ class MyAccount_AJAX extends JSON_Action {
 											'isPublicFacing' => true
 										]
 									),
-									'body' => $campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
-									'icon' => "fa-chart-line",
-									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+								'body' => translate([
+									'text' => '%1% of %2% progressed!',
+									1=> $milestone->name,
+									2=> $campaign->name,
+									'isPublicFacing' => true,
+								]),
+								$campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
+								'icon' => "fa-chart-line",
+								'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
 										[
 											'text' => 'View all campaigns',
 											'isPublicFacing' => true
@@ -11102,48 +11114,57 @@ class MyAccount_AJAX extends JSON_Action {
 						if ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
-									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
-										'title'=> translate(
-											[
-												'text' => 'Milestone completed! Well done!',
-												'isPublicFacing' => true
-											]
-										),
-										'body' => $milestone->name,
-										'icon' => "fa-clipboard-check",
-										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-											[
-												'text' => 'View all campaigns',
-												'isPublicFacing' => true
-											]
-										)]
-									)
-								) . "\n\n";
+								array(
+									'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
+									'title'=> translate(
+										[
+											'text' => 'Milestone completed! Well done!',
+											'isPublicFacing' => true
+										]
+									),
+									'body' => translate([
+										'text' => '%1% of %2% complete.',
+										1 =>$milestone->name,
+										2=>$campaign->name,
+										'isPublicFacing' => true,
+									]),
+									'icon' => "fa-clipboard-check",
+									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+										[
+											'text' => 'View all campaigns',
+											'isPublicFacing' => true
+										]
+									)]
+								)
+							) . "\n\n";
 						}
 
 						# Handle campaign completion notification
 						if ($userCampaign->completed && !$wantedOverflowProgress) {
 							echo "event: ce_notification\n";
 							echo "data: " . json_encode(
-									array(
-										'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
-										'title'=> translate(
-											[
-												'text' => 'Campaign completed! Awesome!',
-												'isPublicFacing' => true
-											]
-										),
-										'body' => $campaign->name,
-										'icon' => "fa-medal",
-										'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-											[
-												'text' => 'View all campaigns',
-												'isPublicFacing' => true
-											]
-										)]
-									)
-								) . "\n\n";
+								array(
+									'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
+									'title'=> translate(
+										[
+											'text' => 'Campaign completed! Awesome!',
+											'isPublicFacing' => true
+										]
+									),
+									'body' => translate([
+										'text' => '%1% campaign complete!',
+										1 => $campaign->name,
+										'isPublicFacing' => true
+									]),
+									'icon' => "fa-medal",
+									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
+										[
+											'text' => 'View all campaigns',
+											'isPublicFacing' => true
+										]
+									)]
+								)
+							) . "\n\n";
 						}
 					}
 				}else{
@@ -11489,6 +11510,8 @@ class MyAccount_AJAX extends JSON_Action {
 	function getListPrintOptions(): array {
 		global $interface;
 		$interface->assign('printListId', strip_tags($_REQUEST['listId']));
+		$interface->assign('selectedResourceTypes', empty($_REQUEST['selectedResourceTypes']) ? '' : $_REQUEST['selectedResourceTypes']);
+		$interface->assign('activeFilters', empty($_REQUEST['activeFilters']) ? '' : $_REQUEST['activeFilters']);
 
 		return [
 			'title' => translate([
@@ -11804,7 +11827,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$userList->update();
 					}
 
-					// Unassign any sub-groups that were in this group
+					// Unassign any subgroups that were in this group
 					$subGroup = new UserListGroup();
 					$subGroup->parentGroupId = $groupId;
 					$subGroup->userId = UserAccount::getActiveUserId();
@@ -11846,5 +11869,353 @@ class MyAccount_AJAX extends JSON_Action {
 
 		return $result;
 
+	}
+
+	/** @noinspection PhpUnused */
+	function getMenuDataSearches() {
+		global $timer;
+		$result = [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Unknown Error',
+				'isPublicFacing' => true,
+			]),
+		];
+		if (UserAccount::isLoggedIn()) {
+			$user = UserAccount::getActiveUserObj();
+			if ($user->canSaveSearches()) {
+				$searchEntry = new SearchEntry();
+				$savedSearches = $searchEntry::getUserSavedSearches($user->id);
+				$recentSearches = $searchEntry::getUserRecentSearches(session_id(), $user->id);
+				$timer->logTime("Loaded user searches for menu data");
+				$result = [
+					'success' => true,
+					'numSavedSearches' => count($savedSearches),
+					'numRecentSearches' => count($recentSearches),
+				];
+			} else {
+				$result['message'] = translate([
+					'text' => 'Unknown Error',
+					'isPublicFacing' => true,
+				]);
+			}
+		} else {
+			$result['message'] = 'You must be logged in to get menu data';
+		}
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	public function getSearchHistory(): array {
+		global $interface;
+
+		if (!UserAccount::isLoggedIn()) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'You must be logged in to view search history',
+					'isPublicFacing' => true
+				]),
+				'searches' => '',
+				'pagination' => ''
+			];
+		}
+
+		$type = $_REQUEST['type'] ?? 'saved';
+		$sort = $_REQUEST['sort'] ?? 'id';
+		$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+		$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
+		$filter = $_REQUEST['filter'] ?? '';
+
+		// Validate type parameter
+		if (!in_array($type, [
+			'saved',
+			'recent'
+		])) {
+			$type = 'saved';
+		}
+
+		$interface->assign('type', $type);
+		$interface->assign('sort', $sort);
+		$interface->assign('page', $page);
+		$interface->assign('limit', $limit);
+		$interface->assign('savedSearchFilter', $filter);
+
+
+		$sortOptions = [
+			'id' => 'Id (Default)',
+			'created_asc' => 'Date Saved (Oldest First)',
+			'created_desc' => 'Date Saved (Newest First)',
+			'title_asc' => 'Name (A-Z)',
+			'title_desc' => 'Name (Z-A)',
+		];
+		$interface->assign('sortOptions', $sortOptions);
+
+		if ($type === 'saved') {
+			return $this->getSavedSearches();
+		} else {
+			return $this->getRecentSearches();
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	private function getSavedSearches(): array {
+		global $interface;
+
+		$interface->assign('noSavedSearches', false);
+		$result = [
+			'success' => false,
+			'message' => 'Unknown error loading saved searches',
+			'searches' => '',
+			'pagination' => '',
+			'totalCount' => 0,
+		];
+
+		$user = UserAccount::getActiveUserObj();
+		if (!UserAccount::isLoggedIn() || empty($user)) {
+			$result['message'] = translate([
+				'text' => "Your login has timed out. Please login again.",
+				'isPublicFacing' => true,
+			]);
+		} else {
+			$searches = [];
+
+			$sort = $_REQUEST['sort'] ?? 'id';
+			$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+			$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
+			$filter = $_REQUEST['filter'] ?? '';
+			$interface->assign('limit', $limit);
+			$interface->assign('sort', $sort);
+			$interface->assign('filter', $filter);
+
+			$savedSearches = [];
+			$savedSearch = new SearchEntry();
+			$savedSearch->user_id = $user->id;
+			$savedSearch->saved = 1;
+			if (!empty($filter)) {
+				$escapedFilter = $savedSearch->escape('%' . $filter . '%');
+				$savedSearch->whereAdd("title LIKE $escapedFilter");
+			}
+			$totalCount = $savedSearch->count();
+			switch ($sort) {
+				case 'created_asc':
+					$savedSearch->orderBy('created ASC');
+					break;
+				case 'created_desc':
+					$savedSearch->orderBy('created DESC');
+					break;
+				case 'source_asc':
+					$savedSearch->orderBy('searchSource ASC');
+					break;
+				case 'source_desc':
+					$savedSearch->orderBy('searchSource DESC');
+					break;
+				case 'title_asc':
+					$savedSearch->orderBy('title ASC');
+					break;
+				case 'title_desc':
+					$savedSearch->orderBy('title DESC');
+					break;
+				default:
+					$savedSearch->orderBy('id DESC');
+					break;
+			}
+			$savedSearch->limit(($page - 1) * $limit, $limit);
+			$savedSearch->find();
+			while ($savedSearch->fetch()) {
+				$savedSearches[] = clone $savedSearch;
+			}
+
+			foreach ($savedSearches as $savedSearch) {
+				/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
+				$searchObject = SearchObjectFactory::initSearchObject();
+				$size = strlen($savedSearch->search_object);
+				$minSO = unserialize($savedSearch->search_object);
+				$searchObject->deminify($minSO);
+				$searchObject->activateAllFacets();
+
+				$searchSourceLabels = [
+					'local' => 'Catalog',
+					'genealogy' => 'Genealogy',
+				];
+
+				$searchSourceLabel = $searchObject->getSearchSource();
+				if (array_key_exists($searchSourceLabel, $searchSourceLabels)) {
+					$searchSourceLabel = $searchSourceLabels[$searchSourceLabel];
+				}
+
+				$newItem = [
+					'id' => $savedSearch->id,
+					'time' => date("g:ia, jS M y", $searchObject->getStartTime()),
+					'title' => $savedSearch->title,
+					'url' => $searchObject->renderSearchUrl(),
+					'searchId' => $searchObject->getSearchId(),
+					'description' => $searchObject->displayQuery(),
+					'filters' => $searchObject->getFilterList(),
+					'hits' => number_format($searchObject->getResultTotal()),
+					'source' => $searchSourceLabel,
+					'speed' => round($searchObject->getQuerySpeed(), 2) . "s",
+					// Size is purely for debugging. Not currently displayed in the template.
+					// It's the size of the serialized, minified search in the database.
+					'size' => round($size / 1024, 3) . "kb",
+					'hasNewResults' => $savedSearch->hasNewResults == 1,
+				];
+
+				if ($savedSearch->hasNewResults) {
+					$searchObject->addFilter('time_since_added:Week');
+					$newItem['newTitlesUrl'] = $searchObject->renderSearchUrl();
+				}
+
+				$searches[] = $newItem;
+			}
+
+			if (count($searches) > 0) {
+				$interface->assign('searches', $searches);
+				$interface->assign('userSearchType', 'saved');
+				$interface->assign('totalPages', ceil($totalCount / $limit));
+				$interface->assign('currentPage', $page);
+				$interface->assign('totalCount', $totalCount);
+
+				$result['success'] = true;
+				$result['searches'] = $interface->fetch('Search/historyList.tpl');
+				$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
+				$result['totalCount'] = $totalCount;
+			} else if (!empty($filter)) {
+				$interface->assign('searches', $searches);
+				$interface->assign('userSearchType', 'saved');
+				$interface->assign('totalPages', ceil($totalCount / $limit));
+				$interface->assign('currentPage', $page);
+				$interface->assign('totalCount', $totalCount);
+
+				$result['success'] = true;
+				$result['searches'] = $interface->fetch('Search/historyList.tpl');
+				$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
+				$result['totalCount'] = $totalCount;
+			} else {
+				$interface->assign('noSavedSearches', true);
+				$result['message'] = translate([
+					'text' => 'No saved searches found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		}
+
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	private function getRecentSearches(): array {
+		global $interface;
+		$interface->assign('noRecentSearches', false);
+		$result = [
+			'success' => false,
+			'message' => 'Unknown error loading recent searches',
+			'searches' => '',
+			'pagination' => '',
+			'totalCount' => 0,
+		];
+
+		$user = UserAccount::getActiveUserObj();
+		if (!UserAccount::isLoggedIn() || empty($user)) {
+			$result['message'] = translate([
+				'text' => "Your login has timed out. Please login again.",
+				'isPublicFacing' => true,
+			]);
+		} else {
+			$searches = [];
+
+			$sort = $_REQUEST['sort'] ?? 'id';
+			$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+			$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
+			$interface->assign('limit', $limit);
+			$interface->assign('sort', $sort);
+
+			$savedSearches = [];
+			$savedSearch = new SearchEntry();
+			$savedSearch->whereAdd("session_id = '" . session_id() . "' OR user_id = " . $user->id);
+			$savedSearch->saved = 0;
+			$totalCount = $savedSearch->count();
+			switch ($sort) {
+				case 'created_asc':
+					$savedSearch->orderBy('created ASC');
+					break;
+				case 'created_desc':
+					$savedSearch->orderBy('created DESC');
+					break;
+				case 'query_asc':
+					$savedSearch->orderBy('description ASC');
+					break;
+				case 'query_desc':
+					$savedSearch->orderBy('description DESC');
+					break;
+				default:
+					$savedSearch->orderBy('id DESC');
+					break;
+			}
+			$savedSearch->limit(($page - 1) * $limit, $limit);
+			$savedSearch->orderBy('id');
+			$savedSearch->find();
+			while ($savedSearch->fetch()) {
+				$savedSearches[] = clone $savedSearch;
+			}
+
+			foreach ($savedSearches as $savedSearch) {
+				/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
+				$searchObject = SearchObjectFactory::initSearchObject();
+				$searchObject->init();
+				$size = strlen($savedSearch->search_object);
+				$minSO = unserialize($savedSearch->search_object);
+				$searchObject = SearchObjectFactory::deminify($minSO);
+				$searchObject->activateAllFacets();
+
+				$searchSourceLabels = [
+					'local' => 'Catalog',
+					'genealogy' => 'Genealogy',
+				];
+
+				$searchSourceLabel = $searchObject->getSearchSource();
+				if (array_key_exists($searchSourceLabel, $searchSourceLabels)) {
+					$searchSourceLabel = $searchSourceLabels[$searchSourceLabel];
+				}
+
+				$newItem = [
+					'id' => $savedSearch->id,
+					'time' => date("g:ia, jS M y", $searchObject->getStartTime()),
+					'url' => $searchObject->renderSearchUrl(),
+					'searchId' => $searchObject->getSearchId(),
+					'description' => $searchObject->displayQuery(),
+					'filters' => $searchObject->getFilterList(),
+					'hits' => number_format($searchObject->getResultTotal()),
+					'source' => $searchSourceLabel,
+					'speed' => round($searchObject->getQuerySpeed(), 2) . "s",
+					// Size is purely for debugging. Not currently displayed in the template.
+					// It's the size of the serialized, minified search in the database.
+					'size' => round($size / 1024, 3) . "kb",
+					'hasNewResults' => $savedSearch->hasNewResults == 1,
+				];
+
+				$searches[] = $newItem;
+			}
+
+			if (count($searches) > 0) {
+				$interface->assign('searches', $searches);
+				$interface->assign('userSearchType', 'recent');
+				$interface->assign('totalPages', ceil($totalCount / $limit));
+				$interface->assign('currentPage', $page);
+				$interface->assign('totalCount', $totalCount);
+
+				$result['success'] = true;
+				$result['searches'] = $interface->fetch('Search/historyList.tpl');
+				$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
+				$result['totalCount'] = $totalCount;
+			} else {
+				$interface->assign('noRecentSearches', true);
+				$result['message'] = translate([
+					'text' => 'No recent searches found.',
+					'isPublicFacing' => true,
+				]);
+			}
+		}
+		return $result;
 	}
 }

@@ -1889,8 +1889,37 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			$selectedDetailedAvailability = null;
 			$selectedLanguages = [];
 			$selectedEcontentSources = [];
+			$filterList = [];
+			if (UserAccount::isLoggedIn()) {
+				$user = UserAccount::getActiveUserObj();
+				$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
+			} else {
+				$lockedFacets = $_SESSION['lockedFilters'] ?? [];
+			}
+			if (isset($lockedFacets)) {
+				foreach ($lockedFacets as $lockSection => $facets) {
+					if (!is_array($facets)) {
+						continue;
+					}
+					foreach ($facets as $facetName => $values) {
+						$values = is_array($values) ? $values : [$values];
+						foreach ($values as $value) {
+							if (is_string($value) && $value !== '') {
+								$filterList[] = $facetName . ':"' . $value . '"';
+							}
+						}
+					}
+				}
+			}
 			if (isset($_REQUEST['filter'])) {
 				foreach ($_REQUEST['filter'] as $filter) {
+					if (!in_array($filter, $filterList)) {
+						$filterList[] = $filter;
+					}
+				}
+			}
+			if (!empty($filterList)) {
+				foreach ($filterList as $filter) {
 					if (preg_match('/^format_category\w*:"?(.+?)"?$/', $filter, $matches)) {
 						$selectedFormatCategory[] = $matches[1];
 					} elseif (preg_match('/^format\w*:"?(.+?)"?$/', $filter, $matches)) {
@@ -2409,7 +2438,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				$allHidden = true;
 				foreach ($seriesMembers as $seriesMember) {
 					$series = $seriesMember->getSeries();
-					if ($series != null) {
+					if ($series != null && $series->deleted == 0) {
 						if ($first) {
 							$seriesInfo = [
 								'seriesTitle' => $series->displayName,

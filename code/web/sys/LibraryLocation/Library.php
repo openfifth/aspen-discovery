@@ -1,7 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
-require_once ROOT_DIR . '/sys/LibraryLocation/LibraryFacetSetting.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryCombinedResultSection.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryTheme.php';
 require_once ROOT_DIR . '/sys/LibraryLocation/LibraryUserDefinedField.php';
@@ -75,6 +74,7 @@ class Library extends DataObject {
 	public $displayExploreMoreBarInEbscoEds;
 	public $displayExploreMoreBarInCatalogSearch;
 	public $displayExploreMoreBarInEbscoHost;
+	public $displayExploreMoreBarInGale;
 
 
 	public $generateSitemap;
@@ -166,6 +166,7 @@ class Library extends DataObject {
 	public $pay360SettingId;
 	public $ncrSettingId;
 	public $usernameField;
+	public $eventsDefaultCalendarView;
 
 	public /** @noinspection PhpUnused */
 		$repeatSearchOption;
@@ -265,6 +266,8 @@ class Library extends DataObject {
 	public $replaceAllFirstNameWithPreferredName;
 	public $allowDateOfBirthUpdates;
 	public $allowPatronAddressUpdates;
+	public $sierraAddressLineForCityState;
+	public $sierraZipOnSameLineAsCityState;
 	/** @noinspection PhpUnused */
 	public $cityStateField;
 	public $allowPatronPhoneNumberUpdates;
@@ -537,6 +540,8 @@ class Library extends DataObject {
 	/** @var MaterialsRequestFormat[] */
 	private $_materialsRequestFormats;
 
+	// Gale Settings
+	public $galeSettingsId;
 
 	/** @var Holiday[] */
 	private $_holidays;
@@ -569,7 +574,8 @@ class Library extends DataObject {
 			'squareSettingId',
 			'stripeSettingId',
 			'heyCentricSettingId',
-			'pay360SettingId'
+			'pay360SettingId',
+			'sierraZipOnSameLineAsCityState'
 		];
 	}
 
@@ -913,7 +919,7 @@ class Library extends DataObject {
 			'type' => 'enum',
 			'values' => $hooplaScopes,
 			'label' => 'Hoopla Scope',
-			'description' => 'The hoopla scope to use',
+			'description' => 'The Hoopla scope to use',
 			'hideInLists' => true,
 			'default' => -1,
 			'forcesReindex' => true,
@@ -1047,6 +1053,16 @@ class Library extends DataObject {
 		$cloudLibraryScope->find();
 		while ($cloudLibraryScope->fetch()) {
 			$cloudLibraryScopes[$cloudLibraryScope->id] = $cloudLibraryScope->name;
+		}
+
+		require_once ROOT_DIR . '/sys/Gale/GaleSetting.php';
+		$galeSettings = new GaleSetting();
+		$galeSettings->orderBy('name');
+		$galeSettings->find();
+		$galeSettingsList = [];
+		$galeSettingsList[-1] = 'none';
+		while ($galeSettings->fetch()) {
+			$galeSettingsList[$galeSettings->id] = $galeSettings->name;
 		}
 
 		$barcodeTypes = [
@@ -1884,6 +1900,26 @@ class Library extends DataObject {
 								'default' => 1,
 								'readOnly' => false,
 								'permissions' => ['Library ILS Connection'],
+							],
+							'sierraAddressLineForCityState' => [
+								'property' => 'sierraAddressLineForCityState',
+								'label' => 'Sierra Address Line with City/State',
+								'description' => 'The line within the address block which holds the city and state in Sierra',
+								'type' => 'integer',
+								'min' => 2,
+								'max' => 4,
+								'default' => 2,
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['sierra'],
+							],
+							'sierraZipOnSameLineAsCityState' => [
+								'property' => 'sierraZipOnSameLineAsCityState',
+								'label' => 'Sierra Zip on the same line as City/State',
+								'description' => 'Check if the Zip code is on the same line as the City/State. If not, it will be the next line down.',
+								'type' => 'checkbox',
+								'default' => 1,
+								'permissions' => ['Library ILS Connection'],
+								'relatedIls' => ['sierra'],
 							],
 							'allowPatronPhoneNumberUpdates' => [
 								'property' => 'allowPatronPhoneNumberUpdates',
@@ -3585,6 +3621,14 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => true,
 					],
+					'displayExploreMoreBarInGale' => [
+						'property' => 'displayExploreMoreBarInGale',
+						'type' => 'checkbox',
+						'label' => 'Display Explore More Bar in Gale Search Results',
+						'description' => 'Whether to display the Explore More Bar in Gale search results',
+						'hideInLists' => true,
+						'default' => true,
+					],
 				],
 			],
 
@@ -3701,7 +3745,21 @@ class Library extends DataObject {
 							'2' => "Events that occur at one of this library's locations",
 						],
 						'default' => '2',
-					]
+					],
+					'eventsDefaultCalendarView' => [
+						'property' => 'eventsDefaultCalendarView',
+						'permissions' => ['Administer Events for All Locations'],
+						'type' =>'enum',
+						'values' => [
+							'0' => 'All',
+							'1' => 'Home library of the user',
+							'2' => 'First alphabetical library'
+						],
+						'default' => '0',
+						'label' => 'Default Calendar View',
+						'description' => 'The default page your events calendar will load to',
+						'hideInLists' => true,
+					],
 				]
 			],
 
@@ -4730,6 +4788,22 @@ class Library extends DataObject {
 					],
 				],
 			],
+			'galeSection' => [
+				'property' => 'galeSection',
+				'type' => 'section',
+				'label' => 'Gale',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'permissions' => ['Library Gale Options'],
+				'properties' => [
+					'galeSettingsId' => [
+						'property' => 'galeSettingsId',
+						'type' => 'enum',
+						'values' => $galeSettingsList,
+						'label' => 'Gale Settings',
+					],
+				],
+			],
 
 			'holidaysSection' => [
 				'property' => 'holidaysSection',
@@ -4947,6 +5021,9 @@ class Library extends DataObject {
 				unset($structure['exploreMoreBarSection']['properties']['displayExploreMoreBarInEbscoHost']);
 			}
 		}
+		if (!array_key_exists('Gale', $enabledModules)) {
+			unset($structure['galeSection']);
+		}
 		if (!array_key_exists('Summon', $enabledModules)) {
 			unset($structure['summonSection']);
 		}
@@ -5130,12 +5207,12 @@ class Library extends DataObject {
 	}
 
 	/**
-	 * @param User|null $tmpUser
+	 * @param User|null|false $tmpUser
 	 * @return Library|null
 	 */
-	static function getPatronHomeLibrary(?User $tmpUser = null) : ?Library {
+	static function getPatronHomeLibrary(User|null|bool $tmpUser = null) : ?Library {
 		//Finally, check to see if the user has logged in and if so, use that library
-		if ($tmpUser != null) {
+		if (!empty($tmpUser)) {
 			return self::getLibraryForLocation($tmpUser->homeLocationId);
 		}
 		if (UserAccount::isLoggedIn()) {
@@ -5195,6 +5272,8 @@ class Library extends DataObject {
 			return $this->getILLItemTypes();
 		} elseif ($name == 'userDefinedFields') {
 			return $this->getUserDefinedFields();
+		} elseif ($name == 'baseUrl') {
+			return $this->getBaseUrl();
 		} else {
 			return parent::__get($name);
 		}
@@ -5242,7 +5321,7 @@ class Library extends DataObject {
 	 * @see DB/DB_DataObject::update()
 	 */
 	public function update(string $context = '') : int|bool {
-		//Make sure we have no other default libraries since
+		//Make sure we have no other default libraries since having multiples causes issues.
 		if ($this->isDefault == 1 && $this->_changedFields != null) {
 			if (in_array('isDefault', $this->_changedFields)) {
 				$library = new Library();
@@ -5252,6 +5331,17 @@ class Library extends DataObject {
 					$library->isDefault = 0;
 					$library->update();
 				}
+			}
+		}
+		//Checks to see if cost savings has been enabled/disabled and update all users appropriately.
+		if (!empty($this->_changedFields) && in_array('enableCostSavings', $this->_changedFields)){
+			$libraryLocations = new Location();
+			$libraryLocations->libraryId = $this->libraryId;
+			$libraryLocations->find();
+			while ($libraryLocations->fetch()) {
+				$user = new User();
+				/** @noinspection SqlResolve */
+				$user->query("update user set enableCostSavings = $this->enableCostSavings where homeLocationId = $libraryLocations->locationId");
 			}
 		}
 		//Updates to properly update settings based on the ILS
@@ -5268,6 +5358,7 @@ class Library extends DataObject {
 			$this->showNoticeTypeInProfile = 0;
 			$this->addSMSIndicatorToPhone = 0;
 		}
+		//Note: Anything checking changedFields must be done above this update
 		$ret = parent::update();
 		if ($ret !== FALSE) {
 			$this->saveHolidays();
@@ -5302,16 +5393,6 @@ class Library extends DataObject {
 				$user = new User();
 				/** @noinspection SqlResolve */
 				$user->query("update user set displayName = '' where homeLocationId = $libraryLocations->locationId");
-			}
-		}
-		if (!empty($this->_changedFields) && in_array('enableCostSavings', $this->_changedFields)){
-			$libraryLocations = new Location();
-			$libraryLocations->libraryId = $this->libraryId;
-			$libraryLocations->find();
-			while ($libraryLocations->fetch()) {
-				$user = new User();
-				/** @noinspection SqlResolve */
-				$user->query("update user set enableCostSavings = $this->enableCostSavings where homeLocationId = $libraryLocations->locationId");
 			}
 		}
 		// Do this last so that everything else can update even if we get an error here
@@ -5853,6 +5934,14 @@ class Library extends DataObject {
 		$location->libraryId = $this->libraryId;
 		$location->createSearchInterface = 1;
 		return $location->count();
+	}
+
+	public function getBaseUrl() {
+		global $configArray;
+		if (empty($this->baseUrl)) {
+			return $configArray['Site']['url'];
+		}
+		return $this->baseUrl;
 	}
 
 	protected $_browseCategoryGroup = null;
@@ -6878,5 +6967,19 @@ class Library extends DataObject {
 			}
 		}
 		return $this->_homeScreenLinkGroup;
+	}
+
+	private ?int $_cloudSourceSettingId = null;
+	public function getCloudSourceSettingId() : int{
+		if ($this->_cloudSourceSettingId == null) {
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $this->libraryId;
+			$this->_cloudSourceSettingId = -1;
+			if ($libraryCloudSourceSetting->find(true)) {
+				$this->_cloudSourceSettingId = $libraryCloudSourceSetting->cloudsourceSettingId;
+			}
+		}
+		return $this->_cloudSourceSettingId;
 	}
 }

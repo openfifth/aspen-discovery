@@ -930,7 +930,7 @@ class IndexingProfile extends DataObject {
 								'property' => 'doAutomaticEcontentSuppression',
 								'type' => 'checkbox',
 								'label' => 'Do Automatic eContent Suppression',
-								'description' => 'Whether or not eContent suppression for overdrive and hoopla records is done automatically',
+								'description' => 'Whether or not eContent suppression for OverDrive and Hoopla records is done automatically',
 								'default' => false,
 								'forcesReindex' => true,
 							],
@@ -1479,6 +1479,7 @@ class IndexingProfile extends DataObject {
 						'type' => 'checkbox',
 						'label' => 'Check Sierra Material Type during format determination',
 						'description' => 'If selected, the bib Material Type from Sierra will be checked before checking bib level formats.',
+						'forcesReindex' => true,
 						'default' => false,
 					],
 					'orderRecordsStatusesToInclude' => [
