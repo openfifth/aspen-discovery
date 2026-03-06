@@ -298,7 +298,15 @@ abstract class Solr {
 			require_once ROOT_DIR . '/sys/Yaml.php';
 			try {
 				$yaml = new Yaml();
-				Solr::$_searchSpecs[$this->host] = $yaml->load($this->getSearchSpecs());
+				$specs = $this->getSearchSpecs();
+				if(file_exists($specs) && is_readable($specs))
+				{
+					Solr::$_searchSpecs[$this->host] = $yaml->load($specs);
+				}
+				else //if its not a file we have a string that is the yaml load it directly.
+				{
+					Solr::$_searchSpecs[$this->host] = $yaml->loadString($specs);
+				}
 			} catch (Exception $e) {
 				require_once ROOT_DIR . '/sys/AspenError.php';
 				AspenError::raiseError('Could not load search specs, check the configuration ' . $e->getMessage());

@@ -167,14 +167,14 @@ function getUpdates26_02_00(): array {
 
 
 		//tomas
-		'custom_grouped_work_search_specs_path' => [
-			'title' => 'Custom Grouped Work Search Specs Path',
-			'description' => 'Add customGroupedWorkSearchSpecsPath setting to library table for library-specific grouped work search specs configuration',
+		'custom_grouped_work_search_specs' => [
+			'title' => 'Custom Grouped Work Search Specs',
+			'description' => 'Add customGroupedWorkSearchSpecs setting to library table for library-specific grouped work search specs configuration',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE library ADD COLUMN IF NOT EXISTS customGroupedWorkSearchSpecsPath VARCHAR(255) DEFAULT NULL COMMENT "Path to custom grouped work search specs YAML file" AFTER casContext'
+				'ALTER TABLE library ADD COLUMN IF NOT EXISTS customGroupedWorkSearchSpecs TEXT DEFAULT NULL COMMENT "Path to custom grouped work search specs YAML file" AFTER casContext'
 			]
-		], //custom_grouped_work_search_specs_path
+		], //custom_grouped_work_search_specs
 
 		//other
 

@@ -8,6 +8,25 @@ class GroupedWorksSolrConnector2 extends Solr {
 		parent::__construct($host, 'grouped_works_v2');
 	}
 
+	function getSearchSpecs()
+	{
+		/** @var Library $library */
+		global $library;
+
+		if (isset($library) && !empty($library->customGroupedWorkSearchSpecs)) {
+			$specs = $library->customGroupedWorkSearchSpecs;
+			if (!file_exist(specs) ||!is_readable(specs))
+			{
+				// Log warning if file doesn't exist or isn't readable
+				global $logger;
+				$logger->log("Custom grouped work search specs is not an accessible file. Interpreting as yaml text instead of a path for library {$library->subdomain}", Logger::LOG_WARNING);
+			}
+			return $specs;			
+		}
+		// Fall back to default grouped work search specs
+		return $this->getSearchSpecsFile();
+	}
+
 	/**
 	 * Get the search specs file for grouped work searches
 	 * @return string
@@ -15,18 +34,6 @@ class GroupedWorksSolrConnector2 extends Solr {
 	function getSearchSpecsFile() {
 		/** @var Library $library */
 		global $library;
-
-		// Check for custom grouped work search specs at library level
-		if (isset($library) && !empty($library->customGroupedWorkSearchSpecsPath)) {
-			if (file_exists($library->customGroupedWorkSearchSpecsPath) && is_readable($library->customGroupedWorkSearchSpecsPath)) {
-				return $library->customGroupedWorkSearchSpecsPath;
-			}
-			// Log warning if file doesn't exist or isn't readable
-			global $logger;
-			$logger->log("Custom grouped work search specs file not accessible: {$library->customGroupedWorkSearchSpecsPath} for library {$library->subdomain}", Logger::LOG_WARNING);
-		}
-
-		// Fall back to default grouped work search specs
 		$searchSpecsVersion = $library->getGroupedWorkDisplaySettings()->searchSpecVersion;
 		if ($searchSpecsVersion == 2) {
 			return ROOT_DIR . '/../../sites/default/conf/groupedWorksSearchSpecs2.yaml';
