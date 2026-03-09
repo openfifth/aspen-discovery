@@ -9,7 +9,7 @@ class MyAccount_ContactInformation extends MyAccount {
 		$user = UserAccount::getLoggedInUser();
 
 		if ($user) {
-			
+
 			$patronUpdateForm = $user->getPatronUpdateForm();
 			if ($patronUpdateForm != null) {
 				$interface->assign('patronUpdateForm', $patronUpdateForm);
