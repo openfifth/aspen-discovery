@@ -282,14 +282,14 @@ class Pay360_Client  {
 				],
 				'lineId' => $fineDetails['fineId']
 			];
-			if (isset($fineDetails['vatCode'])) {
-				$item['tax'] = $fineDetails['vatCode'];
+			if (isset($fineDetails['vatcode'])) {
+				$item['tax'] = $fineDetails['vatcode'];
 			}
 			if (isset($fineDetails['fundCode'])) {
 				$item['IgItemDetails']['fundCode'] = $fineDetails['fundCode'];
 			}
-			if (isset($fineDetails['reference'])) {
-				$item['itemSummary']['reference'] = $fineDetails['reference'];
+			if (isset($fineDetails['sapcode'])) {
+				$item['itemSummary']['reference'] = $fineDetails['sapcode'];
 			}
 			array_push($items, $item);
 		}
