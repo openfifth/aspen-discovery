@@ -1098,23 +1098,22 @@ class Event extends DataObject {
 		while ($instanceQuery->fetch()) {
 			$solrId = 'aspenEvent_' . $settingsId . '_' . $instanceQuery->id;
 			$effectiveSeats = $instanceQuery->numberOfSeats ?? $this->numberOfSeats;
+			$instanceImageURL = null;
+			if ($this->cover) {
+				$instanceImageURL = $siteUrl . '/bookcover.php?id=' . $solrId . '&size=medium&type=aspenEvent_event';
+			}
 			$instances[] = [
 				'id' => (int)$instanceQuery->id,
 				'startDateTime' => $instanceQuery->getStartDateTime()->format('c'),
 				'endDateTime' => $instanceQuery->getEndDateTime()->format('c'),
 				'status' => (bool)$instanceQuery->status,
 				'bookingUrl' => $siteUrl . '/AspenEvents/' . $solrId . '/Event',
+				'imageURL' => $instanceImageURL,
 				'ticketAvailability' => [
 					'isSoldOut' => $effectiveSeats !== null && $effectiveSeats <= 0,
 					'hasAvailableTickets' => $effectiveSeats === null || $effectiveSeats > 0,
 				],
 			];
-		}
-
-		$eventImageURL = null;
-		if ($this->cover && !empty($instances)) {
-			$firstSolrId = 'aspenEvent_' . $settingsId . '_' . $instances[0]['id'];
-			$eventImageURL = $siteUrl . '/bookcover.php?id=' . $firstSolrId . '&size=medium&type=aspenEvent_event';
 		}
 
 		return [
@@ -1124,7 +1123,6 @@ class Event extends DataObject {
 			'isFree' => true,
 			'venueName' => $venueName,
 			'organizer' => $organizer,
-			'eventImageURL' => $eventImageURL,
 			'tags' => $tags,
 			'isRecurring' => $recurrence !== null,
 			'recurrencePattern' => $recurrence['type'] ?? null,
