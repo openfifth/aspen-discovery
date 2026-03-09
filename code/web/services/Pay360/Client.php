@@ -310,7 +310,7 @@ class Pay360_Client  {
 		$parameters = [
 			'credentials' => $this->_getCredentialParams(),
 			'requestType' => 'payOnly',
-			'requestId' => 'TEST',
+			'requestId' => $this->payment->id,
 			'routing' => [
 				'returnUrl' => new SoapVar($returnUrl, XSD_STRING),
 				'backUrl' => new SoapVar($backUrl, XSD_STRING),
