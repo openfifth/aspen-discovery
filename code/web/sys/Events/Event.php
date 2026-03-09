@@ -1134,9 +1134,15 @@ class Event extends DataObject {
 		global $configArray;
 		$siteUrl = $configArray['Site']['url'];
 
+		// Get the events indexing settings ID for Solr ID construction
+		require_once ROOT_DIR . '/sys/Events/EventsIndexingSetting.php';
+		$indexingSetting = new EventsIndexingSetting();
+		$indexingSetting->find(true);
+		$settingsId = $indexingSetting->id;
+
 		$instances = [];
 		while ($instanceQuery->fetch()) {
-			$solrId = 'aspenEvents_' . $this->id . '_' . $instanceQuery->id;
+			$solrId = 'aspenEvent_' . $settingsId . '_' . $instanceQuery->id;
 			$effectiveSeats = $instanceQuery->numberOfSeats ?? $this->numberOfSeats;
 			$instances[] = [
 				'id' => (int)$instanceQuery->id,
@@ -1153,7 +1159,7 @@ class Event extends DataObject {
 
 		$eventImageURL = null;
 		if ($this->cover && !empty($instances)) {
-			$firstSolrId = 'aspenEvents_' . $this->id . '_' . $instances[0]['id'];
+			$firstSolrId = 'aspenEvent_' . $settingsId . '_' . $instances[0]['id'];
 			$eventImageURL = $siteUrl . '/bookcover.php?id=' . $firstSolrId . '&size=medium&type=aspenEvent_event';
 		}
 
