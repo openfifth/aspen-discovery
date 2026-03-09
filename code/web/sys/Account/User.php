@@ -3743,10 +3743,16 @@ class User extends DataObject {
 			require_once ROOT_DIR . '/sys/Notifications/ExpoNotification.php';
 			require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 			$appScheme = 'aspen-lida';
-			require_once ROOT_DIR . '/sys/SystemVariables.php';
-			$systemVariables = SystemVariables::getSystemVariables();
-			if ($systemVariables && !empty($systemVariables->appScheme)) {
-				$appScheme = $systemVariables->appScheme;
+			require_once ROOT_DIR . '/sys/AspenLiDA/BrandedAppSetting.php';
+			$brandedSettings = new BrandedAppSetting();
+			if ($brandedSettings->find(true)) {
+				$appScheme = $brandedSettings->slugName;
+			} else {
+				require_once ROOT_DIR . '/sys/SystemVariables.php';
+				$systemVariables = SystemVariables::getSystemVariables();
+				if ($systemVariables && !empty($systemVariables->appScheme)) {
+					$appScheme = $systemVariables->appScheme;
+				}
 			}
 			$body = [
 				'title' => 'New account link',
@@ -3790,10 +3796,16 @@ class User extends DataObject {
 			require_once ROOT_DIR . '/sys/Notifications/ExpoNotification.php';
 			require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 			$appScheme = 'aspen-lida';
-			require_once ROOT_DIR . '/sys/SystemVariables.php';
-			$systemVariables = SystemVariables::getSystemVariables();
-			if ($systemVariables && !empty($systemVariables->appScheme)) {
-				$appScheme = $systemVariables->appScheme;
+			require_once ROOT_DIR . '/sys/AspenLiDA/BrandedAppSetting.php';
+			$brandedSettings = new BrandedAppSetting();
+			if ($brandedSettings->find(true)) {
+				$appScheme = $brandedSettings->slugName;
+			} else {
+				require_once ROOT_DIR . '/sys/SystemVariables.php';
+				$systemVariables = SystemVariables::getSystemVariables();
+				if ($systemVariables && !empty($systemVariables->appScheme)) {
+					$appScheme = $systemVariables->appScheme;
+				}
 			}
 			$body = [
 					'title' => 'Account link removed',
@@ -5421,14 +5433,14 @@ class User extends DataObject {
 				foreach ($holds as $holdSection) {
 					/** @var Hold $hold */
 					foreach ($holdSection as $hold) {
-						if (!empty($hold->outOfHoldGroupMessage)) {
+						if ($hold->isLocalILL) {
 							$numLocalIllRequests++;
 						}
 					}
 				}
-				$checkouts = $this->getCatalogDriver()->getCheckouts($this);
+				$checkouts = $this->getCatalogDriver()->getCheckouts($this, true);
 				foreach ($checkouts as $checkout) {
-					if (!empty($checkout->outOfHoldGroupMessage)) {
+					if ($checkout->isLocalILL) {
 						$numLocalIllRequests++;
 					}
 				}

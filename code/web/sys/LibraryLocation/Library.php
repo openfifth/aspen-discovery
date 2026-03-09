@@ -415,6 +415,7 @@ class Library extends DataObject {
 	public $showGroupedHoldCopiesCount;
 	public $localIllRequestType;
 	public $maximumLocalIllRequests;
+	public $includeRemoteCheckoutsInMaxLocalIllRequests;
 	public $localIllEmail;
 	/** @noinspection PhpUnused */
 	public $_localIllEmailSuccessMessage;
@@ -4156,6 +4157,14 @@ class Library extends DataObject {
 						'hideInLists' => true,
 						'default' => 0,
 					],
+					'includeRemoteCheckoutsInMaxLocalIllRequests' => [
+						'property' => 'includeRemoteCheckoutsInMaxLocalIllRequests',
+						'type' => 'checkbox',
+						'label' => 'Include Remote Checkouts in Max Local ILL requests',
+						'description' => 'Include Remote Checkouts in Max Local ILL requests',
+						'note' => "Remote checkouts are checkouts that were picked up from the item's owning home group (but that are not owned by the patron's home group)",
+						'default' => 1
+					],
 					'ILLSystem' => [
 						'property' => 'ILLSystem',
 						'type' => 'enum',
@@ -6665,6 +6674,7 @@ class Library extends DataObject {
 			$catalogRegistrationCapabilities = $catalog->getRegistrationCapabilities();
 			$suspendRequiresReactivationDate = $catalog->suspendRequiresReactivationDate();
 			$showDateWhenSuspending = $catalog->showDateWhenSuspending();
+			$reactivateDateNotRequired = $catalog->reactivateDateNotRequired();
 		}
 
 		$accountProfile = $this->getAccountProfile();
@@ -6680,6 +6690,7 @@ class Library extends DataObject {
 		$apiInfo['catalogRegistrationCapabilities'] = $catalogRegistrationCapabilities;
 		$apiInfo['suspendRequiresReactivationDate'] = $suspendRequiresReactivationDate;
 		$apiInfo['showDateWhenSuspending'] = $showDateWhenSuspending;
+		$apiInfo['reactivateDateNotRequired'] = $reactivateDateNotRequired;
 
 		$superScopeLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelSuperScope;
 		$localLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelLocal;

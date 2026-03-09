@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{$userLang->code}">
+<html lang="{$userLang->code}" {if $isRTL}dir="rtl"{/if}>
 <head prefix="og: http://ogp.me/ns#">
 	{strip}
 		<title>{$pageTitleShortAttribute|truncate:64:"..."}{if empty($isMobile)} | {$librarySystemName|escape}{/if}</title>
@@ -57,6 +57,7 @@
 			<link rel="manifest" href="/manifest.json"/>
 		{/if}
 		{if !empty($themeCss)}{$themeCss}{/if}
+		{if $isRTL && !empty($themeRTLCss)}{$themeRTLCss}{/if}
 		{if !empty($loadRecaptcha)}
 			<script src="https://www.google.com/recaptcha/api.js?onload=onloadCallback&render=explicit" async defer></script>
 		{/if}
