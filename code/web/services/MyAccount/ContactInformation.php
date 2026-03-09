@@ -9,6 +9,7 @@ class MyAccount_ContactInformation extends MyAccount {
 		$user = UserAccount::getLoggedInUser();
 
 		if ($user) {
+			
 			$patronUpdateForm = $user->getPatronUpdateForm();
 			if ($patronUpdateForm != null) {
 				$interface->assign('patronUpdateForm', $patronUpdateForm);
@@ -54,6 +55,7 @@ class MyAccount_ContactInformation extends MyAccount {
 				}
 				$passwordLabel = str_replace('Your', '', $patronHomeLibrary->loginFormPasswordLabel ? $patronHomeLibrary->loginFormPasswordLabel : 'Library Card Number');
 			}
+
 			$interface->assign('canUpdateContactInfo', $canUpdateContactInfo);
 			$interface->assign('canUpdateAddress', $canUpdateAddress);
 			$interface->assign('canUpdatePhoneNumber', $canUpdatePhoneNumber);
@@ -151,7 +153,6 @@ class MyAccount_ContactInformation extends MyAccount {
 			}
 
 			if (!empty($user->updateMessage)) {
-				$this->logHelper("I am here too");
 				if ($user->updateMessageIsError) {
 					$interface->assign('profileUpdateErrors', $user->updateMessage);
 				} else {
