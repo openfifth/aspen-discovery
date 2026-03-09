@@ -3,13 +3,19 @@
 require_once ROOT_DIR . '/services/MyAccount/MyAccount.php';
 
 class MyAccount_ContactInformation extends MyAccount {
+
+	function logHelper($text, $info=''){
+		global $logger;
+		$logger->log($text . $info, Logger::LOG_ERROR);
+	}
+
 	function launch() {
 		global $interface;
 		global $offlineMode;
 		$user = UserAccount::getLoggedInUser();
 
 		if ($user) {
-
+			$this->logHelper("User found: ", $user->ils_barcode);
 			$patronUpdateForm = $user->getPatronUpdateForm();
 			if ($patronUpdateForm != null) {
 				$interface->assign('patronUpdateForm', $patronUpdateForm);
@@ -55,7 +61,7 @@ class MyAccount_ContactInformation extends MyAccount {
 				}
 				$passwordLabel = str_replace('Your', '', $patronHomeLibrary->loginFormPasswordLabel ? $patronHomeLibrary->loginFormPasswordLabel : 'Library Card Number');
 			}
-
+			$this->logHelper("I am here");
 			$interface->assign('canUpdateContactInfo', $canUpdateContactInfo);
 			$interface->assign('canUpdateAddress', $canUpdateAddress);
 			$interface->assign('canUpdatePhoneNumber', $canUpdatePhoneNumber);
@@ -153,6 +159,7 @@ class MyAccount_ContactInformation extends MyAccount {
 			}
 
 			if (!empty($user->updateMessage)) {
+				$this->logHelper("I am here too");
 				if ($user->updateMessageIsError) {
 					$interface->assign('profileUpdateErrors', $user->updateMessage);
 				} else {
