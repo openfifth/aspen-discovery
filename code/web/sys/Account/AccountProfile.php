@@ -40,8 +40,7 @@ class AccountProfile extends DataObject {
 	public $workstationId;
 	public $weight;
 	public $ssoSettingId;
-	public $carlXViewVersion;
-	public $carlXSolutionVersion;
+    public $carlXViewVersion;
 	public $enableFetchingIlsMessages;
 
 	/** @var bool|IndexingProfile|null */
@@ -322,20 +321,6 @@ class AccountProfile extends DataObject {
 								'label' => 'Carl.X Database View Version',
 								'note' => 'Only used for Carl.X',
 								'description' => 'Database View Version of Carl.X to use when connecting',
-								'required' => false,
-								'relatedIls' => ['carlx'],
-							],
-							'carlXSolutionVersion' => [
-								'property' => 'carlXSolutionVersion',
-								'type' => 'enum',
-								'values' => [
-									'' => 'N/A',
-									'2025r2' => '2025 Release 2',
-								],
-								'default' => '',
-								'label' => 'Carl.X Solution Version',
-								'note' => 'Only used for Carl.X',
-								'description' => 'Carl Solution Version to determine API requirements',
 								'required' => false,
 								'relatedIls' => ['carlx'],
 							],
