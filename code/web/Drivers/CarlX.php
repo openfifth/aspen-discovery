@@ -65,7 +65,7 @@ class CarlX extends AbstractIlsDriver {
 		if (IPAddress::showDebuggingInformation() || php_sapi_name() === 'cli') {
 			$soapRequestOptions['trace'] = true;
 		}
-		if ( $requestName === 'updatePatron' && $this->accountProfile->carlXSolutionVersion == '2025r2' ) {
+		if ( $requestName === 'updatePatron' && $this->accountProfile->apiVersion == '2025r2' ) {
 			if( $request->Modifiers === '' ) {
 				$request->Modifiers = new stdClass();
 			}
