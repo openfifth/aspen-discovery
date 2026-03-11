@@ -12034,7 +12034,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 			foreach ($savedSearches as $savedSearch) {
 				/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
-				$searchObject = SearchObjectFactory::initSearchObject();
+				$searchObject = SearchObjectFactory::initSearchObject($savedSearch->searchSource);
 				$size = strlen($savedSearch->search_object);
 				$minSO = unserialize($savedSearch->search_object);
 				$searchObject->deminify($minSO);
@@ -12043,6 +12043,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$searchSourceLabels = [
 					'local' => 'Catalog',
 					'genealogy' => 'Genealogy',
+					'series' => 'Series'
 				];
 
 				$searchSourceLabel = $searchObject->getSearchSource();
