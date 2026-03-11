@@ -1948,12 +1948,24 @@ class Admin_AJAX extends JSON_Action {
 		//parse data
 		$rows = $this->parseSierraHolidayData($holidayInformation);
 
+		$libraryCodes = [];
+		$library = new Library();
+		$library->find();
+		while ($library->fetch()){
+			$libraryCodes[$library->libraryId] = $library->ilsCode;
+		}
+		$locationCodes = [];
+		$location = new Location();
+		$location->find();
+		while ($location->fetch()){
+			$locationCodes[$location->locationId] = $location->code;
+		}
+
+
 		//go through each row and update according to user permissions and scope
 		foreach ($rows as $row) {
 			$libraryLocationCode = $row[0];
 			$holidayDate = $row[1];
-			$library = new Library();
-			$location = new Location();
 			$holidayDates = [];
 
 			if (strlen($holidayDate) > 3){
@@ -1964,12 +1976,11 @@ class Admin_AJAX extends JSON_Action {
 
 			if ($libraryLocationCode == "?????") { //update all libraries
 				if ($scope == 'library' || $scope == 'all') {
-					$library->find();
-					while ($library->fetch()) {
-						if (empty($libraryList) || array_key_exists($library->libraryId, $libraryList)) {
+					foreach ($libraryCodes as $libId => $libraryCode) {
+						if (empty($libraryList) || array_key_exists($libId, $libraryList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
 							$holiday = new Holiday();
-							$holiday->libraryId = $library->libraryId;
+							$holiday->libraryId = $libId;
 							$holiday->name = '';
 							if (!empty($holidayDates)) {
 								foreach ($holidayDates as $holidayDate) {
@@ -1987,30 +1998,32 @@ class Admin_AJAX extends JSON_Action {
 						}
 					}
 				} if (($scope == 'location' || $scope == 'all') && strlen($holidayDate) == 3) {
-					$location->find();
-					while ($location->fetch()) {
-						if (empty($locationList) || array_key_exists($location->locationId, $locationList)) {
+					foreach ($locationCodes as $locId => $locationCode) {
+						if (empty($locationList) || array_key_exists($locId, $locationList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/LocationHours.php';
 							$locationClosure = new LocationHours();
-							$locationClosure->locationId = $location->locationId;
+							$locationClosure->locationId = $locId;
 							$locationClosure->day = $dayMap[$holidayDate];
-							$locationClosure->closed = 1;
-							$locationClosure->open = '00:00:00';
-							$locationClosure->close = '00:00:00';
-							if ($locationClosure->insert()) {
-								$locationClosuresAdded++;
+							if (!$locationClosure->find(true)) {
+								$locationClosure->closed = 1;
+								$locationClosure->open = '00:00:00';
+								$locationClosure->close = '00:00:00';
+								if ($locationClosure->insert()) {
+									$locationClosuresAdded++;
+								}
 							}
 						}
 					}
 				}
 			} else {
+				$libraryLocationCode = strtr($libraryLocationCode, ['?' => '.', '*' => '.*']);
 				if ($scope == 'library' || $scope == 'all') {
-					$library->subdomain = $libraryLocationCode;
-					if ($library->find(true)){
-						if (empty($libraryList) || array_key_exists($library->libraryId, $libraryList)) {
+					$libraries = preg_grep("/^". $libraryLocationCode . "/", $libraryCodes);
+					foreach ($libraries as $libId => $lib) {
+						if (empty($libraryList) || array_key_exists($libId, $libraryList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
 							$holiday = new Holiday();
-							$holiday->libraryId = $library->libraryId;
+							$holiday->libraryId = $libId;
 							$holiday->name = '';
 							if (!empty($holidayDates)) {
 								foreach ($holidayDates as $holidayDate) {
@@ -2028,18 +2041,20 @@ class Admin_AJAX extends JSON_Action {
 						}
 					}
 				} if ((($scope == 'location' || $scope == 'all')) && strlen($holidayDate) == 3) {
-					$location->code = $libraryLocationCode;
-					if ($location->find(true)) {
-						if (empty($locationList) || array_key_exists($location->locationId, $locationList)) {
+					$locations = preg_grep("/^" . $libraryLocationCode . "/", $locationCodes);
+					foreach ($locations as $locId => $loc){
+						if (empty($locationList) || array_key_exists($locId, $locationList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/LocationHours.php';
 							$locationClosure = new LocationHours();
-							$locationClosure->locationId = $location->locationId;
+							$locationClosure->locationId = $locId;
 							$locationClosure->day = $dayMap[$holidayDate];
 							$locationClosure->closed = 1;
-							$locationClosure->open = '00:00:00';
-							$locationClosure->close = '00:00:00';
-							if ($locationClosure->insert()) {
-								$locationClosuresAdded++;
+							if (!$locationClosure->find(true)) {
+								$locationClosure->open = '00:00:00';
+								$locationClosure->close = '00:00:00';
+								if ($locationClosure->insert()) {
+									$locationClosuresAdded++;
+								}
 							}
 						}
 					}
