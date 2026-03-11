@@ -1948,13 +1948,28 @@ class Admin_AJAX extends JSON_Action {
 		//parse data
 		$rows = $this->parseSierraHolidayData($holidayInformation);
 
+		$libraryCodes = [];
+		$library = new Library();
+		$library->find();
+		while ($library->fetch()){
+			$libraryCodes[] = $library->ilsCode;
+		}
+		$locationCodes = [];
+		$location = new Location();
+		$location->find();
+		while ($location->fetch()){
+			$locationCodes[] = $location->code;
+		}
+
+
 		//go through each row and update according to user permissions and scope
 		foreach ($rows as $row) {
 			$libraryLocationCode = $row[0];
 			$holidayDate = $row[1];
-			$library = new Library();
-			$location = new Location();
 			$holidayDates = [];
+
+			$libraryLocationCodeTrimmed = rtrim($libraryLocationCode, '*');
+			$libraryLocationCode = strlen($libraryLocationCodeTrimmed) < strlen($libraryLocationCode) ? $libraryLocationCodeTrimmed . '*' : $libraryLocationCodeTrimmed;
 
 			if (strlen($holidayDate) > 3){
 				$holidayDate = $currentYear . '-' . str_replace('/', '-', $holidayDate);
@@ -1964,8 +1979,7 @@ class Admin_AJAX extends JSON_Action {
 
 			if ($libraryLocationCode == "?????") { //update all libraries
 				if ($scope == 'library' || $scope == 'all') {
-					$library->find();
-					while ($library->fetch()) {
+					foreach ($libraryCodes as $libraryCode) {
 						if (empty($libraryList) || array_key_exists($library->libraryId, $libraryList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
 							$holiday = new Holiday();
@@ -1987,8 +2001,7 @@ class Admin_AJAX extends JSON_Action {
 						}
 					}
 				} if (($scope == 'location' || $scope == 'all') && strlen($holidayDate) == 3) {
-					$location->find();
-					while ($location->fetch()) {
+					foreach ($locationCodes as $locationCode) {
 						if (empty($locationList) || array_key_exists($location->locationId, $locationList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/LocationHours.php';
 							$locationClosure = new LocationHours();
@@ -2005,8 +2018,8 @@ class Admin_AJAX extends JSON_Action {
 				}
 			} else {
 				if ($scope == 'library' || $scope == 'all') {
-					$library->subdomain = $libraryLocationCode;
-					if ($library->find(true)){
+					$libraries = preg_grep("/^". $libraryLocationCode . "/", $libraryCodes);
+					foreach ($libraries as $lib) {
 						if (empty($libraryList) || array_key_exists($library->libraryId, $libraryList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
 							$holiday = new Holiday();
@@ -2028,8 +2041,8 @@ class Admin_AJAX extends JSON_Action {
 						}
 					}
 				} if ((($scope == 'location' || $scope == 'all')) && strlen($holidayDate) == 3) {
-					$location->code = $libraryLocationCode;
-					if ($location->find(true)) {
+					$locations = preg_grep("/^" . $libraryLocationCode . "/", $locationCodes);
+					foreach ($locations as $loc){
 						if (empty($locationList) || array_key_exists($location->locationId, $locationList)) {
 							require_once ROOT_DIR . '/sys/LibraryLocation/LocationHours.php';
 							$locationClosure = new LocationHours();
