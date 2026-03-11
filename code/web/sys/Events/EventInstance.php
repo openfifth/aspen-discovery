@@ -371,7 +371,8 @@ class EventInstance extends DataObject {
 		$siteUrl = $configArray['Site']['url'];
 		$solrId = 'aspenEvents_' . $this->eventId . '_' . $this->id;
 		$bookingUrl = $siteUrl . '/AspenEvents/' . $solrId . '/Event';
-		$eventImageURL = $event->cover ? $siteUrl . '/bookcover.php?id=' . $solrId . '&size=medium&type=aspenEvent_event' : null;
+	$imageType = $event->cover ? 'aspenEvent_eventRecord' : 'aspenEvent_event';
+		$eventImageURL = $siteUrl . '/bookcover.php?id=' . $solrId . '&size=medium&type=' . $imageType;
 
 		return [
 			'id' => (int)$this->id,
