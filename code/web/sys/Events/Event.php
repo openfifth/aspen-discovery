@@ -1107,10 +1107,8 @@ class Event extends DataObject {
 		while ($instanceQuery->fetch()) {
 			$solrId = 'aspenEvent_' . $settingsId . '_' . $instanceQuery->id;
 			$effectiveSeats = $instanceQuery->numberOfSeats ?? $this->numberOfSeats;
-			$instanceImageURL = null;
-			if ($this->cover) {
-				$instanceImageURL = $siteUrl . '/bookcover.php?id=' . $solrId . '&size=medium&type=aspenEvent_event';
-			}
+			$imageType = $this->cover ? 'aspenEvent_eventRecord' : 'aspenEvent_event';
+			$instanceImageURL = $siteUrl . '/bookcover.php?id=' . $solrId . '&size=medium&type=' . $imageType;
 			$instances[] = [
 				'id' => (int)$instanceQuery->id,
 				'startDateTime' => $instanceQuery->getStartDateTime()->format('c'),
