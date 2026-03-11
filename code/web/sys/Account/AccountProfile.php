@@ -402,7 +402,7 @@ class AccountProfile extends DataObject {
 								'label' => 'API Version',
 								'maxLength' => 10,
 								'description' => 'Optional description for the version of the API. Required for Sierra.',
-								'relatedIls' => ['polaris','sierra'],
+								'relatedIls' => ['polaris','sierra','carlx'],
 							],
 							'workstationId' => [
 								'property' => 'workstationId',
