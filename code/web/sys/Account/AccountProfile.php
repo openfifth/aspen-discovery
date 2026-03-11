@@ -586,7 +586,7 @@ class AccountProfile extends DataObject {
 	function getIndexingProfile() : ?IndexingProfile {
 		if ($this->_indexingProfile === false) {
 			global $indexingProfiles;
-			if (array_key_exists($this->name, $indexingProfiles)) {
+			if (array_key_exists($this->recordSource, $indexingProfiles)) {
 				$this->_indexingProfile = $indexingProfiles[$this->recordSource];
 			} else {
 				$this->_indexingProfile = null;
