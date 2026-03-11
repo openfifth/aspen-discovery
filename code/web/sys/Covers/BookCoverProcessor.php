@@ -1704,7 +1704,7 @@ class BookCoverProcessor {
 				return true;
 			} else {
 				$title = $series->displayName;
-				$seriesTitles = $series->getSeriesMembers();
+				$seriesTitles = $series->getSeriesMembers(null, false, false);
 				$coverBuilder->getCover($title, $seriesTitles, $this->cacheFile);
 				return $this->processImageURL('default', $this->cacheFile, false);
 			}
