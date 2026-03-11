@@ -2004,8 +2004,8 @@ class Admin_AJAX extends JSON_Action {
 							$locationClosure = new LocationHours();
 							$locationClosure->locationId = $locId;
 							$locationClosure->day = $dayMap[$holidayDate];
-							$locationClosure->closed = 1;
 							if (!$locationClosure->find(true)) {
+								$locationClosure->closed = 1;
 								$locationClosure->open = '00:00:00';
 								$locationClosure->close = '00:00:00';
 								if ($locationClosure->insert()) {
