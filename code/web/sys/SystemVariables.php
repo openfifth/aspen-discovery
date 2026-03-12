@@ -198,6 +198,7 @@ class SystemVariables extends DataObject {
 					],
 					'titleSearchBehavior' => [
 						'property' => 'titleSearchBehavior',
+						'label' => 'Title Search Behavior',
 						'type' => 'enum',
 						'values' => [
 							1 => 'Exclude Alternate Titles',
