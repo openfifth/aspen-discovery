@@ -916,38 +916,38 @@ class MyAccount_AJAX extends JSON_Action {
 				$holdType = $hold->source;
 				$isIll = $hold->isIll;
 				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
+				$patron = ($hold->patronId && $hold->patronId !== $user->id) ? $user->getUserReferredTo($hold->patronId) : $user;
 				if ($patron && $hold->cancelable) {
 					if ($holdType == 'ils') {
-						$tmpResult = $user->cancelHold($recordId, $cancelId, $isIll);
+						$tmpResult = $patron->cancelHold($recordId, $cancelId, $isIll);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'axis360') {
 						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 						$driver = new Axis360Driver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'cloud_library') {
 						require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 						$driver = new CloudLibraryDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'hoopla') {
 						require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 						$driver = new HooplaDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
