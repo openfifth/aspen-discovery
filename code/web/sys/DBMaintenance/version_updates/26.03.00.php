@@ -57,14 +57,14 @@ function getUpdates26_03_00(): array {
 		//add_generated_rtl_css_to_theme
 
 		//kodi
-		'add_bill_reason_translation_map' => [
+		'add_bill_reason_symphony_translation_map' => [
 			'title' => 'Add Bill Reason Translation Map',
 			'description' => 'Add bill reason translation map for Symphony libraries',
 			'sql' => [
 				"addBillReasonTranslationMap",
 			]
 		],
-		//add_bill_reason_translation_map
+		//add_bill_reason_symphony_translation_map
 		'remove_unused_permission_loan_rules' => [
 			'title' => 'Remove unused permission loan rules',
 			'description' => 'Remove unused permission loan rules at all times',
@@ -73,6 +73,13 @@ function getUpdates26_03_00(): array {
 				"DELETE FROM permissions WHERE name = 'Administer Loan Rules'",
 			]
 		], //remove_unused_permission_loan_rules
+		'add_title_search_behavior_setting' => [
+			'title' => 'Title Search Behavior Setting',
+			'description' => 'Add title search behavior setting in system variables',
+			'sql' => [
+				"ALTER TABLE system_variables ADD COLUMN titleSearchBehavior INT DEFAULT 1",
+			]
+		], //add_title_search_behavior_setting
 
 		//yanjun
 		'require_pin_for_palace_project' => [

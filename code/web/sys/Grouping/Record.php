@@ -592,7 +592,11 @@ class Grouping_Record {
 	private ?float $statusRanking = null;
 	function getStatusRanking(): float {
 		if (is_null($this->statusRanking)) {
-			$this->statusRanking = GroupedWorkDriver::$statusRankings[$this->getGroupedStatus()];
+			if (isset(GroupedWorkDriver::$statusRankings[$this->getGroupedStatus()])) {
+				$this->statusRanking = GroupedWorkDriver::$statusRankings[$this->getGroupedStatus()];
+			}else{
+				return 3.5;
+			}
 		}
 		return $this->statusRanking;
 	}

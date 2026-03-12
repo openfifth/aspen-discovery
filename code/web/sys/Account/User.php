@@ -2685,11 +2685,10 @@ class User extends DataObject {
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
+				$patron = ($hold->patronId && $hold->patronId !== $user->id) ? $user->getUserReferredTo($hold->patronId) : $user;
 				if ($patron && $frozen == 0 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
-						$tmpResult = $user->freezeHold($recordId, $holdId, $reactivationDate);
+						$tmpResult = $patron->freezeHold($recordId, $holdId, $reactivationDate);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2698,7 +2697,7 @@ class User extends DataObject {
 					} elseif ($holdType == 'axis360') {
 						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 						$driver = new Axis360Driver();
-						$tmpResult = $driver->freezeHold($user, $recordId);
+						$tmpResult = $driver->freezeHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2707,7 +2706,7 @@ class User extends DataObject {
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->freezeHold($user, $recordId);
+						$tmpResult = $driver->freezeHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2806,24 +2805,24 @@ class User extends DataObject {
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
 				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
+				$patron = ($hold->patronId && $hold->patronId !== $user->id) ? $user->getUserReferredTo($hold->patronId) : $user;
 				if ($patron && $frozen == 1 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
-						$tmpResult = $user->thawHold($recordId, $holdId);
+						$tmpResult = $patron->thawHold($recordId, $holdId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'axis360') {
 						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 						$driver = new Axis360Driver();
-						$tmpResult = $driver->thawHold($user, $recordId);
+						$tmpResult = $driver->thawHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->thawHold($user, $recordId);
+						$tmpResult = $driver->thawHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
@@ -2831,7 +2830,7 @@ class User extends DataObject {
 						//Cloud library holds cannot be frozen
 //						require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 //						$driver = new CloudLibraryDriver();
-//						$tmpResult = $driver->thawHold($user, $recordId);
+//						$tmpResult = $driver->thawHold($patron, $recordId);
 //						if($tmpResult['success']){$success++;}
 					} else {
 						$failed++;
@@ -4426,7 +4425,7 @@ class User extends DataObject {
 		$sections['cataloging']->addAction(new AdminAction('Author Authorities', 'Create and edit authorities for authors.', '/Admin/AuthorAuthorities'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Records To Not Group', 'Lists records that should not be grouped.', '/Admin/NonGroupedRecords'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Record Grouping Overrides', 'Manage record-level grouping overrides. These force specific records to stay in specific grouped works regardless of the automatic grouping algorithm.', '/Admin/RecordGroupingOverrides'), 'Manually Group and Ungroup Works');
-		$sections['cataloging']->addAction(new AdminAction('Manual Grouped Works', 'Manually create and manage custom record groups.', '/Admin/ManualGroupedWorks'), 'Manually Group and Ungroup Works');
+		$sections['cataloging']->addAction(new AdminAction('Custom Grouped Works', 'Manually create and manage custom record groups.', '/Admin/ManualGroupedWorks'), 'Manually Group and Ungroup Works');
 		$sections['cataloging']->addAction(new AdminAction('Replacement Costs', 'Define default replacement costs by format.', '/Admin/ReplacementCosts'), 'Administer Replacement Costs');
 		$sections['cataloging']->addAction(new AdminAction('Hidden Series', 'Edit series to be excluded from the Series facet and Series Display Information', '/Admin/HideSeriess'), 'Hide Metadata');
 		$sections['cataloging']->addAction(new AdminAction('Hidden Subjects', 'Edit subjects to be excluded from the Subjects facet.', '/Admin/HideSubjectFacets'), 'Hide Metadata');
