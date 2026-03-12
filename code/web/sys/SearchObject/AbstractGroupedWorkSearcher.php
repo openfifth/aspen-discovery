@@ -1168,7 +1168,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	public function getSearchIndexes() : array {
 		$titleSearch = 'Title';
 		$systemVariables = SystemVariables::getSystemVariables();
-		if ($systemVariables && (int)$systemVariables->titleSearchBehavior == 1) {
+		if ($systemVariables && (int)$systemVariables->titleSearchBehavior == 2) {
 			$titleSearch = 'AllTitles';
 		}
 		return [
