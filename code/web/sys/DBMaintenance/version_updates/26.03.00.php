@@ -73,6 +73,13 @@ function getUpdates26_03_00(): array {
 				"DELETE FROM permissions WHERE name = 'Administer Loan Rules'",
 			]
 		], //remove_unused_permission_loan_rules
+		'add_title_search_behavior_setting' => [
+			'title' => 'Title Search Behavior Setting',
+			'description' => 'Add title search behavior setting in system variables',
+			'sql' => [
+				"ALTER TABLE system_variables ADD COLUMN titleSearchBehavior INT DEFAULT 1",
+			]
+		], //add_title_search_behavior_setting
 
 		//yanjun
 		'require_pin_for_palace_project' => [

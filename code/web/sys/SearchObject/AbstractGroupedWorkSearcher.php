@@ -520,7 +520,7 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	 * @return array
 	 */
 	public function getSearchSuggestions($searchTerm, $searchIndex) : array {
-		if ($searchIndex == 'Title' || $searchIndex == 'StartOfTitle' || $searchIndex == 'Series') {
+		if ($searchIndex == 'Title' || $searchIndex == 'AllTitles' || $searchIndex == 'StartOfTitle' || $searchIndex == 'Series') {
 			$suggestionHandler = 'title_suggest';
 		} elseif ($searchIndex == 'Author') {
 			$suggestionHandler = 'author_suggest';
@@ -1166,13 +1166,18 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 	}
 
 	public function getSearchIndexes() : array {
+		$titleSearch = 'Title';
+		$systemVariables = SystemVariables::getSystemVariables();
+		if ($systemVariables && (int)$systemVariables->titleSearchBehavior == 1) {
+			$titleSearch = 'AllTitles';
+		}
 		return [
 			'Keyword' => translate([
 				'text' => 'Keyword',
 				'isPublicFacing' => true,
 				'inAttribute' => true,
 			]),
-			'Title' => translate([
+			$titleSearch => translate([
 				'text' => 'Title',
 				'isPublicFacing' => true,
 				'inAttribute' => true,
