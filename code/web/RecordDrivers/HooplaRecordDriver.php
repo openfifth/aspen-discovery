@@ -120,6 +120,8 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			$interface->assign('audience', $audience);
 		}
 		unset($rawData->price);
+		unset($rawData->ppuPrice);
+		unset($rawData->ppuPrices);
 		unset($rawData->audience);
 
 		$interface->assign('hooplaExtract', $rawData);
