@@ -1082,8 +1082,11 @@ public class RecordGroupingProcessor {
 		if (itemDetails.has("titleTitle")){
 			title = itemDetails.getString("titleTitle");
 			subTitle = itemDetails.getString("title");
-		}else if (itemDetails.has("subtitle")){
+		}else if (itemDetails.has("subtitle")) {
 			subTitle = itemDetails.getString("subtitle");
+		}else if (itemDetails.has("seasonNumber")){
+			title = itemDetails.getString("seriesName") + " - Season " + itemDetails.get("seasonNumber").toString();
+			subTitle = "Episode " + itemDetails.get("episodeNumber").toString();
 		}else{
 			subTitle = "";
 		}

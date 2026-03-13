@@ -121,11 +121,16 @@ class HooplaProcessor2 {
 				}
 				JSONObject rawResponse = new JSONObject(rawResponseString);
 
-				if (rawResponse.has("title")){
-					title = rawResponse.getString("title");
-				}
-				if (rawResponse.has("subtitle")){
-					subTitle = rawResponse.getString("subtitle");
+				if (rawResponse.has("seasonNumber")) {
+					title = rawResponse.getString("seriesName") + " - Season " + rawResponse.get("seasonNumber").toString();
+					subTitle = "Episode " + rawResponse.get("episodeNumber").toString();
+				}else {
+					if (rawResponse.has("title")) {
+						title = rawResponse.getString("title");
+					}
+					if (rawResponse.has("subtitle")) {
+						subTitle = rawResponse.getString("subtitle");
+					}
 				}
 
 				String fullTitle = title + " " + subTitle;
