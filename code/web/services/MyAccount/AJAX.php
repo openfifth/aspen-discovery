@@ -8501,6 +8501,33 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		if (!UserAccount::isLoggedIn()) {
+			$result['message'] = translate([
+				'text' => 'You must be logged in to register for events.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$isLinkedUser = false;
+			$activeUser = UserAccount::getActiveUserObj();
+			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
+				if ($linkedUser->id == $userId) {
+					$isLinkedUser = true;
+					break;
+				}
+			}
+			if (!$isLinkedUser) {
+				$result['message'] = translate([
+					'text' => 'You do not have permission to manage registrations for this user.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+		}
+
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		$user = new User();
 		$user->id = $userId;
