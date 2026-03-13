@@ -8841,6 +8841,14 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		if (!$eventInstance->status) {
+			$result['message'] = translate([
+				'text' => 'This event has been cancelled. Registration is no longer available.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceWaitingList.php';
 		$userWaitingList = new UserAspenEventInstanceWaitingList();
 		$userWaitingList->eventInstanceId = $eventInstanceId;
