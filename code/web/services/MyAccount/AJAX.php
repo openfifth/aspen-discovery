@@ -8299,13 +8299,15 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function isUserRegisteredForEvent(): array {
-		$result = [];
+		$result = [
+			'success' => false,
+		];
 		if (!UserAccount::isLoggedIn()) {
-			$result['success'] = false;
 			$result['message'] = translate([
-				'text' => 'Please login before saving an event.',
+				'text' => 'You must be logged in to check event registration.',
 				'isPublicFacing' => true,
 			]);
+			return $result;
 		}
 		$eventSourceId = $_REQUEST['eventSourceId'];
 		$eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $eventSourceId);
@@ -8319,6 +8321,24 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$isLinkedUser = false;
+			$activeUser = UserAccount::getActiveUserObj();
+			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
+				if ($linkedUser->id == $userId) {
+					$isLinkedUser = true;
+					break;
+				}
+			}
+			if (!$isLinkedUser) {
+				$result['message'] = translate([
+					'text' => 'You do not have permission to view registration information for this user.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+		}
 
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
