@@ -12445,9 +12445,12 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 
+		global $library;
+
 		$formattedInstances = $this->formatEventInstances($eventInstances);
 		$parameters = [
 			'user' => $user,
+			'library' => $library,
 			'changeType' => $changeType, 
 			'instances' => $formattedInstances, 
 		];
