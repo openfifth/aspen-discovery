@@ -128,7 +128,18 @@ class EventInstance extends DataObject {
 		if (isset($this->_changedFields) && count($this->_changedFields) > 0) {
 			$this->_changedFields[] = 'dateUpdated';
 		}
-		return parent::update();
+
+		$statusChanged = isset($this->_changedFields) && in_array('status', $this->_changedFields) && !$this->status;
+
+		$ret = parent::update();
+
+		if ($ret !== false && $statusChanged) {
+			require_once ROOT_DIR . '/services/MyAccount/AJAX.php';
+			$AJAX = new MyAccount_AJAX();
+			$AJAX->sendEventInstanceLevelNotifications($this->id, 'cancelled');
+		}
+
+		return $ret;
 	}
 
 	public function insert(string $context = '') : int|bool {

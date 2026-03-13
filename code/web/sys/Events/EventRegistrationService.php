@@ -30,6 +30,11 @@ class EventRegistrationService {
 			return $result;
 		}
 
+		if (!$eventInstance->status) {
+			$result['message'] = translate(['text' => 'This event has been cancelled. Registration is no longer available.', 'isPublicFacing' => true]);
+			return $result;
+		}
+
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		$user = new User();
 		$user->id = $userId;

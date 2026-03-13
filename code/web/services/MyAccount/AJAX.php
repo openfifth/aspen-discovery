@@ -11820,6 +11820,14 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		if (!$eventInstance->status) {
+			$result['message'] = translate([
+				'text' => 'This event has been cancelled. Joining the waiting list is no longer available.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
 		// Check if waiting list is enabled
 		if (!$eventInstance->waitingList) {
 			$result['message'] = translate([

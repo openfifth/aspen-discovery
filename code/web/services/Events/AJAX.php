@@ -750,6 +750,14 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 
+		if (!$eventInstance->status) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isAdminFacing' => true]),
+				'message' => translate(['text' => 'This event has been cancelled. Registration is no longer available.', 'isAdminFacing' => true]),
+			];
+		}
+
 		$parentEvent = $eventInstance->getParentEvent();
 		if (!EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
 			return [

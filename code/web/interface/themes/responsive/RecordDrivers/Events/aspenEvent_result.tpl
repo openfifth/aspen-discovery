@@ -84,9 +84,11 @@
 							<span class="label label-default">{translate text="Private" isPublicFacing=true}</span>
 						</div>
 					{/if}
-					{* Register Button *}
-					<div class="result-value col-tn-4">
-						{if $recordDriver->inEvents()}
+				{* Register Button *}
+				<div class="result-value col-tn-4">
+					{if $isEventCancelled}
+						<span class="btn btn-sm btn-default btn-wrap disabled" style="width:100%">{translate text="Event Cancelled" isPublicFacing=true}</span>
+					{elseif $recordDriver->inEvents()}
 							{if $recordDriver->isRegistrationRequired()}
 								<div class="btn-toolbar">
 									<div class="btn-group btn-group-vertical btn-block">
