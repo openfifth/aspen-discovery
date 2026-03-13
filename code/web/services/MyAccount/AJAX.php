@@ -8450,6 +8450,16 @@ class MyAccount_AJAX extends JSON_Action {
 				return $result;
 			}
 
+			if (!$eventInstance->status) {
+				unset($result['buttons']);
+				$result['success'] = true;
+				$result['message'] = translate([
+					'text' => 'This event has been cancelled. Registration is no longer available.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+
 			global $interface;
 			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
 			$available = $eventInstance->getAvailableSeats();
