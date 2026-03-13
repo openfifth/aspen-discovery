@@ -160,7 +160,7 @@ class SeriesIndexer {
 				logEntry.addNote("Removing empty series created more than 60 minutes ago");
 				while (emptySeriesRS.next()) {
 					seriesId = emptySeriesRS.getInt("id");
-					dbConn.prepareStatement("DELETE from dev_aspen.series_member WHERE seriesId = " + seriesId).executeUpdate();
+					dbConn.prepareStatement("DELETE from series_member WHERE seriesId = " + seriesId).executeUpdate();
 					dbConn.prepareStatement("DELETE from series WHERE id = " + seriesId).executeUpdate();
 					// Also, delete that series id from the Solr index.
 					updateServer.deleteByQuery("recordtype:series AND id:" + seriesId);
