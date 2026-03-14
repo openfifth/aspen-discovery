@@ -4546,21 +4546,71 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		registerUserToEvent: function (eventSourceId, userId) {
+		toggleManageEvent: function (eventSourceId) {
+		    let savedEventDetailsModalWrapper = document.getElementById(`aspen-events-registration-button-${eventSourceId}-wrapper`)
+		    savedEventDetailsModalWrapper.hidden = !savedEventDetailsModalWrapper.hidden;
+		},
+
+		toggleUserEventRegistration: function (eventSourceId) {
 			if (!Globals.loggedIn) {
 				return;
 			}
 
+			const userSelector = document.getElementById(`eventUserSelector-${eventSourceId}`);
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
+
 			const url = Globals.path + "/MyAccount/AJAX";
 			const params = {
-				method: 'registerUserToEvent',
+				method: 'toggleUserRegistrationToEvent',
 				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
-				userId,
+				userId
 			};
 
 			$.getJSON(url, params, function (data) {
 				AspenDiscovery.showMessage(data.title, data.message, false, data.success);
 			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		updateEventRegistrationUser: function (selector, eventSourceId) {
+			const selectedOption = selector.options[selector.selectedIndex];
+			const email = selectedOption.dataset.email || '';
+			const location = selectedOption.dataset.location || '';
+
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = selector ? selector.value : (userIdField ? userIdField.value : null);
+
+			AspenDiscovery.Account.isUserRegisteredForEvent(eventSourceId, userId).then((data) => AspenDiscovery.Account.updateEventButtonTextContent(data, eventSourceId));
+			document.getElementById(`eventRegistrationUserId-${eventSourceId}`).value = selector.value;
+			document.getElementById(`eventUserEmail-${eventSourceId}`).textContent = email;
+			document.getElementById(`eventUserLocation-${eventSourceId}`).textContent = location;
+
+			const changeLink = document.getElementById(`eventUserEmailChangeLink-${eventSourceId}`);
+			if (changeLink) {
+				const primaryUserId = selector.options[0].value;
+				changeLink.style.display = (selector.value === primaryUserId) ? '' : 'none';
+			}
+		},
+
+		updateEventButtonTextContent: function (userRegistrationData, eventSourceId) {
+			if (!userRegistrationData.success) {
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = 'Unavailable';
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).setAttribute('disabled', true);
+				return;
+			}
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = userRegistrationData.body.isRegistered ? 'Unregister' : 'Register';
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).removeAttribute('disabled');
+		},
+
+		isUserRegisteredForEvent: function (eventSourceId, userId) {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'isUserRegisteredForEvent',
+				eventSourceId,
+				userId
+			};
+
+			return $.getJSON(url, params).fail(AspenDiscovery.ajaxFail);
 		},
 
 		deleteSavedEvent: function (id, page, filter) {
@@ -10418,6 +10468,15 @@ AspenDiscovery.Events = (function(){
 						}
 						$("#accordion_body_Fields_for_this_Event_Type .panel-body").html(data.typeFields);
 						$('#accordion_body_Fields_for_this_Event_Type [data-toggle="tooltip"]').tooltip();
+				
+						// Wait a tick for the DOM to render before running the display logic
+						setTimeout(function() {
+							AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+							$('#registrationRequired').off('change').on('change', function() {
+								AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+							});
+						}, 0);
+
 						$("#propertyRowtitle").show();
 						$("#propertyRowinfoSection").show();
 						$("#propertyRowscheduleSection").show();
@@ -10997,6 +11056,34 @@ AspenDiscovery.Events = (function(){
 					AspenDiscovery.showMessage('Sorry', data.message);
 				}
 			})
+		},
+		handleRegistrationEnabledToggle: function () {
+			AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+		},
+		displayRegistrationNumberOfSeats: function () {
+			const requireEventRegistration = document.getElementById('registrationRequired');
+			if (!requireEventRegistration) {
+				return;
+			}
+
+			let registrationNumberOfSeats = document.getElementById('propertyRownumberOfSeats');
+			if (!registrationNumberOfSeats) {
+				return;
+			}
+			
+			if (requireEventRegistration.checked) {
+				registrationNumberOfSeats.style.display = '';
+				return;
+			}
+			AspenDiscovery.Events.unsetNumberOfSeats();
+			registrationNumberOfSeats.style.display = 'none';
+		},
+		unsetNumberOfSeats: function () {
+			let numberofSeats = document.getElementById('numberOfSeats');
+			if (!numberofSeats) {
+				return;
+			}
+			numberofSeats.value = null;
 		},
 		saveEventsForType: function(doFullSave){
 			if (doFullSave) {
