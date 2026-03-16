@@ -1077,15 +1077,21 @@ public class RecordGroupingProcessor {
 	public String groupHooplaRecord(JSONObject itemDetails, long hooplaId) throws JSONException {
 		//Perform record grouping on the record
 		String title;
-		String subTitle;
+		String subTitle = "";
 		title = itemDetails.getString("title");
 		if (itemDetails.has("titleTitle")){
 			title = itemDetails.getString("titleTitle");
 			subTitle = itemDetails.getString("title");
-		}else if (itemDetails.has("subtitle")){
+		}else if (itemDetails.has("subtitle")) {
 			subTitle = itemDetails.getString("subtitle");
-		}else{
-			subTitle = "";
+		}else if (itemDetails.has("seasonNumber")){
+			if (itemDetails.has("seriesName")){
+				title = itemDetails.getString("seriesName");
+			}
+			title += " - Season " + itemDetails.get("seasonNumber").toString();
+			if (itemDetails.has("episodeNumber")){
+				title += " Episode " + itemDetails.get("episodeNumber").toString();
+			}
 		}
 		String mediaType = itemDetails.optString("format", itemDetails.optString("kind", ""));
 		String primaryFormat;
@@ -1105,6 +1111,9 @@ public class RecordGroupingProcessor {
 				break;
 			case "MUSIC":
 				primaryFormat = "eMusic";
+				break;
+			case "BINGEPASS":
+				primaryFormat = "Binge Pass";
 				break;
 			default:
 				logger.error("Unhandled hoopla mediaType " + mediaType);
