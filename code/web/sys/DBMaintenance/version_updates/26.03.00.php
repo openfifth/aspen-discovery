@@ -35,6 +35,13 @@ function getUpdates26_03_00(): array {
 				'ALTER TABLE library ADD COLUMN includeRemoteCheckoutsInMaxLocalIllRequests TINYINT(1) DEFAULT 1',
 			]
 		], //local_ill_handle_remote_pickups
+		'force_regrouping_of_hoopla_26_03' => [
+			'title' => 'Force Regrouping of Hoopla (26.03)',
+			'description' => 'Force Regrouping of Hoopla (26.03)',
+			'sql' => [
+				"UPDATE hoopla_settings set regroupAllRecords = 1"
+			]
+		], //force_regrouping_of_hoopla_26_03
 
 		//kirstien
 		'add_cloud_library_sunday_reindex_option' => [
@@ -158,7 +165,7 @@ function getUpdates26_03_00(): array {
 			'title' => 'User - Allow patrons to choose if they want email notifications when saved searches are updated.',
 			'description' => 'Patrons will gain the choice within Your Preferences to have Aspen notify them via email when updates to their saved searches occur.',
 			'sql' => [
-				"ALTER TABLE user ADD COLUMN notifySavedSearches tinyint(1) NOT NULL DEFAULT 1",
+				"ALTER TABLE user ADD COLUMN notifySavedSearches tinyint(1) NOT NULL DEFAULT 0",
 			]
 		], //notify_saved_searches
 

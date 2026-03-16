@@ -766,35 +766,35 @@ class MyAccount_AJAX extends JSON_Action {
 							}
 						}
 						if ($holdType == 'ils') {
-							$tmpResult = $user->cancelHold($recordId, $cancelId, $key->isIll);
+							$tmpResult = $patronOwningHold->cancelHold($recordId, $cancelId, $key->isIll);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'axis360') {
 							require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 							$driver = new Axis360Driver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'overdrive') {
 							require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 							$driver = new OverDriveDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'cloud_library') {
 							require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 							$driver = new CloudLibraryDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'hoopla') {
 							require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 							$driver = new HooplaDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
@@ -889,7 +889,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function cancelAllHolds() {
+	function cancelAllHolds() : array {
 		$tmpResult = [
 			'success' => false,
 			'title' => translate([
@@ -915,8 +915,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$cancelId = $hold->cancelId;
 				$holdType = $hold->source;
 				$isIll = $hold->isIll;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = ($hold->patronId && $hold->patronId !== $user->id) ? $user->getUserReferredTo($hold->patronId) : $user;
+				$patron = $user->getUserReferredTo($hold->userId);
 				if ($patron && $hold->cancelable) {
 					if ($holdType == 'ils') {
 						$tmpResult = $patron->cancelHold($recordId, $cancelId, $isIll);
@@ -1464,7 +1463,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function freezeHoldAll() {
+	function freezeHoldAll() : array {
 		$user = UserAccount::getLoggedInUser();
 		$tmpResult['title'] = translate([
 			'text' => 'Error',
@@ -1622,7 +1621,7 @@ class MyAccount_AJAX extends JSON_Action {
 						}
 						if ($frozen != 0 && $canFreeze == 1) {
 							if ($holdType == 'ils') {
-								$tmpResult = $user->thawHold($recordId, $holdId);
+								$tmpResult = $patronOwningHold->thawHold($recordId, $holdId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1631,7 +1630,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} elseif ($holdType == 'axis360') {
 								require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 								$driver = new Axis360Driver();
-								$tmpResult = $driver->thawHold($user, $recordId);
+								$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1640,7 +1639,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} elseif ($holdType == 'overdrive') {
 								require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 								$driver = new OverDriveDriver();
-								$tmpResult = $driver->thawHold($user, $recordId);
+								$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1649,7 +1648,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} elseif ($holdType == 'cloud_library') {
 								require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 								$driver = new CloudLibraryDriver();
-								$tmpResult = $driver->thawHold($user, $recordId);
+								$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1713,7 +1712,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function thawHoldAll() {
+	function thawHoldAll() : array {
 		$tmpResult['title'] = translate([
 			'text' => 'Error',
 			'isPublicFacing' => true,
