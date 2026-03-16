@@ -300,7 +300,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	function compareRelatedRecords($a, $b) {
+	function compareRelatedRecords(Grouping_Record $a, Grouping_Record $b) {
 		$literaryForm = $this->getPrimaryLiteraryForm();
 
 		global $library;
