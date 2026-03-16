@@ -7471,7 +7471,7 @@ class Koha extends AbstractIlsDriver {
 		if (str_contains($key, 'borrower_attribute_')) {
 			return [
 				'type'  => 'extended',
-				'code'  => str_replace('attribute_', '', $key),
+				'code'  => str_replace('borrower_attribute_', '', $key),
 				'value' => $value
 			];
 		}
