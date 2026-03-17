@@ -40,7 +40,9 @@
 									{$event.location}
 								</td>
 								<td class="myAccountCell">
-									{if $event.isRegistered && empty($linkedUsers)}
+									{if $event.isEventCancelled}
+										<span>{translate text="This event has been cancelled" isPublicFacing=true}</span>
+									{elseif $event.isRegistered && empty($linkedUsers)}
 										<span>{translate text="You are registered" isPublicFacing=true}</span>
 									{else if $event.isRegistered}
 										<span>{translate text="There are registrations to view" isPublicFacing=true}</span>
@@ -72,7 +74,7 @@
 									<span class="btn btn-xs btn-warning" onclick="return AspenDiscovery.Account.deleteSavedEvent('{$event.sourceId}', {$page}, '{$eventsFilter|escape}');">{translate text="Remove" isPublicFacing=true}</span>					
 								</td>
 								<td class="myAccountCell">	
-									{if $event.regRequired}
+									{if !$event.isEventCancelled && $event.regRequired}
 										{include file='AspenEvents/manageButton.tpl'}
 									{/if}
 								</td>
