@@ -8503,8 +8503,7 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 
 				if ($library->enableSelfRegistration == 0) {
-					$this->display('selfRegistrationNotAllowed.tpl', 'Register for a Library Card', '');
-					return $result;
+					$result['body'] = $interface->fetch('MyAccount/selfRegistrationNotAllowed.tpl');
 				}
 
 				if ($library->enableSelfRegistration == 1) {
