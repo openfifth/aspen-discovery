@@ -179,7 +179,8 @@
 
 	{include file="tracking.tpl"}
 
-	{include file="sse.tpl"}
+	{* TEMPORARY FIX - prevent screen freezes due to max threads num reached. *}
+	{* {include file="sse.tpl"} *}
 
 	{if !empty($semanticData)}
 		{include file="jsonld.tpl"}
