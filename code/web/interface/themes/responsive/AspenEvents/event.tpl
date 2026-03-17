@@ -112,7 +112,9 @@
 				</ul>
 			</div>
 			<div class="col-tn-4" style="display:flex; justify-content:center;">
-				{if $recordDriver->inEvents()}
+				{if $recordDriver->isEventCancelled()}
+					<span class="btn btn-sm btn-default btn-wrap disabled" style="width:100%">{translate text="Event Cancelled" isPublicFacing=true}</span>
+				{elseif $recordDriver->inEvents()}
 					{if $recordDriver->isRegistrationRequired()}
 						<div class="btn-group btn-group-vertical btn-block">
 							{if $recordDriver->isRegisteredForEvent()}
