@@ -27,9 +27,8 @@ class AspenPWA_Manifest extends Action {
 		}
 		$theme = new Theme();
 		$theme->id = $setting->themeId;
-		$theme = $theme->find(true);
 		$themeColor = '#000000'; //fallback value
-		if($theme && $theme->primaryForegroundColor)
+		if($theme->find(true) && $theme->primaryForegroundColor)
 		{
 			$themeColor = $theme->primaryForegroundColor;	
 		}
@@ -61,7 +60,6 @@ class AspenPWA_Manifest extends Action {
 			'launch_handler' => [
 				'client_mode' => ['navigate-existing', 'auto']
 			]
-
 		];
 	}
 
