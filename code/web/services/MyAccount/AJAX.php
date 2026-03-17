@@ -12537,4 +12537,266 @@ class MyAccount_AJAX extends JSON_Action {
 
 		return $results;
 	}
+
+	/** @noinspection PhpUnused */
+	function getListGroupTransferForm(): array {
+		global $interface;
+		$interface->assign('listGroupId', strip_tags($_REQUEST['listGroupId']));
+
+		if (isset($_REQUEST['validationFailed'])) {
+			$interface->assign('hasListValidationError', $_REQUEST['validationFailed']);
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'List Group Transfer',
+				'isAdminFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/listGroupTransferPopup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#transferListGroupForm\").submit();'>" . translate([
+					'text' => 'Save',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listGroupTransferValidation(): array {
+		global $interface;
+
+		$listGroupId = $_REQUEST['listGroupId'];
+		$newListOwner = $_REQUEST['newListGroupOwner'];
+
+		$patron = new User();
+		$patron->whereAdd("ils_barcode = '$newListOwner' OR ils_username = '$newListOwner' OR username = '$newListOwner'");
+		$patron->find();
+		$numResults = $patron->count();
+		if ($numResults == 1 && $patron->find(true)) {
+			if ($patron->isStaff()) {
+				$interface->assign('listGroupId', $listGroupId);
+				$interface->assign('newListGroupOwner', $patron);
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'List Group Transfer',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => $interface->fetch('MyAccount/listGroupTransferConfirm.tpl'),
+					'modalButtons' => "<button id='listTransferProcesBtn' class='tool btn btn-primary' onclick='AspenDiscovery.Lists.listGroupTransferProcess(\"$listGroupId\", \"$patron->id\")'>" . translate([
+							'text' => 'Confirm',
+							'isAdminFacing' => 'true',
+						]) . "</button>",
+				];
+			}
+		}
+		return [
+			'success' => false
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listGroupTransferProcess(): array {
+		global $configArray;
+		$listGroupId = $_REQUEST['listGroupId'];
+		$newListOwner = $_REQUEST['userId'];
+
+		$results = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Unable to Transfer List Group',
+				'isAdminFacing' => true
+			]),
+			'message' => "",
+		];
+
+		$user = new User();
+		$user->id = $newListOwner;
+		if ($user->find(true)) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$listGroup = new UserListGroup();
+			$listGroup->id = $listGroupId;
+			if ($listGroup->find(true)) {
+				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+				$lists = new UserList();
+				$lists->listGroupId = $listGroup->id;
+				$lists->find();
+				while ($lists->fetch()) {
+					$lists->user_id = $user->id;
+					$lists->update();
+				}
+				// since we aren't transferring the parent, we should orphan it
+				if ($listGroup->parentGroupId != -1) {
+					$listGroup->parentGroupId = -1;
+				}
+				$listGroup->userId = $user->id;
+				if ($listGroup->update()) {
+					require_once ROOT_DIR . '/sys/Email/Mailer.php';
+					$mailer = new Mailer();
+					$subject = translate([
+						'text' => 'An Aspen list group has been transferred to you',
+						'isAdminFacing' => true,
+					]);
+					$body = translate([
+							'text' => 'The following list group has been transferred to your account by an administrator:',
+							'isPublicFacing' => true,
+						]) . "\r\n" . $configArray['Site']['url'] . '/MyAccount/Lists?groupId=' . $listGroup->id;
+					$htmlBody = '<p>' . translate([
+							'text' => 'The following list group has been transferred to your account by an administrator:',
+							'isAdminFacing' => true,
+						]) . '</p>';
+					$htmlBody .= '<ul><li><a href="' . $configArray['Site']['url'] . '/MyAccount/Lists?groupId' . $listGroup->id . '">' . $listGroup->title . '</a></li></ul>';
+					if ($mailer->send($user->email, $subject, $body, null, $htmlBody)) {
+						$results['success'] = true;
+					} else {
+						$results['title'] = translate([
+							'text' => 'Success',
+							'isAdminFacing' => true
+						]);
+						$results['message'] = "The list group was transferred successfully but we were unable to send an email to the new list group owner.";
+					}
+				} else {
+					$results['message'] = "There was an error updating the list group owner: " . $listGroup->getLastError();
+				}
+			} else {
+				$results['message'] = "Could not locate the list group by id " . $listGroupId;
+			}
+		} else {
+			$results['message'] = "Could not locate a user by id " . $newListOwner;
+		}
+
+		return $results;
+	}
+
+	/** @noinspection PhpUnused */
+	function getListsTransferForm(): array {
+		global $interface;
+		$interface->assign('prevListOwner', strip_tags($_REQUEST['prevListOwner']));
+
+		if (isset($_REQUEST['validationFailed'])) {
+			$interface->assign('hasListValidationError', $_REQUEST['validationFailed']);
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'Transfer All Lists',
+				'isAdminFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/listsTransferPopup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#transferListsForm\").submit();'>" . translate([
+					'text' => 'Save',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listsTransferValidation(): array {
+		global $interface;
+
+		$newListOwner = $_REQUEST['newListOwner'];
+		$prevListOwner = $_REQUEST['prevListOwner'];
+
+		$patron = new User();
+		$patron->whereAdd("ils_barcode = '$newListOwner' OR ils_username = '$newListOwner' OR username = '$newListOwner'");
+		$patron->find();
+		$numResults = $patron->count();
+		if ($numResults == 1 && $patron->find(true)) {
+			if ($patron->isStaff()) {
+				$interface->assign('newListOwner', $patron);
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Transfer All Lists',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => $interface->fetch('MyAccount/listsTransferConfirm.tpl'),
+					'modalButtons' => "<button id='listsTransferProcesBtn' class='tool btn btn-primary' onclick='AspenDiscovery.Lists.listsTransferProcess(\"$patron->id\", \"$prevListOwner\")'>" . translate([
+							'text' => 'Confirm',
+							'isAdminFacing' => 'true',
+						]) . "</button>",
+				];
+			}
+		}
+		return [
+			'success' => false
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listsTransferProcess(): array {
+		global $configArray;
+		$prevListOwner = $_REQUEST['prevListOwner'];
+		$newListOwner = $_REQUEST['userId'];
+
+		$results = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Unable to Transfer Lists',
+				'isAdminFacing' => true
+			]),
+			'message' => "",
+		];
+
+		$user = new User();
+		$user->id = $newListOwner;
+		if ($user->find(true)) {
+			$lists = [];
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$list = new UserList();
+			$list->user_id = $prevListOwner;
+			$list->find();
+			while ($list->fetch()) {
+				$lists[$list->id] = $list->title;
+				$list->user_id = $user->id;
+				$list->update();
+			}
+			require_once ROOT_DIR . '/sys/Email/Mailer.php';
+			$mailer = new Mailer();
+			$subject = translate([
+				'text' => 'An Aspen list has been transferred to you',
+				'isAdminFacing' => true,
+			]);
+
+			$topLists = array_slice($lists, 0, 20, true); // true preserves keys
+			$body = translate([
+				'text' => 'The following lists has been transferred to your account by an administrator:',
+				'isPublicFacing' => true,
+			]);
+			$htmlBody = '<p>' . translate([
+					'text' => 'The following lists has been transferred to your account by an administrator:',
+					'isAdminFacing' => true,
+				]) . '</p><ul>';
+			foreach ($topLists as $listId => $listTitle) {
+				$body .= "\r\n" . $configArray['Site']['url'] . '/MyAccount/MyList/' . $listId;
+				$htmlBody .= '<li><a href="' . $configArray['Site']['url'] . '/MyAccount/MyList/' . $listId . '">' . $listTitle . '</a></li>';
+			}
+
+			if (count($lists) > 20) {
+				$body .= "\r\n" . translate([
+						'text' => 'To see additional transferred lists, please log in to your account.',
+						'isAdminFacing' => true
+					]);
+				$htmlBody .= '</br>' . translate([
+						'text' => 'To see additional transferred lists, please log in to your account.',
+						'isAdminFacing' => true
+					]);
+			}
+
+			if ($mailer->send($user->email, $subject, $body, null, $htmlBody)) {
+				$results['success'] = true;
+			} else {
+				$results['title'] = translate([
+					'text' => 'Success',
+					'isAdminFacing' => true
+				]);
+				$results['message'] = "The lists were transferred successfully but we were unable to send an email to the new list owner.";
+			}
+		} else {
+			$results['message'] = "Could not locate a user by id " . $newListOwner;
+		}
+
+		return $results;
+	}
 }

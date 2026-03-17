@@ -16783,12 +16783,86 @@ AspenDiscovery.Lists = (function () {
 		},
 
 		listTransferProcess: function (listId, userId) {
-			$('#listTransferProcesBtn .fa-spinner').show();
-			$('#listTransferProcesBtn').prop('disabled', true);
+			$('#listTransferProcessBtn .fa-spinner').show();
+			$('#listTransferProcessBtn').prop('disabled', true);
 			var url = Globals.path + "/MyAccount/AJAX?method=listTransferProcess&listId=" + listId + "&userId=" + userId;
 			$.getJSON(url, function (data) {
 				if (data.success) {
 					window.location.href = Globals.path + "/MyAccount/MyList/" + listId;
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listGroupTransferAction: function (listGroupId) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListGroupTransferForm&listGroupId=' + listGroupId);
+		},
+
+		listGroupTransferValidation: function () {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'listGroupTransferValidation',
+				newListGroupOwner: $('#newListGroupOwner').val(),
+				listGroupId: $('#listGroupId').val()
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success === false) {
+					const listGroupId = $('#listGroupId').val();
+					return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListGroupTransferForm&listGroupId=' + listGroupId + '&validationFailed=true');
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listGroupTransferProcess: function (listGroupId, userId) {
+			$('#listTransferProcessBtn .fa-spinner').show();
+			$('#listTransferProcessBtn').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=listGroupTransferProcess&listGroupId=" + listGroupId + "&userId=" + userId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists?groupId=" + listGroupId;
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listsTransferAction: function (id) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListsTransferForm&prevListOwner=' + id);
+		},
+
+		listsTransferValidation: function () {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'listsTransferValidation',
+				newListOwner: $('#newListOwner').val(),
+				prevListOwner: $('#prevListOwner').val(),
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success === false) {
+					const prevListOwner = $('#prevListOwner').val();
+					return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListsTransferForm&prevListOwner=' + prevListOwner + '&validationFailed=true');
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listsTransferProcess: function (userId, prevUserId) {
+			$('#listTransferProcessBtn .fa-spinner').show();
+			$('#listTransferProcessBtn').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=listsTransferProcess&userId=" + userId + "&prevListOwner=" + prevUserId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists/";
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message, false);
 				}
