@@ -4940,9 +4940,9 @@ class User extends DataObject {
 		$sections['support']->addAction(new AdminAction('Release Notes', 'View release notes for Aspen Discovery which contain information about new functionality and fixes for each release.', '/Admin/ReleaseNotes'), true);
 		
 		if (array_key_exists('Aspen Progressive Web Application(PWA)', $enabledModules)){
-			$sections['Aspen Progressive Web Application(PWA)'] = new AdminSection('Aspen Progressive Web Application(PWA)');
-			$sections['Aspen Progressive Web Application(PWA)']->addAction(new AdminAction('Notification Test Tool', 'Aspen Progressive Web Application(PWA) notification test tool', '/AspenPWA/NotificationTestingTool'), [true]);
-			$sections['Aspen Progressive Web Application(PWA)']->addAction(new AdminAction('Settings', 'Aspen Progressive Web Application(PWA) settings', '/AspenPWA/Settings'), [true]);
+			$sections['AspenPWA'] = new AdminSection('Aspen Progressive Web Application(PWA)');
+			$sections['AspenPWA']->addAction(new AdminAction('Notification Test Tool', 'Aspen Progressive Web Application(PWA) notification test tool', '/AspenPWA/NotificationTestingTool'), [true]);
+			$sections['AspenPWA']->addAction(new AdminAction('Settings', 'Aspen Progressive Web Application(PWA) settings', '/AspenPWA/Settings'), [true]);
 		}
 		$sorter = function (AdminSection $a, AdminSection $b) {
 			return strcasecmp($a->getTranslatedLabel(), $b->getTranslatedLabel());
