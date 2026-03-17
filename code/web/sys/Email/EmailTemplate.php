@@ -325,17 +325,20 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
 			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
 			$text = str_replace('%canRegisterUntil%', $parameters['canRegisterUntil'] ?? '', $text);
-			if ($this->templateType == 'eventCancellation') {
-				$text = str_replace('%changeType%', $parameters['changeType'] ?? '', $text);
+		} elseif ($this->templateType == 'eventCancellation') {
+			$text = str_replace('%changeType%', $parameters['changeType'] ?? '', $text);
+			$instances = $parameters['instances'] ?? [];
+			if (preg_match('/%eventInstancesListBegin%(.*?)%eventInstancesListEnds%/s', $text, $matches)) {
+				$instanceTemplate = $matches[1];
 				$instancesText = '';
-				if (isset($parameters['instances']) && is_array($parameters['instances'])) {
-					foreach ($parameters['instances'] as $instance) {
-						$instancesText .= " Event Title: " . $instance['eventTitle'] . "\n";
-						$instancesText .= " Date: " . $instance['eventDate'] . "\n";
-						$instancesText .= " Time: " . $instance['eventTime'] . "\n";
-					}
+				foreach ($instances as $instance) {
+					$block = $instanceTemplate;
+					$block = str_replace('%instance.title%', $instance['eventTitle'] ?? '', $block);
+					$block = str_replace('%instance.date%', $instance['eventDate'] ?? '', $block);
+					$block = str_replace('%instance.time%', $instance['eventTime'] ?? '', $block);
+					$instancesText .= $block;
 				}
-				$text = str_replace('%eventInstances%', trim($instancesText), $text);
+				$text = preg_replace('/%eventInstancesListBegin%.*?%eventInstancesListEnds%/s', trim($instancesText), $text);
 			}
 		}
 		return $text;
