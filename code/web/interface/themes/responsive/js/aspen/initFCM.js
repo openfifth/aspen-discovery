@@ -25,7 +25,6 @@ export function initialize() {
 							$(".notification-permission-controls").show();
 							let parser = new UAParser(window.navigator.userAgent);
 							let result = parser.getResult();
-							console.log(result);
 							let modelName = result.device.vendor ? result.device.vendor + " " : "";
 							modelName += result.device.model ? result.device.model + " " : "";
 							modelName += result.os.name ? result.os.name + " " : "";

@@ -65,7 +65,7 @@ class AspenPWA_NotificationTestingTool extends Admin_Admin {
 			'Send Aspen Progressive Web Application(PWA) Notifications to All Locations',
 			'Send Aspen Progressive Web Application(PWA) Notifications to Home Library',
 			'Send Aspen Progressive Web Application(PWA) Notifications to Home Location',
-			'Send Aspen Progressive Web Application(PWA) Notifications to Home Library Locations',
+			'Send Aspen PWA Notifications to Home Library Locations',
 		]);
 	}
 }
