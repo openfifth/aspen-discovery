@@ -109,7 +109,11 @@ class CommunityEngagementPoll {
                     $campaignCompletions[] = [
                         'id' => $entry->id . '_ce_campaign_completed',
                         'title' => translate(['text' => 'Campaign completed! Awesome!', 'isPublicFacing' => true]),
-                        'body' => $campaign->name,
+                        'body' => translate([
+                            'text' => '%1% campaign complete!',
+                            1 => $campaign->name,
+                            'isPublicFacing' => true
+                        ]),
                         'icon' => "fa-medal",
                         'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(['text' => 'View all campaigns', 'isPublicFacing' => true])]
                     ];
@@ -122,7 +126,12 @@ class CommunityEngagementPoll {
                     $milestoneCompletions[] = [
                         'id' => $entry->id . '_ce_milestone_completed',
                         'title' => translate(['text' => 'Milestone completed! Well done!', 'isPublicFacing' => true]),
-                        'body' => $milestone->name,
+                        'body' => translate([
+                            'text' => '%1% of %2% complete.',
+                            1 => $milestone->name,
+                            2 => $campaign->name,
+                            'isPublicFacing' => true,
+                        ]),
                         'icon' => "fa-clipboard-check",
                         'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(['text' => 'View all campaigns', 'isPublicFacing' => true])]
                     ];
@@ -135,7 +144,12 @@ class CommunityEngagementPoll {
                     $progressUpdates[] = [
                         'id' => $entry->id . '_ce_milestone_progress',
                         'title' => translate(['text' => 'Milestone progress! Good job!', 'isPublicFacing' => true]),
-                        'body' => $usersProgress->progress . '/' . $campaignMilestone->goal . ' ' . $milestone->name,
+                        'body' => translate([
+                            'text' => '%1% of %2% progressed!',
+                            1=> $milestone->name,
+                            2=> $campaign->name,
+                            'isPublicFacing' => true,
+                        ]),
                         'icon' => "fa-chart-line",
                         'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(['text' => 'View all campaigns', 'isPublicFacing' => true])]
                     ];
