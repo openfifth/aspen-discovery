@@ -179,7 +179,7 @@
 
 	{include file="tracking.tpl"}
 
-	{include file="sse.tpl"}
+	{include file="polling.tpl"}
 
 	{if !empty($semanticData)}
 		{include file="jsonld.tpl"}

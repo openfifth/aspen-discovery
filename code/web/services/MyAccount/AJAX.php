@@ -10989,14 +10989,13 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/**
-	 * Sends server-sent events (SSE) notifications about community engagement milestones and campaigns.
+	 * Returns polling results for toast notifications about community engagement progress.
 	 */
-
-	public function CommunityEngagementSSE() {
-		require_once ROOT_DIR . '/sys/CommunityEngagement/CommunityEngagementSSE.php';
-		$debug = false; // Set to true to enable debug mode. true for dev only.
-		$sse = new CommunityEngagementSSE($debug);
-		$sse->CommunityEngagementSSE();
+	public function CommunityEngagementPoll() {
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CommunityEngagementPoll.php';
+		$debug = false; // Set to true to enable debug mode.Dev only.
+		$CEPoll = new CommunityEngagementPoll($debug);
+		$CEPoll->CommunityEngagementPoll();
 	}
 
 	function getYearInReviewSlide() : array {
