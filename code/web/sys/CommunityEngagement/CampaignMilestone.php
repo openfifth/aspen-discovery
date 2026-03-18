@@ -86,7 +86,6 @@ class CampaignMilestone extends DataObject {
 	}
 
 
-	//TODO: Rename all instances of getMilestoneByCampaign($campaignId) to this
 	/**
      * Fetch all campaign milestones for a given campaign,
      * augmented with milestone and reward data.

@@ -12,7 +12,6 @@ class CampaignMilestoneUsersProgress extends DataObject
 	public $rewardGiven;
 	public $milestoneCompleteEmailSent;
 
-	//TODO: Rename all instances of getprogressbymilestoneid(milestone_id, campaign_id, user_id) to this
 	public static function getProgressByCampaignMilestoneId($campaignMilestoneId, $userId) : int {
 		$campaignMilestoneProgress = new CampaignMilestoneUsersProgress();
 
@@ -26,7 +25,6 @@ class CampaignMilestoneUsersProgress extends DataObject
     }
 
 
-	//TODO: Rename all instances of getRewardGivenForMilestone($milestoneId, $userId, $campaignId) to this
 	public static function getRewardGivenForCampaignMilestone($campaignMilestoneId, $userId) {
 		$campaignMilestoneProgress = new CampaignMilestoneUsersProgress();
 		$campaignMilestoneProgress->ce_campaign_milestone_id = $campaignMilestoneId;

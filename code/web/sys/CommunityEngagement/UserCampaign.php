@@ -128,7 +128,6 @@ class UserCampaign extends DataObject {
 	 * @param int $userId
 	 * @return int
 	 */
-	//TODO: Rename all calculateUserCompletedMilestones($userId) to this
 	public function calculateUserCompletedCampaignMilestones($userId) {
 		$userCampaign = new UserCampaign();
 		$userEnrolledCampaigns = [];
