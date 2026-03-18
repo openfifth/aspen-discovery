@@ -241,3 +241,5 @@ sites/nashville.production
 /code/web/images/mnps
 .htaccess
 sites/aspen-discovery.lndo.site/
+code/web/services/Authentication/OAuth2Server/private.key
+code/web/services/Authentication/OAuth2Server/public.key
