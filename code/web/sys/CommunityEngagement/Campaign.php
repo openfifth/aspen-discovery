@@ -547,6 +547,20 @@ class Campaign extends DataObject {
 		return $campaignList;
 	}
 
+	public static function userIsEnrolledInActiveCampaign(int $userId): bool {
+		$activeCampaigns = self::getActiveCampaignsList();
+		
+		if (empty($activeCampaigns)) {
+			return false;
+		}
+
+		$userCampaign = new UserCampaign();
+		$userCampaign->userId = $userId;
+		$userCampaign->whereAdd("campaignId IN (" . implode(',', array_keys($activeCampaigns)) . ")");
+		
+		return $userCampaign->find() > 0;
+	}
+
 	public static function getUpcomingCampaigns():array {
 		$campaign = new Campaign();
 
