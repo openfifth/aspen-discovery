@@ -537,6 +537,7 @@ class WebBuilder_AJAX extends JSON_Action {
 		}
 		return $result;
 	}
+	
 	/** @noinspection PhpUnused */
 	function uploadImage() {
 		$result = [
@@ -1262,6 +1263,7 @@ class WebBuilder_AJAX extends JSON_Action {
 	function trackWebResourceUsage() {
 		$id = $_REQUEST['id'];
 		$authType = $_REQUEST['authType'];
+		$fromPlacard = isset($_REQUEST['fromPlacard']) ? (int)$_REQUEST['fromPlacard'] : 0;
 
 		require_once ROOT_DIR . '/sys/WebBuilder/WebResource.php';
 		$webResource = new WebResource();
@@ -1281,6 +1283,9 @@ class WebBuilder_AJAX extends JSON_Action {
 				} elseif ($authType == "library") {
 					$webResourceUsage->pageViewsInLibrary++;
 				}
+				if ($fromPlacard) {
+					$webResourceUsage->pageViewsFromPlacard++;
+				}
 				$webResourceUsage->update();
 			} else {
 				$webResourceUsage->pageViews++;
@@ -1288,6 +1293,9 @@ class WebBuilder_AJAX extends JSON_Action {
 					$webResourceUsage->pageViewsByAuthenticatedUsers++;
 				} elseif ($authType == "library") {
 					$webResourceUsage->pageViewsInLibrary++;
+				}
+				if ($fromPlacard) {
+					$webResourceUsage->pageViewsFromPlacard++;
 				}
 				$webResourceUsage->insert();
 			}
