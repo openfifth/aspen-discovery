@@ -10092,17 +10092,16 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/**
-	 * Sends server-sent events (SSE) notifications about community engagement milestones and campaigns.
+	 * Returns polling results for toast notifications about community engagement progress.
 	 * @noinspection PhpUnused
 	 */
 
-	public function CommunityEngagementSSE() {
+	public function CommunityEngagementPoll() {
 		$this->checkRequiredModule('Community Engagement');
-		$this->requireLoggedInUser();
-		require_once ROOT_DIR . '/sys/CommunityEngagement/CommunityEngagementSSE.php';
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CommunityEngagementPoll.php';
 		$debug = false; // Set to true to enable debug mode. true for dev only.
-		$sse = new CommunityEngagementSSE($debug);
-		$sse->CommunityEngagementSSE();
+		$CEPoll = new CommunityEngagementPoll($debug);
+		$CEPoll->CommunityEngagementPoll();
 	}
 
 	/** @noinspection PhpUnused */

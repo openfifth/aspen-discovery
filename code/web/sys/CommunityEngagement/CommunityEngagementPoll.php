@@ -1,6 +1,14 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
-class CommunityEngagementSSE {
+// Load necessary files
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
+
+class CommunityEngagementPoll {
 
     private bool $debug = false;
 
@@ -9,48 +17,39 @@ class CommunityEngagementSSE {
     }
 
     /**
-     * Main Endpoint: Handles the SSE lifecycle.
+     * Returns a JSON polling response
+     * Returns 'status' => 'stop' if:
+     * - User is not logged in
+     * - User is not enrolled in an active campaign
      */
-    public function CommunityEngagementSSE() {
-        $patron = UserAccount::getActiveUserObj();
-        $interval = 10;
-
-        // 1. Send initial connection headers
-        $this->sendHeaders();
-        $this->sendSSEEvent('established', 'connection established');
-        $this->flushOutput();
-
-        // 2. Main Execution Loop
-        while (true) {
-            // Check if the client is still there
-            if ($this->shouldStop()) {
-                exit();
-            }
-
-            if ($this->debug) {
-                global $logger;
-                $logger->log("RUNNING SSE ", Logger::LOG_ERROR);
-            }
-
-            // Get the data (The part we can now test easily)
-            $notifications = $this->fetchLatestNotifications($patron, $interval);
-
-            if (empty($notifications)) {
-                $this->sendSSEEvent('heart_beat', 'No notifications found');
-            } else {
-                foreach ($notifications as $payload) {
-                    $this->sendSSEEvent('ce_notification', json_encode($payload));
-                }
-            }
-
-            $this->flushOutput();
-            sleep($interval);
+    public function CommunityEngagementPoll() {
+        if (!UserAccount::isLoggedIn()) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'stop']);
+            exit();
         }
+        $patron = UserAccount::getActiveUserObj();
+
+        $campaign = new Campaign();
+        if (!$campaign->userIsEnrolledInActiveCampaign($patron->id)) {
+            header('Content-Type: application/json');
+            echo json_encode(['status' => 'stop']);
+            exit();
+        }
+
+        $interval = 10; 
+        $notifications = $this->fetchLatestNotifications($patron, $interval);
+
+        header('Content-Type: application/json');
+        echo json_encode([
+            'status' => 'success',
+            'notifications' => $notifications
+        ]);
+        exit();
     }
 
     /**
-     * REFACTORED LOGIC: This method contains all the business rules.
-     * It returns an array of notification payloads based on priority:
+     * Returns an array of notification payloads based on priority:
      * 1. Campaign Completion (Highest - suppresses all others)
      * 2. Milestone Completion (Suppresses progress updates)
      * 3. Progress Updates (Lowest)
@@ -64,14 +63,6 @@ class CommunityEngagementSSE {
         $campaignsNotified = [];
         $milestonesNotified = [];
         $progressNotified = [];
-
-        // Load necessary files
-        require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
-        require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 
         $entry = new CampaignMilestoneProgressEntry();
         $entry->userId = $patron->id;
@@ -136,7 +127,7 @@ class CommunityEngagementSSE {
                         'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(['text' => 'View all campaigns', 'isPublicFacing' => true])]
                     ];
 
-                // 3. Categorize: General Progress
+                // 3. Categorize: General milestone progress
                 } else {
                     if (in_array($campaignMilestone->id, $progressNotified)) continue;
                     $progressNotified[] = $campaignMilestone->id;
@@ -152,8 +143,6 @@ class CommunityEngagementSSE {
             }
         }
 
-        // --- APPLY PRIORITY HIERARCHY ---
-
         // Priority 1: If any campaigns were completed, only return those.
         if (!empty($campaignCompletions)) {
             return $campaignCompletions;
@@ -166,39 +155,5 @@ class CommunityEngagementSSE {
 
         // Priority 3: Otherwise, return whatever progress updates we found.
         return $progressUpdates;
-    }
-
-    /**
-     * Helper to format SSE strings
-     */
-    protected function sendSSEEvent($event, $data) {
-        echo "event: {$event}\n";
-        echo "data: {$data}\n\n";
-    }
-
-    /**
-     * Helper for headers
-     */
-    protected function sendHeaders() {
-        header("X-Accel-Buffering: no");
-        header("Content-Type: text/event-stream");
-        header("Cache-Control: no-cache");
-    }
-
-    /**
-     * Helper to check connection status
-     */
-    protected function shouldStop() {
-        return connection_status() != CONNECTION_NORMAL || connection_aborted();
-    }
-
-    /**
-     * Helper for buffer flushing
-     */
-    protected function flushOutput() {
-        if (ob_get_length()) {
-            ob_end_flush();
-        }
-        flush();
     }
 }
