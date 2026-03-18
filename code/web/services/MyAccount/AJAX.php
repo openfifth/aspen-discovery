@@ -9891,9 +9891,10 @@ class MyAccount_AJAX extends JSON_Action {
 			return $this->failureResult('Already Enrolled', 'User is already enrolled in this campaign.');
 		}
 
-		$this->applyCampaignProgress($userId, $campaignId);
-
 		if ($userCampaign->insert()) {
+
+			$this->applyCampaignProgress($userId, $campaignId);
+
 			$campaign->enrollmentCounter++;
 			$campaign->currentEnrollments++;
 			$campaign->update();
@@ -10007,7 +10008,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$entityId = $entity->groupedWorkId;
 
 			if ($entityDate >= $campaignStartDate && $entityDate <= $campaignEndDate) {
-				$this->processCampaignMilestones($entity, $campaignId, $entityId);
+				CampaignMilestone::processCampaignMilestoneProgress($entity, $entity->__table, $userId, $entityDate, $entityId);
 			}
 		}
 	}
