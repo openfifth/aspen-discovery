@@ -4,13 +4,13 @@ require_once __DIR__ . '/../../../../../code/web/bootstrap.php';
 
 use PHPUnit\Framework\TestCase;
 
-class CommunityEngagementSSETests extends TestCase {
-    private $sse;
+class CommunityEngagementPollTests extends TestCase {
+    private $poll;
     private $patron;
 
 	public function __construct(string $name) {
 		parent::__construct($name);
-		require_once __DIR__ . '/../../../../../code/web/sys/CommunityEngagement/CommunityEngagementSSE.php';
+		require_once __DIR__ . '/../../../../../code/web/sys/CommunityEngagement/CommunityEngagementPoll.php';
 		require_once __DIR__ . '/../../../../../code/web/sys/CommunityEngagement/Campaign.php';
 		require_once __DIR__ . '/../../../../../code/web/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
 	}
@@ -20,7 +20,7 @@ class CommunityEngagementSSETests extends TestCase {
         
         // 1. Instantiate the class in debug mode 
         // This is crucial: it ignores the 10-second DB time constraint
-        $this->sse = new CommunityEngagementSSE(true);
+        $this->poll = new CommunityEngagementPoll(true);
 
         $this->patron = (object)['id' => 999];
 
@@ -73,7 +73,7 @@ class CommunityEngagementSSETests extends TestCase {
         $progress->progress = 50; // Halfway there
         $progress->insert();
 
-        // 5. Create the Entry (The trigger for the SSE)
+        // 5. Create the Entry (The trigger for the Poll)
         $entry = new CampaignMilestoneProgressEntry();
         $entry->userId = $this->patron->id;
         $entry->ce_campaign_milestone_id = $cm->id;
@@ -82,12 +82,12 @@ class CommunityEngagementSSETests extends TestCase {
         $entry->insert();
 
         // EXECUTE
-        $notifications = $this->sse->fetchLatestNotifications($this->patron, 10);
+        $notifications = $this->poll->fetchLatestNotifications($this->patron, 10);
 
         // ASSERT
         $this->assertCount(1, $notifications);
         $this->assertStringContainsString('ce_milestone_progress', $notifications[0]['id']);
-        $this->assertEquals('50/100 '.$milestone->name, $notifications[0]['body']);
+        $this->assertEquals($milestone->name.' of '.$campaign->name.' progressed!', $notifications[0]['body']);
         $this->assertEquals('fa-chart-line', $notifications[0]['icon']);
     }
 
@@ -158,12 +158,12 @@ class CommunityEngagementSSETests extends TestCase {
         $entryB->insert();
 
         // EXECUTE
-        $notifications = $this->sse->fetchLatestNotifications($this->patron, 10);
+        $notifications = $this->poll->fetchLatestNotifications($this->patron, 10);
 
         // ASSERT
         $this->assertCount(1, $notifications);
         $this->assertStringContainsString('ce_milestone_completed', $notifications[0]['id']);
-        $this->assertEquals('Step One', $notifications[0]['body']);
+        $this->assertEquals('Step One of Multi-Step Challenge complete.', $notifications[0]['body']);
         $this->assertEquals('fa-clipboard-check', $notifications[0]['icon']);
     }
 
@@ -199,11 +199,11 @@ class CommunityEngagementSSETests extends TestCase {
         $entry->ce_campaign_milestone_users_progress_id = $progress->id;
         $entry->insert();
 
-        $notifications = $this->sse->fetchLatestNotifications($this->patron, 10);
+        $notifications = $this->poll->fetchLatestNotifications($this->patron, 10);
 
         $this->assertCount(1, $notifications);
         $this->assertStringContainsString('ce_campaign_completed', $notifications[0]['id']);
-        $this->assertEquals('Grand Tour', $notifications[0]['body']);
+        $this->assertEquals('Grand Tour campaign complete!', $notifications[0]['body']);
     }
 
     /**
@@ -239,7 +239,7 @@ class CommunityEngagementSSETests extends TestCase {
         $entry->ce_campaign_milestone_users_progress_id = $progress->id;
         $entry->insert();
 
-        $notifications = $this->sse->fetchLatestNotifications($this->patron, 10);
+        $notifications = $this->poll->fetchLatestNotifications($this->patron, 10);
 
         // ASSERT: Logic should hit the 'unwantedOverflow' continue statement
         $this->assertCount(0, $notifications);
@@ -252,6 +252,7 @@ class CommunityEngagementSSETests extends TestCase {
      */
     public function testWantedOverflow() {
         $campaign = new Campaign();
+        $campaign->name = "Another Campaign";
         $campaign->insert();
 
         $milestone = new Milestone();
@@ -277,11 +278,11 @@ class CommunityEngagementSSETests extends TestCase {
         $entry->ce_campaign_milestone_users_progress_id = $progress->id;
         $entry->insert();
 
-        $notifications = $this->sse->fetchLatestNotifications($this->patron, 10);
+        $notifications = $this->poll->fetchLatestNotifications($this->patron, 10);
 
         // ASSERT: Logic should identify this as 'wantedOverflow' and allow the progress branch
         $this->assertCount(1, $notifications);
         $this->assertStringContainsString('ce_milestone_progress', $notifications[0]['id']);
-        $this->assertEquals('110/100 ' . $milestone->name, $notifications[0]['body']);
+        $this->assertEquals($milestone->name.' of '.$campaign->name.' progressed!', $notifications[0]['body']);
     }
 }
