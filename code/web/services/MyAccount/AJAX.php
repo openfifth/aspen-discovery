@@ -766,35 +766,35 @@ class MyAccount_AJAX extends JSON_Action {
 							}
 						}
 						if ($holdType == 'ils') {
-							$tmpResult = $user->cancelHold($recordId, $cancelId, $key->isIll);
+							$tmpResult = $patronOwningHold->cancelHold($recordId, $cancelId, $key->isIll);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'axis360') {
 							require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 							$driver = new Axis360Driver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'overdrive') {
 							require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 							$driver = new OverDriveDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'cloud_library') {
 							require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 							$driver = new CloudLibraryDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
 						} elseif ($holdType == 'hoopla') {
 							require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 							$driver = new HooplaDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
+							$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
 							if (!empty($tmpResult['success'])) {
 								$success++;
 							}
@@ -889,7 +889,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function cancelAllHolds() {
+	function cancelAllHolds() : array {
 		$tmpResult = [
 			'success' => false,
 			'title' => translate([
@@ -915,39 +915,38 @@ class MyAccount_AJAX extends JSON_Action {
 				$cancelId = $hold->cancelId;
 				$holdType = $hold->source;
 				$isIll = $hold->isIll;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
+				$patron = $user->getUserReferredTo($hold->userId);
 				if ($patron && $hold->cancelable) {
 					if ($holdType == 'ils') {
-						$tmpResult = $user->cancelHold($recordId, $cancelId, $isIll);
+						$tmpResult = $patron->cancelHold($recordId, $cancelId, $isIll);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'axis360') {
 						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 						$driver = new Axis360Driver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'cloud_library') {
 						require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 						$driver = new CloudLibraryDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'hoopla') {
 						require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
 						$driver = new HooplaDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
+						$tmpResult = $driver->cancelHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
@@ -1464,7 +1463,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function freezeHoldAll() {
+	function freezeHoldAll() : array {
 		$user = UserAccount::getLoggedInUser();
 		$tmpResult['title'] = translate([
 			'text' => 'Error',
@@ -1622,7 +1621,7 @@ class MyAccount_AJAX extends JSON_Action {
 						}
 						if ($frozen != 0 && $canFreeze == 1) {
 							if ($holdType == 'ils') {
-								$tmpResult = $user->thawHold($recordId, $holdId);
+								$tmpResult = $patronOwningHold->thawHold($recordId, $holdId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1631,7 +1630,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} elseif ($holdType == 'axis360') {
 								require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 								$driver = new Axis360Driver();
-								$tmpResult = $driver->thawHold($user, $recordId);
+								$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1640,7 +1639,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} elseif ($holdType == 'overdrive') {
 								require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 								$driver = new OverDriveDriver();
-								$tmpResult = $driver->thawHold($user, $recordId);
+								$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1649,7 +1648,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} elseif ($holdType == 'cloud_library') {
 								require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 								$driver = new CloudLibraryDriver();
-								$tmpResult = $driver->thawHold($user, $recordId);
+								$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
 								if ($tmpResult['success']) {
 									$success++;
 								} else {
@@ -1713,7 +1712,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function thawHoldAll() {
+	function thawHoldAll() : array {
 		$tmpResult['title'] = translate([
 			'text' => 'Error',
 			'isPublicFacing' => true,
@@ -7790,8 +7789,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$createInvoice->InvoiceNumber = $token;
 				$createInvoice->TypeID = intval($invoiceCloudSetting->invoiceTypeId);
 				$createInvoice->BalanceDue = $payment->totalPaid;
-				$createInvoice->CCServiceFee = $invoiceCloudSetting->ccServiceFee;
-				$createInvoice->ACHServiceFee = $invoiceCloudSetting->ccServiceFee;
+				$ccServiceFee = $invoiceCloudSetting->ccServiceFee;
+				if (isset($ccServiceFee) && str_contains($ccServiceFee, '%')) {
+					$percent = floatval(str_replace('%', '', $ccServiceFee));
+					$ccServiceFee = round($payment->totalPaid * ($percent / 100), 2);
+				}
+				$createInvoice->CCServiceFee = $ccServiceFee;
+				$createInvoice->ACHServiceFee = $ccServiceFee;
 				$createInvoice->DueDate = date('m/d/Y');
 				$createInvoice->InvoiceDate = date('m/d/Y');
 
@@ -9020,6 +9024,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$userEventsEntry->title = mb_substr($title, 0, 50);
 						$eventDate = $recordDriver->getStartDate();
 						$userEventsEntry->eventDate = $eventDate->getTimestamp();
+						$userEventsEntry->displayEventBranchOnThumbnail = $recordDriver->getDisplayBranchOnThumbnail();
 						if ($recordDriver->isRegistrationRequired()) {
 							$regRequired = 1;
 						} else {
@@ -12028,7 +12033,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 			foreach ($savedSearches as $savedSearch) {
 				/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
-				$searchObject = SearchObjectFactory::initSearchObject();
+				$searchObject = SearchObjectFactory::initSearchObject($savedSearch->searchSource);
 				$size = strlen($savedSearch->search_object);
 				$minSO = unserialize($savedSearch->search_object);
 				$searchObject->deminify($minSO);
@@ -12037,6 +12042,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$searchSourceLabels = [
 					'local' => 'Catalog',
 					'genealogy' => 'Genealogy',
+					'series' => 'Series'
 				];
 
 				$searchSourceLabel = $searchObject->getSearchSource();
@@ -12217,5 +12223,148 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		}
 		return $result;
+	}
+
+	public function removeCampaignModal() {
+		$activeUser = UserAccount::getActiveUserObj();
+		if (!$activeUser) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'You must be logged in.',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		$userId = $activeUser->id;
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
+		if (!$campaignId) {
+			return [
+				'sucess' =>false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Cannot find a campaign with this ID',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
+
+		$campaign = new Campaign();
+		$campaign->id = $campaignId;
+		if (!$campaign->find(true)) {
+			return [
+				'sucess' =>false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Campaign not found',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		$campaignName = $campaign->name;
+		global $interface;
+		$interface->assign('campaignName', $campaignName);
+
+		return [
+			'success' =>true,
+			'title' => translate([
+				'text' => 'Remove Campaign',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/remove-campaign-modal.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.removeCampaignFromUI($campaignId, $userId)'>" . translate([
+					'text' => 'Remove',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+		];
+	}
+
+	public function removeCampaignFromUI() {
+
+		$activeUser = UserAccount::getActiveUserObj();
+		if (!$activeUser) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'You must be logged in.',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		$userId = $_REQUEST['userId'] ?? null;
+		$campaignId = $_REQUEST['campaignId'] ?? null;
+
+		if (!$campaignId || !$userId) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'Missing Parameter',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		$isAdmin = UserAccount::userHasPermission('View Community Engagement Admin View');
+		$isSelf  = ($activeUser->id == $userId);
+
+		 if (!$isAdmin && !$isSelf) {
+			 return [
+				 'success' => false,
+				 'title' => translate([
+					 'text' => 'Error',
+					 'isPublicFacing' => true,
+				 ]),
+				 'message' => translate([
+					 'text' => 'You do not have permission to perform this action.',
+					 'isPublicFacing' => true,
+				 ]),
+			 ];
+		 }
+
+		require_once ROOT_DIR . '/sys/CommunityEngagement/UserRemovedCampaign.php';
+
+		$removedCampaign = new UserRemovedCampaign();
+		$removedCampaign->userId = $userId;
+		$removedCampaign->campaignId = $campaignId;
+
+		if (!$removedCampaign->find(true)) {
+			$removedCampaign->insert();
+		}
+
+		return [
+			'success' => true,
+			'title' => translate([
+				'text' => 'Success',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Campaign removed from view',
+				'isPublicFacing' => true,
+			]),
+		];
 	}
 }
