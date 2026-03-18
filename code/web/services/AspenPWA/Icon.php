@@ -13,7 +13,7 @@ class AspenPWA_Icon extends Action {
 
 	function launch()
 	{
-		$setting = new AspenMobileSetting();
+		$setting = new AspenPWASetting();
 		$success = true;
 		//TODO we should return an error code instead of 200
 		// if we have no settings
