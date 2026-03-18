@@ -2,6 +2,7 @@
 require_once ROOT_DIR . '/sys/CommunityEngagement/Reward.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
 require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
+require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
 
 class CampaignMilestone extends DataObject {
 	public $__table = 'ce_campaign_milestones';
@@ -190,7 +191,7 @@ class CampaignMilestone extends DataObject {
 	 * @param int $userId The user id of the patron
 	 * @return CampaignMilestone|false Returns a Milestone object if one is found, false otherwise
 	 */
-	public static function getCampaignMilestonesToUpdate($object, $tableName, $userId)
+	private static function getCampaignMilestonesToUpdate($object, $tableName, $userId)
 	{
 
 		# Bail if not the table we want
@@ -391,4 +392,104 @@ class CampaignMilestone extends DataObject {
 		}
 		return false;
 	}
+
+	/**
+	 * Process campaign milestone for a given object and date
+	 *
+	 * @param mixed $value The object being processed
+	 * @param string $objectType The type of object ('user_checkout', 'user_hold', 'user_work_review')
+	 * @param int $userId The user ID
+	 * @param int $date The date to check (unix timestamp)
+	 * @param mixed $groupedId The grouped work/record ID (optional)
+	 */
+	public static function processCampaignMilestoneProgress($value, $objectType, $userId, $date, $groupedId = null) {
+		$campaignMilestone = self::getCampaignMilestonesToUpdate($value, $objectType, $userId);
+
+		if (!$campaignMilestone) {
+			return;
+		}
+
+		while ($campaignMilestone->fetch()) {
+			$campaign = new Campaign();
+			$campaign->id = $campaignMilestone->campaignId;
+			if (!$campaign->find(true)) {
+				continue;
+			}
+
+			if (!self::_isDateWithinCampaignPeriod($date, $campaign)) {
+				continue;
+			}
+
+			if (self::_campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone)) {
+				continue;
+			}
+
+			$milestone = new Milestone();
+			$milestone->id = $campaignMilestone->milestoneId;
+			$milestone->find(true);
+
+			if (!$milestone->progressBeyondOneHundredPercent) {
+				$currentProgress = new CampaignMilestoneUsersProgress();
+				$currentProgress->userId = $userId;
+				$currentProgress->ce_campaign_milestone_id = $campaignMilestone->id;
+
+				if ($currentProgress->find(true)) {
+					if ($currentProgress->progress >= $campaignMilestone->goal) {
+						continue;
+					}
+				}
+			}
+
+			$campaignMilestone->addCampaignMilestoneProgressEntry($value, $userId, $groupedId);
+
+			$userCampaign = new UserCampaign();
+			$userCampaign->userId = $userId;
+			$userCampaign->campaignId = $campaignMilestone->campaignId;
+			$userCampaign->checkAndHandleCampaignCompletion($userId, $campaignMilestone->campaignId);
+		}
+	}
+
+	/**
+	 * Checks if an object entry already exists in the ce_milestone_progress_entries table, for a specific milestone.
+	 * This check is required because a some objects being added to the database may not actually be a instance.
+	 * For example, for checkouts and holds, these may be purged from the database and re-fetched from the ILS.
+	 *
+	 * @param object $value The object containing the sourceId, recordId, and userId.
+	 * @param CampaignMilestone $campaignMilestone The milestone object.
+	 * @return bool Returns true if an entry exists, false otherwise.
+	 */
+	private static function _campaignMilestoneProgressEntryObjectAlreadyExists($value, $campaignMilestone) {
+		$campaignMilestoneProgressEntryCheck = new CampaignMilestoneProgressEntry();
+		$campaignMilestoneProgressEntryCheck->initialize($campaignMilestone);
+		if ($campaignMilestoneProgressEntryCheck->find()) {
+			while ($campaignMilestoneProgressEntryCheck->fetch()) {
+				$decoded_object = json_decode($campaignMilestoneProgressEntryCheck->object);
+				if ($value instanceof UserWorkReview) {
+					if ($decoded_object->groupedRecordPermanentId == $value->groupedRecordPermanentId && $decoded_object->userId == $value->userId) {
+						return true;
+					}
+				}else{
+					if ($decoded_object->sourceId == $value->sourceId && $decoded_object->recordId == $value->recordId && $decoded_object->userId == $value->userId) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Check if a date falls within the campaign period
+	 *
+	 * @param int $date The date to check (unix timestamp)
+	 * @param Campaign $campaign The campaign object
+	 * @return bool True if date is within campaign period, false otherwise
+	 */
+	private static function _isDateWithinCampaignPeriod($date, $campaign) {
+		$campaignStartDate = strtotime($campaign->startDate);
+		$campaignEndDate = strtotime($campaign->endDate);
+
+		return $date >= $campaignStartDate && $date <= $campaignEndDate;
+	}
+
 }
