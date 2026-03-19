@@ -1,6 +1,6 @@
 <?php
 
-require_once ROOT_DIR . '/Action.php';
+require_once ROOT_DIR . '/JSON_Action.php';
 
 class Browse_AJAX extends JSON_Action {
 
