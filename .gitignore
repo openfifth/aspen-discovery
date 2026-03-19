@@ -243,3 +243,4 @@ sites/nashville.production
 sites/aspen-discovery.lndo.site/
 code/web/services/Authentication/OAuth2Server/private.key
 code/web/services/Authentication/OAuth2Server/public.key
+/code/web/services/Authentication/OAuth2Server/encryption.key
