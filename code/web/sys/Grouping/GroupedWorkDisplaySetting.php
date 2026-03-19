@@ -638,17 +638,13 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'default' => false,
 						'forcesReindex' => true,
 					],
-					'locationsToIncludeInShelfLocationsFacet' => [
-						'property' => 'locationsToIncludeInShelfLocationsFacet',
-						'label' => 'Locations to Include in Shelf Locations Facet',
+					'includeEContentInShelvingLocations' => [
+						'property' => 'includeEContentInShelvingLocations',
+						'label' => 'Include eContent in Shelf Locations Facet',
 						'description' => 'Define whether all or only physical materials are included in the Shelf Location facet.',
-						'type' => 'enum',
-						'values' => [
-							'1' => 'All Records',
-							'2' => 'Physical Materials Only',
-						],
+						'type' => 'checkbox',
 						'hideInLists' => true,
-						'default' => false,
+						'default' => 1,
 						'forcesReindex' => true,
 					],
 					'includeAllRecordsInDateAddedFacets' => [
