@@ -2551,4 +2551,21 @@ class Record_AJAX extends Action {
 		}
 		return $results;
 	}
+
+	/** @noinspection PhpUnused */
+	function getLargeCover() : array {
+		global $interface;
+
+		$id = $_REQUEST['id'];
+		$interface->assign('id', $id);
+
+		return [
+			'title' => translate([
+				'text' => 'Cover Image',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch("Record/largeCover.tpl"),
+			'modalButtons' => "",
+		];
+	}
 }
