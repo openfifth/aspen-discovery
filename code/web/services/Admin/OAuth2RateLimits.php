@@ -1,8 +1,8 @@
 <?php
 
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/OAuth2/OAuth2RateLimit.php';
-require_once ROOT_DIR . '/sys/OAuth2/OAuth2RateLimiter.php';
+require_once ROOT_DIR . '/sys/Authentication/OAuth2/RateLimiter/OAuth2RateLimit.php';
+require_once ROOT_DIR . '/sys/Authentication/OAuth2/RateLimiter/OAuth2RateLimiter.php';
 
 class Admin_OAuth2RateLimits extends ObjectEditor {
 	function getObjectType(): string {
@@ -67,21 +67,9 @@ class Admin_OAuth2RateLimits extends ObjectEditor {
 
 		if (UserAccount::userHasPermission('Administer OAuth2')) {
 			$actions[] = [
-				'label' => 'View Rate Limit Statistics',
-				'action' => 'viewStatistics',
-				'onClick' => 'return AspenDiscovery.Admin.viewRateLimitStats();'
-			];
-
-			$actions[] = [
 				'label' => 'Configure Rate Limits',
 				'action' => 'configureRateLimits',
 				'onClick' => 'return AspenDiscovery.Admin.configureRateLimits();'
-			];
-
-			$actions[] = [
-				'label' => 'Cleanup Expired Records',
-				'action' => 'cleanupExpired',
-				'onClick' => 'return AspenDiscovery.Admin.cleanupExpiredRateLimits();'
 			];
 		}
 
@@ -97,43 +85,22 @@ class Admin_OAuth2RateLimits extends ObjectEditor {
 	}
 
 	function getActiveAdminSection(): string {
-		return 'system_admin';
+		return 'admin';
 	}
 
-	protected function getDefaultRecordsPerPage() {
-		return 50;
+	function getViewPermissions(): array {
+		return ['Administer OAuth2'];
 	}
 
-	function viewStatistics() {
-		global $interface;
-
-		if (!UserAccount::userHasPermission('Administer OAuth2')) {
-			$this->display('../../interface/themes/responsive/Admin/invalidPermissions.tpl', 'Invalid Permissions', '');
-			return;
-		}
-
-		$statistics = OAuth2RateLimiter::getStatistics();
-		$rateLimitConfig = OAuth2RateLimiter::getRateLimitConfig();
-
-		$interface->assign('statistics', $statistics);
-		$interface->assign('rateLimitConfig', $rateLimitConfig);
-
-		$this->display('oauth2_rate_limit_stats.tpl', 'OAuth2 Rate Limit Statistics', '');
+	function canBatchEdit(): bool {
+		return false;
 	}
 
-	function cleanupExpired() {
-		global $interface;
+	function canExportToCSV(): bool {
+		return false;
+	}
 
-		if (!UserAccount::userHasPermission('Administer OAuth2')) {
-			$this->display('../../interface/themes/responsive/Admin/invalidPermissions.tpl', 'Invalid Permissions', '');
-			return;
-		}
-
-		$deletedCount = OAuth2RateLimiter::cleanupExpiredRecords();
-
-		$interface->assign('deletedCount', $deletedCount);
-		$interface->assign('message', "Cleaned up $deletedCount expired rate limit records.");
-
-		$this->display('oauth2_cleanup_result.tpl', 'Rate Limit Cleanup Complete', '');
+	function canCompare(): bool {
+		return false;
 	}
 }

@@ -1,7 +1,7 @@
 <?php
 
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/OAuth2/OAuth2Client.php';
+require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
 
 class Admin_OAuth2Clients extends ObjectEditor {
 	function getObjectType(): string {
@@ -49,80 +49,47 @@ class Admin_OAuth2Clients extends ObjectEditor {
 		return 'id';
 	}
 
-	function getAdditionalObjectActions($existingObject): array {
-		$actions = [];
+	function getBreadcrumbs(): array {
+		$breadcrumbs = [];
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#system_admin', 'System Administration');
+		$breadcrumbs[] = new Breadcrumb('/Admin/OAuth2Clients', 'OAuth2 Clients');
+		return $breadcrumbs;
+	}
 
-		if ($existingObject && isset($existingObject->id) && !empty($existingObject->id)) {
-			$actions[] = [
-				'text' => 'View Client Credentials',
-				'onClick' => "return AspenDiscovery.Admin.showOAuth2ClientCredentials('{$existingObject->id}');",
-			];
+	function getActiveAdminSection(): string {
+		return 'admin';
+	}
 
-			if ($existingObject->is_active) {
-				$actions[] = [
-					'text' => 'Revoke Client Access',
-					'onClick' => "return AspenDiscovery.Admin.revokeOAuth2Client('{$existingObject->id}');",
-				];
-			} else {
-				$actions[] = [
-					'text' => 'Reactivate Client',
-					'onClick' => "return AspenDiscovery.Admin.reactivateOAuth2Client('{$existingObject->id}');",
-				];
-			}
+	function getViewPermissions(): array {
+		return ['Administer OAuth2'];
+	}
+
+	function canBatchEdit(): bool {
+		return false;
+	}
+
+	function canExportToCSV(): bool {
+		return false;
+	}
+
+	function canCompare(): bool {
+		return false;
+	}
+
+	function updateFromUI($object, $structure, $fieldLocks): array {
+		$clientSecretBackup = null;
+		if ($this->objectAction == 'addNew' && isset($object->client_secret)) {
+			$clientSecretBackup = $object->client_secret;
+			unset($object->client_secret);
 		}
 
-		return $actions;
-	}
+		$result = parent::updateFromUI($object, $structure, $fieldLocks);
 
-	function canAddNew(): bool {
-		return UserAccount::userHasPermission('Administer OAuth2');
-	}
-
-	function canEdit(): bool {
-		return UserAccount::userHasPermission('Administer OAuth2');
-	}
-
-	function canDelete(): bool {
-		return UserAccount::userHasPermission('Administer OAuth2');
-	}
-
-	function customListActions(): array {
-		$actions = [];
-
-		$actions[] = [
-			'label' => 'Generate New Client',
-			'action' => 'generateNewClient',
-			'onClick' => 'return AspenDiscovery.Admin.generateNewOAuth2Client();'
-		];
-
-		return $actions;
-	}
-
-	function generateNewClient() {
-		if (!UserAccount::userHasPermission('Administer OAuth2')) {
-			$this->display('../../interface/themes/responsive/Admin/invalidPermissions.tpl', 'Invalid Permissions', '');
-			return;
+		if ($clientSecretBackup !== null) {
+			$object->client_secret = $clientSecretBackup;
 		}
 
-		$client = new OAuth2Client();
-		// Pre-fill with some defaults
-		$client->name = 'New OAuth2 Client';
-		$client->scopes = 'user:read,catalog:read';
-		$client->is_active = 1;
-		
-		// These will be auto-generated on insert
-		$result = $client->insert();
-
-		if ($result) {
-			header('Location: /Admin/OAuth2Clients?objectAction=edit&id=' . $client->id);
-		} else {
-			global $interface;
-			$interface->assign('error', 'Failed to create new client');
-			$this->display('../../interface/themes/responsive/Admin/oauth2ClientError.tpl', 'Error Creating Client', '');
-		}
-	}
-
-	protected function getDefaultRecordsPerPage() {
-		return 25;
+		return $result;
 	}
 }
