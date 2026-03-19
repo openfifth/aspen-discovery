@@ -486,7 +486,7 @@ class Browse_AJAX extends JSON_Action {
 		}
 	}
 
-	private BrowseCategory|SearchEntry|UserList|null $browseCategory;
+	private BrowseCategory|SearchEntry|UserList|null $browseCategory = null;
 
 	/**
 	 * @param bool $reload Reload object's BrowseCategory
