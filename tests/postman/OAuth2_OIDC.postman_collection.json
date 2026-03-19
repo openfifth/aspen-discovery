@@ -159,7 +159,108 @@
                 {"key": "state", "value": "xyz123"}
               ]
             },
-            "description": "Step 1: Get authorization code (browser redirect)"
+            "description": "Step 1: Get authorization approval page (shows client, scopes, and user)"
+          },
+          "response": []
+        },
+        {
+          "name": "Authorization Code Flow - Approve",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Extract authorization code from redirect",
+                  "var code = null;",
+                  "",
+                  "// Method 1: Check Location header for redirect",
+                  "var locationHeader = pm.response.headers.get('Location');",
+                  "if (locationHeader) {",
+                  "  console.log('Location Header found');",
+                  "  var match = locationHeader.match(/code=([^&]+)/);",
+                  "  if (match) {",
+                  "    code = match[1];",
+                  "  }",
+                  "}",
+                  "",
+                  "// Method 2: If Postman followed redirect, check the cookies or history",
+                  "// The final URL after redirect should be in pm.request.url",
+                  "if (!code && pm.request.url) {",
+                  "  var urlStr = pm.request.url.toString ? pm.request.url.toString() : String(pm.request.url);",
+                  "  console.log('Checking request URL');",
+                  "  var match = urlStr.match(/code=([^&]+)/);",
+                  "  if (match) {",
+                  "    code = match[1];",
+                  "    console.log('Found code in request URL');",
+                  "  }",
+                  "}",
+                  "",
+                  "// Method 3: Get it from the response text (if it contains the redirect URL)",
+                  "if (!code) {",
+                  "  try {",
+                  "    var responseBody = pm.response.text();",
+                  "    if (responseBody && responseBody.length > 0) {",
+                  "      var match = responseBody.match(/code=([^&\\\"\\s]+)/);",
+                  "      if (match) {",
+                  "        code = match[1];",
+                  "        console.log('Found code in response body');",
+                  "      }",
+                  "    }",
+                  "  } catch (e) {",
+                  "    console.log('Could not read response body');",
+                  "  }",
+                  "}",
+                  "",
+                  "// If we found a code, save it",
+                  "if (code && code.length > 0) {",
+                  "  pm.environment.set('auth_code', code);",
+                  "  console.log('✓ Authorization code extracted and saved');",
+                  "  console.log('✓ Code (first 20 chars): ' + code.substring(0, 20) + '...');",
+                  "  console.log('✓ Ready for Token Exchange - use {{auth_code}} variable');",
+                  "} else {",
+                  "  console.log('⚠ Could not extract authorization code');",
+                  "  console.log('Response status: ' + pm.response.code);",
+                  "  console.log('Try checking your browser - you should have been redirected to:');",
+                  "  console.log('https://aspen.localhost:8890/?code=...&state=xyz123');",
+                  "  console.log('');",
+                  "  console.log('Manual extraction:');",
+                  "  console.log('1. Copy the code from the URL');",
+                  "  console.log('2. Click \"Environment\" in Postman');",
+                  "  console.log('3. Find auth_code variable');",
+                  "  console.log('4. Paste the code in the CURRENT VALUE field');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {"key": "approve", "value": "yes"}
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/Authentication/OAuth2/Authorize?response_type=code&client_id={{client_id}}&redirect_uri={{redirect_uri}}&scope=openid%20profile%20email%20api:work:read&state=xyz123",
+              "host": ["{{base_url}}"],
+              "path": ["Authentication", "OAuth2", "Authorize"],
+              "query": [
+                {"key": "response_type", "value": "code"},
+                {"key": "client_id", "value": "{{client_id}}"},
+                {"key": "redirect_uri", "value": "{{redirect_uri}}"},
+                {"key": "scope", "value": "openid profile email api:work:read"},
+                {"key": "state", "value": "xyz123"}
+              ]
+            },
+            "description": "Step 2: User approves - extracts authorization code from redirect URL and saves to {{auth_code}} variable"
           },
           "response": []
         },
@@ -188,7 +289,7 @@
               "host": ["{{base_url}}"],
               "path": ["Authentication", "OAuth2", "Token"]
             },
-            "description": "Step 2: Exchange authorization code for tokens"
+            "description": "Step 3: Exchange authorization code for tokens"
           },
           "response": []
         },
