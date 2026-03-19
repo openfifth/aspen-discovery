@@ -1128,6 +1128,11 @@ function loadModuleActionId() {
 		$_REQUEST['module'] = $matches[1];
 		$_REQUEST['id'] = $matches[2];
 		$_REQUEST['action'] = 'Home';
+	} elseif (preg_match("~(Authentication)/(OAuth2)/([^/?]+)~", $requestURI, $matches)) {
+		$_GET['module'] = $matches[1];
+		$_GET['action'] = 'OAuth2_' . $matches[3]; // OAuth2_Authorize or OAuth2_Token
+		$_REQUEST['module'] = $matches[1];
+		$_REQUEST['action'] = 'OAuth2_' . $matches[3];
 	} elseif (preg_match("~([^/?]+)/([^/?]+)~", $requestURI, $matches)) {
 		$_GET['module'] = $matches[1];
 		$_GET['action'] = $matches[2];
