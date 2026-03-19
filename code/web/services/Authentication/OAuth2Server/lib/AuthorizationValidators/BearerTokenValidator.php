@@ -14,14 +14,11 @@ namespace League\OAuth2\Server\AuthorizationValidators;
 
 use DateInterval;
 use DateTimeZone;
-use Lcobucci\Clock\SystemClock;
 use Lcobucci\JWT\Configuration;
 use Lcobucci\JWT\Exception;
 use Lcobucci\JWT\Signer\Key\InMemory;
 use Lcobucci\JWT\Signer\Rsa\Sha256;
 use Lcobucci\JWT\UnencryptedToken;
-use Lcobucci\JWT\Validation\Constraint\LooseValidAt;
-use Lcobucci\JWT\Validation\Constraint\SignedWith;
 use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
 use League\OAuth2\Server\CryptKeyInterface;
 use League\OAuth2\Server\CryptTrait;
@@ -61,26 +58,16 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
      */
     private function initJwtConfiguration(): void
     {
-        $this->jwtConfiguration = Configuration::forSymmetricSigner(
-            new Sha256(),
-            InMemory::plainText('empty', 'empty')
-        );
-
-        $clock = new SystemClock(new DateTimeZone(date_default_timezone_get()));
-
         $publicKeyContents = $this->publicKey->getKeyContents();
 
         if ($publicKeyContents === '') {
             throw new RuntimeException('Public key is empty');
         }
 
-        // TODO: next major release: replace deprecated method and remove phpstan ignored error
-        $this->jwtConfiguration->setValidationConstraints(
-            new LooseValidAt($clock, $this->jwtValidAtDateLeeway),
-            new SignedWith(
-                new Sha256(),
-                InMemory::plainText($publicKeyContents, $this->publicKey->getPassPhrase() ?? '')
-            )
+        $this->jwtConfiguration = Configuration::forAsymmetricSigner(
+            new Sha256(),
+            InMemory::plainText('empty', 'empty'),
+            InMemory::plainText($publicKeyContents, $this->publicKey->getPassPhrase() ?? '')
         );
     }
 
@@ -109,7 +96,36 @@ class BearerTokenValidator implements AuthorizationValidatorInterface
 
         try {
             // Attempt to validate the JWT
-            $constraints = $this->jwtConfiguration->validationConstraints();
+            $constraints = [
+                new \Lcobucci\JWT\Validation\Constraint\SignedWith(
+                    new Sha256(),
+                    InMemory::plainText($this->publicKey->getKeyContents(), $this->publicKey->getPassPhrase() ?? '')
+                ),
+            ];
+            
+            // Add time-based constraints
+            if (class_exists('\Lcobucci\JWT\Validation\Constraint\StrictValidAt')) {
+                // Use StrictValidAt if available (newer versions)
+                $constraints[] = new \Lcobucci\JWT\Validation\Constraint\StrictValidAt(
+                    new class implements \Psr\Clock\ClockInterface {
+                        public function now(): \DateTimeImmutable {
+                            return new \DateTimeImmutable();
+                        }
+                    },
+                    $this->jwtValidAtDateLeeway
+                );
+            } elseif (class_exists('\Lcobucci\JWT\Validation\Constraint\LooseValidAt')) {
+                // Fallback to LooseValidAt
+                $constraints[] = new \Lcobucci\JWT\Validation\Constraint\LooseValidAt(
+                    new class implements \Psr\Clock\ClockInterface {
+                        public function now(): \DateTimeImmutable {
+                            return new \DateTimeImmutable();
+                        }
+                    },
+                    $this->jwtValidAtDateLeeway
+                );
+            }
+            
             $this->jwtConfiguration->validator()->assert($token, ...$constraints);
         } catch (RequiredConstraintsViolated $exception) {
             throw OAuthServerException::accessDenied('Access token could not be verified', null, $exception);

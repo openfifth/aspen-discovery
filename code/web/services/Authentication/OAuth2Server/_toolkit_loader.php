@@ -201,7 +201,24 @@ class ListenerProvider implements ListenerProviderInterface
 
 		file_put_contents($leagueEventDir . 'ListenerProvider.php', $listenerProviderContent);
 	}
+
+	// Only create HasEventName if it doesn't exist
+	if (!interface_exists('League\\Event\\HasEventName', false)) {
+		// Create League Event HasEventName Interface
+		$hasEventNameContent = '<?php
+
+namespace League\\Event;
+
+interface HasEventName
+{
+    public function eventName(): string;
 }
+';
+
+		file_put_contents($leagueEventDir . 'HasEventName.php', $hasEventNameContent);
+	}
+}
+
 
 /**
  * Load critical dependency files immediately
@@ -234,6 +251,7 @@ function loadCriticalDependencyFiles($dependenciesDir) {
 	$leagueEventFiles = [
 		'league/event/src/EventDispatcher.php',
 		'league/event/src/ListenerProvider.php',
+		'league/event/src/HasEventName.php',
 	];
 
 	foreach ($leagueEventFiles as $file) {
