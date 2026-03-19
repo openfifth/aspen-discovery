@@ -363,6 +363,23 @@ AspenDiscovery.Searches = (function(){
 			return false;
 		},
 
+		clearAllFiltersAndUnlock: function (removeAllFiltersUrl) {
+			event.stopPropagation();
+			var url = Globals.path + "/Search/AJAX";
+			var params = "method=clearAllLockedFacets";
+			var fullUrl = url + "?" + params;
+			$.getJSON(fullUrl,
+				function(data) {
+					if (data.success === true){
+						window.location = removeAllFiltersUrl;
+					}else{
+						AspenDiscovery.showMessage('Error', data.message, true);
+					}
+				}
+			);
+			return false;
+		},
+
 		showSearchFacetPopup: function (searchId, facetName) {
 			var url = Globals.path + '/Search/AJAX?method=getSearchFacetPopup&searchId=' + searchId + '&facetName=' + facetName;
 			$.getJSON(url, function(data){

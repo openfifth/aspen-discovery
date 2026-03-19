@@ -548,6 +548,54 @@ class AJAX extends JSON_Action {
 		return $response;
 	}
 
+	/** @noinspection PhpUnused */
+	function clearAllLockedFacets(): array {
+		$response = [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Unknown Error',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$searchObject = SearchObjectFactory::initSearchObject();
+		/** @var SearchObject_BaseSearcher|null $activeSearch */
+		$activeSearch = $searchObject->loadLastSearch();
+		if ($activeSearch === null) {
+			$response['message'] = 'Could not load search for which to clear locked filters.';
+			return $response;
+		}
+		$lockSection = $activeSearch->getSearchName();
+		$isLoggedIn = UserAccount::isLoggedIn();
+		$user = $isLoggedIn ? UserAccount::getActiveUserObj() : null;
+
+		if ($isLoggedIn) {
+			$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
+		} else {
+			$lockedFacets = $_SESSION['lockedFilters'] ?? [];
+		}
+
+		// Nothing to clear for this search type.
+		if (!isset($lockedFacets[$lockSection])) {
+			$response['success'] = true;
+			$response['message'] = '';
+			return $response;
+		}
+
+		unset($lockedFacets[$lockSection]);
+
+		if ($isLoggedIn) {
+			$user->lockedFacets = json_encode($lockedFacets);
+			$user->update();
+		} else {
+			$_SESSION['lockedFilters'] = $lockedFacets;
+		}
+
+		$response['success'] = true;
+		$response['message'] = '';
+		return $response;
+	}
+
 	function getSearchIndexes() : array {
 		$searchSource = $_REQUEST['searchSource'];
 		if ($searchSource == 'combined') {
