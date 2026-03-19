@@ -36,7 +36,7 @@ class OAuth2RateLimit extends DataObject {
 				'type' => 'text',
 				'label' => 'IP Address',
 				'description' => 'Client IP address',
-				'maxLength' => 45, // IPv6 support
+				'maxLength' => 45,
 			],
 			'endpoint' => [
 				'property' => 'endpoint',
@@ -67,16 +67,19 @@ class OAuth2RateLimit extends DataObject {
 	}
 
 	function getNumericColumnNames(): array {
-		return ['id', 'request_count'];
+		return [
+			'id',
+			'request_count'
+		];
 	}
 
-	public function insert($context = '') {
+	public function insert($context = ''): bool|int {
 		$this->window_start = date('Y-m-d H:i:s');
 		$this->last_request = date('Y-m-d H:i:s');
 		return parent::insert($context);
 	}
 
-	public function update($context = '') {
+	public function update($context = ''): bool|int {
 		$this->last_request = date('Y-m-d H:i:s');
 		return parent::update($context);
 	}
