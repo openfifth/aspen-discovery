@@ -1,4 +1,5 @@
 <?php
+require_once ROOT_DIR . '/JSON_Action.php';
 
 class Hoopla_AJAX extends JSON_Action {
 	function launch($method = null): void {
