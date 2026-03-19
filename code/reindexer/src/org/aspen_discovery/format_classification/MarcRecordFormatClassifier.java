@@ -1382,10 +1382,6 @@ public class MarcRecordFormatClassifier {
 			printFormats.add("VideoEnabledBook");
 			return;
 		}
-		if (printFormats.contains("BoardBook")){
-			printFormats.remove("PictureBook");
-			return;
-		}
 		if (printFormats.contains("DVD")){
 			printFormats.remove("Video");
 		}
@@ -1486,6 +1482,7 @@ public class MarcRecordFormatClassifier {
 			printFormats.remove("Book");
 		}
 		if (printFormats.contains("BoardBook")){
+			printFormats.remove("PictureBook");
 			printFormats.remove("Book");
 		}
 		if (printFormats.contains("PictureBook")){
