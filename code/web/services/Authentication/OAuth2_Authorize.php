@@ -2,7 +2,7 @@
 
 use League\OAuth2\Server\Exception\OAuthServerException;
 
-require_once ROOT_DIR . '/JSON_Action.php';
+require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2ServerConfig.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
@@ -10,9 +10,25 @@ require_once ROOT_DIR . '/sys/Authentication/OAuth2/RateLimiter/OAuth2RateLimite
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2UserEntity.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleServerRequest.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleResponse.php';
+require_once ROOT_DIR . '/sys/UserAccount.php';
 
+class Authentication_OAuth2_Authorize extends Action {
+	private $authRequest;
+	private $server;
 
-class Authentication_OAuth2_Authorize extends JSON_Action {
+	/**
+	 * Override display to use standalone layout
+	 */
+	function display($mainContentTemplate, $pageTitle, $sidebarTemplate = '', $translateTitle = true): void {
+		global $interface;
+		$interface->assign('sidebar', false);
+		$interface->assign('breadcrumbs', $this->getBreadcrumbs());
+		$interface->setTemplate($mainContentTemplate);
+		$interface->setPageTitle($pageTitle, $translateTitle, false, true);
+
+		$interface->display('standalone-layout.tpl');
+	}
+
 	/**
 	 * @param null $method
 	 * @throws Exception
@@ -30,90 +46,172 @@ class Authentication_OAuth2_Authorize extends JSON_Action {
 		}
 
 		OAuth2ServerConfig::generateKeyPairIfNeeded();
-		$server = OAuth2ServerConfig::getAuthorizationServer();
+		$this->server = OAuth2ServerConfig::getAuthorizationServer();
 
 		try {
 			$request = $this->createServerRequest();
 
 			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-				$authRequest = $server->validateAuthorizationRequest($request);
-				
-				if (isset($_POST['username']) && isset($_POST['password'])) {
-					$loginResult = $this->handleLogin($_POST['username'], $_POST['password']);
-					if (!$loginResult) {
-						http_response_code(401);
-						header('Content-Type: application/json');
-						echo json_encode([
-							'error' => 'invalid_credentials',
-							'error_description' => 'Invalid username or password.'
-						]);
-						return;
-					}
-
-				}
-
-				if (!UserAccount::isLoggedIn()) {
-					http_response_code(401);
-					header('Content-Type: application/json');
-					echo json_encode([
-						'error' => 'authentication_required',
-						'error_description' => 'User must be authenticated to approve authorization.',
-						'instructions' => 'POST with username and password to authenticate first'
-					]);
-					return;
-				}
-
-				$approved = isset($_POST['approve']) && $_POST['approve'] === 'yes';
-
-				if ($approved) {
-					global $user;
-					$userEntity = new OAuth2UserEntity();
-					$userEntity->setIdentifier($user->id);
-					$authRequest->setUser($userEntity);
-					$authRequest->setAuthorizationApproved(true);
-				} else {
-					$authRequest->setAuthorizationApproved(false);
-				}
-
-				$response = $this->createResponse();
-				$response = $server->completeAuthorizationRequest($authRequest, $response);
-				$this->sendPsr7Response($response);
+				$this->handleAuthorizationApproval($request);
 				return;
 			}
 
-			$authRequest = $server->validateAuthorizationRequest($request);
-			$this->handleApiAuthorizationRequest($authRequest);
+			$this->authRequest = $this->server->validateAuthorizationRequest($request);
+			$this->displayLoginForm();
 
 		} catch (OAuthServerException $exception) {
 			error_log("[OAuth2] OAuthServerException caught: " . $exception->getErrorType() . " - " . $exception->getMessage());
 			error_log("[OAuth2] HTTP Status: " . $exception->getHttpStatusCode());
-			http_response_code($exception->getHttpStatusCode());
-			header('Content-Type: application/json');
-			echo json_encode([
-				'error' => $exception->getErrorType(),
-				'error_description' => $exception->getMessage(),
-			]);
+			$this->handleOAuthError($exception);
 
 		} catch (Exception $exception) {
 			error_log("[OAuth2] General Exception: " . $exception->getMessage());
 			error_log("[OAuth2] Trace: " . $exception->getTraceAsString());
-			http_response_code(500);
-			header('Content-Type: application/json');
-			echo json_encode([
-				'error' => 'server_error',
-				'error_description' => 'Internal server error: ' . $exception->getMessage(),
-			]);
+			$this->handleGeneralError($exception);
 		}
 	}
 
+	/**
+	 * Handle the authorization approval flow
+	 * @throws Exception
+	 */
+	private function handleAuthorizationApproval($request): void {
+		try {
+			$this->authRequest = $this->server->validateAuthorizationRequest($request);
+
+			if (isset($_POST['username']) && isset($_POST['password'])) {
+				if ($this->handleLogin($_POST['username'], $_POST['password'])) {
+					$this->displayApprovalForm();
+					return;
+				} else {
+					global $interface;
+					$interface->assign('loginError', 'Invalid username or password.');
+					$this->displayLoginForm();
+					return;
+				}
+			}
+
+			if (!UserAccount::isLoggedIn()) {
+				global $interface;
+				$interface->assign('loginError', 'You must be logged in to authorize this request.');
+				$this->displayLoginForm();
+				return;
+			}
+
+			$approved = isset($_POST['approve']) && $_POST['approve'] === 'yes';
+
+			if ($approved) {
+				$user = UserAccount::getLoggedInUser();
+				if (!$user) {
+					throw new Exception('No authenticated user found');
+				}
+
+				$userEntity = new OAuth2UserEntity();
+				$userEntity->setIdentifier($user->id);
+				$this->authRequest->setUser($userEntity);
+				$this->authRequest->setAuthorizationApproved(true);
+
+				$response = $this->createResponse();
+				$response = $this->server->completeAuthorizationRequest($this->authRequest, $response);
+				$this->sendPsr7Response($response);
+			} else {
+				$redirectUri = $this->authRequest->getRedirectUri();
+				$state = $this->authRequest->getState();
+
+				$params = ['error' => 'access_denied'];
+				if ($state) {
+					$params['state'] = $state;
+				}
+
+				$separator = strpos($redirectUri, '?') === false ? '?' : '&';
+				$redirectUrl = $redirectUri . $separator . http_build_query($params);
+
+				header('Location: ' . $redirectUrl);
+				exit;
+			}
+
+		} catch (OAuthServerException $exception) {
+			error_log("[OAuth2] OAuthServerException in handleAuthorizationApproval: " . $exception->getErrorType());
+			$this->handleOAuthError($exception);
+		}
+	}
+
+	/**
+	 * Display the login form
+	 */
+	private function displayLoginForm(): void {
+		global $interface;
+		global $library;
+
+		$interface->assign('usernameLabel', $library->loginFormUsernameLabel ? $library->loginFormUsernameLabel : 'Your Name');
+		$interface->assign('passwordLabel', $library->loginFormPasswordLabel ? $library->loginFormPasswordLabel : 'Library Card Number');
+
+		$interface->assign('showOAuth2LoginForm', true);
+		if (isset($this->authRequest)) {
+			$interface->assign('clientName', $this->authRequest->getClient()->getName());
+			$interface->assign('clientId', $this->authRequest->getClient()->getIdentifier());
+		}
+
+		$this->display('../OAuth2/oauth2_login.tpl', 'Authorization Required', false, true);
+	}
+
+	/**
+	 * Display the authorization approval form
+	 */
+	private function displayApprovalForm(): void {
+		global $interface;
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			global $interface;
+			$interface->assign('loginError', 'Session error. Please try logging in again.');
+			$this->displayLoginForm();
+			return;
+		}
+
+		$client = new OAuth2Client();
+		$client->setClientId($this->authRequest->getClient()->getIdentifier());
+		$client->find(true);
+
+		$scopeDescriptions = [];
+		foreach ($this->authRequest->getScopes() as $scope) {
+			$scopeId = $scope->getIdentifier();
+			$scopeDescriptions[$scopeId] = $this->getScopeDescription($scopeId);
+		}
+
+		$userInfo = [
+			'id' => $user->id,
+			'displayName' => $user->displayName ?? ($user->firstname . ' ' . $user->lastname),
+			'username' => $user->cat_username ?? $user->ils_barcode,
+		];
+
+		$interface->assign('client', (object)[
+			'id' => $client->getClientId(),
+			'name' => $client->getName(),
+		]);
+		$interface->assign('scopes', $scopeDescriptions);
+		$interface->assign('user', (object)$userInfo);
+		$interface->assign('authorizationUrl', $_SERVER['REQUEST_URI']);
+
+		$this->display('../OAuth2/oauth2_authorize.tpl', 'Authorize ' . $client->getName(), false, true);
+	}
+
+	/**
+	 * Create a PSR-7 server request from the current HTTP request
+	 */
 	private function createServerRequest(): SimpleServerRequest {
 		return new SimpleServerRequest();
 	}
 
-	private function createResponse() {
+	/**
+	 * Create a PSR-7 response
+	 */
+	private function createResponse(): SimpleResponse {
 		return new SimpleResponse();
 	}
 
+	/**
+	 * Send a PSR-7 response
+	 */
 	private function sendPsr7Response($response): void {
 		http_response_code($response->getStatusCode());
 		foreach ($response->getHeaders() as $name => $values) {
@@ -125,51 +223,10 @@ class Authentication_OAuth2_Authorize extends JSON_Action {
 	}
 
 	/**
-	 * Handle authorization requests
-	 */
-	private function handleApiAuthorizationRequest($authRequest): void {
-		$clientId = $authRequest->getClient()->getIdentifier();
-		$client = new OAuth2Client();
-		$client->setClientId($clientId);
-		$client->find(true);
-
-		$scopes = [];
-		$scopeDescriptions = [];
-		foreach ($authRequest->getScopes() as $scope) {
-			$scopeId = $scope->getIdentifier();
-			$scopes[] = $scopeId;
-			$scopeDescriptions[$scopeId] = $this->getScopeDescription($scopeId);
-		}
-
-		$userInfo = null;
-		if (UserAccount::isLoggedIn()) {
-			global $user;
-			$userInfo = [
-				'id' => $user->id,
-				'name' => $user->displayName ?? ($user->firstname . ' ' . $user->lastname),
-				'username' => $user->cat_username ?? $user->ils_barcode,
-				'status' => 'authenticated'
-			];
-		}
-
-		header('Content-Type: application/json');
-		echo json_encode([
-			'client' => [
-				'id' => $client->getClientId(),
-				'name' => $client->getName(),
-			],
-			'scopes' => $scopeDescriptions,
-			'user' => $userInfo
-		]);
-	}
-
-
-	/**
 	 * Get human-readable description for scope
 	 */
 	private function getScopeDescription(string $scope): string {
 		$descriptions = OAuth2Client::getScopeOptions();
-
 		return $descriptions[$scope] ?? $scope;
 	}
 
@@ -177,14 +234,36 @@ class Authentication_OAuth2_Authorize extends JSON_Action {
 	 * Handle login attempt
 	 */
 	private function handleLogin(string $username, string $password): bool {
-		require_once ROOT_DIR . '/sys/Account/UserAccount.php';
-
 		$user = UserAccount::validateAccount($username, $password);
 		if ($user && !($user instanceof AspenError)) {
 			UserAccount::login($user);
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Handle OAuth server exceptions
+	 */
+	private function handleOAuthError(OAuthServerException $exception): void {
+		global $interface;
+		$interface->assign('error', $exception->getErrorType());
+		$interface->assign('errorDescription', $exception->getMessage());
+		http_response_code($exception->getHttpStatusCode());
+
+		$this->display('../OAuth2/oauth2_error.tpl', 'Authorization Error', false, true);
+	}
+
+	/**
+	 * Handle general exceptions
+	 */
+	private function handleGeneralError(Exception $exception): void {
+		global $interface;
+		$interface->assign('error', 'server_error');
+		$interface->assign('errorDescription', 'An unexpected error occurred: ' . $exception->getMessage());
+		http_response_code(500);
+
+		$this->display('../OAuth2/oauth2_error.tpl', 'Server Error', false, true);
 	}
 
 	function getBreadcrumbs(): array {

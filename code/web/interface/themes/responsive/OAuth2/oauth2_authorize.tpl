@@ -1,61 +1,74 @@
-{extends file="layout.tpl"}
-
-{block name="breadcrumbs"}{/block}
-
-{block name="content"}
-<div class="row">
-	<div class="col-md-12">
-		<h1>Authorize Application</h1>
-
-		<div class="well">
-			<p><strong>{$client->name}</strong> is requesting access to your account.</p>
-
-			{if !empty($scopes)}
-			<h3>Requested Permissions:</h3>
-			<ul>
-				{foreach from=$scopes item=scope}
-					{if $scope == 'user:read'}
-						<li>Read your basic profile information</li>
-					{elseif $scope == 'user:write'}
-						<li>Modify your profile information</li>
-					{elseif $scope == 'catalog:read'}
-						<li>View catalog items and your reading history</li>
-					{elseif $scope == 'catalog:write'}
-						<li>Place holds and manage your library account</li>
-					{elseif $scope == 'admin:read'}
-						<li>Read administrative data (admin only)</li>
-					{elseif $scope == 'admin:write'}
-						<li>Modify administrative settings (admin only)</li>
-					{else}
-						<li>{$scope}</li>
-					{/if}
-				{/foreach}
-			</ul>
-			{/if}
-
-			<div class="alert alert-info">
-				<strong>Logged in as:</strong> {$user->displayName} ({$user->id})
+<div class="container" style="max-width: 450px;">
+	<div class="row">
+		<div class="col-xs-12">
+			<div class="text-center">
+				<h1>
+					{$client->name}
+				</h1>
+				<p>
+                    {translate text="wants to access your library account" isPublicFacing=true}
+				</p>
 			</div>
-		</div>
 
-		<form method="POST" action="{$authorizationUrl}">
-			<div class="btn-group btn-group-justified">
-				<div class="btn-group">
-					<button type="submit" name="approve" value="yes" class="btn btn-success btn-lg">
-						<i class="fas fa-check"></i> Authorize
+			<div class="well well-lg" style="padding: 24px; margin-bottom: 24px;">
+				<div style="display: flex; align-items: center">
+					<div style="background-color: #fff; width: 40px; height: 40px; border-radius: 50%; margin-right: 16px; display: flex; align-items: center; justify-content: center;">
+						<i class="fas fa-user" role="presentation" style="font-size: 18px;"></i>
+					</div>
+					<div>
+						<div>
+							{$user->displayName}
+						</div>
+						<div style="margin-top: 2px;">
+							{$user->username}
+						</div>
+					</div>
+				</div>
+
+				{if !empty($scopes)}
+					<hr>
+				<div style="margin-bottom: 20px;">
+					<div style="margin-bottom: 12px;">
+                        {translate text="This will allow %1% to:" 1=$client->name isPublicFacing=true}
+					</div>
+					<ul style="margin: 0; padding-left: 20px; list-style: none;">
+						{foreach from=$scopes item=scope}
+							{if $scope == 'openid'}
+							{elseif $scope == 'profile'}
+								<li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+									<i class="fas fa-check-circle text-info" style="position: absolute; left: 0; margin-top: 1px;"></i>
+                                    {translate text="See your library account info" isPublicFacing=true}
+								</li>
+							{elseif $scope == 'email'}
+								<li style="margin-bottom: 8px; padding-left: 24px; position: relative;">
+									<i class="fas fa-check-circle text-info" style="position: absolute; left: 0; margin-top: 1px;"></i>
+                                    {translate text="Access your email address" isPublicFacing=true}
+								</li>
+							{/if}
+						{/foreach}
+					</ul>
+				</div>
+				{/if}
+				<hr>
+				<div style="padding-top: 16px;">
+					<div>
+                        {translate text="By clicking 'Authorize', you allow %1% to use your library account information in accordance with its terms of service and privacy policy." 1=$client->name isPublicFacing=true}
+					</div>
+				</div>
+
+			</div>
+
+			<form method="POST" action="{$authorizationUrl}">
+				<div style="display: flex; gap: 12px; padding-bottom: 20px">
+					<button type="submit" name="approve" value="no" class="btn btn-link" style="flex: 1;">
+                        {translate text="Cancel" isPublicFacing=true}
+					</button>
+					<button type="submit" name="approve" value="yes" class="btn btn-primary" style="flex: 1;">
+                        {translate text="Authorize" isPublicFacing=true}
 					</button>
 				</div>
-				<div class="btn-group">
-					<button type="submit" name="approve" value="no" class="btn btn-danger btn-lg">
-						<i class="fas fa-times"></i> Cancel
-					</button>
-				</div>
-			</div>
-		</form>
+			</form>
 
-		<div class="alert alert-warning" style="margin-top: 20px;">
-			<strong>Security Notice:</strong> Only authorize applications you trust. Once authorized, this application will be able to access your account according to the permissions listed above.
 		</div>
 	</div>
 </div>
-{/block}
