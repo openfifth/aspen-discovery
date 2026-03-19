@@ -4128,22 +4128,32 @@ class MyAccount_AJAX extends JSON_Action {
 		$eventRecords = $searchObject->getRecords(array_keys($eventIds));
 
 		foreach ($eventIds as $curEventId => $entry) {
-			$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
+			$nativeAspenEvent = strpos($entry->sourceId, 'aspenEvent') !== false;
+			$registration = null;
+			$numberOfSeats = null;
+			$availableSeats = null;
+			$eventFull = null;
+
 			// check aspen native events registration
-			if(strpos($entry->sourceId, 'aspenEvent') !== false) {
+			if($nativeAspenEvent) {
+				$eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+
 				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 				$aspenEventRegistration = new UserAspenEventInstanceRegistration();
 				$aspenEventRegistration->userId = UserAccount::getActiveUserId();
-				$aspenEventRegistration->eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+				$aspenEventRegistration->eventInstanceId = $eventInstanceId;
 				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
 
 				require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 				$eventInstance = new EventInstance();
-				$eventInstance->id = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+				$eventInstance->id = $eventInstanceId;
 				if ($eventInstance->find(true)) {
 					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
 					$availableSeats = $eventInstance->getAvailableSeats();
+					$eventFull = !$eventInstance->hasAvailableSeats();
 				}
+			} else {
+				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
 			}
 
 			if (array_key_exists($curEventId, $eventRecords)) {
@@ -4177,10 +4187,10 @@ class MyAccount_AJAX extends JSON_Action {
 					'vendor' => self::getVendor($entry->sourceId)
 				];
 			}
-			if(strpos($entry->sourceId, 'aspenEvent') !== false) {
+			if($nativeAspenEvent) {
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
-				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
+				$events[$entry->sourceId]['isEventFull'] = $eventFull;
 			}
 		}
 
