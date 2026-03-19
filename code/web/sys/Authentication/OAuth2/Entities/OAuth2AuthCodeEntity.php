@@ -12,8 +12,8 @@ use League\OAuth2\Server\Entities\Traits\TokenEntityTrait;
 class OAuth2AuthCodeEntity implements AuthCodeEntityInterface {
 	use EntityTrait, TokenEntityTrait, AuthCodeTrait;
 
-	protected ?string $codeChallenge;
-	protected ?string $codeChallengeMethod;
+	protected ?string $codeChallenge = null;
+	protected ?string $codeChallengeMethod = null;
 
 	/**
 	 * Get the code challenge (PKCE)

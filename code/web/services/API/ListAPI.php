@@ -246,10 +246,6 @@ class ListAPI extends AbstractAPI {
 	/**
 	 * Get all lists that a particular user has created.
 	 * includes id, title, description, number of titles, and whether the list is public
-	 *
-	 * @oauth true
-	 * @token true
-	 * @scopes list:read
 	 * @noinspection PhpUnused
 	 */
 	function getUserLists() {

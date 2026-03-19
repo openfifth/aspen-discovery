@@ -114,6 +114,18 @@ function getUpdates26_04_00(): array {
 			"
 			]
 		],
+		//Add OAuth2 Server
+		'Add OpenID Connect' => [
+			'title' => 'Add OpenID Connect',
+			'description' => 'Add OpenID Connect support to OAuth2',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE oauth2_clients ADD COLUMN supports_openid TINYINT(1) DEFAULT 0;
+				ALTER TABLE oauth2_clients ADD COLUMN allowed_claims TEXT;
+				ALTER TABLE oauth2_clients ADD INDEX idx_supports_openid (supports_openid);"
+			]
+		],
+		//Add OpenID Connect
 
 		//kodi
 

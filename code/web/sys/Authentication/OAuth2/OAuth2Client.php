@@ -15,6 +15,8 @@ class OAuth2Client extends DataObject {
 	protected $created_by;
 	protected $created_date;
 	protected $last_modified;
+	protected $supports_openid;
+	protected $allowed_claims;
 
 	static $_objectStructure = [];
 
@@ -24,6 +26,7 @@ class OAuth2Client extends DataObject {
 		}
 
 		$scopesOptions = self::getScopeOptions();
+		$claimsOptions = self::getClaimsOptions();
 
 		$structure = [
 			'id' => [
@@ -85,8 +88,9 @@ class OAuth2Client extends DataObject {
 				'property' => 'redirect_uri',
 				'type' => 'url',
 				'label' => 'Redirect URI',
-				'description' => 'Valid redirect URI for this client',
+				'description' => 'Valid redirect URI for this client. REQUIRED for Web Applications (Authorization Code flow). Optional for Service/Native Applications.',
 				'maxLength' => 2000,
+				'note' => 'Leave empty for server-to-server (Client Credentials) or native app (Password Grant) flows.',
 			],
 			'is_active' => [
 				'property' => 'is_active',
@@ -117,6 +121,21 @@ class OAuth2Client extends DataObject {
 				'description' => 'When this client was last modified',
 				'readOnly' => ($context !== 'addNew'),
 			],
+			'supports_openid' => [
+				'property' => 'supports_openid',
+				'type' => 'checkbox',
+				'label' => 'OpenID Connect Support',
+				'default' => false,
+				'description' => 'Enable this client to request OpenID Connect scopes'
+			],
+			'allowed_claims' => [
+				'property' => 'allowed_claims',
+				'type' => 'multiSelect',
+				'label' => 'Allowed Claims',
+				'description' => 'Which OpenID user claims can this client request',
+				'listStyle' => 'checkboxSimple',
+				'values' => $claimsOptions
+			]
 		];
 
 		if ($context == 'addNew') {
@@ -164,21 +183,39 @@ class OAuth2Client extends DataObject {
 		];
 	}
 
+	static function getClaimsOptions(): array {
+		return [
+			'profile' => 'Profile (name, library information)',
+			'email' => 'Email',
+			'phone' => 'Phone Number',
+			'address' => 'Physical Address',
+		];
+	}
+
 	public function fetch(): bool|DataObject|null {
 		$result = parent::fetch();
 		if ($result && !empty($this->scopes)) {
 			if (is_string($this->scopes)) {
-				$scopesArray = explode(',', $this->scopes);
+				$scopesArray = array_filter(array_map('trim', explode(',', $this->scopes)));
 				$validScopes = self::getScopeOptions();
-				$selectedScopes = [];
-				foreach ($validScopes as $scopeKey => $scopeLabel) {
-					if (in_array($scopeKey, $scopesArray)) {
-						$selectedScopes[$scopeKey] = $scopeLabel;
-					}
-				}
+				$selectedScopes = array_filter($validScopes, function ($scopeKey) use ($scopesArray) {
+					return in_array($scopeKey, $scopesArray);
+				}, ARRAY_FILTER_USE_KEY);
 				$this->scopes = $selectedScopes;
 			}
 		}
+
+		if ($result && !empty($this->allowed_claims)) {
+			if (is_string($this->allowed_claims)) {
+				$claimsArray = array_filter(array_map('trim', explode(',', $this->allowed_claims)));
+				$validClaims = self::getClaimsOptions();
+				$selectedClaims = array_filter($validClaims, function ($claimKey) use ($claimsArray) {
+					return in_array($claimKey, $claimsArray);
+				}, ARRAY_FILTER_USE_KEY);
+				$this->allowed_claims = $selectedClaims;
+			}
+		}
+
 		return $result;
 	}
 
@@ -187,6 +224,7 @@ class OAuth2Client extends DataObject {
 		$this->last_modified = date('Y-m-d H:i:s');
 		$this->created_by = UserAccount::getActiveUserId();
 		$this->processScopes();
+		$this->processClaims();
 
 		// Generate client_secret before insert since it's not in the form for addNew context
 		$this->generateClientSecret();
@@ -198,12 +236,20 @@ class OAuth2Client extends DataObject {
 
 	public function update($context = ''): bool|int {
 		$this->last_modified = date('Y-m-d H:i:s');
+		$this->processScopes();
+		$this->processClaims();
 		return parent::update($context);
 	}
 
 	public function processScopes(): void {
 		if (is_array($this->scopes)) {
 			$this->scopes = implode(',', $this->scopes);
+		}
+	}
+
+	public function processClaims(): void {
+		if (is_array($this->allowed_claims)) {
+			$this->allowed_claims = implode(',', $this->allowed_claims);
 		}
 	}
 
@@ -219,11 +265,13 @@ class OAuth2Client extends DataObject {
 		if (empty($this->scopes)) {
 			return [];
 		}
-		// Handle both string and array types
-		if (is_array($this->scopes)) {
-			return $this->scopes;
+		if (is_string($this->scopes)) {
+			return array_filter(array_map('trim', explode(',', $this->scopes)));
 		}
-		return explode(',', $this->scopes);
+		if (is_array($this->scopes)) {
+			return array_filter(array_map('trim', $this->scopes));
+		}
+		return [];
 	}
 
 	/**
@@ -271,6 +319,19 @@ class OAuth2Client extends DataObject {
 			}
 		}
 		return $labels;
+	}
+
+	public function getClaimsArray(): array {
+		if (empty($this->allowed_claims)) {
+			return [];
+		}
+		if (is_string($this->allowed_claims)) {
+			return array_filter(array_map('trim', explode(',', $this->allowed_claims)));
+		}
+		if (is_array($this->allowed_claims)) {
+			return array_filter(array_map('trim', $this->allowed_claims));
+		}
+		return [];
 	}
 
 	public function setClientId(string $clientId): void {

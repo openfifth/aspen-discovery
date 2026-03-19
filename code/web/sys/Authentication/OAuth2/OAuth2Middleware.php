@@ -9,6 +9,7 @@ class OAuth2Middleware {
 
 	private static $resourceServer = null;
 	private static ?User $authenticatedUser = null;
+	private static ?string $authenticatedClientId = null;
 	private static array $currentScopes = [];
 
 	/**
@@ -26,8 +27,12 @@ class OAuth2Middleware {
 			$request = self::createPsr7Request();
 			$request = self::$resourceServer->validateAuthenticatedRequest($request);
 			$userId = $request->getAttribute('oauth_user_id');
+			$clientId = $request->getAttribute('oauth_client_id');
 			$tokenScopes = $request->getAttribute('oauth_scopes', []);
 			self::$currentScopes = is_array($tokenScopes) ? $tokenScopes : explode(' ', $tokenScopes);
+			
+			self::$authenticatedUser = null;
+			self::$authenticatedClientId = $clientId;
 
 			if ($userId) {
 				self::$authenticatedUser = new User();
@@ -64,6 +69,14 @@ class OAuth2Middleware {
 	 */
 	public static function getAuthenticatedUser(): ?User {
 		return self::$authenticatedUser;
+	}
+
+	/**
+	 * Get the authenticated client ID from OAuth2 token
+	 * @return string|null
+	 */
+	public static function getAuthenticatedClientId(): ?string {
+		return self::$authenticatedClientId;
 	}
 
 	private static function createPsr7Request() {

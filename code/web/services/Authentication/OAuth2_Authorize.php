@@ -22,14 +22,22 @@ class Authentication_OAuth2_Authorize extends JSON_Action {
 			return; // Rate limit response already sent
 		}
 
+		// DEBUG: Log incoming request (only if debug enabled)
+		if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
+			error_log("[OAuth2] OAuth2_Authorize - REQUEST METHOD: " . $_SERVER['REQUEST_METHOD']);
+			error_log("[OAuth2] OAuth2_Authorize - GET params: " . json_encode($_GET));
+			error_log("[OAuth2] OAuth2_Authorize - POST params: " . json_encode($_POST));
+		}
+
 		OAuth2ServerConfig::generateKeyPairIfNeeded();
 		$server = OAuth2ServerConfig::getAuthorizationServer();
 
 		try {
 			$request = $this->createServerRequest();
-			$authRequest = $server->validateAuthorizationRequest($request);
 
 			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+				$authRequest = $server->validateAuthorizationRequest($request);
+				
 				if (isset($_POST['username']) && isset($_POST['password'])) {
 					$loginResult = $this->handleLogin($_POST['username'], $_POST['password']);
 					if (!$loginResult) {
@@ -73,9 +81,12 @@ class Authentication_OAuth2_Authorize extends JSON_Action {
 				return;
 			}
 
+			$authRequest = $server->validateAuthorizationRequest($request);
 			$this->handleApiAuthorizationRequest($authRequest);
 
 		} catch (OAuthServerException $exception) {
+			error_log("[OAuth2] OAuthServerException caught: " . $exception->getErrorType() . " - " . $exception->getMessage());
+			error_log("[OAuth2] HTTP Status: " . $exception->getHttpStatusCode());
 			http_response_code($exception->getHttpStatusCode());
 			header('Content-Type: application/json');
 			echo json_encode([
@@ -84,6 +95,8 @@ class Authentication_OAuth2_Authorize extends JSON_Action {
 			]);
 
 		} catch (Exception $exception) {
+			error_log("[OAuth2] General Exception: " . $exception->getMessage());
+			error_log("[OAuth2] Trace: " . $exception->getTraceAsString());
 			http_response_code(500);
 			header('Content-Type: application/json');
 			echo json_encode([

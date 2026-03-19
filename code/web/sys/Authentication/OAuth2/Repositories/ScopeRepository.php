@@ -11,8 +11,15 @@ class ScopeRepository implements ScopeRepositoryInterface {
 
 	public function getScopeEntityByIdentifier($identifier): ?ScopeEntityInterface {
 		$validScopes = OAuth2Client::getScopeOptions();
+		$validClaims = OAuth2Client::getClaimsOptions();
 
 		if (array_key_exists($identifier, $validScopes)) {
+			$scope = new OAuth2ScopeEntity();
+			$scope->setIdentifier($identifier);
+			return $scope;
+		}
+
+		if (array_key_exists($identifier, $validClaims) || $identifier === 'openid') {
 			$scope = new OAuth2ScopeEntity();
 			$scope->setIdentifier($identifier);
 			return $scope;
@@ -32,10 +39,16 @@ class ScopeRepository implements ScopeRepositoryInterface {
 		}
 
 		$allowedScopes = $client->getScopesArray();
+		$allowedClaims = $client->getClaimsArray();
 		$finalScopes = [];
 
 		foreach ($scopes as $scope) {
-			if (in_array($scope->getIdentifier(), $allowedScopes)) {
+			$scopeIdentifier = $scope->getIdentifier();
+			if (in_array($scopeIdentifier, $allowedScopes)) {
+				$finalScopes[] = $scope;
+			} elseif ($scopeIdentifier === 'openid') {
+				$finalScopes[] = $scope;
+			} elseif (in_array($scopeIdentifier, $allowedClaims)) {
 				$finalScopes[] = $scope;
 			}
 		}

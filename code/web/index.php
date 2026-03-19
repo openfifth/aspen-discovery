@@ -1133,6 +1133,21 @@ function loadModuleActionId() {
 		$_GET['action'] = 'OAuth2_' . $matches[3]; // OAuth2_Authorize or OAuth2_Token
 		$_REQUEST['module'] = $matches[1];
 		$_REQUEST['action'] = 'OAuth2_' . $matches[3];
+	} elseif (preg_match("~/(\.well-known)/([^/?]+)~", $requestURI, $matches)) {
+		// Map well-known requests to appropriate OAuth2/OIDC endpoints
+		$wellKnownType = $matches[2];
+		$_GET['module'] = 'Authentication';
+		$_REQUEST['module'] = 'Authentication';
+
+		// Route to appropriate OIDC endpoint based on well-known type
+		if ($wellKnownType === 'jwks.json') {
+			$_GET['action'] = 'OAuth2_JWKS';
+			$_REQUEST['action'] = 'OAuth2_JWKS';
+		} else {
+			// Default to Discovery endpoint (handles openid-configuration)
+			$_GET['action'] = 'OAuth2_Discovery';
+			$_REQUEST['action'] = 'OAuth2_Discovery';
+		}
 	} elseif (preg_match("~([^/?]+)/([^/?]+)~", $requestURI, $matches)) {
 		$_GET['module'] = $matches[1];
 		$_GET['action'] = $matches[2];
@@ -1143,8 +1158,6 @@ function loadModuleActionId() {
 		}else{
 			$checkWebBuilderAliases = true;
 		}
-	} else {
-		$checkWebBuilderAliases = true;
 	}
 
 	global $enabledModules;

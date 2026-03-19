@@ -268,16 +268,49 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         $client = $this->getClientEntityOrFail($clientId, $request);
 
         $redirectUri = $this->getQueryStringParameter('redirect_uri', $request);
+        
+        // DEBUG: Log redirect_uri validation
+        $debugEnabled = defined('OAUTH2_DEBUG') ? OAUTH2_DEBUG : false;
+        if ($debugEnabled) {
+            error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Request redirect_uri: " . ($redirectUri ? '"' . $redirectUri . '"' : 'null'));
+            error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Client redirect_uri: " . (is_array($client->getRedirectUri()) ? json_encode($client->getRedirectUri()) : '"' . $client->getRedirectUri() . '"'));
+            error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Redirect URI is empty: " . ($client->getRedirectUri() === '' ? 'true' : 'false'));
+            error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Redirect URI is array: " . (is_array($client->getRedirectUri()) ? 'true' : 'false'));
+        }
 
-        if ($redirectUri !== null) {
-            $this->validateRedirectUri($redirectUri, $client, $request);
-        } elseif (
-            $client->getRedirectUri() === '' ||
-            (is_array($client->getRedirectUri()) && count($client->getRedirectUri()) !== 1)
-        ) {
-            $this->getEmitter()->emit(new RequestEvent(RequestEvent::CLIENT_AUTHENTICATION_FAILED, $request));
-
-            throw OAuthServerException::invalidClient($request);
+        // For Authorization Code flow, we ALWAYS need a redirect_uri (either configured or provided)
+        // This is different from other flows like Client Credentials which don't need it
+        $hasConfiguredRedirectUri = $client->getRedirectUri() !== '' && 
+                                   !(is_array($client->getRedirectUri()) && count($client->getRedirectUri()) === 0);
+        
+        if ($hasConfiguredRedirectUri) {
+            // Client has a configured redirect_uri
+            if ($redirectUri !== null) {
+                // Request provided one too - validate it matches
+                if ($debugEnabled) {
+                    error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Validating request redirect_uri against configured URI");
+                }
+                $this->validateRedirectUri($redirectUri, $client, $request);
+            } else {
+                // Client has configured URI but request didn't provide one - use the configured one
+                if ($debugEnabled) {
+                    error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Using client's configured redirect_uri");
+                }
+                // Will use $this->getClientRedirectUri($client) later
+            }
+        } else {
+            // Client has no configured redirect_uri - request MUST provide one for Authorization Code flow
+            if ($redirectUri === null || $redirectUri === '') {
+                if ($debugEnabled) {
+                    error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - THROWING error: Authorization Code flow requires redirect_uri");
+                }
+                $this->getEmitter()->emit(new RequestEvent(RequestEvent::CLIENT_AUTHENTICATION_FAILED, $request));
+                throw OAuthServerException::invalidClient($request, 'Authorization Code flow requires a redirect_uri. Either configure one for the client or provide it in the request.');
+            }
+            // The provided redirect_uri will be used and validated later
+            if ($debugEnabled) {
+                error_log("[OAuth2] AuthCodeGrant::validateAuthorizationRequest() - Using request-provided redirect_uri: " . $redirectUri);
+            }
         }
 
         $stateParameter = $this->getQueryStringParameter('state', $request);

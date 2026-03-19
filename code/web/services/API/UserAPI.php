@@ -5,13 +5,74 @@ require_once ROOT_DIR . '/CatalogConnection.php';
 class UserAPI extends AbstractAPI {
 
 
-	/**
-	 * Processes method to determine the return type and calls the correct method.
-	 * Should not be called directly.
-	 *
-	 * @see Action::launch()
-	 * @access private
-	 */
+    /**
+     * Define required OAuth2 scopes for specific API methods
+     * @param string $method The API method name
+     * @return array Array of required scopes
+     */
+    protected function getRequiredScopes($method): array {
+        // Map methods to required scopes
+        $methodScopes = [
+            // Read-only methods require api:user:read
+            'isLoggedIn' => ['api:user:read'],
+            'getMyAccount' => ['api:user:read'],
+            'getPatronProfile' => ['api:user:read'],
+            'getPatronHolds' => ['api:user:read'],
+            'getPatronCheckedOutItems' => ['api:user:read'],
+            'getValidPickupLocations' => ['api:user:read'],
+            'getValidSublocations' => ['api:user:read'],
+            'getLinkedAccounts' => ['api:user:read'],
+            'getViewers' => ['api:user:read'],
+            'getPatronReadingHistory' => ['api:user:read'],
+            'getReadingHistorySortOptions' => ['api:user:read'],
+            'getNotificationPreference' => ['api:user:read'],
+            'getNotificationPreferences' => ['api:user:read'],
+            'getAppPreferencesForUser' => ['api:user:read'],
+            'getInbox' => ['api:user:read'],
+            'getMaterialsRequests' => ['api:user:read'],
+            'getMaterialsRequestDetails' => ['api:user:read'],
+            'getUserCampaigns' => ['api:user:read'],
+
+            // Write methods require api:user:write
+            'login' => ['api:user:write'],
+            'logout' => ['api:user:write'],
+            'checkoutItem' => ['api:user:write'],
+            'renewItem' => ['api:user:write'],
+            'renewAll' => ['api:user:write'],
+            'placeHold' => ['api:user:write'],
+            'cancelHold' => ['api:user:write'],
+            'activateHold' => ['api:user:write'],
+            'freezeHold' => ['api:user:write'],
+            'changeHoldPickUpLocation' => ['api:user:write'],
+            'confirmHold' => ['api:user:write'],
+            'returnCheckout' => ['api:user:write'],
+            'resetPassword' => ['api:user:write'],
+            'updatePatronReadingHistory' => ['api:user:write'],
+            'optIntoReadingHistory' => ['api:user:write'],
+            'optOutOfReadingHistory' => ['api:user:write'],
+            'deleteAllFromReadingHistory' => ['api:user:write'],
+            'deleteSelectedFromReadingHistory' => ['api:user:write'],
+            'markMessageAsRead' => ['api:user:write'],
+            'markMessageAsUnread' => ['api:user:write'],
+            'setNotificationPreference' => ['api:user:write'],
+            'createMaterialsRequest' => ['api:user:write'],
+            'cancelMaterialsRequest' => ['api:user:write'],
+            'enrollUserInCampaign' => ['api:user:write'],
+            'unenrollUserFromCampaign' => ['api:user:write'],
+            'addActivityProgress' => ['api:user:write'],
+        ];
+
+        // Return the scopes for this method, or empty array if no specific scopes defined
+        return $methodScopes[$method] ?? parent::getRequiredScopes($method);
+    }
+
+    /**
+     * Processes method to determine the return type and calls the correct method.
+     * Should not be called directly.
+     *
+     * @see Action::launch()
+     * @access private
+     */
 	function launch() : void {
 		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
 		$output = '';
@@ -30,6 +91,30 @@ class UserAPI extends AbstractAPI {
 			}
 		}
 
+		// Check for OAuth2 Bearer token authentication first
+		$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+		if (preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
+			// This is an OAuth2 Bearer token request
+			if ($this->authenticateWithOAuth2($method)) {
+				if (method_exists($this, $method)) {
+					header("Cache-Control: max-age=10800");
+					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
+					APIUsage::incrementStat('UserAPI', $method);
+					$output = json_encode(['result' => $this->$method()]);
+				} else {
+					header('Cache-Control: no-cache, must-revalidate');
+					$output = json_encode(['error' => 'invalid_method']);
+				}
+			} else {
+				// OAuth2Middleware sends its own error response
+				return;
+			}
+			ExternalRequestLogEntry::logRequest('UserAPI.' . $method, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], getallheaders(), '', $_SERVER['REDIRECT_STATUS'], $output, []);
+			echo $output;
+			return;
+		}
+
+		// Traditional authentication (PHP_AUTH_USER)
 		if (isset($_SERVER['PHP_AUTH_USER'])) {
 			if ($this->grantTokenAccess()) {
 				if (in_array($method, [
@@ -5026,6 +5111,22 @@ class UserAPI extends AbstractAPI {
 				return UserAccount::validateAccount($patronBarcode, $patronPassword);
 			}
 		} else {
+			$oauthUser = OAuth2Middleware::getAuthenticatedUser();
+			if ($oauthUser) {
+				if (empty($_REQUEST['language'])) {
+					global $activeLanguage;
+					global $translator;
+					$userLanguage = new Language();
+					$userLanguage->code = $oauthUser->interfaceLanguage;
+					if ($userLanguage->find(true)) {
+						if ($userLanguage->code != $activeLanguage->code) {
+							$activeLanguage = $userLanguage;
+							$translator = new Translator('lang', $userLanguage->code);
+						}
+					}
+				}
+				return $oauthUser;
+			}
 			$user = false;
 			if ($this->getLiDAVersion() === "v22.04.00") {
 				[

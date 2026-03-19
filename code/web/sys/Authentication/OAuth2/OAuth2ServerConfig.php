@@ -14,6 +14,7 @@ require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/ScopeRepository
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/RefreshTokenRepository.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/UserRepository.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/AuthCodeRepository.php';
+require_once ROOT_DIR . '/sys/Authentication/OAuth2/OpenIDConnectConfig.php';
 
 class OAuth2ServerConfig {
 
@@ -113,5 +114,42 @@ class OAuth2ServerConfig {
 		$publicKey = $publicKeyDetails["key"];
 		file_put_contents($publicKeyPath, $publicKey);
 		chmod($publicKeyPath, 0644);
+	}
+
+	/**
+	 *  Generate ID Token for OpenID Connect
+	 */
+	public static function generateIDToken(array $user, string $clientId, string $issuer): string {
+		$issuedAt = time();
+		$claims = OpenIDConnectConfig::buildIDTokenClaims($user, $clientId, $issuedAt, $issuer);
+
+		return self::createJWT($claims);
+	}
+
+	/**
+	 * Create and sign JWT token for OpenID Connect
+	 */
+	private static function createJWT(array $claims): string {
+		$header = [
+			'typ' => 'JWT',
+			'alg' => 'RS256',
+		];
+
+		$header64 = self::base64urlEncode(json_encode($header));
+		$payload64 = self::base64urlEncode(json_encode($claims));
+
+		$privateKeyPath = ROOT_DIR . '/services/Authentication/OAuth2Server/private.key';
+		$privateKey = file_get_contents($privateKeyPath);
+
+		$signature = '';
+		openssl_sign($header64 . '.' . $payload64, $signature, $privateKey, OPENSSL_ALGO_SHA256);
+
+		$signature64 = self::base64urlEncode($signature);
+
+		return $header64 . '.' . $payload64 . '.' . $signature64;
+	}
+
+	private static function base64urlEncode(string $str): string {
+		return rtrim(strtr(base64_encode($str), '+/', '-_'), '=');
 	}
 }

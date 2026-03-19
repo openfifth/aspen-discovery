@@ -28,6 +28,7 @@ spl_autoload_register(function ($className) use ($oauth2ServerBaseDir, $dependen
 	$namespaceMappings = [
 		'League\\OAuth2\\Server\\' => $oauth2ServerBaseDir,
 		'League\\Event\\' => $dependenciesDir . 'league/event/src/',
+		'League\\Uri\\' => $dependenciesDir . 'league/uri/src/',
 		'Lcobucci\\JWT\\' => $dependenciesDir . 'lcobucci/jwt/src/',
 		'Lcobucci\\Clock\\' => $dependenciesDir . 'lcobucci/clock/src/',
 		'Defuse\\Crypto\\' => $dependenciesDir . 'defuse/php-encryption/src/',
