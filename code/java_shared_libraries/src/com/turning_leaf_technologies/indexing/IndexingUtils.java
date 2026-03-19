@@ -53,6 +53,7 @@ public class IndexingUtils {
 				setting.setIncludeAllRecordsInShelvingFacets(groupedWorkDisplaySettingsRS.getBoolean("includeAllRecordsInShelvingFacets"));
 				setting.setIncludeAllRecordsInDateAddedFacets(groupedWorkDisplaySettingsRS.getBoolean("includeAllRecordsInDateAddedFacets"));
 				setting.setBaseAvailabilityToggleOnLocalHoldingsOnly(groupedWorkDisplaySettingsRS.getBoolean("baseAvailabilityToggleOnLocalHoldingsOnly"));
+				setting.setLocationsToIncludeInShelfLocationsFacet(groupedWorkDisplaySettingsRS.getLong("locationsToIncludeInShelfLocationsFacet"));
 
 				groupedWorkSettings.put(setting.getId(), setting);
 			}

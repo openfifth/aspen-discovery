@@ -7,6 +7,7 @@ public class GroupedWorkDisplaySettings {
 	private boolean includeOnlineMaterialsInAvailableToggle  = true;
 	private boolean includeAllRecordsInShelvingFacets;
 	private boolean includeAllRecordsInDateAddedFacets;
+	private long locationsToIncludeInShelfLocationsFacet;
 	private boolean baseAvailabilityToggleOnLocalHoldingsOnly = false;
 
 	public long getId() {
@@ -29,8 +30,16 @@ public class GroupedWorkDisplaySettings {
 		return includeAllRecordsInShelvingFacets;
 	}
 
+	public long locationsToIncludeInShelfLocationsFacet() {
+		return locationsToIncludeInShelfLocationsFacet;
+	}
+
 	void setIncludeAllRecordsInShelvingFacets(boolean includeAllRecordsInShelvingFacets) {
 		this.includeAllRecordsInShelvingFacets = includeAllRecordsInShelvingFacets;
+	}
+
+	void setLocationsToIncludeInShelfLocationsFacet(long locationsToIncludeInShelfLocationsFacet) {
+		this.locationsToIncludeInShelfLocationsFacet = locationsToIncludeInShelfLocationsFacet;
 	}
 
 	public boolean isIncludeAllRecordsInDateAddedFacets() {
