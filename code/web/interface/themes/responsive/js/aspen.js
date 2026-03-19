@@ -12422,6 +12422,26 @@ AspenDiscovery.Admin = (function () {
 			});
 			return false;
 		},
+		configureRateLimits: function () {
+			var url = Globals.path + "/OAuth2/RateLimitingAJAX";
+			var params = {
+				method: 'configureRateLimits'
+			};
+
+			$.getJSON(url, params)
+				.done(function (data) {
+					if (data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					} else {
+						AspenDiscovery.showMessage("Error", data.message);
+					}
+				})
+				.fail(function () {
+					AspenDiscovery.showMessage("Error", "An error occurred while retrieving rate limit configuration.");
+				});
+
+			return false;
+		},
 	};
 }(AspenDiscovery.Admin || {}));
 AspenDiscovery.Authors = (function () {
