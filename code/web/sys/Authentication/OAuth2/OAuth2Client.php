@@ -80,7 +80,6 @@ class OAuth2Client extends DataObject {
 				'listStyle' => 'checkboxSimple',
 				'note' => 'Select the minimum number of scopes required for this client',
 				'values' => $scopesOptions,
-				'readOnly' => ($context !== 'addNew'),
 			],
 			'redirect_uri' => [
 				'property' => 'redirect_uri',
