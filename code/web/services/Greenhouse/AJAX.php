@@ -7,17 +7,16 @@ global $configArray;
 class Greenhouse_AJAX extends JSON_Action {
 
 	function launch($method = null) : void {
-		if (UserAccount::isLoggedIn()) {
-			if (UserAccount::getActiveUserObj()->isAspenAdminUser()) {
-				parent::launch($method);
-			}
+		if (UserAccount::isLoggedIn() && UserAccount::getActiveUserObj()->isAspenAdminUser()) {
+			parent::launch($method);
+		}else {
+			global $interface;
+			$interface->assign('module', 'Error');
+			$interface->assign('action', 'Handle404');
+			require_once ROOT_DIR . "/services/Error/Handle404.php";
+			$actionClass = new Error_Handle404();
+			$actionClass->launch();
 		}
-		global $interface;
-		$interface->assign('module', 'Error');
-		$interface->assign('action', 'Handle404');
-		require_once ROOT_DIR . "/services/Error/Handle404.php";
-		$actionClass = new Error_Handle404();
-		$actionClass->launch();
 	}
 
 
