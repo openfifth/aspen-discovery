@@ -33,13 +33,14 @@ class Pay360_Client  {
 		$this->_setDigest();
 	}
 
-	public function completeFineInIls(): void {
+	public function completeFineInIls(): bool {
 		$patron = new User;
 		$patron->id = $this->payment->userId;
 		if(!$patron->find(true)) {
-			return;
+			return false;
 		}
-		$patron->completeFinePayment($this->payment);
+		$result = $patron->completeFinePayment($this->payment);
+		return $result['success'];
 	}
 
 	public function setSettings($settingsId): void {
@@ -171,7 +172,12 @@ class Pay360_Client  {
 			if ($transactionStatus['status'] === 'SUCCESS') {
 				$this->payment->message = 'This payment was successful.';
 				$this->payment->pay360TransactionStateMessage = 'Payment successful.';
-				$this->completeFineInIls();
+				if (!$this->completeFineInIls()) {
+					$this->payment->error = true;
+					$this->payment->message = 'Payment was received by Pay360 but could not be applied in the ILS. Please contact your library.';
+					$this->payment->pay360TransactionStateMessage = 'Payment received but ILS update failed.';
+				}
+				$this->payment->update();
 				return false;
 			}
 
