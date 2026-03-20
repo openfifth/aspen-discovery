@@ -70,6 +70,40 @@ class SideFacets implements RecommendationInterface {
 			$lockedFacets = $_SESSION['lockedFilters'] ?? [];
 		}
 		$lockedFacets = $lockedFacets[$lockSection] ?? [];
+
+		//Get applied facets
+		$filterList = $this->searchObject->getFilterList();
+		$lockedFacetsChanged = false;
+		foreach ($filterList as $facet) {
+			foreach ($facet as $filter) {
+				if (!empty($filter['field']) && array_key_exists('value', $filter)) {
+					$unscopedField = $this->searchObject->getUnscopedFieldName($filter['field']);
+					$lockedFacetKey = null;
+					if (array_key_exists($filter['field'], $lockedFacets)) {
+						$lockedFacetKey = $filter['field'];
+					} elseif (array_key_exists($unscopedField, $lockedFacets)) {
+						$lockedFacetKey = $unscopedField;
+					}
+					if ($lockedFacetKey !== null && !in_array($filter['value'], $lockedFacets[$lockedFacetKey], true)) {
+						$lockedFacets[$lockedFacetKey][] = $filter['value'];
+						$lockedFacetsChanged = true;
+					}
+				}
+			}
+		}
+		if ($lockedFacetsChanged) {
+			if (UserAccount::isLoggedIn()) {
+				$user = UserAccount::getActiveUserObj();
+				$lockedFacetsBySection = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
+				$lockedFacetsBySection[$lockSection] = $lockedFacets;
+				$user->lockedFacets = json_encode($lockedFacetsBySection);
+				$user->update();
+			} else {
+				$lockedFacetsBySection = $_SESSION['lockedFilters'] ?? [];
+				$lockedFacetsBySection[$lockSection] = $lockedFacets;
+				$_SESSION['lockedFilters'] = $lockedFacetsBySection;
+			}
+		}
 		$lockedValuesByUnscoped = [];
 		foreach ($lockedFacets as $lockedFacetKey => $lockedValues) {
 			$unscopedKey = $this->searchObject->getUnscopedFieldName($lockedFacetKey);
@@ -81,9 +115,6 @@ class SideFacets implements RecommendationInterface {
 				$lockedValuesByUnscoped[$unscopedKey] = array_values(array_unique(array_merge($lockedValuesByUnscoped[$unscopedKey], $lockedValues)));
 			}
 		}
-
-		//Get applied facets
-		$filterList = $this->searchObject->getFilterList();
 		foreach ($filterList as $facetKey => &$facet) {
 			//Remove any top facets since the removal links are displayed above results
 			if (str_starts_with($facet[0]['field'], 'availability_toggle')) {
