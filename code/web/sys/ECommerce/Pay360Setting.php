@@ -5,7 +5,7 @@ class Pay360Setting extends DataObject {
 	public $id;
 	public $name;
 	public $privateKey;
-	public $wsldUrl;
+	public $wsdlUrl;
 	public $scpId;
 	public $hmacKeyId;
 	public $siteId;
@@ -47,12 +47,12 @@ class Pay360Setting extends DataObject {
 				'description' => 'The Pay360 Private Key (provided by Capita)',
 				'maxLength' => 255,
 			],
-			'wsldUrl' => [
-				'property' => 'wsldUrl',
+			'wsdlUrl' => [
+				'property' => 'wsdlUrl',
 				'type' => 'text',
 				'hideInLists' => true,
-				'label' => 'Pay360 WSLD URL',
-				'description' => 'The WSLD URL for use when sending requests to Pay360',
+				'label' => 'Pay360 WSDL URL',
+				'description' => 'The WSDL URL for use when sending requests to Pay360',
 				'maxLength' => 255,
 				'required' => true,
 			],
