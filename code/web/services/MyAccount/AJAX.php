@@ -7755,11 +7755,13 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function completePay360Order(): void {
+		$this->requireLoggedInUser();
 		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
 		Pay360_PaymentHandler::completeOrder();
 	}
 
 	function handlePay360OrderNotAttempted(): void {
+		$this->requireLoggedInUser();
 		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
 		Pay360_PaymentHandler::handleNotAttempted();
 	}
