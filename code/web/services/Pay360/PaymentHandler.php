@@ -73,4 +73,12 @@ class Pay360_PaymentHandler {
 		$client->handleOutcome([], false);
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
 	}
+
+	public static function spawnPoller(int $pay360SettingsId, int $paymentId): void {
+		global $configArray;
+		$serverName = $_SERVER['aspen_server'];
+		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
+		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($paymentId) . ' >> ' . escapeshellarg($logFilePath) . ' 2>&1 &';
+		exec($pollCommand);
+	}
 }
