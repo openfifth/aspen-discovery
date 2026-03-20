@@ -195,6 +195,30 @@ function getUpdates26_05_00(): array {
 		//galen
 
 		//chloe
+		'pay360_rename_wsldUrl_to_wsdlUrl' => [
+			'title' => 'Rename wsldUrl to wsdlUrl in Pay360 Settings',
+			'description' => 'Corrects a Typo in the Column Name (WSLD → WSDL)',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE pay360_setting CHANGE COLUMN wsldUrl wsdlUrl VARCHAR(255)",
+			],
+		], // pay360_rename_wsldUrl_to_wsdlUrl
+		'pay360_drop_identifier_column' => [
+			'title' => 'Remove Unused Identifier Column from Pay360 Settings',
+			'description' => 'Removes an Unused Column from the pay360_setting Table',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE pay360_setting DROP COLUMN identifier",
+			],
+		], // pay360_drop_identifier_column
+		'pay360_drop_request_parameter_table' => [
+			'title' => 'Remove Unused Pay360 Request Parameter Table',
+			'description' => 'Drops the pay360_request_parameter Table Which is Not Used by the Pay360 Integration',
+			'continueOnError' => true,
+			'sql' => [
+				"DROP TABLE IF EXISTS pay360_request_parameter",
+			],
+		], // pay360_drop_request_parameter_table
 
 		//pedro
 
