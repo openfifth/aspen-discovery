@@ -83,7 +83,7 @@ class Pay360_Client  {
 	}
 
 	public function setSoapClient() {
-		$this->_soapClient = new SoapClient($this->_pay360Settings->wsldUrl, ['features' => SOAP_SINGLE_ELEMENT_ARRAYS]);
+		$this->_soapClient = new SoapClient($this->_pay360Settings->wsdlUrl, ['features' => SOAP_SINGLE_ELEMENT_ARRAYS]);
 	}
 	
 	public function setTimeStamp() {
