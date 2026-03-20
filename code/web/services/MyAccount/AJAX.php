@@ -8006,12 +8006,8 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		// start the polling process for status updates (no webhooks available) 
-		global $configArray;
-		$serverName = $_SERVER['aspen_server'];
-		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
-		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($payment->id) . ' >> ' . escapeshellarg($logFilePath) . ' 2>&1 &';
-		exec($pollCommand);
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::spawnPoller($pay360SettingsId, $payment->id);
 
 		return $result;
 	}
