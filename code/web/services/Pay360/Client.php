@@ -384,21 +384,8 @@ class Pay360_Client  {
 	}
 
 	private function getMinorUnitsAmount(string $totalAmount): string {
-		$numDec = strlen($totalAmount) - strpos($totalAmount, '.') - 1;
-
-		if ($numDec == 1) {
-			return str_replace('.', '', $totalAmount .= "0");
-		}
-		
-		if ( $numDec == 0 ) {
-			return str_replace('.', '', $totalAmount .= "00");
-		}
-		
-		if ( $numDec == 6 ) {
-			// Handle discrete fine item amount format
-			return str_replace(['.', '0000'], '', $totalAmount);
-		}
-
-		return str_replace('.', '', $totalAmount);
-	} 
+		$amount = (float)$totalAmount;
+		$amountInMinorUnits = (int)round($amount * 100);
+		return (string)$amountInMinorUnits;
+	}
 }
