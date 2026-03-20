@@ -200,6 +200,30 @@ function getUpdates26_04_00(): array {
 				"ALTER TABLE sendgrid_settings ADD COLUMN baseUrl VARCHAR(255) DEFAULT null",
 			],
 		], //migrate_sendgrid_url_to_settings
+		'pay360_rename_wsldUrl_to_wsdlUrl' => [
+			'title' => 'Rename wsldUrl to wsdlUrl in Pay360 Settings',
+			'description' => 'Corrects a Typo in the Column Name (WSLD → WSDL)',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE pay360_setting CHANGE COLUMN wsldUrl wsdlUrl VARCHAR(255)",
+			],
+		], // pay360_rename_wsldUrl_to_wsdlUrl
+		'pay360_drop_identifier_column' => [
+			'title' => 'Remove Unused Identifier Column from Pay360 Settings',
+			'description' => 'Removes an Unused Column from the pay360_setting Table',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE pay360_setting DROP COLUMN identifier",
+			],
+		], // pay360_drop_identifier_column
+		'pay360_drop_request_parameter_table' => [
+			'title' => 'Remove Unused Pay360 Request Parameter Table',
+			'description' => 'Drops the pay360_request_parameter Table Which is Not Used by the Pay360 Integration',
+			'continueOnError' => true,
+			'sql' => [
+				"DROP TABLE IF EXISTS pay360_request_parameter",
+			],
+		], // pay360_drop_request_parameter_table
 
 		//pedro
 		'drop_control_display_of_user_dropdown_in_community_engagement_admin_view' => [
