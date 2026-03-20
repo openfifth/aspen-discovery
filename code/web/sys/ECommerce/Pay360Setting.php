@@ -247,8 +247,6 @@ class Pay360Setting extends DataObject {
 				}
 			} else {
 				if ($location->pay360SettingId == $this->id) {
-					if ($location->finePaymentType == 16) {
-					}
 					$location->pay360SettingId = -1;
 					$location->update();
 				}
