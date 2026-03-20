@@ -108,7 +108,7 @@ class Pay360Setting extends DataObject {
 				'property' => 'pollingEnabled',
 				'type' => 'checkbox',
 				'label' => 'Enable Polling',
-				'description' => 'Whenever a user accesses uses the Click to pay online button, start a polling process to check Pay360 for status updates. This will start 10 minutes after the patron first accessed the link, and run every 5 minutes for ',
+				'description' => 'Whenever a patron uses the Click to pay online button, start a polling process to check Pay360 for status updates. This will start 10 minutes after the patron first accessed the link, and run every 5 minutes for up to 30 minutes.',
 				'hideInLists' => true,
 				'default' => true,
 			],
