@@ -5,7 +5,6 @@ class Pay360Setting extends DataObject {
 	public $id;
 	public $name;
 	public $privateKey;
-	public $urlSection;
 	public $wsldUrl;
 	public $scpId;
 	public $hmacKeyId;
