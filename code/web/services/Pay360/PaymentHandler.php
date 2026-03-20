@@ -36,23 +36,14 @@ class Pay360_PaymentHandler {
 	}
 
 	public static function completeOrder(): void {
-		global $configArray;
-		$validated = self::validateRequest();
-		if ($validated === null) {
-			return;
-		}
-
-		$paymentId = $validated['paymentId'];
-		$pay360SettingsId = $validated['pay360SettingsId'];
-		$payment = $validated['payment'];
-
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome();
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+		self::executeOutcome(true);
 	}
 
 	public static function handleNotAttempted(): void {
+		self::executeOutcome(false);
+	}
+
+	private static function executeOutcome(bool $attempted): void {
 		global $configArray;
 		$validated = self::validateRequest();
 		if ($validated === null) {
@@ -65,7 +56,7 @@ class Pay360_PaymentHandler {
 
 		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
 		$client->getOrderStatus(true);
-		$client->handleOutcome([], false);
+		$client->handleOutcome([], $attempted);
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
 	}
 
