@@ -7,11 +7,6 @@ class Pay360_PaymentHandler {
 	public static function validateRequest(): ?array {
 		global $configArray;
 
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return null;
-		}
-
 		if (
 			!isset($_REQUEST['paymentId']) ||
 			!isset($_REQUEST['settingsId']) ||
