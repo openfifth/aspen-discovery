@@ -92,4 +92,8 @@ class Admin_OAuth2Clients extends ObjectEditor {
 
 		return $result;
 	}
+
+	function getInitializationJs(): string {
+		return 'AspenDiscovery.Admin.updateOAuth2SupportsOpenId(); AspenDiscovery.Admin.updateOAuth2GrantType(); AspenDiscovery.Admin.maskOAuth2ClientSecret(); return false;';
+	}
 }

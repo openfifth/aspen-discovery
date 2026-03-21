@@ -74,6 +74,23 @@ class OAuth2Client extends DataObject {
 				],
 				'default' => 'web_application',
 				'readOnly' => ($context !== 'addNew'),
+				'onchange' => 'AspenDiscovery.Admin.updateOAuth2GrantType();',
+			],
+			'supports_openid' => [
+				'property' => 'supports_openid',
+				'type' => 'checkbox',
+				'label' => 'OpenID Connect Support',
+				'default' => false,
+				'description' => 'Enable this client to request OpenID Connect scopes',
+				'onchange' => 'AspenDiscovery.Admin.updateOAuth2SupportsOpenId()',
+			],
+			'allowed_claims' => [
+				'property' => 'allowed_claims',
+				'type' => 'multiSelect',
+				'label' => 'Allowed Claims',
+				'description' => 'Which OpenID user claims can this client request',
+				'listStyle' => 'checkboxSimple',
+				'values' => $claimsOptions,
 			],
 			'scopes' => [
 				'property' => 'scopes',
@@ -83,6 +100,7 @@ class OAuth2Client extends DataObject {
 				'listStyle' => 'checkboxSimple',
 				'note' => 'Select the minimum number of scopes required for this client',
 				'values' => $scopesOptions,
+				'onchange' => 'AspenDiscovery.Admin.updateOAuth2Scopes(this)',
 			],
 			'redirect_uri' => [
 				'property' => 'redirect_uri',
@@ -120,21 +138,6 @@ class OAuth2Client extends DataObject {
 				'label' => 'Last Modified',
 				'description' => 'When this client was last modified',
 				'readOnly' => ($context !== 'addNew'),
-			],
-			'supports_openid' => [
-				'property' => 'supports_openid',
-				'type' => 'checkbox',
-				'label' => 'OpenID Connect Support',
-				'default' => false,
-				'description' => 'Enable this client to request OpenID Connect scopes'
-			],
-			'allowed_claims' => [
-				'property' => 'allowed_claims',
-				'type' => 'multiSelect',
-				'label' => 'Allowed Claims',
-				'description' => 'Which OpenID user claims can this client request',
-				'listStyle' => 'checkboxSimple',
-				'values' => $claimsOptions
 			]
 		];
 
@@ -146,6 +149,7 @@ class OAuth2Client extends DataObject {
 			unset($structure['last_modified']);
 		} elseif ($context !== '') {
 			// For existing clients, make client_secret read-only instead of password field
+			$structure['client_id']['type'] = 'label';
 			$structure['client_secret']['type'] = 'label';
 			$structure['client_secret']['description'] = 'The OAuth2 client secret (hidden for security)';
 		}
