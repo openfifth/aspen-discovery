@@ -19562,7 +19562,7 @@ AspenDiscovery.Searches = (function(){
 								url: url,
 								dataType: "json",
 								success: function (data) {
-									response(data);
+									response(data.suggestions);
 								}
 							});
 						},
@@ -19762,6 +19762,23 @@ AspenDiscovery.Searches = (function(){
 				function(data) {
 					if (data.success === true){
 						window.location = removalUrl;
+					}else{
+						AspenDiscovery.showMessage('Error', data.message, true);
+					}
+				}
+			);
+			return false;
+		},
+
+		clearAllFiltersAndUnlock: function (removeAllFiltersUrl) {
+			event.stopPropagation();
+			var url = Globals.path + "/Search/AJAX";
+			var params = "method=clearAllLockedFacets";
+			var fullUrl = url + "?" + params;
+			$.getJSON(fullUrl,
+				function(data) {
+					if (data.success === true){
+						window.location = removeAllFiltersUrl;
 					}else{
 						AspenDiscovery.showMessage('Error', data.message, true);
 					}

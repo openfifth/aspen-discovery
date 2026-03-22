@@ -155,7 +155,7 @@ AspenDiscovery.Searches = (function(){
 								url: url,
 								dataType: "json",
 								success: function (data) {
-									response(data);
+									response(data.suggestions);
 								}
 							});
 						},
