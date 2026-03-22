@@ -11940,8 +11940,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$sortOptions = [
 			'id' => 'Id (Default)',
-			'created_asc' => 'Date Saved (Oldest First)',
-			'created_desc' => 'Date Saved (Newest First)',
 			'title_asc' => 'Name (A-Z)',
 			'title_desc' => 'Name (Z-A)',
 		];
@@ -11994,12 +11992,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$totalCount = $savedSearch->count();
 			switch ($sort) {
-				case 'created_asc':
-					$savedSearch->orderBy('created ASC');
-					break;
-				case 'created_desc':
-					$savedSearch->orderBy('created DESC');
-					break;
 				case 'source_asc':
 					$savedSearch->orderBy('searchSource ASC');
 					break;
