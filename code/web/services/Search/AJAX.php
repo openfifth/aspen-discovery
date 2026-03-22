@@ -81,8 +81,13 @@ class AJAX extends JSON_Action {
 			$searchSuggestions = $commonSearchTerms;
 			$memCache->set($cacheKey, $searchSuggestions, $configArray['Caching']['search_suggestions']);
 			$timer->logTime("Loaded search suggestions $cacheKey");
+		}else{
+			$searchSuggestions = [];
 		}
-		return $searchSuggestions;
+		return [
+			'success' => true,
+			'suggestions' => $searchSuggestions
+		];
 	}
 
 	/** @noinspection PhpUnused */
