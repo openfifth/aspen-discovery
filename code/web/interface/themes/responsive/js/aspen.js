@@ -8680,7 +8680,7 @@ AspenDiscovery.Account = (function () {
 						$('#recommendedForYouInfo').hide();
 					}
 				} catch (e) {
-					alert("error loading enrichment: " + e);
+					alert("error loading recommendations: " + e);
 				}
 			});
 		},
@@ -15445,10 +15445,10 @@ AspenDiscovery.GroupedWork = (function(){
 						});
 
 						html += '</ul>';
-
 						var carouselElement = $('#moreLikeThisCarousel');
-						carouselElement.html(html);
 						var jCarousel = carouselElement.jcarousel();
+
+						carouselElement.html(html);
 
 						// Reload carousel
 						jCarousel.jcarousel('reload');
@@ -15457,7 +15457,10 @@ AspenDiscovery.GroupedWork = (function(){
 					}
 
 				} catch (e) {
-					alert("error loading enrichment: " + e);
+					setTimeout(function (){
+						var jCarousel = carouselElement.jcarousel();
+						jCarousel.jcarousel('reload');
+					},1000);
 				}
 			});
 		},
