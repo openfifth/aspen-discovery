@@ -28,6 +28,7 @@ class SystemVariables extends DataObject {
 	/** @noinspection PhpUnused */
 	public $indexVersion;
 	public $searchVersion;
+	public $titleSearchBehavior;
 	public $enableNovelistSeriesIntegration;
 	public $greenhouseUrl;
 	public $communityContentUrl;
@@ -194,6 +195,15 @@ class SystemVariables extends DataObject {
 						'description' => 'The Solr Core Version to search with.  In 22.06 and above this should be version 2 in most cases.',
 						'required' => true,
 						'default' => 2,
+					],
+					'titleSearchBehavior' => [
+						'property' => 'titleSearchBehavior',
+						'label' => 'Title Search Behavior',
+						'type' => 'enum',
+						'values' => [
+							1 => 'Exclude Alternate Titles',
+							2 => 'Include Alternate Titles',
+						]
 					],
 					'loadCoversFrom020z' => [
 						'property' => 'loadCoversFrom020z',

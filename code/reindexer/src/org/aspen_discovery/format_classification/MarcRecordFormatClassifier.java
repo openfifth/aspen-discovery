@@ -374,6 +374,9 @@ public class MarcRecordFormatClassifier {
 						}else if (subfieldData.contains("board books") || subfieldData.contains("board book")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format BoardBook based on 655 Genre", 2);}
 							result.add("BoardBook");
+						}else if (subfieldData.contains("picture books") || subfieldData.contains("picture book")) {
+							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format PictureBook based on 655 Genre", 2);}
+							result.add("PictureBook");
 						}else if (subfieldData.contains("pop-up")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format Pop-UpBook based on 655 Genre", 2);}
 							result.add("Pop-UpBook");
@@ -467,10 +470,21 @@ public class MarcRecordFormatClassifier {
 
 	private boolean titleMatchesPattern(org.marc4j.marc.Record record, Pattern patternToLookFor) {
 		String titleField = MarcUtil.getFirstFieldVal(record, "245a");
+		boolean foundMatch = false;
 		if (titleField != null) {
-			return patternToLookFor.matcher(titleField).matches();
+			foundMatch = patternToLookFor.matcher(titleField).matches();
 		}
-		return false;
+		if (!foundMatch) {
+			//Look at all 246a fields
+			Set<String> titleField2 = MarcUtil.getFieldList(record, "246a");
+			for (String titleField2String : titleField2) {
+				foundMatch = patternToLookFor.matcher(titleField2String).matches();
+				if (foundMatch) {
+					break;
+				}
+			}
+		}
+		return foundMatch;
 	}
 
 	public Pattern graphicNovelSubtitle = Pattern.compile("\\b(the|a) graphic novel\\b", Pattern.CASE_INSENSITIVE);
@@ -1468,6 +1482,10 @@ public class MarcRecordFormatClassifier {
 			printFormats.remove("Book");
 		}
 		if (printFormats.contains("BoardBook")){
+			printFormats.remove("PictureBook");
+			printFormats.remove("Book");
+		}
+		if (printFormats.contains("PictureBook")){
 			printFormats.remove("Book");
 		}
 		if (printFormats.contains("Journal")){
