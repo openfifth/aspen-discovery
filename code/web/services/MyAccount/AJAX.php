@@ -10920,6 +10920,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$savedSearches = [];
 		$savedSearch = new SearchEntry();
+		$savedSearch->whereAdd("searchSource <> 'user_list'");
 		$savedSearch->user_id = $user->id;
 		$savedSearch->saved = 1;
 		if (!empty($filter)) {
@@ -11059,6 +11060,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$savedSearches = [];
 		$savedSearch = new SearchEntry();
 		$savedSearch->whereAdd("session_id = '" . session_id() . "' OR user_id = " . $user->id);
+		$savedSearch->whereAdd("searchSource <> 'user_list'");
 		$savedSearch->saved = 0;
 		$totalCount = $savedSearch->count();
 		switch ($sort) {

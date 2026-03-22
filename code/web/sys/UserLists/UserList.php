@@ -512,15 +512,15 @@ class UserList extends DataObject {
 		// Display of query is not right when reusing the global search object
 		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
 		$searchObject = SearchObjectFactory::initSearchObject();
-		$searchObject->init('local', '');
+		$searchObject->init('user_list', '');
 		$searchObject->setSearchTerms([
 			'lookfor' => $this->id,
 			'index' => 'list_link',
 		]);
 		$searchObject->disableBoosting();
 		$searchObject->setPrimarySearch(false);
-		//Don't log this to search history
-		$searchObject->disableLogging();
+		//We need to log this to search history to be able to apply facets
+		//$searchObject->disableLogging();
 		$searchObject->setFieldsToReturn('id');
 		$searchObject->setPage(($start / $numItems) + 1);
 		$searchObject->setLimit($numItems);
