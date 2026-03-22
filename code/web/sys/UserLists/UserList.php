@@ -268,9 +268,8 @@ class UserList extends DataObject {
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
 		if ($forLiDA) {
-			if ($appVersion < 24.02) {
-				$listEntry->whereAdd("source <> 'Events'");
-			}
+			$validSources = AbstractAPI::getValidSourcesForLiDA('list');
+			$listEntry->whereAdd("source IN ('" . implode("','", $validSources) . "')");
 		}
 
 		if (!empty($selectedResourceTypes)) {
@@ -519,8 +518,6 @@ class UserList extends DataObject {
 		]);
 		$searchObject->disableBoosting();
 		$searchObject->setPrimarySearch(false);
-		//Don't log this to search history
-		$searchObject->disableLogging();
 		$searchObject->setFieldsToReturn('id');
 		$searchObject->setPage(($start / $numItems) + 1);
 		$searchObject->setLimit($numItems);
