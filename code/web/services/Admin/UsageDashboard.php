@@ -42,6 +42,27 @@ class Admin_UsageDashboard extends Admin_Dashboard {
 			}
 		}
 		$interface->assign('webResourceUsage', $webResourceUsage);
+
+		require_once ROOT_DIR . '/sys/LocalEnrichment/Placard.php';
+		$placards = [];
+		$placardObj = new Placard();
+		$placardObj->orderBy('title');
+		$placardObj->find();
+		while ($placardObj->fetch()) {
+			$placards[] = $placardObj->title;
+		}
+		$placardUsage = [];
+		foreach ($placards as $placardName) {
+			$placardUsage[] = [
+				'name' => $placardName,
+				'thisMonth' => $this->getPlacardUsageStats($instanceName, $placardName, $this->thisMonth, $this->thisYear),
+				'lastMonth' => $this->getPlacardUsageStats($instanceName, $placardName, $this->lastMonth, $this->lastMonthYear),
+				'thisYear' => $this->getPlacardUsageStats($instanceName, $placardName, null, $this->thisYear),
+				'allTime' => $this->getPlacardUsageStats($instanceName, $placardName, null, null),
+			];
+		}
+		$interface->assign('placardUsage', $placardUsage);
+
 		$this->display('usage_dashboard.tpl', 'Aspen Usage Dashboard');
 	}
 
@@ -132,6 +153,43 @@ class Admin_UsageDashboard extends Admin_Dashboard {
 			'totalPageViewsByAuthenticatedUsers' => $usage->pageViewsByAuthenticatedUsers ?? 0,
 			'totalPageViewsInLibrary' => $usage->pageViewsInLibrary ?? 0,
 			'totalPageViewsFromPlacard' => $usage->pageViewsFromPlacard ?? 0,
+		];
+	}
+
+	/**
+	 * @param string|null $instanceName
+	 * @param string $placardName
+	 * @param string|null $month
+	 * @param string|null $year
+	 * @return int[]
+	 */
+	function getPlacardUsageStats($instanceName, $placardName, $month, $year) {
+		require_once ROOT_DIR . '/sys/WebBuilder/PlacardUsage.php';
+		$usage = new PlacardUsage();
+		if (!empty($instanceName)) {
+			$usage->instance = $instanceName;
+		}
+		if ($month != null) {
+			$usage->month = $month;
+		}
+		if ($year != null) {
+			$usage->year = $year;
+		}
+		if (!empty($placardName)) {
+			$usage->placardName = $placardName;
+		}
+		$usage->selectAdd();
+		$usage->selectAdd('SUM(timesShown) as timesShown');
+		$usage->selectAdd('SUM(pageViews) as pageViews');
+		$usage->selectAdd('SUM(pageViewsByAuthenticatedUsers) as pageViewsByAuthenticatedUsers');
+		$usage->selectAdd('SUM(pageViewsInLibrary) as pageViewsInLibrary');
+		$usage->find(true);
+		return [
+			'name' => $usage->placardName,
+			'timesShown' => $usage->timesShown ?? 0,
+			'pageViews' => $usage->pageViews ?? 0,
+			'pageViewsByAuthenticatedUsers' => $usage->pageViewsByAuthenticatedUsers ?? 0,
+			'pageViewsInLibrary' => $usage->pageViewsInLibrary ?? 0,
 		];
 	}
 

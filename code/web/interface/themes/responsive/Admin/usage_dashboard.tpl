@@ -628,7 +628,7 @@
 		</div>
 
 		{if $webResourceUsage|@count > 0}
-		<h2>{translate text="Web Resources" isAdminFacing=true}</h2>
+		<h2>{translate text="Web Resource Usage" isAdminFacing=true}</h2>
 			<div class="row">
 			    {foreach from=$webResourceUsage item=resource name="webResourceLoop"}
 			        <div class="dashboardCategory col-sm-6">
@@ -680,5 +680,48 @@
 		        {/foreach}
 			</div>
         {/if}
+
+		   {if $placardUsage|@count > 0}
+			   <h2>{translate text="Placard Usage" isAdminFacing=true}</h2>
+			   <div class="row">
+				   {foreach from=$placardUsage item=placard name="placardUsageLoop"}
+					   <div class="dashboardCategory col-sm-6">
+						   <h3 class="dashboardCategoryLabel">{$placard.name}</h3>
+						   <div class="row">
+							   <div class="col-tn-6">
+								   <div class="dashboardLabel">{translate text="Times Shown" isAdminFacing=true}</div>
+								   <div class="dashboardValue">{$placard.thisMonth.timesShown|number_format} <span class="dashboardSubLabel">{translate text="This Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.lastMonth.timesShown|number_format} <span class="dashboardSubLabel">{translate text="Last Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.thisYear.timesShown|number_format} <span class="dashboardSubLabel">{translate text="This Year" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.allTime.timesShown|number_format} <span class="dashboardSubLabel">{translate text="All Time" isAdminFacing=true}</span></div>
+							   </div>
+							   <div class="col-tn-6">
+								   <div class="dashboardLabel">{translate text="Clicks" isAdminFacing=true}</div>
+								   <div class="dashboardValue">{$placard.thisMonth.pageViews|number_format} <span class="dashboardSubLabel">{translate text="This Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.lastMonth.pageViews|number_format} <span class="dashboardSubLabel">{translate text="Last Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.thisYear.pageViews|number_format} <span class="dashboardSubLabel">{translate text="This Year" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.allTime.pageViews|number_format} <span class="dashboardSubLabel">{translate text="All Time" isAdminFacing=true}</span></div>
+							   </div>
+						   </div>
+						   <div class="row">
+							   <div class="col-tn-6">
+								   <div class="dashboardLabel">{translate text="Clicks by Authenticated Users" isAdminFacing=true}</div>
+								   <div class="dashboardValue">{$placard.thisMonth.pageViewsByAuthenticatedUsers|number_format} <span class="dashboardSubLabel">{translate text="This Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.lastMonth.pageViewsByAuthenticatedUsers|number_format} <span class="dashboardSubLabel">{translate text="Last Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.thisYear.pageViewsByAuthenticatedUsers|number_format} <span class="dashboardSubLabel">{translate text="This Year" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.allTime.pageViewsByAuthenticatedUsers|number_format} <span class="dashboardSubLabel">{translate text="All Time" isAdminFacing=true}</span></div>
+							   </div>
+							   <div class="col-tn-6">
+								   <div class="dashboardLabel">{translate text="Clicks in Library" isAdminFacing=true}</div>
+								   <div class="dashboardValue">{$placard.thisMonth.pageViewsInLibrary|number_format} <span class="dashboardSubLabel">{translate text="This Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.lastMonth.pageViewsInLibrary|number_format} <span class="dashboardSubLabel">{translate text="Last Month" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.thisYear.pageViewsInLibrary|number_format} <span class="dashboardSubLabel">{translate text="This Year" isAdminFacing=true}</span></div>
+								   <div class="dashboardValue">{$placard.allTime.pageViewsInLibrary|number_format} <span class="dashboardSubLabel">{translate text="All Time" isAdminFacing=true}</span></div>
+							   </div>
+						   </div>
+					   </div>
+				   {/foreach}
+			   </div>
+		   {/if}
 	</div>
 {/strip}
