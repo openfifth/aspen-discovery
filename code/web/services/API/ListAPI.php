@@ -1002,6 +1002,7 @@ class ListAPI extends AbstractAPI {
 		$SearchEntry = new SearchEntry();
 		$SearchEntry->user_id = $id;
 		$SearchEntry->saved = "1";
+		$SearchEntry->whereAdd("searchSource <> 'user_list'");
 		$SearchEntry->orderBy('created desc');
 		$SearchEntry->find();
 
@@ -1068,6 +1069,7 @@ class ListAPI extends AbstractAPI {
 			$SearchEntry = new SearchEntry();
 			$SearchEntry->user_id = $user->id;
 			$SearchEntry->saved = "1";
+			$SearchEntry->whereAdd("searchSource <> 'user_list'");
 			$SearchEntry->orderBy('created desc');
 			$SearchEntry->find();
 			$count = 0;
