@@ -2012,11 +2012,8 @@ class SearchAPI extends AbstractAPI {
 		//based off of url, branch parameter, or IP address
 		$activeLocation = $locationSingleton->getActiveLocation();
 
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-		$appUser = UserAccount::validateAccount($username, $password);
+		$appUser = $this->getUserForApiCall();
+
 
 		/** @var BrowseCategoryGroupEntry[] $browseCategories */
 		if ($activeLocation == null) {

@@ -530,14 +530,9 @@ class ListAPI extends AbstractAPI {
 			$listId = $_REQUEST['id'];
 		}
 
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-		if (!empty($username)) {
-			$user = UserAccount::validateAccount($username, $password);
-		} else {
-			$user = UserAccount::getLoggedInUser();
+		$user = $this->getUserForApiCall();
+		if (!$user) {
+			$user = UserAccount::getLoggedInUser(); // not sure why this is here... are we calling this API in Discovery?
 		}
 
 		if (isset($_REQUEST['numTitles'])) {
@@ -863,17 +858,13 @@ class ListAPI extends AbstractAPI {
 
 	function getListDetails(): array {
 		global $configArray;
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['id'])) {
 			return [
 				'success' => false,
 				'message' => 'The id of the list to load must be provided as the id parameter.',
 			];
 		}
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->id = $_REQUEST['id'];
@@ -1063,17 +1054,10 @@ class ListAPI extends AbstractAPI {
 	}
 
 	function getSavedSearchesForLiDA(): array {
-
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-		if (!empty($username)) {
-			$user = UserAccount::validateAccount($username, $password);
-		} else {
+		$user = $this->getUserForApiCall();
+		if (!$user) {
 			$user = UserAccount::getLoggedInUser();
 		}
-
 		if ($user && !($user instanceof AspenError)) {
 			$checkIfValid = "true";
 			if (isset($_REQUEST['checkIfValid'])) {
@@ -1174,17 +1158,14 @@ class ListAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function createList() {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['title'])) {
 			return [
 				'success' => false,
 				'message' => 'You must provide the title of the list to be created.',
 			];
 		}
-		$user = UserAccount::validateAccount($username, $password);
+
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->title = strip_tags($_REQUEST['title']);
@@ -1293,10 +1274,6 @@ class ListAPI extends AbstractAPI {
 	 * </code>
 	 */
 	function addTitlesToList($existingList = false) {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['listId'])) {
 			return [
 				'success' => false,
@@ -1319,7 +1296,7 @@ class ListAPI extends AbstractAPI {
 
 		$source = $_REQUEST['source'] ?? 'GroupedWork';
 
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->id = $_REQUEST['listId'];
@@ -1454,17 +1431,13 @@ class ListAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function deleteList() {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['id'])) {
 			return [
 				'success' => false,
 				'message' => 'You must provide the id of the list to be deleted.',
 			];
 		}
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->id = $_REQUEST['id'];
@@ -1556,17 +1529,14 @@ class ListAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function editList() {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['id'])) {
 			return [
 				'success' => false,
 				'message' => 'You must provide the id of the list to be modified.',
 			];
 		}
-		$user = UserAccount::validateAccount($username, $password);
+
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->id = $_REQUEST['id'];
@@ -1651,10 +1621,6 @@ class ListAPI extends AbstractAPI {
 	 * </code>
 	 */
 	function removeTitlesFromList() {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['listId'])) {
 			return [
 				'success' => false,
@@ -1677,7 +1643,7 @@ class ListAPI extends AbstractAPI {
 
 		$source = $_REQUEST['source'] ?? 'GroupedWork';
 
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->id = $_REQUEST['listId'];
@@ -1757,17 +1723,13 @@ class ListAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function clearListTitles() {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
 		if (!isset($_REQUEST['listId'])) {
 			return [
 				'success' => false,
 				'message' => 'You must provide the listId to clear titles from.',
 			];
 		}
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$list = new UserList();
 			$list->id = $_REQUEST['listId'];
