@@ -49,19 +49,21 @@ class Admin_UsageDashboard extends Admin_Dashboard {
 		$placardObj->orderBy('title');
 		$placardObj->find();
 		while ($placardObj->fetch()) {
-			$placards[] = $placardObj->title;
+			$placards[] = clone $placardObj;
 		}
 		$placardUsage = [];
-		foreach ($placards as $placardName) {
+		foreach ($placards as $placard) {
 			$placardUsage[] = [
-				'name' => $placardName,
-				'thisMonth' => $this->getPlacardUsageStats($instanceName, $placardName, $this->thisMonth, $this->thisYear),
-				'lastMonth' => $this->getPlacardUsageStats($instanceName, $placardName, $this->lastMonth, $this->lastMonthYear),
-				'thisYear' => $this->getPlacardUsageStats($instanceName, $placardName, null, $this->thisYear),
-				'allTime' => $this->getPlacardUsageStats($instanceName, $placardName, null, null),
+				'name' => $placard->title,
+				'placardId' => $placard->id,
+				'thisMonth' => $this->getPlacardUsageStats($instanceName, $placard->title, $this->thisMonth, $this->thisYear),
+				'lastMonth' => $this->getPlacardUsageStats($instanceName, $placard->title, $this->lastMonth, $this->lastMonthYear),
+				'thisYear' => $this->getPlacardUsageStats($instanceName, $placard->title, null, $this->thisYear),
+				'allTime' => $this->getPlacardUsageStats($instanceName, $placard->title, null, null),
 			];
 		}
 		$interface->assign('placardUsage', $placardUsage);
+		$interface->assign('selectedInstance', $instanceName);
 
 		$this->display('usage_dashboard.tpl', 'Aspen Usage Dashboard');
 	}
