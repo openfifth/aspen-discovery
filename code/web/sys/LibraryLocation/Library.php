@@ -188,6 +188,8 @@ class Library extends DataObject {
 	public /** @noinspection PhpUnused */
 		$systemsToRepeatIn;
 	public $additionalLocationsToShowAvailabilityFor;
+	public /** @noinspection PhpUnused */
+		$locationsToExcludeAvailabilityFor;
 	public $homeLink;
 	public $showAdvancedSearchbox;
 	public $showWebsiteSearch;
@@ -413,6 +415,7 @@ class Library extends DataObject {
 	public $showGroupedHoldCopiesCount;
 	public $localIllRequestType;
 	public $maximumLocalIllRequests;
+	public $includeRemoteCheckoutsInMaxLocalIllRequests;
 	public $localIllEmail;
 	/** @noinspection PhpUnused */
 	public $_localIllEmailSuccessMessage;
@@ -2362,9 +2365,9 @@ class Library extends DataObject {
 								'description' => 'Whether or not the user can cancel in transit holds.',
 								'hideInLists' => true,
 								'default' => 1,
-								'note' => 'Applies to CARL.X Only',
+								'note' => 'Applies to CARL.X and Symphony Only',
 								'permissions' => ['Library ILS Connection'],
-								'relatedIls' => ['carlx'],
+								'relatedIls' => ['carlx', 'symphony'],
 							],
 							'allowFreezeHolds' => [
 								'property' => 'allowFreezeHolds',
@@ -3493,8 +3496,17 @@ class Library extends DataObject {
 								'property' => 'additionalLocationsToShowAvailabilityFor',
 								'type' => 'text',
 								'label' => 'Additional Locations to Include in Available At Facet',
-								'description' => 'A list of library codes that you would like included in the available at facet separated by pipes |.',
-								'size' => '20',
+								'description' => 'A list of location codes that you would like included in the available at facet separated by pipes |.',
+								'maxLength' => '255',
+								'hideInLists' => true,
+								'forcesReindex' => true,
+							],
+							'locationsToExcludeAvailabilityFor' => [
+								'property' => 'locationsToExcludeAvailabilityFor',
+								'type' => 'regularExpression',
+								'label' => 'Locations to Exclude from Available At Facet',
+								'description' => 'A list of location names (facet values) that you would like excluded.',
+								'maxLength' => '255',
 								'hideInLists' => true,
 								'forcesReindex' => true,
 							],
@@ -3729,10 +3741,11 @@ class Library extends DataObject {
 						'label' => 'Aspen Events to Include',
 						'description' => 'Which events to include when searching this library',
 						'values' => [
+							'0' => 'Do not show the option to search Events',
 							'1' => 'All events at all locations',
 							'2' => "Events that occur at one of this library's locations",
 						],
-						'default' => '2',
+						'default' => '0',
 					],
 					'eventsDefaultCalendarView' => [
 						'property' => 'eventsDefaultCalendarView',
@@ -4131,6 +4144,14 @@ class Library extends DataObject {
 						'description' => 'The maximum number of Local ILL requests to allow. Leave at 0 to not restrict.',
 						'hideInLists' => true,
 						'default' => 0,
+					],
+					'includeRemoteCheckoutsInMaxLocalIllRequests' => [
+						'property' => 'includeRemoteCheckoutsInMaxLocalIllRequests',
+						'type' => 'checkbox',
+						'label' => 'Include Remote Checkouts in Max Local ILL requests',
+						'description' => 'Include Remote Checkouts in Max Local ILL requests',
+						'note' => "Remote checkouts are checkouts that were picked up from the item's owning home group (but that are not owned by the patron's home group)",
+						'default' => 1
 					],
 					'ILLSystem' => [
 						'property' => 'ILLSystem',
@@ -6608,6 +6629,7 @@ class Library extends DataObject {
 		$suspendRequiresReactivationDate = false;
 		$showDateWhenSuspending = true;
 		$catalogHasAccountNotifications = false;
+		$reactivateDateNotRequired = false;
 
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
 		if ($catalog != null) {
@@ -6621,6 +6643,7 @@ class Library extends DataObject {
 			$catalogRegistrationCapabilities = $catalog->getRegistrationCapabilities();
 			$suspendRequiresReactivationDate = $catalog->suspendRequiresReactivationDate();
 			$showDateWhenSuspending = $catalog->showDateWhenSuspending();
+			$reactivateDateNotRequired = $catalog->reactivateDateNotRequired();
 		}
 
 		$accountProfile = $this->getAccountProfile();
@@ -6636,6 +6659,7 @@ class Library extends DataObject {
 		$apiInfo['catalogRegistrationCapabilities'] = $catalogRegistrationCapabilities;
 		$apiInfo['suspendRequiresReactivationDate'] = $suspendRequiresReactivationDate;
 		$apiInfo['showDateWhenSuspending'] = $showDateWhenSuspending;
+		$apiInfo['reactivateDateNotRequired'] = $reactivateDateNotRequired;
 
 		$superScopeLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelSuperScope;
 		$localLabel = $this->getGroupedWorkDisplaySettings()->availabilityToggleLabelLocal;

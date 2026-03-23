@@ -155,7 +155,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	static function compareAvailabilityForRecords($a, $b) {
+	static function compareAvailabilityForRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		$availableLocallyA = $a->getStatusInformation()->isAvailableLocally();
 		$availableLocallyB = $b->getStatusInformation()->isAvailableLocally();
 		if (($availableLocallyA == $availableLocallyB)) {
@@ -227,35 +227,17 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 */
 	static function compareLanguagesForRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		$aHasEnglish = false;
-		if (is_array($a->language)) {
-			$languageA = strtolower(reset($a->language));
-			foreach ($a->language as $language) {
-				if (strcasecmp('english', $language) == 0) {
-					$aHasEnglish = true;
-					break;
-				}
-			}
-		} else {
-			$languageA = strtolower($a->language);
-			if (strcasecmp('english', $languageA) == 0) {
-				$aHasEnglish = true;
-			}
+		$languageA = strtolower($a->language);
+		if (strcasecmp('english', $languageA) == 0) {
+			$aHasEnglish = true;
 		}
+
 		$bHasEnglish = false;
-		if (is_array($b->language)) {
-			$languageB = strtolower(reset($b->language));
-			foreach ($b->language as $language) {
-				if (strcasecmp('english', $language) == 0) {
-					$bHasEnglish = true;
-					break;
-				}
-			}
-		} else {
-			$languageB = strtolower($b->language);
-			if (strcasecmp('english', $languageB) == 0) {
-				$bHasEnglish = true;
-			}
+		$languageB = strtolower($b->language);
+		if (strcasecmp('english', $languageB) == 0) {
+			$bHasEnglish = true;
 		}
+
 		if ($aHasEnglish && $bHasEnglish) {
 			return 0;
 		} else {
@@ -274,7 +256,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	static function compareLocalAvailableItemsForRecords($a, $b) {
+	static function compareLocalAvailableItemsForRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		$statusA = $a->getStatusInformation();
 		$statusB = $b->getStatusInformation();
 		if (($statusA->isAvailableHere() || $statusA->isAvailableOnline()) && ($statusB->isAvailableHere() || $statusB->isAvailableOnline())) {
@@ -301,7 +283,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	static function compareLocalItemsForRecords($a, $b) {
+	static function compareLocalItemsForRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		if ($a->hasLocalItem() && $b->hasLocalItem()) {
 			return 0;
 		} elseif ($a->hasLocalItem()) {
@@ -370,20 +352,29 @@ class GroupedWorkDriver extends IndexRecordDriver {
 									//6) Put anything with a local copy higher
 									$localItemComparisonResult = GroupedWorkDriver::compareLocalItemsForRecords($a, $b);
 									if ($localItemComparisonResult == 0) {
-										//7) All else being equal, sort by hold ratio
-										if ($a->getHoldRatio() == $b->getHoldRatio()) {
-											//8) Hold Ratio is the same, last thing to check is the number of copies
-											if ($a->getCopies() == $b->getCopies()) {
-												return 0;
-											} elseif ($a->getCopies() > $b->getCopies()) {
+										//7) Do a status check to make sure we don't place a hold on something that will be slow to come in
+										$statusA = $a->getStatusRanking();
+										$statusB = $b->getStatusRanking();
+										//Status rankings should be between 4 (checked out and 1 currently available), we prefer the highest but could group some
+										$statusComparison = $statusB <=> $statusA;
+										if ($statusComparison == 0) {
+											//8) All else being equal, sort by hold ratio
+											if ($a->getHoldRatio() == $b->getHoldRatio()) {
+												//9) Hold Ratio is the same, last thing to check is the number of copies
+												if ($a->getCopies() == $b->getCopies()) {
+													return 0;
+												} elseif ($a->getCopies() > $b->getCopies()) {
+													return -1;
+												} else {
+													return 1;
+												}
+											} elseif ($a->getHoldRatio() < $b->getHoldRatio()) {
 												return -1;
 											} else {
 												return 1;
 											}
-										} elseif ($a->getHoldRatio() < $b->getHoldRatio()) {
-											return -1;
-										} else {
-											return 1;
+										}else{
+											return $statusComparison;
 										}
 									} else {
 										return $localItemComparisonResult;
