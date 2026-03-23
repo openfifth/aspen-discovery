@@ -57,6 +57,14 @@ function getUpdates26_04_00(): array {
 				) ENGINE=INNODB',
 			]
 		], //create_placard_usage_table
+		'add_index_to_placard_usage' => [
+			'title' => 'Add index to placard usage table',
+			'description' => 'Add index to placard usage table to improve performance of queries.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE placard_usage ADD UNIQUE INDEX placard_usage_unique (instance, year, month, placardName);",
+			]
+		], //add_index_to_placard_usage
 
 		//lucas
 

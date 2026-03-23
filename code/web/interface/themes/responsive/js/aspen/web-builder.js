@@ -7,8 +7,8 @@ AspenDiscovery.WebBuilder = function () {
 			const url = Globals.path + '/WebBuilder/AJAX';
 			const params = {
 				method: 'trackPlacardUsage',
-				placardId: placardId,
-				action: 'view'
+				id: placardId,
+				operation: 'view'
 			};
 			$.getJSON(url, params);
 		},
@@ -18,8 +18,8 @@ AspenDiscovery.WebBuilder = function () {
 			const url = Globals.path + '/WebBuilder/AJAX';
 			const params = {
 				method: 'trackPlacardUsage',
-				placardId: placardId,
-				action: 'click',
+				id: placardId,
+				operation: 'click',
 				authType: authType
 			};
 			$.getJSON(url, params);

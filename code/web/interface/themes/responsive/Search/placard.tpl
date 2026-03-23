@@ -10,7 +10,6 @@
 		</div>
 		{/if}
 		<script type="text/javascript">
-			// Track placard view on render
 			AspenDiscovery.WebBuilder.trackPlacardView('{$placard->id}');
 		</script>
 		<div class="row">
