@@ -105,26 +105,6 @@
 							</div>
 						</div>
 
-                        {if !empty($masqueradeMode) || !empty($userIsStaff)} {* Only show debugging preferences to staff *}
-						<div class="panel" id="debuggingPreferencesPanel">
-							<a data-toggle="collapse" href="#debuggingPreferencesPanelBody">
-								<div class="panel-heading">
-									<div class="panel-title">
-										<h2>{translate text="Staff Debugging" isPublicFacing=true}</h2>
-									</div>
-								</div>
-							</a>
-							<div id="debuggingPreferencesPanelBody" class="panel-collapse collapse in">
-								<div class="panel-body">
-									<div class="form-group propertyRow">
-										<label for="allowAppRequestLogging" class="control-label">{translate text='Allow ogging Aspen LiDA requests for this patron' isPublicFacing=true}</label>&nbsp;
-										<input type="checkbox" class="form-control" name="allowAppRequestLogging" id="allowAppRequestLogging" {if $profile->allowAppRequestLogging==1}checked='checked'{/if} data-switch="">
-									</div>
-								</div>
-							</div>
-						</div>
-                        {/if}
-
 						{if !empty($showEdsPreferences) || !empty($validEdsSorts) || !empty($validEbscohostSorts) || !empty($validSummonSorts) || !empty($validGaleSorts)}
 							<div class="panel" id="articlesAndDatabasesPreferencesPanel">
 								<a data-toggle="collapse" href="#articlesAndDatabasesPreferencesPanelBody">
