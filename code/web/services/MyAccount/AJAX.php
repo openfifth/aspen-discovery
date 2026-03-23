@@ -10878,8 +10878,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$sortOptions = [
 			'id' => 'Id (Default)',
-			'created_asc' => 'Date Saved (Oldest First)',
-			'created_desc' => 'Date Saved (Newest First)',
 			'title_asc' => 'Name (A-Z)',
 			'title_desc' => 'Name (Z-A)',
 		];
@@ -10910,16 +10908,41 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$searches = [];
 
-		$sort = $_REQUEST['sort'] ?? 'id';
-		$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-		$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
-		$filter = $_REQUEST['filter'] ?? '';
-		$interface->assign('limit', $limit);
-		$interface->assign('sort', $sort);
-		$interface->assign('filter', $filter);
+			$savedSearches = [];
+			$savedSearch = new SearchEntry();
+			$savedSearch->user_id = $user->id;
+			$savedSearch->saved = 1;
+			if (!empty($filter)) {
+				$escapedFilter = $savedSearch->escape('%' . $filter . '%');
+				$savedSearch->whereAdd("title LIKE $escapedFilter");
+			}
+			$totalCount = $savedSearch->count();
+			switch ($sort) {
+				case 'source_asc':
+					$savedSearch->orderBy('searchSource ASC');
+					break;
+				case 'source_desc':
+					$savedSearch->orderBy('searchSource DESC');
+					break;
+				case 'title_asc':
+					$savedSearch->orderBy('title ASC');
+					break;
+				case 'title_desc':
+					$savedSearch->orderBy('title DESC');
+					break;
+				default:
+					$savedSearch->orderBy('id DESC');
+					break;
+			}
+			$savedSearch->limit(($page - 1) * $limit, $limit);
+			$savedSearch->find();
+			while ($savedSearch->fetch()) {
+				$savedSearches[] = clone $savedSearch;
+			}
 
 		$savedSearches = [];
 		$savedSearch = new SearchEntry();
+		$savedSearch->whereAdd("searchSource <> 'user_list'");
 		$savedSearch->user_id = $user->id;
 		$savedSearch->saved = 1;
 		if (!empty($filter)) {
@@ -11059,6 +11082,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$savedSearches = [];
 		$savedSearch = new SearchEntry();
 		$savedSearch->whereAdd("session_id = '" . session_id() . "' OR user_id = " . $user->id);
+		$savedSearch->whereAdd("searchSource <> 'user_list'");
 		$savedSearch->saved = 0;
 		$totalCount = $savedSearch->count();
 		switch ($sort) {
