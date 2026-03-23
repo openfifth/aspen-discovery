@@ -20762,7 +20762,7 @@ AspenDiscovery.WebBuilder = function () {
 			});
 		},
 
-		getWebResource(id) {
+		getWebResource(id, fromPlacard = false) {
 			const url = `${Globals.path}/WebBuilder/AJAX`;
 			const params = {
 				method: "getWebResource",
@@ -20791,6 +20791,9 @@ AspenDiscovery.WebBuilder = function () {
 						id,
 						authType
 					};
+					if (fromPlacard) {
+						trackParams.fromPlacard = 1;
+					}
 					$.getJSON(url, trackParams, () => openResource());
 				};
 
@@ -20800,7 +20803,7 @@ AspenDiscovery.WebBuilder = function () {
 					} else if (Globals.loggedIn && !canView) {
 						AspenDiscovery.showMessage(userNoAccessTitle, userNoAccessMessage);
 					} else {
-						AspenDiscovery.Account.ajaxLogin(null, () => AspenDiscovery.WebBuilder.getWebResource(id), true);
+						AspenDiscovery.Account.ajaxLogin(null, () => AspenDiscovery.WebBuilder.getWebResource(id, fromPlacard), true);
 					}
 				} else {
 					trackUsage("none");
