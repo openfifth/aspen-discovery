@@ -39,12 +39,13 @@ class OAuth2RateLimiter {
 			'description' => 'Default API rate limit'
 		];
 
-		$identifier = $clientId ?: $ipAddress;
+		$anonIP = self::anonymizeIP($ipAddress);
+		$identifier = $clientId ?: $anonIP;
 		if (empty($identifier)) {
 			$identifier = 'anonymous';
 		}
 
-		$rateLimitRecord = OAuth2RateLimit::getRateLimitRecord($identifier, $ipAddress, $endpoint);
+		$rateLimitRecord = OAuth2RateLimit::getRateLimitRecord($identifier, $anonIP, $endpoint);
 
 		if ($rateLimitRecord->isWindowExpired($config['window'])) {
 			$rateLimitRecord->resetWindow();
@@ -152,4 +153,28 @@ class OAuth2RateLimiter {
 
 		return $_SERVER['REMOTE_ADDR'] ?? 'unknown';
 	}
+
+	/**
+	 * Anonymize IP addresses for privacy
+	 *  IPv4: Replace last octet with 0 (e.g., 203.0.113.45 → 203.0.113.0)
+	 *  IPv6: Replace last 64 bits with 0 (e.g., 2001:0db8:85a3:0000:0000:8a2e:1370:7334 → 2001:0db8:85a3:0000::)
+	 *  Invalid IPs are returned as 'unknown'
+	 */
+	private static function anonymizeIP(string $ip): string {
+		if (str_contains($ip, '.') && substr_count($ip, '.') === 3) {
+			$parts = explode('.', $ip);
+			if (count($parts) === 4 && is_numeric($parts[0]) && is_numeric($parts[3])) {
+				$parts[3] = '0';
+				return implode('.', $parts);
+			}
+		} elseif (str_contains($ip, ':')) {
+			$parts = explode(':', $ip);
+			if (count($parts) >= 3) {
+				array_splice($parts, 4);
+				return implode(':', $parts) . '::';
+			}
+		}
+		return 'unknown';
+	}
+
 }
