@@ -83,6 +83,7 @@ class OAuth2Client extends DataObject {
 				'default' => false,
 				'description' => 'Enable this client to request OpenID Connect scopes',
 				'onchange' => 'AspenDiscovery.Admin.updateOAuth2SupportsOpenId()',
+				'readOnly' => ($context !== 'addNew'),
 			],
 			'allowed_claims' => [
 				'property' => 'allowed_claims',
@@ -106,9 +107,9 @@ class OAuth2Client extends DataObject {
 				'property' => 'redirect_uri',
 				'type' => 'url',
 				'label' => 'Redirect URI',
-				'description' => 'Valid redirect URI for this client. REQUIRED for Web Applications (Authorization Code flow). Optional for Service/Native Applications.',
+				'description' => 'Valid redirect URI for this client',
 				'maxLength' => 2000,
-				'note' => 'Leave empty for server-to-server (Client Credentials) or native app (Password Grant) flows.',
+				'note' => 'Required for Web Applications (Authorization Code flow)',
 			],
 			'is_active' => [
 				'property' => 'is_active',

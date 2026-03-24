@@ -12458,8 +12458,10 @@ AspenDiscovery.Admin = (function () {
 			var supportsOpenId = $("#supports_openid").is(":checked");
 			if (supportsOpenId) {
 				$("#propertyRowallowed_claims").show();
+				$("#propertyRowscopes").hide();
 			} else {
 				$("#propertyRowallowed_claims").hide();
+				$("#propertyRowscopes").show();
 			}
 		},
 		updateOAuth2Scopes: function (element) {
