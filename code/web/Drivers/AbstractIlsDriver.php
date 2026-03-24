@@ -909,8 +909,14 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 							$dueDate = date_format($dueDate, 'm/d/Y');
 							$item['due'] = $dueDate;
 						} else {
-							$message .= ' ' . $checkoutResponse['variable']['AF'][0];
 							$item['due'] = null;
+							if (isset($checkoutResponse['variable']['AF'][0])) {
+								$alertMessage = $checkoutResponse['variable']['AF'][0];
+								$message .= ': ' . $alertMessage;
+								if (stripos($alertMessage, 'not found') !== false || stripos($alertMessage, 'item not found') !== false || stripos($alertMessage, 'unknown item') !== false) {
+									$apiResult['itemNotFound'] = true;
+								}
+							}
 						}
 						$item['title'] = $checkoutResponse['variable']['AJ'][0] ?? 'Unknown title';
 						$item['barcode'] = $barcode;
