@@ -75,7 +75,7 @@
                 {"key": "password", "value": "{{password}}"},
                 {"key": "client_id", "value": "{{client_id}}"},
                 {"key": "client_secret", "value": "{{client_secret}}"},
-                {"key": "scope", "value": "api:work:read api:list:read"}
+                {"key": "scope", "value": "work:read list:read"}
               ]
             },
             "url": {
@@ -130,7 +130,7 @@
                 {"key": "password", "value": "{{password}}"},
                 {"key": "client_id", "value": "{{client_id}}"},
                 {"key": "client_secret", "value": "{{client_secret}}"},
-                {"key": "scope", "value": "openid profile email api:work:read api:list:read"}
+                {"key": "scope", "value": "openid profile email work:read list:read"}
               ]
             },
             "url": {
@@ -148,14 +148,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/Authentication/OAuth2/Authorize?response_type=code&client_id={{client_id}}&redirect_uri={{redirect_uri}}&scope=openid%20profile%20email%20api:work:read&state=xyz123",
+              "raw": "{{base_url}}/Authentication/OAuth2/Authorize?response_type=code&client_id={{client_id}}&redirect_uri={{redirect_uri}}&scope=openid%20profile%20email%20work:read&state=xyz123",
               "host": ["{{base_url}}"],
               "path": ["Authentication", "OAuth2", "Authorize"],
               "query": [
                 {"key": "response_type", "value": "code"},
                 {"key": "client_id", "value": "{{client_id}}"},
                 {"key": "redirect_uri", "value": "{{redirect_uri}}"},
-                {"key": "scope", "value": "openid profile email api:work:read"},
+                {"key": "scope", "value": "openid profile email work:read"},
                 {"key": "state", "value": "xyz123"}
               ]
             },
@@ -249,14 +249,14 @@
               ]
             },
             "url": {
-              "raw": "{{base_url}}/Authentication/OAuth2/Authorize?response_type=code&client_id={{client_id}}&redirect_uri={{redirect_uri}}&scope=openid%20profile%20email%20api:work:read&state=xyz123",
+              "raw": "{{base_url}}/Authentication/OAuth2/Authorize?response_type=code&client_id={{client_id}}&redirect_uri={{redirect_uri}}&scope=openid%20profile%20email%20work:read&state=xyz123",
               "host": ["{{base_url}}"],
               "path": ["Authentication", "OAuth2", "Authorize"],
               "query": [
                 {"key": "response_type", "value": "code"},
                 {"key": "client_id", "value": "{{client_id}}"},
                 {"key": "redirect_uri", "value": "{{redirect_uri}}"},
-                {"key": "scope", "value": "openid profile email api:work:read"},
+                {"key": "scope", "value": "openid profile email work:read"},
                 {"key": "state", "value": "xyz123"}
               ]
             },
@@ -352,7 +352,7 @@
                 {"key": "grant_type", "value": "client_credentials"},
                 {"key": "client_id", "value": "{{client_id}}"},
                 {"key": "client_secret", "value": "{{client_secret}}"},
-                {"key": "scope", "value": "api:work:read"}
+                {"key": "scope", "value": "work:read"}
               ]
             },
             "url": {
@@ -411,7 +411,7 @@
                 {"key": "method", "value": "getMyAccount"}
               ]
             },
-            "description": "Get authenticated user's account information (requires api:user:read scope)"
+            "description": "Get authenticated user's account information (requires user:read scope)"
           },
           "response": []
         },
@@ -433,7 +433,7 @@
                 {"key": "method", "value": "getUserLists"}
               ]
             },
-            "description": "Get user's reading lists (requires api:list:read scope)"
+            "description": "Get user's reading lists (requires list:read scope)"
           },
           "response": []
         },
@@ -455,7 +455,7 @@
                 {"key": "method", "value": "getPatronCheckedOutItems"}
               ]
             },
-            "description": "Get user's currently checked out items (requires api:user:read scope)"
+            "description": "Get user's currently checked out items (requires user:read scope)"
           },
           "response": []
         },
@@ -477,7 +477,7 @@
                 {"key": "method", "value": "getPatronHolds"}
               ]
             },
-            "description": "Get user's active holds (requires api:user:read scope)"
+            "description": "Get user's active holds (requires user:read scope)"
           },
           "response": []
         }
@@ -791,7 +791,7 @@
                 {"key": "password", "value": "{{password}}"},
                 {"key": "client_id", "value": "{{client_id}}"},
                 {"key": "client_secret", "value": "{{client_secret}}"},
-                {"key": "scope", "value": "openid profile email api:work:read api:list:read api:user:read"}
+                {"key": "scope", "value": "openid profile email work:read list:read user:read"}
               ]
             },
             "url": {

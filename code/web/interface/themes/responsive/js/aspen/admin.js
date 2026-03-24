@@ -3156,10 +3156,10 @@ AspenDiscovery.Admin = (function () {
 		},
 		updateOAuth2Scopes: function (element) {
 			const dependencies = {
-				'api:user:write': ['api:user:read'],
-				'api:list:write': ['api:list:read'],
-				'api:event:write': ['api:event:read'],
-				'api:community:write': ['api:community:read'],
+				'user:write': ['user:read'],
+				'list:write': ['list:read'],
+				'event:write': ['event:read'],
+				'community:write': ['community:read'],
 			};
 
 			if (element.checked) {

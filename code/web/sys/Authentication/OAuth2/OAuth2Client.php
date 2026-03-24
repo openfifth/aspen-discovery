@@ -171,19 +171,19 @@ class OAuth2Client extends DataObject {
 
 	static function getScopeOptions(): array {
 		return [
-			'api:work:read' => 'Work API Read Access',
-			'api:user:read' => 'User API Read Access',
-			'api:user:write' => 'User API Write Access',
-			'api:list:read' => 'List API Read Access',
-			'api:list:write' => 'List API Write Access',
-			'api:item:read' => 'Item API Read Access',
-			'api:event:read' => 'Event API Read Access',
-			'api:event:write' => 'Event API Write Access',
-			'api:search:read' => 'Search API Read Access',
-			'api:system:read' => 'System API Read Access',
-			'api:fine' => 'Fine API Read Access',
-			'api:community:read' => 'Community API Read Access',
-			'api:community:write' => 'Community API Write Access',
+			'work:read' => 'Work API Read Access',
+			'user:read' => 'User API Read Access',
+			'user:write' => 'User API Write Access',
+			'list:read' => 'List API Read Access',
+			'list:write' => 'List API Write Access',
+			'item:read' => 'Item API Read Access',
+			'event:read' => 'Event API Read Access',
+			'event:write' => 'Event API Write Access',
+			'search:read' => 'Search API Read Access',
+			'system:read' => 'System API Read Access',
+			'fine:read' => 'Fine API Read Access',
+			'community:read' => 'Community API Read Access',
+			'community:write' => 'Community API Write Access',
 		];
 	}
 
