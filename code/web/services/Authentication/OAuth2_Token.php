@@ -32,7 +32,13 @@ class Authentication_OAuth2_Token extends JSON_Action {
 
 			// check for openid request
 			if (in_array('openid', $requestedScopes)) {
-				$response = $this->addIDTokenToResponse($response);
+				$grantType = $_POST['grant_type'] ?? '';
+				if (in_array($grantType, [
+					'authorization_code',
+					'refresh_token'
+				])) {
+					$response = $this->addIDTokenToResponse($response);
+				}
 			}
 
 			$this->sendPsr7Response($response);
@@ -88,28 +94,6 @@ class Authentication_OAuth2_Token extends JSON_Action {
 		return array_map('trim', $scopeArray);
 	}
 
-	private function getUserFromRequest(): ?array {
-		$username = $_POST['username'] ?? '';
-		$password = $_POST['password'] ?? '';
-
-		require_once ROOT_DIR . '/sys/Account/User.php';
-		$user = UserAccount::validateAccount($username, $password);
-
-		if ($user) {
-			return [
-				'id' => $user->id,
-				'username' => $user->username,
-				'email' => $user->email ?? '',
-				'firstName' => '',
-				'lastName' => '',
-				'homeLibrary' => $user->homeLibrary ?? null,
-				'source' => $user->source ?? 'ils',
-			];
-		}
-
-		return null;
-	}
-
 	private function getIssuer(): string {
 		$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
 		$host = $_SERVER['HTTP_HOST'];
@@ -127,14 +111,53 @@ class Authentication_OAuth2_Token extends JSON_Action {
 				return $response;
 			}
 
-			$clientId = $_POST['client_id'] ?? '';
-			$user = $this->getUserFromRequest();
-
-			if ($user) {
-				$issuer = $this->getIssuer();
-				$idToken = OAuth2ServerConfig::generateIDToken($user, $clientId, $issuer);
-				$body['id_token'] = $idToken;
+			$grantType = $_POST['grant_type'] ?? '';
+			if (!in_array($grantType, [
+				'authorization_code',
+				'refresh_token'
+			])) {
+				return $response;
 			}
+
+			$accessToken = $body['access_token'] ?? '';
+			if (empty($accessToken)) {
+				return $response;
+			}
+
+			$parts = explode('.', $accessToken);
+			if (count($parts) !== 3) {
+				return $response;
+			}
+
+			$payload = json_decode(base64_decode($parts[1]), true);
+			$userId = $payload['sub'] ?? null;
+			$clientId = $payload['aud'][0] ?? ($_POST['client_id'] ?? '');
+
+			if (!$userId) {
+				return $response;
+			}
+
+			require_once ROOT_DIR . '/sys/Account/User.php';
+			$user = new User();
+			$user->id = $userId;
+
+			if (!$user->find(true)) {
+				return $response;
+			}
+
+			$issuer = $this->getIssuer();
+			$userData = [
+				'id' => $user->id,
+				'username' => $user->username,
+				'email' => $user->email ?? '',
+				'firstName' => '',
+				'lastName' => '',
+				'homeLibrary' => $user->homeLibrary ?? null,
+				'source' => $user->source ?? 'ils',
+			];
+
+			$idToken = OAuth2ServerConfig::generateIDToken($userData, $clientId, $issuer);
+			$body['id_token'] = $idToken;
 
 			$newResponse = new SimpleResponse();
 			$newResponse->getBody()->write(json_encode($body));
@@ -150,6 +173,9 @@ class Authentication_OAuth2_Token extends JSON_Action {
 
 		} catch (Exception $e) {
 			// If ID token generation fails, return original response
+			if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
+				error_log("[OAuth2] Error adding ID token: " . $e->getMessage());
+			}
 			return $response;
 		}
 	}
