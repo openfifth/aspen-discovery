@@ -228,6 +228,13 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
         if ($redirectUri !== null && $authCodePayload->redirect_uri !== $redirectUri) {
             throw OAuthServerException::invalidRequest('redirect_uri', 'Invalid redirect URI');
         }
+
+		if (property_exists($authCodePayload, 'state') && $authCodePayload->state !== null) {
+			$requestState = $this->getRequestParameter('state', $request);
+			if ($requestState !== $authCodePayload->state) {
+				throw OAuthServerException::invalidRequest('state', 'State parameter mismatch');
+			}
+		}
     }
 
     /**
@@ -407,6 +414,7 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
                 'expire_time'           => (new DateTimeImmutable())->add($this->authCodeTTL)->getTimestamp(),
                 'code_challenge'        => $authorizationRequest->getCodeChallenge(),
                 'code_challenge_method' => $authorizationRequest->getCodeChallengeMethod(),
+				'state' => $authorizationRequest->getState(),
             ];
 
             $jsonPayload = json_encode($payload);
