@@ -133,9 +133,16 @@ class AuthCodeGrant extends AbstractAuthorizeGrant
             );
         }
 
-        if (isset($authCodePayload->code_challenge)) {
-            $this->validateCodeChallenge($authCodePayload, $codeVerifier);
-        }
+		if (isset($authCodePayload->code_challenge)) {
+			try {
+				$this->validateCodeChallenge($authCodePayload, $codeVerifier);
+			} catch (OAuthServerException $e) {
+				if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
+					error_log("[OAuth2] PKCE validation failed: " . $e->getMessage());
+				}
+				throw $e;
+			}
+		}
 
         // Issue and persist new access token
         $accessToken = $this->issueAccessToken($accessTokenTTL, $client, $authCodePayload->user_id, $scopes);
