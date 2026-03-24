@@ -41,7 +41,8 @@ class OpenIDConnectConfig {
 				'form_post',
 			],
 			'grant_types_supported' => [
-				'authorization_code'
+				'authorization_code',
+				'refresh_token',
 			],
 			'subject_types_supported' => ['public'],
 			'id_token_signing_alg_values_supported' => ['RS256'],
