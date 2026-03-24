@@ -846,6 +846,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 				'text' => 'Unable to checkout title',
 				'isPublicFacing' => true,
 			]),
+			'itemNotFound' => false,
 		];
 
 		require_once ROOT_DIR . '/sys/AspenLiDA/SelfCheckSetting.php';

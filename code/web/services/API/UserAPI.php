@@ -6251,6 +6251,8 @@ class UserAPI extends AbstractAPI {
 								'itemData' => $result['itemData'],
 								'completionMessage' => $result['completionMessage'] ?? '',
 								'mustConfirmCompletionMessage' => $result['mustConfirmCompletionMessage'] ?? false,
+								'itemNotFound' => $result['api']['itemNotFound'] ?? false,
+								'barcode' => $itemBarcode
 							];
 						} else {
 							return [
