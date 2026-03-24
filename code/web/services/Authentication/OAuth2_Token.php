@@ -15,7 +15,14 @@ class Authentication_OAuth2_Token extends JSON_Action {
 	 * @throws Exception
 	 */
 	function launch($method = null): void {
+		global $logger;
+		$logger->log("[OAuth2] OAuth2_Token - Starting token request processing", Logger::LOG_DEBUG);
+		$logger->log("[OAuth2] OAuth2_Token - REQUEST METHOD: " . $_SERVER['REQUEST_METHOD'], Logger::LOG_DEBUG);
+		$logger->log("[OAuth2] OAuth2_Token - Grant Type: " . ($_POST['grant_type'] ?? 'not_provided'), Logger::LOG_DEBUG);
+		$logger->log("[OAuth2] OAuth2_Token - Client ID: " . ($_POST['client_id'] ?? 'not_provided'), Logger::LOG_DEBUG);
+		
 		if (!OAuth2RateLimiter::enforce('token')) {
+			$logger->log("[OAuth2] OAuth2_Token - Rate limit enforced, aborting request", Logger::LOG_WARNING);
 			return;
 		}
 
@@ -24,26 +31,33 @@ class Authentication_OAuth2_Token extends JSON_Action {
 		$server = OAuth2ServerConfig::getAuthorizationServer();
 
 		try {
+			$logger->log("[OAuth2] OAuth2_Token - Creating PSR7 request and response objects", Logger::LOG_DEBUG);
 			$request = new SimpleServerRequest();
 			$response = new SimpleResponse();
 			$response = $server->respondToAccessTokenRequest($request, $response);
 
 			$requestedScopes = $this->getRequestedScopes();
+			$logger->log("[OAuth2] OAuth2_Token - Requested scopes: " . implode(', ', $requestedScopes), Logger::LOG_DEBUG);
 
 			// check for openid request
 			if (in_array('openid', $requestedScopes)) {
 				$grantType = $_POST['grant_type'] ?? '';
+				$logger->log("[OAuth2] OAuth2_Token - OpenID requested with grant_type: " . $grantType, Logger::LOG_DEBUG);
 				if (in_array($grantType, [
 					'authorization_code',
 					'refresh_token'
 				])) {
+					$logger->log("[OAuth2] OAuth2_Token - Adding ID token to response", Logger::LOG_DEBUG);
 					$response = $this->addIDTokenToResponse($response);
 				}
 			}
 
+			$logger->log("[OAuth2] OAuth2_Token - Token request successful, sending response", Logger::LOG_DEBUG);
 			$this->sendPsr7Response($response);
 
 		} catch (OAuthServerException $exception) {
+			$logger->log("[OAuth2] OAuth2_Token - OAuthServerException: " . $exception->getErrorType() . " - " . $exception->getMessage(), Logger::LOG_WARNING);
+			$logger->log("[OAuth2] OAuth2_Token - HTTP Status: " . $exception->getHttpStatusCode(), Logger::LOG_WARNING);
 			http_response_code($exception->getHttpStatusCode());
 			header('Content-Type: application/json');
 			
@@ -53,6 +67,7 @@ class Authentication_OAuth2_Token extends JSON_Action {
 			]));
 
 		} catch (Exception $exception) {
+			$logger->log("[OAuth2] OAuth2_Token - General Exception: " . $exception->getMessage(), Logger::LOG_ERROR);
 			http_response_code(500);
 			header('Content-Type: application/json');
 			echo json_encode([
@@ -104,6 +119,7 @@ class Authentication_OAuth2_Token extends JSON_Action {
 	 *  Add ID Token to the OAuth2 response for OpenID Connect
 	 */
 	private function addIDTokenToResponse(ResponseInterface $response) {
+		global $logger;
 		try {
 			$body = json_decode($response->getBody()->__toString(), true);
 
@@ -173,9 +189,7 @@ class Authentication_OAuth2_Token extends JSON_Action {
 
 		} catch (Exception $e) {
 			// If ID token generation fails, return original response
-			if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-				error_log("[OAuth2] Error adding ID token: " . $e->getMessage());
-			}
+			$logger->log("[OAuth2] Error adding ID token: " . $e->getMessage(), Logger::LOG_ERROR);
 			return $response;
 		}
 	}

@@ -34,16 +34,14 @@ class Authentication_OAuth2_Authorize extends Action {
 	 * @throws Exception
 	 */
 	function launch($method = null): void {
+		global $logger;
 		if (!OAuth2RateLimiter::enforce('auth')) {
 			return; // Rate limit response already sent
 		}
 
-		// DEBUG: Log incoming request (only if debug enabled)
-		if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-			error_log("[OAuth2] OAuth2_Authorize - REQUEST METHOD: " . $_SERVER['REQUEST_METHOD']);
-			error_log("[OAuth2] OAuth2_Authorize - GET params: " . json_encode($_GET));
-			error_log("[OAuth2] OAuth2_Authorize - POST params: " . json_encode($_POST));
-		}
+		$logger->log("[OAuth2] OAuth2_Authorize - REQUEST METHOD: " . $_SERVER['REQUEST_METHOD'], Logger::LOG_DEBUG);
+		$logger->log("[OAuth2] OAuth2_Authorize - GET params: " . json_encode($_GET), Logger::LOG_DEBUG);
+		$logger->log("[OAuth2] OAuth2_Authorize - POST params: " . json_encode($_POST), Logger::LOG_DEBUG);
 
 		OAuth2ServerConfig::generateKeyPairIfNeeded();
 		$this->server = OAuth2ServerConfig::getAuthorizationServer();
@@ -60,13 +58,13 @@ class Authentication_OAuth2_Authorize extends Action {
 			$this->displayLoginForm();
 
 		} catch (OAuthServerException $exception) {
-			error_log("[OAuth2] OAuthServerException caught: " . $exception->getErrorType() . " - " . $exception->getMessage());
-			error_log("[OAuth2] HTTP Status: " . $exception->getHttpStatusCode());
+			$logger->log("[OAuth2] OAuthServerException caught: " . $exception->getErrorType() . " - " . $exception->getMessage(), Logger::LOG_ERROR);
+			$logger->log("[OAuth2] HTTP Status: " . $exception->getHttpStatusCode(), Logger::LOG_ERROR);
 			$this->handleOAuthError($exception);
 
 		} catch (Exception $exception) {
-			error_log("[OAuth2] General Exception: " . $exception->getMessage());
-			error_log("[OAuth2] Trace: " . $exception->getTraceAsString());
+			$logger->log("[OAuth2] General Exception: " . $exception->getMessage(), Logger::LOG_ERROR);
+			$logger->log("[OAuth2] Trace: " . $exception->getTraceAsString(), Logger::LOG_ERROR);
 			$this->handleGeneralError($exception);
 		}
 	}
@@ -76,6 +74,7 @@ class Authentication_OAuth2_Authorize extends Action {
 	 * @throws Exception
 	 */
 	private function handleAuthorizationApproval($request): void {
+		global $logger;
 		try {
 			$this->authRequest = $this->server->validateAuthorizationRequest($request);
 
@@ -131,7 +130,7 @@ class Authentication_OAuth2_Authorize extends Action {
 			}
 
 		} catch (OAuthServerException $exception) {
-			error_log("[OAuth2] OAuthServerException in handleAuthorizationApproval: " . $exception->getErrorType());
+			$logger->log("[OAuth2] OAuthServerException in handleAuthorizationApproval: " . $exception->getErrorType(), Logger::LOG_ERROR);
 			$this->handleOAuthError($exception);
 		}
 	}

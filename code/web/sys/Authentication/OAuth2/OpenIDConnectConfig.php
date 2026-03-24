@@ -12,7 +12,10 @@ class OpenIDConnectConfig {
 	 * GET /.well-known/openid-configuration
 	 */
 	public static function getDiscoveryDocument(string $baseUrl): array {
-		return [
+		global $logger;
+		$logger->log("[OAuth2] OpenIDConnectConfig::getDiscoveryDocument() - Generating discovery document for base URL: " . $baseUrl, Logger::LOG_DEBUG);
+
+		$discovery = [
 			'issuer' => $baseUrl,
 			'authorization_endpoint' => $baseUrl . '/Authentication/OAuth2/Authorize',
 			'token_endpoint' => $baseUrl . '/Authentication/OAuth2/Token',
@@ -69,6 +72,10 @@ class OpenIDConnectConfig {
 			],
 			'service_documentation' => $baseUrl . '/documentation',
 		];
+
+		$logger->log("[OAuth2] OpenIDConnectConfig::getDiscoveryDocument() - Discovery document generated successfully", Logger::LOG_DEBUG);
+
+		return $discovery;
 	}
 
 	/**
@@ -76,7 +83,10 @@ class OpenIDConnectConfig {
 	 * ID Tokens contain user identity information
 	 */
 	public static function buildIDTokenClaims(array $user, string $clientId, string $issuedAt, string $issuer): array {
-		return [
+		global $logger;
+		$logger->log("[OAuth2] OpenIDConnectConfig::buildIDTokenClaims() - Building ID token claims for user: " . $user['id'] . ", client: " . $clientId . ", issuer: " . $issuer, Logger::LOG_DEBUG);
+
+		$claims = [
 			// Required OIDC Claims
 			'iss' => $issuer,
 			'sub' => (string)$user['id'],
@@ -112,6 +122,10 @@ class OpenIDConnectConfig {
 			'patron_type' => $user['patronType'] ?? null,
 			'source' => $user['source'] ?? null,
 		];
+
+		$logger->log("[OAuth2] OpenIDConnectConfig::buildIDTokenClaims() - ID token claims built successfully", Logger::LOG_DEBUG);
+
+		return $claims;
 	}
 
 	/**
@@ -119,7 +133,11 @@ class OpenIDConnectConfig {
 	 * Allows client applications to verify ID token signatures
 	 */
 	public static function getJWKS(string $publicKeyPath): array {
+		global $logger;
+		$logger->log("[OAuth2] OpenIDConnectConfig::getJWKS() - Loading JWKS from: " . $publicKeyPath, Logger::LOG_DEBUG);
+		
 		if (!file_exists($publicKeyPath)) {
+			$logger->log("[OAuth2] OpenIDConnectConfig::getJWKS() - WARNING: Public key file not found, returning empty JWKS", Logger::LOG_WARNING);
 			return ['keys' => []];
 		}
 
@@ -127,6 +145,7 @@ class OpenIDConnectConfig {
 		$keyDetails = openssl_pkey_get_details(openssl_pkey_get_public($publicKey));
 
 		if (!$keyDetails) {
+			$logger->log("[OAuth2] OpenIDConnectConfig::getJWKS() - ERROR: Could not extract key details from public key", Logger::LOG_ERROR);
 			return ['keys' => []];
 		}
 
@@ -135,7 +154,7 @@ class OpenIDConnectConfig {
 		$keyResource = openssl_pkey_get_public($publicKey);
 		$keyDetails = openssl_pkey_get_details($keyResource);
 
-		return [
+		$jwks = [
 			'keys' => [
 				[
 					'kty' => 'RSA',
@@ -147,6 +166,10 @@ class OpenIDConnectConfig {
 				],
 			],
 		];
+
+		$logger->log("[OAuth2] OpenIDConnectConfig::getJWKS() - JWKS loaded successfully with 1 key", Logger::LOG_DEBUG);
+
+		return $jwks;
 	}
 
 	private static function base64urlEncode($str): string {

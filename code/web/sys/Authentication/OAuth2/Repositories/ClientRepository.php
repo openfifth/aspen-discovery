@@ -10,23 +10,22 @@ require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2ClientEntity.
 class ClientRepository implements ClientRepositoryInterface {
 
 	public function getClientEntity($clientIdentifier): ?ClientEntityInterface {
+		global $logger;
 		$client = new OAuth2Client();
 		$client->setClientId($clientIdentifier);
 		$client->setIsActive(1);
 
 		// DEBUG: Log the lookup attempt
-		if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-			error_log("[OAuth2] ClientRepository::getClientEntity() - Looking for client_id: " . $clientIdentifier);
-		}
+		$logger->log("[OAuth2] ClientRepository::getClientEntity() - Looking for client_id: " . $clientIdentifier, Logger::LOG_DEBUG);
 		
 		if ($client->find(true)) {
-			if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-				error_log("[OAuth2] ClientRepository::getClientEntity() - FOUND client with ID: " . $client->getClientId());
-				error_log("[OAuth2] ClientRepository::getClientEntity() - Client name: " . $client->getName());
-				error_log("[OAuth2] ClientRepository::getClientEntity() - Client type: " . $client->client_type);
-				error_log("[OAuth2] ClientRepository::getClientEntity() - Redirect URI: " . (is_array($client->getRedirectUri()) ? json_encode($client->getRedirectUri()) : '"' . $client->getRedirectUri() . '"'));
-				error_log("[OAuth2] ClientRepository::getClientEntity() - Is Active: " . ($client->is_active ? '1' : '0'));
-			}
+			$logger->log("[OAuth2] ClientRepository::getClientEntity() - FOUND client with ID: " . $client->getClientId(), Logger::LOG_DEBUG);
+			$logger->log("[OAuth2] ClientRepository::getClientEntity() - Client name: " . $client->getName(), Logger::LOG_DEBUG);
+			$logger->log("[OAuth2] ClientRepository::getClientEntity() - Client type: " . $client->client_type, Logger::LOG_DEBUG);
+			$logger->log("[OAuth2] ClientRepository::getClientEntity() - Redirect URI: " . (is_array($client->getRedirectUri()) ? json_encode($client->getRedirectUri()) : '"' . $client->getRedirectUri() . '"'), Logger::LOG_DEBUG);
+			$logger->log("[OAuth2] ClientRepository::getClientEntity() - Is Active: " . ($client->is_active ? '1' : '0'), Logger::LOG_DEBUG);
+
+
 			$clientEntity = new OAuth2ClientEntity();
 			$clientEntity->setIdentifier($client->getClientId());
 			$clientEntity->setName($client->getName());
@@ -42,13 +41,12 @@ class ClientRepository implements ClientRepositoryInterface {
 		}
 
 		// DEBUG: Log lookup failure
-		if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-			error_log("[OAuth2] ClientRepository::getClientEntity() - CLIENT NOT FOUND for ID: " . $clientIdentifier);
-		}
+		$logger->log("[OAuth2] ClientRepository::getClientEntity() - CLIENT NOT FOUND for ID: " . $clientIdentifier, Logger::LOG_DEBUG);
 		return null;
 	}
 
 	public function validateClient($clientIdentifier, $clientSecret, $grantType): bool {
+		global $logger;
 		$client = new OAuth2Client();
 		$client->setClientId($clientIdentifier);
 		$client->setIsActive(1);
@@ -60,30 +58,22 @@ class ClientRepository implements ClientRepositoryInterface {
 
 			$storedSecret = $client->getClientSecret();
 
-			if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-				error_log("[OAuth2] ClientRepository::validateClient() - Validating client_id: " . $clientIdentifier . " for grant_type: " . $grantType);
-				error_log("[OAuth2] ClientRepository::validateClient() - Client found: " . $client->getName());
-				error_log("[OAuth2] ClientRepository::validateClient() - Comparing secrets...");
-			}
+			$logger->log("[OAuth2] ClientRepository::validateClient() - Validating client_id: " . $clientIdentifier . " for grant_type: " . $grantType, Logger::LOG_DEBUG);
+			$logger->log("[OAuth2] ClientRepository::validateClient() - Client found: " . $client->getName(), Logger::LOG_DEBUG);
+			$logger->log("[OAuth2] ClientRepository::validateClient() - Comparing secrets...", Logger::LOG_DEBUG);
 
 			if ($storedSecret === $clientSecret) {
-				if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-					error_log("[OAuth2] ClientRepository::validateClient() - ✓ Client secret validated");
-				}
+				$logger->log("[OAuth2] ClientRepository::validateClient() - Client secret found", Logger::LOG_DEBUG);
 				return true;
 			} else {
-				if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-					error_log("[OAuth2] ClientRepository::validateClient() - ✗ Client secret mismatch");
-					error_log("[OAuth2] ClientRepository::validateClient() - Stored (first 20 chars): " . substr($storedSecret, 0, 20));
-					error_log("[OAuth2] ClientRepository::validateClient() - Provided (first 20 chars): " . substr($clientSecret, 0, 20));
-				}
+				$logger->log("[OAuth2] ClientRepository::validateClient() - ✗ Client secret mismatch", Logger::LOG_DEBUG);
+				$logger->log("[OAuth2] ClientRepository::validateClient() - Stored (first 20 chars): " . substr($storedSecret, 0, 20), Logger::LOG_DEBUG);
+				$logger->log("[OAuth2] ClientRepository::validateClient() - Provided (first 20 chars): " . substr($clientSecret, 0, 20), Logger::LOG_DEBUG);
 				return false;
 			}
 		}
-
-		if (defined('OAUTH2_DEBUG') && OAUTH2_DEBUG) {
-			error_log("[OAuth2] ClientRepository::validateClient() - Client not found");
-		}
+		
+		$logger->log("[OAuth2] ClientRepository::validateClient() - Client not found", Logger::LOG_DEBUG);
 		return false;
 	}
 }

@@ -19,15 +19,22 @@ require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
 class Authentication_OAuth2_UserInfo extends JSON_Action {
 
 	function launch($method = null): void {
+		global $logger;
+		$logger->log("[OAuth2] OAuth2_UserInfo - Starting UserInfo endpoint request", Logger::LOG_DEBUG);
+		
 		// Require 'openid' scope for OIDC compliance
 		if (!OAuth2Middleware::authenticate(['openid'])) {
+			$logger->log("[OAuth2] OAuth2_UserInfo - Authentication failed or 'openid' scope missing", Logger::LOG_WARNING);
 			// Error response already sent by middleware
 			return;
 		}
 
+		$logger->log("[OAuth2] OAuth2_UserInfo - User authenticated successfully", Logger::LOG_DEBUG);
+
 		// Get authenticated user
 		$user = OAuth2Middleware::getAuthenticatedUser();
 		if (!$user) {
+			$logger->log("[OAuth2] OAuth2_UserInfo - User object not found after authentication", Logger::LOG_WARNING);
 			http_response_code(401);
 			header('Content-Type: application/json');
 			echo json_encode([
@@ -37,9 +44,14 @@ class Authentication_OAuth2_UserInfo extends JSON_Action {
 			return;
 		}
 
+		$logger->log("[OAuth2] OAuth2_UserInfo - User loaded: " . $user->id, Logger::LOG_DEBUG);
+
 		// Verify that the client has OpenID Connect support enabled
 		$clientId = OAuth2Middleware::getAuthenticatedClientId();
+		$logger->log("[OAuth2] OAuth2_UserInfo - Validating OpenID Connect support for client: " . ($clientId ?? 'none'), Logger::LOG_DEBUG);
+		
 		if (!$this->validateClientOpenIDSupport($clientId)) {
+			$logger->log("[OAuth2] OAuth2_UserInfo - Client does not support OpenID Connect: " . ($clientId ?? 'none'), Logger::LOG_WARNING);
 			http_response_code(403);
 			header('Content-Type: application/json');
 			echo json_encode([
@@ -49,9 +61,15 @@ class Authentication_OAuth2_UserInfo extends JSON_Action {
 			return;
 		}
 
+		$logger->log("[OAuth2] OAuth2_UserInfo - Client supports OpenID Connect", Logger::LOG_DEBUG);
+
 		// Build user info response based on scopes
 		$scopes = $this->getTokenScopes();
+		$logger->log("[OAuth2] OAuth2_UserInfo - Token scopes: " . implode(', ', $scopes), Logger::LOG_DEBUG);
+		
 		$userInfo = $this->buildUserInfo($user, $scopes);
+
+		$logger->log("[OAuth2] OAuth2_UserInfo - UserInfo response built successfully for user: " . $user->id, Logger::LOG_DEBUG);
 
 		header('Content-Type: application/json');
 		echo json_encode($userInfo);
@@ -61,7 +79,10 @@ class Authentication_OAuth2_UserInfo extends JSON_Action {
 	 * Validate that the client has OpenID Connect support enabled
 	 */
 	private function validateClientOpenIDSupport(?string $clientId): bool {
+		global $logger;
+		
 		if (!$clientId) {
+			$logger->log("[OAuth2] OAuth2_UserInfo::validateClientOpenIDSupport() - No client ID provided", Logger::LOG_WARNING);
 			return false;
 		}
 
@@ -69,8 +90,12 @@ class Authentication_OAuth2_UserInfo extends JSON_Action {
 		$client->setClientId($clientId);
 		
 		if (!$client->find(true)) {
+			$logger->log("[OAuth2] OAuth2_UserInfo::validateClientOpenIDSupport() - Client not found: " . $clientId, Logger::LOG_WARNING);
 			return false;
 		}
+
+		$logger->log("[OAuth2] OAuth2_UserInfo::validateClientOpenIDSupport() - Client found: " . $client->getName(), Logger::LOG_DEBUG);
+		$logger->log("[OAuth2] OAuth2_UserInfo::validateClientOpenIDSupport() - OpenID support enabled: " . ($client->supports_openid ? 'yes' : 'no'), Logger::LOG_DEBUG);
 
 		// Check if client has OpenID Connect support enabled
 		return (bool)$client->supports_openid;

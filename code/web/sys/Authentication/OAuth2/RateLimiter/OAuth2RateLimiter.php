@@ -32,6 +32,8 @@ class OAuth2RateLimiter {
 	 * @return array ['allowed' => bool, 'headers' => array, 'resetTime' => int]
 	 */
 	public static function checkRateLimit(string $endpoint, string $clientId = '', string $ipAddress = ''): array {
+		global $logger;
+		
 		// Get rate limit config for endpoint
 		$config = self::$rateLimits[$endpoint] ?? [
 			'requests' => 100,
@@ -48,6 +50,7 @@ class OAuth2RateLimiter {
 		$rateLimitRecord = OAuth2RateLimit::getRateLimitRecord($identifier, $anonIP, $endpoint);
 
 		if ($rateLimitRecord->isWindowExpired($config['window'])) {
+			$logger->log("[OAuth2] RateLimiter::checkRateLimit() - Rate limit window expired for identifier: " . $identifier . ", endpoint: " . $endpoint . ". Resetting window.", Logger::LOG_DEBUG);
 			$rateLimitRecord->resetWindow();
 		}
 
@@ -62,12 +65,14 @@ class OAuth2RateLimiter {
 		];
 
 		if ($rateLimitRecord->request_count >= $config['requests']) {
-			$headers['Retry-After'] = $resetTime - time();
+			$retryAfter = $resetTime - time();
+			$logger->log("[OAuth2] RateLimiter::checkRateLimit() - RATE LIMIT EXCEEDED for identifier: " . $identifier . ", endpoint: " . $endpoint . ", retry_after: " . $retryAfter . " seconds", Logger::LOG_WARNING);
+			$headers['Retry-After'] = $retryAfter;
 			return [
 				'allowed' => false,
 				'headers' => $headers,
 				'resetTime' => $resetTime,
-				'message' => "Rate limit exceeded. Try again in " . ($resetTime - time()) . " seconds."
+				'message' => "Rate limit exceeded. Try again in " . $retryAfter . " seconds."
 			];
 		}
 
@@ -115,12 +120,17 @@ class OAuth2RateLimiter {
 	 * @return bool True if request allowed, false if rate limited (response already sent)
 	 */
 	public static function enforce(string $endpoint, string $clientId = ''): bool {
+		global $logger;
 		$ipAddress = self::getClientIP();
+		
+		$logger->log("[OAuth2] RateLimiter::enforce() - Checking rate limit for endpoint: " . $endpoint . ", client_id: " . ($clientId ?: 'not_provided') . ", ip: " . self::anonymizeIP($ipAddress), Logger::LOG_DEBUG);
+		
 		$rateLimitResult = self::checkRateLimit($endpoint, $clientId, $ipAddress);
 
 		self::sendHeaders($rateLimitResult['headers']);
 
 		if (!$rateLimitResult['allowed']) {
+			$logger->log("[OAuth2] RateLimiter::enforce() - Rate limit enforced, sending 429 response", Logger::LOG_WARNING);
 			self::sendRateLimitResponse($rateLimitResult);
 			return false;
 		}
