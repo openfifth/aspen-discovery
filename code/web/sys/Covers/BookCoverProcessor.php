@@ -697,6 +697,17 @@ class BookCoverProcessor {
 						}
 					}
 				}
+
+				if ($marcField->getIndicator(1) == '7' && $marcField->getSubfield('3')) {
+					$subfield3 = trim($marcField->getSubfield('3')->getData());
+					if (stripos($subfield3, 'cover art') !== false || strcasecmp($subfield3, 'View cover art') == 0) {
+						if ($marcField->getSubfield('u')) {
+							if ($this->processImageURL('marcRecord', trim($marcField->getSubfield('u')->getData()))) {
+								return true;
+							}
+						}
+					}
+				}
 			}
 		}
 
