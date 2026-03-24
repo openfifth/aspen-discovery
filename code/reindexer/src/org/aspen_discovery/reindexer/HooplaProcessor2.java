@@ -121,11 +121,21 @@ class HooplaProcessor2 {
 				}
 				JSONObject rawResponse = new JSONObject(rawResponseString);
 
-				if (rawResponse.has("title")){
-					title = rawResponse.getString("title");
-				}
-				if (rawResponse.has("subtitle")){
-					subTitle = rawResponse.getString("subtitle");
+				if (rawResponse.has("seasonNumber")) {
+					if (rawResponse.has("seriesName")){
+						title = rawResponse.getString("seriesName");
+					}
+					title += " - Season " + rawResponse.get("seasonNumber").toString();
+					if (rawResponse.has("episodeNumber")) {
+						title += " Episode " + rawResponse.get("episodeNumber").toString();
+					}
+				}else {
+					if (rawResponse.has("title")) {
+						title = rawResponse.getString("title");
+					}
+					if (rawResponse.has("subtitle")) {
+						subTitle = rawResponse.getString("subtitle");
+					}
 				}
 
 				String fullTitle = title + " " + subTitle;
@@ -153,12 +163,11 @@ class HooplaProcessor2 {
 
 				if (!series.isEmpty()){
 					groupedWork.addSeries(series);
-					if (rawResponse.has("episodeNumber")) {
-						String volume = rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
-						groupedWork.addSeriesWithVolume(series, volume, 2, false);
-					}
 					if (rawResponse.has("seriesNumber")) {
 						String volume = rawResponse.optString("seriesNumber", rawResponse.optString("volume", ""));
+						if (rawResponse.has("episodeNumber") || rawResponse.has("episode")) {
+							volume += " Episode " + rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
+						}
 						groupedWork.addSeriesWithVolume(series, volume, 2, false);
 					}
 				}
