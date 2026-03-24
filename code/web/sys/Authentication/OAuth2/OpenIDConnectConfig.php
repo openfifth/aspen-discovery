@@ -18,7 +18,6 @@ class OpenIDConnectConfig {
 			'token_endpoint' => $baseUrl . '/Authentication/OAuth2/Token',
 			'userinfo_endpoint' => $baseUrl . '/Authentication/OAuth2/UserInfo',
 			'jwks_uri' => $baseUrl . '/.well-known/jwks.json',
-			'registration_endpoint' => $baseUrl . '/Authentication/OAuth2/Register',
 			// openid is required in scopes_supported
 			'scopes_supported' => [
 				'openid',
@@ -26,9 +25,6 @@ class OpenIDConnectConfig {
 				'email',
 				'address',
 				'phone',
-				'api:work:read',
-				'api:list:read',
-				'api:user:read',
 			],
 			'response_types_supported' => [
 				'code',
@@ -45,11 +41,7 @@ class OpenIDConnectConfig {
 				'form_post',
 			],
 			'grant_types_supported' => [
-				'authorization_code',
-				'implicit',
-				'refresh_token',
-				'password',
-				'client_credentials',
+				'authorization_code'
 			],
 			'subject_types_supported' => ['public'],
 			'id_token_signing_alg_values_supported' => ['RS256'],
