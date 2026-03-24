@@ -411,9 +411,8 @@ spl_autoload_register(function ($className) use ($oauth2ServerBaseDir, $dependen
 	return false;
 });
 
-// Clear any existing problematic EventDispatcher file and recreate it properly
 $problematicEventDispatcherFile = $dependenciesDir . 'league/event/src/EventDispatcher.php';
-if (file_exists($problematicEventDispatcherFile)) {
-	unlink($problematicEventDispatcherFile);
+@unlink($problematicEventDispatcherFile);
+if (function_exists('createLeagueEventClasses')) {
 	createLeagueEventClasses($dependenciesDir);
 }
