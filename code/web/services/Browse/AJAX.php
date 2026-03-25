@@ -1069,7 +1069,7 @@ class Browse_AJAX extends JSON_Action {
 		if ($pageToLoad == null) {
 			$pageToLoad = $_REQUEST['pageToLoad'];
 		}
-		if (!is_int($_REQUEST['pageToLoad'])) {
+		if (!filter_var($_REQUEST['pageToLoad'], FILTER_VALIDATE_INT)) {
 			return ['success' => false];
 		}
 		return $this->getBrowseCategoryResults($pageToLoad);
