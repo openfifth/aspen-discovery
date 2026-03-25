@@ -62,7 +62,7 @@ class Enrichment_LoralSettings extends ObjectEditor {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#third_party_enrichment', 'Third Party Enrichment');
-		$breadcrumbs[] = new Breadcrumb('/Enrichment/LoralSettings', 'Content Cafe Settings');
+		$breadcrumbs[] = new Breadcrumb('/Enrichment/LoralSettings', 'Loral Settings');
 		return $breadcrumbs;
 	}
 
