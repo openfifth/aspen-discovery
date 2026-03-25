@@ -11,7 +11,7 @@ abstract class DB_LibraryLinkedObject extends DataObject {
 		$selectedLibraries = $selectedFilters['libraries'];
 		$linkedLibraryIds = $this->getLinkedLibraryIds();
 		foreach ($selectedLibraries as $libraryId) {
-			if (in_array($libraryId, $linkedLibraryIds, true)) {
+			if (in_array((string)$libraryId, $linkedLibraryIds, true)) {
 				$okToExport = true;
 				break;
 			}
@@ -42,9 +42,9 @@ abstract class DB_LibraryLinkedObject extends DataObject {
 		foreach ($libraries as $key => $value) {
 			if (is_array($value)) {
 				// checkboxWithOptions format: libraryId => [options]
-				$libraryIds[] = $key;
+				$libraryIds[] = (string)$key;
 			} else {
-				$libraryIds[] = $value;
+				$libraryIds[] = (string)$value;
 			}
 		}
 		return $libraryIds;
