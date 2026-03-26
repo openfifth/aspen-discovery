@@ -18,9 +18,27 @@ function getUpdates26_04_00(): array {
 		//mark n
 
 		//kirstien
-
+		'list_transfer_permission' => [
+			'title' => 'Add list transfer permission',
+			'description' => 'Create permission for allowing transfer of list ownership.',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES
+					('User Lists', 'Transfer Lists', '', 6, 'Allows the user to transfer a list to another staff.')
+				",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Transfer Lists'))",
+			],
+		],
+		//list_transfer_permission
 
 		//kodi
+		'bypass_aspen_cloudsource_page' => [
+			'title' => 'Add Option to Bypass Aspen CloudSource Record Page',
+			'description' => 'Add option in cloudsource settings to bypass aspen cloudsource record pages',
+			'sql' => [
+				"ALTER TABLE cloudsource_setting ADD COLUMN bypassAspenCloudSourcePage TINYINT(1) DEFAULT 0"
+			]
+		], //bypass_aspen_cloudsource_page
 
 		//yanjun
 
@@ -29,6 +47,14 @@ function getUpdates26_04_00(): array {
 		//galen
 
 		//chloe
+		'update_aspenEventsToInclude_default' => [
+			'title' => 'Update AspenEventsToInclude Default',
+			'description' => 'Have aspenEventsToInclude default to 0 (do not display events as a search source)',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library MODIFY COLUMN aspenEventsToInclude INT DEFAULT 0",
+			],
+		], //update_aspenEventsToInclude_default
 
 		//mark j
 		'add_pageViewsFromPlacard_to_web_builder_resource_usage' => [
