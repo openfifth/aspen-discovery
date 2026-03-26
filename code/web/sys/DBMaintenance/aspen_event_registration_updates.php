@@ -22,7 +22,7 @@ function getAspenEventRegistrationUpdates() {
 				'CREATE TABLE IF NOT EXISTS aspen_event_settings (
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					name VARCHAR(100) NOT NULL UNIQUE,
-    				registrationModalBody mediumtext
+					registrationModalBody mediumtext
 				) ENGINE = INNODB',
 			],
 		], // create_aspen_event_settings_table
