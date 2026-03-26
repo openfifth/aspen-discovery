@@ -489,30 +489,44 @@ AspenDiscovery.CommunityEngagement = function() {
 			const resultsDiv = document.getElementById('user_search_results');
 			const hiddenInput = document.getElementById('selected_user_id');
 
+			// 1. Clear the debounce timer
+			clearTimeout(this.searchTimer);
+
+			// 2. Abort any existing AJAX request
+			if (this.currentSearchRequest) {
+				this.currentSearchRequest.abort();
+			}
+
 			if (query.length < 2) {
 				resultsDiv.style.display = 'none';
 				hiddenInput.value = '';
 				return;
 			}
 
-			hiddenInput.value = '';
-			const url = Globals.path + '/CommunityEngagement/AJAX';
-			const params = {
-				method: 'searchUsers',
-				query: query
-			};
+			// 3. Set the debounce timer (300ms)
+			this.searchTimer = setTimeout(() => {
+				hiddenInput.value = '';
+				const url = Globals.path + '/CommunityEngagement/AJAX';
+				const params = {
+					method: 'searchUsers',
+					query: query
+				};
 
-			$.getJSON(url, params, function(data) {
-				if (data.success) {
-					AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
-				} else {
-					resultsDiv.style.display = 'none';
-					console.warn('No users found or error in AJAX call');
-				}
-			}).fail(function(jqXHR, textStatus, errorThrown) {
-				console.error('AJAX Error: ', textStatus, errorThrown);
-			});
-		},
+				// 4. Store the AJAX object to allow aborting
+				this.currentSearchRequest = $.getJSON(url, params, function(data) {
+					if (data.success) {
+						AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
+					} else {
+						resultsDiv.style.display = 'none';
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					// Ignore manual aborts, log real errors
+					if (textStatus !== 'abort') {
+						console.error('AJAX Error: ', textStatus, errorThrown);
+					}
+				});
+			}, 300);
+        },
 		loadCheckoutsForUser: function(userId, callback) {
 			let url = Globals.path + "/MyAccount/AJAX";
 			var params = {
