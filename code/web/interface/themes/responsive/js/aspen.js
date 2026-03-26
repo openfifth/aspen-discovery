@@ -21960,23 +21960,6 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 			
 		},
-		getLibraryUsers: function (callback) {
-			var url = Globals.path + "/CommunityEngagement/AJAX";
-			var params = {
-				method: 'getLibraryUsers',
-			};
-
-			$.getJSON(url, params, function (data) {
-				if (data.success && data.users) {
-					callback(data.users);
-				} else{
-					callback([]);
-				}
-			}).fail (function(jqXHR, textStatus, errorThrown) {
-				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
-				callback([]);
-			});
-		},
 		displaySearchResults: function (users) {
 			const resultsDiv = document.getElementById('user_search_results');
 
@@ -22249,17 +22232,6 @@ AspenDiscovery.CommunityEngagement = function() {
 				success: function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.message);
-						AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
-							if ($('#user_id').length > 0) {
-								const $dropdown = $('#user_id');
-								const currentValue = $dropdown.val();
-								$dropdown.empty().append('<option value="">-</option>');
-								users.forEach(function(user) {
-									const selected = user.id == currentValue ? 'selected' : '';
-									$dropdown.append(`<option value="${user.id}" ${selected}>${user.displayName}</option>`);
-								});
-							}
-						});
 						$('#addUserByBarcodeModal').modal('hide');
 						$('#newUserBarcode').val('');
 					} else {
