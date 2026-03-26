@@ -908,7 +908,22 @@ public class RecordGroupingProcessor {
 			}
 		}
 		if (activeLanguage == null || activeLanguage.equals("|||") || activeLanguage.equals("   ") || activeLanguage.contains(" ")){
-			activeLanguage = "unk";
+			String secondaryLanguageField = "041a";
+			activeLanguage = null;
+			languages = MarcUtil.getFieldList(marcRecord, secondaryLanguageField);
+			for (String language : languages){
+				if (activeLanguage == null){
+					activeLanguage = language;
+				}else{
+					if (!activeLanguage.equals(language)){
+						activeLanguage = "mul";
+						break;
+					}
+				}
+			}
+			if (activeLanguage == null) {
+				activeLanguage = "unk";
+			}
 		}
 		return activeLanguage;
 	}
