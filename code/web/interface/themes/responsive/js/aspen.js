@@ -22002,6 +22002,10 @@ AspenDiscovery.CommunityEngagement = function() {
 
 			// 3. Set the debounce timer (300ms)
 			this.searchTimer = setTimeout(() => {
+
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: #666;">Searching...</div>';
+                resultsDiv.style.display = 'block';
+
 				hiddenInput.value = '';
 				const url = Globals.path + '/CommunityEngagement/AJAX';
 				const params = {
