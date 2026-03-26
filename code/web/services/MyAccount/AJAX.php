@@ -8305,13 +8305,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$result = [
 			'success' => false,
 		];
-		if (!UserAccount::isLoggedIn()) {
-			$result['message'] = translate([
-				'text' => 'You must be logged in to check event registration.',
-				'isPublicFacing' => true,
-			]);
-			return $result;
-		}
+		$this->requireLoggedInUser(null, 'You must be logged in to check event registration.');
 		$eventSourceId = $_REQUEST['eventSourceId'];
 		$eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $eventSourceId);
 		$userId = $_REQUEST['userId'];
@@ -8531,13 +8525,7 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		if (!UserAccount::isLoggedIn()) {
-			$result['message'] = translate([
-				'text' => 'You must be logged in to register for events.',
-				'isPublicFacing' => true,
-			]);
-			return $result;
-		}
+		$this->requireLoggedInUser(null, 'You must be logged in to register for events.');
 
 		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
