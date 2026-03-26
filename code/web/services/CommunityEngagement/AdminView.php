@@ -31,10 +31,6 @@ class CommunityEngagement_AdminView extends Admin_Dashboard {
 		$upcomingCampaigns = $campaign->getUpcomingCampaigns();
 		$interface->assign('upcomingCampaigns', $upcomingCampaigns);
 
-		$campaignAjax = new CommunityEngagement_AJAX();
-		$users = $campaignAjax->fetchLibraryUsers();
-		$interface->assign('users', $users);
-
 		$userCampaigns = [];
 		$campaignMilestonesMap = [];
 		$userCampaignMilestones = [];

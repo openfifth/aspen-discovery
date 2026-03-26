@@ -64,6 +64,15 @@ function getUpdates26_04_00(): array {
 			]
 		], //migrate_event_field_select_values_to_codes
 
+		//pedro
+		'drop_control_display_of_user_dropdown_in_community_engagement_admin_view' => [
+			'title' => 'Drop Control User Select Type in Admin View',
+			'description' => 'Drop options for how to select users in the admin view  (only search exists now)',
+			'sql' => [
+				"ALTER TABLE library DROP COLUMN communityEngagementAdminUserSelect",
+			],
+		], //control_display_of_user_dropdown_in_community_engagement_admin_view
+
 		//mark j
 		'add_pageViewsFromPlacard_to_web_builder_resource_usage' => [
 			'title' => 'Track web resource page views from a placard',

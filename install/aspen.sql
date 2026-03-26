@@ -3116,7 +3116,6 @@ CREATE TABLE `library` (
   `logSelfRegistrations` tinyint(1) DEFAULT 0,
   `showYouMightAlsoLike` tinyint(1) DEFAULT 1,
   `allowMaterialRequestsBranchChoice` tinyint(1) DEFAULT 0,
-  `communityEngagementAdminUserSelect` varchar(20) DEFAULT 'dropdown',
   `displayOnlyUsersForLocationInUserAdmin` tinyint(1) DEFAULT 0,
   `allowAdminToEnrollUsersInAdminView` tinyint(1) DEFAULT 0,
   `displayDigitalRewardOnlyWhenAwarded` tinyint(1) DEFAULT 0,
