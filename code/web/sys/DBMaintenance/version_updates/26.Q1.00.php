@@ -68,5 +68,13 @@ function getUpdates26_Q1_00(): array {
 				"ALTER TABLE library MODIFY COLUMN aspenEventsToInclude INT DEFAULT 0",
 			],
 		], //update_aspenEventsToInclude_default
+		'migrate_sendgrid_url_to_settings' => [
+			'title' => 'Migrate SendGrid URL to Settings',
+			'description' => 'The URL for sendGrid should be customisable as it is region specific',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE sendgrid_settings ADD COLUMN baseUrl VARCHAR(255) DEFAULT null",
+			],
+		], //migrate_sendgrid_url_to_settings
 	];
 }
