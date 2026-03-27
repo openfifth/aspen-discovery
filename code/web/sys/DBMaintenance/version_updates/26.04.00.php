@@ -63,6 +63,14 @@ function getUpdates26_04_00(): array {
 				'migrateEventFieldSelectValuesToCamelCase',
 			]
 		], //migrate_event_field_select_values_to_codes
+		'migrate_sendgrid_url_to_settings' => [
+			'title' => 'Migrate SendGrid URL to Settings',
+			'description' => 'The URL for sendGrid should be customisable as it is region specific',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE sendgrid_settings ADD COLUMN baseUrl VARCHAR(255) DEFAULT null",
+			],
+		], //migrate_sendgrid_url_to_settings
 
 		//mark j
 		'add_pageViewsFromPlacard_to_web_builder_resource_usage' => [
