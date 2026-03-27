@@ -23,5 +23,13 @@ function getUpdates25_Q4_00(): array {
 				"ALTER TABLE grapes_web_builder MODIFY cssData LONGTEXT",
 			]
 		], //change_data_types_for_grapes_js_columns
+		'migrate_sendgrid_url_to_settings' => [
+			'title' => 'Migrate SendGrid URL to Settings',
+			'description' => 'The URL for sendGrid should be customisable as it is region specific',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE sendgrid_settings ADD COLUMN baseUrl VARCHAR(255) DEFAULT null",
+			],
+		], //migrate_sendgrid_url_to_settings
 	];
 }
