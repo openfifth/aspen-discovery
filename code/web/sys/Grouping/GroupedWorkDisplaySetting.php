@@ -47,6 +47,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 
 	// Faceting
 	public $includeAllRecordsInShelvingFacets;
+	public $includeEContentInShelvingLocations;
 	public $includeAllRecordsInDateAddedFacets;
 	public $facetCountsToShow;
 	public $facetGroupId;
