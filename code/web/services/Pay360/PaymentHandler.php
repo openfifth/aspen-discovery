@@ -6,6 +6,9 @@ class Pay360_PaymentHandler {
 
 	public static function validateRequest(): ?array {
 		global $configArray;
+		if (!UserAccount::isLoggedIn()) {
+			return null;
+		}
 
 		if (
 			!isset($_REQUEST['paymentId']) ||
