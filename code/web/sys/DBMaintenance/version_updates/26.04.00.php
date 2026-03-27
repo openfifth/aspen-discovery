@@ -32,6 +32,13 @@ function getUpdates26_04_00(): array {
 		//list_transfer_permission
 
 		//kodi
+		'include_econtent_in_shelf_locations_facet' => [
+			'title' => 'Add Setting for Including/Excluding eContent in Shelf Locations Facet',
+			'description' => 'Add Setting for Including/Excluding eContent in Shelf Locations Facet',
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN includeEContentInShelvingLocations TINYINT(1) DEFAULT 1"
+			]
+		], //include_econtent_in_shelf_locations_facet
 		'bypass_aspen_cloudsource_page' => [
 			'title' => 'Add Option to Bypass Aspen CloudSource Record Page',
 			'description' => 'Add option in cloudsource settings to bypass aspen cloudsource record pages',
