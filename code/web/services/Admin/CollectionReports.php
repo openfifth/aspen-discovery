@@ -85,7 +85,7 @@ class Admin_CollectionReports extends Admin_Admin {
 		//Get Format Table Data
 		global $aspen_db;
 		$query = $aspen_db->query("SELECT format, source, count(*) AS numRecords FROM grouped_work_records 
-    			INNER JOIN indexed_record_source on sourceId = indexed_record_source.id 
+				INNER JOIN indexed_record_source on sourceId = indexed_record_source.id 
 				INNER JOIN indexed_format on formatId = indexed_format.id 
 				GROUP BY formatId, sourceId;", PDO::FETCH_ASSOC);
 		$formatTableData = $query->fetchAll();
