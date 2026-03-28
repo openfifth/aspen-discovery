@@ -1310,6 +1310,9 @@ class SearchAPI extends AbstractAPI {
 		$isLiDA = $this->checkIfLiDA();
 		$textId = $this->getTextId($textId);
 		$user = $this->getUserForApiCall();
+		if (empty($user)) {
+			$user = UserAccount::getLoggedInUser();
+		}
 		$key = $isLiDA ? 'records' : 'initialResults';
 		$curCount = 1;
 		if (!empty($textId)) {
