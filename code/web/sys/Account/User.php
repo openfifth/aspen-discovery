@@ -165,6 +165,8 @@ class User extends DataObject {
 	public $holdSortUnavailable;
 	public $checkoutSort;
 
+	public $allowAppRequestLogging;
+
 	private static int $CIRCULATION_CACHE_TIMEOUT = 300; // 5 minutes
 
 	public static $lidaToAspenCheckoutSortMapping = [
@@ -1741,6 +1743,8 @@ class User extends DataObject {
 				$this->setRememberHoldPromptForEdition($_POST['rememberHoldPromptForEdition']);
 			}
 		}
+
+		$this->__set('allowAppRequestLogging', (isset($_POST['allowAppRequestLogging']) && $_POST['allowAppRequestLogging'] == 'on') ? 1 : 0);
 
 		$saveResult = $this->update();
 		if ($saveResult === false) {
@@ -4949,7 +4953,7 @@ class User extends DataObject {
 
 
 		$sections['support'] = new AdminSection('Aspen Discovery Support');
-		$sections['support']->addAction(new AdminAction('Help Center', 'View the Help Center for Aspen Discovery.', 'https://help.aspendiscovery.org'), true);
+		$sections['support']->addAction(new AdminAction('Help Center', 'View the Help Center for Aspen Discovery.', 'https://aspen-discovery.atlassian.net/wiki/spaces/Help/overview'), true);
 		$sections['support']->addAction(new AdminAction('API Documentation', 'View available OpenAPI specifications for Aspen Discovery APIs.', '/API/Documentation'), true);
 		$sections['support']->addAction(new AdminAction('Release Notes', 'View release notes for Aspen Discovery which contain information about new functionality and fixes for each release.', '/Admin/ReleaseNotes'), true);
 
