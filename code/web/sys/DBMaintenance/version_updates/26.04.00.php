@@ -152,7 +152,7 @@ function getUpdates26_04_00(): array {
 			'description' => 'Modifies the pageSize column to allow the value "all"',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE user_page_defaults MODIFY COLUMN pageSize VARCHAR(10) NULL',
+				'ALTER TABLE user_page_defaults CHANGE COLUMN pageSize pageSize VARCHAR(10) NULL',
 			],
 		], //change_user_page_defaults.pageSize_to_varchar
 
