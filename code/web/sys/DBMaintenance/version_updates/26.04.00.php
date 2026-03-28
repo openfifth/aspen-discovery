@@ -18,6 +18,33 @@ function getUpdates26_04_00(): array {
 		//mark n
 
 		//kirstien
+		'add_user_app_request_logging_option' => [
+			'title' => 'Add LiDA Request Logging Option for Users',
+			'description' => 'Add option to log a users LiDA API requests for debugging',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN allowAppRequestLogging TINYINT(1) NOT NULL DEFAULT 0',
+			]
+		],
+		//add_user_app_request_logging_option
+		'add_user_app_request_log' => [
+			'title' => 'Add LiDA Request Log for Users',
+			'description' => 'Add logging for users who have enabled allow API logging for LiDA requests',
+			'continueOnError' => false,
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS user_app_request_log (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+					userId INT NOT NULL, 
+					action VARCHAR(25), 
+					method VARCHAR(25), 
+					queryString TEXT NOT NULL,
+					version VARCHAR(255),
+					time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+				) ENGINE = InnoDB'
+			]
+		],
+		//add_user_app_request_log
+
 		'list_transfer_permission' => [
 			'title' => 'Add list transfer permission',
 			'description' => 'Create permission for allowing transfer of list ownership.',
