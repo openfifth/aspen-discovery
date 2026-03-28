@@ -355,8 +355,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 										//7) Do a status check to make sure we don't place a hold on something that will be slow to come in
 										$statusA = $a->getStatusRanking();
 										$statusB = $b->getStatusRanking();
-										//Status rankings should be between 4 (checked out and 1 currently available), we prefer the highest but could groups some
-										$statusComparison = $statusA <=> $statusB;
+										//Status rankings should be between 4 (checked out and 1 currently available), we prefer the highest but could group some
+										$statusComparison = $statusB <=> $statusA;
 										if ($statusComparison == 0) {
 											//8) All else being equal, sort by hold ratio
 											if ($a->getHoldRatio() == $b->getHoldRatio()) {
@@ -374,7 +374,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 												return 1;
 											}
 										}else{
-											return !$statusComparison;
+											return $statusComparison;
 										}
 									} else {
 										return $localItemComparisonResult;
@@ -2772,9 +2772,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		return null;
 	}
 
-	public function getAlternateTitles() {
+	public function getAlternateTitles() : ?array {
 		//Load alternate titles
-		if (UserAccount::userHasPermission('Set Grouped Work Display Information')) {
+		if (UserAccount::userHasPermission('Manually Group and Ungroup Works')) {
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkAlternateTitle.php';
 			$alternateTitle = new GroupedWorkAlternateTitle();
 			$permanentId = $this->getPermanentId();

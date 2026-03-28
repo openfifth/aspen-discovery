@@ -1,28 +1,14 @@
 <?php
 
-require_once ROOT_DIR . '/Action.php';
+require_once ROOT_DIR . '/JSON_Action.php';
 
-class AJAX extends Action {
+class AJAX extends JSON_Action {
 
-	function launch() {
-		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
-		if (method_exists($this, $method)) {
-			header('Content-type: application/json');
-			header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
-			header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
-
-			$result = $this->$method();
-			echo json_encode($result);
-		} else {
-			$output = json_encode(['error' => 'invalid_method']);
-			echo $output;
-		}
-	}
 
 	// Email Search Results
 
 	/** @noinspection PhpUnused */
-	function sendEmail() {
+	function sendEmail() : array {
 		global $interface;
 
 		$subject = translate([
@@ -31,9 +17,9 @@ class AJAX extends Action {
 		]);
 		$url = $_REQUEST['sourceUrl'];
 		$to = $_REQUEST['to'];
-		$from = isset($_REQUEST['from']) ? $_REQUEST['from'] : '';
+		$from = $_REQUEST['from'] ?? '';
 		$message = $_REQUEST['message'];
-		if (strpos($message, 'http') === false && strpos($message, 'mailto') === false && $message == strip_tags($message)) {
+		if (!str_contains($message, 'http') && !str_contains($message, 'mailto') && $message == strip_tags($message)) {
 			$interface->assign('message', $message);
 			$interface->assign('msgUrl', $url);
 			$interface->assign('from', $from);
@@ -47,11 +33,6 @@ class AJAX extends Action {
 				$result = [
 					'result' => true,
 					'message' => 'Your email was sent successfully.',
-				];
-			} elseif (($emailResult instanceof AspenError)) {
-				$result = [
-					'result' => false,
-					'message' => "Your email message could not be sent: {$emailResult->getMessage()}.",
 				];
 			} else {
 				$result = [
@@ -70,17 +51,17 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getAutoSuggestList() {
+	function getAutoSuggestList() : array {
 		require_once ROOT_DIR . '/sys/SearchSuggestions.php';
 		global $timer;
 		global $configArray;
 		global $memCache;
-		$searchTerm = isset($_REQUEST['searchTerm']) ? $_REQUEST['searchTerm'] : $_REQUEST['q'];
-		$searchIndex = isset($_REQUEST['searchIndex']) ? $_REQUEST['searchIndex'] : '';
+		$searchTerm = $_REQUEST['searchTerm'] ?? $_REQUEST['q'];
+		$searchIndex = $_REQUEST['searchIndex'] ?? '';
 		$searchSource = !empty($_REQUEST['searchSource']) ? $_REQUEST['searchSource'] : '';
 		$cacheKey = 'auto_suggest_list_' . urlencode($searchSource) . '_' . urlencode($searchIndex) . '_' . urlencode($searchTerm);
 		$searchSuggestions = $memCache->get($cacheKey);
-		if ($searchSuggestions == false || isset($_REQUEST['reload'])) {
+		if ($searchSuggestions === false || isset($_REQUEST['reload'])) {
 			$suggestions = new SearchSuggestions();
 			$commonSearches = $suggestions->getAllSuggestions($searchTerm, $searchIndex, $searchSource);
 			$commonSearchTerms = [];
@@ -100,12 +81,17 @@ class AJAX extends Action {
 			$searchSuggestions = $commonSearchTerms;
 			$memCache->set($cacheKey, $searchSuggestions, $configArray['Caching']['search_suggestions']);
 			$timer->logTime("Loaded search suggestions $cacheKey");
+		}else{
+			$searchSuggestions = [];
 		}
-		return $searchSuggestions;
+		return [
+			'success' => true,
+			'suggestions' => $searchSuggestions
+		];
 	}
 
 	/** @noinspection PhpUnused */
-	function getInnReachResults() {
+	function getInnReachResults() : array {
 		$innReachSavedSearchId = $_GET['innReachSavedSearchId'];
 
 		require_once ROOT_DIR . '/sys/InterLibraryLoan/InnReach.php';
@@ -145,12 +131,11 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getShareItResults() {
+	function getShareItResults() : array {
 		$shareItSavedSearchId = $_GET['shareItSavedSearchId'];
 
 		require_once ROOT_DIR . '/sys/InterLibraryLoan/ShareIt.php';
 		global $interface;
-		global $library;
 		global $timer;
 
 		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
@@ -183,10 +168,10 @@ class AJAX extends Action {
 	 * @return array data representing the list information
 	 */
 	/** @noinspection PhpUnused */
-	function getListTitles() {
+	function getListTitles() : array {
 		global $timer;
 
-		$listName = strip_tags(isset($_GET['scrollerName']) ? $_GET['scrollerName'] : 'List' . $_GET['id']);
+		$listName = strip_tags($_GET['scrollerName'] ?? 'List' . $_GET['id']);
 
 		//Determine the caching parameters
 		require_once(ROOT_DIR . '/services/API/ListAPI.php');
@@ -198,16 +183,16 @@ class AJAX extends Action {
 		$showRatings = isset($_REQUEST['showRatings']) && $_REQUEST['showRatings'];
 		$interface->assign('showRatings', $showRatings); // overwrite values that come from library settings
 
-		$numTitlesToShow = isset($_REQUEST['numTitlesToShow']) ? $_REQUEST['numTitlesToShow'] : 25;
+		$numTitlesToShow = $_REQUEST['numTitlesToShow'] ?? 25;
 
 		$titles = $listAPI->getListTitles(null, $numTitlesToShow);
 		$timer->logTime("getListTitles");
-		if ($titles['success'] == true) {
+		if ($titles['success']) {
 			$titles = $titles['titles'];
 			if (is_array($titles)) {
 				foreach ($titles as $key => $rawData) {
 					$interface->assign('key', $key);
-					// 20131206 James Staub: bookTitle is in the list API and it removes the final front slash, but I didn't get $rawData['bookTitle'] to load
+					// 20131206 James Staub: bookTitle is in the list API, and it removes the final front slash, but I didn't get $rawData['bookTitle'] to load
 
 					$titleShort = preg_replace([
 						'/:.*?$/',
@@ -221,9 +206,9 @@ class AJAX extends Action {
 
 					$interface->assign('title', $titleShort);
 					$interface->assign('author', $rawData['author']);
-					$interface->assign('description', isset($rawData['description']) ? $rawData['description'] : null);
-					$interface->assign('length', isset($rawData['length']) ? $rawData['length'] : null);
-					$interface->assign('publisher', isset($rawData['publisher']) ? $rawData['publisher'] : null);
+					$interface->assign('description', $rawData['description'] ?? null);
+					$interface->assign('length', $rawData['length'] ?? null);
+					$interface->assign('publisher', $rawData['publisher'] ?? null);
 					$interface->assign('shortId', $rawData['shortId']);
 					$interface->assign('id', $rawData['id']);
 					$interface->assign('titleURL', $rawData['titleURL']);
@@ -255,7 +240,7 @@ class AJAX extends Action {
 			];
 			if ($titles['message']) {
 				$listData['error'] = $titles['message'];
-			} // send error message to javascript
+			} // send error message to JavaScript
 		}
 
 		return $listData;
@@ -323,7 +308,12 @@ class AJAX extends Action {
 
 				$result['listTitle'] = $collectionSpotlightList->name;
 				$result['listDescription'] = '';
-				$result['titles'] = $searchObject->getSpotlightResults($collectionSpotlight);
+				if (method_exists($searchObject, 'getSpotlightResults')) {
+					$result['titles'] = $searchObject->getSpotlightResults($collectionSpotlight);
+				}else{
+					$result['titles'] = [];
+				}
+
 				$currentIndex = 0;
 				$result['currentIndex'] = $currentIndex;
 			}
@@ -337,7 +327,7 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getEmailForm() {
+	function getEmailForm() : array {
 		global $interface;
 		return [
 			'title' => translate([
@@ -353,7 +343,7 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getDplaResults() {
+	function getDplaResults() : array {
 		require_once ROOT_DIR . '/sys/SearchObject/DPLA.php';
 		$dpla = new DPLA();
 		$searchTerm = $_REQUEST['searchTerm'];
@@ -377,7 +367,7 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getMoreSearchResults($displayMode = 'covers') {
+	function getMoreSearchResults($displayMode = 'covers') : array {
 		// Called Only for Covers mode //
 		$success = true; // set to false on error
 
@@ -388,7 +378,7 @@ class AJAX extends Action {
 		/** @var string $searchSource */
 		$searchSource = !empty($_REQUEST['searchSource']) ? $_REQUEST['searchSource'] : 'local';
 
-		// Initialise from the current search globals
+		// Initialize from the current search globals
 		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
 		$searchObject = SearchObjectFactory::initSearchObject();
 		$searchObject->init($searchSource);
@@ -413,7 +403,6 @@ class AJAX extends Action {
 		global $library;
 		/** @var Location $locationSingleton */ global $locationSingleton;
 		$activeLocation = $locationSingleton->getActiveLocation();
-		$browseCategoryRatingsMode = null;
 		if ($activeLocation != null) {
 			$browseCategoryRatingsMode = $activeLocation->getBrowseCategoryGroup()->browseCategoryRatingsMode;
 		} else {
@@ -439,7 +428,7 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function loadExploreMoreBar() {
+	function loadExploreMoreBar() : array {
 		global $interface;
 
 		$section = $_REQUEST['section'];
@@ -564,7 +553,55 @@ class AJAX extends Action {
 		return $response;
 	}
 
-	function getSearchIndexes() {
+	/** @noinspection PhpUnused */
+	function clearAllLockedFacets(): array {
+		$response = [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Unknown Error',
+				'isPublicFacing' => true,
+			]),
+		];
+
+		$searchObject = SearchObjectFactory::initSearchObject();
+		/** @var SearchObject_BaseSearcher|null $activeSearch */
+		$activeSearch = $searchObject->loadLastSearch();
+		if ($activeSearch === null) {
+			$response['message'] = 'Could not load search for which to clear locked filters.';
+			return $response;
+		}
+		$lockSection = $activeSearch->getSearchName();
+		$isLoggedIn = UserAccount::isLoggedIn();
+		$user = $isLoggedIn ? UserAccount::getActiveUserObj() : null;
+
+		if ($isLoggedIn) {
+			$lockedFacets = !empty($user->lockedFacets) ? json_decode($user->lockedFacets, true) : [];
+		} else {
+			$lockedFacets = $_SESSION['lockedFilters'] ?? [];
+		}
+
+		// Nothing to clear for this search type.
+		if (!isset($lockedFacets[$lockSection])) {
+			$response['success'] = true;
+			$response['message'] = '';
+			return $response;
+		}
+
+		unset($lockedFacets[$lockSection]);
+
+		if ($isLoggedIn) {
+			$user->lockedFacets = json_encode($lockedFacets);
+			$user->update();
+		} else {
+			$_SESSION['lockedFilters'] = $lockedFacets;
+		}
+
+		$response['success'] = true;
+		$response['message'] = '';
+		return $response;
+	}
+
+	function getSearchIndexes() : array {
 		$searchSource = $_REQUEST['searchSource'];
 		if ($searchSource == 'combined') {
 			$response = [
@@ -615,7 +652,8 @@ class AJAX extends Action {
 		return $response;
 	}
 
-	function showSearchToolbar() {
+	/** @noinspection PhpUnused */
+	function showSearchToolbar() : array {
 		global $interface;
 		$interface->assign('displayMode', $_REQUEST['displayMode']);
 		$interface->assign('showCovers', $_REQUEST['showCovers']);
@@ -756,6 +794,110 @@ class AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
+	function getAdvancedSearchFacetPopup() : array {
+		global $interface;
+		$facetName = $_REQUEST['facetName'];
+		$interface->assign('facetName', $facetName);
+
+		$searchObject = SearchObjectFactory::initSearchObject();
+		$searchObject->initAdvancedFacets();
+		$searchObject->disableLogging();
+		$searchObject->processSearch(false, true);
+
+		$facetConfig = $searchObject->getFacetConfig();
+		if (array_key_exists($facetName, $facetConfig)) {
+			$config = $facetConfig[$facetName];
+			if (is_object($config)) {
+				$facetTitle = $config->displayName;
+				$facetTitlePlural = $config->displayNamePlural;
+			} else {
+				$facetTitle = $facetName;
+				$facetTitlePlural = $facetName;
+			}
+			$interface->assign('facetTitle', $facetTitle);
+			$interface->assign('facetTitlePlural', $facetTitlePlural);
+
+			$allFacets = $searchObject->getFacetList();
+			$topResults = [];
+			if (isset($allFacets[$facetName])) {
+				$rawList = $allFacets[$facetName]['list'];
+				ksort($rawList, SORT_NATURAL | SORT_FLAG_CASE);
+				foreach ($rawList as $item) {
+					$topResults[] = [
+						'filter'  => $facetName . ':"' . $item['value'] . '"',
+						'display' => $item['display'],
+						'value'   => $item['value'],
+					];
+				}
+			}
+			$interface->assign('topResults', $topResults);
+			$searchObject->close();
+
+			return [
+				'success'   => true,
+				'title'     => translate([
+					'text'               => 'Browse %1%',
+					'1'                  => $facetTitlePlural,
+					'isPublicFacing'     => true,
+					'translateParameters' => true,
+				]),
+				'modalBody' => $interface->fetch('Search/advancedSearchFacetPopup.tpl'),
+				'buttons'   => '',
+			];
+		} else {
+			$searchObject->close();
+			return [
+				'success' => false,
+				'title'   => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'That facet could not be found', 'isPublicFacing' => true]),
+			];
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function searchAdvancedFacetTerms() : array {
+		global $interface;
+		$facetName  = $_REQUEST['facetName'];
+		$searchTerm = $_REQUEST['searchTerm'];
+		$interface->assign('facetName', $facetName);
+
+		$searchObject = SearchObjectFactory::initSearchObject();
+		$searchObject->initAdvancedFacets();
+		$searchObject->disableLogging();
+		$searchObject->addFacetSearch($facetName, $searchTerm);
+		$searchObject->processSearch(false, true);
+
+		$allFacets = $searchObject->getFacetList();
+		$searchObject->close();
+
+		if (isset($allFacets[$facetName])) {
+			$rawList = $allFacets[$facetName]['list'];
+			ksort($rawList, SORT_NATURAL | SORT_FLAG_CASE);
+			$results = [];
+			foreach ($rawList as $item) {
+				$results[] = [
+					'filter'  => $facetName . ':"' . $item['value'] . '"',
+					'display' => $item['display'],
+					'value'   => $item['value'],
+				];
+			}
+			$interface->assign('facetSearchResults', $results);
+			return [
+				'success'      => true,
+				'facetResults' => $interface->fetch('Search/advancedSearchFacetResults.tpl'),
+			];
+		} else {
+			return [
+				'success' => false,
+				'message' => "<div class='alert alert-warning'>" . translate([
+					'text'           => 'No results match your search',
+					'isPublicFacing' => true,
+				]) . '</div>',
+			];
+		}
+	}
+
+	/** @noinspection PhpUnused */
 	function searchFacetTerms() : array {
 		global $interface;
 		$searchId = $_REQUEST['searchId'];
@@ -772,7 +914,7 @@ class AJAX extends Action {
 					/** @var SearchObject_SolrSearcher $newSearch */
 					$newSearch = clone $restoredSearch;
 					$newSearch->addFacetSearch($facetName, $searchTerm);
-					$newSearchResult = $newSearch->processSearch(false, true);
+					$newSearch->processSearch(false, true);
 
 					$facetConfig = $newSearch->getFacetConfig()[$facetName];
 					if (is_object($facetConfig)) {
