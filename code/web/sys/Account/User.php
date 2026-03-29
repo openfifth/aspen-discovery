@@ -4263,6 +4263,7 @@ class User extends DataObject {
 			'View System Reports',
 			'View Indexing Logs',
 		]);
+		$sections['system_reports']->addAction(new AdminAction('Collection Reports', 'View collection reports of records Aspen has processed.', '/Admin/CollectionReports'), ['View System Reports']);
 		$sections['system_reports']->addAction(new AdminAction('Cron Log', 'View Cron Log. The cron process handles periodic cleanup tasks and updates reading history for users.', '/Admin/CronLog'), 'View System Reports');
 		$sections['system_reports']->addAction(new AdminAction('Background Processes', 'View information about background processes that are being run.', '/Admin/BackgroundProcesses'), 'View System Reports');
 		$sections['system_reports']->addAction(new AdminAction('Saved Search Notifications Log', 'A log of searches that have been checked for new results to generate notices.', '/Admin/SearchUpdateLog'), 'View System Reports');
