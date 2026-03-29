@@ -73,6 +73,13 @@ function getUpdates26_04_00(): array {
 				"ALTER TABLE cloudsource_setting ADD COLUMN bypassAspenCloudSourcePage TINYINT(1) DEFAULT 0"
 			]
 		], //bypass_aspen_cloudsource_page
+		'where_is_it_display_style' => [
+			'title' => 'Where Is It Display Style',
+			'description' => 'Add where is it display style to grouped work display settings',
+			'sql' => [
+				"ALTER TABLE grouped_work_display_settings ADD COLUMN whereIsItDisplayStyle TINYINT(1) DEFAULT 1"
+			]
+		], //where_is_it_display_style
 
 		//yanjun
 

@@ -2786,6 +2786,19 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $this->holdings;
 	}
 
+	public function getSortedCopies() : array {
+		$this->loadCopies();
+		$isPeriodical = $this->isPeriodical();
+		$holdings = $this->holdings;
+		require_once ROOT_DIR . '/sys/Utils/GroupingUtils.php';
+		if ($isPeriodical) {
+			$holdings = sortPeriodicalItemsByShelfLocationAndCallNumber($holdings);
+		}else{
+			$holdings = sortItemsByShelfLocationAndCallNumber($holdings);
+		}
+		return $holdings;
+	}
+
 	private ?bool $_isPeriodical = null;
 	public function isPeriodical() : bool {
 		if ($this->_isPeriodical === null) {
