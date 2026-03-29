@@ -61,7 +61,7 @@ class ExploreMore {
 			$interface->assign('relatedArticles', $ebscoMatches);
 		}
 
-		$aummonMatches = $this->loadSummonOptions('', [], $searchTerm);
+		$summonMatches = $this->loadSummonOptions('', [], $searchTerm);
 		if (count($summonMatches) > 0) {
 			$interface->assign('relatedArticles', $summonMatches);
 		}
@@ -142,7 +142,7 @@ class ExploreMore {
 			$exploreMoreOptions = $this->loadGaleOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
 		}
 
-    if (array_key_exists('CloudSource', $enabledModules)) {
+		if (array_key_exists('CloudSource', $enabledModules)) {
 			$exploreMoreOptions = $this->loadCloudSourceOptions($activeSection, $exploreMoreOptions, $searchTerm, $appliedTheme);
 		};
 
@@ -915,7 +915,7 @@ class ExploreMore {
 		global $enabledModules;
 		global $locationSingleton;
 		$activeLocation = $locationSingleton->getActiveLocation();
-		if (!empty($searchTerm) && array_key_exists('CloudSource', $enabledModules)) {
+		if (!empty($searchTerm) && array_key_exists('CloudSource', $enabledModules) && $activeSection != 'cloudsource') {
 			$hasSetting = false;
 			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
 			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();

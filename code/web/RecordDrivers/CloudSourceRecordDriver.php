@@ -54,20 +54,24 @@ class CloudSourceRecordDriver extends RecordInterface {
 	 * @param bool $unscoped
 	 * @return string
 	 */
-	public function getLinkUrl($unscoped = false)
-	{
+	public function getLinkUrl($unscoped = false) {
+		if ($this->bypassAspenCloudSourcePageSetting()){
+			return $this->getRecordUrl();
+		}
+		return '/CloudSource/Record?id=' . $this->getId();
+	}
+
+	public function bypassAspenCloudSourcePageSetting(): bool {
 		global $library;
 		require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
 		$libraryCloudSourceSetting = new CloudSourceSetting();
 		$libraryCloudSourceSetting->id = $library->getCloudSourceSettingId();
-		if ($libraryCloudSourceSetting->find(true)){
-			if ($libraryCloudSourceSetting->bypassAspenCloudSourcePage){
-				return $this->getRecordUrl();
-			} else {
-				return '/CloudSource/Record?id=' . $this->getId();
+		if ($libraryCloudSourceSetting->find(true)) {
+			if ($libraryCloudSourceSetting->bypassAspenCloudSourcePage) {
+				return true;
 			}
 		}
-		return '/CloudSource/Record?id=' . $this->getId();
+		return false;
 	}
 
 	/**
@@ -131,6 +135,7 @@ class CloudSourceRecordDriver extends RecordInterface {
 		$interface->assign('summDescription', $this->getDescription());
 		$interface->assign('bookCoverUrl', $this->getBookcoverUrl('small'));
 		$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('medium'));
+		$interface->assign('bypassAspenPage', $this->bypassAspenCloudSourcePageSetting());
 
 		/*require_once ROOT_DIR . '/sys/CloudSource/CloudSourceRecordUsage.php';
 		global $aspenUsage;
