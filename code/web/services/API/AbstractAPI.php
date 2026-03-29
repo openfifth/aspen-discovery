@@ -94,6 +94,13 @@ abstract class AbstractAPI extends Action{
 		return [$username, $password];
 	}
 
+	function logPatronRequest($userId): void {
+		if ($this->context == 'lida') {
+			require_once ROOT_DIR . '/sys/SystemLogging/UserAppRequestLogEntry.php';
+			UserAppRequestLogEntry::logRequest($userId, $_GET['action'], $_GET['method'], json_encode($_REQUEST), $this->getLiDAVersion());
+		}
+	}
+
 	/**
 	 * @return bool|User
 	 */
@@ -120,6 +127,10 @@ abstract class AbstractAPI extends Action{
 			}
 		}
 
+		if ($user !== false && $user->allowAppRequestLogging) {
+			$this->logPatronRequest($user->id);
+		}
+
 		return $user;
 	}
 
@@ -140,6 +151,12 @@ abstract class AbstractAPI extends Action{
 				'library_calendar_event',
 				'event_aspenEvent',
 				'grouped_work'
+			];
+		} elseif ($context == 'list') {
+			return [
+				'GroupedWork',
+				'Events',
+				'Lists'
 			];
 		} else {
 			return [

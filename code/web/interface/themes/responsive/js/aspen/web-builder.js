@@ -2,6 +2,28 @@ AspenDiscovery.WebBuilder = function () {
 	// noinspection JSUnusedGlobalSymbols
 	return {
 		editors: [],
+		// Track placard views (whenever shown to a user, regardless of whether they interact with it)
+		trackPlacardView: function(placardId) {
+			const url = Globals.path + '/WebBuilder/AJAX';
+			const params = {
+				method: 'trackPlacardUsage',
+				id: placardId,
+				operation: 'view'
+			};
+			$.getJSON(url, params);
+		},
+
+		// Track placard clicks
+		trackPlacardClick: function(placardId, authType) {
+			const url = Globals.path + '/WebBuilder/AJAX';
+			const params = {
+				method: 'trackPlacardUsage',
+				id: placardId,
+				operation: 'click',
+				authType: authType
+			};
+			$.getJSON(url, params);
+		},
 		saveLinkedObjCallback: function() {},
 
 		getPortalCellValuesForSource: function () {
@@ -124,6 +146,15 @@ AspenDiscovery.WebBuilder = function () {
 					AspenDiscovery.showMessage('Sorry', data.message);
 				}
 			});
+		},
+
+		// Call this whenever placards are rendered/shown.
+		renderPlacards: function(placardIds) {
+			if (Array.isArray(placardIds)) {
+				placardIds.forEach(function(id) {
+					AspenDiscovery.WebBuilder.trackPlacardView(id);
+				});
+			}
 		},
 
 		checkLinkedObject: function (submitForm) {
@@ -434,7 +465,7 @@ AspenDiscovery.WebBuilder = function () {
 			});
 		},
 
-		getWebResource(id) {
+		getWebResource(id, fromPlacard = false) {
 			const url = `${Globals.path}/WebBuilder/AJAX`;
 			const params = {
 				method: "getWebResource",
@@ -463,6 +494,9 @@ AspenDiscovery.WebBuilder = function () {
 						id,
 						authType
 					};
+					if (fromPlacard) {
+						trackParams.fromPlacard = 1;
+					}
 					$.getJSON(url, trackParams, () => openResource());
 				};
 
@@ -472,7 +506,7 @@ AspenDiscovery.WebBuilder = function () {
 					} else if (Globals.loggedIn && !canView) {
 						AspenDiscovery.showMessage(userNoAccessTitle, userNoAccessMessage);
 					} else {
-						AspenDiscovery.Account.ajaxLogin(null, () => AspenDiscovery.WebBuilder.getWebResource(id), true);
+						AspenDiscovery.Account.ajaxLogin(null, () => AspenDiscovery.WebBuilder.getWebResource(id, fromPlacard), true);
 					}
 				} else {
 					trackUsage("none");
@@ -480,6 +514,16 @@ AspenDiscovery.WebBuilder = function () {
 			}).fail(AspenDiscovery.ajaxFail);
 
 			return false;
+		},
+
+		placardClickHandler: function(placardId) {
+			let authType = "none";
+			if (Globals.loggedIn) {
+				authType = "user";
+			} else if (Globals.inLibrary) {
+				authType = "library";
+			}
+			AspenDiscovery.WebBuilder.trackPlacardClick(placardId, authType);
 		},
 
 		getAddQuickPollOptionForm: function (pollId) {

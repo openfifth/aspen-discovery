@@ -165,6 +165,8 @@ class User extends DataObject {
 	public $holdSortUnavailable;
 	public $checkoutSort;
 
+	public $allowAppRequestLogging;
+
 	private static int $CIRCULATION_CACHE_TIMEOUT = 300; // 5 minutes
 
 	public static $lidaToAspenCheckoutSortMapping = [
@@ -1742,6 +1744,8 @@ class User extends DataObject {
 			}
 		}
 
+		$this->__set('allowAppRequestLogging', (isset($_POST['allowAppRequestLogging']) && $_POST['allowAppRequestLogging'] == 'on') ? 1 : 0);
+
 		$saveResult = $this->update();
 		if ($saveResult === false) {
 			return [
@@ -2676,6 +2680,7 @@ class User extends DataObject {
 		$numHoldsAlreadyFrozen = 0;
 
 		if ($total >= 1) {
+			/** @var Hold $hold */
 			foreach ($allUnavailableHolds as $hold) {
 				$frozen = $hold->frozen;
 				if ($frozen) {
@@ -2685,7 +2690,7 @@ class User extends DataObject {
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
-				$patron = ($hold->patronId && $hold->patronId !== $user->id) ? $user->getUserReferredTo($hold->patronId) : $user;
+				$patron = $user->getUserReferredTo($hold->userId);
 				if ($patron && $frozen == 0 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
 						$tmpResult = $patron->freezeHold($recordId, $holdId, $reactivationDate);
@@ -2798,14 +2803,14 @@ class User extends DataObject {
 		$total = count($allHolds['unavailable']);
 
 		if ($total >= 1) {
+			/** @var Hold $hold */
 			foreach ($allUnavailableHolds as $hold) {
 				$frozen = $hold->frozen;
 				$canFreeze = $hold->canFreeze;
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = ($hold->patronId && $hold->patronId !== $user->id) ? $user->getUserReferredTo($hold->patronId) : $user;
+				$patron = $user->getUserReferredTo($hold->userId);
 				if ($patron && $frozen == 1 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
 						$tmpResult = $patron->thawHold($recordId, $holdId);
@@ -4948,7 +4953,7 @@ class User extends DataObject {
 
 
 		$sections['support'] = new AdminSection('Aspen Discovery Support');
-		$sections['support']->addAction(new AdminAction('Help Center', 'View the Help Center for Aspen Discovery.', 'https://help.aspendiscovery.org'), true);
+		$sections['support']->addAction(new AdminAction('Help Center', 'View the Help Center for Aspen Discovery.', 'https://aspen-discovery.atlassian.net/wiki/spaces/Help/overview'), true);
 		$sections['support']->addAction(new AdminAction('API Documentation', 'View available OpenAPI specifications for Aspen Discovery APIs.', '/API/Documentation'), true);
 		$sections['support']->addAction(new AdminAction('Release Notes', 'View release notes for Aspen Discovery which contain information about new functionality and fixes for each release.', '/Admin/ReleaseNotes'), true);
 

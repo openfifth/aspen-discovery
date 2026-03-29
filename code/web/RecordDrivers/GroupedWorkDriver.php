@@ -317,8 +317,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		6. Put anything with locally available items first
 		7. Anything that is available elsewhere goes higher
 		8. Put anything with a local copy higher
-		9. All else being equal, sort by hold ratio
-		10. If hold ratio is the same, compare number of copies (more copies first)
+		9. Do a status check to make sure we don't place a hold on something that will be slow to come in
+		10. All else being equal, sort by hold ratio
+		11. If hold ratio is the same, compare number of copies (more copies first)
 		*/
 		$comparators = [
 			fn() => $this->compareFormats($a->format, $b->format),
@@ -331,6 +332,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			fn() => GroupedWorkDriver::compareLocalAvailableItemsForRecords($a, $b),
 			fn() => GroupedWorkDriver::compareAvailabilityForRecords($a, $b),
 			fn() => GroupedWorkDriver::compareLocalItemsForRecords($a, $b),
+			//Status rankings should be between 4 (checked out and 1 currently available), we prefer the highest but could group some
+			fn() => $b->getStatusRanking() <=> $a->getStatusRanking(), 
 			fn() => $a->getHoldRatio() <=> $b->getHoldRatio(),
 			fn() => $b->getCopies() <=> $a->getCopies(),
 		];
@@ -2736,9 +2739,9 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		return null;
 	}
 
-	public function getAlternateTitles() {
+	public function getAlternateTitles() : ?array {
 		//Load alternate titles
-		if (UserAccount::userHasPermission('Set Grouped Work Display Information')) {
+		if (UserAccount::userHasPermission('Manually Group and Ungroup Works')) {
 			require_once ROOT_DIR . '/sys/Grouping/GroupedWorkAlternateTitle.php';
 			$alternateTitle = new GroupedWorkAlternateTitle();
 			$permanentId = $this->getPermanentId();
