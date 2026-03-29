@@ -91,6 +91,7 @@ class GroupedWorkDisplaySetting extends DataObject {
 	public $showItemNotes;
 	public $showItemBarcodes;
 	public $showCopiesForPeriodicalsWithNoItems;
+	public $whereIsItDisplayStyle;
 
 	// Series display
 	public $showIndexedSeriesWithNoveList;
@@ -316,6 +317,18 @@ class GroupedWorkDisplaySetting extends DataObject {
 						'type' => 'checkbox',
 						'label' => 'Sort Owned Editions First',
 						'description' => 'Sort owned editions first within editions list.',
+						'hideInLists' => true,
+					],
+					'whereIsItDisplayStyle' => [
+						'property' => 'whereIsItDisplayStyle',
+						'type' => 'enum',
+						'values' => [
+							'1' => 'Summary',
+							'2' => 'Item Details',
+						],
+						'label' => 'Where Is It Display Style',
+						'description' => 'Define whether the Where is it? displays a summary or item details.',
+						'default' => 1,
 						'hideInLists' => true,
 					],
 				]
