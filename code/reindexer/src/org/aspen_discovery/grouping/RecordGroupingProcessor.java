@@ -912,6 +912,7 @@ public class RecordGroupingProcessor {
 			activeLanguage = null;
 			languages = MarcUtil.getFieldList(marcRecord, secondaryLanguageField);
 			for (String language : languages){
+				language = language.replaceAll("^[^a-zA-Z]+|[^a-zA-Z]+$|\\p{Punct}", "");
 				if (activeLanguage == null){
 					activeLanguage = language;
 				}else{

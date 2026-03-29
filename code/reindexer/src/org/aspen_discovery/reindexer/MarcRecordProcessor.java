@@ -1442,6 +1442,7 @@ abstract class MarcRecordProcessor {
 		HashSet<String> translatedLanguages = new HashSet<>();
 		boolean isFirstLanguage = true;
 		for (String language : languages){
+			language = language.replaceAll("^[^a-zA-Z]+|[^a-zA-Z]+$|\\p{Punct}", "");
 			if (!indexer.hasSystemTranslation("language", language)) {
 				continue;
 			}
