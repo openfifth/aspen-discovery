@@ -3,10 +3,10 @@
 require_once ROOT_DIR . '/Action.php';
 
 class History extends Action {
-	var $catalog;
-	private static $searchSourceLabels = [
+	private static array $searchSourceLabels = [
 		'local' => 'Catalog',
 		'genealogy' => 'Genealogy',
+		'series' => 'Series',
 	];
 
 	function __construct($isStandalonePage = false) {
@@ -27,7 +27,7 @@ class History extends Action {
 						$accountMessages[] = clone $customAccountMessages;
 					}
 				}
-			} catch (Exception $e) {
+			} catch (Exception) {
 				//This happens before the table is created, ignore it.
 			}
 			global $interface;
@@ -35,7 +35,7 @@ class History extends Action {
 		}
 	}
 
-	function launch() {
+	function launch() : void {
 		global $interface;
 
 		// In some contexts, we want to require a login before showing search
@@ -99,7 +99,8 @@ class History extends Action {
 		}
 	}
 
-	public static function getSearchForSaveForm($searchId) {
+	public static function getSearchForSaveForm($searchId) : array {
+		require_once ROOT_DIR . '/sys/SearchObject/minSO.php';
 		global $interface;
 
 		// Retrieve search history
@@ -111,8 +112,6 @@ class History extends Action {
 			// Loop through the history to find the one we want
 			foreach ($searchHistory as $search) {
 				if ($search->id == $searchId) {
-					$searchObject = SearchObjectFactory::initSearchObject();
-					$size = strlen($search->search_object);
 					$minSO = unserialize($search->search_object);
 					$searchObject = SearchObjectFactory::deminify($minSO);
 
@@ -149,11 +148,14 @@ class History extends Action {
 		return $thisSearch;
 	}
 
-	public static function getSavedSearchObject($searchId) {
+	public static function getSavedSearchObject($searchId) : ?array {
 		// Retrieve search history
 		$s = new SearchEntry();
 		$s->id = $searchId;
+		$thisSearch = null;
 		if ($s->find(true)) {
+			require_once ROOT_DIR . '/sys/SearchObject/minSO.php';
+
 			SearchObjectFactory::initSearchObject();
 			$minSO = unserialize($s->search_object);
 

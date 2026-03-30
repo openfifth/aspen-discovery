@@ -12,6 +12,7 @@ import org.aspen_discovery.reindexer.ItemInfo;
 import org.aspen_discovery.reindexer.RecordInfo;
 import org.marc4j.marc.ControlField;
 import org.marc4j.marc.DataField;
+import org.marc4j.marc.Record;
 import org.marc4j.marc.Subfield;
 
 import java.util.*;
@@ -149,7 +150,7 @@ public class MarcRecordFormatClassifier {
 		getFormatFromNotes(groupedWork, record, printFormats);
 		getFormatFromEdition(groupedWork, record, printFormats);
 		getFormatFromPhysicalDescription(groupedWork, record, printFormats, settings);
-		getFormatFromSubjects(groupedWork, record, printFormats);
+		getFormatFromSubjects(groupedWork, record, printFormats, settings);
 		getFormatFromTitle(groupedWork, record, printFormats);
 		getFormatFromDigitalFileCharacteristics(groupedWork, record, printFormats);
 		getFormatFromFormField(groupedWork, record, printFormats);
@@ -306,7 +307,8 @@ public class MarcRecordFormatClassifier {
 		}
 	}
 
-	public void getFormatFromSubjects(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, Set<String> result) {
+	public void getFormatFromSubjects(AbstractGroupedWorkSolr groupedWork, Record record, Set<String> result, BaseIndexingSettings settings) {
+		boolean checkPictureBooks = settings instanceof IndexingProfile && ((IndexingProfile) settings).getUse650ForPictureBooks();
 		List<DataField> topicalTerm = MarcUtil.getDataFields(record, 650);
 		if (topicalTerm != null) {
 			Iterator<DataField> fieldIterator = topicalTerm.iterator();
@@ -323,10 +325,10 @@ public class MarcRecordFormatClassifier {
 						}else if (subfieldData.contains("playaway")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format Playaway based on 650 Subject", 2);}
 							result.add("Playaway");
-						}else if (subfieldData.contains("board books") || subfieldData.contains("board book")) {
+						}else if (subfieldData.contains("board book")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format BoardBook based on 650 Subject", 2);}
 							result.add("BoardBook");
-						}else if (subfieldData.contains("picture books") || subfieldData.contains("picture book")) {
+						}else if (checkPictureBooks && subfieldData.contains("picture book")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format PictureBook based on 650 Subject", 2);}
 							result.add("PictureBook");
 						}else if (subfieldData.contains("pop-up")) {
@@ -374,10 +376,10 @@ public class MarcRecordFormatClassifier {
 						}else if (subfieldData.contains("playaway")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format Playaway based on 655 Genre", 2);}
 							result.add("Playaway");
-						}else if (subfieldData.contains("board books") || subfieldData.contains("board book")) {
+						}else if (subfieldData.contains("board book")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format BoardBook based on 655 Genre", 2);}
 							result.add("BoardBook");
-						}else if (subfieldData.contains("picture books") || subfieldData.contains("picture book")) {
+						}else if (subfieldData.contains("picture book")) {
 							if (groupedWork != null && groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Adding bib level format PictureBook based on 655 Genre", 2);}
 							result.add("PictureBook");
 						}else if (subfieldData.contains("pop-up")) {
@@ -478,9 +480,13 @@ public class MarcRecordFormatClassifier {
 			foundMatch = patternToLookFor.matcher(titleField).matches();
 		}
 		if (!foundMatch) {
-			String titleField2 = MarcUtil.getFirstFieldVal(record, "246a");
-			if (titleField2 != null) {
-				foundMatch = patternToLookFor.matcher(titleField2).matches();
+			//Look at all 246a fields
+			Set<String> titleField2 = MarcUtil.getFieldList(record, "246a");
+			for (String titleField2String : titleField2) {
+				foundMatch = patternToLookFor.matcher(titleField2String).matches();
+				if (foundMatch) {
+					break;
+				}
 			}
 		}
 		return foundMatch;
@@ -1381,10 +1387,6 @@ public class MarcRecordFormatClassifier {
 			printFormats.add("VideoEnabledBook");
 			return;
 		}
-		if (printFormats.contains("BoardBook")){
-			printFormats.remove("PictureBook");
-			return;
-		}
 		if (printFormats.contains("DVD")){
 			printFormats.remove("Video");
 		}
@@ -1485,6 +1487,7 @@ public class MarcRecordFormatClassifier {
 			printFormats.remove("Book");
 		}
 		if (printFormats.contains("BoardBook")){
+			printFormats.remove("PictureBook");
 			printFormats.remove("Book");
 		}
 		if (printFormats.contains("PictureBook")){

@@ -35,6 +35,20 @@ function getUpdates26_03_00(): array {
 				'ALTER TABLE library ADD COLUMN includeRemoteCheckoutsInMaxLocalIllRequests TINYINT(1) DEFAULT 1',
 			]
 		], //local_ill_handle_remote_pickups
+		'force_regrouping_of_hoopla_26_03' => [
+			'title' => 'Force Regrouping of Hoopla (26.03)',
+			'description' => 'Force Regrouping of Hoopla (26.03)',
+			'sql' => [
+				"UPDATE hoopla_settings set regroupAllRecords = 1"
+			]
+		], //force_regrouping_of_hoopla_26_03
+		'indexing_profile_use_650_for_picture_books' => [
+			'title' => 'Indexing Profile Use 650 for Picture Books',
+			'description' => 'Allow using 650 for Picture Books in Indexing Profile',
+			'sql' => [
+				'ALTER TABLE indexing_profiles ADD COLUMN use650ForPictureBooks TINYINT(1) DEFAULT 0'
+			]
+		], //indexing_profile_use_650_for_picture_books
 
 		//kirstien
 		'add_cloud_library_sunday_reindex_option' => [
@@ -57,14 +71,14 @@ function getUpdates26_03_00(): array {
 		//add_generated_rtl_css_to_theme
 
 		//kodi
-		'add_bill_reason_translation_map' => [
+		'add_bill_reason_symphony_translation_map' => [
 			'title' => 'Add Bill Reason Translation Map',
 			'description' => 'Add bill reason translation map for Symphony libraries',
 			'sql' => [
 				"addBillReasonTranslationMap",
 			]
 		],
-		//add_bill_reason_translation_map
+		//add_bill_reason_symphony_translation_map
 		'remove_unused_permission_loan_rules' => [
 			'title' => 'Remove unused permission loan rules',
 			'description' => 'Remove unused permission loan rules at all times',
@@ -73,6 +87,13 @@ function getUpdates26_03_00(): array {
 				"DELETE FROM permissions WHERE name = 'Administer Loan Rules'",
 			]
 		], //remove_unused_permission_loan_rules
+		'add_title_search_behavior_setting' => [
+			'title' => 'Title Search Behavior Setting',
+			'description' => 'Add title search behavior setting in system variables',
+			'sql' => [
+				"ALTER TABLE system_variables ADD COLUMN titleSearchBehavior INT DEFAULT 1",
+			]
+		], //add_title_search_behavior_setting
 
 		//yanjun
 		'require_pin_for_palace_project' => [
@@ -222,7 +243,7 @@ function getUpdates26_03_00(): array {
 			'title' => 'User - Allow patrons to choose if they want email notifications when saved searches are updated.',
 			'description' => 'Patrons will gain the choice within Your Preferences to have Aspen notify them via email when updates to their saved searches occur.',
 			'sql' => [
-				"ALTER TABLE user ADD COLUMN notifySavedSearches tinyint(1) NOT NULL DEFAULT 1",
+				"ALTER TABLE user ADD COLUMN notifySavedSearches tinyint(1) NOT NULL DEFAULT 0",
 			]
 		], //notify_saved_searches
 

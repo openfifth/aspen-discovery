@@ -2676,6 +2676,7 @@ class User extends DataObject {
 		$numHoldsAlreadyFrozen = 0;
 
 		if ($total >= 1) {
+			/** @var Hold $hold */
 			foreach ($allUnavailableHolds as $hold) {
 				$frozen = $hold->frozen;
 				if ($frozen) {
@@ -2685,11 +2686,10 @@ class User extends DataObject {
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
+				$patron = $user->getUserReferredTo($hold->userId);
 				if ($patron && $frozen == 0 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
-						$tmpResult = $user->freezeHold($recordId, $holdId, $reactivationDate);
+						$tmpResult = $patron->freezeHold($recordId, $holdId, $reactivationDate);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2698,7 +2698,7 @@ class User extends DataObject {
 					} elseif ($holdType == 'axis360') {
 						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 						$driver = new Axis360Driver();
-						$tmpResult = $driver->freezeHold($user, $recordId);
+						$tmpResult = $driver->freezeHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2707,7 +2707,7 @@ class User extends DataObject {
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->freezeHold($user, $recordId);
+						$tmpResult = $driver->freezeHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						} else {
@@ -2799,31 +2799,31 @@ class User extends DataObject {
 		$total = count($allHolds['unavailable']);
 
 		if ($total >= 1) {
+			/** @var Hold $hold */
 			foreach ($allUnavailableHolds as $hold) {
 				$frozen = $hold->frozen;
 				$canFreeze = $hold->canFreeze;
 				$recordId = $hold->sourceId;
 				$holdId = $hold->cancelId;
 				$holdType = $hold->source;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
+				$patron = $user->getUserReferredTo($hold->userId);
 				if ($patron && $frozen == 1 && $canFreeze == 1) {
 					if ($holdType == 'ils') {
-						$tmpResult = $user->thawHold($recordId, $holdId);
+						$tmpResult = $patron->thawHold($recordId, $holdId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'axis360') {
 						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
 						$driver = new Axis360Driver();
-						$tmpResult = $driver->thawHold($user, $recordId);
+						$tmpResult = $driver->thawHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}
 					} elseif ($holdType == 'overdrive') {
 						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 						$driver = new OverDriveDriver();
-						$tmpResult = $driver->thawHold($user, $recordId);
+						$tmpResult = $driver->thawHold($patron, $recordId);
 						if ($tmpResult['success']) {
 							$success++;
 						}

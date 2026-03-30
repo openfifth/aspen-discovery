@@ -838,55 +838,86 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 			} else {
 				seriesWithVolumePriority.put(normalizedSeriesInfoWithVolume, priority);
 			}
-			if ((!this.seriesWithVolume.containsKey(normalizedSeriesInfoWithVolume) && !untraced) || (!this.seriesWithVolumeUntraced.containsKey(normalizedSeriesInfoWithVolume) && untraced)) {
+
+			HashMap<String, String> seriesMapToCheck;
+			if (untraced) {
+				seriesMapToCheck = this.seriesWithVolumeUntraced;
+				if (this.seriesWithVolume.containsKey(normalizedSeriesInfoWithVolume)) {
+					//Don't add to the untraced if we already have a traced version
+					return;
+				}
+			}else{
+				seriesMapToCheck = this.seriesWithVolume;
+			}
+			if (!seriesMapToCheck.containsKey(normalizedSeriesInfoWithVolume)) {
 				boolean okToAdd = true;
-				//Check to see if we have a similar series name (where one series name is fully contained in the other series).
-				// This helps to prevent cases where series of "Dark" and "Dark Series" both appear.
-				// When this occurs the more specific series (longer or with a volume) will be preserved.
-				// This logic only applies if the series module is NOT active.
+
 				if (!groupedWorkIndexer.hasSeriesModuleEnabled()) {
-					for (String existingSeries2 : this.seriesWithVolume.keySet()) {
-						String[] existingSeriesInfo = existingSeries2.split("\\|", 2);
-						String existingSeriesName = existingSeriesInfo[0];
-						String existingVolume = "";
-						if (existingSeriesInfo.length > 1) {
-							existingVolume = existingSeriesInfo[1];
-						}
-						//Get the longer series name
-						if (existingSeriesName.contains(seriesInfoLower)) {
-							//Use the old one unless it doesn't have a volume
-							if (existingVolume.isEmpty()) {
-								this.seriesWithVolume.remove(existingSeries2);
-								break;
-							} else {
-								if (volumeLower.equals(existingVolume)) {
-									okToAdd = false;
-									break;
-								} else if (volumeLower.isEmpty()) {
-									okToAdd = false;
-									break;
-								}
-							}
-						} else if (seriesInfoLower.contains(existingSeriesName)) {
-							//Before removing the old series, make sure the new one has a volume
-							if (!existingVolume.isEmpty() && existingVolume.equals(volumeLower)) {
-								this.seriesWithVolume.remove(existingSeries2);
-								break;
-							} else if (volume.isEmpty() && !existingVolume.isEmpty()) {
-								okToAdd = false;
-								break;
-							} else if (volume.isEmpty()) {
-								this.seriesWithVolume.remove(existingSeries2);
-								break;
-							}
+					//Check to see if we have a similar series name (where one series name is fully contained in the other series).
+					// This helps to prevent cases where series of "Dark" and "Dark Series" both appear.
+					// When this occurs, the more specific series (longer or with a volume) will be preserved.
+					// This logic only applies if the series module is NOT active.
+					// First Check the traced series
+					okToAdd = isSeriesOkToAdd(volume, this.seriesWithVolume, seriesInfoLower, volumeLower, okToAdd);
+
+					// Next, check the untraced series
+					if (okToAdd && untraced) {
+						okToAdd = isSeriesOkToAdd(volume, this.seriesWithVolumeUntraced, seriesInfoLower, volumeLower, okToAdd);
+					}
+				}
+
+				if (okToAdd) {
+					if (untraced) {
+						seriesMapToCheck.put(normalizedSeriesInfoWithVolume, seriesInfoWithVolume);
+					}else {
+						seriesMapToCheck.put(normalizedSeriesInfoWithVolume, seriesInfoWithVolume);
+						if (this.seriesWithVolumeUntraced.containsKey(normalizedSeriesInfoWithVolume)) {
+							this.seriesWithVolumeUntraced.remove(normalizedSeriesInfoWithVolume);
 						}
 					}
 				}
-				if (okToAdd) {
-					this.seriesWithVolume.put(normalizedSeriesInfoWithVolume, seriesInfoWithVolume);
+			}
+		}
+	}
+
+	private static boolean isSeriesOkToAdd(String volume, HashMap<String, String> seriesMapToCheck, String seriesInfoLower, String volumeLower, boolean okToAdd) {
+		for (String existingSeries2 : seriesMapToCheck.keySet()) {
+			String[] existingSeriesInfo = existingSeries2.split("\\|", 2);
+			String existingSeriesName = existingSeriesInfo[0];
+			String existingVolume = "";
+			if (existingSeriesInfo.length > 1) {
+				existingVolume = existingSeriesInfo[1];
+			}
+			//Get the longer series name
+			if (existingSeriesName.contains(seriesInfoLower)) {
+				//Use the old one unless it doesn't have a volume
+				if (existingVolume.isEmpty()) {
+					seriesMapToCheck.remove(existingSeries2);
+					break;
+				} else {
+					if (volumeLower.equals(existingVolume)) {
+						okToAdd = false;
+						break;
+					} else if (volumeLower.isEmpty()) {
+						okToAdd = false;
+						break;
+					}
+				}
+			} else if (seriesInfoLower.contains(existingSeriesName)) {
+				//Before removing the old series, make sure the new one has a volume
+				if (!existingVolume.isEmpty() && existingVolume.equals(volumeLower)) {
+					seriesMapToCheck.remove(existingSeries2);
+					break;
+				} else if (volume.isEmpty() && !existingVolume.isEmpty()) {
+					okToAdd = false;
+					break;
+				} else if (volume.isEmpty()) {
+					seriesMapToCheck.remove(existingSeries2);
+					break;
 				}
 			}
 		}
+		return okToAdd;
 	}
 
 	private void addSeriesInfoToField(String seriesInfo, HashMap<String, String> seriesField) {
