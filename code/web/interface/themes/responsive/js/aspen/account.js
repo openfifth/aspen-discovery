@@ -2587,7 +2587,7 @@ AspenDiscovery.Account = (function () {
 						$('#recommendedForYouInfo').hide();
 					}
 				} catch (e) {
-					alert("error loading enrichment: " + e);
+					alert("error loading recommendations: " + e);
 				}
 			});
 		},
