@@ -113,6 +113,15 @@ function getUpdates26_04_00(): array {
 			],
 		], //migrate_sendgrid_url_to_settings
 
+		//pedro
+		'drop_control_display_of_user_dropdown_in_community_engagement_admin_view' => [
+			'title' => 'Drop Control User Select Type in Admin View',
+			'description' => 'Drop options for how to select users in the admin view  (only search exists now)',
+			'sql' => [
+				"ALTER TABLE library DROP COLUMN communityEngagementAdminUserSelect",
+			],
+		], //control_display_of_user_dropdown_in_community_engagement_admin_view
+
 		//mark j
 		'add_pageViewsFromPlacard_to_web_builder_resource_usage' => [
 			'title' => 'Track web resource page views from a placard',
@@ -162,6 +171,43 @@ function getUpdates26_04_00(): array {
 				'ALTER TABLE user_page_defaults CHANGE COLUMN pageSize pageSize VARCHAR(10) NULL',
 			],
 		], //change_user_page_defaults.pageSize_to_varchar
+
+
+		//pedro
+		'update_community_engagement_schema_v2' => [
+			'title' => 'Normalize Community Engagement to allow multiple milestone/extra credit instances',
+			'description' => 'Shifts progress tracking from (Campaign+Item) ID pairs to a single Junction ID (Instance) to allow duplicate items within one campaign.',
+			'sql' => [
+				// --- 1. MILESTONES: Add the new instance-based foreign keys ---
+				"ALTER TABLE `ce_campaign_milestone_users_progress` ADD COLUMN `ce_campaign_milestone_id` int(11) DEFAULT NULL AFTER `ce_milestone_id`",
+				"ALTER TABLE `ce_campaign_milestone_progress_entries` ADD COLUMN `ce_campaign_milestone_id` int(11) DEFAULT NULL AFTER `ce_milestone_id`",
+				"ALTER TABLE `ce_user_completed_milestones` ADD COLUMN `ce_campaign_milestone_id` int(11) DEFAULT NULL AFTER `milestoneId`",
+
+				// --- 2. MILESTONES: Data Migration (Map coordinates to unique instance IDs) ---
+				"UPDATE `ce_campaign_milestone_users_progress` up
+					JOIN `ce_campaign_milestones` cm ON up.ce_campaign_id = cm.campaignId AND up.ce_milestone_id = cm.milestoneId
+					SET up.ce_campaign_milestone_id = cm.id",
+				"UPDATE `ce_campaign_milestone_progress_entries` pe
+					JOIN `ce_campaign_milestones` cm ON pe.ce_campaign_id = cm.campaignId AND pe.ce_milestone_id = cm.milestoneId
+					SET pe.ce_campaign_milestone_id = cm.id",
+				"UPDATE `ce_user_completed_milestones` ucm
+					JOIN `ce_campaign_milestones` cm ON ucm.campaignId = cm.campaignId AND ucm.milestoneId = cm.milestoneId
+					SET ucm.ce_campaign_milestone_id = cm.id",
+
+				// --- 3. MILESTONES: Cleanup and Constraint Enforcement ---
+				"ALTER TABLE `ce_campaign_milestone_users_progress`
+					DROP COLUMN `ce_campaign_id`,
+					DROP COLUMN `ce_milestone_id`",
+				"ALTER TABLE `ce_campaign_milestone_progress_entries`
+					DROP COLUMN `ce_campaign_id`,
+					DROP COLUMN `ce_milestone_id`",
+				"ALTER TABLE `ce_user_completed_milestones`
+					DROP COLUMN `campaignId`,
+					DROP COLUMN `milestoneId`",
+				"ALTER TABLE `ce_milestone` DROP COLUMN `campaignId`",
+
+			]
+		],
 
 		//other
 
