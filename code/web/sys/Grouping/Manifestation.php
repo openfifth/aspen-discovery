@@ -404,6 +404,18 @@ class Grouping_Manifestation {
 		return $this->_itemSummary;
 	}
 
+	function hasVolumes() : bool {
+		foreach ($this->_variations as $variation) {
+				$records = $variation->getRecords();
+				foreach ($records as $record) {
+					if (!empty($record->getUnsuppressedVolumeData())) {
+						return true;
+					}
+				}
+			}
+		return false;
+	}
+
 	protected ?array $_itemsDisplayedByDefault = null;
 
 	/** @noinspection PhpUnused */
