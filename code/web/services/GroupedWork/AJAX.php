@@ -585,6 +585,10 @@ class GroupedWork_AJAX extends JSON_Action {
 		$workReview = new UserWorkReview();
 		$workReview->groupedRecordPermanentId = $_REQUEST['id'];
 		$workReview->userId = UserAccount::getActiveUserId();
+		$reviewExists = false;
+		if ($workReview->find(true)) {
+			$reviewExists = true;
+		}
 		if (empty($workReview->title)) {
 			require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 			$driver = new GroupedWorkDriver($_REQUEST['id']);
@@ -592,7 +596,7 @@ class GroupedWork_AJAX extends JSON_Action {
 				$workReview->title = $driver->getTitle();
 			}
 		}
-		if ($workReview->find(true)) {
+		if ($reviewExists) {
 			if ($rating != $workReview->rating) { // update gives an error if the rating value is the same as stored.
 				$workReview->rating = $rating;
 				$success = $workReview->update();
@@ -1590,14 +1594,19 @@ class GroupedWork_AJAX extends JSON_Action {
 		$this->checkRequiredParameters(['id']);
 
 		global $interface;
+		global $library;
 
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+		require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 		$id = $_REQUEST['id'];
 		$recordDriver = new GroupedWorkDriver($id);
 		$interface->assign('recordDriver', $recordDriver);
 
 		$recordId = $_REQUEST['recordId'];
 		$selectedFormat = urldecode($_REQUEST['format']);
+
+		$whereIsItDisplayStyle = $library->getGroupedWorkDisplaySettings()->whereIsItDisplayStyle;
+		$interface->assign('whereIsItDisplayStyle', $whereIsItDisplayStyle);
 
 		$relatedManifestation = null;
 		foreach ($recordDriver->getRelatedManifestations() as $relatedManifestation) {
@@ -1620,32 +1629,75 @@ class GroupedWork_AJAX extends JSON_Action {
 		$interface->assign('relatedManifestation', $relatedManifestation);
 		$interface->assign('isEContent', $relatedManifestation->isEContent());
 
-		if ($recordId != $id) {
-			$record = $recordDriver->getRelatedRecord($recordId);
-			$summary = null;
-			if ($record != null) {
-				foreach ($relatedManifestation->getVariations() as $variation) {
-					foreach ($variation->getRecords() as $recordWithVariation) {
-						if ($recordWithVariation->id == $recordId) {
-							$summary = $recordWithVariation->getItemSummary();
-							break;
+		$summary = null;
+		$infoToShow = [
+			'volume'   => false,
+			'note'     => false,
+			'dueDate' => false,
+			'barcode'  => false
+		];
+		if ($whereIsItDisplayStyle == 2) {
+			foreach ($relatedManifestation->getRelatedRecords() as $record) {
+				$recordDriver = new MarcRecordDriver($record->id);
+				if ($recordDriver->isValid()) {
+					$summary = $recordDriver->getSortedCopies();
+
+					foreach ($summary as $summaryItem) {
+						if (!empty($summaryItem['volume'])) {
+							$infoToShow['volume'] = true;
 						}
-					}
-					if (!empty($summary)) {
-						break;
-					}
-				}
-			} else {
-				foreach ($relatedManifestation->getVariations() as $variation) {
-					if ($recordId == $id . '_' . $variation->label) {
-						$summary = $variation->getItemSummary();
-						break;
+						if (!empty($summaryItem['note'])) {
+							$infoToShow['note'] = true;
+						}
+						if (!empty($summaryItem['dueDate'])) {
+							$infoToShow['dueDate'] = true;
+						}
+						if (!empty($summaryItem['barcode'])) {
+							$infoToShow['barcode'] = true;
+						}
+
+						if (!in_array(false, $infoToShow, true)) {
+							break; // Exit when ALL four are true
+						}
 					}
 				}
 			}
-		} else {
-			$summary = $relatedManifestation->getItemSummary();
 		}
+		if ($summary == null) {
+			if ($recordId != $id) {
+				$record = $recordDriver->getRelatedRecord($recordId);
+				if ($record != null) {
+					if (!empty($record->getUnsuppressedVolumeData())) {
+						$infoToShow['volume'] = true;
+					}
+					foreach ($relatedManifestation->getVariations() as $variation) {
+						foreach ($variation->getRecords() as $recordWithVariation) {
+							if ($recordWithVariation->id == $recordId) {
+								$summary = $recordWithVariation->getItemSummary();
+								break;
+							}
+						}
+						if (!empty($summary)) {
+							break;
+						}
+					}
+				} else {
+					foreach ($relatedManifestation->getVariations() as $variation) {
+						if ($recordId == $id . '_' . $variation->label) {
+							$summary = $variation->getItemSummary();
+							break;
+						}
+					}
+				}
+			} else {
+				$summary = $relatedManifestation->getItemSummary();
+				$infoToShow['volume'] = $relatedManifestation->hasVolumes();
+			}
+		}
+		$interface->assign('infoToShow', $infoToShow);
+		$interface->assign('showItemNotes', $library->getGroupedWorkDisplaySettings()->showItemNotes);
+		$interface->assign('showItemDueDates', $library->getGroupedWorkDisplaySettings()->showItemDueDates);
+		$interface->assign('showItemBarcodes', $library->getGroupedWorkDisplaySettings()->showItemBarcodes);
 		$interface->assign('showEContentHoldCounts', true);
 
 		$interface->assign('summary', $summary);

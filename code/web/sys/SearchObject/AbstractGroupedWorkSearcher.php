@@ -688,6 +688,15 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 				$searchTerm = preg_replace('/\.$/', ' ', $searchTerm);
 				$searchTerm = trim($searchTerm);
 			}
+			global $enabledModules;
+			global $library;
+			$searchSeries = array_key_exists('Series', $enabledModules) && $library->useSeriesSearchIndex == 1;
+			if (preg_match('/(\b|^)(series)(\b|$)/i', $searchTerm) && $searchSeries) {
+				// Redirect to series search and remove the word "series" from the search terms.
+				$searchTerm = preg_replace('/(\b)series(\b)/i', '', $searchTerm);
+				header('Location: /Union/Search?lookfor=' . urlencode(trim($searchTerm)) . '&searchIndex=SeriesKeyword&searchSource=series');
+				exit;
+			}
 		}
 		return $searchTerm;
 	}
