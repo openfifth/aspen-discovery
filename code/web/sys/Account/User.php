@@ -2494,6 +2494,10 @@ class User extends DataObject {
 			]);
 
 			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+			if (!empty($result['api']['action'])) {
+				$buttonText = $result['api']['text'] ?? "Go to Holds";
+				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
+			}
 
 			//If we have a cached account summary, add one to the number of unavailable holds (no ILSs move a hold to active immediately)
 			$accountSummary = $this->getCachedAccountSummary('ils');
@@ -2522,6 +2526,11 @@ class User extends DataObject {
 			]);
 
 			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+
+			if (!empty($result['api']['action'])) {
+				$buttonText = $result['api']['text'] ?? "Go to Holds";
+				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
+			}
 
 			$accountSummary = $this->getCachedAccountSummary('ils');
 			$accountSummary->incrementNumberOfUnavailableHolds();
@@ -2595,6 +2604,10 @@ class User extends DataObject {
 			]);
 
 			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='{$viewHoldsText}'>{$viewHoldsText}</a>";
+			if (!empty($result['api']['action'])) {
+				$buttonText = $result['api']['text'] ?? "Go to Holds";
+				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
+			}
 
 			//Update account summary and ensure holds reload
 			$accountSummary = $this->getCachedAccountSummary('ils');
