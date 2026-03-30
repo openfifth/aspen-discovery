@@ -264,13 +264,15 @@ public abstract class BaseMarcRecordGrouper extends RecordGroupingProcessor {
 					}
 				}
 			}
-			if (!treatUnknownLanguageAs.isEmpty()){
-				activeLanguage = translateValue("language_to_three_letter_code", treatUnknownLanguageAs);
-				if (activeLanguage.length() != 3 || activeLanguage.contains(" ")){
+			if (activeLanguage == null) {
+				if (!treatUnknownLanguageAs.isEmpty()) {
+					activeLanguage = translateValue("language_to_three_letter_code", treatUnknownLanguageAs);
+					if (activeLanguage.length() != 3 || activeLanguage.contains(" ")) {
+						activeLanguage = "unk";
+					}
+				} else {
 					activeLanguage = "unk";
 				}
-			}else if (activeLanguage == null){
-				activeLanguage = "unk";
 			}
 		}
 		workForTitle.setLanguage(activeLanguage);
