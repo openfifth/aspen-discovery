@@ -16,26 +16,22 @@
 		{translate text="Or select from these popular %1%." 1=$facetTitlePlural isPublicFacing=true translateParameters=true}
 	</div>
 	<div id="advFacetSearchResults">
-		<ul class="list-unstyled adv-facet-list">
-			{foreach from=$topResults item=thisFacet}
-				<li class="adv-facet-item"
-					data-filter="{$thisFacet.filter|escape:'html'}"
-					data-display="{$thisFacet.display|escape:'html'}"
-					data-facet="{$facetName|escape:'html'}"
-					onclick="AspenDiscovery.Searches.setAdvancedSearchFacetValue(this); return false;"
-					style="cursor: pointer;">
-					{$thisFacet.display}
-				</li>
-			{/foreach}
-		</ul>
+		<div class="container-12">
+			<div class="row moreFacetPopup">
+				{foreach from=$topResults item=thisFacet}
+					{strip}
+					<div class="checkboxFacet col-tn-12">
+						<label>
+							<input type="checkbox" class="advFacetCheckbox"
+								data-filter="{$thisFacet.filter|escape:'html'}"
+								data-display="{$thisFacet.display|escape:'html'}"
+								data-facet="{$facetName|escape:'html'}">
+							&nbsp;{$thisFacet.display}
+						</label>
+					</div>
+					{/strip}
+				{/foreach}
+			</div>
+		</div>
 	</div>
-	<style>
-		{literal}
-		.adv-facet-list { column-count: 2; column-gap: 0; margin: 0; }
-		.adv-facet-item { break-inside: avoid; padding: 4px 8px; }
-		.adv-facet-item:nth-child(odd)  { background-color: #f9f9f9; }
-		.adv-facet-item:nth-child(even) { background-color: #ffffff; }
-		.adv-facet-item:hover { background-color: #e8f0fe; }
-		{/literal}
-	</style>
 </div>
