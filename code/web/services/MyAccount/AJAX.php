@@ -933,6 +933,21 @@ class MyAccount_AJAX extends JSON_Action {
 				$recordId = $_REQUEST['recordId'];
 				$holdId = $_REQUEST['holdId'];
 				$reactivationDate = $_REQUEST['reactivationDate'] ?? null;
+
+				if ($_REQUEST['isAlreadyFrozen'] === 'true') {
+					// If we get here, we are updating the reactivation date, so we thaw the hold and freeze it again.
+					$thawResult = $patronOwningHold->thawHold($recordId, $holdId);
+					if (!$thawResult['success']) {
+						$message = '<div class="alert alert-danger">' . $thawResult['message'] . '</div>';
+						$thawResult['message'] = $message;
+						$thawResult['title'] = translate([
+							'text' => 'Error',
+							'isPublicFacing' => true,
+						]);
+						return $thawResult;
+					}
+				}
+
 				$result = $patronOwningHold->freezeHold($recordId, $holdId, $reactivationDate);
 				if ($result['success']) {
 					$message = '<div class="alert alert-success">' . $result['message'] . '</div>';
@@ -1998,11 +2013,13 @@ class MyAccount_AJAX extends JSON_Action {
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$patronOwningHold = $user->getUserReferredTo($patronId);
+		$isAlreadyFrozen = $_REQUEST['isAlreadyFrozen'];
 		if ($patronOwningHold !== false) {
 			$id = $_REQUEST['holdId'];
 			$interface->assign('holdId', $id);
 			$interface->assign('patronId', $patronId);
 			$interface->assign('recordId', $_REQUEST['recordId']);
+			$interface->assign('isAlreadyFrozen', $isAlreadyFrozen);
 
 			$reactivateDateNotRequired = $user->reactivateDateNotRequired();
 			$interface->assign('reactivateDateNotRequired', $reactivateDateNotRequired);
@@ -2020,7 +2037,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 
 			$title = translate([
-				'text' => 'Freeze Hold',
+				'text' => $isAlreadyFrozen === 'true' ? 'Change Activation Date' : 'Freeze Hold',
 				'isPublicFacing' => true,
 			]); // language customization
 			return [

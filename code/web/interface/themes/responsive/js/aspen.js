@@ -7293,13 +7293,14 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 		},
 
-		freezeHold: function (patronId, recordId, holdId, promptForReactivationDate, caller) {
+		freezeHold: function (patronId, recordId, holdId, promptForReactivationDate, isAlreadyFrozen, caller) {
 			AspenDiscovery.loadingMessage();
 			var url = Globals.path + '/MyAccount/AJAX';
 			var params = {
 				patronId: patronId
 				, recordId: recordId
 				, holdId: holdId
+				, isAlreadyFrozen:isAlreadyFrozen
 			};
 			if (promptForReactivationDate) {
 				//Prompt the user for the date they want to reactivate the hold
@@ -7334,6 +7335,7 @@ AspenDiscovery.Account = (function () {
 				, recordId: $('#recordId').val()
 				, holdId: $("#holdId").val()
 				, reactivationDate: $("#reactivationDate").val()
+				, isAlreadyFrozen: $("#isAlreadyFrozen").val()
 			};
 			var url = Globals.path + '/MyAccount/AJAX';
 			AspenDiscovery.showMessage(popUpBoxTitle, "Updating your hold.  This may take a minute.");
