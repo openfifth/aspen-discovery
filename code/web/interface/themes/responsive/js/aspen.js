@@ -5979,120 +5979,114 @@ jQuery.validator.addMethod("strongPassword", function(value, element) {
 
 	return '<ul class="password-error-list" style="margin-top:5px; margin-bottom:0; padding-left:1.25em; list-style-type:disc"><li>' + errors.join('</li><li>') + '</li></ul>';
 });
-AspenDiscovery.ToastNotifications = function() {
-	const debug = false; // Set to true to enable debug mode. true for dev only.
-	return {
+AspenDiscovery.ToastNotifications = (function () {
+  const debug = false;
+  const POLL_INTERVAL = 10000; // 10 seconds
+  let pollTimer = null;
 
-		/**
-		 * Listen to SSE (Server sent events)
-		 *
-		 * @param {String} args.eventSource
-		 * @param {String} args.eventName
-		 * @returns {boolean}
-		 */
-
-		listenToSSE: function(args) {
-			const eventSource = new EventSource(args.eventSource);
-
-			const closeEventSource = () => {
-				eventSource.close();
-			};
-			window.addEventListener('beforeunload', closeEventSource);
-
-			eventSource.addEventListener(args.eventName, e => {
-				const toastDataArray = JSON.parse(sessionStorage.getItem('toastDataArray')) || [];
-				const notificationAlreadyShown = toastDataArray.some(notification => notification.id === JSON.parse(e.data).id && notification.type === JSON.parse(e.data).type);
-				if (!notificationAlreadyShown || debug) {
-					toastDataArray.push(JSON.parse(e.data));
-					sessionStorage.setItem('toastDataArray', JSON.stringify(toastDataArray));
-					AspenDiscovery.ToastNotifications.showToast(JSON.parse(e.data));
-				}
-			})
-
-			eventSource.onclose = () => {
-				window.removeEventListener('beforeunload', closeEventSource);
-			};
-		},
-
-		/**
-		 * Show the toast notification
-		 *
-		 * Parameter SSEData must adhere to the following structure:
-		 * 
-		 * {
-		 *      id:    'my html id',
-		 *      title: 'toast title',
-		 *      body:  'toast body',
-		 *      link:  { href: 'url', text: 'link text' },
-		 *      icon:  'fa-icon'
-		 * }
-		 * 
-		 * @param {Object} SSEData
-		 */
-
-		showToast: function(SSEData) {
-			const toast = document.createElement('div');
-			toast.id = SSEData.id;
-			toast.className = 'toast-notification';
-			toast.innerHTML = `
-				<div class="toast-column-left">
-					<i class="fas ${SSEData.icon} toast-notification-icon"></i>
-				</div>
-				<div class="toast-column-right">
-					<p class="toast-message-title">${SSEData.title}</p>
-					<p class="toast-message-subtitle">${SSEData.body}</p>
-					${SSEData.link ? `<a class="toast-message-link" href="${SSEData.link.href}">${SSEData.link.text}</a>` : ''}
-					<button class="toast-close">×</button>
-				</div>
-			`;
-			const margin_spacing = 8;
-			const toast_height = 95;
-
-			let toast_bottom = margin_spacing;
-			
-			let adjustPosition = false;
-			if ($(document).find('.toast-notification').length == 3) {
-				$('.toast-notification').first().remove();
-				toast_bottom = (toast_height * 2) + (margin_spacing * 3);
-				adjustPosition = true;
-			}else if ($(document).find('.toast-notification').length == 1) {
-				toast_bottom = toast_height + (margin_spacing * 2);
-			}else if ($(document).find('.toast-notification').length == 2) {
-				toast_bottom = (toast_height * 2) + (margin_spacing * 3);
+  return {
+    /**
+     * Start polling for toast notifications
+     */
+    startPolling: function (args) {
+      const fetchNotifications = () => {
+        fetch(args.endpoint)
+          .then((response) => response.json())
+          .then((data) => {
+			if (data.status === "stop") {
+				clearInterval(pollTimer);
+				return;
 			}
+            if (data.status === "success" && data.notifications) {
+              data.notifications.forEach((notification) => {
+                this.processNotification(notification);
+              });
+            }
+          })
+          .catch((err) => console.error("Polling error:", err));
+      };
+      fetchNotifications();
+      pollTimer = setInterval(fetchNotifications, POLL_INTERVAL);
+    },
 
-			if( adjustPosition ){
-				let firstToast = $('.toast-notification').first()[0];
-				if(firstToast.style){
-					firstToast.style.bottom = parseInt(firstToast.style.bottom) - (toast_height + (margin_spacing)) + 'px';
-				}
-				let secondToast = $('.toast-notification').eq(1)[0];
-				if(secondToast.style){
-					secondToast.style.bottom = parseInt(secondToast.style.bottom) - (toast_height + (margin_spacing)) + 'px';
-				}
+    processNotification: function (notification) {
+      const toastDataArray =
+        JSON.parse(sessionStorage.getItem("toastDataArray")) || [];
+
+      const alreadyShown = toastDataArray.some((n) => n.id === notification.id);
+      if (!alreadyShown || debug) {
+        toastDataArray.push(notification);
+        if (toastDataArray.length > 20) toastDataArray.shift();
+
+        sessionStorage.setItem(
+          "toastDataArray",
+          JSON.stringify(toastDataArray)
+        );
+        this.showToast(notification);
+      }
+    },
+
+	showToast: function(toastData) {
+		const toast = document.createElement('div');
+		toast.id = toastData.id;
+		toast.className = 'toast-notification';
+		toast.innerHTML = `
+			<div class="toast-column-left">
+				<i class="fas ${toastData.icon} toast-notification-icon"></i>
+			</div>
+			<div class="toast-column-right">
+				<p class="toast-message-title">${toastData.title}</p>
+				<p class="toast-message-subtitle">${toastData.body}</p>
+				${toastData.link ? `<a class="toast-message-link" href="${toastData.link.href}">${toastData.link.text}</a>` : ''}
+				<button class="toast-close">×</button>
+			</div>
+		`;
+		const margin_spacing = 8;
+		const toast_height = 95;
+
+		let toast_bottom = margin_spacing;
+
+		let adjustPosition = false;
+		if ($(document).find('.toast-notification').length == 3) {
+			$('.toast-notification').first().remove();
+			toast_bottom = (toast_height * 2) + (margin_spacing * 3);
+			adjustPosition = true;
+		}else if ($(document).find('.toast-notification').length == 1) {
+			toast_bottom = toast_height + (margin_spacing * 2);
+		}else if ($(document).find('.toast-notification').length == 2) {
+			toast_bottom = (toast_height * 2) + (margin_spacing * 3);
+		}
+
+		if( adjustPosition ){
+			let firstToast = $('.toast-notification').first()[0];
+			if(firstToast.style){
+				firstToast.style.bottom = parseInt(firstToast.style.bottom) - (toast_height + (margin_spacing)) + 'px';
 			}
+			let secondToast = $('.toast-notification').eq(1)[0];
+			if(secondToast.style){
+				secondToast.style.bottom = parseInt(secondToast.style.bottom) - (toast_height + (margin_spacing)) + 'px';
+			}
+		}
 
-			Object.assign(toast.style, {
-				bottom: toast_bottom + 'px',
-				right: margin_spacing+'px',
-				height: toast_height + 'px'
-			});
-			document.body.appendChild(toast);
-			const closeButton = toast.querySelector('.toast-close');
-			closeButton.addEventListener('click', () => {
-				toast.style.opacity = 0;
-				setTimeout(() => {
-				toast.remove();
-				}, 300);
-			});
+		Object.assign(toast.style, {
+			bottom: toast_bottom + 'px',
+			right: margin_spacing+'px',
+			height: toast_height + 'px'
+		});
+		document.body.appendChild(toast);
+		const closeButton = toast.querySelector('.toast-close');
+		closeButton.addEventListener('click', () => {
+			toast.style.opacity = 0;
 			setTimeout(() => {
-				toast.style.opacity = 1;
-			}, 10);
-		},
-	}
-	
-}(AspenDiscovery.ToastNotifications || {});
-
+			toast.remove();
+			}, 300);
+		});
+		setTimeout(() => {
+			toast.style.opacity = 1;
+		}, 10);
+	},
+  };
+})();
 AspenDiscovery.Account = (function () {
 
 	// noinspection JSUnusedGlobalSymbols
@@ -7299,13 +7293,14 @@ AspenDiscovery.Account = (function () {
 			}).fail(AspenDiscovery.ajaxFail);
 		},
 
-		freezeHold: function (patronId, recordId, holdId, promptForReactivationDate, caller) {
+		freezeHold: function (patronId, recordId, holdId, promptForReactivationDate, isAlreadyFrozen, caller) {
 			AspenDiscovery.loadingMessage();
 			var url = Globals.path + '/MyAccount/AJAX';
 			var params = {
 				patronId: patronId
 				, recordId: recordId
 				, holdId: holdId
+				, isAlreadyFrozen:isAlreadyFrozen
 			};
 			if (promptForReactivationDate) {
 				//Prompt the user for the date they want to reactivate the hold
@@ -7340,6 +7335,7 @@ AspenDiscovery.Account = (function () {
 				, recordId: $('#recordId').val()
 				, holdId: $("#holdId").val()
 				, reactivationDate: $("#reactivationDate").val()
+				, isAlreadyFrozen: $("#isAlreadyFrozen").val()
 			};
 			var url = Globals.path + '/MyAccount/AJAX';
 			AspenDiscovery.showMessage(popUpBoxTitle, "Updating your hold.  This may take a minute.");
@@ -16544,14 +16540,14 @@ $(() => {
 		});
 	});
 });
-AspenDiscovery.Lists = (function(){
+AspenDiscovery.Lists = (function () {
 	// noinspection JSUnusedGlobalSymbols
 	return {
-		addToHomePage: function(listId, selectedResourceTypes, activeFilters){
+		addToHomePage: function (listId, selectedResourceTypes, activeFilters) {
 			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getAddBrowseCategoryFromListForm&listId=' + listId, true);
 		},
 
-		editListAction: function (){
+		editListAction: function () {
 			$('#listDescription,#listTitle,#FavEdit,.listViewButton').hide();
 			$('#listEditControls,#FavSave,.listEditButton').show();
 			const element = document.getElementById('listEditControls');
@@ -16559,37 +16555,37 @@ AspenDiscovery.Lists = (function(){
 			return false;
 		},
 
-		cancelEditListAction: function (){
+		cancelEditListAction: function () {
 			$('#listDescription,#listTitle,#FavEdit,.listViewButton').show();
 			$('#listEditControls,#FavSave,.listEditButton').hide();
 			return false;
 		},
 
-		submitListForm: function(action){
+		submitListForm: function (action) {
 			$('#myListActionHead').val(action);
 			$('#myListFormHead').trigger('submit');
 			AspenDiscovery.Account.loadListData();
 			return false;
 		},
 
-		makeListPublicAction: function (){
+		makeListPublicAction: function () {
 			return this.submitListForm('makePublic');
 		},
 
-		makeListPrivateAction: function (){
+		makeListPrivateAction: function () {
 			return this.submitListForm('makePrivate');
 		},
 
 		deleteListAction() {
 			const url = Globals.path + '/MyAccount/AJAX?method=getDeleteListForm';
-			$.getJSON(url, function(data) {
-				const { title, modalBody, modalButtons } = data;
+			$.getJSON(url, function (data) {
+				const {title, modalBody, modalButtons} = data;
 				AspenDiscovery.showMessageWithButtons(title, modalBody, modalButtons, false, '', false, false, true);
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		},
 
-		deleteEntryFromList: function (listId, listEntryId){
+		deleteEntryFromList: function (listId, listEntryId) {
 			window.location.href = Globals.path + '/MyAccount/MyList/' + listId + '?delete=' + listEntryId;
 		},
 
@@ -16605,7 +16601,7 @@ AspenDiscovery.Lists = (function(){
 			}
 		},
 
-		updateListAction: function (){
+		updateListAction: function () {
 			return this.submitListForm('saveList');
 		},
 
@@ -16613,12 +16609,12 @@ AspenDiscovery.Lists = (function(){
 			var urlToDisplay = Globals.path + '/MyAccount/AJAX';
 			AspenDiscovery.loadingMessage();
 			$.getJSON(urlToDisplay, {
-					method  : 'getEmailMyListForm',
-					listId : listId,
+					method: 'getEmailMyListForm',
+					listId: listId,
 					selectedResourceTypes: selectedResourceTypes,
 					activeFilters: activeFilters
 				},
-				function(data){
+				function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}
 			);
@@ -16630,15 +16626,15 @@ AspenDiscovery.Lists = (function(){
 
 			$.getJSON(url,
 				{ // form inputs passed as data
-					listId   : $('#emailListForm input[name="listId"]').val(),
+					listId: $('#emailListForm input[name="listId"]').val(),
 					selectedResourceTypes: $('#emailListForm input[name="selectedResourceTypes"]').val(),
 					activeFilters: $('#emailListForm input[name="activeFilters"]').val(),
-					to      : $('#emailListForm input[name="to"]').val(),
-					from    : $('#emailListForm input[name="from"]').val(),
-					message : $('#emailListForm textarea[name="message"]').val(),
-					method  : 'sendMyListEmail'
+					to: $('#emailListForm input[name="to"]').val(),
+					from: $('#emailListForm input[name="from"]').val(),
+					message: $('#emailListForm textarea[name="message"]').val(),
+					method: 'sendMyListEmail'
 				},
-				function(data) {
+				function (data) {
 					if (data.result) {
 						AspenDiscovery.showMessage("Success", data.message);
 					} else {
@@ -16652,60 +16648,60 @@ AspenDiscovery.Lists = (function(){
 			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX?method=getCitationFormatsForm&listId=' + id + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters, false);
 		},
 
-		processCiteListForm: function(){
+		processCiteListForm: function () {
 			$("#citeListForm").trigger('submit');
 		},
 
-		batchAddToListAction: function (id){
+		batchAddToListAction: function (id) {
 			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getBulkAddToListForm&listId=' + id);
 		},
 
-		processBulkAddForm: function(){
+		processBulkAddForm: function () {
 			$("#bulkAddToList").trigger('submit');
 		},
 
-		changeList: function (){
+		changeList: function () {
 			var availableLists = $("#availableLists");
 			window.location = Globals.path + "/MyAccount/MyList/" + availableLists.val();
 		},
 
-		printListAction: function (){
+		printListAction: function () {
 			window.print();
 			return false;
 		},
 
-		printListWithDescriptions: function (){
+		printListWithDescriptions: function () {
 			// Ensure descriptions are shown.
 			$('body').removeClass('no-print-descriptions');
 			window.print();
 			return false;
 		},
 
-		printListWithoutDescriptions: function (){
+		printListWithoutDescriptions: function () {
 			// Hide descriptions during print.
 			$('body').addClass('no-print-descriptions');
 			window.print();
 			return false;
 		},
 
-		importListsFromClassic: function (){
+		importListsFromClassic: function () {
 			AspenDiscovery.confirm("Import Lists?", "This will import any lists you had defined in the old catalog.  This may take several minutes depending on the size of your lists. Are you sure you want to continue?", "Yes", "No", true, "AspenDiscovery.Lists.doImportListsFromClassic()");
 			return false;
 		},
-		doImportListsFromClassic: function() {
+		doImportListsFromClassic: function () {
 			window.location = Globals.path + "/MyAccount/ImportListsFromClassic";
 			return false;
 		},
-		getUploadListCoverForm: function (id){
+		getUploadListCoverForm: function (id) {
 			var url = Globals.path + '/MyAccount/AJAX?id=' + id + '&method=getUploadListCoverForm';
-			$.getJSON(url, function (data){
+			$.getJSON(url, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}
 			);
 			return false;
 		},
 
-		uploadListCover: function (id){
+		uploadListCover: function (id) {
 			var url = Globals.path + '/MyAccount/AJAX?id=' + id + '&method=uploadListCover';
 			var uploadCoverData = new FormData($("#uploadListCoverForm")[0]);
 			$.ajax({
@@ -16713,7 +16709,7 @@ AspenDiscovery.Lists = (function(){
 				type: 'POST',
 				data: uploadCoverData,
 				dataType: 'json',
-				success: function(data) {
+				success: function (data) {
 					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
 				},
 				async: false,
@@ -16723,16 +16719,16 @@ AspenDiscovery.Lists = (function(){
 			return false;
 		},
 
-		getUploadListCoverFormByURL: function (id){
+		getUploadListCoverFormByURL: function (id) {
 			var url = Globals.path + '/MyAccount/AJAX?id=' + id + '&method=getUploadListCoverFormByURL';
-			$.getJSON(url, function (data){
+			$.getJSON(url, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}
 			);
 			return false;
 		},
 
-		uploadListCoverByURL: function (id){
+		uploadListCoverByURL: function (id) {
 			var url = Globals.path + '/MyAccount/AJAX?id=' + id + '&method=uploadListCoverByURL';
 			var uploadCoverData = new FormData($("#uploadListCoverFormByURL")[0]);
 			$.ajax({
@@ -16740,7 +16736,7 @@ AspenDiscovery.Lists = (function(){
 				type: 'POST',
 				data: uploadCoverData,
 				dataType: 'json',
-				success: function(data) {
+				success: function (data) {
 					AspenDiscovery.showMessage(data.title, data.message, true, data.success);
 				},
 				async: false,
@@ -16750,9 +16746,9 @@ AspenDiscovery.Lists = (function(){
 			return false;
 		},
 
-		removeUploadedListCover: function (id){
+		removeUploadedListCover: function (id) {
 			var url = Globals.path + '/MyAccount/AJAX?listId=' + id + '&method=removeUploadedListCover';
-			$.getJSON(url, function (data){
+			$.getJSON(url, function (data) {
 				if (data.success) {
 					$("#removeUploadedListCover").hide();
 				}
@@ -16761,7 +16757,7 @@ AspenDiscovery.Lists = (function(){
 			return false;
 		},
 
-		changeWeight: function(listEntryId, direction) {
+		changeWeight: function (listEntryId, direction) {
 			var url = Globals.path + '/MyAccount/AJAX';
 			var params = {
 				method: 'updateWeight',
@@ -16769,12 +16765,12 @@ AspenDiscovery.Lists = (function(){
 				direction: direction
 			};
 			$.getJSON(url, params, function (data) {
-				if (data.success){
+				if (data.success) {
 					var entry1 = $(listEntryId);
 					var entry2 = $(data.swappedWithId);
-					if (direction === 'up'){
+					if (direction === 'up') {
 						entry2.before(entry1);
-					}else{
+					} else {
 						entry1.before(entry2);
 					}
 					location.reload();
@@ -16881,6 +16877,117 @@ AspenDiscovery.Lists = (function(){
 				// If the AJAX call itself failed, still try the download.
 				window.location.href = `${Globals.path}/MyAccount/AJAX?method=exportUserListRIS&listId=${listId}` + '&selectedResourceTypes=' + selectedResourceTypes + '&activeFilters=' + activeFilters;
 			});
+			return false;
+		},
+
+		listTransferAction: function (id) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListTransferForm&listId=' + id);
+		},
+
+		listTransferValidation: function () {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'listTransferValidation',
+				newListOwner: $('#newListOwner').val(),
+				listId: $('#listId').val()
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success === false) {
+					const listId = $('#listId').val();
+					return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListTransferForm&listId=' + listId + '&validationFailed=true');
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listTransferProcess: function (listId, userId) {
+			$('#listTransferProcessBtn .fa-spinner').show();
+			$('#listTransferProcessBtn').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=listTransferProcess&listId=" + listId + "&userId=" + userId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/MyList/" + listId;
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listGroupTransferAction: function (listGroupId) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListGroupTransferForm&listGroupId=' + listGroupId);
+		},
+
+		listGroupTransferValidation: function () {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'listGroupTransferValidation',
+				newListGroupOwner: $('#newListGroupOwner').val(),
+				listGroupId: $('#listGroupId').val()
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success === false) {
+					const listGroupId = $('#listGroupId').val();
+					return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListGroupTransferForm&listGroupId=' + listGroupId + '&validationFailed=true');
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listGroupTransferProcess: function (listGroupId, userId) {
+			$('#listTransferProcessBtn .fa-spinner').show();
+			$('#listTransferProcessBtn').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=listGroupTransferProcess&listGroupId=" + listGroupId + "&userId=" + userId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists?groupId=" + listGroupId;
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listsTransferAction: function (id) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListsTransferForm&prevListOwner=' + id);
+		},
+
+		listsTransferValidation: function () {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'listsTransferValidation',
+				newListOwner: $('#newListOwner').val(),
+				prevListOwner: $('#prevListOwner').val(),
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (data.success === false) {
+					const prevListOwner = $('#prevListOwner').val();
+					return AspenDiscovery.Account.ajaxLightbox(Globals.path + '/MyAccount/AJAX/?method=getListsTransferForm&prevListOwner=' + prevListOwner + '&validationFailed=true');
+				} else {
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		listsTransferProcess: function (userId, prevUserId) {
+			$('#listTransferProcessBtn .fa-spinner').show();
+			$('#listTransferProcessBtn').prop('disabled', true);
+			var url = Globals.path + "/MyAccount/AJAX?method=listsTransferProcess&userId=" + userId + "&prevListOwner=" + prevUserId;
+			$.getJSON(url, function (data) {
+				if (data.success) {
+					window.location.href = Globals.path + "/MyAccount/Lists/";
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message, false);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
 			return false;
 		}
 	};
@@ -18905,7 +19012,7 @@ AspenDiscovery.Record = (function () {
 					} else if (data.needsIllRequest) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 					} else {
-						AspenDiscovery.showMessage(data.title, data.message, false, data.autologout);
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, data.modalButtons, data.autologout);
 						var existingButton = $("#onHoldAction" + id);
 						if (existingButton.length === 0) {
 							$(data.viewHoldsAction).insertBefore('#actionButton' + id);
@@ -19068,7 +19175,7 @@ AspenDiscovery.Record = (function () {
 						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 					} else {
 						AspenDiscovery.Record.volumeHoldInProgress = false;
-						AspenDiscovery.showMessage(data.title, data.message, false, autoLogOut);
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, data.modalButtons, autoLogOut);
 						AspenDiscovery.Account.loadMenuData();
 					}
 				} else {
@@ -19354,6 +19461,15 @@ AspenDiscovery.Record = (function () {
 				AspenDiscovery.showMessage(data.title, data.message);
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
+		},
+
+		getLargeCover: function (recordId){
+			var url = Globals.path + '/Record/' + recordId + '/AJAX?method=getLargeCover';
+			$.getJSON(url, function (data){
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+				}
+			);
+			return false;
 		}
 	};
 }(AspenDiscovery.Record || {}));
@@ -19556,7 +19672,8 @@ AspenDiscovery.Searches = (function(){
 			}
 		})
 	});
-	return{
+	return {
+		_advFacetCache: {},
 		searchGroups: [],
 		curPage: 1,
 		displayMode: 'list', // default display Mode for results
@@ -19954,6 +20071,88 @@ AspenDiscovery.Searches = (function(){
 					$("#facetSearchResults").html(data.message);
 				}
 			});
+		},
+
+		showAdvancedSearchFacetPopup: function (facetName) {
+			var cache = AspenDiscovery.Searches._advFacetCache;
+			if (cache[facetName]) {
+				var data = cache[facetName];
+				AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.buttons);
+				return false;
+			}
+			var url = Globals.path + '/Search/AJAX?method=getAdvancedSearchFacetPopup&facetName=' + encodeURIComponent(facetName);
+			$.getJSON(url, function (data) {
+				if (data.success === true) {
+					cache[facetName] = data;
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.buttons);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			});
+			return false;
+		},
+
+		onAdvancedFacetSelectChange: function (selectEl) {
+			var $select = aspenJQ(selectEl);
+			var val     = $select.val();
+			if (val === '__browse__') {
+				$select.val($select.data('prevVal') || '');
+				var facetName = selectEl.id.replace('facet-select-', '');
+				AspenDiscovery.Searches.showAdvancedSearchFacetPopup(facetName);
+			} else {
+				$select.data('prevVal', val);
+			}
+		},
+
+		searchAdvancedFacetValuesKeyDown: function (e) {
+			if (e.keyCode === 9) {
+				AspenDiscovery.Searches.searchAdvancedFacetValues();
+			} else if (e.keyCode === 10 || e.keyCode === 13) {
+				e.preventDefault();
+				AspenDiscovery.Searches.searchAdvancedFacetValues();
+			}
+			return false;
+		},
+
+		searchAdvancedFacetValues: function () {
+			$("#advFacetSearchResultsPopularHelp").hide();
+			$("#advFacetSearchResultsLoading").show();
+			$("#advFacetSearchResults").html("");
+			var facetName   = $("#advFacetName").val();
+			var searchTerm  = $("#advFacetSearchTerm").val();
+			var url = Globals.path + '/Search/AJAX';
+			var params = {
+				'method':     'searchAdvancedFacetTerms',
+				'facetName':  facetName,
+				'searchTerm': searchTerm
+			};
+			$.getJSON(url, params, function (data) {
+				$("#advFacetSearchResultsLoading").hide();
+				if (data.success === true) {
+					$("#advFacetSearchResults").html(data.facetResults);
+				} else {
+					$("#advFacetSearchResults").html(data.message);
+				}
+			});
+		},
+
+		setAdvancedSearchFacetValue: function (el) {
+			var $el         = aspenJQ(el);
+			var filterValue = $el.attr('data-filter');
+			var displayText = $el.attr('data-display');
+			var facetName   = $el.attr('data-facet');
+			var $select = aspenJQ('#facet-select-' + facetName);
+			if ($select.length === 0) {
+				aspenJQ('#modalDialog').modal('hide');
+				return;
+			}
+			$select.val(filterValue);
+			if ($select.val() !== filterValue) {
+				$select.append(aspenJQ('<option>', {value: filterValue, text: displayText}));
+				$select.val(filterValue);
+			}
+			$select.data('prevVal', filterValue);
+			aspenJQ('#modalDialog').modal('hide');
 		}
 	}
 }(AspenDiscovery.Searches || {}));
@@ -20472,6 +20671,28 @@ AspenDiscovery.WebBuilder = function () {
 	// noinspection JSUnusedGlobalSymbols
 	return {
 		editors: [],
+		// Track placard views (whenever shown to a user, regardless of whether they interact with it)
+		trackPlacardView: function(placardId) {
+			const url = Globals.path + '/WebBuilder/AJAX';
+			const params = {
+				method: 'trackPlacardUsage',
+				id: placardId,
+				operation: 'view'
+			};
+			$.getJSON(url, params);
+		},
+
+		// Track placard clicks
+		trackPlacardClick: function(placardId, authType) {
+			const url = Globals.path + '/WebBuilder/AJAX';
+			const params = {
+				method: 'trackPlacardUsage',
+				id: placardId,
+				operation: 'click',
+				authType: authType
+			};
+			$.getJSON(url, params);
+		},
 		saveLinkedObjCallback: function() {},
 
 		getPortalCellValuesForSource: function () {
@@ -20594,6 +20815,15 @@ AspenDiscovery.WebBuilder = function () {
 					AspenDiscovery.showMessage('Sorry', data.message);
 				}
 			});
+		},
+
+		// Call this whenever placards are rendered/shown.
+		renderPlacards: function(placardIds) {
+			if (Array.isArray(placardIds)) {
+				placardIds.forEach(function(id) {
+					AspenDiscovery.WebBuilder.trackPlacardView(id);
+				});
+			}
 		},
 
 		checkLinkedObject: function (submitForm) {
@@ -20953,6 +21183,16 @@ AspenDiscovery.WebBuilder = function () {
 			}).fail(AspenDiscovery.ajaxFail);
 
 			return false;
+		},
+
+		placardClickHandler: function(placardId) {
+			let authType = "none";
+			if (Globals.loggedIn) {
+				authType = "user";
+			} else if (Globals.inLibrary) {
+				authType = "library";
+			}
+			AspenDiscovery.WebBuilder.trackPlacardClick(placardId, authType);
 		},
 
 		getAddQuickPollOptionForm: function (pollId) {
@@ -21968,23 +22208,6 @@ AspenDiscovery.CommunityEngagement = function() {
 			}
 			
 		},
-		getLibraryUsers: function (callback) {
-			var url = Globals.path + "/CommunityEngagement/AJAX";
-			var params = {
-				method: 'getLibraryUsers',
-			};
-
-			$.getJSON(url, params, function (data) {
-				if (data.success && data.users) {
-					callback(data.users);
-				} else{
-					callback([]);
-				}
-			}).fail (function(jqXHR, textStatus, errorThrown) {
-				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
-				callback([]);
-			});
-		},
 		displaySearchResults: function (users) {
 			const resultsDiv = document.getElementById('user_search_results');
 
@@ -22011,30 +22234,48 @@ AspenDiscovery.CommunityEngagement = function() {
 			const resultsDiv = document.getElementById('user_search_results');
 			const hiddenInput = document.getElementById('selected_user_id');
 
+			// 1. Clear the debounce timer
+			clearTimeout(this.searchTimer);
+
+			// 2. Abort any existing AJAX request
+			if (this.currentSearchRequest) {
+				this.currentSearchRequest.abort();
+			}
+
 			if (query.length < 2) {
 				resultsDiv.style.display = 'none';
 				hiddenInput.value = '';
 				return;
 			}
 
-			hiddenInput.value = '';
-			const url = Globals.path + '/CommunityEngagement/AJAX';
-			const params = {
-				method: 'searchUsers',
-				query: query
-			};
+			// 3. Set the debounce timer (300ms)
+			this.searchTimer = setTimeout(() => {
 
-			$.getJSON(url, params, function(data) {
-				if (data.success) {
-					AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
-				} else {
-					resultsDiv.style.display = 'none';
-					console.warn('No users found or error in AJAX call');
-				}
-			}).fail(function(jqXHR, textStatus, errorThrown) {
-				console.error('AJAX Error: ', textStatus, errorThrown);
-			});
-		},
+                resultsDiv.innerHTML = '<div style="padding: 10px; color: #666;">Searching...</div>';
+                resultsDiv.style.display = 'block';
+
+				hiddenInput.value = '';
+				const url = Globals.path + '/CommunityEngagement/AJAX';
+				const params = {
+					method: 'searchUsers',
+					query: query
+				};
+
+				// 4. Store the AJAX object to allow aborting
+				this.currentSearchRequest = $.getJSON(url, params, function(data) {
+					if (data.success) {
+						AspenDiscovery.CommunityEngagement.displaySearchResults(data.users);
+					} else {
+						resultsDiv.style.display = 'none';
+					}
+				}).fail(function(jqXHR, textStatus, errorThrown) {
+					// Ignore manual aborts, log real errors
+					if (textStatus !== 'abort') {
+						console.error('AJAX Error: ', textStatus, errorThrown);
+					}
+				});
+			}, 300);
+        },
 		loadCheckoutsForUser: function(userId, callback) {
 			let url = Globals.path + "/MyAccount/AJAX";
 			var params = {
@@ -22243,17 +22484,6 @@ AspenDiscovery.CommunityEngagement = function() {
 				success: function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.message);
-						AspenDiscovery.CommunityEngagement.getLibraryUsers(function(users) {
-							if ($('#user_id').length > 0) {
-								const $dropdown = $('#user_id');
-								const currentValue = $dropdown.val();
-								$dropdown.empty().append('<option value="">-</option>');
-								users.forEach(function(user) {
-									const selected = user.id == currentValue ? 'selected' : '';
-									$dropdown.append(`<option value="${user.id}" ${selected}>${user.displayName}</option>`);
-								});
-							}
-						});
 						$('#addUserByBarcodeModal').modal('hide');
 						$('#newUserBarcode').val('');
 					} else {

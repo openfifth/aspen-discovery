@@ -4,11 +4,23 @@
 		<thead>
 		<tr>
 			<th>{translate text="Available Copies" isPublicFacing=true}</th>
+			{if ($whereIsItDisplayStyle == 2) && $infoToShow.volume}
+				<th>{translate text="Volume" isPublicFacing=true}</th>
+			{/if}
 			<th>{translate text="Location" isPublicFacing=true}</th>
 			{if empty($isEContent)}
 				<th>{translate text="Call #" isPublicFacing=true}</th>
 			{elseif !empty($showEContentHoldCounts)}
 				<th>{translate text="Holds" isPublicFacing=true}</th>
+			{/if}
+			{if ($whereIsItDisplayStyle == 2)}
+				{if ($infoToShow.note) && $showItemNotes}
+					<th>{translate text="Note" isPublicFacing=true}</th>
+				{/if}
+				<th>{translate text="Status" isPublicFacing=true}</th>
+				{if ($infoToShow.dueDate) && $showItemDueDates}
+					<th>{translate text="Due Date" isPublicFacing=true}</th>
+				{/if}
 			{/if}
 		</tr>
 		</thead>
@@ -29,6 +41,9 @@
 						<td>{translate text="%1% of %2%" 1=$item.availableCopies 2=$item.totalCopies isPublicFacing=true}{if !empty($item.availableCopies)} <i class="fa fa-check"></i>{/if}</td>
 					{/if}
 				{/if}
+				{if ($whereIsItDisplayStyle == 2) && $infoToShow.volume}
+					<td class="notranslate">{$item.volume}</td>
+				{/if}
 				<td class="notranslate">{$item.shelfLocation}</td>
 
 				{if empty($item.isEContent)}
@@ -41,6 +56,19 @@
 							{$item.numHolds}
 						{/if}
 					</td>
+				{/if}
+				{if ($whereIsItDisplayStyle == 2)}
+					{if !empty($infoToShow.note) && $showItemNotes}
+						<td>
+							{if !empty($item.note)}{$item.note}{/if}
+						</td>
+					{/if}
+					<td class="notranslate">{$item.status}</td>
+					{if !empty($infoToShow.dueDate) && $showItemDueDates}
+						<td>
+							{if !empty($item.dueDate)}{$item.dueDate|date_format:"%B %e, %Y"}{/if}
+						</td>
+					{/if}
 				{/if}
 
 			</tr>

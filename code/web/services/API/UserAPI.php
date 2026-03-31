@@ -392,6 +392,10 @@ class UserAPI extends AbstractAPI {
 					$validatedUser = $authN->validateAccount($username, $password, $additionalInfo['accountProfile'], $parentAccount, $validatedViaSSO);
 					if ($validatedUser && !($validatedUser instanceof AspenError)) {
 						$_REQUEST['rememberMe'] = "true";
+						if ($validatedUser->allowAppRequestLogging) {
+							require_once ROOT_DIR . '/sys/SystemLogging/UserAppRequestLogEntry.php';
+							UserAppRequestLogEntry::logRequest($validatedUser->id, $_GET['action'], $_GET['method'], json_encode($_REQUEST), $this->getLiDAVersion());
+						}
 						UserAccount::updateSession($validatedUser);
 						return [
 							'success' => true,
@@ -599,12 +603,7 @@ class UserAPI extends AbstractAPI {
 	 *
 	 */
 	function validateAccount(): array {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user != null) {
 			//TODO This needs to be updated to just export public information
 			//get rid of data object fields before returning the result
@@ -683,8 +682,7 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function prepareSharedSession() {
-		[$username, $password] = $this->loadUsernameAndPassword();
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user != null) {
 			// validate the incoming request
 			$validSession = $this->validateSession();
@@ -1460,11 +1458,7 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function getPatronCheckedOutItemsOverDrive(): array {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-		$user = UserAccount::validateAccount($username, $password);
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
 			$driver = new OverDriveDriver();
@@ -2929,13 +2923,7 @@ class UserAPI extends AbstractAPI {
 	}
 
 	function updateOverDriveEmail(): array {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-
-		$user = UserAccount::validateAccount($username, $password);
-
+		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
 			$patronId = $_REQUEST['patronId'];
 			$patron = $user->getUserReferredTo($patronId);
@@ -5128,12 +5116,9 @@ class UserAPI extends AbstractAPI {
 				return $oauthUser;
 			}
 			$user = false;
-			if ($this->getLiDAVersion() === "v22.04.00") {
-				[
-					$username,
-					$password,
-				] = $this->loadUsernameAndPassword();
-				return UserAccount::validateAccount($username, $password);
+
+			if ($this->checkIfLiDA()) {
+				return parent::getUserForApiCall();
 			}
 
 			if (isset($_REQUEST['patronId'])) {
@@ -5283,15 +5268,10 @@ class UserAPI extends AbstractAPI {
 	}
 
 	function addAccountLink() {
-		[
-			$username,
-			$password,
-		] = $this->loadUsernameAndPassword();
-
 		$accountToLinkUsername = $_POST['accountToLinkUsername'] ?? '';
 		$accountToLinkPassword = $_POST['accountToLinkPassword'] ?? '';
 
-		$initiatingUser = UserAccount::validateAccount($username, $password);
+		$initiatingUser = $this->getUserForApiCall();
 
 		if ($initiatingUser && !($initiatingUser instanceof AspenError)) {
 			$accountToLinkUser = UserAccount::validateAccount($accountToLinkUsername, $accountToLinkPassword);
@@ -6352,6 +6332,8 @@ class UserAPI extends AbstractAPI {
 								'itemData' => $result['itemData'],
 								'completionMessage' => $result['completionMessage'] ?? '',
 								'mustConfirmCompletionMessage' => $result['mustConfirmCompletionMessage'] ?? false,
+								'itemNotFound' => $result['api']['itemNotFound'] ?? false,
+								'barcode' => $itemBarcode
 							];
 						} else {
 							return [

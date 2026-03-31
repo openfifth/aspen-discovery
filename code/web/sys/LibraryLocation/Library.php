@@ -504,7 +504,6 @@ class Library extends DataObject {
 	public $campaignCompletionNewEmail;
 	public $displayCampaignLeaderboard;
 	/** @noinspection PhpUnused */
-	public $communityEngagementAdminUserSelect;
 	public $displayOnlyUsersForLocationInUserAdmin;
 	public $allowAdminToEnrollUsersInAdminView;
 	public $displayDigitalRewardOnlyWhenAwarded;
@@ -4381,17 +4380,6 @@ class Library extends DataObject {
 						'description' => 'Allow admin to enroll users via the admin view page',
 						'default' => 0,
 						'hideInLists'=> true,
-					],
-					'communityEngagementAdminUserSelect' => [
-						'property' => 'communityEngagementAdminUserSelect',
-						'type' => 'enum',
-						'label' => 'Admin View User Select',
-						'description' => 'Whether to use a dropdown or a search bar to select users in the Community Engagement Admin View section',
-						'values' => [
-							'dropdown' => 'Dropdown',
-							'searchbar' => 'Search bar',
-						],
-						'default' => 'dropdown',
 					],
 					'displayOnlyUsersForLocationInUserAdmin' => [
 						'property' => 'displayOnlyUsersForLocationInUserAdmin',
