@@ -174,3 +174,7 @@ code/aspen_app/%ProgramData%/Microsoft/Windows/UUS/State/_active.uusver
 data_dir_setup/.idea/workspace.xml
 /code/web/images/mnps
 .htaccess
+sites/aspen-discovery.lndo.site/
+code/web/services/Authentication/OAuth2Server/private.key
+code/web/services/Authentication/OAuth2Server/public.key
+code/web/services/Authentication/OAuth2Server/encryption.key
