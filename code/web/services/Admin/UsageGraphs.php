@@ -246,6 +246,7 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 			// Get placard name for title
 			$placard = new Placard();
 			$placard->id = $placardId;
+			$interface->assign('placardId', $placardId);
 			if ($placard->find(true)) {
 				$placardName = $placard->title;
 			} else {
