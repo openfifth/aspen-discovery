@@ -162,6 +162,7 @@ class GroupedWork_AJAX extends JSON_Action {
 
 		global $interface;
 		global $memoryWatcher;
+		global $library;
 
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		$id = $_REQUEST['id'];
@@ -181,8 +182,42 @@ class GroupedWork_AJAX extends JSON_Action {
 		$enrichmentData = $recordDriver->loadEnrichment();
 		$memoryWatcher->logMemory('Loaded Enrichment information from NoveList');
 
-		//Process series data
+		//Process series data if series module is on
 		$titles = [];
+		if ($library->useSeriesSearchIndex) {
+			$seriesInfo = $recordDriver->getSeries(true);
+			if (empty($seriesInfo)) {
+				$enrichmentResult['seriesInfo'] = [
+					'titles' => $titles,
+					'currentIndex' => 0,
+				];
+			}else{
+				$seriesId = $seriesInfo['seriesId'];
+
+				require_once ROOT_DIR . '/sys/Series/Series.php';
+				$series = new Series();
+				$series->id = $seriesId;
+				if ($series->find(true)) {
+					$seriesMembers = $series->getSeriesMembers($series->getDefaultSortMethodName(), false, false);
+					$titles = [];
+					$currentIndex = 1;
+					foreach ($seriesMembers as $index => $seriesMember) {
+						$titles[] = $this->getScrollerTitleForSeriesMember($seriesMember, $index, 'Series');
+						if ($seriesMember->groupedWorkPermanentId == $id) {
+							$currentIndex = $index;
+						}
+					}
+
+					$seriesInfo = [
+						'titles' => $titles,
+						'currentIndex' => $currentIndex,
+					];
+					$enrichmentResult['seriesInfo'] = $seriesInfo;
+				}
+			}
+		}
+
+		//Process Novelist if on.
 		/** @var NovelistData $novelistData */
 		if (isset($enrichmentData['novelist'])) {
 			$novelistData = $enrichmentData['novelist'];
@@ -473,6 +508,66 @@ class GroupedWork_AJAX extends JSON_Action {
 			'image' => $cover,
 			'title' => $title,
 			'author' => $record['author'] ?? '',
+			'formattedTitle' => $formattedTitle,
+		];
+	}
+
+	private function getScrollerTitleForSeriesMember(SeriesMember $seriesMember, $index, $scrollerName) : array {
+		$recordDriver = $seriesMember->getRecordDriver();
+		$cover = $recordDriver->getBookcoverUrl('medium');
+		$title = preg_replace("~\\s*([/:])\\s*$~", "", $seriesMember->displayName);
+		$series = $seriesMember->getSeries()->displayName;
+
+		if (isset($series)) {
+			$title .= ' (' . $series;
+			if (!empty($seriesMember->volume)) {
+				$title .= ' Volume ' . $seriesMember->volume;
+			}
+			$title .= ')';
+		}
+
+		if ($recordDriver != null) {
+			global $interface;
+			$interface->assign('index', $index);
+			$interface->assign('scrollerName', $scrollerName);
+			$interface->assign('id', $recordDriver->getPermanentId());
+			$interface->assign('title', $title);
+			$interface->assign('linkUrl', $recordDriver->getLinkUrl());
+			$interface->assign('bookCoverUrl', $cover);
+			$interface->assign('bookCoverUrlMedium', $cover);
+			$formattedTitle = $interface->fetch('RecordDrivers/GroupedWork/scroller-title.tpl');
+		} else {
+			$originalId = $_REQUEST['id'];
+			$formattedTitle = "<div id=\"scrollerTitle$scrollerName$index\" class=\"scrollerTitle\" onclick=\"return AspenDiscovery.showElementInPopup('$title', '#noResults$index')\">" . "<img src=\"$cover\" class=\"scrollerTitleCover\" alt=\"$title Cover\"/>" . "</div>";
+			$formattedTitle .= "<div id=\"noResults$index\" style=\"display:none\">
+					<div class=\"row\">
+						<div class=\"result-label col-md-3\">Author: </div>
+						<div class=\"col-md-9 result-value notranslate\">
+							<a href='/Author/Home?author=\"{$seriesMember->getSeries()->author}\"'>{$seriesMember->getSeries()->author}</a>
+						</div>
+					</div>
+					<div class=\"series row\">
+						<div class=\"result-label col-md-3\">Series: </div>
+						<div class=\"col-md-9 result-value\">
+							<a href=\"/GroupedWork/$originalId/Series\">$series</a>
+						</div>
+					</div>
+					<div class=\"row related-manifestation\">
+						<div class=\"col-sm-12\">
+							" . translate([
+					'text' => "The library does not own any copies of this title.",
+					'isPublicFacing' => true,
+				]) . "
+						</div>
+					</div>
+				</div>";
+		}
+
+		return [
+			'id' => $seriesMember->groupedWorkPermanentId ?? '',
+			'image' => $cover,
+			'title' => $title,
+			'author' => $seriesMember->getSeries()->author ?? '',
 			'formattedTitle' => $formattedTitle,
 		];
 	}
