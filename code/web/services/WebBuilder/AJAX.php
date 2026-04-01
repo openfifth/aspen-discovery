@@ -1275,7 +1275,6 @@ class WebBuilder_AJAX extends JSON_Action {
 		$id = $_REQUEST['id'];
 		$operation = $_REQUEST['operation'];
 		global $locationSingleton;
-		require_once ROOT_DIR . '/sys/Account/UserAccount.php';
 		$authType = null;
 		if (UserAccount::isLoggedIn()) {
 			$authType = 'user';
@@ -1300,7 +1299,6 @@ class WebBuilder_AJAX extends JSON_Action {
 			$usage->month = $month;
 			$usage->instance = $instance;
 			$usage->placardName = $placardName;
-			$test_usage_find = $usage->find(true);
 			if ($usage->find(true)) {
 				if ($operation === 'view') {
 					$usage->timesShown++;
