@@ -81,8 +81,16 @@ class EBSCO_EBSCOhostSettings extends ObjectEditor {
 			/** @var EBSCOhostSetting $curObject */
 			$curObject = $this->getExistingObjectById($id);
 			$searchSettings = $curObject->getSearchSettings();
+			$connectionFailed = false;
 			foreach ($searchSettings as $searchSetting) {
-				$searchSetting->updateDatabasesFromEBSCOhost();
+				if (!$searchSetting->updateDatabasesFromEBSCOhost()) {
+					$connectionFailed = true;
+				}
+			}
+			if ($connectionFailed) {
+				global $interface;
+				$interface->assign('updateMessage', 'EBSCO connection failed. Credentials may be invalid or the EBSCO API is unreachable.');
+				$interface->assign('updateMessageIsError', $connectionFailed);
 			}
 		}
 		parent::viewIndividualObject($structure);

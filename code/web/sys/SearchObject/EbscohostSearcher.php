@@ -764,6 +764,11 @@ class SearchObject_EbscohostSearcher extends SearchObject_BaseSearcher {
 	public function getDatabases(): array {
 		$databases = [];
 		$searchOptions = $this->getSearchOptions();
+		if ($searchOptions == null) {
+			global $logger;
+			$logger->log('EBSCOhost getDatabases: getSearchOptions() returned null — credentials may be invalid or the EBSCO API is unreachable', Logger::LOG_WARNING);
+			return $databases;
+		}
 		/** @var SimpleXMLElement $dbInfo */
 		foreach ($searchOptions->dbInfo->db as $dbInfo) {
 			$shortName = (string)$dbInfo->attributes()['shortName'];
