@@ -20600,13 +20600,12 @@ AspenDiscovery.WebBuilder = function () {
 		},
 
 		// Track placard clicks
-		trackPlacardClick: function(placardId, authType) {
+		trackPlacardClick: function(placardId) {
 			const url = Globals.path + '/WebBuilder/AJAX';
 			const params = {
 				method: 'trackPlacardUsage',
 				id: placardId,
-				operation: 'click',
-				authType: authType
+				operation: 'click'
 			};
 			$.getJSON(url, params);
 		},
@@ -21103,13 +21102,7 @@ AspenDiscovery.WebBuilder = function () {
 		},
 
 		placardClickHandler: function(placardId) {
-			let authType = "none";
-			if (Globals.loggedIn) {
-				authType = "user";
-			} else if (Globals.inLibrary) {
-				authType = "library";
-			}
-			AspenDiscovery.WebBuilder.trackPlacardClick(placardId, authType);
+			AspenDiscovery.WebBuilder.trackPlacardClick(placardId);
 		},
 
 		getAddQuickPollOptionForm: function (pollId) {

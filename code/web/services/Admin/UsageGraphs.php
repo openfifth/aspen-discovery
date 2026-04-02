@@ -243,16 +243,10 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 			require_once ROOT_DIR . '/sys/WebBuilder/PlacardUsage.php';
 			require_once ROOT_DIR . '/sys/LocalEnrichment/Placard.php';
 			$placardId = $_REQUEST['placardId'] ?? null;
-			if (empty($placardId)) {
-				$interface->assign('columnLabels', []);
-				$interface->assign('dataSeries', []);
-				$interface->assign('translateDataSeries', true);
-				$interface->assign('translateColumnLabels', false);
-				return;
-			}
 			// Get placard name for title
 			$placard = new Placard();
 			$placard->id = $placardId;
+			$interface->assign('placardId', $placardId);
 			if ($placard->find(true)) {
 				$placardName = $placard->title;
 			} else {
@@ -271,16 +265,12 @@ class Admin_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$usage->orderBy('year, month');
 			$usage->find();
 			$dataSeries['Times Shown'] = GraphingUtils::getDataSeriesArray(0);
+			$columnLabels = [];
 			while ($usage->fetch()) {
 				$curPeriod = "{$usage->month}-{$usage->year}";
 				$columnLabels[] = $curPeriod;
 				$dataSeries['Times Shown']['data'][$curPeriod] = (int)$usage->sumTimesShown;
 			}
-			$interface->assign('columnLabels', $columnLabels);
-			$interface->assign('dataSeries', $dataSeries);
-			$interface->assign('translateDataSeries', true);
-			$interface->assign('translateColumnLabels', false);
-			return;
 		}
 
 		$interface->assign('columnLabels', $columnLabels);
