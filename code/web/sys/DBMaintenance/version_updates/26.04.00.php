@@ -157,6 +157,14 @@ function getUpdates26_04_00(): array {
 				"ALTER TABLE placard_usage ADD UNIQUE INDEX placard_usage_unique (instance, year, month, placardName);",
 			]
 		], //add_index_to_placard_usage
+		'add_series_option_to_search_interpreter_settings' => [
+			'title' => 'Add Series Option to Search Interpreter Settings',
+			'description' => 'Add a setting to control whether or not the search interpreter defaults to a series search when the "series" keyword is used.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE search_interpreter_settings ADD COLUMN triggerSeriesSearch TINYINT(1) DEFAULT 0",
+			]
+		], //add_series_option_to_search_interpreter_settings
 
 		//lucas
 
