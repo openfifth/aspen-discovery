@@ -950,7 +950,7 @@ class User extends DataObject {
 		return $users;
 	}
 
-	function isValidForEContentSource($source) {
+	function isValidForEContentSource(string $source) : bool {
 		global $enabledModules;
 		if ($this->parentUser == null || ($this->getBarcode() != $this->parentUser->getBarcode())) {
 			$userHomeLibrary = Library::getPatronHomeLibrary($this);
