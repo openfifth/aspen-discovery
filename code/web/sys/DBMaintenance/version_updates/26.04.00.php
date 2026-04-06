@@ -16,6 +16,22 @@ function getUpdates26_04_00(): array {
 		 ], //name*/
 
 		//mark n
+		'show_palace_project_link_for_checkouts' => [
+			'title' => 'Show Palace Project Link For Checkouts',
+			'description' => 'Track whether a checkout should have a link to access it in Palace Project',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user_checkout ADD COLUMN showPalaceProjectLink TINYINT DEFAULT 0',
+			]
+		], //show_palace_project_link_for_checkouts
+		'allow_disabling_palace_project_links' => [
+			'title' => 'Allow Disabling Palace Project Links',
+			'description' => 'Allow disabling Project Links for other eContent',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE palace_project_settings ADD COLUMN showPalaceProjectLinks TINYINT DEFAULT 1',
+			]
+		], //allow_disabling_palace_project_links
 
 		//kirstien
 		'add_user_app_request_logging_option' => [

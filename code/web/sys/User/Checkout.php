@@ -55,6 +55,7 @@ class Checkout extends CircEntry {
 
 	//For Palace Project
 	public $earlyReturnUrl;
+	public $showPalaceProjectLink;
 
 	//Calculate in realtime
 	public $_overdue = null;
