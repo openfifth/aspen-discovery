@@ -10,7 +10,6 @@ class AspenPWA_Manifest extends Action {
 		header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
 		header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
 		$output = json_encode($this->build_manifest());
-		http_response_code(200);
 		echo $output;
 	}
 
@@ -33,6 +32,7 @@ class AspenPWA_Manifest extends Action {
 			$themeColor = $theme->primaryForegroundColor;	
 		}
 
+		http_response_code(200);
 		return [
 
 			'id' => $setting->manifestID,
