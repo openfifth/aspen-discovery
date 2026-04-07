@@ -32,6 +32,52 @@ function getUpdates26_04_00(): array {
 				'ALTER TABLE palace_project_settings ADD COLUMN showPalaceProjectLinks TINYINT DEFAULT 1',
 			]
 		], //allow_disabling_palace_project_links
+		'user_list_custom_name' => [
+			'title' => 'User List Custom Name',
+			'description' => 'Allow definining custom names for searchable lists',
+			'sql' => [
+				'ALTER TABLE user_list ADD COLUMN customAuthorName varchar(256)'
+			]
+		], //user_list_custom_name
+		'user_list_facets' => [
+			'title' => 'User List Facets',
+			'description' => 'Setup tables to define facets for use when searching lists',
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('User Lists', 'Administer User List Facet Settings', '', 40, 'Allows users to administer facets for user list searches.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer User List Facet Settings'))",
+				"CREATE TABLE `user_list_facet_groups` (
+					`id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+					`name` varchar(255) NOT NULL,
+					PRIMARY KEY (`id`),
+					UNIQUE KEY `name` (`name`)
+				) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;",
+				"INSERT INTO user_list_facet_groups (id, name) VALUES (1, 'default')",
+				"CREATE TABLE `user_list_facet` (
+					`id` int(11) NOT NULL AUTO_INCREMENT,
+					`facetGroupId` int(11) NOT NULL,
+					`displayName` varchar(50) NOT NULL,
+					`displayNamePlural` varchar(50) DEFAULT NULL,
+					`facetName` varchar(50) NOT NULL,
+					`weight` int(11) NOT NULL DEFAULT 0,
+					`numEntriesToShowByDefault` int(11) NOT NULL DEFAULT 5,
+					`showAsDropDown` tinyint(4) NOT NULL DEFAULT 0,
+					`sortMode` enum('alphabetically','num_results') NOT NULL DEFAULT 'num_results',
+					`collapseByDefault` tinyint(4) DEFAULT 1,
+					`useMoreFacetPopup` tinyint(4) DEFAULT 1,
+					`translate` tinyint(4) DEFAULT 0,
+					`multiSelect` tinyint(4) DEFAULT 0,
+					`canLock` tinyint(4) DEFAULT 0,
+					PRIMARY KEY (`id`),
+					UNIQUE KEY `groupFacet` (`facetGroupId`,`facetName`)
+				) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;",
+				"CREATE TABLE library_user_list_facet_setting (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					libraryId INT NOT NULL,
+					userListFacetGroupId INT NOT NULL
+				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
+				"INSERT INTO library_user_list_facet_setting (libraryId, userListFacetGroupId) SELECT DISTINCT libraryId, 1 FROM library;"
+			]
+		], //user_list_facets
 
 		//kirstien
 		'add_user_app_request_logging_option' => [

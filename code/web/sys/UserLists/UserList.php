@@ -11,6 +11,7 @@ class UserList extends DataObject {
 	public $created;
 	public $public;
 	public $searchable;
+	public $customAuthorName;
 	public $displayListAuthor;
 	public $deleted;
 	public $dateUpdated;
