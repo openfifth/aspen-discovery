@@ -13,15 +13,16 @@ class AspenPWA_Icon extends Action {
 
 	function launch()
 	{
-		$setting = new AspenPWASetting();
+		$setting = AspenPWASetting::getSettingsForCurrentLibrary;
 		$success = true;
 		//TODO we should return an error code instead of 200
 		// if we have no settings
-		if($setting->find(true))
+		if($setting)
 		{
 			$_REQUEST['themeId'] = $setting->themeId;
 		} else {
-			$_REQUEST['themeId'] = 1;
+			http_response_code(404);
+			return;
 		}
 
 		$api = new SystemAPI('internal');

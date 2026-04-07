@@ -30,6 +30,22 @@ class AspenPWASetting extends DataObject {
 		return ['serviceAccount'];
 	}
 
+	static function getSettingsForCurrentLibrary(): AspenPWASetting | null {
+		$setting = new AspenPWASetting();
+		$library = Library::getActiveLibrary();
+		$setting->id = $library->AspenPWASettingId;
+		if($setting->find(true))
+		{
+			return $setting;
+		}
+		else 
+		{
+			global $logger;
+			$logger->log("No Settings found for active library or no active library found", Logger::LOG_ERROR);
+			return null;
+		}
+	}
+
 	static function getObjectStructure($context = ''): array {
 
 		require_once ROOT_DIR . '/sys/Theming/Theme.php';
