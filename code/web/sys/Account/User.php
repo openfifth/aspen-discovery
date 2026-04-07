@@ -6676,8 +6676,8 @@ class User extends DataObject {
 			} else if (strcasecmp($notificationToken->tokenType, "firebase") == 0)
 			{
 				require_once ROOT_DIR . '/sys/Notifications/FirebaseNotification.php';
-				$fireBaseNotification = new FirebaseNotification();
-				$fireBaseNotification->sendPushNotification($body, $notificationToken->pushToken, $this->id, $notificationType);
+				$firebaseNotification = new FirebaseNotification();
+				$firebaseNotification->sendPushNotification($body, $notificationToken->pushToken, $this->id, $notificationType);
 				$firebaseNotification = null;
 				$count++;
 			} else 
