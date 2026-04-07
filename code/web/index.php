@@ -1270,7 +1270,7 @@ function loadModuleActionId() {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
 	try {
-		if ($library->aspenPWASettingId != -1)
+		if ($library->AspenPWASettingId != -1)
 		{
 			if($requestURI == "/manifest.json") {
 				$_GET['module'] = "AspenPWA";
@@ -1294,8 +1294,6 @@ function loadModuleActionId() {
 			}
 			else if($requestURI == "/pwa-icon.png")
 			{
-				global $logger;
-				$logger->log("processing pwa-icon.png", Logger::LOG_ERROR);
 				$_GET['module'] = "AspenPWA";
 				$_GET['action'] = "Icon";
 				$_REQUEST['module'] = "AspenPWA";

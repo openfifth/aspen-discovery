@@ -15,17 +15,17 @@ class AspenPWA_Manifest extends Action {
 
 	function build_manifest()
 	{
-		$setting = new AspenPWASetting();
+		$settings = AspenPWASetting::getSettingsForCurrentLibrary();
 		$success = true;
 		//TODO we should return an error code instead of 200
 		// if we have no settings
-		if(!$setting->find(true))
+		if(!$settings)
 		{
 			http_response_code(404);
 			return ['success' => false,'message'=>'settings not found'];
 		}
 		$theme = new Theme();
-		$theme->id = $setting->themeId;
+		$theme->id = $settings->themeId;
 		$themeColor = '#000000'; //fallback value
 		if($theme->find(true) && $theme->primaryForegroundColor)
 		{

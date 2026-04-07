@@ -7,9 +7,6 @@ class AspenPWASetting extends DataObject {
 	public $shortName;
 	public $description;
 	public $themeId;
-	public $autoRotateCard;
-	public $enableSelfRegistration;
-	public $showMoreInfoBtn;
 	public $manifestID;
 	public $startURL;
 	public $slug;

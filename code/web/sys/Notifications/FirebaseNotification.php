@@ -94,8 +94,8 @@ class FirebaseNotification extends DataObject {
 
 	function sendFCMessage($title, $body, $deviceToken)
 	{
-		$settings = new AspenPWASetting();
-		if($settings->find(true))
+		$settings = AspenPWASetting::getSettingsForCurrentLibrary();
+		if($settings)
 		{
 			$serviceAccount = $settings->getServiceAccount();
 			//get serviceAccount from settings then use that to get account token
@@ -133,6 +133,8 @@ class FirebaseNotification extends DataObject {
 
 			return json_decode($response, true);
 		} else {
+			// If we don't have settings that logging is handled inside
+			// getSettingsForCurrentLibrary
 			return [];
 		}
 	}

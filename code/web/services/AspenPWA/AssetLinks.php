@@ -15,9 +15,8 @@ class AspenPWA_AssetLinks extends Action {
 
 	function build_links()
 	{
-		$setting = new AspenPWASetting();
-		$success = true;
-		if(!$setting->find(true))
+		$settings = AspenPWASetting::getSettingsForCurrentLibrary();
+		if(!$settings)
 		{
 			return ['success' => false,'message'=>'settings not found'];
 		}
@@ -25,8 +24,8 @@ class AspenPWA_AssetLinks extends Action {
 			"relation" => ["delegate_permission/common.handle_all_urls"],
 			"target" => [
 				"namespace"=>  "android_app",
-				"package_name" => $setting->manifestID,
-				"sha256_cert_fingerprints" => [$setting->sha256CertFingerprint]
+				"package_name" => $settings->manifestID,
+				"sha256_cert_fingerprints" => [$settings->sha256CertFingerprint]
 			]
 
 		]];

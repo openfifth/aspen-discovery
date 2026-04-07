@@ -1236,8 +1236,8 @@ class SystemAPI extends AbstractAPI {
 	//the front end to get a token
 	function getFirebaseMessagingConfig() {
 		require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
-		$settings = new AspenPWASetting();
-		if($settings->find(true))
+		$settings = AspenPWASetting::getSettingsForCurrentLibrary();
+		if($settings)
 		{
 			return [
 				'success' => true,
@@ -1336,7 +1336,7 @@ class SystemAPI extends AbstractAPI {
 		} else {
 			return [
 				'success' => false,
-				'error' => 'no settings found'
+				'message' => 'Must provide either a Location Id or Library Id',
 			];
 		}
 	}
