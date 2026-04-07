@@ -8,6 +8,7 @@ AspenDiscovery.Lists = (function () {
 		editListAction: function () {
 			$('#listDescription,#listTitle,#FavEdit,.listViewButton').hide();
 			$('#listEditControls,#FavSave,.listEditButton').show();
+			AspenDiscovery.Lists.updateListEditFields();
 			const element = document.getElementById('listEditControls');
 			element.scrollIntoView();
 			return false;
@@ -24,6 +25,32 @@ AspenDiscovery.Lists = (function () {
 			$('#myListFormHead').trigger('submit');
 			AspenDiscovery.Account.loadListData();
 			return false;
+		},
+
+		updateListEditFields: function () {
+			let publicSwitch = $("#public");
+			let searchableSwitch = $("#searchable");
+			let displayListAuthorSwitch = $("#displayListAuthor");
+			if (publicSwitch.prop('checked')) {
+				if (searchableSwitch !== undefined) {
+					$('#searchableRow').show();
+					if (searchableSwitch.prop('checked')) {
+						$('#displayListAuthorRow').show();
+						if (displayListAuthorSwitch.prop('checked')) {
+							$('#customAuthorNameRow').show();
+						}else{
+							$('#customAuthorNameRow').hide();
+						}
+					}else{
+						$('#displayListAuthorRow').hide();
+						$('#customAuthorNameRow').hide();
+					}
+				}
+			}else{
+				$('#searchableRow').hide();
+				$('#displayListAuthorRow').hide();
+				$('#customAuthorNameRow').hide();
+			}
 		},
 
 		makeListPublicAction: function () {
