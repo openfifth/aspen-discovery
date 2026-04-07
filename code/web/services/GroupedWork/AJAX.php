@@ -186,7 +186,7 @@ class GroupedWork_AJAX extends JSON_Action {
 		$titles = [];
 		if ($library->useSeriesSearchIndex) {
 			$seriesInfo = $recordDriver->getSeries(true);
-			if (empty($seriesInfo)) {
+			if (empty($seriesInfo) || empty($seriesInfo['seriesId'])) {
 				$enrichmentResult['seriesInfo'] = [
 					'titles' => $titles,
 					'currentIndex' => 0,
