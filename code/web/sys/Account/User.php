@@ -1079,25 +1079,21 @@ class User extends DataObject {
 	 */
 	/** @noinspection PhpUnused */
 	function getViewers() {
-		if (is_null($this->viewers)) {
-			$this->viewers = [];
-			/* var Library $library */ global $library;
-			if ($this->id && $library->allowLinkedAccounts) {
-				require_once ROOT_DIR . '/sys/Account/UserLink.php';
-				$userLink = new UserLink();
-				$userLink->linkedAccountId = $this->id;
-				$userLink->find();
-				while ($userLink->fetch()) {
-					$linkedUser = new User();
-					$linkedUser->id = $userLink->primaryAccountId;
-					if ($linkedUser->find(true)) {
-						if (!$linkedUser->isBlockedAccount($this->id)) {
-							$this->viewers[] = clone($linkedUser);
-						}
-					}
-				}
+		if (!is_null($this->viewers)) {
+			return $this->viewers;
+		}
+		
+		$this->viewers = [];
+		$this->loadViewerIds();
+
+		foreach ($this->viewerIds as $viewerId) {
+			$viewer = new User();
+			$viewer->id = $viewerId;
+			if ($viewer->find(true)) {
+				$this->viewers[] = clone($viewer);
 			}
 		}
+
 		return $this->viewers;
 	}
 
@@ -1105,7 +1101,7 @@ class User extends DataObject {
 	 * Fetches and sets the list of ids of users that can view this account
 	 */
 	/** @noinspection PhpUnused */
-	function setViewerIds(): void {
+	function loadViewerIds(): void {
 		if (!is_null($this->viewerIds)) {
 			return;
 		}
@@ -1123,9 +1119,10 @@ class User extends DataObject {
 		$userLink->find();
 
 		while ($userLink->fetch()) {
-			$viewer = new User();
-			$viewer->id = $userLink->primaryAccountId;
-			if (!$viewer->isBlockedAccount($this->id)) {
+			$viewerStub = new User();
+			$viewerStub->id = $userLink->primaryAccountId;
+			// we need to instantiate the stub so isBlockedAccount can be called, however there is no need to load the User data from the DB
+			if (!$viewerStub->isBlockedAccount($this->id)) {
 				$this->viewerIds[] = $userLink->primaryAccountId;
 			}
 		}
@@ -1138,7 +1135,7 @@ class User extends DataObject {
 	/** @noinspection PhpUnused */
 	function getViewerIds(): array {
 		if (is_null($this->viewerIds)) {
-			$this->setViewerIds();
+			$this->loadViewerIds();
 		}
 		return $this->viewerIds;
 	}
