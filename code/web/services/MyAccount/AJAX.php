@@ -4226,6 +4226,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$linkedUser->loadContactInformation();
 				}
 			}
+			$interface->assign('allowEventRegistration', isset($library->allowEventRegistration) && $library->allowEventRegistration != 0);
 			$interface->assign('linkedUsers', $linkedUsers);
 		}
 
