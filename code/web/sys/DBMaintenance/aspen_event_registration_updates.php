@@ -41,6 +41,13 @@ function getAspenEventRegistrationUpdates() {
 				'ALTER TABLE event_instance ADD COLUMN numberOfSeats INT DEFAULT NULL',
 			],
 		], // add_numberOfSeats_to_events
-
+		'add_allowEventRegistration_to_library_t' => [
+			'title' => 'Add Allow Event Registration To Library',
+			'description' => 'Add the option to allow/block staff from enabling event registration on a per event basis',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN IF NOT EXISTS allowEventRegistration TINYINT(1) NOT NULL DEFAULT 0",
+			],
+		], //add_allowEventRegistration_to_library
 	];
 }
