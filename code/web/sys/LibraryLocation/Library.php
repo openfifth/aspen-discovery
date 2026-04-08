@@ -166,6 +166,7 @@ class Library extends DataObject {
 	public $ncrSettingId;
 	public $usernameField;
 	public $eventsDefaultCalendarView;
+	public $allowEventRegistration;
 
 	public /** @noinspection PhpUnused */
 		$repeatSearchOption;
@@ -3758,6 +3759,14 @@ class Library extends DataObject {
 						'default' => '0',
 						'label' => 'Default Calendar View',
 						'description' => 'The default page your events calendar will load to',
+						'hideInLists' => true,
+					],
+					'allowEventRegistration' => [
+						'property' => 'allowEventRegistration',
+						'type' =>'checkbox',
+						'default' => '0',
+						'label' => 'Allow Event Registration',
+						'description' => 'Whether to allow staff with Event administration permissions to enable registration on a per event basis',
 						'hideInLists' => true,
 					],
 				]
