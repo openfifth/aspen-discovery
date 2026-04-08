@@ -141,7 +141,7 @@ abstract class ObjectEditor extends Admin_Admin {
 	 * Get a count of the number of objects so we can paginate as needed
 	 */
 	function getNumObjects(): int {
-		if ($this->_numObjects == null) {
+		if ($this->_numObjects === null) {
 			/** @var DataObject $object */
 			$objectType = $this->getObjectType();
 			$object = new $objectType();
@@ -1269,8 +1269,9 @@ abstract class ObjectEditor extends Admin_Admin {
 					'currency',
 					'text',
 					'integer',
+					'calculatedInteger',
 					'email',
-					'url',
+					'url'
 				])) {
 				$sortableFields[$field['label']] = $field;
 			}

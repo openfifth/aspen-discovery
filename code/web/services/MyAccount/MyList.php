@@ -139,8 +139,11 @@ class MyAccount_MyList extends MyAccount {
 						$list->searchable = false;
 						$list->displayListAuthor = false;
 					} else {
-						$list->searchable = isset($_REQUEST['searchable']) && ($_REQUEST['searchable'] == 'true' || $_REQUEST['searchable'] == 'on');
-						$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && ($_REQUEST['displayListAuthor'] == 'true' || $_REQUEST['displayListAuthor'] == 'on');
+						if (UserAccount::userHasPermission('Include Lists In Search Results')) {
+							$list->searchable = isset($_REQUEST['searchable']) && ($_REQUEST['searchable'] == 'true' || $_REQUEST['searchable'] == 'on');
+							$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && ($_REQUEST['displayListAuthor'] == 'true' || $_REQUEST['displayListAuthor'] == 'on');
+							$list->customAuthorName = $_REQUEST['customAuthorName'] ?? '';
+						}
 					}
 					if ($showListGroup) {
 						$list->listGroupId = isset($_REQUEST['listGroupSelect']) ? intval($_REQUEST['listGroupSelect']) : -1;

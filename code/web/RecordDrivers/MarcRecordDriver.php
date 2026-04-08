@@ -1890,7 +1890,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $this->upcs;
 	}
 
-	public function getMoreDetailsOptions() {
+	public function getMoreDetailsOptions() : array {
 		global $interface;
 		/** @var Library $library */
 		global $library;

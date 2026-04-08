@@ -60,9 +60,7 @@
 								<div class="result-value col-sm-8 col-xs-12">
 									{assign var=seriesLimit value=$numSeriesToShowBeforeMore+1}
 									{assign var=totalSeriesShown value=0}
-									{if !empty($summSeries)}
-									    {include "GroupedWork/series-shared.tpl" summSeries=$summSeries seriesLimit=$seriesLimit}
-									{/if}
+									{include "GroupedWork/series-shared.tpl" summSeries=$summSeries seriesLimit=$seriesLimit}
 								</div>
 							</div>
 						{/if}

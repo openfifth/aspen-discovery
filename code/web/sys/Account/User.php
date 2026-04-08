@@ -950,7 +950,7 @@ class User extends DataObject {
 		return $users;
 	}
 
-	function isValidForEContentSource($source) {
+	function isValidForEContentSource(string $source) : bool {
 		global $enabledModules;
 		if ($this->parentUser == null || ($this->getBarcode() != $this->parentUser->getBarcode())) {
 			$userHomeLibrary = Library::getPatronHomeLibrary($this);
@@ -4892,6 +4892,7 @@ class User extends DataObject {
 		if (array_key_exists('User Lists', $enabledModules)) {
 			$sections['user_lists'] = new AdminSection('User Lists');
 			$sections['user_lists']->addAction(new AdminAction('Settings', 'Define settings for indexing user lists within Aspen Discovery.', '/UserLists/Settings'), 'Administer List Indexing Settings');
+			$sections['user_lists']->addAction(new AdminAction('User List Facet Settings', 'Define facets for user list searches.', '/UserLists/UserListFacets'), 'Administer User List Facet Settings');
 			$sections['user_lists']->addAction(new AdminAction('Indexing Log', 'View the indexing log for User Lists.', '/UserLists/IndexingLog'), [
 				'View System Reports',
 				'View Indexing Logs',

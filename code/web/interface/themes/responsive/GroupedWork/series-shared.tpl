@@ -7,13 +7,13 @@
 	{else}
 		{assign var=seriesClass value="series_from_marc"}
 	{/if}
-	{if !$summSeries.hidden}
+	{if empty($summSeries.hidden)}
 		{assign var=totalSeriesShown value=$totalSeriesShown+1}
 		<a class="{$seriesClass}" href="/Series/{$summSeries.seriesId}">{$summSeries.seriesTitle}</a>{if !empty($summSeries.volume)}<strong> {translate text="volume %1%" 1=$summSeries.volume|format_float_with_min_decimals isPublicFacing=true}</strong>{/if}<br>
 	{/if}
 	{if !empty($summSeries.additionalSeries)}
 		{foreach from=$summSeries.additionalSeries item=additional}
-			{if !$additional.hidden}
+			{if empty($additional.hidden)}
 				{assign var=totalSeriesShown value=$totalSeriesShown+1}
 				{if $totalSeriesShown == $seriesLimit}
 					<a onclick="$('#moreSeries_{$summId}').show();$('#moreSeriesLink_{$summId}').hide();" id="moreSeriesLink_{$summId}">{translate text='More Series...' isPublicFacing=true}</a>
