@@ -418,6 +418,10 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	}
 
 	public function isRegistrationRequired(): bool {
+		global $library;
+		if (empty($library->allowEventRegistration)) {
+			return false;
+		}
 		return array_key_exists("registration_required", $this->fields) && $this->fields['registration_required'] == "Yes";
 	}
 
