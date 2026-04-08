@@ -4219,6 +4219,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('userEmail', $user->email);
 			$interface->assign('userHomeLocation', $user->getHomeLocationName());
 			$linkedUsers = [];
+			global $library;
 			if ($library->allowLinkedAccounts) {
 				$linkedUsers = $user->getLinkedUsers();
 				foreach ($linkedUsers as $linkedUser) {
