@@ -859,8 +859,10 @@ public class GroupedWorkIndexer {
 		}
 	}
 
-	void finishIndexing(){
-		this.processScheduledWorks(logEntry, true, -1);
+	void finishIndexing(boolean processedSingleWork){
+		if (!processedSingleWork) {
+			this.processScheduledWorks(logEntry, true, -1);
+		}
 		logEntry.addNote("Finishing indexing");
 		if (fullReindex) {
 			try {

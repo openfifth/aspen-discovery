@@ -690,12 +690,22 @@ abstract class SearchObject_AbstractGroupedWorkSearcher extends SearchObject_Sol
 			}
 			global $enabledModules;
 			global $library;
-			$searchSeries = array_key_exists('Series', $enabledModules) && $library->useSeriesSearchIndex == 1;
-			if (preg_match('/(\b|^)(series)(\b|$)/i', $searchTerm) && $searchSeries) {
-				// Redirect to series search and remove the word "series" from the search terms.
-				$searchTerm = preg_replace('/(\b)series(\b)/i', '', $searchTerm);
-				header('Location: /Union/Search?lookfor=' . urlencode(trim($searchTerm)) . '&searchIndex=SeriesKeyword&searchSource=series');
-				exit;
+			$searchSeriesModule = array_key_exists('Series', $enabledModules) && $library->useSeriesSearchIndex == 1;
+			if (preg_match('/(\b|^)(series)(\b|$)/i', $searchTerm) && $searchInterpreterSettings->triggerSeriesSearch) {
+				// Only redirect if bypassSeriesRedirect is not set
+				if (empty($_REQUEST['bypassSeriesRedirect'])) {
+					$originalSearchUrl = $_SERVER['REQUEST_URI'];
+					$searchTerm = preg_replace('/(\b)series(\b)/i', '', $searchTerm);
+					if ($searchSeriesModule) {
+						$redirectUrl = '/Union/Search?lookfor=' . urlencode(trim($searchTerm)) . '&searchIndex=SeriesKeyword&searchSource=series&seriesRedirectedFrom=' . urlencode($originalSearchUrl);
+					}
+					else {
+						// Switch to just searching the series index within the grouped work/catalog search type.
+						$redirectUrl = '/Union/Search?lookfor=' . urlencode(trim($searchTerm)) . '&searchIndex=Series&searchSource=local&seriesRedirectedFrom=' . urlencode($originalSearchUrl);
+					}
+					header('Location: ' . $redirectUrl);
+					exit;
+				}
 			}
 		}
 		return $searchTerm;
