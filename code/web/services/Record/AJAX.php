@@ -2770,7 +2770,6 @@ class Record_AJAX extends JSON_Action {
 		}
 
 		if ($successCount > 1) {
-			$user->forceReloadOfHolds();
 			$patronHolds = $catalogDriver->getHolds($user);
 
 			$holdsToCheck = array_merge(
