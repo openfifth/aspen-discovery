@@ -439,11 +439,18 @@ AspenDiscovery.Searches = (function(){
 						return aspenJQ(this).attr('data-filter') === currentVal;
 					}).prop('checked', true);
 				}
-				// Enforce single-select: checking one unchecks all others
+				// Enforce single-select: checking one unchecks all others.
+				// If the user clicks the already-checked item, keep it checked so Apply always has a valid selection.
 				aspenJQ('#modalDialog').off('change.advFacet').on('change.advFacet', '.advFacetCheckbox', function () {
 					if (aspenJQ(this).prop('checked')) {
 						aspenJQ('.advFacetCheckbox').not(this).prop('checked', false);
+					} else {
+						aspenJQ(this).prop('checked', true);
 					}
+				});
+				// Bind Apply button via event delegation (avoids inline onclick issues)
+				aspenJQ('#modalDialog').off('click.advFacetApply').on('click.advFacetApply', '.adv-facet-apply-btn', function () {
+					AspenDiscovery.Searches.applyAdvancedFacetSelections();
 				});
 			};
 			if (cache[facetName]) {
