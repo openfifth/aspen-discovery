@@ -11702,7 +11702,6 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($catalogDriver->driver instanceof Koha) {
 				// Pass forceGrouped to groupHolds
 				$groupedHolds = $catalogDriver->groupHolds($patronId, $holdIds, $forceGrouped);
-				$logger->log("==== ERROR CODE === : " .  print_r($groupedHolds, true), Logger::LOG_ERROR);
 
 				// Check if holds are already in a group
 				if (isset($groupedHolds['error_code']) && $groupedHolds['error_code'] === 'HoldAlreadyBelongsToHoldGroup') {
