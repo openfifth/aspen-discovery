@@ -9475,26 +9475,30 @@ class Koha extends AbstractIlsDriver {
 			$this->initDatabaseConnection();
 
 			if (!$this->dbConnection) {
-				$logger->log("Could not connect to Koha databse to check displayAddHoldGroups setting", Logger::LOG_ERROR);
+				$logger->log("Could not connect to Koha database to check displayAddHoldGroups setting", Logger::LOG_ERROR);
+				return false;
 			}
 
 			$sql = "SELECT value FROM systempreferences WHERE variable = 'displayAddHoldGroups'";
 			$result = mysqli_query($this->dbConnection, $sql);
 
-			if ($result) {
-				$row = $result->fetch_assoc();
-				$result->close();
+			if (!$result) {
+				return false;
+			}
+			
+			$row = $result->fetch_assoc();
+			$result->close();
 
-				if ($row && isset($row['value'])) {
-					$value = $row['value'];
-					return ($value === '1' || strtolower($value) === 'on');
-				}
+			if (!$row || !isset($row['value'])) {
+				return false;
 			}
 
-			return false;
+			$value = $row['value'];
+			return ($value === '1' || strtolower($value) === 'on');
+
 		} catch (Exception $e) {
 			$logger->log("Error checking Koha displayAddHoldGroups setting: " . $e->getMessage(), Logger::LOG_ERROR);
+			return false;
 		}
-
 	}
 }

@@ -2410,15 +2410,6 @@ class Library extends DataObject {
 								'default' => 0,
 								'permissions' => ['Library ILS Connection'],
 							],
-							'allowHoldsToBeGrouped' => [
-								'property' => 'allowHoldsToBeGrouped',
-								'type' => 'checkbox',
-								'label' => 'Allow Grouping Holds',
-								'description' => 'Whether or not the user can group their holds.',
-								'hideInLists' => true,
-								'default' => 0,
-								'permissions' => ['Library ILS Connection'],
-							],
 							'inSystemPickupsOnly' => [
 								'property' => 'inSystemPickupsOnly',
 								'type' => 'checkbox',
