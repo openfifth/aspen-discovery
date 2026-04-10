@@ -9,6 +9,13 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public $success;
 	public $attended;
 
+	public function getUniquenessFields(): array {
+		return [
+			'userId',
+			'eventInstanceId',
+		];
+	}
+
 	public function isUserRegisteredForEvent(): bool {
 		return $this->find(true);
 	}
