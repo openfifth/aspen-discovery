@@ -3,7 +3,21 @@ import { getMessaging } from "https://www.gstatic.com/firebasejs/12.1.0/firebase
 import { getToken } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js";
 import * as UAP from "../lib/ua-parser-min.js";
 //import '../lib/apisauce.min.js';
+
 export var appToken = "default";
+export function getModelName() {
+	let parser = new UAParser(window.navigator.userAgent);
+	let result = parser.getResult();
+	let modelName = result.device.vendor ? result.device.vendor + " " : "";
+	modelName += result.device.model ? result.device.model + " " : "";
+	modelName += result.os.name ? result.os.name + " " : "";
+	modelName += result.os.version ? result.os.version + " " : "";
+	modelName += result.cpu.architecture ? result.cpu.architecture + " " : "";
+	modelName += result.browser.name ? result.browser.name + " " : "";
+	modelName ||= "Unknown ";
+	modelName += "PWA";
+	return modelName;
+}
 export function initialize() {
 	fetch("/API/SystemAPI?method=getFirebaseMessagingConfig").then(function (response) {
 		return response.json();
@@ -21,8 +35,6 @@ export function initialize() {
 					appToken = currentToken;
 					Notification.requestPermission().then((permission) => {
 						if (permission === 'granted') {
-							$(".grant-notification-permissions").hide();
-							$(".notification-permission-controls").show();
 							let parser = new UAParser(window.navigator.userAgent);
 							let result = parser.getResult();
 							let modelName = result.device.vendor ? result.device.vendor + " " : "";
@@ -65,3 +77,78 @@ export function initialize() {
 		}
 	});
 }
+
+function handleAllowNotifications() {
+	var allow = $("#allowNotifications").is(":checked");
+	console.log("yo");
+	if(allow)
+	{
+		let token = initialize();
+		console.log(appToken);
+		console.log("Token was: "+token);
+		if(Notification.permission === "granted")
+		{
+			$(".notification-permission-controls").show();
+		}
+	} else {
+		$(".notification-permission-controls").hide();
+		const postData = {
+			"pushToken": appToken
+		}
+
+		fetch("/AspenPWA/AJAX?method=deleteNotificationPushToken", {
+			method: "POST",
+			headers: {
+				'Cache-Control': 'no-cache'
+			},
+			body: new URLSearchParams(postData)
+		});
+	}
+}
+function handleNotificationControls(type) {
+	console.log(type + " :: " + $("#"+type).is(":checked"));
+	console.log(appToken);
+	let value = $("#"+type).is(":checked");
+	let postData = {
+		"pushToken": appToken,
+		"type": type,
+		"value": value
+	};
+	fetch("/AspenPWA/AJAX?method=setNotificationPreference", {
+		method: "POST",
+		headers: {
+			'Cache-Control': 'no-cache'
+		},
+		body: new URLSearchParams(postData)
+	}).then(function (response) {
+		console.log(response.json());
+	});
+}
+
+$(document).ready(function(){
+	$(function(){ $('input[type="checkbox"][data-switch]').bootstrapSwitch()});
+	$("#notifySavedSearch").on('switchChange.bootstrapSwitch', function(){handleNotificationControls('notifySavedSearch')});
+	$("#notifyAccount").on('switchChange.bootstrapSwitch', function(){handleNotificationControls('notifyAccount')});
+	$("#notifyCustom").on('switchChange.bootstrapSwitch', function(){handleNotificationControls('notifyCustom')});
+	$("#allowNotifications").on('switchChange.bootstrapSwitch',handleAllowNotifications);
+
+	let modelName = getModelName();
+	let token = $('[data-device="'+modelName+'"]');
+	let notifySavedSearch = token.data("notifySavedSearch");
+	let notifyCustom = token.data("notifyCustom");
+	let notifyAccount = token.data("notifyAccount");
+	appToken = token.data("token");
+
+	if(token.length)
+	{
+		$("#allowNotifications").prop("checked", true).trigger("change");
+	} else {
+		$(".notification-permission-controls").hide();
+	}
+
+	$("#notifySavedSearch").prop("checked", notifySavedSearch).trigger("change");
+	$("#notifyCustom").prop("checked", notifyCustom).trigger("change");
+	$("#notifyAccount").prop("checked", notifyAccount).trigger("change");
+
+	
+});
