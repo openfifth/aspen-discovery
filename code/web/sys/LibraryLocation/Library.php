@@ -531,6 +531,7 @@ class Library extends DataObject {
 	// Aspen Events
 	/** @noinspection PhpUnused */
 	public $aspenEventsToInclude;
+	public $displayEventNotificationsInAccount;
 
 	/** @noinspection PhpUnused */
 	public $allowUpdatingHolidaysFromILS;
@@ -3809,6 +3810,14 @@ class Library extends DataObject {
 						'label' => 'Allow Event Registration',
 						'description' => 'Whether to allow staff with Event administration permissions to enable registration on a per event basis',
 						'hideInLists' => true,
+					],
+					'displayEventNotificationsInAccount' => [
+						'property' => 'displayEventNotificationsInAccount',
+						'type' => 'checkbox',
+						'label' => 'Display Event Notifications in Account',
+						'description' => 'Whether or not to display a notification banner in the user\' account when they are eligible to register for an event for which they were on the waiting list',
+						'hideInLists' => true,
+						'default' => 1,
 					],
 				]
 			],
