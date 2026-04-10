@@ -210,23 +210,6 @@ function getUpdates26_04_00(): array {
 			],
 		], //control_display_of_user_dropdown_in_community_engagement_admin_view
 
-		// alexander
-		'add_ability_for_admin_to_control_whether_holds_can_be_grouped' => [
-			'title' => 'Add Ability for Admin to Control Whether Holds Can Be Grouped',
-			'description' => 'Allow admin to control whether holds can be grouped',
-			'sql' => [
-				"ALTER TABLE library ADD COLUMN allowHoldsToBeGrouped TINYINT(1) DEFAULT 0",
-			],
-		], //add_ability_for_admin_to_control_whether_holds_can_be_grouped
-		'add_grouped_hold_id_to_user_hold' => [
-			'title' => 'Add Grouped Hold Id To User Hold',
-			'description' => 'Add grouped hold id and visual hold group id to user hold',
-			'sql' => [
-				"ALTER TABLE user_hold ADD COLUMN holdGroupId INT(11) DEFAULT NULL",
-				"ALTER TABLE user_hold ADD COLUMN visualHoldGroupId VARCHAR(50) DEFAULT NULL",
-			],
-		], //add_grouped_hold_id_to_user_hold
-
 		//mark j
 		'add_pageViewsFromPlacard_to_web_builder_resource_usage' => [
 			'title' => 'Track web resource page views from a placard',
