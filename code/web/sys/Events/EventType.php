@@ -20,6 +20,7 @@ class EventType extends DataObject {
 	public $includeInReports;
 	public $displayEventBranchOnThumbnail;
 	public $displayEventBranchOnThumbnailCustomizable;
+	public $waitingListInviteExpiryHours;
 
 	public $_libraries;
 	public $_locations;
@@ -36,6 +37,7 @@ class EventType extends DataObject {
 			'archived',
 			'includeInReports',
 			'displayEventBranchOnThumbnailCustomizable',
+			'waitingListInviteExpiryHours',
 		];
 	}
 
@@ -167,6 +169,15 @@ class EventType extends DataObject {
 				'label' => 'Include in Reports?',
 				'default' => true,
 				'description' => 'If unchecked, events of this type will not be shown in events reports',
+			],
+			'waitingListInviteExpiryHours' => [
+				'property' => 'waitingListInviteExpiryHours',
+				'type' => 'integer',
+				'label' => 'Waiting List Invite Expiry (Hours)',
+				'default' => 24,
+				'min' => 1,
+				'max' => 168,
+				'description' => 'How many hours a user has to register after being invited from the waiting list',
 			],
 			'archived' => [
 				'property' => 'archived',
