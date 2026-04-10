@@ -9455,19 +9455,11 @@ class Koha extends AbstractIlsDriver {
 		return false;
 	}	
 
-	/**
-	 * Check if this driver supports hyperholds grouping
-	 * @return bol
-	*/
-	public function supportsHyperholdsGrouping() {
+	public function supportsHyperholdsGrouping(): bool {
 		return $this->isDisplayAddHoldGroupsEnabledInKoha();
 	}
 
-	/**
-	 * Check if displayAddHoldGroups system preference is enabled in Koha
-	 * @return bool
-	*/
-	private function isDisplayAddHoldGroupsEnabledInKoha() {
+	private function isDisplayAddHoldGroupsEnabledInKoha(): bool {
 		global $logger;
 
 		try {
