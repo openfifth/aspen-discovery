@@ -494,6 +494,27 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 	}
 
+	public function getUserWaitingListInfo(): array {
+		$default = ['onWaitingList' => false, 'position' => null, 'canRegister' => false];
+
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return $default;
+		}
+
+		$eventInstanceId = $this->getIdentifier();
+		if (!$eventInstanceId) {
+			return $default;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->userId = $user->id;
+
+		return $registration->getWaitingListInfo();
+	}
+
 	/**
 	 * Determines whether a user should or should not see the "Registration Information" link on Aspen Events.
 	 **/
