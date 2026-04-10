@@ -6,8 +6,10 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public $id;
 	public $userId;
 	public $eventInstanceId;
-	public $success;
-	public $attended;
+	public $status;
+	public $createdAt;
+
+	const VALID_STATUSES = ['waiting', 'invited', 'registered'];
 
 	public function getUniquenessFields(): array {
 		return [
@@ -17,6 +19,38 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	}
 
 	public function isUserRegisteredForEvent(): bool {
-		return $this->find(true);
+		if($this->status) {
+			return $this->status === 'registered';
+		}
+
+		if (!$this->find(true)) {
+			return false;
+		}
+		return $this->status === 'registered';
+	}
+
+	public function registerUser(): bool {
+		$status = 'registered';
+
+		if ($this->status === 'registered') {
+			return false;
+		}
+
+		if (!$this->validateStatus($status)) {
+			return false;
+		}
+
+		if ($this->find(true)) {
+			$this->status = $status;
+			return $this->update();
+		}
+
+		$this->status = $status;
+		$this->createdAt = date('Y-m-d H:i:s');
+		return $this->insert();
+	}
+
+	private function validateStatus(string $status): bool {
+		return in_array($status, self::VALID_STATUSES, true);
 	}
 }

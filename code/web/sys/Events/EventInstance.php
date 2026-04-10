@@ -221,6 +221,7 @@ class EventInstance extends DataObject {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->eventInstanceId = $this->id;
+		$registration->status = 'registered';
 		return $registration->count();
 	}
 
