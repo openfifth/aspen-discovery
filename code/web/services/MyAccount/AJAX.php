@@ -8296,12 +8296,10 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			}
 			$interface->assign('linkedUsers', $linkedUsers);
-			
-			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
-			$recordDriver = new AspenEventRecordDriver($sourceId);	
-			$interface->assign('isRegistered', $recordDriver->isUserRegisteredForEvent());
 
+			$isRegistered = $aspenEventInstanceUserRegistration->status === 'registered';
+
+			$interface->assign('userIsRegistered', $isRegistered);
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 		}
@@ -8612,6 +8610,20 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$userAspenEventInstanceRegistration = new UserAspenEventInstanceRegistration();
+		$userAspenEventInstanceRegistration->eventInstanceId = $eventInstanceId;
+		$userAspenEventInstanceRegistration->userId = $userId;
+
+
+		if (!$eventInstance->hasAvailableSeats(1)) {
+			$result['message'] = translate([
+				'text' => 'This event is full. No seats available.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
 		// add the event to saved events if it has not yet been saved
 		$recordDriver->saveUserEventEntry($sourceId, $userId);
 
@@ -8635,7 +8647,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// register the user
-		$registration->insert();
+		$userAspenEventInstanceRegistration->registerUser();
 
 		$result['success'] = true;
 		$result['title'] = translate([
