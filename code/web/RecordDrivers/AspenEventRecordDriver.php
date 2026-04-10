@@ -494,6 +494,14 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		}
 	}
 
+	public function isWaitingListEnabled(): bool {
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return false;
+		}
+		return $eventObject->isWaitingListEnabled();
+	}
+
 	public function getUserWaitingListInfo(): array {
 		$default = ['onWaitingList' => false, 'position' => null, 'canRegister' => false];
 
