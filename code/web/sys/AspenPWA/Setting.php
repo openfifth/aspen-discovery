@@ -122,10 +122,10 @@ class AspenPWASetting extends DataObject {
 				'property' => 'sha256CertFingerprint',
 				'type' => 'text',
 				'label' => 'Sha 256 Cert Fingerprint',
-				'description' => 'Provided by Google Play after initial upload; proves that App and the website are authorized. (https://support.google.com/googleplay/android-developer/answer/16641489?hl=en)',
+				'description' => "Required only for Google Play Store publishing. If you haven't published yet, leave this blank. You can retrieve this value from the Google Play Console after your initial submission. (https://support.google.com/googleplay/android-developer/answer/16641489?hl=en)",
 				'maxLength' => 200,
-				'default' => strtoupper(implode(":", str_split(hash('sha256', "REPLACE ME"), 2))),
-				'required' => true,
+				'default' => " ",
+				'required' => false,
 			],
 			'firebaseAPIKey' => [
 				'property' => 'firebaseAPIKey',
