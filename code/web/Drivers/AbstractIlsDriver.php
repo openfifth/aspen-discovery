@@ -1062,7 +1062,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	/**
 	 * Check if this driver supports hyperholds grouping
 	*/
-	public function supportsHoldGrouping() {
+	public function supportsHyperholdsGrouping() {
 		return false;
 	}
 }
