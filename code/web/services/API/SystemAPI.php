@@ -398,8 +398,10 @@ class SystemAPI extends AbstractAPI {
 		$galeUpdates = getGaleUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_registration_updates.php';
 		$aspenEventRegistrationUpdates = getAspenEventRegistrationUpdates();
-
-		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates, $galeUpdates, $aspenEventRegistrationUpdates);
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_waiting_list_updates.php';
+		$aspenEventWaitingListUpdates = getAspenEventWaitingListUpdates();
+		
+		$baseUpdates = array_merge($library_location_updates, $summonUpdates, $cloudLibraryUpdates, $grapesWebBuilderUpdates, $communityEngagementUpdates, $talpaUpdates, $heycentricUpdates, $hooplaVersion2Updates, $pay360Updates, $galeUpdates, $aspenEventRegistrationUpdates, $aspenEventWaitingListUpdates);
 
 		//Get version updates
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
