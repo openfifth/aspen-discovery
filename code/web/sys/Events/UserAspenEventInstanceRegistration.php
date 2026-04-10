@@ -50,6 +50,24 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		return $this->insert();
 	}
 
+	public function getWaitingListInfo(): array {
+		$default = ['onWaitingList' => false, 'position' => null, 'canRegister' => false];
+
+		if (!$this->status && !$this->find(true)) {
+			return $default;
+		}
+
+		if (!in_array($this->status, ['waiting', 'invited'], true)) {
+			return $default;
+		}
+
+		return [
+			'onWaitingList' => true,
+			'position' => self::getWaitingListPosition($this->eventInstanceId, $this->createdAt),
+			'canRegister' => $this->status === 'invited',
+		];
+	}
+
 	private function validateStatus(string $status): bool {
 		return in_array($status, self::VALID_STATUSES, true);
 	}
