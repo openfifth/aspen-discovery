@@ -8242,9 +8242,12 @@ class MyAccount_AJAX extends JSON_Action {
 
 			$body = $aspenEventSettings->getRegistrationModalBody() ?? '';
 
-			$sourceId = $_REQUEST['sourceId'];
-			$sourceIdParts = explode('_', $sourceId);
-			$eventInstanceId = end($sourceIdParts);
+			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+			$sourceId = AspenEventRecordDriver::sanitizeSourceId($_REQUEST['sourceId'] ?? '');
+			if ($sourceId === null) {
+				return AspenEventRecordDriver::invalidSourceIdResult();
+			}
+			$eventInstanceId = AspenEventRecordDriver::extractEventInstanceId($sourceId);
 
 			require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 			$eventInstance = new EventInstance();
@@ -8515,8 +8518,13 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	function toggleUserRegistrationToEvent(): array {
-		$eventInstanceId = $_REQUEST['eventInstanceId'];
-		$userId = $_REQUEST['userId'];
+		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+		$sourceId = AspenEventRecordDriver::sanitizeSourceId($_REQUEST['eventSourceId'] ?? '');
+		if ($sourceId === null) {
+			return AspenEventRecordDriver::invalidSourceIdResult();
+		}
+		$eventInstanceId = AspenEventRecordDriver::extractEventInstanceId($sourceId);
+		$userId = (int)($_REQUEST['userId'] ?? 0);
 
 		$result = [
 			'success' => false,
@@ -8574,8 +8582,6 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-		$sourceId = 'aspenEvent_1_' . $eventInstanceId;
 		$recordDriver = new AspenEventRecordDriver($sourceId);
 		if (!$recordDriver->isValid()) {
 			$result['message'] = translate([
