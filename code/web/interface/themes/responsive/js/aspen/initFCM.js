@@ -30,36 +30,34 @@ export function initialize() {
 
 			// Initialize Firebase Cloud Messaging and get a reference to the service
 			const messaging = getMessaging(app);
-			getToken(messaging, { vapidKey: firebaseConfig['vapidKey'] }).then((currentToken) => {
+			getToken(messaging).then((currentToken) => {
 				if (currentToken) {
 					appToken = currentToken;
-					Notification.requestPermission().then((permission) => {
-						if (permission === 'granted') {
-							let parser = new UAParser(window.navigator.userAgent);
-							let result = parser.getResult();
-							let modelName = result.device.vendor ? result.device.vendor + " " : "";
-							modelName += result.device.model ? result.device.model + " " : "";
-							modelName += result.os.name ? result.os.name + " " : "";
-							modelName += result.os.version ? result.os.version + " " : "";
-							modelName += result.cpu.architecture ? result.cpu.architecture + " " : "";
-							modelName += result.browser.name ? result.browser.name + " " : "";
-							modelName ||= "Unknown ";
-							modelName += "PWA";
-							const postData = {
-								"pushToken": currentToken,
-								"deviceModel": modelName,
-								"tokenType": "firebase"
-							}
-
-							fetch("/AspenPWA/AJAX?method=saveNotificationPushToken", {
-								method: "POST",
-								headers: {
-									'Cache-Control': 'no-cache'
-								},
-								body: new URLSearchParams(postData)
-							});
+					if (Notification.permission === 'granted') {
+						let parser = new UAParser(window.navigator.userAgent);
+						let result = parser.getResult();
+						let modelName = result.device.vendor ? result.device.vendor + " " : "";
+						modelName += result.device.model ? result.device.model + " " : "";
+						modelName += result.os.name ? result.os.name + " " : "";
+						modelName += result.os.version ? result.os.version + " " : "";
+						modelName += result.cpu.architecture ? result.cpu.architecture + " " : "";
+						modelName += result.browser.name ? result.browser.name + " " : "";
+						modelName ||= "Unknown ";
+						modelName += "PWA";
+						const postData = {
+							"pushToken": currentToken,
+							"deviceModel": modelName,
+							"tokenType": "firebase"
 						}
-					});
+
+						fetch("/AspenPWA/AJAX?method=saveNotificationPushToken", {
+							method: "POST",
+							headers: {
+								'Cache-Control': 'no-cache'
+							},
+							body: new URLSearchParams(postData)
+						});
+					}
 				} 
 				else {
 					//show permission request UI
@@ -80,16 +78,15 @@ export function initialize() {
 
 function handleAllowNotifications() {
 	var allow = $("#allowNotifications").is(":checked");
-	console.log("yo");
 	if(allow)
 	{
-		let token = initialize();
-		console.log(appToken);
-		console.log("Token was: "+token);
-		if(Notification.permission === "granted")
-		{
-			$(".notification-permission-controls").show();
-		}
+		Notification.requestPermission().then((permission) => {
+			if(permission === 'granted')
+			{
+				initialize();
+				$(".notification-permission-controls").show();
+			}
+		});
 	} else {
 		$(".notification-permission-controls").hide();
 		const postData = {
@@ -139,7 +136,9 @@ $(document).ready(function(){
 	let notifyAccount = token.data("notifyAccount");
 	appToken = token.data("token");
 
-	if(token.length)
+	//if we dont have a token or dont have permissions we need
+	//to request
+	if(token.length && Notification.permission === "granted")
 	{
 		$("#allowNotifications").prop("checked", true).trigger("change");
 	} else {

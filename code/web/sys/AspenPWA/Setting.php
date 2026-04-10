@@ -17,8 +17,6 @@ class AspenPWASetting extends DataObject {
 	public $firebaseStorageBucket;
 	public $firebaseMessagingSenderID;
 	public $firebaseAppID;
-	public $firebaseMeasurementID;
-	public $vapidKey;
 	public $serviceAccount;
 
 	private $_libraries;
@@ -181,24 +179,6 @@ class AspenPWASetting extends DataObject {
 				'required' => true,
 
 			],
-			'firebaseMeasurementID' => [
-				'property' => 'firebaseMeasurementID',
-				'type' => 'text',
-				'label' => 'Firebase Measurement ID',
-				'description' => 'description here',
-				'maxLength' => 50,
-				'required' => true,
-
-			],
-			'vapidKey' => [
-				'property' => 'vapidKey',
-				'type' => 'text',
-				'label' => 'Vapid Key',
-				'description' => 'description here',
-				'maxLength' => 100,
-				'required' => true,
-
-			],
 			'serviceAccount' => [
 				'property' => 'serviceAccount',
 				'type' => 'storedPassword',
@@ -288,15 +268,14 @@ class AspenPWASetting extends DataObject {
 	}
 
 	function getFirebaseSettings(){
+		//apikey, projectId, messagingSenderId, appId
 		return [
 			'apiKey' => $this->firebaseAPIKey,
-			'authDomain' =>$this->firebaseAuthDomain,
+			//'authDomain' =>$this->firebaseAuthDomain,
 			'projectId' => $this->firebaseProjectID,
-			'storageBucket' => $this->firebaseStorageBucket,
+			//'storageBucket' => $this->firebaseStorageBucket,
 			'messagingSenderId' => $this->firebaseMessagingSenderID,
-			'appId' => $this->firebaseAppID,
-			'measurementId' => $this->firebaseMeasurementID,
-			'vapidKey' => $this->vapidKey
+			'appId' => $this->firebaseAppID
 		];
 	}
 
