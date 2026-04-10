@@ -225,6 +225,15 @@ class EventInstance extends DataObject {
 		return $registration->count();
 	}
 
+	public function isWaitingListEnabled(): bool {
+		if ($this->waitingList !== null) {
+			return (bool)$this->waitingList;
+		}
+		$event = $this->getParentEvent();
+		return (bool)$event->waitingList;
+	}
+
+
 	public function getAvailableSeats(): ?int {
 		$capacity = $this->getEffectiveNumberOfSeats();
 		if ($capacity === null) {
