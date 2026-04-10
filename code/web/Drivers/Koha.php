@@ -9475,7 +9475,6 @@ class Koha extends AbstractIlsDriver {
 			$this->initDatabaseConnection();
 
 			if (!$this->dbConnection) {
-				$logger->log("Could not connect to Koha database to check displayAddHoldGroups setting", Logger::LOG_ERROR);
 				return false;
 			}
 
