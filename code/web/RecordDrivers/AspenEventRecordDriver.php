@@ -36,6 +36,35 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return $this->valid;
 	}
 
+	public static function isValidSourceId(string $sourceId): bool {
+		return (bool)preg_match('/^aspenEvent_\d+_\d+$/', $sourceId);
+	}
+
+	public static function sanitizeSourceId(string $sourceId): ?string {
+		if (!self::isValidSourceId($sourceId)) {
+			return null;
+		}
+		return $sourceId;
+	}
+
+	public static function invalidSourceIdResult(): array {
+		return [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Invalid event source ID.',
+				'isPublicFacing' => true,
+			]),
+		];
+	}
+
+	public static function extractEventInstanceId(string $sourceId): ?int {
+		if (!self::isValidSourceId($sourceId)) {
+			return null;
+		}
+		$parts = explode('_', $sourceId);
+		return (int)end($parts);
+	}
+
 	public function getListEntry($listId = null, $allowEdit = true) {
 		//Use getSearchResult to do the bulk of the assignments
 		$this->getSearchResult('list', false);
