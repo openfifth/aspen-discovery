@@ -12,6 +12,8 @@ class EventInstance extends DataObject {
 	public $status;
 	public $note;
 	public $numberOfSeats;
+	public $waitingList;
+	public $waitingListNumberOfSeats;
 
 	public $dateUpdated;
 	public $deleted;
@@ -77,6 +79,20 @@ class EventInstance extends DataObject {
 				'min' => 0,
 				'max' => 1000,
 			],
+			'waitingList' => [
+				'property' => 'waitingList',
+				'type' => 'checkbox',
+				'label' => 'Waiting List Override',
+				'description' => 'Override whether waiting list is enabled for this specific instance.',
+			],
+			'waitingListNumberOfSeats' => [
+				'property' => 'waitingListNumberOfSeats',
+				'type' => 'integer',
+				'label' => 'Number of Seats on Waiting List Override',
+				'description' => 'Override waiting list capacity for this specific instance.',
+				'min' => 0,
+				'max' => 1000,
+			],
 			'status' => [
 				'property' => 'status',
 				'type' => 'checkbox',
@@ -101,6 +117,7 @@ class EventInstance extends DataObject {
 			'length',
 			'dateUpdated',
 			'numberOfSeats',
+			'waitingListNumberOfSeats',
 		];
 	}
 
