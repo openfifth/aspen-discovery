@@ -3,7 +3,7 @@
 function getUntitledVolumeHoldAction($module, $source, $id, $variationId) : array {
 	return [
 		'title' => translate([
-			'text' => 'Place Hold one',
+			'text' => 'Place Hold',
 			'isPublicFacing' => true,
 		]),
 		'url' => '',
@@ -51,7 +51,7 @@ function getSpecificVolumeHoldAction($module, $source, $id, $volumeInfo) : array
 function getMultiVolumeHoldAction($module, $source, $id) : array {
 	return [
 		'title' => translate([
-			'text' => 'Place Hold three',
+			'text' => 'Place Hold',
 			'isPublicFacing' => true,
 		]),
 		'url' => '',
