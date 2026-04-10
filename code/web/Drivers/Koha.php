@@ -9429,7 +9429,7 @@ class Koha extends AbstractIlsDriver {
 
 			if (!$result['success']) {
 				global $logger;
-				$logger->log("Hold Groupeing Error: " . print_r($result, true), Logger::LOG_ERROR);
+				$logger->log("Hold Grouping Error: " . print_r($result, true), Logger::LOG_ERROR);
 			}
 		} catch (Exception $e) {
 			global $logger;
