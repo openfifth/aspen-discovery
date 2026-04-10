@@ -9465,10 +9465,6 @@ class Koha extends AbstractIlsDriver {
 		try {
 			$this->initDatabaseConnection();
 
-			if (!$this->dbConnection) {
-				return false;
-			}
-
 			$sql = "SELECT value FROM systempreferences WHERE variable = 'displayAddHoldGroups'";
 			$result = mysqli_query($this->dbConnection, $sql);
 
