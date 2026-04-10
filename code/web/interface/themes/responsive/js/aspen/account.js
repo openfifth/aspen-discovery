@@ -2385,7 +2385,7 @@ AspenDiscovery.Account = (function () {
 			const url = Globals.path + "/MyAccount/AJAX";
 			const params = {
 				method: 'toggleUserRegistrationToEvent',
-				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
+				eventSourceId,
 				userId
 			};
 
