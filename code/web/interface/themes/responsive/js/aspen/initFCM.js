@@ -1,11 +1,9 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js';
-import { getMessaging } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging-sw.js";
-import { getToken } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js";
+import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-messaging.js";
 import * as UAP from "../lib/ua-parser-min.js";
-//import '../lib/apisauce.min.js';
 
-export var appToken = "default";
-export function getModelName() {
+var appToken = "default";
+function getModelName() {
 	let parser = new UAParser(window.navigator.userAgent);
 	let result = parser.getResult();
 	let modelName = result.device.vendor ? result.device.vendor + " " : "";
@@ -18,7 +16,7 @@ export function getModelName() {
 	modelName += "PWA";
 	return modelName;
 }
-export function initialize() {
+function initialize() {
 	fetch("/API/SystemAPI?method=getFirebaseMessagingConfig").then(function (response) {
 		return response.json();
 	}).then(function (data) {
