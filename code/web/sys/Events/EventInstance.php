@@ -262,4 +262,11 @@ class EventInstance extends DataObject {
 		return $available >= $requestedSeats;
 	}
 
+	public function getWaitingListCount(): int {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $this->id;
+		$registration->whereAdd('status IN ("waiting", "invited")');
+		return $registration->count();
+	}
 }
