@@ -68,6 +68,20 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		];
 	}
 
+	/**
+	 * Static because DataObject uses set properties as implicit WHERE clauses.
+	 * Calling this on an instance with userId set would contaminate the count
+	 * query, returning only the caller's own rows instead of all queue entries.
+	 */
+	public static function getWaitingListPosition(int $eventInstanceId, string $createdAt): ?int {
+		$query = new UserAspenEventInstanceRegistration();
+		$query->eventInstanceId = $eventInstanceId;
+		$query->whereAdd('status IN ("waiting", "invited")');
+		$query->whereAdd("createdAt < " . $query->escape($createdAt));
+
+		return $query->count() + 1;
+	}
+
 	private function validateStatus(string $status): bool {
 		return in_array($status, self::VALID_STATUSES, true);
 	}
