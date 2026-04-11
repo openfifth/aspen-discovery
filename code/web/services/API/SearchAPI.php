@@ -461,12 +461,25 @@ class SearchAPI extends AbstractAPI {
 						/** @noinspection PhpPossiblePolymorphicInvocationInspection */
 						$logEntry->websiteName = 'Web Builder Content';
 					}elseif ($aspenModule->name == 'Hoopla') {
-						require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
-						$hooplaSettings = new HooplaSetting();
-						$hooplaSettings->find();
 						$checkEntriesInLast34Hours = true;
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
+						//Check to see if Flex is enabled (which will have continuous indexing)
+						$numEntriesToCheck = 1;
+						if (!empty($systemVariables)) {
+							if ($systemVariables->hooplaVersion == 1) {
+								require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
+								$hooplaSetting = new HooplaSetting();
+							}else{
+								require_once ROOT_DIR . '/sys/Hoopla/LibraryHooplaSetting.php';
+								$hooplaSetting = new LibraryHooplaSetting();
+							}
+							$hooplaSetting->hooplaFlexEnabled = 1;
+							if ($hooplaSetting->count() > 0) {
+								//Flex is enabled
+								$numEntriesToCheck = 3;
+							}
+						}
 					}
 					$logEntry->limit(0, $numEntriesToCheck * $numSettings);
 					$logErrors = 0;
@@ -536,9 +549,6 @@ class SearchAPI extends AbstractAPI {
 							}
 						}
 					}elseif ($aspenModule->name == 'Hoopla') {
-						require_once ROOT_DIR . '/sys/Hoopla/HooplaSetting.php';
-						$hooplaSettings = new HooplaSetting();
-						$hooplaSettings->find();
 						$checkEntriesInLast34Hours = true;
 						$checkEntriesInLast24Hours = false;
 						$checkEntriesInLast1Hours = false;
