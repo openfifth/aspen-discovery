@@ -641,6 +641,8 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			'registration_required' => $this->isRegistrationRequired(),
 			'number_of_seats' => $this->getNumberOfSeats(),
 			'available_seats' => $this->getAvailableSeats(),
+			'waiting_list' => $this->isWaitingListEnabled(),
+			'waiting_list_number_of_seats' => $this->getWaitingListNumberOfSeats(),
 			'bypass' => $this->getBypassSetting(),
 			'url' => null,
 			'source' => 'aspenEvents',
