@@ -252,6 +252,29 @@ class EventInstance extends DataObject {
 		return max(0, $capacity - $this->getWaitingListCount());
 	}
 
+	public function getRegistrationStatusMessage(bool $waitingListEnabled, bool $userOnWaitingList, bool $canRegister, int $waitingListPosition, bool $isEventFull, bool $isWaitingListFull): string {
+		if (!$waitingListEnabled) {
+			return "Registration available";
+		}
+
+		if ($userOnWaitingList) {
+			if ($canRegister) {
+				return "Registration available";
+			}
+			return "On waiting list - position " . $waitingListPosition;
+		}
+
+		if (!$isEventFull) {
+			return "Registration available";
+		}
+
+		if (!$isWaitingListFull) {
+			return "Waiting List available";
+		}
+
+		return "Registration unavailable";
+	}
+
 	public function getAvailableSeats(): ?int {
 		$capacity = $this->getEffectiveNumberOfSeats();
 		if ($capacity === null) {
