@@ -3106,6 +3106,7 @@ class User extends DataObject {
 			$readingHistoryEntry = new ReadingHistoryEntry();
 			$readingHistoryEntry->userId = $this->id;
 			$readingHistoryEntry->deleted = 0;
+			$readingHistoryEntry->whereAdd('checkOutDate > 0');
 			$readingHistoryEntry->orderBy('checkOutDate ASC');
 			$readingHistoryEntry->limit(0, 1);
 			if ($readingHistoryEntry->find(true)) {
