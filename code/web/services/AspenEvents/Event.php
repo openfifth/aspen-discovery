@@ -49,20 +49,7 @@ class AspenEvents_Event extends Action {
 		$interface->assign('isStaff', UserAccount::isStaff());
 		$interface->assign('upcomingInstanceCount', $this->recordDriver->getEventObject()->getUpcomingInstanceCount() ?? 0);
 		$interface->assign('private', $this->recordDriver->isPrivate() ? 'private' : '');
-		$waitingListInfo = $this->recordDriver->getUserWaitingListInfo();
-		$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
-		$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
-		$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
-		$interface->assign('waitingList', $this->recordDriver->isWaitingListEnabled());
-		$eventObject = $this->recordDriver->getEventObject();
-		$interface->assign('registrationAction', $eventObject ? $eventObject->getRegistrationAction(
-			$this->recordDriver->isRegisteredForEvent(),
-			$this->recordDriver->isEventFull(),
-			$this->recordDriver->isWaitingListEnabled(),
-			$waitingListInfo['onWaitingList'],
-			$waitingListInfo['canRegister'],
-			$this->recordDriver->isWaitingListFull()
-		) : 'none');
+		$this->recordDriver->assignWaitingListTemplateVars();
 
 		$this->display('event.tpl', $this->recordDriver->getTitle(), null, false);
 	}
