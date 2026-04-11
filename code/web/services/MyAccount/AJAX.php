@@ -9458,7 +9458,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$mandatoryEnrollment = $_REQUEST['mandatoryEnrollment'] ?? 'false';
 
 		if ($step == "register") {
-			$this->requireLoggedInUser();
 			function mask($str, $first, $last) : string {
 				$len = strlen($str);
 				$toShow = $first + $last;
@@ -9570,7 +9569,6 @@ class MyAccount_AJAX extends JSON_Action {
 					]) . "</button>",
 			];
 		} elseif ($step == "complete") {
-			$this->requireLoggedInUser();
 			// update user table to enrolled status
 			$user = new User();
 			$user->id = UserAccount::getActiveUserId();
