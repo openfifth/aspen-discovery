@@ -244,6 +244,13 @@ class EventInstance extends DataObject {
 		return $event->waitingListNumberOfSeats;
 	}
 
+	public function getAvailableWaitingListSeats(): ?int {
+		$capacity = $this->getEffectiveWaitingListNumberOfSeats();
+		if ($capacity === null) {
+			return null;
+		}
+		return max(0, $capacity - $this->getWaitingListCount());
+	}
 
 	public function getAvailableSeats(): ?int {
 		$capacity = $this->getEffectiveNumberOfSeats();
