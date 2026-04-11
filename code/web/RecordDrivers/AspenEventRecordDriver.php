@@ -388,7 +388,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return $data->title;
 	}
 
-	private function getIdentifier() {
+	public function getIdentifier() {
 		return $this->fields['identifier'];
 	}
 
