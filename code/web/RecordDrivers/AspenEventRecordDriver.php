@@ -138,25 +138,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('numberOfSeats', $this->getNumberOfSeats());
 	$interface->assign('availableSeats', $this->getAvailableSeats());
 	$interface->assign('isEventFull', $this->isEventFull());
-	$interface->assign('waitingList', $this->isWaitingListEnabled());
-	$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
-	$waitingListInfo = $this->getUserWaitingListInfo();
-	$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
-	$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
-	$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
-	$interface->assign('availableNumberOfWaitingListSeats', $this->getAvailableNumberOfWaitingListSeats());
-	$isWaitingListFull = $this->isWaitingListFull();
-	$interface->assign('isWaitingListFull', $isWaitingListFull);
-	$eventObject = $this->getEventObject();
-	$interface->assign('registrationAction', $eventObject ? $eventObject->getRegistrationAction(
-		$this->isRegisteredForEvent(),
-		$this->isEventFull(),
-		$this->isWaitingListEnabled(),
-		$waitingListInfo['onWaitingList'],
-		$waitingListInfo['canRegister'],
-		$isWaitingListFull
-	) : 'none');
-	$interface->assign('displayWaitingListSeats', $this->getDisplayWaitingListSeats());
+	$this->assignWaitingListTemplateVars();
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -575,6 +557,29 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			return null;
 		}
 		return $eventObject->getDisplayWaitingListSeats();
+	}
+
+	public function assignWaitingListTemplateVars(): void {
+		global $interface;
+		$interface->assign('waitingList', $this->isWaitingListEnabled());
+		$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
+		$waitingListInfo = $this->getUserWaitingListInfo();
+		$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
+		$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
+		$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
+		$interface->assign('availableNumberOfWaitingListSeats', $this->getAvailableNumberOfWaitingListSeats());
+		$isWaitingListFull = $this->isWaitingListFull();
+		$interface->assign('isWaitingListFull', $isWaitingListFull);
+		$eventObject = $this->getEventObject();
+		$interface->assign('registrationAction', $eventObject ? $eventObject->getRegistrationAction(
+			$this->isRegisteredForEvent(),
+			$this->isEventFull(),
+			$this->isWaitingListEnabled(),
+			$waitingListInfo['onWaitingList'],
+			$waitingListInfo['canRegister'],
+			$isWaitingListFull
+		) : 'none');
+		$interface->assign('displayWaitingListSeats', $this->getDisplayWaitingListSeats());
 	}
 
 	/**
