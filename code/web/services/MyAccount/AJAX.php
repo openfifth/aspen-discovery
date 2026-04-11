@@ -8289,13 +8289,23 @@ class MyAccount_AJAX extends JSON_Action {
 			global $interface;
 			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
 			$available = $eventInstance->getAvailableSeats();
+
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+			$aspenEventInstanceUserRegistration = new UserAspenEventInstanceRegistration();
+			$aspenEventInstanceUserRegistration->eventInstanceId = $eventInstanceId;
+			$aspenEventInstanceUserRegistration->userId = UserAccount::getActiveUserId();
+			$waitingListInfo = $aspenEventInstanceUserRegistration->getWaitingListInfo();
+
 			$interface->assign('numberOfSeats', $numberOfSeats);
 			$interface->assign('availableSeats', $available);
 			$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+			$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
+			$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
+			$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
+			$interface->assign('userIsRegistered', false);
 
 			$user = UserAccount::getLoggedInUser();
 			if (empty($user)) {
-				// Marking this as 'success' as there is no server error, and we do want the user to access the login button
 				$result['success'] = true;
 				$result['buttons'] = $interface->fetch('AspenEvents/loginToRegisterButton.tpl');
 				$result['body'] = translate([
@@ -8323,8 +8333,19 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('linkedUsers', $linkedUsers);
 
 			$isRegistered = $aspenEventInstanceUserRegistration->status === 'registered';
-
+			$isEventFull = !$eventInstance->hasAvailableSeats();
+			$canRegister = $waitingListInfo['canRegister'];
+			$isWaitingListFull = $eventInstance->isWaitingListFull();
+			$registrationAction = $eventInstance->getRegistrationAction(
+				$isRegistered,
+				$isEventFull,
+				$eventInstance->isWaitingListEnabled(),
+				$waitingListInfo['onWaitingList'],
+				$canRegister,
+				$isWaitingListFull
+			);
 			$interface->assign('userIsRegistered', $isRegistered);
+			$interface->assign('registrationAction', $registrationAction);
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 		}
