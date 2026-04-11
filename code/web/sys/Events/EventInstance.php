@@ -364,4 +364,23 @@ class EventInstance extends DataObject {
 		}
 		return $this->getWaitingListCount() >= $capacity;
 	}
+
+	public function inviteNextOnWaitingList(): void {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		require_once ROOT_DIR . '/sys/Account/User.php';
+
+		$nextWaitingUserRegistration = new UserAspenEventInstanceRegistration();
+		$nextWaitingUserRegistration->eventInstanceId = $this->id;
+		$nextWaitingUserRegistration->status = 'waiting';
+		$nextWaitingUserRegistration->orderBy('createdAt ASC');
+		$nextWaitingUserRegistration->limit(0, 1);
+
+		if (!$nextWaitingUserRegistration->find(true)) {
+			return;
+		}
+
+		$nextWaitingUserRegistration->status = 'invited';
+		$nextWaitingUserRegistration->notifiedAt = date('Y-m-d H:i:s');
+		$nextWaitingUserRegistration->update();
+	}
 }
