@@ -2672,7 +2672,12 @@ class User extends DataObject {
 	}
 
 	function freezeHold(string $recordId, string $holdId, ?string $reactivationDate) : array {
-		return $this->getCatalogDriver()->freezeHold($this, $recordId, $holdId, $reactivationDate);
+		$result = $this->getCatalogDriver()->freezeHold($this, $recordId, $holdId, $reactivationDate);
+		if ($result['success']){
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->markHoldsStale();
+		}
+		return $result;
 	}
 
 	function freezeAllHolds($reactivationDate = false) : array {
@@ -2902,7 +2907,12 @@ class User extends DataObject {
 	}
 
 	function thawHold(string $recordId, string $holdId): array {
-		return $this->getCatalogDriver()->thawHold($this, $recordId, $holdId);
+		$result = $this->getCatalogDriver()->thawHold($this, $recordId, $holdId);
+		if ($result['success']){
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->markHoldsStale();
+		}
+		return $result;
 	}
 
 	function freezeOverDriveHold($overDriveId): array {
