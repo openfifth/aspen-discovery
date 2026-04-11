@@ -18,6 +18,8 @@ class EventInstance extends DataObject {
 	public $dateUpdated;
 	public $deleted;
 
+	private $_parentEvent = null;
+
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
@@ -156,9 +158,13 @@ class EventInstance extends DataObject {
 	}
 
 	function getParentEvent() : Event {
+		if ($this->_parentEvent !== null) {
+			return $this->_parentEvent;
+		}
 		$event = new Event();
 		$event->id = $this->eventId;
 		$event->find(true);
+		$this->_parentEvent = $event;
 		return $event;
 	}
 
