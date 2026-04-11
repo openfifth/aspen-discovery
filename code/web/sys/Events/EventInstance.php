@@ -315,6 +315,13 @@ class EventInstance extends DataObject {
 		if ($capacity === null) {
 			return null;
 		}
+
+		// If anyone is queued on the waiting list, block direct registration — new users must join the queue
+		$waitingListCount = $this->getWaitingListCount();
+		if ($waitingListCount > 0) {
+			return 0;
+		}
+
 		return max(0, $capacity - $this->getRegistrationCount());
 	}
 
