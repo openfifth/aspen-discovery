@@ -6,7 +6,7 @@ require_once ROOT_DIR . '/sys/Events/Event.php';
 
 class AspenEventRecordDriver extends IndexRecordDriver {
 	private $valid;
-	/** @var AspenEventRecordDriver */
+	/** @var EventInstance */
 	private $eventObject;
 
 	public function __construct($recordData) {
