@@ -540,6 +540,15 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return $eventObject->getAvailableWaitingListSeats();
 	}
 
+	public function getDisplayWaitingListSeats(): ?string {
+
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return null;
+		}
+		return $eventObject->getDisplayWaitingListSeats();
+	}
+
 	/**
 	 * Determines whether a user should or should not see the "Registration Information" link on Aspen Events.
 	 **/
