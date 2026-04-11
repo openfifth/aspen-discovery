@@ -486,6 +486,15 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return false;
 	}
 
+	public function isWaitingListFull(): bool {
+		$eventObject = $this->getEventObject();
+
+		if ($eventObject) {
+			return $eventObject->isWaitingListFull();
+		}
+		return false;
+	}
+
 	public function inEvents() {
 		if (UserAccount::isLoggedIn()) {
 			return UserAccount::getActiveUserObj()->inUserEvents($this->getId());
