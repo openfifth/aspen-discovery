@@ -275,6 +275,35 @@ class EventInstance extends DataObject {
 		return "Registration unavailable";
 	}
 
+	public function getRegistrationAction(bool $isRegistered, bool $isEventFull, bool $waitingListEnabled, bool $userOnWaitingList, bool $canRegister, bool $isWaitingListFull): string {
+		if ($isRegistered) {
+			return 'registered';
+		}
+
+		if (!$isEventFull) {
+			return 'registrationAvailable';
+		}
+
+		if (!$waitingListEnabled) {
+			return 'eventFull';
+		}
+
+		if ($userOnWaitingList && $canRegister) {
+			return 'completeRegistration';
+		}
+
+		if ($userOnWaitingList) {
+			return 'showPosition';
+		}
+
+		if (!$isWaitingListFull) {
+			return 'joinWaitingList';
+		}
+
+		return 'eventFull';
+	}
+
+
 	public function getAvailableSeats(): ?int {
 		$capacity = $this->getEffectiveNumberOfSeats();
 		if ($capacity === null) {
