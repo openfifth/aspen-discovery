@@ -291,4 +291,12 @@ class EventInstance extends DataObject {
 		$registration->whereAdd('status IN ("waiting", "invited")');
 		return $registration->count();
 	}
+
+	public function isWaitingListFull(): bool {
+		$capacity = $this->getEffectiveWaitingListNumberOfSeats();
+		if ($capacity === null) {
+			return false;
+		}
+		return $this->getWaitingListCount() >= $capacity;
+	}
 }
