@@ -269,6 +269,21 @@ class EventInstance extends DataObject {
 		return $available >= $requestedSeats;
 	}
 
+
+	public function getDisplayWaitingListSeats(): string {
+		if ($this->deleted) {
+			return '—';
+		}
+
+		$totalSeats = $this->getEffectiveWaitingListNumberOfSeats();
+		if ($totalSeats === null) {
+			return 'Available';
+		}
+
+		$available = $this->getAvailableWaitingListSeats();
+		return "{$available} / {$totalSeats}";
+	}
+
 	public function getWaitingListCount(): int {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
