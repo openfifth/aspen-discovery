@@ -4396,6 +4396,21 @@ class MyAccount_AJAX extends JSON_Action {
 					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
 					$availableSeats = $eventInstance->getAvailableSeats();
 					$eventFull = !$eventInstance->hasAvailableSeats();
+					$waitingList = $eventInstance->isWaitingListEnabled();
+					$waitingListNumberOfSeats = $eventInstance->getEffectiveWaitingListNumberOfSeats();
+					
+					$userOnWaitingList = false;
+					$userWaitingListPosition = null;
+					$userCanRegisterFromWaitingList = false;
+					
+					if (!$waitingList || $eventInstance->getWaitingListCount() === 0) {
+						$userCanRegisterFromWaitingList = $eventInstance->hasAvailableSeats();
+					} else {
+						$waitingListInfo = $aspenEventRegistration->getWaitingListInfo();
+						$userOnWaitingList = $waitingListInfo['onWaitingList'];
+						$userWaitingListPosition = $waitingListInfo['position'];
+						$userCanRegisterFromWaitingList = $waitingListInfo['canRegister'];
+					}
 				}
 			} else {
 				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
@@ -4436,6 +4451,23 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;
+				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
+				$events[$entry->sourceId]['waitingList'] = $waitingList;
+				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
+				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
+				$events[$entry->sourceId]['userWaitingListPosition'] = $userWaitingListPosition;
+				$events[$entry->sourceId]['userCanRegisterFromWaitingList'] = $userCanRegisterFromWaitingList;
+				$isWaitingListFull = $eventInstance->isWaitingListFull();
+				$events[$entry->sourceId]['waitingListFull'] = $isWaitingListFull;
+				$events[$entry->sourceId]['registrationStatusMessage'] = $eventInstance->getRegistrationStatusMessage($waitingList, $userOnWaitingList, $userCanRegisterFromWaitingList, $userWaitingListPosition ?? 0, $eventFull, $isWaitingListFull);
+				$events[$entry->sourceId]['registrationAction'] = $eventInstance->getRegistrationAction(
+					$registration,
+					$eventFull,
+					$waitingList,
+					$userOnWaitingList,
+					$userCanRegisterFromWaitingList,
+					$isWaitingListFull
+				);
 			}
 		}
 
