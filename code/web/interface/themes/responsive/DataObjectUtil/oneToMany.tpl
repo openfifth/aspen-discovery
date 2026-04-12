@@ -19,7 +19,6 @@
 			</thead>
 			<tbody>
 			{foreach from=$propValue item=subObject}
-				{assign var=subObjectId value=$subObject->getPrimaryKeyValue()}
 				{assign var=instanceStructure value=$subObject->_instanceStructure}
 				<tr id="{$propName}{$subObject->id}" class="{$propName}Row" data-id="{$subObject->id}">
 					<input type="hidden" id="{$propName}Id_{$subObject->id}" name="{$propName}Id[{$subObject->id}]" value="{$subObject->id}"/>
