@@ -833,8 +833,8 @@ AspenDiscovery.Record = (function () {
 			return false;
 		},
 
-		getLargeCover: function (recordId){
-			var url = Globals.path + '/Record/' + recordId + '/AJAX?method=getLargeCover';
+		getLargeCover: function (module, recordId){
+			var url = Globals.path + '/' + module + '/' + recordId + '/AJAX?method=getLargeCover';
 			$.getJSON(url, function (data){
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}
