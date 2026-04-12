@@ -3,7 +3,7 @@
 require_once(ROOT_DIR . '/services/Admin/Admin.php');
 
 class Admin_CollectionReports extends Admin_Admin {
-	function launch() {
+	function launch() : void {
 		global $enabledModules;
 		global $interface;
 		$user = UserAccount::getLoggedInUser();
@@ -19,23 +19,26 @@ class Admin_CollectionReports extends Admin_Admin {
 		$ilsData->selectAdd('SUM(suppressedNoMarcAvailable) AS suppressedCount');
 		if ($ilsData->find(true)) {
 			$tableData['ilsData']['rowName'] = "ILS";
-			$tableData['ilsData']['activeCount'] = $ilsData->_data['activeCount'];
-			$tableData['ilsData']['deletedCount'] = $ilsData->_data['deletedCount'];
-			$tableData['ilsData']['suppressedCount'] = $ilsData->_data['suppressedCount'];
+			$tableData['ilsData']['activeCount'] = $ilsData->__get('activeCount');
+			$tableData['ilsData']['deletedCount'] = $ilsData->__get('deletedCount');
+			$tableData['ilsData']['suppressedCount'] = $ilsData->__get('suppressedCount');
 		}
 
 		if (array_key_exists('Side Loads', $enabledModules)) {
-			$sideloadData = new IlsRecord();
-			$sideloadData->whereAdd('source = "sideload"');
-			$sideloadData->selectAdd();
-			$sideloadData->selectAdd('SUM(deleted = 0 AND suppressedNoMarcAvailable = 0) AS activeCount');
-			$sideloadData->selectAdd('SUM(deleted) AS deletedCount');
-			$sideloadData->selectAdd('SUM(suppressedNoMarcAvailable) AS suppressedCount');
-			if ($sideloadData->find(true)) {
-				$tableData['sideloadData']['rowName'] = "Side Loads";
-				$tableData['sideloadData']['activeCount'] = $sideloadData->_data['activeCount'];
-				$tableData['sideloadData']['deletedCount'] = $sideloadData->_data['deletedCount'];
-				$tableData['sideloadData']['suppressedCount'] = $sideloadData->_data['suppressedCount'];
+			global $sideLoadSettings;
+			foreach ($sideLoadSettings as $sideLoadSetting) {
+				$sideloadData = new IlsRecord();
+				$sideloadData->whereAdd("source = '$sideLoadSetting->name'");
+				$sideloadData->selectAdd();
+				$sideloadData->selectAdd('SUM(deleted = 0 AND suppressedNoMarcAvailable = 0) AS activeCount');
+				$sideloadData->selectAdd('SUM(deleted) AS deletedCount');
+				$sideloadData->selectAdd('SUM(suppressedNoMarcAvailable) AS suppressedCount');
+				if ($sideloadData->find(true)) {
+					$tableData['sideloadData' . $sideLoadSetting->id]['rowName'] = $sideLoadSetting->name;
+					$tableData['sideloadData' . $sideLoadSetting->id]['activeCount'] = $sideloadData->__get('activeCount');
+					$tableData['sideloadData' . $sideLoadSetting->id]['deletedCount'] = $sideloadData->__get('deletedCount');
+					$tableData['sideloadData' . $sideLoadSetting->id]['suppressedCount'] = $sideloadData->__get('suppressedCount');
+				}
 			}
 		}
 		if (array_key_exists('CloudLibrary', $enabledModules)) {
@@ -46,8 +49,8 @@ class Admin_CollectionReports extends Admin_Admin {
 			$cloudLibraryData->selectAdd('SUM(deleted) AS deletedCount');
 			if ($cloudLibraryData->find(true)) {
 				$tableData['cloudLibraryData']['rowName'] = "CloudLibrary";
-				$tableData['cloudLibraryData']['activeCount'] = $cloudLibraryData->_data['activeCount'];
-				$tableData['cloudLibraryData']['deletedCount'] = $cloudLibraryData->_data['deletedCount'];
+				$tableData['cloudLibraryData']['activeCount'] = $cloudLibraryData->__get('activeCount');
+				$tableData['cloudLibraryData']['deletedCount'] = $cloudLibraryData->__get('deletedCount');
 			}
 		}
 		if (array_key_exists('Hoopla', $enabledModules)) {
@@ -57,7 +60,7 @@ class Admin_CollectionReports extends Admin_Admin {
 			$hooplaData->selectAdd('COUNT(*) AS activeCount');
 			if ($hooplaData->find(true, false, true)) {
 				$tableData['hooplaData']['rowName'] = "Hoopla";
-				$tableData['hooplaData']['activeCount'] = $hooplaData->_data['activeCount'];
+				$tableData['hooplaData']['activeCount'] = $hooplaData->__get('activeCount');
 			}
 		}
 		if (array_key_exists('OverDrive', $enabledModules)) {
@@ -68,8 +71,8 @@ class Admin_CollectionReports extends Admin_Admin {
 			$overdriveData->selectAdd('SUM(deleted) AS deletedCount');
 			if ($overdriveData->find(true)) {
 				$tableData['overDriveData']['rowName'] = "OverDrive";
-				$tableData['overDriveData']['activeCount'] = $overdriveData->_data['activeCount'];
-				$tableData['overDriveData']['deletedCount'] = $overdriveData->_data['deletedCount'];
+				$tableData['overDriveData']['activeCount'] = $overdriveData->__get('activeCount');
+				$tableData['overDriveData']['deletedCount'] = $overdriveData->__get('deletedCount');
 			}
 		}
 		if (array_key_exists('Palace Project', $enabledModules)) {
@@ -79,15 +82,17 @@ class Admin_CollectionReports extends Admin_Admin {
 			$palaceData->selectAdd('COUNT(id) AS activeCount');
 			if ($palaceData->find(true)) {
 				$tableData['palaceProjectData']['rowName'] = "Palace Project";
-				$tableData['palaceProjectData']['activeCount'] = $palaceData->_data['activeCount'];
+				$tableData['palaceProjectData']['activeCount'] = $palaceData->__get('activeCount');
 			}
 		}
+		uasort($tableData, function ($a, $b) {return strcasecmp( $a['rowName'], $b['rowName']);});
+
 		//Get Format Table Data
 		global $aspen_db;
 		$query = $aspen_db->query("SELECT format, source, count(*) AS numRecords FROM grouped_work_records 
 				INNER JOIN indexed_record_source on sourceId = indexed_record_source.id 
 				INNER JOIN indexed_format on formatId = indexed_format.id 
-				GROUP BY formatId, format, sourceId, source ORDER BY format, source;", PDO::FETCH_ASSOC);
+				GROUP BY formatId, format, sourceId, source ORDER BY lower(format), lower(source);", PDO::FETCH_ASSOC);
 		$formatTableData = $query->fetchAll();
 
 
