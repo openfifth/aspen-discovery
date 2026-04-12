@@ -1807,7 +1807,7 @@ class SearchAPI extends AbstractAPI {
 					if (!$hasSubcategories && $subCategoryCount === 0) {
 						$results = $this->getAppBrowseCategoryResults($browseCategory->textId, $appUser);
 						if ($browseCategory->textId === "system_recommended_for_you") {
-							$results = $results['records'];
+							$results = $results['records'] ?? [];
 						} else {
 							$results = $results['items'];
 						}
@@ -2657,6 +2657,11 @@ class SearchAPI extends AbstractAPI {
 				if ($browseCategory->textId == 'system_recommended_for_you') {
 					$records = $this->getAppSuggestionsBrowseCategoryResults($pageToLoad, $pageSize);
 					$response['key'] = $browseCategory->textId;
+					if (!array_key_exists('records', $records)){
+						//User not logged in
+						$response['success'] = false;
+						return $response;
+					}
 					$response['records'] = $records['records'];
 					$response['message'] = 'Results found for browse category';
 				} else {
