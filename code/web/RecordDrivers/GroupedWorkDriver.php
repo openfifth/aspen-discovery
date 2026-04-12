@@ -2443,6 +2443,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 							$this->seriesData = [
 								'seriesTitle' => $existingDisplayInfo->seriesName,
 								'volume' => $existingDisplayInfo->seriesDisplayOrder,
+								'groupedWorkId' => $this->getPermanentId(),
 								'fromNovelist' => true,
 								'fromSeriesIndex' => false
 							];
@@ -2487,6 +2488,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					$this->seriesData = [
 						'seriesTitle' => $novelistData->seriesTitle,
 						'volume' => $novelistData->volume,
+						'groupedWorkId' => $this->getPermanentId(),
 						'fromNovelist' => true,
 						'fromSeriesIndex' => false
 					];
