@@ -409,6 +409,12 @@ class EventInstance extends DataObject {
 		return $eventTimestamp > time();
 	}
 
+	public static function addUpcomingWhereClause(DataObject $query): void {
+		$cutoffDate = $query->escape(date('Y-m-d'));
+		$cutoffTime = $query->escape(date('H:i:s'));
+		$query->whereAdd("(date > $cutoffDate OR (date = $cutoffDate AND time > $cutoffTime))");
+	}
+
 	public function isWaitingListFull(): bool {
 		$capacity = $this->getEffectiveWaitingListNumberOfSeats();
 		if ($capacity === null) {

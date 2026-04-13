@@ -549,24 +549,62 @@ class Event extends DataObject {
 	}
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
-		if (!$useWhere) {
-			$this->deleted = 1;
-			$this->dateUpdated = time();
-			$ret = parent::update();
-
-			if ($ret) {
-				$instance = new EventInstance();
-				$instance->eventId = $this->id;
-				$instance->find();
-				while ($instance->fetch()) {
-					$instance->delete();
-				}
-				return true;
-			}
-			return false;
-		} else {
-			return parent::delete($useWhere, $hardDelete);
+		if ($useWhere) {
+			throw new InvalidArgumentException('Event::delete does not support $useWhere = true. Delete events individually.');
 		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+
+		$upcomingInstances = $this->getUpcomingInstances();
+		$upcomingInstanceIds = [];
+		foreach ($upcomingInstances as $upcomingInstance) {
+			$upcomingInstanceIds[] = (int)$upcomingInstance->id;
+		}
+		$affectedUsersByStatus = UserAspenEventInstanceRegistration::getUsersGroupedByStatusForInstances($upcomingInstanceIds);
+
+		$this->deleted = 1;
+		$this->dateUpdated = time();
+		$softDeleteResult = parent::update();
+		if ($softDeleteResult === false) {
+			return false;
+		}
+
+		foreach ($this->getAllInstanceIds() as $instanceId) {
+			$instance = new EventInstance();
+			$instance->id = $instanceId;
+			if ($instance->find(true)) {
+				$instance->delete(false, false, true);
+			}
+		}
+
+		$instanceForNotification = new EventInstance();
+		$instanceForNotification->sendCancellationNotificationEmails($upcomingInstances, $affectedUsersByStatus);
+
+		return $softDeleteResult;
+	}
+
+	public function getUpcomingInstances(): array {
+		$upcoming = [];
+		$instance = new EventInstance();
+		$instance->eventId = $this->id;
+		$instance->deleted = 0;
+		EventInstance::addUpcomingWhereClause($instance);
+		$instance->find();
+		while ($instance->fetch()) {
+			$upcoming[] = clone $instance;
+		}
+		return $upcoming;
+	}
+
+	public function getAllInstanceIds(): array {
+		$ids = [];
+		$instance = new EventInstance();
+		$instance->eventId = $this->id;
+		$instance->find();
+		while ($instance->fetch()) {
+			$ids[] = (int)$instance->id;
+		}
+		return $ids;
 	}
 
 	public function __set($name, $value) {
