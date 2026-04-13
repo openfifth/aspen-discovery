@@ -448,4 +448,20 @@ class EventInstance extends DataObject {
 		}
 		return true;
 	}
+
+	public function sendCancellationNotificationEmails(array $upcomingInstances, array $affectedUsersByStatus): void {
+		if (empty($upcomingInstances) || empty($affectedUsersByStatus)) {
+			return;
+		}
+		$formattedInstances = $this->formatEmailTemplateEventInstances($upcomingInstances);
+		foreach ($affectedUsersByStatus as $status => $userIds) {
+			foreach ($userIds as $userId) {
+				$this->sendEventEmail($userId, 'eventCancellation', [
+					'instances' => $formattedInstances,
+					'status' => $status,
+				]);
+			}
+		}
+	}
+
 }
