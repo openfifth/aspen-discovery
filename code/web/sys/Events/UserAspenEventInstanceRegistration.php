@@ -147,4 +147,47 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		$registration->status = 'invited';
 		return $registration->find(true);
 	}
+
+	/**
+
+	 * Deletes all registration rows tied to the given event instance.
+	 * Returns the number of rows deleted (or false on failure).
+	 */
+	public static function deleteAllForEventInstance(int $eventInstanceId): bool|int {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		return $registration->delete(true);
+	}
+
+	/**
+	 * Returns users grouped by registration status for a single event instance.
+	 * Shape: ['registered' => [userId, ...], 'invited' => [...], 'waiting' => [...]]
+	 * Statuses with no users are omitted.
+	 */
+	public static function getUsersGroupedByStatusForInstance(int $eventInstanceId): array {
+		return self::getUsersGroupedByStatusForInstances([$eventInstanceId]);
+	}
+
+	/**
+	 * Returns users grouped by registration status across multiple event instances.
+	 * A user on multiple instances with the same status appears once in that group.
+	 */
+	public static function getUsersGroupedByStatusForInstances(array $eventInstanceIds): array {
+		if (empty($eventInstanceIds)) {
+			return [];
+		}
+
+		$instanceIdList = implode(',', array_map('intval', $eventInstanceIds));
+
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->whereAdd("eventInstanceId IN ($instanceIdList)");
+		$registration->find();
+
+		$grouped = [];
+		while ($registration->fetch()) {
+			$grouped[$registration->status][(int)$registration->userId] = true;
+		}
+
+		return array_map('array_keys', $grouped);
+	}
 }
