@@ -416,4 +416,36 @@ class EventInstance extends DataObject {
 		$nextWaitingUserRegistration->notifiedAt = date('Y-m-d H:i:s');
 		$nextWaitingUserRegistration->update();
 	}
+
+	public function sendEventEmail(int $userId, string $templateName, array $parameters): bool {
+		require_once ROOT_DIR . '/sys/Email/Mailer.php';
+		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+		global $logger;
+
+		$emailTemplate = EmailTemplate::getActiveTemplate($templateName);
+		if (!$emailTemplate) {
+			$logger->log("Unable to find email template: $templateName", Logger::LOG_ERROR);
+			return false;
+		}
+		
+		$user = new User();
+		$user->id = $userId;
+		if (!$user->find(true)) {
+			$logger->log("$templateName email skipped — user $userId not found", Logger::LOG_ERROR);
+			return false;
+		}
+
+		if (!$user->canReceiveEventNotifications()) {
+			return false;
+		}
+
+		$parameters['user'] = $user;
+
+		$sent = $emailTemplate->sendEmail($user->email, $parameters);
+		if (!$sent) {
+			$logger->log("$templateName email failed to send for user $userId", Logger::LOG_ERROR);
+			return false;
+		}
+		return true;
+	}
 }
