@@ -423,23 +423,59 @@ class EventInstance extends DataObject {
 		return $this->getWaitingListCount() >= $capacity;
 	}
 
-	public function inviteNextOnWaitingList(): void {
+	public function inviteNextOnWaitingList(): bool {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
+		global $logger;
 
-		$nextWaitingUserRegistration = new UserAspenEventInstanceRegistration();
-		$nextWaitingUserRegistration->eventInstanceId = $this->id;
-		$nextWaitingUserRegistration->status = 'waiting';
-		$nextWaitingUserRegistration->orderBy('createdAt ASC');
-		$nextWaitingUserRegistration->limit(0, 1);
+		$candidateIds = UserAspenEventInstanceRegistration::getWaitingRowIdsForInstance((int)$this->id);
 
-		if (!$nextWaitingUserRegistration->find(true)) {
-			return;
+		foreach ($candidateIds as $candidateId) {
+			$candidate = new UserAspenEventInstanceRegistration();
+			$candidate->id = $candidateId;
+			if (!$candidate->find(true)) {
+				continue;
+			}
+
+			$user = new User();
+			$user->id = $candidate->userId;
+			if (!$user->find(true)) {
+				$candidate->delete();
+				$logger->log("Waiting list candidate removed — user {$candidate->userId} not found (instance {$this->id})", Logger::LOG_WARNING);
+				continue;
+			}
+
+			if (!$user->canReceiveEventNotifications()) {
+				$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$this->id})", Logger::LOG_INFO);
+				continue;
+			}
+
+			$candidate->status = 'invited';
+			$candidate->notifiedAt = date('Y-m-d H:i:s');
+			$candidate->update();
+
+			$this->sendEventInstanceRegistrationInvitation((int)$candidate->userId);
+			return true;
 		}
 
-		$nextWaitingUserRegistration->status = 'invited';
-		$nextWaitingUserRegistration->notifiedAt = date('Y-m-d H:i:s');
-		$nextWaitingUserRegistration->update();
+		return false;
+	}
+
+	private function sendEventInstanceRegistrationInvitation(int $userId): void {
+		$event = $this->getParentEvent();
+
+		$homeLibrary = Library::getPatronHomeLibrary();
+		if (is_null($homeLibrary)) {
+			global $library;
+			$homeLibrary = $library;
+		}
+
+		$this->sendEventEmail($userId, 'registerForEventFromWaitingList', [
+			'eventDate' => DateUtils::formatHumanDate($this->date),
+			'eventTime' => $this->time,
+			'eventTitle' => $event->title,
+			'library' => $homeLibrary,
+		]);
 	}
 
 	public function sendEventEmail(int $userId, string $templateName, array $parameters): bool {
