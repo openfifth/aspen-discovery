@@ -11907,4 +11907,109 @@ class MyAccount_AJAX extends JSON_Action {
 
 		return $results;
 	}
+
+	public function joinEventWaitingList() {
+		$this->requireLoggedInUser();
+
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Unknown error occurred',
+				'isPublicFacing' => true,
+			])
+		];
+
+		$userId = UserAccount::getActiveUserId();
+		$eventInstanceId = (int)($_REQUEST['eventInstanceId'] ?? 0);
+
+		if ($eventInstanceId <= 0) {
+			$result['message'] = translate([
+				'text' => 'Invalid Event ID.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate([
+				'text' => 'Event not found.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if (!$eventInstance->isWaitingListEnabled()) {
+			$result['message'] = translate([
+				'text' => 'This event does not have a waiting list enabled',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if ($eventInstance->isWaitingListFull()) {
+			$result['message'] = translate([
+				'text' => 'The waiting list for this event is full.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		// Add user to waiting list
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->userId = $userId;
+
+		if (!$registration->addUserToWaitingList()) {
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Already on Waiting List',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You are already on the waiting list for this event.',
+				'isPublicFacing' => true,
+			]);
+			$registration->find(true);
+			$result['position'] = UserAspenEventInstanceRegistration::getWaitingListPosition($registration->eventInstanceId, $registration->createdAt);
+			return $result;
+		}
+
+		$position = UserAspenEventInstanceRegistration::getWaitingListPosition($registration->eventInstanceId, $registration->createdAt);
+
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+		$event = new Event();
+		$event->id = $eventInstance->eventId;
+		$event->find(true);
+
+		$result['success'] = true;
+		$result['title'] = translate([
+			'text' => 'Added to Waiting List',
+			'isPublicFacing' => true,
+		]);
+		$message = translate([
+			'text' => 'You have been added to the waiting list for %1%. You are in position #%2%.',
+			'isPublicFacing' => true,
+		]);
+		$result['message'] = str_replace(['%1%', '%2%'], [$event->title, $position], $message);
+		$result['position'] = $position;
+
+		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+		$sourceId = AspenEventRecordDriver::sanitizeSourceId($_REQUEST['sourceId'] ?? '');
+		if ($sourceId === null) {
+			return $result;
+		}
+		$recordDriver = new AspenEventRecordDriver($sourceId);
+		$recordDriver->saveUserEventEntry($sourceId, $userId);
+
+		return $result;
+	}
 }
