@@ -8662,9 +8662,10 @@ class MyAccount_AJAX extends JSON_Action {
 		$userAspenEventInstanceRegistration = new UserAspenEventInstanceRegistration();
 		$userAspenEventInstanceRegistration->eventInstanceId = $eventInstanceId;
 		$userAspenEventInstanceRegistration->userId = $userId;
+		$waitingListInfo = $userAspenEventInstanceRegistration->getWaitingListInfo();
+		$canRegister = $waitingListInfo['canRegister'];
 
-
-		if (!$eventInstance->hasAvailableSeats(1)) {
+		if (!$eventInstance->hasAvailableSeats(1) && !$canRegister) {
 			$result['message'] = translate([
 				'text' => 'This event is full. No seats available.',
 				'isPublicFacing' => true
@@ -8686,7 +8687,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$recordDriver->saveUserEventEntry($sourceId, $viewerId);	
 		}
 
-		if (!$eventInstance->hasAvailableSeats(1)) {
+		if (!$eventInstance->hasAvailableSeats(1) && !$waitingListInfo['canRegister']) {
 			$result['message'] = translate([
 				'text' => "This event is full — no seats are currently available. We've saved it to your events list so you can keep track of it.",
 				'isPublicFacing' => true
