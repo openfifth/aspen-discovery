@@ -58,6 +58,7 @@ class User extends DataObject {
 	public $optInToAllCampaignLeaderboards;
 	public $campaignNotificationsByEmail;
 	public $notifySavedSearches;
+	public $eventRegistrationNotificationsByEmail;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
