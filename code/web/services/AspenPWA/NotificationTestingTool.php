@@ -50,13 +50,13 @@ class AspenPWA_NotificationTestingTool extends Admin_Admin {
 	function getBreadcrumbs(): array {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
-		$breadcrumbs[] = new Breadcrumb('/Admin/Home#aspen_mobile', 'Aspen Progressive Web Application(PWA)');
+		$breadcrumbs[] = new Breadcrumb('/Admin/Home#aspen_pwa', 'Aspen Progressive Web Application(PWA)');
 		$breadcrumbs[] = new Breadcrumb('/AspenPWA/NotificationTestingTool', 'Notification Testing Tool');
 		return $breadcrumbs;
 	}
 
 	function getActiveAdminSection(): string {
-		return 'aspen_mobile';
+		return 'aspen_pwa';
 	}
 
 	function canView(): bool {

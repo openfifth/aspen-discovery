@@ -284,8 +284,8 @@ CREATE TABLE `aspen_lida_self_check_settings` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
-DROP TABLE IF EXISTS aspen_mobile_settings;
-CREATE TABLE `aspen_mobile_settings` (
+DROP TABLE IF EXISTS aspen_pwa_settings;
+CREATE TABLE `aspen_pwa_settings` (
   `id` int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `name` varchar(50) NOT NULL,
   `shortName` varchar(50) NOT NULL,

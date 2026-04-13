@@ -1,7 +1,7 @@
 <?php
 
 class AspenPWASetting extends DataObject {
-	public $__table = 'aspen_mobile_settings';
+	public $__table = 'aspen_pwa_settings';
 	public $id;
 	public $name;
 	public $shortName;
