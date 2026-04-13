@@ -40,6 +40,8 @@ class EmailTemplate extends DataObject {
 				'campaignComplete' => 'Campaign Complete',
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
+				'registerForEventFromWaitingList' => 'Register for Event From Waiting List',
+				'eventCancellation' => 'Cancellation of an Event',
 			];
 		}
 		if ($isCarlX){
@@ -361,6 +363,29 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%searchHistory.updatedSearchesWithSampleTitles%', $parameters['searchHistory']['updatedSearchesWithSampleTitles'] ?? '', $text);
 			$text = str_replace('%searchHistory.updatedSearchesHtml%', $parameters['searchHistory']['updatedSearchesHtml'] ?? '', $text);
 			$text = str_replace('%searchHistory.updatedSearches%', $parameters['searchHistory']['updatedSearches'] ?? '', $text);
+		} elseif ($this->templateType == 'registerForEventFromWaitingList') {
+			$text = str_replace('%event.title%', $parameters['eventTitle'] ?? '', $text);
+			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
+			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
+			$text = str_replace('%canRegisterUntil%', $parameters['canRegisterUntil'] ?? '', $text);
+		} elseif ($this->templateType == 'eventCancellation') {
+			$statusMessages = [
+				'waiting' => 'The event you were on the waiting list for has been cancelled.',
+				'invited' => 'You had been invited from the waiting list for an event that has now been cancelled.',
+				'registered' => 'The event you registered for has been cancelled.',
+			];
+			$status = $parameters['status'] ?? 'registered';
+			$text = str_replace('%statusMessage%', $statusMessages[$status] ?? $statusMessages['registered'], $text);
+			$text = str_replace('%changeType%', $parameters['changeType'] ?? 'cancelled', $text);
+			$instancesText = '';
+			if (isset($parameters['instances']) && is_array($parameters['instances'])) {
+				foreach ($parameters['instances'] as $instance) {
+					$instancesText .= " Event Title: " . $instance['eventTitle'] . "\n";
+					$instancesText .= " Date: " . $instance['eventDate'] . "\n";
+					$instancesText .= " Time: " . $instance['eventTime'] . "\n";
+				}
+			}
+			$text = str_replace('%eventInstances%', trim($instancesText), $text);
 		}
 		return $text;
 	}
