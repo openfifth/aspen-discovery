@@ -357,6 +357,18 @@ class EventInstance extends DataObject {
 		return $registration->count();
 	}
 
+
+	public function isUpcoming(): bool {
+		if (empty($this->date) || empty($this->time)) {
+			return false;
+		}
+		$eventTimestamp = strtotime($this->date . ' ' . $this->time);
+		if ($eventTimestamp === false) {
+			return false;
+		}
+		return $eventTimestamp > time();
+	}
+
 	public function isWaitingListFull(): bool {
 		$capacity = $this->getEffectiveWaitingListNumberOfSeats();
 		if ($capacity === null) {
