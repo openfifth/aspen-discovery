@@ -3285,6 +3285,21 @@ AspenDiscovery.Account = (function () {
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				console.error('AJAX Error: ', textStatus, errorThrown);
 			})
+		},
+		joinEventWaitingList: function (eventSourceId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=joinEventWaitingList";
+			var params = {
+				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
+				sourceId: eventSourceId
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, true, true);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail (AspenDiscovery.ajaxFail);
+			return false;
 		}
 	};
 }(AspenDiscovery.Account || {}));
