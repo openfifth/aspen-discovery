@@ -136,14 +136,33 @@ class EventInstance extends DataObject {
 		return parent::insert();
 	}
 
-	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
-		if (!$useWhere) {
-			$this->deleted = 1;
-			$this->dateUpdated = time();
-			return parent::update();
-		} else {
-			return parent::delete($useWhere, $hardDelete);
+	public function delete(bool $useWhere = false, bool $hardDelete = false, bool $suppressIndividualNotifications = false) : bool|int {
+		if ($useWhere) {
+			throw new InvalidArgumentException('EventInstance::delete does not support $useWhere = true. Delete instances individually.');
 		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+
+		$shouldNotify = !$suppressIndividualNotifications && $this->isUpcoming();
+
+		$affectedUsersByStatus = $shouldNotify
+			? UserAspenEventInstanceRegistration::getUsersGroupedByStatusForInstance((int)$this->id)
+			: [];
+
+		$this->deleted = 1;
+		$this->dateUpdated = time();
+		$softDeleteResult = parent::update();
+		if ($softDeleteResult === false) {
+			return false;
+		}
+
+		UserAspenEventInstanceRegistration::deleteAllForEventInstance((int)$this->id);
+
+		if ($shouldNotify) {
+			$this->sendCancellationNotificationEmails([$this], $affectedUsersByStatus);
+		}
+
+		return $softDeleteResult;
 	}
 
 	public function fetch(): bool|DataObject|null {
