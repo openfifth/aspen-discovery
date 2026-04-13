@@ -319,6 +319,7 @@ class WebsiteIndexer {
 							if (linkUrl.isEmpty() || linkUrl.startsWith(".")) {
 								continue;
 							}
+							//noinspection HttpUrlsUsage
 							if (linkUrl.startsWith("http://")) {
 								if (!linkUrl.startsWith(initialUrl)) {
 									continue;
@@ -429,9 +430,12 @@ class WebsiteIndexer {
 
 							//TODO: Add popularity
 							solrUpdateServer.add(solrDocument);
+						}else{
+							logEntry.incSkipped();
 						}
 					} else {
 						logger.info("Non HTML page (" + mimeType + "), skipping");
+						logEntry.incSkipped();
 					}
 				} else{
 					logger.info("Got error processing the page");
