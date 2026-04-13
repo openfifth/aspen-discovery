@@ -157,6 +157,27 @@ class EventInstance extends DataObject {
 		return $return;
 	}
 
+	private function formatEmailTemplateEventInstances(array $eventInstances): array {
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+
+		$formatted = [];
+
+		foreach ($eventInstances as $instance) {
+			$event = new Event();
+			$event->id = $instance->eventId;
+			if (!$event->find(true)) {
+				continue;
+			}
+			$humanEventDate = DateUtils::formatHumanDate($instance->date);
+			$formatted[] = [
+				'eventTitle' => $event->title,
+				'eventDate' => $humanEventDate,
+				'eventTime' => $instance->time,
+			];
+		}
+		return $formatted;
+	}
+
 	function getParentEvent() : Event {
 		if ($this->_parentEvent !== null) {
 			return $this->_parentEvent;
