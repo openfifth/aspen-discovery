@@ -12463,4 +12463,61 @@ class MyAccount_AJAX extends JSON_Action {
 
 		return $result;
 	}
+
+	public function leaveEventWaitingList(): array {
+		$this->requireLoggedInUser();
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Unknown error occurred',
+				'isPublicFacing' => true,
+			])
+		];
+
+		$userId = UserAccount::getActiveUserId();
+		$eventInstanceId = (int)($_REQUEST['eventInstanceId'] ?? 0);
+
+		if ($eventInstanceId <= 0) {
+			$result['message'] = translate([
+				'text' => 'Invalid Event ID.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->userId = $userId;
+		$registration->whereAdd('status IN ("waiting", "invited")');
+
+		if (!$registration->find(true)) {
+			$result['title'] = translate([
+				'text' => 'Waiting List Spot Not Found',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You were not found on the waiting list for this event instance.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$registration->delete();
+
+		$result['success'] = true;
+		$result['title'] = translate([
+			'text' => 'Removed from Waiting List',
+			'isPublicFacing' => true,
+		]);
+		$result['message'] = translate([
+			'text' => 'You have been removed from the waiting list.',
+			'isPublicFacing' => true,
+		]);
+		return $result;
+	}
 }
