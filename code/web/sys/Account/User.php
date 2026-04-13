@@ -243,6 +243,10 @@ class User extends DataObject {
 		];
 	}
 
+	public function canReceiveEventNotifications(): bool {
+		return !empty($this->email) && $this->eventRegistrationNotificationsByEmail == 1;
+	}
+
 	function getLists() {
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 
