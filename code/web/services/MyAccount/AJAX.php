@@ -8850,6 +8850,8 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->delete();
 
+			$eventInstance->inviteNextOnWaitingList();
+			
 			$result['success'] = true;
 			$result['title'] = translate([
 				'text' => 'Registration Information',
