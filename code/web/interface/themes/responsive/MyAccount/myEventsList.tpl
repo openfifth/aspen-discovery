@@ -47,7 +47,7 @@
 									{else if $event.isRegistered}
 										<span>{translate text="There are registrations to view" isPublicFacing=true}</span>
 									{else if $event.regRequired}
-										<span>{translate text="Registration available" isPublicFacing=true}</span>
+										<span>{translate text=$event.registrationStatusMessage isPublicFacing=true}</span>
 									{else}
 										<span>{translate text="Registration unavailable" isPublicFacing=true}</span>
 									{/if}
