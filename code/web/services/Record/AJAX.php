@@ -1063,8 +1063,9 @@ class Record_AJAX extends JSON_Action {
 					}else{
 						//Placing a hold on the suggested edition
 						$rememberUserEditionPreference = isset($_REQUEST['rememberUserEditionPreference']) ? filter_var($_REQUEST['rememberUserEditionPreference'], FILTER_VALIDATE_BOOLEAN) : false;
-						if ($rememberUserEditionPreference !== $user->rememberHoldPromptForEdition) {
-							$user->setRememberHoldPromptForEdition($rememberUserEditionPreference);
+						if ($rememberUserEditionPreference !== $patron->rememberHoldPromptForEdition) {
+							$patron->setRememberHoldPromptForEdition($rememberUserEditionPreference);
+							$patron->update();
 						}
 					}
 				}
