@@ -102,4 +102,39 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	private function validateStatus(string $status): bool {
 		return in_array($status, self::VALID_STATUSES, true);
 	}
+
+	/**
+	 * Returns IDs of invited registrations whose invite window has expired.
+	 *
+	 * Batches by EventType so each type's waitingListInviteExpiryHours is honoured
+	 * in a single query per type. Skips soft-deleted event instances.
+	 *
+	 */
+	public static function getExpiredInvitedRowIds(): array {
+		require_once ROOT_DIR . '/sys/Events/EventType.php';
+
+		$eventType = new EventType();
+		$eventType->find();
+
+		$expiredIds = [];
+		while ($eventType->fetch()) {
+			$expiryHours = (int)$eventType->waitingListInviteExpiryHours;
+			if ($expiryHours <= 0) {
+				$expiryHours = 24;
+			}
+			$cutoff = date('Y-m-d H:i:s', time() - ($expiryHours * 3600));
+
+			$query = new UserAspenEventInstanceRegistration();
+			$query->status = 'invited';
+			$query->whereAdd('notifiedAt IS NOT NULL');
+			$query->whereAdd('notifiedAt < ' . $query->escape($cutoff));
+			$query->whereAdd('eventInstanceId IN (SELECT ei.id FROM event_instance ei JOIN event e ON ei.eventId = e.id WHERE ei.deleted = 0 AND e.eventTypeId = ' . (int)$eventType->id . ')');
+			$query->find();
+			while ($query->fetch()) {
+				$expiredIds[] = (int)$query->id;
+			}
+		}
+
+		return $expiredIds;
+	}
 }
