@@ -58,9 +58,7 @@ function initialize() {
 					}
 				} 
 				else {
-					//show permission request UI
-					// QUESTION when do we get here? when is token falsey
-					console.log('no registration token available. request permission to generate one.');
+					console.log('no registration token available. Something went wrong with getToken.');
 				}
 			}).catch((err) => {
 				console.log('an error occured while retrieving token. ', err);
@@ -83,6 +81,12 @@ function handleAllowNotifications() {
 			{
 				initialize();
 				$(".notification-permission-controls").show();
+				// giving a slight delay to allow the token to be created first.
+				setTimeout(function() {
+					handleNotificationControls("notifySavedSearch");
+					handleNotificationControls("notifyCustom");
+					handleNotificationControls("notifyAccount");
+				}, 200);
 			}
 		});
 	} else {
@@ -101,8 +105,6 @@ function handleAllowNotifications() {
 	}
 }
 function handleNotificationControls(type) {
-	console.log(type + " :: " + $("#"+type).is(":checked"));
-	console.log(appToken);
 	let value = $("#"+type).is(":checked");
 	let postData = {
 		"pushToken": appToken,
@@ -115,8 +117,6 @@ function handleNotificationControls(type) {
 			'Cache-Control': 'no-cache'
 		},
 		body: new URLSearchParams(postData)
-	}).then(function (response) {
-		console.log(response.json());
 	});
 }
 
