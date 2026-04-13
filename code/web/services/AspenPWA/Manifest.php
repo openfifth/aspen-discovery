@@ -35,12 +35,12 @@ class AspenPWA_Manifest extends Action {
 		http_response_code(200);
 		return [
 
-			'id' => $setting->manifestID,
-			'name' => $setting->name,
-			'short_name' => $setting->shortName,
+			'id' => $settings->manifestID,
+			'name' => $settings->name,
+			'short_name' => $settings->shortName,
 			'theme_color' => $themeColor,
-			'start_url' => $setting->startURL,
-			'description' => $setting->description,
+			'start_url' => $settings->startURL,
+			'description' => $settings->description,
 			'icons' => [
 				[
 					'src' => '/pwa-icon.png',
