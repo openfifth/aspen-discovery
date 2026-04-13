@@ -17,7 +17,8 @@ services:
       - ${ASPEN_DATA_DIR}/data:/data/aspen-discovery/${SITE_NAME}
       - ${ASPEN_DATA_DIR}/logs:/var/log/aspen-discovery/${SITE_NAME}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   apache:
     image: ${BACKEND_IMAGE_TAG:-aspendiscovery/aspen}
@@ -72,6 +73,10 @@ services:
       - ${ASPEN_DATA_DIR}/my.cnf:/etc/mysql/my.cnf
     networks:
       - net-aspen
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 10
 
   solr:
     image: ${SOLR_IMAGE_TAG:-aspendiscovery/solr}
