@@ -26,12 +26,12 @@ class AspenPWASetting extends DataObject {
 	}
 
 	static function getSettingsForCurrentLibrary(): AspenPWASetting | null {
-		$setting = new AspenPWASetting();
+		$settings = new AspenPWASetting();
 		$library = Library::getActiveLibrary();
-		$setting->id = $library->AspenPWASettingId;
-		if($setting->find(true))
+		$settings->id = $library->AspenPWASettingId;
+		if($settings->find(true))
 		{
-			return $setting;
+			return $settings;
 		}
 		else 
 		{
