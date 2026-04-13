@@ -149,7 +149,6 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	}
 
 	/**
-
 	 * Deletes all registration rows tied to the given event instance.
 	 * Returns the number of rows deleted (or false on failure).
 	 */
@@ -157,6 +156,22 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->eventInstanceId = $eventInstanceId;
 		return $registration->delete(true);
+	}
+
+	/**
+	 * Returns row IDs for waiting registrations on a given instance, ordered by queue position.
+	 */
+	public static function getWaitingRowIdsForInstance(int $eventInstanceId): array {
+		$query = new UserAspenEventInstanceRegistration();
+		$query->eventInstanceId = $eventInstanceId;
+		$query->status = 'waiting';
+		$query->orderBy('createdAt ASC');
+		$query->find();
+		$ids = [];
+		while ($query->fetch()) {
+			$ids[] = (int)$query->id;
+		}
+		return $ids;
 	}
 
 	/**
