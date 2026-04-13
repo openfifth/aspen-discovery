@@ -137,4 +137,14 @@ class UserAspenEventInstanceRegistration extends DataObject {
 
 		return $expiredIds;
 	}
+
+	/**
+	 * Checks whether a user has at least one event instance to register to.
+	*/
+	static function isUserInvitedToRegister(int $userId): bool {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->status = 'invited';
+		return $registration->find(true);
+	}
 }
