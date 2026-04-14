@@ -101,37 +101,41 @@ abstract class AbstractAPI extends Action{
 		}
 	}
 
+	private $_userForAPICall = null;
 	/**
 	 * @return bool|User
 	 */
-	function getUserForApiCall() {
-		$user = false;
-		[$username, $password] = $this->loadUsernameAndPassword();
-		$user = UserAccount::validateAccount($username, $password);
-		if ($user !== false && $user->source == 'admin') {
-			//Admin users are not allowed with API calls
-			return false;
-		}
+	function getUserForApiCall() : bool|User {
+		if ($this->_userForAPICall === null) {
+			[$username, $password] = $this->loadUsernameAndPassword();
+			$user = UserAccount::validateAccount($username, $password);
+			if ($user !== false && $user->source == 'admin') {
+				//Admin users are not allowed with API calls
+				$this->_userForAPICall = false;
+				return $this->_userForAPICall;
+			}
 
-		//Set translations up based on the active user's desired language
-		if (empty($_REQUEST['language']) && $user !== false) {
-			global $activeLanguage;
-			global $translator;
-			$userLanguage = new Language();
-			$userLanguage->code = $user->interfaceLanguage;
-			if ($userLanguage->find(true)) {
-				if ($userLanguage->code != $activeLanguage->code) {
-					$activeLanguage = $userLanguage;
-					$translator = new Translator('lang', $userLanguage->code);
+			//Set translations up based on the active user's desired language
+			if (empty($_REQUEST['language']) && $user !== false) {
+				global $activeLanguage;
+				global $translator;
+				$userLanguage = new Language();
+				$userLanguage->code = $user->interfaceLanguage;
+				if ($userLanguage->find(true)) {
+					if ($userLanguage->code != $activeLanguage->code) {
+						$activeLanguage = $userLanguage;
+						$translator = new Translator('lang', $userLanguage->code);
+					}
 				}
 			}
+
+			if ($user !== false && $user->allowAppRequestLogging) {
+				$this->logPatronRequest($user->id);
+			}
+			$this->_userForAPICall = $user;
 		}
 
-		if ($user !== false && $user->allowAppRequestLogging) {
-			$this->logPatronRequest($user->id);
-		}
-
-		return $user;
+		return $this->_userForAPICall;
 	}
 
 	/**

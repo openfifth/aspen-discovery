@@ -78,6 +78,14 @@ function getUpdates26_04_00(): array {
 				"INSERT INTO library_user_list_facet_setting (libraryId, userListFacetGroupId) SELECT DISTINCT libraryId, 1 FROM library;"
 			]
 		], //user_list_facets
+		'add_num_skpped_to_website_index_log' => [
+			'title' => 'Add Num Skipped to Website Index Log',
+			'description' => 'Add Num Skipped to Website Index Log',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE website_index_log ADD COLUMN numSkipped TINYINT(1) NOT NULL DEFAULT 0',
+			]
+		], //add_num_skpped_to_website_index_log
 
 		//kirstien
 		'add_user_app_request_logging_option' => [
