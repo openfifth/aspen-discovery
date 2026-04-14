@@ -4475,6 +4475,11 @@ class User extends DataObject {
 			'Administer All Collection Spotlights',
 			'Administer Library Collection Spotlights',
 		]);
+		$exploreMoreAction = new AdminAction('Explore More', 'Configure the Explore More feature.', '/Admin/ExploreMore');
+		$sections['local_enrichment']->addAction($exploreMoreAction, [
+			'Administer All Explore More',
+			'Administer Library Explore More',
+		]);
 		$heroSliderAction = new AdminAction('Hero Sliders', 'Define hero sliders that can be used on websites or digital signage.', '/Admin/HeroSliderLocations');
 		$sections['local_enrichment']->addAction($heroSliderAction, [
 			'Administer All Hero Sliders',
