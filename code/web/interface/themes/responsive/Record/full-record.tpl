@@ -16,7 +16,11 @@
 			<h1>
 				{*{$recordDriver->getTitle()|escape}*}{* // ever a case when the trailing punction is needed? *}
 				{* Title includes the title section *}
-				{$recordDriver->getTitle()|removeTrailingPunctuation}{if !empty($recordDriver->get880Title())} <span class="agrTitle">({$recordDriver->get880Title()|removeTrailingPunctuation})</span>{/if}
+				{if empty($recordDriver->getTitle()) && !empty($recordDriver->get880Title())}
+					{$recordDriver->get880Title()|removeTrailingPunctuation}
+				{else}
+					{$recordDriver->getTitle()|removeTrailingPunctuation}{if !empty($recordDriver->get880Title())} <span class="agrTitle">({$recordDriver->get880Title()|removeTrailingPunctuation})</span>{/if}
+				{/if}
 				{if $recordDriver->getFormats()}
 					<br>
 					<small>
@@ -38,7 +42,7 @@
 			<div class="row">
 				<div class="col-xs-4 col-sm-5 col-md-4 col-lg-3 text-center">
 					{if $disableCoverArt != 1}
-						<a href="#" id="recordCover" class="text-center row" style="display: inline-block;" onclick="return AspenDiscovery.Record.getLargeCover('{$recordDriver->getUniqueID()}')">
+						<a href="#" id="recordCover" class="text-center row" style="display: inline-block;" onclick="return AspenDiscovery.Record.getLargeCover('{$recordDriver->getModule()}', '{$recordDriver->getUniqueID()}')">
 							<img alt="{translate text='Book Cover' isPublicFacing=true inAttribute=true}" class="img-thumbnail{if $useOriginalCoverUrls} use-original-covers{/if} {$coverStyle}" src="{$recordDriver->getBookcoverUrl('medium')}" role="presentation">
 						</a>
 					{/if}

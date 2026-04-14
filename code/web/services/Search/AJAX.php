@@ -834,7 +834,7 @@ class AJAX extends JSON_Action {
 			$searchObject->close();
 
 			$applyLabel = translate(['text' => 'Apply', 'isPublicFacing' => true]);
-			$buttons = "<button class='btn btn-primary' onclick='AspenDiscovery.Searches.applyAdvancedFacetSelections()'>$applyLabel</button>";
+			$buttons = "<button class='btn btn-primary adv-facet-apply-btn'>$applyLabel</button>";
 			return [
 				'success'   => true,
 				'title'     => translate([

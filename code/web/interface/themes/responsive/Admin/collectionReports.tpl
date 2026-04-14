@@ -17,9 +17,9 @@
 		{foreach $tableData as $row}
 			<tr>
 				<td>{$row.rowName}</td>
-				<td>{$row.activeCount|default:'n/a'}</td>
-				<td>{$row.deletedCount|default:'n/a'}</td>
-				<td>{$row.suppressedCount|default:'n/a'}</td>
+				<td>{if isset($row.activeCount)}{$row.activeCount|number_format}{else}n/a{/if}</td>
+				<td>{if isset($row.deletedCount)}{$row.activeCount|number_format}{else}n/a{/if}</td>
+				<td>{if isset($row.suppressedCount)}{$row.activeCount|number_format}{else}n/a{/if}</td>
 			</tr>
 		{/foreach}
 		</tbody>
@@ -38,8 +38,8 @@
 		{foreach $formatTableData as $row}
 			<tr>
 				<td>{$row.format}</td>
-				<td>{$row.source|default:'-'}</td>
-				<td>{$row.numRecords|default:'-'}</td>
+				<td>{$row.source}</td>
+				<td>{$row.numRecords|number_format}</td>
 			</tr>
 		{/foreach}
 		</tbody>
