@@ -151,7 +151,9 @@ class Checkout extends CircEntry {
 			$checkout['allowDownload'] = $checkout['allowDownload'] == 1;
 			$checkout['overdriveListen'] = $checkout['overdriveListen'] == 1;
 			$checkout['earlyReturn'] = $checkout['canReturnEarly'] == 1;
-			$checkout['format'] = $this->getPrimaryFormat();
+			if (empty($checkout['format'])) {
+				$checkout['format'] = $this->getPrimaryFormat();
+			}
 			$checkout['recordUrl'] = $configArray['Site']['url'] . $this->getLinkUrl();
 		}
 		$checkout['id'] = $checkout['sourceId'];
