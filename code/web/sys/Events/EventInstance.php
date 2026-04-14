@@ -446,7 +446,7 @@ class EventInstance extends DataObject {
 			}
 
 			if (!$user->canReceiveEventNotifications()) {
-				$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$this->id})", Logger::LOG_INFO);
+				$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$this->id})", Logger::LOG_WARNING);
 				continue;
 			}
 
