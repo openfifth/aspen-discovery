@@ -271,7 +271,8 @@
 		<field name="availability_toggle" type="unchanged_string" indexed="true" stored="true" multiValued="true"/>
 		<dynamicField name="available_copies_*" type="integer" indexed="true" docValues="true" stored="false" multiValued="true"/>
 
-		<!-- Language Related Fields -->
+		<!-- Language Related Fields -->\
+		<field name="all_languages" type="unchanged_string" indexed="true" stored="true" multiValued="true" omitNorms="true" docValues="true"/>
 		<field name="language" type="unchanged_string" indexed="true" stored="true" multiValued="true" omitNorms="true" docValues="true"/>
 		<field name="translation" type="unchanged_string" indexed="true" stored="true" multiValued="true" omitNorms="true" docValues="true"/>
 		<field name="language_boost" type="integer" indexed="true" stored="false" multiValued="false" omitNorms="true" default="1"/>
