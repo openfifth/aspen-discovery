@@ -14,28 +14,26 @@ abstract class AbstractUsage extends DataObject {
 		return "{$this->month}-{$this->year}"; // monthly is the default
 	}
 	public function buildCustomPeriodQuery(array $custom): void {
-		$escapedPeriodDuration = $this->escape($custom['customUsagePeriodDuration']);
-		$escapedPeriodStart = $this->escape($custom['customUsagePeriodStart']);
-    	$selectPeriod ="CONCAT(DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration DAY), '%d/%m/%y'),' - ',DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL (FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration + ($escapedPeriodDuration - 1)) DAY), '%d/%m/%y')) AS period";
-		$customPeriodStartYear = date('Y', strtotime($custom['customUsagePeriodStart']));
-		$customPeriodStartMonth = date('m', strtotime($custom['customUsagePeriodStart']));
-		$customPeriodStartDay = date('d', strtotime($custom['customUsagePeriodStart']));
+		$periodStart = $custom['customUsagePeriodStart'] ?? '';
+		$periodDuration = (int) ($custom['customUsagePeriodDuration'] ?? 0);
+
+		if (strtotime($periodStart) === false || $periodDuration <= 0) {
+			throw new InvalidArgumentException('buildCustomPeriodQuery: invalid start date or non-positive duration');
+		}
+
+		$escapedPeriodStart = $this->escape($periodStart);
+		$escapedPeriodDuration = $this->escape($periodDuration);
+
+		$selectPeriod = "CONCAT("
+			. "DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration DAY), '%d/%m/%y'),"
+			. "' - ',"
+			. "DATE_FORMAT(DATE_ADD($escapedPeriodStart, INTERVAL (FLOOR(DATEDIFF(STR_TO_DATE(CONCAT(year, '-', month, '-', day), '%Y-%m-%d'), $escapedPeriodStart) / $escapedPeriodDuration) * $escapedPeriodDuration + ($escapedPeriodDuration - 1)) DAY), '%d/%m/%y')"
+			. ") AS period";
+
 		$this->selectAdd($selectPeriod);
-		$condition = 'year > ' .
-			$customPeriodStartYear .
-			' OR (year = ' .
-			$customPeriodStartYear .
-			' AND month >= ' .
-			$customPeriodStartMonth .
-			')' .
-			' OR (year = ' .
-			$customPeriodStartYear .
-			' AND month = ' .
-			$customPeriodStartMonth .
-			' AND day >= ' .
-			$customPeriodStartDay .
-			')';
-		$this->whereAdd($condition);
+		$this->whereAdd(
+			"STR_TO_DATE(CONCAT(year, '-', LPAD(month, 2, '0'), '-', LPAD(day, 2, '0')), '%Y-%m-%d') >= $escapedPeriodStart"
+		);
 		$this->groupBy('period');
 		$this->orderBy(['year', 'month', 'day']);
 	}
