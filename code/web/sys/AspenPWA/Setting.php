@@ -18,6 +18,7 @@ class AspenPWASetting extends DataObject {
 	public $firebaseMessagingSenderID;
 	public $firebaseAppID;
 	public $serviceAccount;
+	public $vapidKey;
 
 	private $_libraries;
 
@@ -179,6 +180,14 @@ class AspenPWASetting extends DataObject {
 				'required' => true,
 
 			],
+			'vapidKey' => [
+				'property' => 'vapidKey',
+				'type' => 'text',
+				'label' => 'Web Push Certificate (VapidKey)',
+				'note' => 'This value is the public key of the key pair in the web configuration section of the cloud messaging tab in your firebase project. You may need to generate a new key pair if you do not already have one. (https://firebase.google.com/docs/cloud-messaging/web/get-started#configure_web_credentials_with_fcm)',
+				'maxLength' => 100,
+				'required' => true,
+			],
 			'serviceAccount' => [
 				'property' => 'serviceAccount',
 				'type' => 'storedPassword',
@@ -271,11 +280,12 @@ class AspenPWASetting extends DataObject {
 		//apikey, projectId, messagingSenderId, appId
 		return [
 			'apiKey' => $this->firebaseAPIKey,
-			//'authDomain' =>$this->firebaseAuthDomain,
+			'authDomain' =>$this->firebaseAuthDomain,
 			'projectId' => $this->firebaseProjectID,
-			//'storageBucket' => $this->firebaseStorageBucket,
+			'storageBucket' => $this->firebaseStorageBucket,
 			'messagingSenderId' => $this->firebaseMessagingSenderID,
-			'appId' => $this->firebaseAppID
+			'appId' => $this->firebaseAppID,
+			'vapidKey' => $this->vapidKey
 		];
 	}
 

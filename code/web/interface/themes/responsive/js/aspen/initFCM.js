@@ -33,7 +33,7 @@ function initialize() {
 
 		// Initialize Firebase Cloud Messaging and get a reference to the service
 		const messaging = getMessaging(app);
-		getToken(messaging).then((currentToken) => {
+		getToken(messaging, {vapidKey: firebaseConfig.vapidKey}).then((currentToken) => {
 			if(!currentToken)
 			{
 				console.log('no registration token available. Something went wrong with getToken.');

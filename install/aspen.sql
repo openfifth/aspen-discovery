@@ -301,6 +301,7 @@ CREATE TABLE `aspen_pwa_settings` (
   `firebaseStorageBucket` varchar(50) NOT NULL,
   `firebaseMessagingSenderID` varchar(50) NOT NULL,
   `firebaseAppID` varchar(50) NOT NULL,
+  `vapidKey` varchar(100) NOT NULL,
   `serviceAccount` varchar(5000) NOT NULL
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 DROP TABLE IF EXISTS aspen_release;

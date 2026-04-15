@@ -8,7 +8,6 @@ class MyAccount_MyNotificationPreferences extends MyAccount {
 	function launch() : void {
 		global $interface;
 		$user = UserAccount::getLoggedInUser();
-		// TODO clean up code copied from MyPreferences.php
 		if ($user) {
 			global $offlineMode;
 			if (!$offlineMode) {
@@ -32,7 +31,6 @@ class MyAccount_MyNotificationPreferences extends MyAccount {
 				$tokens[] = $token;
 			}
 			$interface->assign("tokens", $tokens);
-			// Save/Update Actions
 		}
 		
 

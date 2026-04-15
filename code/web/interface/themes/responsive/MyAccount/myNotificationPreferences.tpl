@@ -3,6 +3,13 @@
 		{if !empty($loggedIn)}
 			<h1>{translate text='Notification Preferences' isPublicFacing=true}</h1>
 			<div>
+				{translate 
+					text='These settings are device specific. Please be careful about turning on notifications for public devices if you do not wish other people to be able to see notifications intended for you.'
+					isPublicFacing=true
+				}
+			</div>
+			<br>
+			<div>
 				{foreach from=$tokens item=item}
 					<token
 						data-token="{$item.token}"

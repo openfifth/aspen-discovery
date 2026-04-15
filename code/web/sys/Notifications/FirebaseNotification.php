@@ -84,6 +84,7 @@ class FirebaseNotification extends DataObject {
 		$httpCode = curl_getInfo($ch, CURLINFO_HTTP_CODE);
 		curl_close($ch);
 
+
 		if ($httpCode !== 200) {
 			throw new Exception('Failed to get access token: ' . $response);
 		}
