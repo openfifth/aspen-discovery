@@ -216,7 +216,7 @@ class ExploreMore {
 				// @todo: Adds a temporary check for libraries who may not have the show_in_explore_more field added to their Solr index yet.
 				// This can be removed once we're confident all libraries have the field.
 				// This code can, at that time, probably just be simplified to:
-				// $searchObjectSolr->addFilter('show_in_explore_more:true');
+				// $searchObjectSolr->addHiddenFilter('show_in_explore_more:true');
 				$hasShowInExploreMore = false;
 				if ($results && isset($results['response']['docs'])) {
 					foreach ($results['response']['docs'] as $doc) {
@@ -235,7 +235,7 @@ class ExploreMore {
 						'lookfor' => $searchTerm,
 						'index' => 'WebsiteKeyword',
 					]);
-					$searchObjectSolr->addFilter('show_in_explore_more:true');
+					$searchObjectSolr->addHiddenFilter('show_in_explore_more:true');
 					$searchObjectSolr->setPage(1);
 					$searchObjectSolr->setLimit($this->numEntriesToAdd + 1);
 					$results = $searchObjectSolr->processSearch(true, false);
