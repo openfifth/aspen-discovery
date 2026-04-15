@@ -4954,94 +4954,24 @@ class Koha extends AbstractIlsDriver {
 				}
 			}
 
-			//Use self registration API
-			$postVariables = [];
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address', 'borrower_address', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address2', 'borrower_address2', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_address', 'borrower_B_address', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_address2', 'borrower_B_address2', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_city', 'borrower_B_city', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_country', 'borrower_B_country', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_email', 'borrower_B_email', $library->useAllCapsWhenSubmittingSelfRegistration);
-			//altaddress_notes
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_phone', 'borrower_B_phone', $library->useAllCapsWhenSubmittingSelfRegistration, $library->requireNumericPhoneNumbersWhenUpdatingProfile);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_postal_code', 'borrower_B_zipcode', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_state', 'borrower_B_state', $library->useAllCapsWhenSubmittingSelfRegistration);
-			//altaddress_street_number
-			//altaddress_street_type
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_address', 'borrower_altcontactaddress1', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_address2', 'borrower_altcontactaddress2', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_city', 'borrower_altcontactaddress3', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_country', 'borrower_altcontactcountry', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_firstname', 'borrower_altcontactfirstname', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_phone', 'borrower_altcontactphone', $library->useAllCapsWhenSubmittingSelfRegistration, $library->requireNumericPhoneNumbersWhenUpdatingProfile);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_postal_code', 'borrower_altcontactzipcode', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_state', 'borrower_altcontactstate', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_surname', 'borrower_altcontactsurname', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'city', 'borrower_city', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'country', 'borrower_country', $library->useAllCapsWhenSubmittingSelfRegistration);
-			if (!empty($_REQUEST['borrower_dateofbirth'])) {
-				$postVariables['date_of_birth'] = $_REQUEST['borrower_dateofbirth'];
-			}
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'email', 'borrower_email', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'fax', 'borrower_fax', $library->useAllCapsWhenSubmittingSelfRegistration, $library->requireNumericPhoneNumbersWhenUpdatingProfile);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'firstname', 'borrower_firstname', $library->useAllCapsWhenSubmittingSelfRegistration);
-			if($this->getKohaVersion() >= 24.11) {
-				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'preferred_name', 'borrower_preferred_name', $library->useAllCapsWhenSubmittingSelfRegistration);
-			}
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'gender', 'borrower_sex', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'initials', 'borrower_initials', $library->useAllCapsWhenSubmittingSelfRegistration);
-			if (!isset($_REQUEST['borrower_branchcode']) || $_REQUEST['borrower_branchcode'] == -1) {
-				// TODO when Koha bug 28495 is complete update this to
-				// match the validation in Koha (bugs.koha-community.org/bugzilla3/show_bug.cgi?id=28495)
-				if($library->ilsCode && $library->ilsCode != ".*")
-				{
-					$postVariables['library_id'] = $library->ilsCode;
+			$input = $_REQUEST;
+			if (!isset($input['borrower_branchcode']) || $input['borrower_branchcode'] == -1) {
+				if ($library->ilsCode && $library->ilsCode != ".*") {
+					$input['borrower_branchcode'] = $library->ilsCode;
+				} else if ($library->getMainLocation()) {
+					$input['borrower_branchcode'] = $library->getMainLocation()->code;
+				} else {
+					return [
+						'success' => false,
+						'message' => "Could not create your Account.  No location to register found.",
+					];
 				}
-				else if ($library->getMainLocation())
-				{
-					$postVariables['library_id'] = $library->getMainLocation()->code;
-				}
-				else {
-					return ['success' => false,
-							'message' => "Could not create your Account.  No location to register found."];
-				}
-			} else {
-				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'library_id', 'borrower_branchcode', $library->useAllCapsWhenSubmittingSelfRegistration);
 			}
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'mobile', 'borrower_mobile', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'opac_notes', 'borrower_contactnote', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'other_name', 'borrower_othernames', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'phone', 'borrower_phone', $library->useAllCapsWhenSubmittingSelfRegistration, $library->requireNumericPhoneNumbersWhenUpdatingProfile);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'postal_code', 'borrower_zipcode', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'secondary_email', 'borrower_emailpro', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'secondary_phone', 'borrower_phonepro', $library->useAllCapsWhenSubmittingSelfRegistration, $library->requireNumericPhoneNumbersWhenUpdatingProfile);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'state', 'borrower_state', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'surname', 'borrower_surname', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'title', 'borrower_title', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'userid', 'userid', $library->useAllCapsWhenSubmittingSelfRegistration);
-			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'cardnumber', 'cardnumber', $library->useAllCapsWhenSubmittingSelfRegistration);
-			if (!isset($_REQUEST['category_id'])) {
-				$postVariables['category_id'] = $this->getKohaSystemPreference('PatronSelfRegistrationDefaultCategory');
-			} else {
-				$postVariables['category_id'] = $_REQUEST['category_id'];
+			if (!isset($input['category_id'])) {
+				$input['category_id'] = $this->getKohaSystemPreference('PatronSelfRegistrationDefaultCategory');
 			}
 
-			if($this->getKohaVersion() >= 22.11) {
-				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'pronouns', 'borrower_pronouns', $library->useAllCapsWhenSubmittingSelfRegistration);
-				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'middle_name', 'borrower_middle_name', $library->useAllCapsWhenSubmittingSelfRegistration);
-			}
-
-			// Patron extended attributes
-			if ($this->getKohaVersion() > 21.05) {
-				$extendedAttributes = $this->setExtendedAttributes();
-				if (!empty($extendedAttributes)) {
-					foreach ($extendedAttributes as $attribute) {
-						$postVariables = $this->setPostFieldWithDifferentName($postVariables, "borrower_attribute_" . $attribute['code'], $attribute['code'], $library->useAllCapsWhenUpdatingProfile);
-					}
-				}
-			}
-			
+			$postVariables = $this->buildPatronRegistrationPostVariables($input, AbstractIlsDriver::ILS_REG_MODE_PUBLIC_SELF);
 			$result = $this->submitPatronRegistrationToKoha($postVariables);
 
 			if (!$library->ilsConsentEnabled) {
@@ -5064,6 +4994,75 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		return $result;
+	}
+
+	private function buildPatronRegistrationPostVariables(array $input, string $mode): array {
+		global $library;
+		$upper = $library->useAllCapsWhenSubmittingSelfRegistration;
+		$stripPhone = $library->requireNumericPhoneNumbersWhenUpdatingProfile;
+
+		$postVariables = [];
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address', 'borrower_address', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address2', 'borrower_address2', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_address', 'borrower_B_address', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_address2', 'borrower_B_address2', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_city', 'borrower_B_city', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_country', 'borrower_B_country', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_email', 'borrower_B_email', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_phone', 'borrower_B_phone', $upper, $stripPhone, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_postal_code', 'borrower_B_zipcode', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_state', 'borrower_B_state', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_address', 'borrower_altcontactaddress1', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_address2', 'borrower_altcontactaddress2', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_city', 'borrower_altcontactaddress3', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_country', 'borrower_altcontactcountry', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_firstname', 'borrower_altcontactfirstname', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_phone', 'borrower_altcontactphone', $upper, $stripPhone, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_postal_code', 'borrower_altcontactzipcode', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_state', 'borrower_altcontactstate', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altcontact_surname', 'borrower_altcontactsurname', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'city', 'borrower_city', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'country', 'borrower_country', $upper, false, [], $input);
+		if (!empty($input['borrower_dateofbirth'])) {
+			$postVariables['date_of_birth'] = $input['borrower_dateofbirth'];
+		}
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'email', 'borrower_email', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'fax', 'borrower_fax', $upper, $stripPhone, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'firstname', 'borrower_firstname', $upper, false, [], $input);
+		if ($this->getKohaVersion() >= 24.11) {
+			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'preferred_name', 'borrower_preferred_name', $upper, false, [], $input);
+		}
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'gender', 'borrower_sex', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'initials', 'borrower_initials', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'library_id', 'borrower_branchcode', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'mobile', 'borrower_mobile', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'opac_notes', 'borrower_contactnote', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'other_name', 'borrower_othernames', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'phone', 'borrower_phone', $upper, $stripPhone, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'postal_code', 'borrower_zipcode', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'secondary_email', 'borrower_emailpro', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'secondary_phone', 'borrower_phonepro', $upper, $stripPhone, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'state', 'borrower_state', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'surname', 'borrower_surname', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'title', 'borrower_title', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'userid', 'userid', $upper, false, [], $input);
+		$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'cardnumber', 'cardnumber', $upper, false, [], $input);
+		if (array_key_exists('category_id', $input)) {
+			$postVariables['category_id'] = $input['category_id'];
+		}
+		if ($this->getKohaVersion() >= 22.11) {
+			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'pronouns', 'borrower_pronouns', $upper, false, [], $input);
+			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'middle_name', 'borrower_middle_name', $upper, false, [], $input);
+		}
+		if ($this->getKohaVersion() > 21.05) {
+			$extendedAttributes = $this->setExtendedAttributes();
+			if (!empty($extendedAttributes)) {
+				foreach ($extendedAttributes as $attribute) {
+					$postVariables = $this->setPostFieldWithDifferentName($postVariables, "borrower_attribute_" . $attribute['code'], $attribute['code'], $library->useAllCapsWhenUpdatingProfile, false, [], $input);
+				}
+			}
+		}
+		return $postVariables;
 	}
 
 	private function submitPatronRegistrationToKoha(array $postVariables, array $options = []): array {
