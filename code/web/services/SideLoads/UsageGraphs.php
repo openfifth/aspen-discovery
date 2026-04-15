@@ -51,20 +51,24 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		$dataSeries = [];
 		$columnLabels = [];
-		$usage = [];
 		$groupByTimeframe = implode(',', $timeframes);
 
-		if ($_REQUEST['sideloadId']) {
-			$sideloadId = $_REQUEST['sideloadId'];
-		} else {
-			$profileName= $_REQUEST['profileName'];
+		$sideloadId = (int) ($_REQUEST['sideloadId'] ?? 0);
+		if ($sideloadId === 0) {
+			$profileName = $_REQUEST['profileName'] ?? '';
 			$sideloadId = $this->getSideloadIdBySideLoadName($profileName);
+		}
+
+		if ($sideloadId === 0) {
+			return;
 		}
 
 		if ($stat == 'activeUsers') {
 			$usage = new UserSideLoadUsage();
 		} elseif ($stat == 'recordsAccessedOnline') {
 			$usage = new SideLoadedRecordUsage();
+		} else {
+			return;
 		}
 		
 		if (is_array($custom)) {
