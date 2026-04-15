@@ -17,11 +17,15 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 
 		if ($timeframe === 'custom') {
 			$customUsagePeriodStart = $_REQUEST['customUsagePeriodStart'] ?? null;
-			$customUsagePeriodDuration = $_REQUEST['customUsagePeriodDuration'] ?? null;
-			$custom = [
-				'customUsagePeriodStart' => $customUsagePeriodStart,
-				'customUsagePeriodDuration' => $customUsagePeriodDuration,
-			];
+			$customUsagePeriodDuration = (int) ($_REQUEST['customUsagePeriodDuration'] ?? 0);
+			if ($customUsagePeriodStart === null || strtotime($customUsagePeriodStart) === false || $customUsagePeriodDuration <= 0) {
+				$timeframe = 'month';
+			} else {
+				$custom = [
+					'customUsagePeriodStart' => $customUsagePeriodStart,
+					'customUsagePeriodDuration' => $customUsagePeriodDuration,
+				];
+			}
 		}
 
 		if (!empty($_REQUEST['instance'])) {
@@ -91,11 +95,15 @@ abstract class Admin_AbstractUsageGraphs extends Admin_Admin {
 		$custom = false;
 		if ($timeframe === 'custom') {
 			$customUsagePeriodStart = $_REQUEST['customUsagePeriodStart'] ?? null;
-			$customUsagePeriodDuration = $_REQUEST['customUsagePeriodDuration'] ?? null;
-			$custom = [
-				'customUsagePeriodStart' => $customUsagePeriodStart,
-				'customUsagePeriodDuration' => $customUsagePeriodDuration,
-			];
+			$customUsagePeriodDuration = (int) ($_REQUEST['customUsagePeriodDuration'] ?? 0);
+			if ($customUsagePeriodStart === null || strtotime($customUsagePeriodStart) === false || $customUsagePeriodDuration <= 0) {
+				$timeframe = 'month';
+			} else {
+				$custom = [
+					'customUsagePeriodStart' => $customUsagePeriodStart,
+					'customUsagePeriodDuration' => $customUsagePeriodDuration,
+				];
+			}
 		}
 
 		if (!empty($_REQUEST['instance'])) {
