@@ -37,12 +37,13 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		here to find the sideloads' id as only this exists on the sideload
 		usage tables
 	*/
-	private function getSideloadIdBySideLoadName($name): int {
+	private function getSideloadIdBySideLoadName(string $name): int {
 		$sideload = new SideLoad();
 		$sideload->name = $name;
-		$sideload->selectAdd();
-		$sideload->find();
-		return $sideload->fetch()->id;
+		if (!$sideload->find(true)) {
+			return 0;
+		}
+		return (int) $sideload->id;
 	}
 
 	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
