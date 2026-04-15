@@ -22,7 +22,7 @@ function getDailyUsageUpdates() {
 				'ALTER TABLE axis360_record_usage DROP KEY IF EXISTS instance_3',
 				'ALTER TABLE axis360_record_usage ADD KEY instance(instance, axis360Id, year, month, day)',
 				'ALTER TABLE axis360_record_usage ADD KEY instance_2(instance, year, month, day)',
-  				'ALTER TABLE axis360_record_usage ADD KEY instance_3(instance, year, month, day)',
+				'ALTER TABLE axis360_record_usage ADD KEY instance_3(instance, year, month, day)',
 			]
 		], //add_day_to_axis360_record_usage
 		'add_day_to_user_axis360_usage' => [
