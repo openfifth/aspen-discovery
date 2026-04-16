@@ -695,6 +695,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 										$overDriveProduct = new OverDriveAPIProduct();
 										$overDriveProduct->crossRefId = $overDriveMetadata->parentMagazineTitleId;
 										if ($overDriveProduct->find(true)) {
+                      $checkout->recordId = $overDriveProduct->overdriveId;
 											//we have the product, now we need to find the grouped work id
 											require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
 											$groupedWorkPrimaryIdentifier = new GroupedWorkPrimaryIdentifier();
