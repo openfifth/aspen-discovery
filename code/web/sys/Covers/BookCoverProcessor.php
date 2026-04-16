@@ -2143,6 +2143,10 @@ class BookCoverProcessor {
 			if (file_exists($uploadedImage)) {
 				return $this->processImageURL('upload', $uploadedImage);
 			}
+			$alternatePath = ROOT_DIR . '/files/original/' . basename($uploadedImage);
+			if (file_exists($alternatePath)) {
+				return $this->processImageURL('upload', $alternatePath);
+			}
 		}
 		return false;
 	}
