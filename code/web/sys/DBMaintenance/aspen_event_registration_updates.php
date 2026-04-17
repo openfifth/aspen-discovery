@@ -76,7 +76,6 @@ function getAspenEventRegistrationUpdates() {
 			'continueOnError' => false,
 			'sql' => [
 				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN registeredByStaffId INT DEFAULT NULL",
-				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN dateRegistered INT DEFAULT NULL",
 			]
 		], //staff_event_registration_tracking
 	];

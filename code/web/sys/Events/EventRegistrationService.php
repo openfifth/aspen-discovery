@@ -49,7 +49,6 @@ class EventRegistrationService {
 			}
 			$registration->cancelled = 0;
 			$registration->registeredByStaffId = $staffUserId;
-			$registration->dateRegistered = time();
 			if ($registration->update()) {
 				$result['success'] = true;
 				$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
@@ -67,7 +66,6 @@ class EventRegistrationService {
 
 		$registration->cancelled = 0;
 		$registration->registeredByStaffId = $staffUserId;
-		$registration->dateRegistered = time();
 
 		if ($registration->insert()) {
 			$result['success'] = true;

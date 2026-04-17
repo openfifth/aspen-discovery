@@ -10,7 +10,6 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public $createdAt;
 	public $notifiedAt;
 	public $registeredByStaffId;
-	public $dateRegistered;
 
 	const VALID_STATUSES = ['waiting', 'invited', 'registered'];
 
@@ -29,7 +28,6 @@ class UserAspenEventInstanceRegistration extends DataObject {
 			'attended',
 			'cancelled',
 			'registeredByStaffId',
-			'dateRegistered',
 		];
 	}
 

@@ -758,7 +758,7 @@ class Events_AJAX extends JSON_Action {
 				'attended' => (bool)$registration->attended,
 				'registeredByStaff' => $registration->wasRegisteredByStaff(),
 				'staffName' => $staffUser ? $staffUser->getDisplayName() : null,
-				'dateRegistered' => $registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : null,
+				'dateRegistered' => $registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : null,
 			];
 		}
 
