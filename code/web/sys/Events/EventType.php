@@ -3,6 +3,7 @@ require_once ROOT_DIR . '/sys/Events/EventFieldSet.php';
 require_once ROOT_DIR . '/sys/Events/EventTypeLibrary.php';
 require_once ROOT_DIR . '/sys/Events/EventTypeLocation.php';
 require_once ROOT_DIR . '/sys/Events/Event.php';
+require_once ROOT_DIR . '/sys/Events/EventTypeAttendeeCategory.php';
 
 class EventType extends DataObject {
 	public $__table = 'event_type';
@@ -25,6 +26,7 @@ class EventType extends DataObject {
 
 	public $_libraries;
 	public $_locations;
+	public $_eventTypeAttendeeCategories;
 
 	static $_objectStructure = [];
 
@@ -157,6 +159,22 @@ class EventType extends DataObject {
 				'description' => 'Define locations that use this type',
 				'values' => $locationList,
 			],
+			'attendeeCategories' => [
+				'property' => 'attendeeCategories',
+				'type' => 'oneToMany',
+				'label' => 'Attendee Categories',
+				'description' => 'Define attendee categories and their limits for this event type',
+				'keyThis' => 'id',
+				'keyOther' => 'eventTypeId',
+				'subObjectType' => 'EventTypeAttendeeCategory',
+				'structure' => EventTypeAttendeeCategory::getObjectStructure(),
+				'sortable' => false,
+				'storeDb' => true,
+				'allowEdit' => true,
+				'canEdit' => true,
+				'canAddNew' => true,
+				'canDelete' => true,
+			],
 			'eventFieldSets' => [
 				'property' => 'eventFieldSets',
 				'type' => 'section',
@@ -215,6 +233,7 @@ class EventType extends DataObject {
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
 			$this->saveLocations();
+			$this->saveAttendeeCategories();
 			$this->saveTextBlockTranslations('editFormInstructions');
 		}
 		return $ret;
@@ -225,6 +244,7 @@ class EventType extends DataObject {
 		if ($ret !== FALSE) {
 			$this->saveLibraries();
 			$this->saveLocations();
+			$this->saveAttendeeCategories();
 			$this->saveTextBlockTranslations('editFormInstructions');
 		}
 		return $ret;
@@ -266,8 +286,9 @@ class EventType extends DataObject {
 			$this->setLibraries($value);
 		} else if ($name == 'locations'){
 			$this->setLocations($value);
-		} else
-		{
+		} else if ($name == 'attendeeCategories') {
+			$this->_eventTypeAttendeeCategories = $value;
+		} else {
 			parent::__set($name, $value);
 		}
 	}
@@ -277,6 +298,8 @@ class EventType extends DataObject {
 			return $this->getLibraries();
 		} else if ($name == 'locations') {
 			return $this->getLocations();
+		} else if ($name == 'attendeeCategories') {
+			return $this->getEventTypeAttendeeCategories();
 		} else {
 			return parent::__get($name);
 		}
@@ -362,6 +385,27 @@ class EventType extends DataObject {
 		$eventTypeLocation->find();
 		while ($eventTypeLocation->fetch()) {
 			$eventTypeLocation->delete(true);
+		}
+	}
+
+	public function getEventTypeAttendeeCategories(): array {
+		if (isset($this->_eventTypeAttendeeCategories)) {
+			return $this->_eventTypeAttendeeCategories ?? [];
+		}
+		$this->_eventTypeAttendeeCategories = [];
+		$eventTypeAttendeeCategory = new EventTypeAttendeeCategory();
+		$eventTypeAttendeeCategory->eventTypeId = $this->id;
+		$eventTypeAttendeeCategory->find();
+		while ($eventTypeAttendeeCategory->fetch()) {
+			$this->_eventTypeAttendeeCategories[$eventTypeAttendeeCategory->id] = clone($eventTypeAttendeeCategory);
+		}
+		return $this->_eventTypeAttendeeCategories;
+	}
+
+	public function saveAttendeeCategories(): void {
+		if (isset($this->_eventTypeAttendeeCategories) && is_array($this->_eventTypeAttendeeCategories)) {
+			$this->saveOneToManyOptions($this->_eventTypeAttendeeCategories, 'eventTypeId');
+			unset($this->_eventTypeAttendeeCategories);
 		}
 	}
 
