@@ -2389,6 +2389,13 @@ class MyAccount_AJAX extends JSON_Action {
 			'success' => false,
 			'message' => ['Unable to renew all titles'],
 		];
+		$user = UserAccount::getLoggedInUser();
+		if ($user){
+			// Renew linked accounts as well if applicable
+			$renewResults = $user->renewAll(true);
+		} else {
+			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
+		}
 
 		global $interface;
 		$interface->assign('renew_message_data', $renewResults);
@@ -2414,7 +2421,7 @@ class MyAccount_AJAX extends JSON_Action {
 			]),
 			'modalBody' => $interface->fetch('Record/renew-results.tpl'),
 			'success' => $renewResults['success'],
-			'renewed' => $renewResults['Renewed'],
+			'renewed' => $renewResults['Renewed'] ?? 0,
 		];
 	}
 
