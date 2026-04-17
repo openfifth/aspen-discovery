@@ -197,7 +197,6 @@ class EventRegistrationService {
 	 * @param int $eventInstanceId The event instance ID
 	 */
 	private static function addEventToUserSavedEvents(int $userId, int $eventInstanceId): void {
-		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
 		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
 		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 
@@ -213,17 +212,7 @@ class EventRegistrationService {
 			return;
 		}
 
-		$userEventsEntry = new UserEventsEntry();
-		$userEventsEntry->sourceId = $sourceId;
-		$userEventsEntry->userId = $userId;
-		if (!$userEventsEntry->find(true)) {
-			$userEventsEntry->title = mb_substr($recordDriver->getTitle(), 0, 50);
-			$userEventsEntry->eventDate = $recordDriver->getStartDate()->getTimestamp();
-			$userEventsEntry->regRequired = $recordDriver->isRegistrationRequired() ? 1 : 0;
-			$userEventsEntry->location = $recordDriver->getBranch();
-			$userEventsEntry->dateAdded = time();
-			$userEventsEntry->insert();
-		}
+		$recordDriver->saveUserEventEntry($sourceId, $userId);
 	}
 
 	/**
