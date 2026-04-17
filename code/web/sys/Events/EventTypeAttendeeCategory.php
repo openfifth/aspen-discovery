@@ -9,6 +9,19 @@ class EventTypeAttendeeCategory extends DataObject {
 	public $attendeeCategoryId;
 	public $maxAttendees;
 
+	private $_category;
+
+	public function getCategory(): ?AspenEventAttendeeCategory {
+		if (!isset($this->_category) && $this->attendeeCategoryId) {
+			$this->_category = new AspenEventAttendeeCategory();
+			$this->_category->id = $this->attendeeCategoryId;
+			if (!$this->_category->find(true)) {
+				$this->_category = null;
+			}
+		}
+		return $this->_category;
+	}
+
 	function getEditLink(): string {
 		return '/Events/EventTypes?objectAction=edit&id=' . $this->eventTypeId;
 	}
