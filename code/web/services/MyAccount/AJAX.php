@@ -8369,6 +8369,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$eventType = $eventInstance->getEventType();
 			$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
 			$interface->assign('registrationFormStructure', $registrationFormStructure);
+			$interface->assign('attendeeCategories', $eventType->getEventTypeAttendeeCategories());
 
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
