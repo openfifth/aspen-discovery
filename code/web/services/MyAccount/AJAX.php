@@ -2390,14 +2390,9 @@ class MyAccount_AJAX extends JSON_Action {
 			'message' => ['Unable to renew all titles'],
 		];
 		$user = UserAccount::getLoggedInUser();
-		if ($user) {
-			if (!method_exists($user, 'renewAll')) {
-				AspenError::raiseError(new AspenError('Cannot Renew Item - ILS Not Supported'));
-				$renewResults = $this->failureResult(null, 'Cannot Renew Items - ILS Not Supported.');
-			} else {
-				// Renew linked accounts as well if applicable
-				$renewResults = $user->renewAll(true);
-			}
+		if ($user){
+			// Renew linked accounts as well if applicable
+			$renewResults = $user->renewAll(true);
 		} else {
 			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
 		}
