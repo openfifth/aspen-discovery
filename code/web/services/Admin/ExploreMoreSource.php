@@ -54,7 +54,7 @@ class Admin_ExploreMoreSource extends ObjectEditor {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#local_enrichment', 'Local Enrichment');
-		$breadcrumbs[] = new Breadcrumb('/Admin/ExploreMoreSource', 'Explore More Sources');
+		$breadcrumbs[] = new Breadcrumb('/Admin/ExploreMore?objectAction=edit&id=1', 'Explore More Sources');
 		return $breadcrumbs;
 	}
 
@@ -75,5 +75,12 @@ class Admin_ExploreMoreSource extends ObjectEditor {
 
   function canDelete(): bool {
 		return false;
+	}
+
+  /**
+	 * Override the return to list URL to always go to the default group edit page.
+	 */
+	public function getReturnToListUrl(): string {
+		return '/Admin/ExploreMore?objectAction=edit&id=1';
 	}
 }

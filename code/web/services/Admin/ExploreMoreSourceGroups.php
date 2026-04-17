@@ -60,7 +60,7 @@ class Admin_ExploreMoreSourceGroups extends ObjectEditor {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#local_enrichment', 'Local Enrichment');
-		$breadcrumbs[] = new Breadcrumb('/Admin/ExploreMoreSourceGroups', 'Explore More Source Groups');
+		$breadcrumbs[] = new Breadcrumb('/Admin/ExploreMore?objectAction=edit&id=1', 'Explore More Source Groups');
 		return $breadcrumbs;
 	}
 
