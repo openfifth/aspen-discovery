@@ -96,7 +96,7 @@ class ExploreMoreSourceGroup extends DataObject {
         'property' => 'exploreMoreSources',
         'type' => 'oneToMany',
         'label' => 'Explore More Sources',
-        'description' => 'Drag and drop to reorder sources',
+        'description' => 'Drag and drop to reorder sources. Only sources that are active based on the current modules and settings will be shown.',
         'keyThis' => 'id',
         'keyOther' => 'exploreMoreSourceGroupId',
         'subObjectType' => 'ExploreMoreSourceEntry',
