@@ -138,6 +138,39 @@ function getAspenEventRegistrationUpdates() {
 					value TEXT DEFAULT NULL
 				) ENGINE INNODB CHARACTER SET utf8 COLLATE utf8_general_ci",
 			] 
-		] //add_user_aspen_event_instance_registrations_event_field
+		], //add_user_aspen_event_instance_registrations_event_field
+		'create_attendee_category_tables' => [
+			'title' => 'Create Attendee Category Tables',
+			'description' => 'Add attendee categories and link them to event types with max attendee counts',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS aspen_event_attendee_category (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					name VARCHAR(50) NOT NULL,
+					staffDescription VARCHAR(255) NOT NULL,
+					publicDescription VARCHAR(255) NOT NULL,
+					UNIQUE KEY (name)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+				"CREATE TABLE IF NOT EXISTS event_type_attendee_category (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					eventTypeId INT NOT NULL,
+					attendeeCategoryId INT NOT NULL,
+					maxAttendees INT NOT NULL DEFAULT 1,
+					UNIQUE KEY (eventTypeId, attendeeCategoryId)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+			],
+		], //create_attendee_category_tables
+		'create_registration_attendee_table' => [
+			'title' => 'Create Registration Attendee Table',
+			'description' => 'Stores per-category attendee counts for each registration',
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS user_aspen_event_instance_registration_attendee (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+					registrationId INT NOT NULL,
+					attendeeCategoryId INT NOT NULL,
+					count INT NOT NULL DEFAULT 0,
+					UNIQUE KEY (registrationId, attendeeCategoryId)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
+			],
+		], //create_registration_attendee_table
 	];
 }
