@@ -76,9 +76,21 @@ class EventRegistrationService {
 		return self::publicErrorResult(translate(['text' => 'Failed to cancel registration.', 'isPublicFacing' => true]));
 	}
 
-	/**
-	 * Check if a user is registered for an event instance
-	 */
+	public static function getRegistrationCount(int $eventInstanceId): int {
+		$eventInstance = new EventInstance;
+		$eventInstance->id = $eventInstanceId;
+		$eventInstance->find(true);
+		$eventType = $eventInstance->getEventType();
+		if ($eventType !== null && !empty($eventType->getEventTypeAttendeeCategories())) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+			$attendeeTotal = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeesForInstance((int)$eventInstanceId);
+			if ($attendeeTotal > 0) {
+				return $attendeeTotal;
+			}
+		}
+
+		return UserAspenEventInstanceRegistration::getRegistrationCount($eventInstanceId);
+	}
 
 	public static function getAvailableSeats(EventInstance $instance): ?int {
 		$capacity = $instance->getEffectiveNumberOfSeats();
@@ -92,7 +104,7 @@ class EventRegistrationService {
 			return 0;
 		}
 
-		return max(0, $capacity - UserAspenEventInstanceRegistration::getRegistrationCount((int)$instance->id));
+		return max(0, $capacity - self::getRegistrationCount((int)$instance->id));
 	}
 
 	public static function hasAvailableSeats(EventInstance $instance, int $requestedSeats = 1): bool {
