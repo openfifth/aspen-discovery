@@ -198,7 +198,7 @@ class EventInstance extends DataObject {
 	}
 
 	function getParentEvent() : Event {
-		if ($this->_parentEvent !== null) {
+		if ($this->_parentEvent !== null && $this->_parentEvent->id == $this->eventId) {
 			return $this->_parentEvent;
 		}
 		$event = new Event();
