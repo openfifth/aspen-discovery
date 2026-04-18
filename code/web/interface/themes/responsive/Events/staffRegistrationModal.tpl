@@ -32,6 +32,7 @@
 				<strong>{translate text="Email" isAdminFacing=true}:</strong> <span id="foundPatronEmail"></span><br>
 				<strong>{translate text="Home Location" isAdminFacing=true}:</strong> <span id="foundPatronLocation"></span>
 			</p>
+			{include file="AspenEvents/attendeeCategories.tpl"}
 			<button type="button" class="btn btn-success" onclick="AspenDiscovery.Events.confirmStaffRegistration();">
 				<i class="fas fa-user-plus"></i> {translate text="Register This Patron" isAdminFacing=true}
 			</button>
