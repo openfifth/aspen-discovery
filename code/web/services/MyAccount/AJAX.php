@@ -11164,7 +11164,9 @@ class MyAccount_AJAX extends JSON_Action {
 		$patron->find();
 		$numResults = $patron->count();
 		if ($numResults == 1 && $patron->find(true)) {
-			if ($patron->isStaff()) {
+			if ($patron->id == UserAccount::getActiveUserId()) {
+				return $this->failureResult(null, 'Cannot transfer a list to yourself.');
+			}else if ($patron->isStaff()) {
 				$interface->assign('listId', $listId);
 				$interface->assign('newListOwner', $patron);
 				return [
@@ -11179,11 +11181,12 @@ class MyAccount_AJAX extends JSON_Action {
 							'isAdminFacing' => 'true',
 						]) . "</button>",
 				];
+			}else{
+				return $this->failureResult(null, 'Cannot transfer a list to the specified user.');
 			}
+		}else{
+			return $this->failureResult(null, 'User not found.');
 		}
-		return [
-			'success' => false
-		];
 	}
 
 	/** @noinspection PhpUnused */
@@ -11212,6 +11215,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$list->id = $listId;
 			if ($list->find(true)) {
 				$list->user_id = $user->id;
+				$list->listGroupId = -1;
 				if ($list->update()) {
 					require_once ROOT_DIR . '/sys/Email/Mailer.php';
 					$mailer = new Mailer();
