@@ -475,8 +475,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	public function getRegistrationCount(): int {
 		$eventObject = $this->getEventObject();
 		if ($eventObject) {
-			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-			return UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventObject->id);
+			return EventRegistrationService::getRegistrationCount((int)$eventObject->id);
 		}
 		return 0;
 	}

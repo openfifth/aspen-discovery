@@ -42,7 +42,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 		$interface->assign('eventLocation', $eventInstance->getLocation());
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
 		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
-		$interface->assign('registrationCount', UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id));
+		$interface->assign('registrationCount', EventRegistrationService::getRegistrationCount((int)$eventInstance->id));
 		$interface->assign('canManageEventRegistration', $library->allowEventRegistration && $library->allowStaffToRegisterUsersForEvents && EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId));
 
 		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId);
@@ -100,7 +100,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 						'date' => $eventInstance->date,
 						'time' => $eventInstance->time,
 						'location' => $eventInstance->getLocation(),
-						'registrationCount' => UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id),
+						'registrationCount' => EventRegistrationService::getRegistrationCount((int)$eventInstance->id),
 						'availableSeats' => EventRegistrationService::getAvailableSeats($eventInstance),
 						'numberOfSeats' => $eventInstance->getEffectiveNumberOfSeats(),
 						'registrationRequired' => (bool)$parentEvent->registrationRequired,
