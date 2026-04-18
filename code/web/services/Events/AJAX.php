@@ -671,7 +671,7 @@ class Events_AJAX extends JSON_Action {
 		$interface->assign('eventTime', $eventInstance->time);
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
 		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
-		$interface->assign('registrationCount', UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id));
+		$interface->assign('registrationCount', EventRegistrationService::getRegistrationCount((int)$eventInstance->id));
 
 		return [
 			'success' => true,
