@@ -678,6 +678,10 @@ class Events_AJAX extends JSON_Action {
 		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
 		$interface->assign('registrationCount', EventRegistrationService::getRegistrationCount((int)$eventInstance->id));
 
+		$eventType = $eventInstance->getEventType();
+		$attendeeCategories = $eventType !== null ? $eventType->getEventTypeAttendeeCategories() : [];
+		$interface->assign('attendeeCategories', $attendeeCategories);
+
 		return [
 			'success' => true,
 			'title' => translate(['text' => 'Register Patron for Event', 'isAdminFacing' => true]),
