@@ -55,6 +55,25 @@ class UserAspenEventInstanceRegistrationAttendee extends DataObject {
 	}
 
 	/**
+	 * Get per-category attendee counts for an event instance.
+	 * Returns [['name' => ..., 'count' => ...], ...] or empty array if no categories.
+	 */
+	public static function getCategoryAttendeeCountsForInstance(int $eventInstanceId): array {
+		$query = new UserAspenEventInstanceRegistrationAttendee();
+		$escapedId = $query->escape($eventInstanceId);
+		$query->whereAdd("registrationId IN (SELECT id FROM user_aspen_event_instance_registrations WHERE eventInstanceId = $escapedId AND status = 'registered')");
+		$query->find();
+
+		$countsByCategory = [];
+		while ($query->fetch()) {
+			$catId = (int)$query->attendeeCategoryId;
+			$countsByCategory[$catId] = ($countsByCategory[$catId] ?? 0) + (int)$query->count;
+		}
+
+		return $countsByCategory;
+	}
+
+	/**
 	 * Validate attendee counts against the event type's category limits.
 	 * Returns validated array or false if any count exceeds its max.
 	 * Returns empty array if the event type has no categories.
