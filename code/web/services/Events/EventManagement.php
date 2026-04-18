@@ -83,7 +83,7 @@ class Events_EventManagement extends Admin_Admin {
 		$this->display('eventManagement.tpl', 'Event Management');
 	}
 
-	private function getUpcomingEventsForUser($user): array {
+	private function getUpcomingEventsForUser(): array {
 		$events = [];
 		$todayDate = date('Y-m-d');
 		$todayTime = date('H:i:s');
