@@ -15,6 +15,30 @@ class UserAspenEventInstanceRegistrationAttendee extends DataObject {
 		return ['registrationId', 'attendeeCategoryId', 'count'];
 	}
 
+
+	/**
+	 * Save attendee category counts for a registration.
+	 * $attendeeCounts: [attendeeCategoryId => count, ...]
+	 */
+	public static function saveForRegistration(int $registrationId, array $attendeeCounts): void {
+		foreach ($attendeeCounts as $categoryId => $count) {
+			$count = (int)$count;
+			if ($count <= 0) {
+				continue;
+			}
+			$attendee = new UserAspenEventInstanceRegistrationAttendee();
+			$attendee->registrationId = $registrationId;
+			$attendee->attendeeCategoryId = (int)$categoryId;
+			if ($attendee->find(true)) {
+				$attendee->count = $count;
+				$attendee->update();
+				continue;
+			}
+			$attendee->count = $count;
+			$attendee->insert();
+		}
+	}
+
 	/**
 	 * Validate attendee counts against the event type's category limits.
 	 * Returns validated array or false if any count exceeds its max.
