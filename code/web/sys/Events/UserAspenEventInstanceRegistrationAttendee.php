@@ -17,6 +17,21 @@ class UserAspenEventInstanceRegistrationAttendee extends DataObject {
 
 
 	/**
+	 * Sum all attendee counts across all active registrations for an event instance.
+	 * Only includes registrations with status = 'registered'.
+	 */
+	public static function getTotalAttendeesForInstance(int $eventInstanceId): int {
+		$query = new UserAspenEventInstanceRegistrationAttendee();
+		$query->whereAdd('registrationId IN (SELECT id FROM user_aspen_event_instance_registrations WHERE eventInstanceId = ' . $query->escape($eventInstanceId) . " AND status = 'registered')");
+		$query->find();
+		$total = 0;
+		while ($query->fetch()) {
+			$total += (int)$query->count;
+		}
+		return $total;
+	}
+
+	/**
 	 * Save attendee category counts for a registration.
 	 * $attendeeCounts: [attendeeCategoryId => count, ...]
 	 */
