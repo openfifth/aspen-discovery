@@ -30,6 +30,14 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		];
 	}
 
+	public function delete(bool $useWhere = false, bool $hardDelete = false): bool|int {
+		if (!$useWhere && $this->id) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+			UserAspenEventInstanceRegistrationAttendee::deleteForRegistration((int)$this->id);
+		}
+		return parent::delete($useWhere, $hardDelete);
+	}
+
 	public function isUserRegisteredForEvent(): bool {
 		if($this->status) {
 			return $this->status === 'registered';
