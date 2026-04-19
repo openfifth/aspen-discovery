@@ -85,13 +85,7 @@ class EventRegistrationService {
 			return $result;
 		}
 
-		if ($registration->cancelled) {
-			$result['message'] = translate(['text' => 'Registration is already cancelled.', 'isPublicFacing' => true]);
-			return $result;
-		}
-
-		$registration->cancelled = 1;
-		if ($registration->update()) {
+		if ($registration->delete()) {
 			$result['success'] = true;
 			$result['title'] = translate(['text' => 'Registration Cancelled', 'isPublicFacing' => true]);
 			$result['message'] = translate(['text' => 'Registration has been cancelled successfully.', 'isPublicFacing' => true]);
@@ -105,16 +99,12 @@ class EventRegistrationService {
 	/**
 	 * Get all registrations for an event instance
 	 * @param int $eventInstanceId The event instance ID
-	 * @param bool $includesCancelled Whether to include cancelled registrations
-	 * @return array Array of UserAspenEventInstanceRegistration objects
+	 * @return UserAspenEventInstanceRegistration[]
 	 */
-	public static function getRegistrationsForEvent(int $eventInstanceId, bool $includesCancelled = false): array {
+	public static function getRegistrationsForEvent(int $eventInstanceId): array {
 		$registrations = [];
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->eventInstanceId = $eventInstanceId;
-		if (!$includesCancelled) {
-			$registration->whereAdd('cancelled IS NULL OR cancelled = 0');
-		}
 		$registration->find();
 		while ($registration->fetch()) {
 			$registrations[] = clone $registration;

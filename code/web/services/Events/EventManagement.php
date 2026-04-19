@@ -42,7 +42,7 @@ class Events_EventManagement extends Admin_Admin {
 		$interface->assign('availableSeats', $eventInstance->getAvailableSeats());
 		$interface->assign('registrationCount', $eventInstance->getRegistrationCount());
 
-		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
+		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId);
 		$registrationData = [];
 		foreach ($registrations as $registration) {
 			$user = $registration->getUser();
@@ -53,7 +53,6 @@ class Events_EventManagement extends Admin_Admin {
 				'userName' => $user ? $user->getDisplayName() : 'Unknown',
 				'userBarcode' => $user ? $user->ils_barcode : '',
 				'userEmail' => $user ? $user->email : '',
-				'cancelled' => (bool)$registration->cancelled,
 				'attended' => (bool)$registration->attended,
 				'registeredByStaff' => $registration->wasRegisteredByStaff(),
 				'staffName' => $staffUser ? $staffUser->getDisplayName() : null,
