@@ -220,7 +220,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 				$user ? $user->ils_barcode : '',
 				$user ? $user->email : '',
 				$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
-				$registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-',
+				$registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : '-',
 				$registration->attended ? 'Yes' : 'No'
 			];
 
