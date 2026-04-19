@@ -8,7 +8,7 @@ class ExploreMoreSourceEntry extends DataObject {
 		}
 		return parent::__get($name);
 	}
-  
+
 	public function getSourceName() {
 		require_once ROOT_DIR . '/sys/ExploreMoreSource.php';
 		$source = new ExploreMoreSource();
@@ -33,7 +33,7 @@ class ExploreMoreSourceEntry extends DataObject {
 		];
 	}
 
-  /** @noinspection PhpUnusedParameterInspection */
+	/** @noinspection PhpUnusedParameterInspection */
 	public function getEditLink(string $context): string {
 		return '/Admin/ExploreMoreSource?objectAction=edit&id=' . $this->exploreMoreSourceId;
 	}
@@ -52,13 +52,13 @@ class ExploreMoreSourceEntry extends DataObject {
 			$groupList[$groups->id] = $groups->source;
 		}
 		$sourceList = $groupList;
-    $structure = [
-      'sourceName' => [
-        'property' => 'sourceName',
-        'type' => 'label',
-        'label' => 'Source',
-        'description' => 'The Explore More source to display',
-      ],
+		$structure = [
+			'sourceName' => [
+				'property' => 'sourceName',
+				'type' => 'label',
+				'label' => 'Source',
+				'description' => 'The Explore More source to display',
+			],
 			'id' => [
 				'property' => 'id',
 				'type' => 'label',
@@ -72,14 +72,14 @@ class ExploreMoreSourceEntry extends DataObject {
 				'label' => 'Group',
 				'description' => 'The group this source should be added in',
 			],
-      'exploreMoreSourceId' => [
-        'property' => 'exploreMoreSourceId',
-        'type' => 'enum',
-        'values' => $sourceList,
-        'label' => 'Source',
-        'description' => 'The Explore More source to display',
-        'readOnly' => true,
-      ],
+			'exploreMoreSourceId' => [
+				'property' => 'exploreMoreSourceId',
+				'type' => 'enum',
+				'values' => $sourceList,
+				'label' => 'Source',
+				'description' => 'The Explore More source to display',
+				'readOnly' => true,
+			],
 			'weight' => [
 				'property' => 'weight',
 				'type' => 'integer',

@@ -266,7 +266,7 @@ class ExploreMore {
 									'onclick' => "AspenDiscovery.WebBuilder.getWebResource('$id'); AspenDiscovery.Websites.trackUsage('{$driver->getId()}');",
 									'usageCount' => 1,
 									'openInNewWindow' => false,
-                  'source' => 'Web Indexer',
+									'source' => 'Web Indexer',
 								];
 							}else{
 								//Add a link to the actual title
@@ -278,7 +278,7 @@ class ExploreMore {
 									'onclick' => 'AspenDiscovery.Websites.trackUsage(' . $driver->getId() . ')',
 									'usageCount' => 1,
 									'openInNewWindow' => false,
-                  'source' => 'Web Indexer',
+									'source' => 'Web Indexer',
 								];
 							}
 						}

@@ -73,11 +73,11 @@ class Admin_ExploreMoreSource extends ObjectEditor {
 		return false;
 	}
 
-  function canDelete(): bool {
+	function canDelete(): bool {
 		return false;
 	}
 
-  /**
+	/**
 	 * Override the return to list URL to always go to the default group edit page.
 	 */
 	public function getReturnToListUrl(): string {
