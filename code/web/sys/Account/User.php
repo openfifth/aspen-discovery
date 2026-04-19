@@ -3352,7 +3352,7 @@ class User extends DataObject {
 		return false;
 	}
 
-	public function canMasquerade() {
+	public function canMasquerade() : bool {
 		if (self::canClientIpUseMasquerade()) {
 			return $this->hasPermission([
 				'Masquerade as any user',
