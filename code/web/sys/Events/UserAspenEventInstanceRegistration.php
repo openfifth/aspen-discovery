@@ -207,6 +207,13 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		return $values;
 	}
 
+	/**
+	 * @return array<int, int> [attendeeCategoryId => count, ...]
+	 */
+	public function getAttendeeCounts(): array {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		return UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$this->id);
+	}
 
 	/**
 	 * Deletes all registration rows tied to the given event instance.

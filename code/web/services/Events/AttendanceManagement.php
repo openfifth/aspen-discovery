@@ -190,6 +190,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 		$eventType = $eventInstance->getEventType();
 		$customFields = $eventType !== null ? $eventType->getFieldSetFieldsByUse(2) : [];
+		$attendeeCategories = $eventType !== null ? $eventType->getEventTypeAttendeeCategories() : [];
 
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
@@ -207,6 +208,13 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 		foreach ($customFields as $fieldId => $field) {
 			$headers[] = $field['label'];
+		}
+
+		foreach ($attendeeCategories as $eventTypeCategory) {
+			$category = $eventTypeCategory->getCategory();
+			if ($category !== null) {
+				$headers[] = $category->name . ' (attendees)';
+			}
 		}
 
 		fputcsv($output, $headers);
@@ -227,6 +235,14 @@ class Events_AttendanceManagement extends Admin_Admin {
 			$customFieldValues = $registration->getCustomFieldValues();
 			foreach ($customFields as $fieldId => $field) {
 				$row[] = $customFieldValues[(int)$fieldId] ?? '';
+			}
+
+			$attendeeCounts = $registration->getAttendeeCounts();
+			foreach ($attendeeCategories as $eventTypeCategory) {
+				$category = $eventTypeCategory->getCategory();
+				if ($category !== null) {
+					$row[] = $attendeeCounts[(int)$eventTypeCategory->attendeeCategoryId] ?? 0;
+				}
 			}
 
 			fputcsv($output, $row);
