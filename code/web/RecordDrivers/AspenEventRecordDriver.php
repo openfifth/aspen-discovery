@@ -780,21 +780,4 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return false;
 	}
 
-	public function saveUserEventEntry($sourceId, $userId): void {
-		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
-		$userEventsEntry = new UserEventsEntry();
-		$userEventsEntry->sourceId = $sourceId;
-		$userEventsEntry->userId = $userId;
-
-		if ($userEventsEntry->find(true)) {
-			return;
-		}
-
-		$userEventsEntry->title = mb_substr($this->getTitle(), 0, 50);
-		$userEventsEntry->eventDate = $this->getStartDate()->getTimestamp();
-		$userEventsEntry->regRequired = $this->isRegistrationRequired() ? 1 : 0;
-		$userEventsEntry->location = $this->getBranch();
-		$userEventsEntry->dateAdded = time();
-		$userEventsEntry->insert();
-	}
 }

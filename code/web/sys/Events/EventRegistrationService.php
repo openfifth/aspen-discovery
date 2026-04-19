@@ -55,7 +55,7 @@ class EventRegistrationService {
 			$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
 			$result['message'] = translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]);
 
-			self::addEventToUserSavedEvents($userId, $eventInstanceId);
+			$eventInstance->saveToUserEvents($userId);
 		} else {
 			$result['message'] = translate(['text' => 'Failed to create registration.', 'isPublicFacing' => true]);
 		}
@@ -164,29 +164,6 @@ class EventRegistrationService {
 		return false;
 	}
 
-	/**
-	 * Add event to user's saved events
-	 * @param int $userId The user ID
-	 * @param int $eventInstanceId The event instance ID
-	 */
-	private static function addEventToUserSavedEvents(int $userId, int $eventInstanceId): void {
-		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
-		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-
-		$aspenEventSettings = new AspenEventSetting();
-		$aspenEventSettings->id = 1;
-		if (!$aspenEventSettings->find(true)) {
-			return;
-		}
-
-		$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
-		$recordDriver = new AspenEventRecordDriver($sourceId);
-		if (!$recordDriver->isValid()) {
-			return;
-		}
-
-		$recordDriver->saveUserEventEntry($sourceId, $userId);
-	}
 
 	/**
 	 * Look up a user by barcode

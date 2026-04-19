@@ -574,6 +574,38 @@ class EventInstance extends DataObject {
 		return true;
 	}
 
+	public function saveToUserEvents(int $userId): void {
+		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+		$setting = new AspenEventSetting();
+		if (!$setting->find(true)) {
+			return;
+		}
+
+		$sourceId = 'aspenEvent_' . $setting->id . '_' . $this->id;
+
+		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
+		$entry = new UserEventsEntry();
+		$entry->sourceId = $sourceId;
+		$entry->userId = $userId;
+		if ($entry->find(true)) {
+			return;
+		}
+
+		$event = $this->getParentEvent();
+
+		$entry->title = mb_substr($event->title, 0, 50);
+		$entry->eventDate = strtotime($this->date . ' ' . $this->time);
+		$entry->regRequired = !empty($event->registrationRequired) ? 1 : 0;
+
+		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
+		$location = new Location();
+		$location->locationId = $event->locationId;
+		$entry->location = $location->find(true) ? $location->displayName : '';
+
+		$entry->dateAdded = time();
+		$entry->insert();
+	}
+
 	public function sendCancellationNotificationEmails(array $upcomingInstances, array $affectedUsersByStatus): void {
 		if (empty($upcomingInstances) || empty($affectedUsersByStatus)) {
 			return;

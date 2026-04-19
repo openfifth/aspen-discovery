@@ -8863,17 +8863,17 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// add the event to saved events if it has not yet been saved
-		$recordDriver->saveUserEventEntry($sourceId, $userId);
+		$eventInstance->saveToUserEvents($userId);
 
 		// so the registered may manage their registration, also add the event to the active user's saved events if the user this was added for is a linked user
 		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
-			$recordDriver->saveUserEventEntry($sourceId, $activeUserId);	
+			$eventInstance->saveToUserEvents($activeUserId);
 		}
 
 		// so the parent linked account display all events their linked user is registered to, save the event if the user registering have had their account linked.
 		foreach ($user->getViewerIds() as $viewerId) {
-			$recordDriver->saveUserEventEntry($sourceId, $viewerId);	
+			$eventInstance->saveToUserEvents($viewerId);
 		}
 
 		if (!$eventInstance->hasAvailableSeats(1) && !$waitingListInfo['canRegister']) {
@@ -12472,13 +12472,7 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 		$result['position'] = $position;
 
-		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-		$sourceId = AspenEventRecordDriver::sanitizeSourceId($_REQUEST['sourceId'] ?? '');
-		if ($sourceId === null) {
-			return $result;
-		}
-		$recordDriver = new AspenEventRecordDriver($sourceId);
-		$recordDriver->saveUserEventEntry($sourceId, $userId);
+		$eventInstance->saveToUserEvents($userId);
 
 		return $result;
 	}
