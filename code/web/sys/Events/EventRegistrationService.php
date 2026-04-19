@@ -42,32 +42,15 @@ class EventRegistrationService {
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
 
-		if ($registration->find(true)) {
-			if (!$registration->cancelled) {
-				$result['message'] = translate(['text' => 'User is already registered for this event.', 'isPublicFacing' => true]);
-				return $result;
-			}
-			$registration->cancelled = 0;
-			$registration->registeredByStaffId = $staffUserId;
-			if ($registration->update()) {
-				$result['success'] = true;
-				$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
-				$result['message'] = translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]);
-			} else {
-				$result['message'] = translate(['text' => 'Failed to update registration.', 'isPublicFacing' => true]);
-			}
-			return $result;
-		}
-
-		if (!$eventInstance->hasAvailableSeats(1)) {
+		$waitingListInfo = $registration->getWaitingListInfo();
+		if (!$eventInstance->hasAvailableSeats(1) && !$waitingListInfo['canRegister']) {
 			$result['message'] = translate(['text' => 'This event is full. No seats available.', 'isPublicFacing' => true]);
 			return $result;
 		}
 
-		$registration->cancelled = 0;
 		$registration->registeredByStaffId = $staffUserId;
 
-		if ($registration->insert()) {
+		if ($registration->registerUser()) {
 			$result['success'] = true;
 			$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
 			$result['message'] = translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]);
