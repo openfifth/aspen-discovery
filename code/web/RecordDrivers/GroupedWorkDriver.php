@@ -300,7 +300,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 	 * @param Grouping_Record $b
 	 * @return int
 	 */
-	function compareRelatedRecords(Grouping_Record $a, Grouping_Record $b) {
+	function compareRelatedRecords(Grouping_Record $a, Grouping_Record $b) : int {
 		$literaryForm = $this->getPrimaryLiteraryForm();
 
 		global $library;
@@ -2443,6 +2443,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 							$this->seriesData = [
 								'seriesTitle' => $existingDisplayInfo->seriesName,
 								'volume' => $existingDisplayInfo->seriesDisplayOrder,
+								'groupedWorkId' => $this->getPermanentId(),
 								'fromNovelist' => true,
 								'fromSeriesIndex' => false
 							];
@@ -2487,6 +2488,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					$this->seriesData = [
 						'seriesTitle' => $novelistData->seriesTitle,
 						'volume' => $novelistData->volume,
+						'groupedWorkId' => $this->getPermanentId(),
 						'fromNovelist' => true,
 						'fromSeriesIndex' => false
 					];
@@ -3167,7 +3169,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					if ($mainLocation->isMainBranch) {
 						$scope = new Grouping_Scope();
 						$mainLibraryScopeName = str_replace('-', '', !empty($mainLocation->subdomain) ? $mainLocation->subdomain : $mainLocation->code);
-						$scope->name = $mainLibraryScopeName;
+						$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($mainLibraryScopeName)));
 						$scope->isLocationScope = 1;
 						if ($scope->find(true)) {
 							GroupedWorkDriver::$mainLocationScopeId = $scope->id;
@@ -3179,7 +3181,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				if ($activeLocation != null) {
 					$scope = new Grouping_Scope();
 					$activeLocationScopeName = str_replace('-', '', !empty($activeLocation->subdomain) ? $activeLocation->subdomain : $activeLocation->code);
-					$scope->name = $activeLocationScopeName;
+					$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($activeLocationScopeName)));
 					$scope->isLocationScope = 1;
 					if ($scope->find(true)) {
 						GroupedWorkDriver::$activeLocationScopeId = $scope->id;
@@ -3191,7 +3193,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						if ($altLocation1->find(true)) {
 							$scope = new Grouping_Scope();
 							$altLocation1ScopeName = str_replace('-', '', !empty($altLocation1->subdomain) ? $altLocation1->subdomain : $altLocation1->code);
-							$scope->name = $altLocation1ScopeName;
+							$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($altLocation1ScopeName)));
 							$scope->isLocationScope = 1;
 							if ($scope->find(true)) {
 								GroupedWorkDriver::$atNearbyLocation1 = $scope->id;
@@ -3200,11 +3202,11 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					}
 					if ($activeLocation->nearbyLocation2 > 0) {
 						$altLocation2 = new Location();
-						$altLocation2->locationId = $activeLocation->nearbyLocation2;
+						$altLocation2->locationId = strtolower($activeLocation->nearbyLocation2);
 						if ($altLocation2->find(true)) {
 							$scope = new Grouping_Scope();
 							$altLocation2ScopeName = str_replace('-', '', !empty($altLocation2->subdomain) ? $altLocation2->subdomain : $altLocation2->code);
-							$scope->name = $altLocation2ScopeName;
+							$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($altLocation2ScopeName)));
 							$scope->isLocationScope = 1;
 							if ($scope->find(true)) {
 								GroupedWorkDriver::$atNearbyLocation2 = $scope->id;
@@ -3218,7 +3220,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 					if ($userHomeLocation != null) {
 						$scope = new Grouping_Scope();
 						$mainLibraryScopeName = str_replace('-', '', !empty($userHomeLocation->subdomain) ? $userHomeLocation->subdomain : $userHomeLocation->code);
-						$scope->name = $mainLibraryScopeName;
+						$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($mainLibraryScopeName)));
 						$scope->isLocationScope = 1;
 						if ($scope->find(true)) {
 							GroupedWorkDriver::$homeLocationScopeId = $scope->id;
@@ -3230,7 +3232,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						if ($myLocation1->find(true)) {
 							$mainLibraryScopeName = str_replace('-', '', !empty($myLocation1->subdomain) ? $myLocation1->subdomain : $myLocation1->code);
 							$scope = new Grouping_Scope();
-							$scope->name = $mainLibraryScopeName;
+							$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($mainLibraryScopeName)));
 							$scope->isLocationScope = 1;
 							if ($scope->find(true)) {
 								GroupedWorkDriver::$userNearbyLocation1ScopeId = $scope->id;
@@ -3243,7 +3245,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						if ($myLocation2->find(true)) {
 							$mainLibraryScopeName = str_replace('-', '', !empty($myLocation2->subdomain) ? $myLocation2->subdomain : $myLocation2->code);
 							$scope = new Grouping_Scope();
-							$scope->name = $mainLibraryScopeName;
+							$scope->whereAdd('LOWER(name) = ' . $scope->escape(strtolower($mainLibraryScopeName)));
 							$scope->isLocationScope = 1;
 							if ($scope->find(true)) {
 								GroupedWorkDriver::$userNearbyLocation2ScopeId = $scope->id;

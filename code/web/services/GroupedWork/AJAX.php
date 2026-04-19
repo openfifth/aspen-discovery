@@ -285,6 +285,7 @@ class GroupedWork_AJAX extends JSON_Action {
 				$interface->assign($detailOption, true);
 			}
 			$interface->assign('series', $series);
+			$interface->assign('summId', $id);
 			$enrichmentResult['seriesSummary'] = $interface->fetch('GroupedWork/series-summary.tpl');
 		}
 
@@ -514,7 +515,11 @@ class GroupedWork_AJAX extends JSON_Action {
 
 	private function getScrollerTitleForSeriesMember(SeriesMember $seriesMember, $index, $scrollerName) : array {
 		$recordDriver = $seriesMember->getRecordDriver();
-		$cover = $recordDriver->getBookcoverUrl('medium');
+		if ($recordDriver != null) {
+			$cover = $recordDriver->getBookcoverUrl('medium');
+		}else{
+			$cover = '';
+		}
 		$title = preg_replace("~\\s*([/:])\\s*$~", "", $seriesMember->displayName);
 		$series = $seriesMember->getSeries()->displayName;
 

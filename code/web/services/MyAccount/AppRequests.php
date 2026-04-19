@@ -25,6 +25,10 @@ class MyAccount_AppRequests extends MyAccount {
 		$logs->userId = $user->id;
 		$logs->orderBy('time DESC');
 		$requestLogs = $logs->fetchAll();
+		/** @var UserAppRequestLogEntry $log */
+		foreach ($requestLogs as $log) {
+			$log->queryString = str_replace('","', ", ", $log->queryString);
+		}
 		$interface->assign('requestLogs', $requestLogs);
 		$interface->assign('user', $user);
 

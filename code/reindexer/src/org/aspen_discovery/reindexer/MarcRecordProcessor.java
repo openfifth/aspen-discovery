@@ -1521,7 +1521,8 @@ abstract class MarcRecordProcessor {
 			displayAuthor = displayAuthor.substring(0, displayAuthor.indexOf(';') -1);
 		}
 		//a title of <>. is an indicator that additional info may be in the 880
-		if ((MarcUtil.getFirstFieldVal(record, "245a").equals("<>."))) {
+		String title = MarcUtil.getFirstFieldVal(record, "245a");
+		if (title != null && title.equals("<>.")) {
 			List<DataField> altAuthorField = MarcUtil.getDataFields(record, 880);
 			Iterator<DataField> fieldIterator = altAuthorField.iterator();
 			DataField field880;
@@ -1571,7 +1572,7 @@ abstract class MarcRecordProcessor {
 			String title = titleField.getSubfieldsAsString("a");
 			//noinspection SpellCheckingInspection
 			String subTitle = titleField.getSubfieldsAsString("bfgnp", " ");
-			if (title.equals("<>.")) { //a title of <>. is an indicator that the title may be in the 880
+			if (title != null && title.equals("<>.")) { //a title of <>. is an indicator that the title may be in the 880
 				List<DataField> altTitleField = MarcUtil.getDataFields(record, 880);
 				Iterator<DataField> fieldIterator = altTitleField.iterator();
 				DataField field880;
