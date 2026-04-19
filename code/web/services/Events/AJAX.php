@@ -740,8 +740,13 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 
+		$attendeeCounts = [];
+		if (isset($_REQUEST['attendeeCategory']) && is_array($_REQUEST['attendeeCategory'])) {
+			$attendeeCounts = $_REQUEST['attendeeCategory'];
+		}
+
 		$staffUserId = UserAccount::getActiveUserId();
-		return EventRegistrationService::registerUserForEvent((int)$userId, (int)$eventInstanceId, (int)$staffUserId);
+		return EventRegistrationService::registerUserForEvent((int)$userId, (int)$eventInstanceId, (int)$staffUserId, $attendeeCounts);
 	}
 
 	/**
