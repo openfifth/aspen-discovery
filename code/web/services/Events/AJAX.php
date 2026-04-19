@@ -745,8 +745,7 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 
-		$includeCancelled = !empty($_REQUEST['includeCancelled']);
-		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, $includeCancelled);
+		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId);
 
 		$registrationData = [];
 		foreach ($registrations as $registration) {
@@ -758,7 +757,6 @@ class Events_AJAX extends JSON_Action {
 				'userName' => $user ? $user->getDisplayName() : 'Unknown',
 				'userBarcode' => $user ? $user->ils_barcode : '',
 				'userEmail' => $user ? $user->email : '',
-				'cancelled' => (bool)$registration->cancelled,
 				'attended' => (bool)$registration->attended,
 				'registeredByStaff' => $registration->wasRegisteredByStaff(),
 				'staffName' => $staffUser ? $staffUser->getDisplayName() : null,
