@@ -26,7 +26,6 @@ class UserAspenEventInstanceRegistration extends DataObject {
 			'eventInstanceId',
 			'success',
 			'attended',
-			'cancelled',
 			'registeredByStaffId',
 		];
 	}

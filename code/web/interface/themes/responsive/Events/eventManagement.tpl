@@ -94,7 +94,6 @@
 									<th>{translate text="Patron Name" isAdminFacing=true}</th>
 									<th>{translate text="Barcode" isAdminFacing=true}</th>
 									<th>{translate text="Email" isAdminFacing=true}</th>
-									<th>{translate text="Status" isAdminFacing=true}</th>
 									<th>{translate text="Registered By" isAdminFacing=true}</th>
 									<th>{translate text="Date Registered" isAdminFacing=true}</th>
 									<th style="text-align: center;">{translate text="Attended" isAdminFacing=true}</th>
@@ -103,17 +102,10 @@
 							</thead>
 							<tbody>
 								{foreach from=$registrations item=reg}
-									<tr id="registration-row-{$reg.id}" class="{if $reg.cancelled}text-muted{/if}">
+									<tr id="registration-row-{$reg.id}">
 										<td>{$reg.userName|escape}</td>
 										<td>{$reg.userBarcode|escape}</td>
 										<td>{$reg.userEmail|escape}</td>
-										<td>
-											{if $reg.cancelled}
-												<span class="label label-danger">{translate text="Cancelled" isAdminFacing=true}</span>
-											{else}
-												<span class="label label-success">{translate text="Active" isAdminFacing=true}</span>
-											{/if}
-										</td>
 										<td>
 											{if $reg.registeredByStaff}
 												{$reg.staffName|escape}
@@ -123,22 +115,12 @@
 										</td>
 										<td>{$reg.dateRegistered|default:"-"}</td>
 										<td style="text-align: center;">
-											{if !$reg.cancelled}
-												<input type="checkbox" id="attended-{$reg.id}" {if $reg.attended}checked {/if}onchange="AspenDiscovery.Events.toggleAttendance({$reg.id}, this.checked);">
-											{else}
-												-
-											{/if}
+											<input type="checkbox" id="attended-{$reg.id}" {if $reg.attended}checked {/if}onchange="AspenDiscovery.Events.toggleAttendance({$reg.id}, this.checked);">
 										</td>
 										<td>
-											{if !$reg.cancelled}
-												<button type="button" class="btn btn-xs btn-danger" onclick="AspenDiscovery.Events.staffUnregisterUser({$eventInstanceId}, {$reg.userId});">
-													<i class="fas fa-times"></i> {translate text="Cancel" isAdminFacing=true}
-												</button>
-											{else}
-												<button type="button" class="btn btn-xs btn-success" onclick="AspenDiscovery.Events.staffReregisterUser({$eventInstanceId}, {$reg.userId});">
-													<i class="fas fa-undo"></i> {translate text="Restore" isAdminFacing=true}
-												</button>
-											{/if}
+											<button type="button" class="btn btn-xs btn-danger" onclick="AspenDiscovery.Events.staffUnregisterUser({$eventInstanceId}, {$reg.userId});">
+												<i class="fas fa-times"></i> {translate text="Cancel" isAdminFacing=true}
+											</button>
 										</td>
 									</tr>
 								{/foreach}
