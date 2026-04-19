@@ -160,7 +160,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 		echo str_repeat("=", 80) . "\n\n";
 
 		// Table header
-		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Status", 12) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
+		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
 		echo str_repeat("-", 137) . "\n";
 
 		foreach ($registrations as $registration) {
@@ -170,12 +170,11 @@ class Events_AttendanceManagement extends Admin_Admin {
 			$patronName = $user ? $user->getDisplayName() : 'Unknown';
 			$barcode = $user ? $user->ils_barcode : '';
 			$email = $user ? $user->email : '';
-			$status = $registration->cancelled ? 'Cancelled' : 'Active';
 			$registeredBy = $registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self';
 			$dateRegistered = $registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-';
 			$attended = '[ ]';
 
-			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($status, 12) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . $attended . "\n";
+			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . $attended . "\n";
 		}
 		exit;
 	}
@@ -201,7 +200,6 @@ class Events_AttendanceManagement extends Admin_Admin {
 			'Patron Name',
 			'Barcode',
 			'Email',
-			'Status', 
 			'Registered By',
 			'Date Registered',
 			'Attended'
@@ -221,7 +219,6 @@ class Events_AttendanceManagement extends Admin_Admin {
 				$user ? $user->getDisplayName() : 'Unknown',
 				$user ? $user->ils_barcode : '',
 				$user ? $user->email : '',
-				$registration->cancelled ? 'Cancelled' : 'Active',
 				$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
 				$registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-',
 				$registration->attended ? 'Yes' : 'No'
