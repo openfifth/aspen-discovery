@@ -148,7 +148,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();
-		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId, true);
 
 		header('Content-Type: text/plain');
 		header('Content-Disposition: attachment; filename="registrations_list_' . $eventInstanceId . '.txt"');
@@ -186,10 +186,10 @@ class Events_AttendanceManagement extends Admin_Admin {
 			return;
 		}
 
-		$parentEvent = $eventInstance->getParentEvent();	
-		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId, true);
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId);
 
-		$customFields = $this->getEventRegistrationFields($parentEvent);
+		$eventType = $eventInstance->getEventType();
+		$customFields = $eventType !== null ? $eventType->getFieldSetFieldsByUse(2) : [];
 
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
@@ -204,8 +204,8 @@ class Events_AttendanceManagement extends Admin_Admin {
 			'Date Registered',
 			'Attended'
 		];
-		
-		foreach ($customFields as $field) {
+
+		foreach ($customFields as $fieldId => $field) {
 			$headers[] = $field['label'];
 		}
 
@@ -224,9 +224,9 @@ class Events_AttendanceManagement extends Admin_Admin {
 				$registration->attended ? 'Yes' : 'No'
 			];
 
-			$customFieldValues = $this->getRegistrationFieldValues($registration->id);
-			foreach ($customFields as $field) {
-				$row[] = $customFieldValues[$field['id']] ?? '';
+			$customFieldValues = $registration->getCustomFieldValues();
+			foreach ($customFields as $fieldId => $field) {
+				$row[] = $customFieldValues[(int)$fieldId] ?? '';
 			}
 
 			fputcsv($output, $row);
@@ -236,73 +236,4 @@ class Events_AttendanceManagement extends Admin_Admin {
 		exit;
 	}
 
-	private function getEventRegistrationFields($event) {
-		global $logger;
-		$fields = [];
-
-		$fieldSetId = $event->eventRegistrationFieldSetId ?? null;
-		
-		if (empty($fieldSetId) && !empty($event->eventTypeId)) {
-			require_once ROOT_DIR . '/sys/Events/EventType.php';
-			$eventType = new EventType();
-			$eventType->id = $event->eventTypeId;
-			if ($eventType->find(true)) {
-				$fieldSetId = $eventType->eventRegistrationFieldSetId ?? null;
-			}
-		}
-
-
-		if (empty($fieldSetId)) {
-			return $fields;
-		}
-
-		require_once ROOT_DIR . '/sys/Events/EventFieldSet.php';
-		require_once ROOT_DIR . '/sys/Events/EventFieldSetField.php';
-		require_once ROOT_DIR . '/sys/Events/EventField.php';
-
-		$fieldSet = new EventFieldSet();
-		$fieldSet->id = $fieldSetId;
-
-		if ($fieldSet->find(true)) {
-			
-			$fieldSetField = new EventFieldSetField();
-			$fieldSetField->eventFieldSetId = $fieldSet->id;
-			$count = $fieldSetField->find();
-			
-			
-			while ($fieldSetField->fetch()) {
-				$eventField = new EventField();
-				$eventField->id = $fieldSetField->eventFieldId;
-				if ($eventField->find(true)) {
-					$fields[] = [
-						'id' => $eventField->id,
-						'label' => $eventField->name,
-						'fieldType' => $eventField->type
-					];
-				}
-			}
-		} else {
-			global $logger;
-			$logger->log("Field set not found with ID: " . $fieldSetId, Logger::LOG_ERROR);
-		}
-		return $fields;
-	}
-
-
-
-	private function getRegistrationFieldValues($registrationId) {
-		$values = [];
-
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
-
-		$registrationField = new UserAspenEventInstanceRegistrationEventField();
-		$registrationField->eventInstanceRegistrationId = $registrationId;
-		$count = $registrationField->find();
-		$logger->log("Looking for registration field values for registration ID: $registrationId, found $count records", Logger::LOG_ERROR);
-
-		while ($registrationField->fetch()) {
-			$values[$registrationField->eventFieldId] = $registrationField->value;
-		}
-		return $values;
-	}
 }
