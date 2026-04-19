@@ -15,6 +15,11 @@ class UserAspenEventInstanceRegistrationAttendee extends DataObject {
 		return ['registrationId', 'attendeeCategoryId', 'count'];
 	}
 
+	public static function deleteForRegistration(int $registrationId): void {
+		$attendee = new UserAspenEventInstanceRegistrationAttendee();
+		$attendee->registrationId = $registrationId;
+		$attendee->delete(true);
+	}
 
 	/**
 	 * Sum all attendee counts across all active registrations for an event instance.
