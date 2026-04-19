@@ -952,20 +952,28 @@ AspenDiscovery.Events = (function(){
 		},
 
 		confirmStaffRegistration: function() {
-			var eventInstanceId = $("#staffRegEventInstanceId").val();
-			var userId = $("#foundPatronId").val();
+			const eventInstanceId = $("#staffRegEventInstanceId").val();
+			const userId = $("#foundPatronId").val();
 
 			if (!eventInstanceId || !userId) {
 				AspenDiscovery.showMessage("Error", "Missing event or patron information.");
 				return;
 			}
 
-			var url = Globals.path + "/Events/AJAX";
-			var params = {
+			const url = Globals.path + "/Events/AJAX";
+			const params = {
 				method: 'staffRegisterUserForEvent',
 				eventInstanceId: eventInstanceId,
 				userId: userId
 			};
+
+			const attendeeCategoryInputs = document.querySelectorAll('#staffRegistrationModal input[name^="attendeeCategory["]');
+			for (const input of attendeeCategoryInputs) {
+				const count = parseInt(input.value, 10) || 0;
+				if (count > 0) {
+					params[input.name] = count;
+				}
+			}
 
 			$.getJSON(url, params, function(data) {
 				AspenDiscovery.showMessage(data.title, data.message, !data.success);

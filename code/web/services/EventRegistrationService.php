@@ -16,7 +16,7 @@ class EventRegistrationService {
 	 * @param int|null $staffUserId The staff user performing the registration (null for self-registration)
 	 * @return array Result with success status and message
 	 */
-	public static function registerUserForEvent(int $userId, int $eventInstanceId, ?int $staffUserId = null): array {
+	public static function registerUserForEvent(int $userId, int $eventInstanceId, ?int $staffUserId = null, array $attendeeCounts = []): array {
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
@@ -30,18 +30,27 @@ class EventRegistrationService {
 			return self::publicErrorResult(translate(['text' => 'User not found.', 'isPublicFacing' => true]));
 		}
 
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$validatedCounts = UserAspenEventInstanceRegistrationAttendee::validateAttendeeCounts($eventInstance, $attendeeCounts);
+		if ($validatedCounts === false) {
+			return self::publicErrorResult(translate(['text' => 'Invalid attendee counts. One or more categories exceed the allowed maximum.', 'isPublicFacing' => true]));
+		}
+
+		$requestedSeats = !empty($validatedCounts) ? array_sum($validatedCounts) : 1;
+
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
 
 		$waitingListInfo = $registration->getWaitingListInfo();
-		if (!self::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
+		if (!self::hasAvailableSeats($eventInstance, $requestedSeats) && !$waitingListInfo['canRegister']) {
 			return self::publicErrorResult(translate(['text' => 'This event is full. No seats available.', 'isPublicFacing' => true]));
 		}
 
 		$registration->registeredByStaffId = $staffUserId;
 
 		if ($registration->registerUser()) {
+			UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts);
 			self::saveToUserEvents($eventInstance, $userId, $staffUserId);
 			return [
 				'success' => true,
