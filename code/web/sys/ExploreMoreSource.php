@@ -45,20 +45,20 @@ class ExploreMoreSource extends DataObject {
 	}
 
 	public function getLibraries() {
-		   if (!is_array($this->libraries) || empty($this->libraries)) {
-			   $this->libraries = [];
-			   if ($this->id) {
-				   $obj = new ExploreMoreSourceLibrary();
-				   $obj->exploreMoreSourceId = $this->id;
-				   $obj->find();
-				   while ($obj->fetch()) {
-					   $this->libraries[] = (string)$obj->libraryId;
-				   }
-			   }
-		   }
-		   // Normalize and reindex
-		   $this->libraries = array_values(array_map('strval', $this->libraries));
-		   return $this->libraries;
+		if (!is_array($this->libraries) || empty($this->libraries)) {
+			$this->libraries = [];
+			if ($this->id) {
+				$obj = new ExploreMoreSourceLibrary();
+				$obj->exploreMoreSourceId = $this->id;
+				$obj->find();
+				while ($obj->fetch()) {
+					$this->libraries[] = (string)$obj->libraryId;
+				}
+			}
+		}
+		// Normalize and reindex
+		$this->libraries = array_values(array_map('strval', $this->libraries));
+		return $this->libraries;
 	}
 
 	public function getLocations() {

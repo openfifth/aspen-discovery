@@ -29,7 +29,7 @@ class ExploreMoreSourceGroup extends DataObject {
 		}
 		return $this->exploreMoreSources;
 	}
-  
+
 	/**
 	 * Ensure all ExploreMoreSource records are present as entries for this group
 	 */
