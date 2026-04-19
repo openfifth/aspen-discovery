@@ -2389,6 +2389,13 @@ class MyAccount_AJAX extends JSON_Action {
 			'success' => false,
 			'message' => ['Unable to renew all titles'],
 		];
+		$user = UserAccount::getLoggedInUser();
+		if ($user){
+			// Renew linked accounts as well if applicable
+			$renewResults = $user->renewAll(true);
+		} else {
+			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
+		}
 
 		global $interface;
 		$interface->assign('renew_message_data', $renewResults);
@@ -2414,7 +2421,7 @@ class MyAccount_AJAX extends JSON_Action {
 			]),
 			'modalBody' => $interface->fetch('Record/renew-results.tpl'),
 			'success' => $renewResults['success'],
-			'renewed' => $renewResults['Renewed'],
+			'renewed' => $renewResults['Renewed'] ?? 0,
 		];
 	}
 
@@ -11157,7 +11164,9 @@ class MyAccount_AJAX extends JSON_Action {
 		$patron->find();
 		$numResults = $patron->count();
 		if ($numResults == 1 && $patron->find(true)) {
-			if ($patron->isStaff()) {
+			if ($patron->id == UserAccount::getActiveUserId()) {
+				return $this->failureResult(null, 'Cannot transfer a list to yourself.');
+			}else if ($patron->isStaff()) {
 				$interface->assign('listId', $listId);
 				$interface->assign('newListOwner', $patron);
 				return [
@@ -11172,11 +11181,12 @@ class MyAccount_AJAX extends JSON_Action {
 							'isAdminFacing' => 'true',
 						]) . "</button>",
 				];
+			}else{
+				return $this->failureResult(null, 'Cannot transfer a list to the specified user.');
 			}
+		}else{
+			return $this->failureResult(null, 'User not found.');
 		}
-		return [
-			'success' => false
-		];
 	}
 
 	/** @noinspection PhpUnused */
@@ -11205,6 +11215,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$list->id = $listId;
 			if ($list->find(true)) {
 				$list->user_id = $user->id;
+				$list->listGroupId = -1;
 				if ($list->update()) {
 					require_once ROOT_DIR . '/sys/Email/Mailer.php';
 					$mailer = new Mailer();
