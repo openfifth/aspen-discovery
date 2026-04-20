@@ -5212,6 +5212,10 @@ class Koha extends AbstractIlsDriver {
 		$quickAddFields = array_flip(array_filter(explode('|', $quickAddRaw)));
 		$allowedFields = array_replace($quickAddFields, $mandatoryFields);
 
+		// branchcode is always required for patron creation regardless of syspref config
+		$allowedFields['branchcode'] = true;
+		$mandatoryFields['branchcode'] = true;
+
 		if (isset($allowedFields['password'])) {
 			$allowedFields['password2'] = true;
 		}
