@@ -5192,13 +5192,47 @@ class Koha extends AbstractIlsDriver {
 
 	public function getILSRegistrationFormStructure(string $mode): array {
 		if ($mode === AbstractIlsDriver::ILS_REG_MODE_STAFF) {
-			return $this->filterRegistrationFieldsBySysprefs(
-				$this->buildRegistrationFieldStructure('selfReg'),
-				'BorrowerMandatoryField',
-				'BorrowerUnwantedField'
-			);
+			return $this->buildStaffRegistrationFieldStructure();
 		}
 		return $this->getSelfRegistrationFields();
+	}
+
+	/**
+	 * Mirrors Koha's quick-add form: visible fields = BorrowerMandatoryField ∪ PatronQuickAddFields.
+	 * BorrowerMandatoryField entries are marked required.
+	 */
+	private function buildStaffRegistrationFieldStructure(): array {
+		$fields = $this->buildRegistrationFieldStructure('selfReg');
+
+		$mandatoryRaw = $this->getKohaSystemPreference('BorrowerMandatoryField');
+		$quickAddRaw = $this->getKohaSystemPreference('PatronQuickAddFields');
+
+		$mandatoryFields = array_flip(array_filter(explode('|', $mandatoryRaw)));
+		$quickAddFields = array_flip(array_filter(explode('|', $quickAddRaw)));
+		$allowedFields = array_replace($quickAddFields, $mandatoryFields);
+
+		if (isset($allowedFields['password'])) {
+			$allowedFields['password2'] = true;
+		}
+
+		foreach ($fields as $sectionKey => &$section) {
+			if (($section['type'] ?? '') !== 'section') {
+				continue;
+			}
+			foreach ($section['properties'] as $fieldKey => &$field) {
+				$fieldName = str_replace('borrower_', '', $fieldKey);
+				if (!array_key_exists($fieldName, $allowedFields)) {
+					unset($section['properties'][$fieldKey]);
+					continue;
+				}
+				$field['required'] = array_key_exists($fieldName, $mandatoryFields);
+			}
+			if (empty($section['properties'])) {
+				unset($fields[$sectionKey]);
+			}
+		}
+
+		return $fields;
 	}
 
 	public function registerPatronToILS(string $mode, array $input): array {
