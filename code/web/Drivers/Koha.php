@@ -5236,7 +5236,40 @@ class Koha extends AbstractIlsDriver {
 			}
 		}
 
+		// Patron category — always required for creation, not part of buildRegistrationFieldStructure
+		$categoryValues = $this->fetchPatronCategoryOptions();
+		$defaultCategory = $this->getKohaSystemPreference('PatronSelfRegistrationDefaultCategory');
+		$fields['categorySection'] = [
+			'property' => 'categorySection',
+			'type' => 'section',
+			'label' => 'Patron Category',
+			'hideInLists' => true,
+			'expandByDefault' => true,
+			'properties' => [
+				'category_id' => [
+					'property' => 'category_id',
+					'type' => 'enum',
+					'label' => 'Patron Category',
+					'values' => $categoryValues,
+					'default' => $defaultCategory,
+					'required' => true,
+				],
+			],
+		];
+
 		return $fields;
+	}
+
+	private function fetchPatronCategoryOptions(): array {
+		$response = $this->kohaApiUserAgent->get('/api/v1/patron_categories', 'koha.getPatronCategories');
+		if (!$response || $response['code'] !== 200 || !is_array($response['content'])) {
+			return [];
+		}
+		$options = [];
+		foreach ($response['content'] as $category) {
+			$options[$category['patron_category_id']] = $category['name'];
+		}
+		return $options;
 	}
 
 	public function registerPatronToILS(string $mode, array $input): array {
