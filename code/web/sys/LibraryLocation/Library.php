@@ -7015,4 +7015,20 @@ class Library extends DataObject {
 		}
 		return $this->_cloudSourceSettingId;
 	}
+
+	private null|bool|PalaceProjectSetting $_palaceProjectSettings = false;
+	public function getPalaceProjectSettings() : ?PalaceProjectSetting {
+		if ($this->_palaceProjectSettings === false) {
+			$this->_palaceProjectSettings = null;
+			if ($this->palaceProjectScopeId > 0) {
+				require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectScope.php';
+				$palaceProjectScope = new PalaceProjectScope();
+				$palaceProjectScope->id = $this->palaceProjectScopeId;
+				if ($palaceProjectScope->find(true)){
+					$this->_palaceProjectSettings = $palaceProjectScope->getSettings();
+				}
+			}
+		}
+		return $this->_palaceProjectSettings;
+	}
 }

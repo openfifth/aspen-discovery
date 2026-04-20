@@ -201,7 +201,7 @@ class ExploreMore {
 		if ($activeSection != 'websites') {
 			if (strlen($searchTerm) > 0) {
 				$exploreMoreOptions['sampleRecords']['websites'] = [];
-				/** @var SearchObject_ListsSearcher $searchObject */
+				/** @var SearchObject_WebsitesSearcher $searchObjectSolr */
 				$searchObjectSolr = SearchObjectFactory::initSearchObject('Websites');
 				$searchObjectSolr->init();
 				$searchObjectSolr->disableSpelling();
@@ -243,20 +243,33 @@ class ExploreMore {
 						];
 					}
 					foreach ($results['response']['docs'] as $doc) {
-						/** @var ListsRecordDriver $driver */
+						/** @var IndexRecordDriver $driver */
 						$driver = $searchObjectSolr->getRecordDriverForResult($doc);
-						$id = str_replace('WebResource:', '', $driver->getId());
 						if ($numCatalogResultsAdded < $this->numEntriesToAdd) {
-							//Add a link to the actual title
-							$exploreMoreOptions['sampleRecords']['websites'][] = [
-								'label' => $driver->getTitle(),
-								'description' => $driver->getTitle(),
-								'image' => $driver->getBookcoverUrl('medium'),
-								'link' => 'javascript:;',
-								'onclick' => "AspenDiscovery.WebBuilder.getWebResource('{$id}'); AspenDiscovery.Websites.trackUsage('{$driver->getId()}');",
-								'usageCount' => 1,
-								'openInNewWindow' => false,
-							];
+							if ($doc['recordtype'] == 'WebResource') {
+								$id = str_replace('WebResource:', '', $driver->getId());
+								//Add a link to the actual title
+								$exploreMoreOptions['sampleRecords']['websites'][] = [
+									'label' => $driver->getTitle(),
+									'description' => $driver->getTitle(),
+									'image' => $driver->getBookcoverUrl('medium'),
+									'link' => 'javascript:;',
+									'onclick' => "AspenDiscovery.WebBuilder.getWebResource('$id'); AspenDiscovery.Websites.trackUsage('{$driver->getId()}');",
+									'usageCount' => 1,
+									'openInNewWindow' => false,
+								];
+							}else{
+								//Add a link to the actual title
+								$exploreMoreOptions['sampleRecords']['websites'][] = [
+									'label' => $driver->getTitle(),
+									'description' => $driver->getTitle(),
+									'image' => $driver->getBookcoverUrl('medium'),
+									'link' => $driver->getLinkUrl(),
+									'onclick' => 'AspenDiscovery.Websites.trackUsage(' . $driver->getId() . ')',
+									'usageCount' => 1,
+									'openInNewWindow' => false,
+								];
+							}
 						}
 
 						$numCatalogResultsAdded++;

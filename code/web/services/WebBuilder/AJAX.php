@@ -1274,7 +1274,15 @@ class WebBuilder_AJAX extends JSON_Action {
 	function trackPlacardUsage() {
 		$id = $_REQUEST['id'];
 		$operation = $_REQUEST['operation'];
-		$authType = isset($_REQUEST['authType']) ? $_REQUEST['authType'] : null;
+		global $locationSingleton;
+		$authType = null;
+		if (UserAccount::isLoggedIn()) {
+			$authType = 'user';
+		} elseif ($locationSingleton && $locationSingleton->getActiveLocation() != null) {
+			$authType = 'library';
+		} else {
+			$authType = 'none';
+		}
 
 		require_once ROOT_DIR . '/sys/LocalEnrichment/Placard.php';
 		require_once ROOT_DIR . '/sys/WebBuilder/PlacardUsage.php';
@@ -1291,7 +1299,6 @@ class WebBuilder_AJAX extends JSON_Action {
 			$usage->month = $month;
 			$usage->instance = $instance;
 			$usage->placardName = $placardName;
-			$test_usage_find = $usage->find(true);
 			if ($usage->find(true)) {
 				if ($operation === 'view') {
 					$usage->timesShown++;

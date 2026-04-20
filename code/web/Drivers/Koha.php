@@ -1663,7 +1663,7 @@ class Koha extends AbstractIlsDriver {
 			$hasMorePages = true;
 			while ($hasMorePages) {
 				$checkedInParam = $checkedIn ? 'true' : 'false';
-				$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage;
+				$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage . "&_match=exact";
 				$extraHeaders = [
 					'Accept-Encoding: gzip, deflate',
 					'Content-Type: application/json',
@@ -3483,7 +3483,7 @@ class Koha extends AbstractIlsDriver {
 
 		if ($response) {
 			$holdResponse = $response['content'];
-			if ($response['code'] != 201) {
+			if ($response['code'] != 201 && $response['code'] != 204) {
 				if (isset($holdResponse['error'])){
 					$result['title'] = translate([
 						'text' => 'Hold frozen',

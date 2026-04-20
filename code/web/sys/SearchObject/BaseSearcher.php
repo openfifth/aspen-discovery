@@ -1865,6 +1865,8 @@ abstract class SearchObject_BaseSearcher {
 			$currentSessionId = session_id();
 			if ($search->session_id == $currentSessionId || $search->user_id == UserAccount::getActiveUserId()) {
 				// They do, deminify it to a new object.
+				//Init a search object to be sure dependencies (facets) are loaded
+				SearchObjectFactory::initSearchObject($search->searchSource);
 				$minSO = unserialize($search->search_object);
 				return SearchObjectFactory::deminify($minSO, $search);
 			} else {

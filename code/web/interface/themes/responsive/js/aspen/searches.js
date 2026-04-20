@@ -430,16 +430,38 @@ AspenDiscovery.Searches = (function(){
 
 		showAdvancedSearchFacetPopup: function (facetName) {
 			var cache = AspenDiscovery.Searches._advFacetCache;
-			if (cache[facetName]) {
-				var data = cache[facetName];
+			var show = function (data) {
 				AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.buttons);
+				// Pre-check the checkbox matching the currently selected value
+				var currentVal = aspenJQ('#facet-select-' + facetName).val();
+				if (currentVal) {
+					aspenJQ('.advFacetCheckbox').filter(function () {
+						return aspenJQ(this).attr('data-filter') === currentVal;
+					}).prop('checked', true);
+				}
+				// Enforce single-select: checking one unchecks all others.
+				// If the user clicks the already-checked item, keep it checked so Apply always has a valid selection.
+				aspenJQ('#modalDialog').off('change.advFacet').on('change.advFacet', '.advFacetCheckbox', function () {
+					if (aspenJQ(this).prop('checked')) {
+						aspenJQ('.advFacetCheckbox').not(this).prop('checked', false);
+					} else {
+						aspenJQ(this).prop('checked', true);
+					}
+				});
+				// Bind Apply button via event delegation (avoids inline onclick issues)
+				aspenJQ('#modalDialog').off('click.advFacetApply').on('click.advFacetApply', '.adv-facet-apply-btn', function () {
+					AspenDiscovery.Searches.applyAdvancedFacetSelections();
+				});
+			};
+			if (cache[facetName]) {
+				show(cache[facetName]);
 				return false;
 			}
 			var url = Globals.path + '/Search/AJAX?method=getAdvancedSearchFacetPopup&facetName=' + encodeURIComponent(facetName);
 			$.getJSON(url, function (data) {
 				if (data.success === true) {
 					cache[facetName] = data;
-					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.buttons);
+					show(data);
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
@@ -489,6 +511,30 @@ AspenDiscovery.Searches = (function(){
 					$("#advFacetSearchResults").html(data.message);
 				}
 			});
+		},
+
+		applyAdvancedFacetSelections: function () {
+			var $checked = aspenJQ('.advFacetCheckbox:checked').first();
+			if ($checked.length === 0) {
+				aspenJQ('#modalDialog').modal('hide');
+				return;
+			}
+			var filterValue = $checked.attr('data-filter');
+			var displayText = aspenJQ('<div/>').html($checked.attr('data-display')).text();
+			var facetName   = $checked.attr('data-facet');
+			var $select = aspenJQ('#facet-select-' + facetName);
+			if ($select.length === 0) {
+				aspenJQ('#modalDialog').modal('hide');
+				return;
+			}
+			$select.find('option.adv-facet-dynamic').remove();
+			$select.val(filterValue);
+			if ($select.val() !== filterValue) {
+				$select.append(aspenJQ('<option>', {value: filterValue, text: displayText, 'class': 'adv-facet-dynamic'}));
+				$select.val(filterValue);
+			}
+			$select.data('prevVal', filterValue);
+			aspenJQ('#modalDialog').modal('hide');
 		},
 
 		setAdvancedSearchFacetValue: function (el) {

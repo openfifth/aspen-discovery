@@ -217,6 +217,7 @@ class CurlWrapper {
 
 	public function curlSendPage(string $url, string $httpMethod, $body = null) {
 		$this->curl_connect($url);
+		curl_setopt($this->curl_connection, CURLOPT_CUSTOMREQUEST, null);
 		if ($httpMethod == 'GET') {
 			curl_setopt($this->curl_connection, CURLOPT_HTTPGET, true);
 		} elseif ($httpMethod == 'POST') {

@@ -8,6 +8,7 @@ AspenDiscovery.Lists = (function () {
 		editListAction: function () {
 			$('#listDescription,#listTitle,#FavEdit,.listViewButton').hide();
 			$('#listEditControls,#FavSave,.listEditButton').show();
+			AspenDiscovery.Lists.updateListEditFields();
 			const element = document.getElementById('listEditControls');
 			element.scrollIntoView();
 			return false;
@@ -24,6 +25,32 @@ AspenDiscovery.Lists = (function () {
 			$('#myListFormHead').trigger('submit');
 			AspenDiscovery.Account.loadListData();
 			return false;
+		},
+
+		updateListEditFields: function () {
+			let publicSwitch = $("#public");
+			let searchableSwitch = $("#searchable");
+			let displayListAuthorSwitch = $("#displayListAuthor");
+			if (publicSwitch.prop('checked')) {
+				if (searchableSwitch !== undefined) {
+					$('#searchableRow').show();
+					if (searchableSwitch.prop('checked')) {
+						$('#displayListAuthorRow').show();
+						if (displayListAuthorSwitch.prop('checked')) {
+							$('#customAuthorNameRow').show();
+						}else{
+							$('#customAuthorNameRow').hide();
+						}
+					}else{
+						$('#displayListAuthorRow').hide();
+						$('#customAuthorNameRow').hide();
+					}
+				}
+			}else{
+				$('#searchableRow').hide();
+				$('#displayListAuthorRow').hide();
+				$('#customAuthorNameRow').hide();
+			}
 		},
 
 		makeListPublicAction: function () {
@@ -367,7 +394,7 @@ AspenDiscovery.Lists = (function () {
 			var url = Globals.path + "/MyAccount/AJAX?method=listTransferProcess&listId=" + listId + "&userId=" + userId;
 			$.getJSON(url, function (data) {
 				if (data.success) {
-					window.location.href = Globals.path + "/MyAccount/MyList/" + listId;
+					window.location.href = Globals.path + "/MyAccount/Lists";
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message, false);
 				}
@@ -404,7 +431,7 @@ AspenDiscovery.Lists = (function () {
 			var url = Globals.path + "/MyAccount/AJAX?method=listGroupTransferProcess&listGroupId=" + listGroupId + "&userId=" + userId;
 			$.getJSON(url, function (data) {
 				if (data.success) {
-					window.location.href = Globals.path + "/MyAccount/Lists?groupId=" + listGroupId;
+					window.location.href = Globals.path + "/MyAccount/Lists";
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message, false);
 				}
@@ -435,13 +462,13 @@ AspenDiscovery.Lists = (function () {
 			return false;
 		},
 
-		listsTransferProcess: function (userId, prevUserId) {
+		listsTransferProcess: function (userId) {
 			$('#listTransferProcessBtn .fa-spinner').show();
 			$('#listTransferProcessBtn').prop('disabled', true);
-			var url = Globals.path + "/MyAccount/AJAX?method=listsTransferProcess&userId=" + userId + "&prevListOwner=" + prevUserId;
+			var url = Globals.path + "/MyAccount/AJAX?method=listsTransferProcess&userId=" + userId;
 			$.getJSON(url, function (data) {
 				if (data.success) {
-					window.location.href = Globals.path + "/MyAccount/Lists/";
+					window.location.href = Globals.path + "/MyAccount/Lists";
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message, false);
 				}
