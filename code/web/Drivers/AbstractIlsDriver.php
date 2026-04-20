@@ -1086,8 +1086,4 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	public function isPatronAccountLocked(User $patron, $fine): bool {
 		return false;
 	}
-
-	public function hasMandatorySelfRegistrationFields(): bool {
-		return false;
-	} 
 }
