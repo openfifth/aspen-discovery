@@ -11390,7 +11390,11 @@ class MyAccount_AJAX extends JSON_Action {
 					$results['message'] = "There was an error updating the list group owner: " . $listGroup->getLastError();
 				}
 			} else {
-				$results['message'] = "Could not locate the list group by id " . $listGroupId;
+				if ($listGroupId == -1) {
+					$results['message'] = "Cannot transfer the Unassigned List group.";
+				} else {
+					$results['message'] = "Could not locate the list group by id " . $listGroupId;
+				}
 			}
 		} else {
 			$results['message'] = "Could not locate a user by id " . $newListOwner;
