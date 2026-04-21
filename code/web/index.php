@@ -1269,39 +1269,24 @@ function loadModuleActionId() {
 	}catch (Exception $e) {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
-	try {
-		if ($library->AspenPWASettingId != -1)
+	
+	if ($library->AspenPWASettingId != -1)
+	{
+		$pwaAction = null;
+		$routes = array(
+			"/manifest.json" => "Manifest",
+			"/.well-known/assetlinks.json" => "AssetLinks",
+			"/firebase-messaging-sw.js" => "Firebase",
+			"/pwa-icon.png" => "Icon"
+		);
+		if(array_key_exists($requestURI, $routes))
 		{
-			if($requestURI == "/manifest.json") {
-				$_GET['module'] = "AspenPWA";
-				$_GET['action'] = "Manifest";
-				$_REQUEST['module'] = "AspenPWA";
-				$_REQUEST['action'] = "Manifest";
-			}
-			else if($requestURI == "/.well-known/assetlinks.json")
-			{
-				$_GET['module'] = "AspenPWA";
-				$_GET['action'] = "AssetLinks";
-				$_REQUEST['module'] = "AspenPWA";
-				$_REQUEST['action'] = "AssetLinks";
-			}
-			else if($requestURI == "/firebase-messaging-sw.js")
-			{
-				$_GET['module'] = "AspenPWA";
-				$_GET['action'] = "Firebase";
-				$_REQUEST['module'] = "AspenPWA";
-				$_REQUEST['action'] = "Firebase";
-			}
-			else if($requestURI == "/pwa-icon.png")
-			{
-				$_GET['module'] = "AspenPWA";
-				$_GET['action'] = "Icon";
-				$_REQUEST['module'] = "AspenPWA";
-				$_REQUEST['action'] = "Icon";
-			}
+			$action = $routes[$requestURI];
+			$_GET['module'] = "AspenPWA";
+			$_GET['action'] = $action;
+			$_REQUEST['module'] = "AspenPWA";
+			$_REQUEST['action'] = $action;
 		}
-	}catch (Exception $e) {
-		//TODO mirroring web builder here maybe we want to conditionally log something though?
 	}
 	//Correct some old actions
 	if (isset($_GET['action'])) {
