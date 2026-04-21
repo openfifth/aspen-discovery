@@ -31,10 +31,9 @@ self.addEventListener('fetch', event => {
 		if (cachedResponse !== undefined) {
 			// Cache hit, return the resource
 			return cachedResponse;
-		} else {
-			// Otherwise, go to the network
-			return fetch(event.request)
-		};
+		}
+		// Otherwise, go to the network
+		return fetch(event.request);
 	});
 });
 

@@ -1244,14 +1244,12 @@ class SystemAPI extends AbstractAPI {
 				'settings' => $settings->getFirebaseSettings(),
 			];
 		}
-		else 
-		{
-			http_response_code(404);
-			return [
-				'success' => false,
-				'error' => 'no settings found'
-			];
-		}
+		
+		http_response_code(404);
+		return [
+			'success' => false,
+			'error' => 'no settings found'
+		];
 	}
 
 	/** @noinspection PhpUnused */

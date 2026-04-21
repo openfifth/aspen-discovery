@@ -34,12 +34,10 @@ class AspenPWASetting extends DataObject {
 		{
 			return $settings;
 		}
-		else 
-		{
-			global $logger;
-			$logger->log("No Settings found for active library or no active library found", Logger::LOG_ERROR);
-			return null;
-		}
+		
+		global $logger;
+		$logger->log("No Settings found for active library or no active library found", Logger::LOG_ERROR);
+		return null;
 	}
 
 	static function getObjectStructure($context = ''): array {

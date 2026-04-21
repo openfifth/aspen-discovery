@@ -48,14 +48,7 @@ function initialize() {
 			appToken = currentToken;
 			let parser = new UAParser(window.navigator.userAgent);
 			let result = parser.getResult();
-			let modelName = result.device.vendor ? result.device.vendor + " " : "";
-			modelName += result.device.model ? result.device.model + " " : "";
-			modelName += result.os.name ? result.os.name + " " : "";
-			modelName += result.os.version ? result.os.version + " " : "";
-			modelName += result.cpu.architecture ? result.cpu.architecture + " " : "";
-			modelName += result.browser.name ? result.browser.name + " " : "";
-			modelName ||= "Unknown ";
-			modelName += "PWA";
+			let modelName = getModelName();
 			const postData = {
 				"pushToken": currentToken,
 				"deviceModel": modelName,
