@@ -12447,7 +12447,7 @@ class MyAccount_AJAX extends JSON_Action {
 			'isPublicFacing' => true,
 		]);
 		$message = translate([
-			'text' => 'You have been added to the waiting list for %1%. You are in position #%2%.',
+			'text' => "You have been added to the waiting list for %1%. You are in position #%2%. <br><br> To receive waiting list invites, make sure a contact email is saved to your account and that event email notifications are enabled in your preferences. Without both, your spot is held but, as we have no way to let you know when it is your turn to register you will not be able to access registration",
 			'isPublicFacing' => true,
 		]);
 		$result['message'] = str_replace(['%1%', '%2%'], [$event->title, $position], $message);
