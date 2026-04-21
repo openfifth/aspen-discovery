@@ -3477,7 +3477,7 @@ AspenDiscovery.Account = (function () {
 			}
 			$.getJSON(url, params, function(data) {
 				if (data.success) {
-					AspenDiscovery.showMessage(data.title, data.message, true, true);
+					AspenDiscovery.showMessage(data.title, data.message, false, true);
 				} else {
 					AspenDiscovery.showMessage(data.title, data.message);
 				}
