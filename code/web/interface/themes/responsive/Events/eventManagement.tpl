@@ -1,6 +1,6 @@
 {strip}
 <div id="main-content" class="col-md-12">
-	<h1>{translate text="Event Management" isAdminFacing=true}</h1>
+	<h1>{translate text="Event Attendance Management" isAdminFacing=true}</h1>
 
 	{if !empty($featureDisabled)}
 		<div class="alert alert-warning">
@@ -39,7 +39,7 @@
 									{/if}
 								</td>
 								<td>
-									<a href="/Events/EventManagement?eventInstanceId={$event.instanceId}" class="btn btn-sm btn-primary">
+									<a href="/Events/AttendanceManagement?eventInstanceId={$event.instanceId}" class="btn btn-sm btn-primary">
 										{translate text="Manage" isAdminFacing=true}
 									</a>
 								</td>
@@ -72,10 +72,12 @@
 					</div>
 
 					<div class="btn-group" style="margin-bottom: 15px;">
-						<button type="button" class="btn btn-primary" onclick="AspenDiscovery.Events.showStaffRegistrationModal({$eventInstanceId});">
-							<i class="fas fa-user-plus"></i> {translate text="Register Patron" isAdminFacing=true}
-						</button>
-						<a href="/Events/EventManagement" class="btn btn-default">
+						{if $canManageEventRegistration}
+							<button type="button" class="btn btn-primary" onclick="AspenDiscovery.Events.showStaffRegistrationModal({$eventInstanceId});">
+								<i class="fas fa-user-plus"></i> {translate text="Register Patron" isAdminFacing=true}
+							</button>
+						{/if}
+						<a href="/Events/AttendanceManagement" class="btn btn-default">
 							<i class="fas fa-arrow-left"></i> {translate text="Back to Event List" isAdminFacing=true}
 						</a>
 					</div>
