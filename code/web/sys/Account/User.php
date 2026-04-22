@@ -2554,6 +2554,11 @@ class User extends DataObject {
 			$accountSummary = $this->getCachedAccountSummary('ils');
 			$accountSummary->incrementNumberOfUnavailableHolds();
 			$accountSummary->markHoldsStale();
+
+			if (!empty($result['api']['action'])) {
+				$buttonText = $result['api']['text'] ?? "Go to Holds";
+				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
+			}
 		}
 		return $result;
 	}
@@ -3347,7 +3352,7 @@ class User extends DataObject {
 		return false;
 	}
 
-	public function canMasquerade() {
+	public function canMasquerade() : bool {
 		if (self::canClientIpUseMasquerade()) {
 			return $this->hasPermission([
 				'Masquerade as any user',
