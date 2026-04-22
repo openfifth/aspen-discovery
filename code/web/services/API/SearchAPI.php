@@ -3649,10 +3649,10 @@ class SearchAPI extends AbstractAPI {
 								if (!is_null($obj->manifestation) && !array_key_exists($obj->manifestation->format, $items[$recordKey]['itemList'])) {
 									$format = $obj->manifestation->format;
 									$items[$recordKey]['itemList'][$format]['key'] = $i;
-									$items[$recordKey]['itemList'][$format]['name'] = translate([
+									$items[$recordKey]['itemList'][$format]['name'] = strip_tags(translate([
 										'text' => $format,
 										'isPublicFacing' => true
-									]);
+									]));
 									$i++;
 								}
 							}
