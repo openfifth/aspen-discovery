@@ -8895,7 +8895,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		// save the user inputed registration information
 		foreach ($_REQUEST as $key => $value) {
-		    if (is_int($key)) {
+		    if (is_numeric($key)) {
 				$registration->saveEventFieldValue($key, $value); 
 		    }
 		}
