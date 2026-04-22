@@ -510,7 +510,7 @@ class EventInstance extends DataObject {
 		return true;
 	}
 
-	public function saveToUserEvents(int $userId): void {
+	public function saveToUserEvents(int $userId, int|null $savedByStaffId = null): void {
 		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
 		$setting = new AspenEventSetting();
 		if (!$setting->find(true)) {
@@ -532,6 +532,7 @@ class EventInstance extends DataObject {
 		$entry->title = mb_substr($event->title, 0, 50);
 		$entry->eventDate = strtotime($this->date . ' ' . $this->time);
 		$entry->regRequired = !empty($event->registrationRequired) ? 1 : 0;
+		$entry->savedByStaffId = $savedByStaffId;
 
 		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
 		$location = new Location();
