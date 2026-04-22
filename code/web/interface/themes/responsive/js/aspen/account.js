@@ -1248,12 +1248,16 @@ AspenDiscovery.Account = (function () {
 		// called by ReactivationDateForm when fn freezeHold above has promptForReactivationDate is set
 		doFreezeHoldWithReactivationDate: function (caller) {
 			var popUpBoxTitle = $(caller).text() || "Freezing Hold"; // freezing terminology can be customized, so grab text from click button: caller
+			var reactivateDate = $("#reactivationDate").val();
+			if (!reactivateDate) {
+				reactivateDate = $("#maxFreezeFormattedDate").val();
+			}
 			var params = {
 				'method': 'freezeHold'
 				, patronId: $('#patronId').val()
 				, recordId: $('#recordId').val()
 				, holdId: $("#holdId").val()
-				, reactivationDate: $("#reactivationDate").val()
+				, reactivationDate: reactivateDate
 				, isAlreadyFrozen: $("#isAlreadyFrozen").val()
 			};
 			var url = Globals.path + '/MyAccount/AJAX';
