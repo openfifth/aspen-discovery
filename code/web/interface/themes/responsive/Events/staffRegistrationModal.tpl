@@ -38,6 +38,12 @@
 		</div>
 	</div>
 
+	<div class="alert alert-info" role="info" aria-live="polite">
+		<div class="admin-message-text">
+			<p>Registering a patron to an event will add a 'Saved Event' to their account, allowing them to manage their registration.</p>
+		</div>
+	</div>
+
 	<div id="patronLookupError" class="alert alert-danger" style="display: none;"></div>
 </div>
 {/strip}
