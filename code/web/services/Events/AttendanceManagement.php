@@ -1,7 +1,7 @@
 <?php
 
 require_once ROOT_DIR . '/services/Admin/Admin.php';
-require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+require_once ROOT_DIR . '/services/EventRegistrationService.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 require_once ROOT_DIR . '/sys/Events/Event.php';
 
