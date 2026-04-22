@@ -62,6 +62,17 @@ function getAspenEventRegistrationUpdates() {
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Register Users for Events for All Locations'))",
 			]
 		], //staff_event_registration_permissions
+		'staff_patron_event_attendance_management_permissions' => [
+			'title' => 'Staff Event Registration Permissions',
+			'description' => 'Add permissions for staff to register users for Aspen native events',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Manage Patron Event Attendance for All Locations', 'Events', 55, 'Allows the user manage patron attendance for native events at all locations.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Manage Patron Event Attendance for Home Library Locations', 'Events', 56, 'Allows the user manage patron attendance for native events at home library locations.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Manage Patron Event Attendance for Home Location', 'Events', 57, 'Allows the user manage patron attendance for native events at home location.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Manage Patron Event Attendance for All Locations'))",
+			]
+		], //staff_patron_event_attendance_management_permissions
 		'staff_event_registration_library_setting' => [
 			'title' => 'Staff Event Registration Library Setting',
 			'description' => 'Add library setting to allow staff to register users for events',

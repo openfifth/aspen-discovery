@@ -5,7 +5,7 @@ require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 require_once ROOT_DIR . '/sys/Events/Event.php';
 
-class Events_EventManagement extends Admin_Admin {
+class Events_AttendanceManagement extends Admin_Admin {
 
 	function launch() {
 		global $interface;
@@ -21,15 +21,15 @@ class Events_EventManagement extends Admin_Admin {
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
 			$interface->assign('error', translate(['text' => 'Event not found.', 'isAdminFacing' => true]));
-			$this->display('eventManagement.tpl', 'Event Management');
+			$this->display('eventManagement.tpl', 'Attendance Management');
 			return;
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();
 
-		if (!EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
-			$interface->assign('error', translate(['text' => 'You do not have permission to manage registrations for this event.', 'isAdminFacing' => true]));
-			$this->display('eventManagement.tpl', 'Event Management');
+		if (!EventRegistrationService::canStaffManagePatronEventAttendance($parentEvent->locationId)) {
+			$interface->assign('error', translate(['text' => 'You do not have permission to manage patron attendance for this event.', 'isAdminFacing' => true]));
+			$this->display('eventManagement.tpl', 'Attendance Management');
 			return;
 		}
 
@@ -41,6 +41,7 @@ class Events_EventManagement extends Admin_Admin {
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
 		$interface->assign('availableSeats', $eventInstance->getAvailableSeats());
 		$interface->assign('registrationCount', $eventInstance->getRegistrationCount());
+		$interface->assign('canManageEventRegistration', EventRegistrationService::canStaffRegisterUsers($parentEvent->locationId));
 
 		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId);
 		$registrationData = [];
@@ -61,7 +62,7 @@ class Events_EventManagement extends Admin_Admin {
 		}
 		$interface->assign('registrations', $registrationData);
 
-		$this->display('eventManagement.tpl', 'Event Management - ' . $parentEvent->title);
+		$this->display('eventManagement.tpl', 'Attendance Management - ' . $parentEvent->title);
 	}
 
 	private function displayEventSelector(): void {
@@ -70,7 +71,7 @@ class Events_EventManagement extends Admin_Admin {
 
 		if (empty($library->allowStaffToRegisterUsersForEvents)) {
 			$interface->assign('featureDisabled', true);
-			$this->display('eventManagement.tpl', 'Event Management');
+			$this->display('eventManagement.tpl', 'Attendance Management');
 			return;
 		}
 
@@ -79,7 +80,7 @@ class Events_EventManagement extends Admin_Admin {
 		$interface->assign('upcomingEvents', $upcomingEvents);
 		$interface->assign('showEventSelector', true);
 
-		$this->display('eventManagement.tpl', 'Event Management');
+		$this->display('eventManagement.tpl', 'Attendance Management');
 	}
 
 	private function getUpcomingEventsForUser(): array {
@@ -98,7 +99,7 @@ class Events_EventManagement extends Admin_Admin {
 			$parentEvent = $eventInstance->getParentEvent();
 			if ($parentEvent && !$parentEvent->deleted && $parentEvent->registrationRequired) {
 				// Only show events with registration enabled that staff has location access to
-				if (EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
+				if (EventRegistrationService::canStaffManagePatronEventAttendance($parentEvent->locationId)) {
 					$events[] = [
 						'instanceId' => $eventInstance->id,
 						'title' => $parentEvent->title,
@@ -121,7 +122,7 @@ class Events_EventManagement extends Admin_Admin {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#events', 'Events');
-		$breadcrumbs[] = new Breadcrumb('/Events/EventManagement', 'Event Management');
+		$breadcrumbs[] = new Breadcrumb('/Events/AttendanceManagement', 'Attendance Management');
 		return $breadcrumbs;
 	}
 
@@ -130,10 +131,6 @@ class Events_EventManagement extends Admin_Admin {
 	}
 
 	function canView(): bool {
-		return  UserAccount::userHasPermission([
-			'Register Users for Events for All Locations',
-			'Register Users for Events for Home Library Locations',
-			'Register Users for Events for Home Location',
-		]);
+		return EventRegistrationService::canStaffManagePatronEventAttendance();
 	}
 }

@@ -737,7 +737,7 @@ class Events_AJAX extends JSON_Action {
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();
-		if (!EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
+		if (!EventRegistrationService::canStaffManagePatronEventAttendance($parentEvent->locationId)) {
 			return [
 				'success' => false,
 				'title' => translate(['text' => 'Permission Denied', 'isAdminFacing' => true]),
@@ -811,7 +811,7 @@ class Events_AJAX extends JSON_Action {
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();
-		if (!EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
+		if (!EventRegistrationService::canStaffManagePatronEventAttendance($parentEvent->locationId)) {
 			return [
 				'success' => false,
 				'title' => translate(['text' => 'Permission Denied', 'isAdminFacing' => true]),
