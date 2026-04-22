@@ -4389,6 +4389,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$aspenEventRegistration->eventInstanceId = $eventInstanceId;
 				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
 				$registeredByStaff = $registration && !empty($aspenEventRegistration->registeredByStaffId);
+				$savedByStaff = !empty($event->savedByStaffId);
 
 				require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 				$eventInstance = new EventInstance();
@@ -4450,6 +4451,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			if($nativeAspenEvent) {
 				$events[$entry->sourceId]['registeredByStaff'] = $registeredByStaff;
+				$events[$entry->sourceId]['savedByStaff'] = $savedByStaff;
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;

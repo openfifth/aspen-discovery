@@ -55,7 +55,7 @@ class EventRegistrationService {
 			$result['title'] = translate(['text' => 'Registration Successful', 'isPublicFacing' => true]);
 			$result['message'] = translate(['text' => 'User has been registered for this event.', 'isPublicFacing' => true]);
 
-			$eventInstance->saveToUserEvents($userId);
+			$eventInstance->saveToUserEvents($userId, $staffUserId);
 		} else {
 			$result['message'] = translate(['text' => 'Failed to create registration.', 'isPublicFacing' => true]);
 		}
