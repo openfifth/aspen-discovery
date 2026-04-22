@@ -33,6 +33,8 @@ class Events_AttendanceManagement extends Admin_Admin {
 			return;
 		}
 
+		global $library;
+
 		$interface->assign('eventInstanceId', $eventInstanceId);
 		$interface->assign('eventTitle', $parentEvent->title);
 		$interface->assign('eventDate', $eventInstance->date);
@@ -41,7 +43,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
 		$interface->assign('availableSeats', $eventInstance->getAvailableSeats());
 		$interface->assign('registrationCount', $eventInstance->getRegistrationCount());
-		$interface->assign('canManageEventRegistration', EventRegistrationService::canStaffRegisterUsers($parentEvent->locationId));
+		$interface->assign('canManageEventRegistration', $library->allowEventRegistration && $library->allowStaffToRegisterUsersForEvents && EventRegistrationService::canStaffRegisterUsers($parentEvent->locationId));
 
 		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId);
 		$registrationData = [];
@@ -67,13 +69,6 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 	private function displayEventSelector(): void {
 		global $interface;
-		global $library;
-
-		if (empty($library->allowStaffToRegisterUsersForEvents)) {
-			$interface->assign('featureDisabled', true);
-			$this->display('eventManagement.tpl', 'Attendance Management');
-			return;
-		}
 
 		$user = UserAccount::getLoggedInUser();
 		$upcomingEvents = $this->getUpcomingEventsForUser($user);
