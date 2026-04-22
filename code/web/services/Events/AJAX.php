@@ -559,7 +559,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function getStaffRegistrationModal(): array {
-		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 		if (empty($eventInstanceId)) {
@@ -611,7 +611,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function lookupPatronByBarcode(): array {
-		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		if (!EventRegistrationService::canStaffRegisterUsers()) {
 			return [
@@ -629,7 +629,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function staffRegisterUserForEvent(): array {
-		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 		$userId = $_REQUEST['userId'] ?? null;
@@ -670,7 +670,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function staffUnregisterUserFromEvent(): array {
-		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 		$userId = $_REQUEST['userId'] ?? null;
@@ -710,7 +710,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function getEventRegistrations(): array {
-		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 		if (empty($eventInstanceId)) {
@@ -773,7 +773,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function markAttendance(): array {
-		require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$registrationId = $_REQUEST['registrationId'] ?? null;
 		$attended = $_REQUEST['attended'] ?? null;

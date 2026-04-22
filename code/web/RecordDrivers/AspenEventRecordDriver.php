@@ -587,7 +587,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			$eventInstanceId = $eventObject->id;
 			$parentEvent = $eventObject->getParentEvent();
 			if ($parentEvent && $parentEvent->registrationRequired) {
-				require_once ROOT_DIR . '/sys/Events/EventRegistrationService.php';
+				require_once ROOT_DIR . '/services/EventRegistrationService.php';
 				$canStaffRegister = EventRegistrationService::canStaffManagePatronAttendanceForLocation($parentEvent->locationId);
 			}
 		}
