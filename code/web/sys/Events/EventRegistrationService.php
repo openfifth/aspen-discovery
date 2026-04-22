@@ -129,16 +129,51 @@ class EventRegistrationService {
 	}
 
 	/**
+	 * Check if a user has permission to view and manage patron event attendance
+	 * @return bool
+	 */
+	public static function canStaffManagePatronEventAttendance(): bool {
+		return UserAccount::userHasPermission([
+			'Manage Patron Event Attendance for All Locations',
+			'Manage Patron Event Attendance for Home Library Locations',
+			'Manage Patron Event Attendance for Home Location',
+		]);
+	}
+
+	/**
 	 * Check if staff can register users for a specific event location
 	 * @param int $locationId The location ID of the event
 	 * @return bool
 	 */
 	public static function canStaffRegisterUsersForLocation(int $locationId): bool {
+		return self::hasPermissionForLocation(
+			$locationId,
+			'Register Users for Events for All Locations',
+			'Register Users for Events for Home Library Locations',
+			'Register Users for Events for Home Location',
+		);
+	}
+
+	/**
+	 * Check if staff can view and manage patron event attendance for a specific event location
+	 * @param int $locationId The location ID of the event
+	 * @return bool
+	 */
+	public static function canStaffManagePatronAttendanceForLocation(int $locationId): bool {
+		return self::hasPermissionForLocation(
+			$locationId,
+			'Manage Patron Event Attendance for All Locations',
+			'Manage Patron Event Attendance for Home Library Locations',
+			'Manage Patron Event Attendance for Home Location',
+		);
+	}
+
+	private static function hasPermissionForLocation(int $locationId, string $systemLevelPermission, string $locationLevelPermission, string $libraryLevelPermission): bool {
 		if (!self::canStaffRegisterUsers()) {
 			return false;
 		}
 
-		if (UserAccount::userHasPermission('Register Users for Events for All Locations')) {
+		if (UserAccount::userHasPermission($systemLevelPermission)) {
 			return true;
 		}
 
@@ -147,13 +182,13 @@ class EventRegistrationService {
 			return false;
 		}
 
-		if (UserAccount::userHasPermission('Register Users for Events for Home Library Locations')) {
+		if (UserAccount::userHasPermission($libraryLevelPermission)) {
 			$patronLibrary = Library::getLibraryForLocation($user->homeLocationId);
 			$eventLibrary = Library::getLibraryForLocation($locationId);
 			return $patronLibrary && $eventLibrary && $patronLibrary->libraryId == $eventLibrary->libraryId;
 		}
 
-		if (UserAccount::userHasPermission('Register Users for Events for Home Location')) {
+		if (UserAccount::userHasPermission($locationLevelPermission)) {
 			if ($user->homeLocationId == $locationId) {
 				return true;
 			}
