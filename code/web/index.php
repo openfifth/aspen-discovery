@@ -1539,6 +1539,7 @@ function checkForMaliciouslyFormattedParameters(): void {
 }
 
 function checkForTooManyFailedLogins() : void {
+	global $logger;
 	$activeIP = IPAddress::getActiveIp();
 	$subnet = IPAddress::getIPAddressForIP($activeIP);
 
@@ -1557,6 +1558,7 @@ function checkForTooManyFailedLogins() : void {
 		if ($failedLogins->count() >= 5) {
 			http_response_code(403);
 			echo("<h1>Forbidden</h1><p><strong>We are unable to handle your request.</strong></p>");
+			$logger->log("Blocked request from " . IPAddress::getClientIP() . " for too many login attempts", Logger::LOG_ERROR);
 			die();
 		}
 		//Slow if we have more than 10 logins in 5 minutes
@@ -1565,6 +1567,7 @@ function checkForTooManyFailedLogins() : void {
 		$failedLogins->whereAdd('timestamp > ' . ($currentTime - 300));
 		if ($failedLogins->count() >= 10) {
 			sleep(10);
+			$logger->log("Delayed request from " . IPAddress::getClientIP() . " for too many login attempts", Logger::LOG_ERROR);
 		}
 	}catch (Exception $e) {
 		//This fails if the table has not been created, ignore
