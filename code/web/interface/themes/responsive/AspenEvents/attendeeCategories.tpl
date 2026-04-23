@@ -12,7 +12,8 @@
 						class="form-control"
 						min="0"
 						max="{$category->maxAttendees}"
-						value="0">
+						value="{$savedAttendeeCounts[$category->attendeeCategoryId]|default:0}"
+						{if $isRegistered || $userIsRegistered}disabled{/if}>
 					<span class="input-group-addon">/ {$category->maxAttendees}</span>
 				</div>
 			</div>
