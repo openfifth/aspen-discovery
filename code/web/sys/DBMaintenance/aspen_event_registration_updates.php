@@ -90,5 +90,13 @@ function getAspenEventRegistrationUpdates() {
 				"ALTER TABLE user_events_entry ADD COLUMN savedByStaffId INT DEFAULT NULL",
 			]
 		], //staff_event_registration_tracking
+		'patron_attendance_tracking' => [
+			'title' => 'Add Attended Column',
+			'description' => 'Add attended column to track patron attendance at events',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN attended TINYINT(1) DEFAULT NULL",
+			]
+		] //patron_attendance_tracking
 	];
 }
