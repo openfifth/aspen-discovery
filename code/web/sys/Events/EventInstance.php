@@ -159,7 +159,8 @@ class EventInstance extends DataObject {
 		UserAspenEventInstanceRegistration::deleteAllForEventInstance((int)$this->id);
 
 		if ($shouldNotify) {
-			$this->sendCancellationNotificationEmails([$this], $affectedUsersByStatus);
+			require_once ROOT_DIR . '/services/EventRegistrationService.php';
+			EventRegistrationService::sendCancellationNotificationEmails([$this], $affectedUsersByStatus);
 		}
 
 		return $softDeleteResult;
@@ -174,27 +175,6 @@ class EventInstance extends DataObject {
 			}
 		}
 		return $return;
-	}
-
-	private function formatEmailTemplateEventInstances(array $eventInstances): array {
-		require_once ROOT_DIR . '/sys/Events/Event.php';
-
-		$formatted = [];
-
-		foreach ($eventInstances as $instance) {
-			$event = new Event();
-			$event->id = $instance->eventId;
-			if (!$event->find(true)) {
-				continue;
-			}
-			$humanEventDate = DateUtils::formatHumanDate($instance->date);
-			$formatted[] = [
-				'eventTitle' => $event->title,
-				'eventDate' => $humanEventDate,
-				'eventTime' => $instance->time,
-			];
-		}
-		return $formatted;
 	}
 
 	function getParentEvent() : Event {
@@ -263,14 +243,6 @@ class EventInstance extends DataObject {
 		return $event->numberOfSeats;
 	}
 
-	public function getRegistrationCount(): int {
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->eventInstanceId = $this->id;
-		$registration->status = 'registered';
-		return $registration->count();
-	}
-
 	public function isWaitingListEnabled(): bool {
 		if ($this->waitingList !== null) {
 			return (bool)$this->waitingList;
@@ -290,113 +262,10 @@ class EventInstance extends DataObject {
 		return $event->waitingListNumberOfSeats;
 	}
 
-	public function getAvailableWaitingListSeats(): ?int {
-		$capacity = $this->getEffectiveWaitingListNumberOfSeats();
-		if ($capacity === null) {
-			return null;
-		}
-		return max(0, $capacity - $this->getWaitingListCount());
-	}
-
-	public function getRegistrationStatusMessage(bool $waitingListEnabled, bool $userOnWaitingList, bool $canRegister, int $waitingListPosition, bool $isEventFull, bool $isWaitingListFull): string {
-		if (!$waitingListEnabled) {
-			return "Registration available";
-		}
-
-		if ($userOnWaitingList) {
-			if ($canRegister) {
-				return "Registration available";
-			}
-			return "On waiting list - position " . $waitingListPosition;
-		}
-
-		if (!$isEventFull) {
-			return "Registration available";
-		}
-
-		if (!$isWaitingListFull) {
-			return "Waiting List available";
-		}
-
-		return "Registration unavailable";
-	}
-
-	public function getRegistrationAction(bool $isRegistered, bool $isEventFull, bool $waitingListEnabled, bool $userOnWaitingList, bool $canRegister, bool $isWaitingListFull): string {
-		if ($isRegistered) {
-			return 'registered';
-		}
-
-		if (!$isEventFull) {
-			return 'registrationAvailable';
-		}
-
-		if (!$waitingListEnabled) {
-			return 'eventFull';
-		}
-
-		if ($userOnWaitingList && $canRegister) {
-			return 'completeRegistration';
-		}
-
-		if ($userOnWaitingList) {
-			return 'showPosition';
-		}
-
-		if (!$isWaitingListFull) {
-			return 'joinWaitingList';
-		}
-
-		return 'eventFull';
-	}
-
-
-	public function getAvailableSeats(): ?int {
-		$capacity = $this->getEffectiveNumberOfSeats();
-		if ($capacity === null) {
-			return null;
-		}
-
-		// If anyone is queued on the waiting list, block direct registration — new users must join the queue
-		$waitingListCount = $this->getWaitingListCount();
-		if ($waitingListCount > 0) {
-			return 0;
-		}
-
-		return max(0, $capacity - $this->getRegistrationCount());
-	}
-
-	public function hasAvailableSeats(int $requestedSeats = 1): bool {
-		$capacity = $this->getEffectiveNumberOfSeats();
-		if ($capacity === null) {
-			return true;
-		}
-		$available = $this->getAvailableSeats();
-		return $available >= $requestedSeats;
-	}
-
-
 	public function getDisplayWaitingListSeats(): string {
-		if ($this->deleted) {
-			return '—';
-		}
-
-		$totalSeats = $this->getEffectiveWaitingListNumberOfSeats();
-		if ($totalSeats === null) {
-			return 'Available';
-		}
-
-		$available = $this->getAvailableWaitingListSeats();
-		return "{$available} / {$totalSeats}";
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		return EventRegistrationService::getDisplayWaitingListSeats($this);
 	}
-
-	public function getWaitingListCount(): int {
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->eventInstanceId = $this->id;
-		$registration->whereAdd('status IN ("waiting", "invited")');
-		return $registration->count();
-	}
-
 
 	public function isUpcoming(): bool {
 		if (empty($this->date) || empty($this->time)) {
@@ -413,149 +282,6 @@ class EventInstance extends DataObject {
 		$cutoffDate = $query->escape(date('Y-m-d'));
 		$cutoffTime = $query->escape(date('H:i:s'));
 		$query->whereAdd("(date > $cutoffDate OR (date = $cutoffDate AND time > $cutoffTime))");
-	}
-
-	public function isWaitingListFull(): bool {
-		$capacity = $this->getEffectiveWaitingListNumberOfSeats();
-		if ($capacity === null) {
-			return false;
-		}
-		return $this->getWaitingListCount() >= $capacity;
-	}
-
-	public function inviteNextOnWaitingList(): bool {
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		require_once ROOT_DIR . '/sys/Account/User.php';
-		global $logger;
-
-		$candidateIds = UserAspenEventInstanceRegistration::getWaitingRowIdsForInstance((int)$this->id);
-
-		foreach ($candidateIds as $candidateId) {
-			$candidate = new UserAspenEventInstanceRegistration();
-			$candidate->id = $candidateId;
-			if (!$candidate->find(true)) {
-				continue;
-			}
-
-			$user = new User();
-			$user->id = $candidate->userId;
-			if (!$user->find(true)) {
-				$candidate->delete();
-				$logger->log("Waiting list candidate removed — user {$candidate->userId} not found (instance {$this->id})", Logger::LOG_WARNING);
-				continue;
-			}
-
-			if (!$user->canReceiveEventNotifications()) {
-				$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$this->id})", Logger::LOG_WARNING);
-				continue;
-			}
-
-			$candidate->status = 'invited';
-			$candidate->notifiedAt = date('Y-m-d H:i:s');
-			$candidate->update();
-
-			$this->sendEventInstanceRegistrationInvitation((int)$candidate->userId);
-			return true;
-		}
-
-		return false;
-	}
-
-	private function sendEventInstanceRegistrationInvitation(int $userId): void {
-		$event = $this->getParentEvent();
-
-		$homeLibrary = Library::getPatronHomeLibrary();
-		if (is_null($homeLibrary)) {
-			global $library;
-			$homeLibrary = $library;
-		}
-
-		$this->sendEventEmail($userId, 'registerForEventFromWaitingList', [
-			'eventDate' => DateUtils::formatHumanDate($this->date),
-			'eventTime' => $this->time,
-			'eventTitle' => $event->title,
-			'library' => $homeLibrary,
-		]);
-	}
-
-	public function sendEventEmail(int $userId, string $templateName, array $parameters): bool {
-		require_once ROOT_DIR . '/sys/Email/Mailer.php';
-		require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
-		global $logger;
-
-		$emailTemplate = EmailTemplate::getActiveTemplate($templateName);
-		if (!$emailTemplate) {
-			$logger->log("Unable to find email template: $templateName", Logger::LOG_ERROR);
-			return false;
-		}
-		
-		$user = new User();
-		$user->id = $userId;
-		if (!$user->find(true)) {
-			$logger->log("$templateName email skipped — user $userId not found", Logger::LOG_ERROR);
-			return false;
-		}
-
-		if (!$user->canReceiveEventNotifications()) {
-			return false;
-		}
-
-		$parameters['user'] = $user;
-
-		$sent = $emailTemplate->sendEmail($user->email, $parameters);
-		if (!$sent) {
-			$logger->log("$templateName email failed to send for user $userId", Logger::LOG_ERROR);
-			return false;
-		}
-		return true;
-	}
-
-	public function saveToUserEvents(int $userId, int|null $savedByStaffId = null): void {
-		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
-		$setting = new AspenEventSetting();
-		if (!$setting->find(true)) {
-			return;
-		}
-
-		$sourceId = 'aspenEvent_' . $setting->id . '_' . $this->id;
-
-		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
-		$entry = new UserEventsEntry();
-		$entry->sourceId = $sourceId;
-		$entry->userId = $userId;
-		if ($entry->find(true)) {
-			return;
-		}
-
-		$event = $this->getParentEvent();
-
-		$entry->title = mb_substr($event->title, 0, 50);
-		$entry->eventDate = strtotime($this->date . ' ' . $this->time);
-		$entry->regRequired = !empty($event->registrationRequired) ? 1 : 0;
-		$entry->savedByStaffId = $savedByStaffId;
-
-		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
-		$location = new Location();
-		$location->locationId = $event->locationId;
-		$entry->location = $location->find(true) ? $location->displayName : '';
-
-		$entry->dateAdded = time();
-		$entry->insert();
-	}
-
-	public function sendCancellationNotificationEmails(array $upcomingInstances, array $affectedUsersByStatus): void {
-		if (empty($upcomingInstances) || empty($affectedUsersByStatus)) {
-			return;
-		}
-		$formattedInstances = $this->formatEmailTemplateEventInstances($upcomingInstances);
-		foreach ($affectedUsersByStatus as $status => $userIds) {
-			foreach ($userIds as $userId) {
-				$this->sendEventEmail($userId, 'eventCancellation', [
-					'instances' => $formattedInstances,
-					'status' => $status,
-				]);
-			}
-		}
 	}
 
 }
