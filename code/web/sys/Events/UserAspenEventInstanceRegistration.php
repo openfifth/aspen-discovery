@@ -10,6 +10,7 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public $createdAt;
 	public $notifiedAt;
 	public $registeredByStaffId;
+	public $attended;
 
 	const VALID_STATUSES = ['waiting', 'invited', 'registered'];
 
@@ -25,6 +26,7 @@ class UserAspenEventInstanceRegistration extends DataObject {
 			'userId',
 			'eventInstanceId',
 			'registeredByStaffId',
+			'attended'
 		];
 	}
 
