@@ -552,13 +552,13 @@ class Event extends DataObject {
 			throw new InvalidArgumentException('Event::delete does not support $useWhere = true. Delete events individually.');
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-
 		$upcomingInstances = $this->getUpcomingInstances();
 		$upcomingInstanceIds = [];
 		foreach ($upcomingInstances as $upcomingInstance) {
 			$upcomingInstanceIds[] = (int)$upcomingInstance->id;
 		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$affectedUsersByStatus = UserAspenEventInstanceRegistration::getUsersGroupedByStatusForInstances($upcomingInstanceIds);
 
 		$this->deleted = 1;
@@ -576,8 +576,8 @@ class Event extends DataObject {
 			}
 		}
 
-		$instanceForNotification = new EventInstance();
-		$instanceForNotification->sendCancellationNotificationEmails($upcomingInstances, $affectedUsersByStatus);
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		EventRegistrationService::sendCancellationNotificationEmails($upcomingInstances, $affectedUsersByStatus);
 
 		return $softDeleteResult;
 	}

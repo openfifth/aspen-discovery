@@ -5,6 +5,7 @@ require_once __DIR__ . '/../bootstrap_aspen.php';
 require_once ROOT_DIR . '/sys/CronLogEntry.php';
 require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 // prevent a new run from starting if the previous has not terminated.
 $lockFile = sys_get_temp_dir() . '/aspen_event_registration_invitations.lock';
@@ -54,7 +55,7 @@ foreach (array_keys($affectedInstanceIds) as $eventInstanceId) {
 	if (!$eventInstance->find(true)) {
 		continue;
 	}
-	if ($eventInstance->inviteNextOnWaitingList()) {
+	if (EventRegistrationService::inviteNextOnWaitingList($eventInstance)) {
 		$invitedCount++;
 	}
 }

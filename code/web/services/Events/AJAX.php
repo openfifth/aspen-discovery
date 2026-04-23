@@ -563,7 +563,6 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function getStaffRegistrationModal(): array {
-		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 		if (empty($eventInstanceId)) {
@@ -586,6 +585,8 @@ class Events_AJAX extends JSON_Action {
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();
+
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 		if (!EventRegistrationService::canStaffRegisterUsersForLocation($parentEvent->locationId)) {
 			return [
 				'success' => false,
@@ -594,14 +595,15 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		global $interface;
 		$interface->assign('eventInstanceId', $eventInstanceId);
 		$interface->assign('eventTitle', $parentEvent->title);
 		$interface->assign('eventDate', $eventInstance->date);
 		$interface->assign('eventTime', $eventInstance->time);
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
-		$interface->assign('availableSeats', $eventInstance->getAvailableSeats());
-		$interface->assign('registrationCount', $eventInstance->getRegistrationCount());
+		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
+		$interface->assign('registrationCount', UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id));
 
 		return [
 			'success' => true,
@@ -745,7 +747,8 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 
-		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId);
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId);
 
 		$registrationData = [];
 		foreach ($registrations as $registration) {
@@ -768,7 +771,7 @@ class Events_AJAX extends JSON_Action {
 			'success' => true,
 			'registrations' => $registrationData,
 			'totalCount' => count($registrationData),
-			'availableSeats' => $eventInstance->getAvailableSeats(),
+			'availableSeats' => EventRegistrationService::getAvailableSeats($eventInstance),
 			'numberOfSeats' => $eventInstance->getEffectiveNumberOfSeats(),
 		];
 	}
