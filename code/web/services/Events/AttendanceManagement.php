@@ -140,6 +140,18 @@ class Events_AttendanceManagement extends Admin_Admin {
 		return EventRegistrationService::canStaffManagePatronEventAttendance();
 	}
 
+	private function buildBaseRegistrationRow(UserAspenEventInstanceRegistration $registration): array {
+		$user = $registration->getUser();
+		$staffUser = $registration->getStaffUser();
+		return [
+			$user ? $user->getDisplayName() : 'Unknown',
+			$user ? $user->ils_barcode : '',
+			$user ? $user->email : '',
+			$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
+			$registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : '-',
+		];
+	}
+
 	private function downloadRegistrationsList($eventInstanceId) {
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
@@ -159,22 +171,12 @@ class Events_AttendanceManagement extends Admin_Admin {
 		echo "Total Registrations: " . count($registrations) . "\n";
 		echo str_repeat("=", 80) . "\n\n";
 
-		// Table header
 		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
 		echo str_repeat("-", 137) . "\n";
 
 		foreach ($registrations as $registration) {
-			$user = $registration->getUser();
-			$staffUser = $registration->getStaffUser();
-
-			$patronName = $user ? $user->getDisplayName() : 'Unknown';
-			$barcode = $user ? $user->ils_barcode : '';
-			$email = $user ? $user->email : '';
-			$registeredBy = $registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self';
-			$dateRegistered = $registration->dateRegistered ? date('Y-m-d H:i', $registration->dateRegistered) : '-';
-			$attended = '[ ]';
-
-			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . $attended . "\n";
+			[$patronName, $barcode, $email, $registeredBy, $dateRegistered] = $this->buildBaseRegistrationRow($registration);
+			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . "[ ]\n";
 		}
 		exit;
 	}
@@ -197,14 +199,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 		$output = fopen('php://output', 'w');
 
-		$headers = [
-			'Patron Name',
-			'Barcode',
-			'Email',
-			'Registered By',
-			'Date Registered',
-			'Attended'
-		];
+		$headers = ['Patron Name', 'Barcode', 'Email', 'Registered By', 'Date Registered', 'Attended'];
 
 		foreach ($customFields as $fieldId => $field) {
 			$headers[] = $field['label'];
@@ -220,17 +215,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 		fputcsv($output, $headers);
 
 		foreach ($registrations as $registration) {
-			$user = $registration->getUser();
-			$staffUser = $registration->getStaffUser();
-
-			$row = [
-				$user ? $user->getDisplayName() : 'Unknown',
-				$user ? $user->ils_barcode : '',
-				$user ? $user->email : '',
-				$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
-				$registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : '-',
-				$registration->attended ? 'Yes' : 'No'
-			];
+			$row = [...$this->buildBaseRegistrationRow($registration), $registration->attended ? 'Yes' : 'No'];
 
 			$customFieldValues = $registration->getCustomFieldValues();
 			foreach ($customFields as $fieldId => $field) {
