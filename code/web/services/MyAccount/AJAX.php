@@ -4427,6 +4427,12 @@ class MyAccount_AJAX extends JSON_Action {
 					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
 					$savedRegistrationFieldValues = UserAspenEventInstanceRegistrationEventField::getValuesForRegistration((int)$aspenEventRegistration->id);
 				}
+
+				$savedAttendeeCounts = [];
+				if ($registration && $aspenEventRegistration->id) {
+					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+					$savedAttendeeCounts = UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$aspenEventRegistration->id);
+				}
 			} else {
 				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
 			}
@@ -4466,6 +4472,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['registeredByStaff'] = $registeredByStaff;
 				$events[$entry->sourceId]['savedByStaff'] = $savedByStaff;
 				$events[$entry->sourceId]['savedRegistrationFieldValues'] = $savedRegistrationFieldValues;
+				$events[$entry->sourceId]['savedAttendeeCounts'] = $savedAttendeeCounts;
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;
