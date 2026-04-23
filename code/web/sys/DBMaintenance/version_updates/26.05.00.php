@@ -171,10 +171,10 @@ function migrateMaterialsRequestTitleData(): void {
 				&& !empty(trim($row['author'] ?? ''))
 			) {
 				$stmt = $aspen_db->prepare(
-					"SELECT id FROM materials_request_title
-          					WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title,  '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
-          					AND LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(author, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :author
-          					LIMIT 1"
+					"SELECT id FROM materials_request_title 
+					WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title,  '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title 
+					AND LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(author, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :author
+					LIMIT 1"
 				);
 				$stmt->execute([
 					':title'  => normalizeAuthorTitleString($row['title']),
@@ -190,8 +190,8 @@ function migrateMaterialsRequestTitleData(): void {
 			if ($titleId === null && !empty(trim($row['title'] ?? ''))) {
 				$stmt = $aspen_db->prepare(
 					"SELECT id FROM materials_request_title
-          					WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
-          					LIMIT 1"
+					WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
+					LIMIT 1"
 				);
 				$stmt->execute([':title' => normalizeAuthorTitleString($row['title'])]);
 				$existing = $stmt->fetch(PDO::FETCH_ASSOC);
