@@ -1,7 +1,6 @@
 <?php
 
 require_once ROOT_DIR . '/services/Admin/Admin.php';
-require_once ROOT_DIR . '/services/EventRegistrationService.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 require_once ROOT_DIR . '/sys/Events/Event.php';
 
@@ -25,14 +24,15 @@ class Events_AttendanceManagement extends Admin_Admin {
 			return;
 		}
 
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 		$parentEvent = $eventInstance->getParentEvent();
-
 		if (!EventRegistrationService::canStaffManagePatronEventAttendance($parentEvent->locationId)) {
 			$interface->assign('error', translate(['text' => 'You do not have permission to manage patron attendance for this event.', 'isAdminFacing' => true]));
 			$this->display('eventManagement.tpl', 'Attendance Management');
 			return;
 		}
 
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		global $library;
 
 		$interface->assign('eventInstanceId', $eventInstanceId);
@@ -41,11 +41,11 @@ class Events_AttendanceManagement extends Admin_Admin {
 		$interface->assign('eventTime', $eventInstance->time);
 		$interface->assign('eventLocation', $eventInstance->getLocation());
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
-		$interface->assign('availableSeats', $eventInstance->getAvailableSeats());
-		$interface->assign('registrationCount', $eventInstance->getRegistrationCount());
+		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
+		$interface->assign('registrationCount', UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id));
 		$interface->assign('canManageEventRegistration', $library->allowEventRegistration && $library->allowStaffToRegisterUsersForEvents && EventRegistrationService::canStaffRegisterUsers($parentEvent->locationId));
 
-		$registrations = EventRegistrationService::getRegistrationsForEvent((int)$eventInstanceId);
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId);
 		$registrationData = [];
 		foreach ($registrations as $registration) {
 			$user = $registration->getUser();
@@ -69,9 +69,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 	private function displayEventSelector(): void {
 		global $interface;
-
-		$user = UserAccount::getLoggedInUser();
-		$upcomingEvents = $this->getUpcomingEventsForUser($user);
+		$upcomingEvents = $this->getUpcomingEventsForUser();
 		$interface->assign('upcomingEvents', $upcomingEvents);
 		$interface->assign('showEventSelector', true);
 
@@ -79,13 +77,14 @@ class Events_AttendanceManagement extends Admin_Admin {
 	}
 
 	private function getUpcomingEventsForUser(): array {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+
 		$events = [];
-		$todayDate = date('Y-m-d');
-		$todayTime = date('H:i:s');
 
 		$eventInstance = new EventInstance();
 		$eventInstance->whereAdd("(deleted IS NULL OR deleted = 0)");
-		$eventInstance->whereAdd("(date > '$todayDate' OR (date = '$todayDate' AND time > '$todayTime'))");
+		EventInstance::addUpcomingWhereClause($eventInstance);
 		$eventInstance->orderBy('date ASC, time ASC');
 		$eventInstance->limit(0, 100);
 
@@ -101,8 +100,8 @@ class Events_AttendanceManagement extends Admin_Admin {
 						'date' => $eventInstance->date,
 						'time' => $eventInstance->time,
 						'location' => $eventInstance->getLocation(),
-						'registrationCount' => $eventInstance->getRegistrationCount(),
-						'availableSeats' => $eventInstance->getAvailableSeats(),
+						'registrationCount' => UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id),
+						'availableSeats' => EventRegistrationService::getAvailableSeats($eventInstance),
 						'numberOfSeats' => $eventInstance->getEffectiveNumberOfSeats(),
 						'registrationRequired' => (bool)$parentEvent->registrationRequired,
 					];
@@ -126,6 +125,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 	}
 
 	function canView(): bool {
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 		return EventRegistrationService::canStaffManagePatronEventAttendance();
 	}
 }
