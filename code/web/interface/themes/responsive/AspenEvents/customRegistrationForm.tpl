@@ -4,6 +4,9 @@
 			{foreach from=$registrationFormStructure item=property}
 				{if is_array($property) && isset($property.property) && isset($property.type)}
 					{$property.readOnly = $isRegistered}
+					{if isset($savedRegistrationFieldValues[$property.fieldId])}
+						{$property.default = $savedRegistrationFieldValues[$property.fieldId]}
+					{/if}
 					{include file="DataObjectUtil/property.tpl"}
 				{/if}
 			{/foreach}
