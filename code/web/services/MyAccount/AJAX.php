@@ -4150,18 +4150,19 @@ class MyAccount_AJAX extends JSON_Action {
 				$eventInstance = new EventInstance();
 				$eventInstance->id = $eventInstanceId;
 				if ($eventInstance->find(true)) {
+					require_once ROOT_DIR . '/services/EventRegistrationService.php';
 					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
-					$availableSeats = $eventInstance->getAvailableSeats();
-					$eventFull = !$eventInstance->hasAvailableSeats();
+					$availableSeats = EventRegistrationService::getAvailableSeats($eventInstance);
+					$eventFull = !EventRegistrationService::hasAvailableSeats($eventInstance);
 					$waitingList = $eventInstance->isWaitingListEnabled();
 					$waitingListNumberOfSeats = $eventInstance->getEffectiveWaitingListNumberOfSeats();
-					
+
 					$userOnWaitingList = false;
 					$userWaitingListPosition = null;
 					$userCanRegisterFromWaitingList = false;
-					
-					if (!$waitingList || $eventInstance->getWaitingListCount() === 0) {
-						$userCanRegisterFromWaitingList = $eventInstance->hasAvailableSeats();
+
+					if (!$waitingList || UserAspenEventInstanceRegistration::getWaitingListCount($eventInstance->id) === 0) {
+						$userCanRegisterFromWaitingList = EventRegistrationService::hasAvailableSeats($eventInstance);
 					} else {
 						$waitingListInfo = $aspenEventRegistration->getWaitingListInfo();
 						$userOnWaitingList = $waitingListInfo['onWaitingList'];
@@ -4210,16 +4211,16 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;
-				$events[$entry->sourceId]['isEventFull'] = !$eventInstance->hasAvailableSeats();
+				$events[$entry->sourceId]['isEventFull'] = !EventRegistrationService::hasAvailableSeats($eventInstance);
 				$events[$entry->sourceId]['waitingList'] = $waitingList;
 				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
 				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
 				$events[$entry->sourceId]['userWaitingListPosition'] = $userWaitingListPosition;
 				$events[$entry->sourceId]['userCanRegisterFromWaitingList'] = $userCanRegisterFromWaitingList;
-				$isWaitingListFull = $eventInstance->isWaitingListFull();
+				$isWaitingListFull = EventRegistrationService::isWaitingListFull($eventInstance);
 				$events[$entry->sourceId]['waitingListFull'] = $isWaitingListFull;
-				$events[$entry->sourceId]['registrationStatusMessage'] = $eventInstance->getRegistrationStatusMessage($waitingList, $userOnWaitingList, $userCanRegisterFromWaitingList, $userWaitingListPosition ?? 0, $eventFull, $isWaitingListFull);
-				$events[$entry->sourceId]['registrationAction'] = $eventInstance->getRegistrationAction(
+				$events[$entry->sourceId]['registrationStatusMessage'] = EventRegistrationService::getRegistrationStatusMessage($waitingList, $userOnWaitingList, $userCanRegisterFromWaitingList, $userWaitingListPosition ?? 0, $eventFull, $isWaitingListFull);
+				$events[$entry->sourceId]['registrationAction'] = EventRegistrationService::getRegistrationAction(
 					$registration,
 					$eventFull,
 					$waitingList,
@@ -8299,7 +8300,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 			global $interface;
 			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
-			$available = $eventInstance->getAvailableSeats();
+			require_once ROOT_DIR . '/services/EventRegistrationService.php';
+			$available = EventRegistrationService::getAvailableSeats($eventInstance);
 
 			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 			$aspenEventInstanceUserRegistration = new UserAspenEventInstanceRegistration();
@@ -8309,7 +8311,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 			$interface->assign('numberOfSeats', $numberOfSeats);
 			$interface->assign('availableSeats', $available);
-			$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+			$interface->assign('isEventFull', !EventRegistrationService::hasAvailableSeats($eventInstance));
 			$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
 			$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
 			$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
@@ -8344,10 +8346,10 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('linkedUsers', $linkedUsers);
 
 			$isRegistered = $aspenEventInstanceUserRegistration->status === 'registered';
-			$isEventFull = !$eventInstance->hasAvailableSeats();
+			$isEventFull = !EventRegistrationService::hasAvailableSeats($eventInstance);
 			$canRegister = $waitingListInfo['canRegister'];
-			$isWaitingListFull = $eventInstance->isWaitingListFull();
-			$registrationAction = $eventInstance->getRegistrationAction(
+			$isWaitingListFull = EventRegistrationService::isWaitingListFull($eventInstance);
+			$registrationAction = EventRegistrationService::getRegistrationAction(
 				$isRegistered,
 				$isEventFull,
 				$eventInstance->isWaitingListEnabled(),
@@ -8599,6 +8601,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$this->requireLoggedInUser(null, 'You must be logged in to register for events.');
 
+		require_once ROOT_DIR . '/sys/Account/User.php';
 		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
 			$isLinkedUser = false;
@@ -8621,7 +8624,7 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		$user = new User();
 		$user->id = $userId;
-		if(!$user->find(true)) {
+		if (!$user->find(true)) {
 			$result['message']['text'] = 'User not found';
 			return $result;
 		}
@@ -8646,6 +8649,8 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+
 		// unregister the user if registered
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
@@ -8654,8 +8659,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->delete();
-
-			$eventInstance->inviteNextOnWaitingList();
+			EventRegistrationService::inviteNextOnWaitingList($eventInstance);
 			
 			$result['success'] = true;
 			$result['title'] = translate([
@@ -8669,45 +8673,33 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		$userAspenEventInstanceRegistration = new UserAspenEventInstanceRegistration();
-		$userAspenEventInstanceRegistration->eventInstanceId = $eventInstanceId;
-		$userAspenEventInstanceRegistration->userId = $userId;
-		$waitingListInfo = $userAspenEventInstanceRegistration->getWaitingListInfo();
-		$canRegister = $waitingListInfo['canRegister'];
-
-		if (!$eventInstance->hasAvailableSeats(1) && !$canRegister) {
-			$result['message'] = translate([
-				'text' => 'This event is full. No seats available.',
-				'isPublicFacing' => true
-			]);
-			return $result;
-		}
-
 		// add the event to saved events if it has not yet been saved
-		$eventInstance->saveToUserEvents($userId);
+		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
 
 		// so the registered may manage their registration, also add the event to the active user's saved events if the user this was added for is a linked user
-		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
-			$eventInstance->saveToUserEvents($activeUserId);
+			EventRegistrationService::saveToUserEvents($eventInstance, $activeUserId);
 		}
 
 		// so the parent linked account display all events their linked user is registered to, save the event if the user registering have had their account linked.
 		foreach ($user->getViewerIds() as $viewerId) {
-			$eventInstance->saveToUserEvents($viewerId);
+			EventRegistrationService::saveToUserEvents($eventInstance, $viewerId);
 		}
 
-		if (!$eventInstance->hasAvailableSeats(1) && !$waitingListInfo['canRegister']) {
+		$waitingListInfo = $registration->getWaitingListInfo();
+		if (!EventRegistrationService::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
 			$result['message'] = translate([
-				'text' => "This event is full — no seats are currently available. We've saved it to your events list so you can keep track of it.",
+				'text' => 'This event is full - no seats currently available. We have saved it to your events list so you can keep track of it.',
 				'isPublicFacing' => true
 			]);
 			return $result;
 		}
 
 		// register the user
-		$userAspenEventInstanceRegistration->registerUser();
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->registerUser();
 
 		$result['success'] = true;
 		$result['title'] = translate([
@@ -11961,7 +11953,8 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		if ($eventInstance->isWaitingListFull()) {
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		if (EventRegistrationService::isWaitingListFull($eventInstance)) {
 			$result['message'] = translate([
 				'text' => 'The waiting list for this event is full.',
 				'isPublicFacing' => true,
@@ -12009,7 +12002,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$result['message'] = str_replace(['%1%', '%2%'], [$event->title, $position], $message);
 		$result['position'] = $position;
 
-		$eventInstance->saveToUserEvents($userId);
+		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
 
 		return $result;
 	}
