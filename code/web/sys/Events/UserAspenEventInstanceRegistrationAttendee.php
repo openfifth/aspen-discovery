@@ -59,6 +59,17 @@ class UserAspenEventInstanceRegistrationAttendee extends DataObject {
 		}
 	}
 
+	public static function getCountsForRegistration(int $registrationId): array {
+		$attendee = new UserAspenEventInstanceRegistrationAttendee();
+		$attendee->registrationId = $registrationId;
+		$attendee->find();
+		$counts = [];
+		while ($attendee->fetch()) {
+			$counts[(int)$attendee->attendeeCategoryId] = (int)$attendee->count;
+		}
+		return $counts;
+	}
+
 	/**
 	 * Get per-category attendee counts for an event instance.
 	 * Returns [['name' => ..., 'count' => ...], ...] or empty array if no categories.
