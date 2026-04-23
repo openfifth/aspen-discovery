@@ -33,7 +33,7 @@ function getUpdates26_05_00(): array {
 					isbn varchar(15),
 					upc varchar(15),
 					issn varchar(8),
-    				comments varchar(255),
+					comments varchar(255),
 					hasExistingRecord tinyint(1),
 					lastCheckForExistingRecord int(11),
 					existingRecordUrl tinytext,
@@ -149,10 +149,10 @@ function migrateMaterialsRequestTitleData(): void {
 			) {
 				$stmt = $aspen_db->prepare(
 					"SELECT id FROM materials_request_title
-                     WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title,  '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
-                       AND LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(author, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :author
-                       AND format = :format
-                     LIMIT 1"
+						WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title,  '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
+						AND LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(author, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :author
+						AND format = :format
+						LIMIT 1"
 				);
 				$stmt->execute([
 					':title'  => normalizeAuthorTitleString($row['title']),
@@ -172,9 +172,9 @@ function migrateMaterialsRequestTitleData(): void {
 			) {
 				$stmt = $aspen_db->prepare(
 					"SELECT id FROM materials_request_title
-                     WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title,  '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
-                       AND LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(author, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :author
-                     LIMIT 1"
+          					WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title,  '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
+          					AND LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(author, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :author
+          					LIMIT 1"
 				);
 				$stmt->execute([
 					':title'  => normalizeAuthorTitleString($row['title']),
@@ -190,8 +190,8 @@ function migrateMaterialsRequestTitleData(): void {
 			if ($titleId === null && !empty(trim($row['title'] ?? ''))) {
 				$stmt = $aspen_db->prepare(
 					"SELECT id FROM materials_request_title
-                     WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
-                     LIMIT 1"
+          					WHERE LOWER(TRIM(REGEXP_REPLACE(REGEXP_REPLACE(title, '[^a-zA-Z0-9 ]+', ''), '\\\\s+', ' '))) = :title
+          					LIMIT 1"
 				);
 				$stmt->execute([':title' => normalizeAuthorTitleString($row['title'])]);
 				$existing = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -257,7 +257,7 @@ function migrateMaterialsRequestTitleData(): void {
 				$insertParams[':dateLastRequested']  = $dateCreated;
 
 				$insertSql = "INSERT INTO materials_request_title ($columnList, dateFirstRequested, dateLastRequested)
-                              VALUES (" . implode(', ', $insertValues) . ", :dateFirstRequested, :dateLastRequested)";
+								VALUES (" . implode(', ', $insertValues) . ", :dateFirstRequested, :dateLastRequested)";
 				$stmt = $aspen_db->prepare($insertSql);
 				$stmt->execute($insertParams);
 				$titleId = $aspen_db->lastInsertId();

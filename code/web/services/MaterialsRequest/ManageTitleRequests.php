@@ -51,10 +51,10 @@ class MaterialsRequest_ManageTitleRequests extends Admin_Admin {
 			if ($materialsRequestTitles->find()) {
 				$stmt = $aspen_db->query("SELECT mrt.*, COUNT(mr.id) as numRequests 
 							FROM materials_request_title mrt
-    						LEFT JOIN materials_request mr ON mrt.id = mr.materialsRequestTitleId
-    						GROUP BY mrt.id
-    						ORDER BY mrt.dateLastRequested DESC
-    						");
+							LEFT JOIN materials_request mr ON mrt.id = mr.materialsRequestTitleId
+							GROUP BY mrt.id
+							ORDER BY mrt.dateLastRequested DESC
+							");
 				$allRequests = $stmt->fetchAll(PDO::FETCH_CLASS, 'MaterialsRequestTitle');
 			}
 
