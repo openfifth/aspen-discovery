@@ -217,10 +217,10 @@ class MaterialsRequest_Submit extends Action {
 										$authorPattern = "";
 										//get normalized title & title pattern for matching
 										if (!empty($materialsRequest->title)) {
-											$normalizedMaterialsRequestTitle = preg_replace('/[^\w\s]/', '', $materialsRequest->author);
+											$normalizedMaterialsRequestTitle = preg_replace('/[^\w\s]/', '', $materialsRequest->title);
 											$normalizedMaterialsRequestTitle = trim(preg_replace('/\s+/', ' ', $normalizedMaterialsRequestTitle));
 
-											$titlePattern = str_replace(' ', '[^a-zA-Z]*', $normalizedMaterialsRequestTitle);
+											$titlePattern = '(?i)' . str_replace(' ', '[^a-zA-Z]*', $normalizedMaterialsRequestTitle);
 										}
 										//get normalized author & author pattern for matching
 										if (!empty($materialsRequest->author)) {
@@ -239,7 +239,7 @@ class MaterialsRequest_Submit extends Action {
 												}
 												$parts[] = $part;
 											}
-											$authorPattern = implode('[^a-zA-Z]*', $parts);
+											$authorPattern = '(?i)' . implode('[^a-zA-Z]*', $parts);
 
 										}
 										//try title & author & format
