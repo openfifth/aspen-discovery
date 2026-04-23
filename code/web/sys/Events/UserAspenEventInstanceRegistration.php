@@ -152,7 +152,7 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	/**
 	 * Checks whether a user has at least one event instance to register to.
 	*/
-	static function isUserInvitedToRegister(int $userId): bool {
+	public static function isUserInvitedToRegister(int $userId): bool {
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId;
 		$registration->status = 'invited';
