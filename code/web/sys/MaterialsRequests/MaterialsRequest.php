@@ -53,6 +53,7 @@ class MaterialsRequest extends DataObject {
 	public $hasExistingRecord;
 	public $lastCheckForExistingRecord;
 	public $existingRecordUrl;
+	public $materialsRequestTitleId;
 
 	protected $_holdCandidateRecords;
 	protected $_selectedHoldCandidate;

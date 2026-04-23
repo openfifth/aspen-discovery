@@ -277,6 +277,10 @@ AspenDiscovery.MaterialsRequest = (function(){
 			return true;
 		},
 
+		manageMaterialsTitleRequest: function (id) {
+			return AspenDiscovery.Account.ajaxLightbox(Globals.path + "/MaterialsRequest/AJAX?method=ManageMaterialsTitleRequest&id=" +id, true);
+		},
+
 		showRedirectToMaterialsRequestForm: function(title, message, buttonText, url){
 			var buttons = "<button type='button' class='btn btn-primary' onclick='window.location.href=\"" + url + "\"'>" + buttonText + "</button>";
 

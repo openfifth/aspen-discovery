@@ -397,6 +397,77 @@ class MaterialsRequest_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
+	function ManageMaterialsTitleRequest() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['id']);
+
+		global $interface;
+		$user = UserAccount::getLoggedInUser();
+
+		$id = $_REQUEST['id'];
+		if (!empty($id) && ctype_digit($id)) {
+			$requestLibrary = $user->getHomeLibrary(); // staff member's or patron's home library
+			if (is_null($requestLibrary)) {
+				global $library;
+				$requestLibrary = $library;
+			}
+			if (!empty($requestLibrary)) {
+				$materialsRequests = [];
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->materialsRequestTitleId = $id;
+
+				// Statuses
+				$statusQuery = new MaterialsRequestStatus();
+				$materialsRequest->joinAdd($statusQuery, 'INNER', 'status', 'status', 'id');
+
+				$materialsRequest->selectAdd();
+				$materialsRequest->selectAdd('materials_request.*, status.description as statusLabel');
+
+				if ($materialsRequest->find()) {
+					while ($materialsRequest->fetch()) {
+						$materialsRequests[$materialsRequest->id] = clone($materialsRequest);
+					}
+					$interface->assign('materialsRequests', $materialsRequests);
+
+					$columnsToDisplay = [
+						'id' => 'Materials Request Id',
+						'assignedTo' => 'Assigned To',
+						'statusLabel' => 'Status',
+						'dateCreated' => 'Created On',
+						'dateUpdated' => 'Updated On',
+					];
+
+					$interface->assign('columnsToDisplay', $columnsToDisplay);
+				} else {
+					$interface->assign('error', translate([
+						'text' => "Sorry, we couldn't find a materials request for that id.",
+						'isPublicFacing' => true,
+					]));
+				}
+			} else {
+				$interface->assign('error', translate([
+					'text' => 'Could not determine your home library.',
+					'isPublicFacing' => true,
+				]));
+			}
+		} else {
+			$interface->assign('error', translate([
+				'text' => 'Invalid Request ID.',
+				'isPublicFacing' => true,
+			]));
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'Materials Title Request Details',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MaterialsRequest/ajax-request-title-details.tpl'),
+			'modalButtons' => ''
+		];
+	}
+
+	/** @noinspection PhpUnused */
 	function showSelectHoldCandidateForm() : array {
 		$this->requireLoggedInUser();
 		$this->checkRequiredPermission('Manage Library Materials Requests');
