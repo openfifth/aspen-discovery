@@ -287,7 +287,7 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 
 			doc.addField("barcode", barcodes);
 			//Awards and ratings
-			doc.addField("mpaa_rating", mpaaRatings);
+			doc.addField("content_rating", contentRatings);
 			doc.addField("awards_facet", awards);
 			if (lexileScore.isEmpty()) {
 				doc.addField("lexile_score", -1);

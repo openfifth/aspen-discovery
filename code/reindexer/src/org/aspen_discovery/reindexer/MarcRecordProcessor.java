@@ -479,7 +479,7 @@ abstract class MarcRecordProcessor {
 		loadTargetAudiences(groupedWork, record, printItems, identifier);
 		loadFountasPinnell(groupedWork, record);
 		loadLexileScore(groupedWork, record);
-		groupedWork.addMpaaRating(getContentRating(record));
+		groupedWork.addContentRating(getContentRating(record));
 		groupedWork.addKeywords(MarcUtil.getAllSearchableFields(record, 100, 900));
 		//Settings are nullable for eContent that is in MARC format (i.e. cloudLibrary)
 		if (settings != null && settings.getCustomMarcFieldsToIndexAsKeyword() != null && !settings.getCustomMarcFieldsToIndexAsKeyword().isEmpty()) {
