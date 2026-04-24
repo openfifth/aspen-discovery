@@ -30,15 +30,15 @@ function getAspenEventRegistrationUpdates() {
 			'title' => 'Add registrationRequired to Events',
 			'description' => 'Add an registration required column to events',
 			'sql' => [
-				'ALTER TABLE event ADD COLUMN registrationRequired TINYINT(1) DEFAULT 0',
+				'ALTER TABLE event ADD COLUMN IF NOT EXISTS registrationRequired TINYINT(1) DEFAULT 0',
 			],
 		], // add_registrationRequired_to_events
 		'add_numberOfSeats_to_events' => [
 			'title' => 'Add numberOfSeats to Events and Event Instances',
 			'description' => 'Add number of seats columns for capacity management. NULL or 0 means unlimited.',
 			'sql' => [
-				'ALTER TABLE event ADD COLUMN numberOfSeats INT DEFAULT NULL',
-				'ALTER TABLE event_instance ADD COLUMN numberOfSeats INT DEFAULT NULL',
+				'ALTER TABLE event ADD COLUMN IF NOT EXISTS numberOfSeats INT DEFAULT NULL',
+				'ALTER TABLE event_instance ADD COLUMN IF NOT EXISTS numberOfSeats INT DEFAULT NULL',
 			],
 		], // add_numberOfSeats_to_events
 		'add_allowEventRegistration_to_library_t' => [
@@ -78,7 +78,7 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Add library setting to allow staff to register users for events',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE library ADD COLUMN allowStaffToRegisterUsersForEvents TINYINT(1) DEFAULT 0",
+				"ALTER TABLE library ADD COLUMN IF NOT EXISTS allowStaffToRegisterUsersForEvents TINYINT(1) DEFAULT 0",
 			]
 		], //staff_event_registration_library_setting
 		'staff_event_registration_tracking' => [
@@ -86,8 +86,8 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Add tracking fields for staff registrations',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN registeredByStaffId INT DEFAULT NULL",
-				"ALTER TABLE user_events_entry ADD COLUMN savedByStaffId INT DEFAULT NULL",
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS registeredByStaffId INT DEFAULT NULL",
+				"ALTER TABLE user_events_entry ADD COLUMN IF NOT EXISTS savedByStaffId INT DEFAULT NULL",
 			]
 		], //staff_event_registration_tracking
 		'patron_attendance_tracking' => [
@@ -95,21 +95,21 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Add attended column to track patron attendance at events',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN attended TINYINT(1) DEFAULT NULL",
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS attended TINYINT(1) DEFAULT NULL",
 			]
 		], //patron_attendance_tracking
 		'add_fieldUse_to_event_field' => [
 			'title' => 'Add fieldUse to Event Fields',
 			'description' => 'Add an field use column to event fields',
 			'sql' => [
-				'ALTER TABLE event_field ADD COLUMN fieldUse TINYINT(1) DEFAULT 0',
+				'ALTER TABLE event_field ADD COLUMN IF NOT EXISTS fieldUse TINYINT(1) DEFAULT 0',
 			],
 		], // add_fieldUse_to_event_field
 		'add_fieldSetUse_to_event_field' => [
 			'title' => 'Add fieldSetUse to Event Field Sets',
 			'description' => 'Add an field use column to event field sets',
 			'sql' => [
-				'ALTER TABLE event_field_set ADD COLUMN fieldSetUse TINYINT(1) DEFAULT 0',
+				'ALTER TABLE event_field_set ADD COLUMN IF NOT EXISTS fieldSetUse TINYINT(1) DEFAULT 0',
 			],
 		], // add_fieldSetUse_to_event_field
 		'update_event_type_table' => [
@@ -117,14 +117,14 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Update the Event Type table to link to information and/or registration field set ids',
 			'sql' => [
 				'ALTER TABLE event_type RENAME COLUMN eventFieldSetId to eventInformationFieldSetId',
-				'ALTER TABLE event_type ADD COLUMN eventRegistrationFieldSetId TINYINT(1) DEFAULT 0',
+				'ALTER TABLE event_type ADD COLUMN IF NOT EXISTS eventRegistrationFieldSetId TINYINT(1) DEFAULT 0',
 			],
 		], // update_event_type_table
 		'add_staffNotes_to_event_table' => [
 			'title' => 'Add staffNotes to Event Table',
 			'description' => 'Add staff only notes to events',
 			'sql' => [
-				'ALTER TABLE event ADD COLUMN staffNotes longtext DEFAULT NULL',
+				'ALTER TABLE event ADD COLUMN IF NOT EXISTS staffNotes longtext DEFAULT NULL',
 			],
 		], // add_staffNotes_to_event_table
 		'add_user_aspen_event_instance_registrations_event_field' => [
