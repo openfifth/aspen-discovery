@@ -87,11 +87,7 @@ class Events_Events extends ObjectEditor {
 	}
 
 	function getInitializationJs(): string {
-		return 'AspenDiscovery.Events.toggleStartEndTimestamp();';
-	}
-
-	function getInitializationJs(): string {
-		return 'AspenDiscovery.Events.handleRegistrationEnabledToggle();';
+		return 'AspenDiscovery.Events.toggleStartEndTimestamp(); AspenDiscovery.Events.handleRegistrationEnabledToggle();';
 	}
 
 	function getBreadcrumbs(): array {
