@@ -58,8 +58,10 @@ class Events_AspenEventSettings extends ObjectEditor {
 		return $breadcrumbs;
 	}
 
-	function canView(): bool {
-		return UserAccount::userHasPermission('Administer Events for All Locations');
+	public function getViewPermissions() : array {
+		return [
+			'Administer Events for All Locations'
+		];
 	}
 
 	function getActiveAdminSection(): string {
