@@ -5359,6 +5359,9 @@ class Library extends DataObject {
 		if ($this->lidaNotificationSettingId === '') {
 			$this->lidaNotificationSettingId = -1;
 		}
+		if ($this->lidaGeneralSettingId === '') {
+			$this->lidaGeneralSettingId = -1;
+		}
 		//Make sure we have no other default libraries since having multiples causes issues.
 		if ($this->isDefault == 1 && $this->_changedFields != null) {
 			if (in_array('isDefault', $this->_changedFields)) {
@@ -5466,6 +5469,9 @@ class Library extends DataObject {
 	public function insert(string $context = '') : int|bool {
 		if ($this->lidaNotificationSettingId === '') {
 			$this->lidaNotificationSettingId = -1;
+		}
+		if ($this->lidaGeneralSettingId === '') {
+			$this->lidaGeneralSettingId = -1;
 		}
 		$ret = parent::insert();
 		if ($ret !== FALSE) {
