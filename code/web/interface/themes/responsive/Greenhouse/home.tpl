@@ -7,24 +7,27 @@
 
 	<form role="form">
 		<div class="form-group">
+			<select id="settingsSearchType" aria-label="Search for" class="form-control" style="display:none" onchange="return AspenDiscovery.Admin.searchSettings();">
+				<option value="page">{translate text="Page" isAdminFacing=true inAttribute=true}</option>
+				<option value="property">{translate text="Setting" isAdminFacing=true inAttribute=true}</option>
+			</select>
 			<label for="settingsSearch">{translate text="Search for a Setting" isAdminFacing=true}</label>
 			<div class="input-group">
-				<input  type="text" name="settingsSearch" id="settingsSearch"
-						onkeyup="return AspenDiscovery.Admin.searchSettings();" class="form-control" />
-				<span class="input-group-btn"><button class="btn btn-default" type="button" onclick="$('#settingsSearch').val('');return AspenDiscovery.Admin.searchSettings();" title="{translate text="Clear" inAttribute=true isAdminFacing=true}"><i class="fas fa-times-circle"></i></button></span>
-				<script type="text/javascript">
-					{literal}
-					$(document).ready(function() {
-						$("#settingsSearch").on('keydown', function (e) {
-							if (e.which === 13) {
-								e.preventDefault();
-							}
-						});
-					});
-					{/literal}
-				</script>
+				<input  type="text" name="settingsSearch" id="settingsSearch" onkeyup="return AspenDiscovery.Admin.searchSettings();" class="form-control" aria-label="Search For" />
+				<span class="input-group-btn"><button class="btn btn-default" type="button" onclick="$('#settingsSearch').val('');return AspenDiscovery.Admin.searchSettings();" title="{translate text="Clear" inAttribute=true isAdminFacing=true}"><i class="fas fa-times-circle" role="presentation"></i></button></span>
 			</div>
 		</div>
+		<script type="text/javascript">
+			{literal}
+			$(document).ready(function() {
+				$("#settingsSearch").on('keydown', function (e) {
+					if (e.which === 13) {
+						e.preventDefault();
+					}
+				});
+			});
+			{/literal}
+		</script>
 	</form>
 
 	<div id="adminSections" class="grid" data-colcade="columns: .grid-col, items: .grid-item">
