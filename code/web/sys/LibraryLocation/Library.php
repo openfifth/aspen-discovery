@@ -5362,6 +5362,9 @@ class Library extends DataObject {
 		if ($this->lidaGeneralSettingId === '') {
 			$this->lidaGeneralSettingId = -1;
 		}
+		if ($this->lidaHomeScreenLinkGroupId === '') {
+			$this->lidaHomeScreenLinkGroupId = -1;
+		}
 		//Make sure we have no other default libraries since having multiples causes issues.
 		if ($this->isDefault == 1 && $this->_changedFields != null) {
 			if (in_array('isDefault', $this->_changedFields)) {
