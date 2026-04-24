@@ -8321,7 +8321,6 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 
 				if ($library->enableSelfRegistration == 0) {
-					$this->display('selfRegistrationNotAllowed.tpl', 'Register for a Library Card', '');
 					return $result;
 				}
 
@@ -8344,7 +8343,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$result['body'] = $body;
 					return $result;
 				}
-				
+
 				if ($library->enableSelfRegistration == 2) {
 					$result['title'] = translate([
 						'text' => 'Join our library to register for events',
