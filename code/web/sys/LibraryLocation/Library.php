@@ -5356,6 +5356,9 @@ class Library extends DataObject {
 	 * @see DB/DB_DataObject::update()
 	 */
 	public function update(string $context = '') : int|bool {
+		if ($this->lidaNotificationSettingId === '') {
+			$this->lidaNotificationSettingId = -1;
+		}
 		//Make sure we have no other default libraries since having multiples causes issues.
 		if ($this->isDefault == 1 && $this->_changedFields != null) {
 			if (in_array('isDefault', $this->_changedFields)) {
@@ -5461,6 +5464,9 @@ class Library extends DataObject {
 	 * @see DB/DB_DataObject::insert()
 	 */
 	public function insert(string $context = '') : int|bool {
+		if ($this->lidaNotificationSettingId === '') {
+			$this->lidaNotificationSettingId = -1;
+		}
 		$ret = parent::insert();
 		if ($ret !== FALSE) {
 			$this->saveHolidays();
