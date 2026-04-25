@@ -21,6 +21,7 @@ class HooplaSetting extends DataObject {
 	/** @noinspection PhpUnused */
 	public $lastRecordProcessed;
 	public $recordExtractionBatchSize;
+	public $hooplaFlexBatchSize;
 	public $indexingTime;
 	// Legacy Hoopla v1 columns
 	public $libraryId;
@@ -362,6 +363,17 @@ class HooplaSetting extends DataObject {
 				],
 				'default' => '500',
 			],
+			'hooplaFlexBatchSize' => [
+				'property' => 'hooplaFlexBatchSize',
+				'type' => 'integer',
+				'label' => 'Flex Availability Batch Size',
+				'description' => 'The number of records to process per api request for availability updates.',
+				'note' => 'This normally does not need changes unless requested by Hoopla',
+				'default' => '50',
+				'max' => '50',
+				'min' => '1',
+			],
+
 		];
 		if ($isVersion2) {
 			$indexingProperties += [

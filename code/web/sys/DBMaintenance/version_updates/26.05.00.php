@@ -80,6 +80,13 @@ function getUpdates26_05_00(): array {
 		//kodi
 
 		//yanjun
+		'add_hoopla_flex_batch_size' => [
+			'title' => 'Add Hoopla Flex Batch Size',
+			'description' => 'Add a batch size for Hoopla Flex availability updates',
+			'sql' => [
+				"ALTER TABLE hoopla_settings ADD COLUMN hooplaFlexBatchSize int(3) DEFAULT 50",
+			]
+		], //add_hoopla_flex_batch_size
 
 		//imani
 		// Aspen Progressive Web Application(PWA) updates moved
