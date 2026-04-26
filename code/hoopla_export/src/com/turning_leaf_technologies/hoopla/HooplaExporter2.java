@@ -912,9 +912,9 @@ public class HooplaExporter2 {
 							upsertFlexAvailabilityStmt.setString(6, status);
 							upsertFlexAvailabilityStmt.executeUpdate();
 							titlesNeedingReindex.add(hooplaId);
-							processedIds.add(hooplaId);
 							logEntry.incAvailabilityChanges();
 						}
+						processedIds.add(hooplaId);
 					} catch (SQLException e) {
 						logEntry.incErrors("Error updating Flex availability for title " + hooplaId + " (library " + scopeLibraryId + ")", e);
 					}
@@ -1031,7 +1031,8 @@ public class HooplaExporter2 {
 	}
 
 	private boolean getFlexAvailability(HooplaSettings2 settings, ArrayList<HooplaLibrarySettings> librarySettings) {
-		logEntry.addNote("Starting Flex availability update");
+		int batchSize = Math.max(1, settings.getHooplaFlexBatchSize());
+		logEntry.addNote("Starting Flex availability update using a batch size of " + batchSize);
 		logEntry.saveResults();
 
 		if (librarySettings.isEmpty()) {
@@ -1053,16 +1054,12 @@ public class HooplaExporter2 {
 			ArrayList<Long> flexTitleIds = loadFlexEntitlementsForLibrary(libraryId);
 			if (flexTitleIds.isEmpty()) {
 				logEntry.incErrors("No Flex entitlements found for library " + libraryId + ", please run full update for this library");
-				logEntry.saveResults();
 				continue;
 			}
+
 			int numFlexTitles = flexTitleIds.size();
-			int numMissing = 0;
-			boolean libraryHasUpdates = false;
-
+			int numProcessed = 0;
 			int start = 0;
-			int batchSize = Math.max(1, settings.getHooplaFlexBatchSize());
-
 			while (start < numFlexTitles) {
 				int end = Math.min(start + batchSize, numFlexTitles);
 				List<Long> batchIds = flexTitleIds.subList(start, end);
@@ -1073,21 +1070,17 @@ public class HooplaExporter2 {
 				if (!missingIds.isEmpty()){
 					Set<Long> retried = getFlexAvailabilityFromAPI(settings, new ArrayList<>(missingIds), libraryId, hooplaLibraryId);
 					missingIds.removeAll(retried);
-					numMissing += missingIds.size();
 					processedIds.addAll(retried);
 				}
-				if (!processedIds.isEmpty()) {
-					libraryHasUpdates = true;
-				}
+				numProcessed += processedIds.size();
 				start = end;
 			}
-			if (libraryHasUpdates) {
-				logEntry.addNote("Processed Flex availability for " + numFlexTitles + " (Hoopla Library ID: " + hooplaLibraryId + "), updated " + (numFlexTitles - numMissing) + " titles, missed " + numMissing + " titles.");
-				logEntry.addNote("Completed Flex availability updates.");
-				logEntry.saveResults();
-			}
-			hasUpdates = hasUpdates || libraryHasUpdates;
+			hasUpdates = true;
+			logEntry.addNote("Procesed Flex availability for " + numFlexTitles + " titles, missed " + (numFlexTitles - numProcessed) + " titles.");
+			logEntry.saveResults();
 		}
+		logEntry.addNote("Completed Flex availability updates.");
+		logEntry.saveResults();
 		return hasUpdates;
 	}
 
@@ -1135,7 +1128,8 @@ public class HooplaExporter2 {
 
 			int responseCode = response.getResponseCode();
 			if (responseCode != 401 && responseCode != 503 && responseCode != 504) {
-				logEntry.incErrors("Error getting Flex availability from " + url + " " + responseCode + " " + response.getMessage());
+				logEntry.incErrors("Error getting Flex availability " + responseCode + " " + response.getMessage());
+				logger.error("Error getting Flex availability from " + url + " + responseCode + " + response.getMessage());
 				return Collections.emptySet();
 			}
 			if (responseCode == 401) {
@@ -1154,7 +1148,8 @@ public class HooplaExporter2 {
 					logEntry.incErrors("Error sleeping for 1 minutes for Flex availability", e);
 				}
 			} else {
-				logEntry.incErrors("Error getting Flex availability from " + url + " " + responseCode + " " + response.getMessage());
+				logEntry.incErrors("Error getting Flex availability " + responseCode + " " + response.getMessage());
+				logger.error("Error getting Flex availability from " + url + " + responseCode + " + response.getMessage());
 			}
 		}
 		return Collections.emptySet();

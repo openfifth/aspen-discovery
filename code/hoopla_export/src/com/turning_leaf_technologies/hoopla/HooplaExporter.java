@@ -435,21 +435,20 @@ public class HooplaExporter {
 
 	private static boolean getFlexAvailability(HooplaSettings settings) {
 		// Update all the flex titles availability
-		logEntry.addNote("Starting Flex availability update");
+		int batchSize = Math.max(1, settings.getHooplaFlexBatchSize());
+		logEntry.addNote("Starting Flex availability update using a batch size of " + batchSize);
 		logEntry.saveResults();
-		int numUpdates = 0;
+		int numProcessed = 0;
 
 		int hooplaLibraryId = settings.getLibraryId();
 		ArrayList<Long> flexTitleIds = loadFlexTitles();
 		if (flexTitleIds.isEmpty()) {
 			logEntry.incErrors("No Flex titles found, please run full update for Flex.");
-			logEntry.saveResults();
+			return false;
 		}
+
 		int numFlexTitles = flexTitleIds.size();
-
 		int start = 0;
-		int batchSize = Math.max(1, settings.getHooplaFlexBatchSize());
-
 		while (start < numFlexTitles) {
 			int end = Math.min(start + batchSize, numFlexTitles);
 			List<Long> batchIds = flexTitleIds.subList(start, end);
@@ -462,16 +461,13 @@ public class HooplaExporter {
 				missingIds.removeAll(retried);
 				processedIds.addAll(retried);
 			}
-			numUpdates += processedIds.size();
+			numProcessed += processedIds.size();
 			start = end;
 		}
-		if (numUpdates > 0) {
-			logEntry.addNote("Updated Flex availability for " + numFlexTitles + " titles, processed " + numUpdates + " titles, missed " + (numFlexTitles - numUpdates) + " titles.");
-			logEntry.addNote("Completed Flex availability updates.");
-			logEntry.saveResults();
-			return true;
-		}
-		return false;
+		logEntry.addNote("Procesed Flex availability for " + numFlexTitles + " titles, missed " + (numFlexTitles - numProcessed) + " titles.");
+		logEntry.addNote("Completed Flex availability updates.");
+		logEntry.saveResults();
+		return true;
 	}
 
 	private static ArrayList<Long> loadFlexTitles () {
@@ -535,7 +531,8 @@ public class HooplaExporter {
 
 			int responseCode = response.getResponseCode();
 			if (responseCode != 401 && responseCode != 503 && responseCode != 504) {
-				logEntry.incErrors("Error getting Flex availability from " + url + " " + responseCode + " " + response.getMessage());
+				logEntry.incErrors("Error getting Flex availability " + responseCode + " " + response.getMessage());
+				logger.error("Error getting Flex availability from " + url + " + responseCode + " + response.getMessage());
 				return Collections.emptySet();
 			}
 			if (responseCode == 401) {
@@ -554,7 +551,8 @@ public class HooplaExporter {
 					logEntry.incErrors("Error sleeping for 1 minutes for Flex availability", e);
 				}
 			} else {
-				logEntry.incErrors("Error getting Flex availability from " + url + " " + responseCode + " " + response.getMessage());
+				logEntry.incErrors("Error getting Flex availability " + responseCode + " " + response.getMessage());
+				logger.error("Error getting Flex availability from " + url + " + responseCode + " + response.getMessage());
 			}
 		}
 		return Collections.emptySet();
@@ -599,13 +597,9 @@ public class HooplaExporter {
 								if (existingholdsQueueSize != holdsQueueSize || existingAvailableCopies != availableCopies || existingTotalCopies != totalCopies || !Objects.equals(existingStatus, status)) {
 									availabilityChanged = true;
 								}
-								if (!doFullReloadFlex && existingInDB){
-									logEntry.incNumProducts(1);
-								}
 							} else {
 								availabilityChanged = true;
 							}
-							flexTitlesRS.close();
 
 							if (availabilityChanged) {
 								upsertFlexAvailabilityStmt.setLong(1, hooplaId);
@@ -619,7 +613,11 @@ public class HooplaExporter {
 								String groupedWorkId =  getRecordGroupingProcessor().groupHooplaRecord(curTitle, hooplaId);
 								indexRecord(groupedWorkId);
 								logEntry.incAvailabilityChanges();
+								if (!doFullReloadFlex) {
+									logEntry.incNumProducts(1);
+								}
 							}
+							flexTitlesRS.close();
 							processedIds.add(hooplaId);
 						} catch (SQLException e) {
 							logEntry.incErrors("Error updating Flex availability for title " + hooplaId, e);
