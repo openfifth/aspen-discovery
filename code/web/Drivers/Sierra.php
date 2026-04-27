@@ -2387,6 +2387,9 @@ class Sierra extends AbstractIlsDriver {
 											$expirationPeriod = "D";
 										}
 										$expirationDate->add(new DateInterval('P' . $expirationDays . $expirationPeriod));
+										if ($municipalities[$matchId]->extendExpirationToMonthEnd) {
+											$expirationDate->modify('last day of this month');
+										}
 										$params['expirationDate'] = $expirationDate->format('Y-m-d');
 									}
 									if (!empty($municipalities[$matchId]->sierraPType) && $municipalities[$matchId]->sierraPType != -1) {

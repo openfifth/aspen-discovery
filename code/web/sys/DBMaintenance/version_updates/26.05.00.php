@@ -16,6 +16,14 @@ function getUpdates26_05_00(): array {
 		 ], //name*/
 
 		//mark n
+		'municipality_extend_registration' => [
+			'title' => 'Allow Extending Registration In Sierra Municipality',
+			'description' => 'Convert array to traditional syntax',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE self_reg_municipality_values_sierra ADD COLUMN extendExpirationToMonthEnd TINYINT(1) DEFAULT 0',
+			]
+		], //municipality_extend_registration
 
 		//kirstien
 
