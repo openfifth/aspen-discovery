@@ -1459,6 +1459,7 @@ abstract class MarcRecordProcessor {
 				for (RecordInfo ilsRecord : ilsRecords){
 					ilsRecord.setPrimaryLanguage(translatedLanguage);
 				}
+				groupedWork.setPrimaryLanguage(translatedLanguage);
 			}
 			isFirstLanguage = false;
 			String languageBoost = indexer.translateSystemValue("language_boost", language, identifier);
