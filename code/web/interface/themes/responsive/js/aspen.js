@@ -17298,6 +17298,45 @@ AspenDiscovery.MaterialsRequest = (function(){
 			return AspenDiscovery.Account.ajaxLightbox(Globals.path + "/MaterialsRequest/AJAX?method=ManageMaterialsTitleRequest&id=" +id, true);
 		},
 
+		updateMaterialsTitleRequests: function () {
+			const rows = document.querySelectorAll('#requestedMaterials tbody tr[data-request-id]');
+			const updates = {};
+			const normalize = val => (!val || val === 'unselected') ? null : val;
+
+			rows.forEach(row => {
+				const requestId      = row.dataset.requestId;
+				const assigneeSelect = row.querySelector('select[name="newAssignee"]');
+				const statusSelect   = row.querySelector('select[name="newStatus"]');
+
+				const assigneeChanged = assigneeSelect && normalize(assigneeSelect.value) !== normalize(assigneeSelect.dataset.original);
+				const statusChanged   = statusSelect   && normalize(statusSelect.value)   !== normalize(statusSelect.dataset.original);
+
+				if (assigneeChanged || statusChanged) {
+					updates[requestId] = {
+						newAssignee: assigneeSelect ? assigneeSelect.value : null,
+						newStatus:   statusSelect   ? statusSelect.value   : null,
+					};
+				}
+			});
+
+			var url = Globals.path + "/MaterialsRequest/AJAX";
+			var params = {
+				method:  'updateMaterialsTitleRequests',
+				updates: JSON.stringify(updates),
+			};
+
+			$.getJSON(url, params,
+				function(data) {
+					if (data.success) {
+						AspenDiscovery.showMessage(data.title, data.modalBody);
+					} else {
+						AspenDiscovery.showMessage('An error occurred', data.message);
+					}
+				}
+			).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
 		showRedirectToMaterialsRequestForm: function(title, message, buttonText, url){
 			var buttons = "<button type='button' class='btn btn-primary' onclick='window.location.href=\"" + url + "\"'>" + buttonText + "</button>";
 

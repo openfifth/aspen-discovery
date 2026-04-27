@@ -406,22 +406,15 @@ class MaterialsRequest_AJAX extends JSON_Action {
 
 		$id = $_REQUEST['id'];
 		if (!empty($id) && ctype_digit($id)) {
-			$requestLibrary = $user->getHomeLibrary(); // staff member's or patron's home library
-			if (is_null($requestLibrary)) {
+			$staffLibrary = $user->getHomeLibrary(); // staff member's or patron's home library
+			if (is_null($staffLibrary)) {
 				global $library;
-				$requestLibrary = $library;
+				$staffLibrary = $library;
 			}
-			if (!empty($requestLibrary)) {
+			if (!empty($staffLibrary)) {
 				$materialsRequests = [];
 				$materialsRequest = new MaterialsRequest();
 				$materialsRequest->materialsRequestTitleId = $id;
-
-				// Statuses
-				$statusQuery = new MaterialsRequestStatus();
-				$materialsRequest->joinAdd($statusQuery, 'INNER', 'status', 'status', 'id');
-
-				$materialsRequest->selectAdd();
-				$materialsRequest->selectAdd('materials_request.*, status.description as statusLabel');
 
 				if ($materialsRequest->find()) {
 					while ($materialsRequest->fetch()) {
@@ -438,9 +431,61 @@ class MaterialsRequest_AJAX extends JSON_Action {
 					];
 
 					$interface->assign('columnsToDisplay', $columnsToDisplay);
+
+					// Get Statuses
+					$materialsRequestStatus = new MaterialsRequestStatus();
+					$materialsRequestStatus->orderBy('isDefault DESC, isOpen DESC, description ASC');
+					$materialsRequestStatus->libraryId = $staffLibrary->libraryId;
+					$materialsRequestStatus->find();
+					$availableStatuses = [];
+					while ($materialsRequestStatus->fetch()) {
+						$availableStatuses[$materialsRequestStatus->id] = $materialsRequestStatus->description;
+					}
+					$interface->assign('availableStatuses', $availableStatuses);
+
+					// Get Assignees
+					$homeLibrary = Library::getPatronHomeLibrary();
+					if (is_null($homeLibrary)) {
+						//User does not have a home library, this is likely an admin account.  Use the active library
+						global $library;
+						$homeLibrary = $library;
+					}
+					$locations = new Location();
+					$locations->libraryId = $homeLibrary->libraryId;
+					$locations->find();
+					$locationsForLibrary = [];
+					while ($locations->fetch()) {
+						$locationsForLibrary[] = $locations->locationId;
+					}
+					//Get a list of other users that are materials request users for this library
+					$permission = new Permission();
+					$permission->name = 'Manage Library Materials Requests';
+					if ($permission->find(true)) {
+						//Get roles for the user
+						$rolePermissions = new RolePermissions();
+						$rolePermissions->permissionId = $permission->id;
+						$rolePermissions->find();
+						$assignees = [];
+						while ($rolePermissions->fetch()) {
+							// Get Available Assignees
+							$materialsRequestManagers = new User();
+							if (count($locationsForLibrary) > 0) {
+								if ($materialsRequestManagers->query("SELECT * from user WHERE id IN (SELECT userId FROM user_roles WHERE roleId = $rolePermissions->roleId) AND ((id IN (SELECT userId from user_administration_locations WHERE locationId IN (" . implode(', ', $locationsForLibrary) . "))) OR homeLocationId IN (" . implode(', ', $locationsForLibrary) . "))")) {
+									while ($materialsRequestManagers->fetch()) {
+										if (empty($materialsRequestManagers->displayName)) {
+											$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->firstname . ' ' . $materialsRequestManagers->lastname;
+										} else {
+											$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->getDisplayName();
+										}
+									}
+								}
+							}
+						}
+						$interface->assign('assignees', $assignees);
+					}
 				} else {
 					$interface->assign('error', translate([
-						'text' => "Sorry, we couldn't find a materials request for that id.",
+						'text' => "Sorry, we couldn't find any materials requests for that id.",
 						'isPublicFacing' => true,
 					]));
 				}
@@ -459,12 +504,63 @@ class MaterialsRequest_AJAX extends JSON_Action {
 
 		return [
 			'title' => translate([
-				'text' => 'Materials Title Request Details',
+				'text' => 'Manage Title Requests',
 				'isPublicFacing' => true,
 			]),
-			'modalBody' => $interface->fetch('MaterialsRequest/ajax-request-title-details.tpl'),
-			'modalButtons' => ''
+			'modalBody' => $interface->fetch('MaterialsRequest/ajax-request-title-manage.tpl'),
+			'modalButtons' => $interface->get_template_vars('error') == null ? "<button class='btn btn-primary' onclick='return AspenDiscovery.MaterialsRequest.updateMaterialsTitleRequests()'>" . translate([
+					'text' => "Update Requests",
+					'isPublicFacing' => true,
+				]) . "</button>" : '',
 		];
+	}
+	/** @noinspection PhpUnused */
+	function updateMaterialsTitleRequests(): array {
+		$updates = json_decode($_GET['updates'], true);
+
+		if (!empty($updates)) {
+			$numUpdates = 0;
+			$numToUpdate = count($updates);
+			foreach ($updates as $requestId  => $data) {
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->id = $requestId;
+				if ($materialsRequest->find(true)){
+					$materialsRequest->assignedTo = $data['newAssignee'];
+					$materialsRequest->status = $data['newStatus'];
+					if ($materialsRequest->update()){
+						$numUpdates++;
+					}
+				}
+			}
+			if ($numUpdates == $numToUpdate) {
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => "Successfully updated " . $numUpdates . " of " . $numToUpdate . " requests.",
+				];
+			} else {
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Partial Success',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => "Only successfully updated " . $numUpdates . " of " . $numToUpdate . " requests.",
+				];
+			}
+		} else {
+			return [
+				'success' => true,
+				'title' => translate([
+					'text' => 'No Changes',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => "No changes were selected or made.",
+			];
+		}
 	}
 
 	/** @noinspection PhpUnused */
