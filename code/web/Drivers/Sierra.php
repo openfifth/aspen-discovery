@@ -1947,10 +1947,10 @@ class Sierra extends AbstractIlsDriver {
 				$pickupLocations[$location->code] = $location->displayName;
 			}
 			if (count($pickupLocations) > 1) {
-				array_unshift($pickupLocations, translate([
+				$pickupLocations = [-1 =>translate([
 					'text' => 'Please select a location',
 					'isPublicFacing' => true,
-				]));
+				])] + $pickupLocations;
 			}
 		}
 
