@@ -1517,7 +1517,7 @@ abstract class MarcRecordProcessor {
 		//author_additional = 505r:245c
 		groupedWork.addAuthorAdditional(MarcUtil.getFieldList(record, "505r:245c"));
 		//set display author based on 100/110
-		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100acdq:110ab");
+		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100abcdq:110ab");
 		if (displayAuthor != null && displayAuthor.indexOf(';') > 0){
 			displayAuthor = displayAuthor.substring(0, displayAuthor.indexOf(';') -1);
 		}
