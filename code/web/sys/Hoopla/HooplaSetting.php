@@ -403,40 +403,6 @@ class HooplaSetting extends DataObject {
 		return $indexingProperties;
 	}
 
-	private static function getLegacyIndexingProperties(): array {
-		return [
-			'regroupAllRecords' => [
-				'property' => 'regroupAllRecords',
-				'type' => 'checkbox',
-				'label' => 'Regroup all Records',
-				'description' => 'Whether or not all existing records should be regrouped',
-				'default' => 0,
-			],
-			'indexingTime' => [
-				'property' => 'indexingTime',
-				'type' => 'integer',
-				'label' => 'Indexing Time',
-				'description' => 'In 24 hour format, the hour of the day when the indexing should be run',
-				'note' => '24 hour format, please enter a value between 0 and 23, default is 1',
-				'default' => 1,
-			],
-			'recordExtractionBatchSize' => [
-				'property' => 'recordExtractionBatchSize',
-				'type' => 'enum',
-				'label' => 'Record Extraction Batch Size',
-				'description' => 'The number of records that should be extracted at once.',
-				'note' => 'This normally does not need changes unless requested by Hoopla',
-				'values' => [
-					'100' => '100',
-					'200' => '200',
-					'300' => '300',
-					'400' => '400',
-					'500' => '500',
-				],
-				'default' => '500',
-			],
-		];
-	}
 
 	private static function getLegacyInstantProperties(): array {
 		return [
