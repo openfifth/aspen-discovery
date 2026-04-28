@@ -48,9 +48,6 @@
 							{/foreach}
 							<td>
 								<div class="btn-group btn-group-vertical btn-group-sm">
-									{if $showExistingTitleInformation && !$request->hasExistingRecord}
-										<button type="button" onclick="AspenDiscovery.MaterialsRequest.checkRequestForExistingRecord('{$request->id}')" class="btn btn-sm btn-info btn-wrap">{translate text="Check for Existing Title" isAdminFacing=true}</button>
-									{/if}
 									<button type="button" onclick="AspenDiscovery.MaterialsRequest.manageMaterialsTitleRequest('{$request->id}')" class="btn btn-sm btn-info btn-wrap">{translate text="Manage Requests" isAdminFacing=true}</button>
 								</div>
 							</td>
