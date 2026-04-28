@@ -256,45 +256,43 @@ class Event extends DataObject {
 
 		global $library;
 		if (isset($library->allowEventRegistration) && $library->allowEventRegistration != '0') {
-			$structure['registrationSection'] =  [
-				'registrationSection' => [
-					'property' => 'registrationSection',
-					'type' => 'section',
-					'label' => 'Event Registration',
-					'expandByDefault' => true,
-					'properties' => [
-						'registrationRequired' => [
-							'property' => 'registrationRequired',
-							'type' => 'checkbox',
-							'label' => 'Enable Registration ?',
-							'default' => false,
-							'description' => 'Enable registration for this event and mark is as required',
-							'onchange' => 'AspenDiscovery.Events.handleRegistrationEnabledToggle()',
-						],
-						'numberOfSeats' => [
-							'property' => 'numberOfSeats',
-							'type' => 'integer',
-							'label' => 'Number of Seats',
-							'description' => 'Maximum number of available seats for this event. Leave blank or 0 for unlimited.',
-							'min' => 0,
-							'max' => 1000,
-						],
-						'waitingList' => [
-							'property' => 'waitingList',
-							'type' => 'checkbox',
-							'label' => 'Enable Waiting List ?',
-							'description' => 'Whether or not to enable a waiting list for this event.',
-							'default' => 0,
-							'onchange' => 'AspenDiscovery.Events.displayWaitingListNumberOfSeats()',
-						],
-						'waitingListNumberOfSeats' => [
-							'property' => 'waitingListNumberOfSeats',
-							'type' => 'integer',
-							'label' => 'Number of Seats on Waiting List',
-							'description' => 'Number of seats on waiting list. Leave blank or 0 for unlimited.',
-							'min' => 0,
-							'max' => 1000,
-						],
+			$structure['registrationSection'] = [
+				'property' => 'registrationSection',
+				'type' => 'section',
+				'label' => 'Event Registration',
+				'expandByDefault' => true,
+				'properties' => [
+					'registrationRequired' => [
+						'property' => 'registrationRequired',
+						'type' => 'checkbox',
+						'label' => 'Enable Registration ?',
+						'default' => false,
+						'description' => 'Enable registration for this event and mark is as required',
+						'onchange' => 'AspenDiscovery.Events.handleRegistrationEnabledToggle()',
+					],
+					'numberOfSeats' => [
+						'property' => 'numberOfSeats',
+						'type' => 'integer',
+						'label' => 'Number of Seats',
+						'description' => 'Maximum number of available seats for this event. Leave blank or 0 for unlimited.',
+						'min' => 0,
+						'max' => 1000,
+					],
+					'waitingList' => [
+						'property' => 'waitingList',
+						'type' => 'checkbox',
+						'label' => 'Enable Waiting List ?',
+						'description' => 'Whether or not to enable a waiting list for this event.',
+						'default' => 0,
+						'onchange' => 'AspenDiscovery.Events.displayWaitingListNumberOfSeats()',
+					],
+					'waitingListNumberOfSeats' => [
+						'property' => 'waitingListNumberOfSeats',
+						'type' => 'integer',
+						'label' => 'Number of Seats on Waiting List',
+						'description' => 'Number of seats on waiting list. Leave blank or 0 for unlimited.',
+						'min' => 0,
+						'max' => 1000,
 					],
 				],
 			];
