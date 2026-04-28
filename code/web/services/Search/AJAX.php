@@ -833,16 +833,18 @@ class AJAX extends JSON_Action {
 			$interface->assign('topResults', $topResults);
 			$searchObject->close();
 
+			$applyLabel = translate(['text' => 'Apply', 'isPublicFacing' => true]);
+			$buttons = "<button class='btn btn-primary adv-facet-apply-btn'>$applyLabel</button>";
 			return [
 				'success'   => true,
 				'title'     => translate([
-					'text'               => 'Browse %1%',
+					'text'               => 'More %1%',
 					'1'                  => $facetTitlePlural,
 					'isPublicFacing'     => true,
 					'translateParameters' => true,
 				]),
 				'modalBody' => $interface->fetch('Search/advancedSearchFacetPopup.tpl'),
-				'buttons'   => '',
+				'buttons'   => $buttons,
 			];
 		} else {
 			$searchObject->close();

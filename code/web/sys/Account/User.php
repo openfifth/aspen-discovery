@@ -950,7 +950,7 @@ class User extends DataObject {
 		return $users;
 	}
 
-	function isValidForEContentSource($source) {
+	function isValidForEContentSource(string $source) : bool {
 		global $enabledModules;
 		if ($this->parentUser == null || ($this->getBarcode() != $this->parentUser->getBarcode())) {
 			$userHomeLibrary = Library::getPatronHomeLibrary($this);
@@ -2112,7 +2112,7 @@ class User extends DataObject {
 		require_once ROOT_DIR . "/sys/User/Hold.php";
 		$hold = new Hold();
 		$hold->userId = $this->id;
-		$hold->cancelled = 0;
+		$hold->whereAdd('cancelled = 0 OR cancelled is null');
 		$hold->find();
 		while ($hold->fetch()) {
 			$cacheKey = "$hold->source:$hold->recordId";
@@ -2493,7 +2493,11 @@ class User extends DataObject {
 				'inAttribute' => true
 			]);
 
-			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+			if (!$this->disableCirculationActions) {
+				$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+			}else{
+				$result['viewHoldsAction'] = '';
+			}
 			if (!empty($result['api']['action'])) {
 				$buttonText = $result['api']['text'] ?? "Go to Holds";
 				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
@@ -2525,7 +2529,11 @@ class User extends DataObject {
 				'inAttribute' => true,
 			]);
 
-			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+			if (!$this->disableCirculationActions) {
+				$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+			}else{
+				$result['viewHoldsAction'] = '';
+			}
 
 			if (!empty($result['api']['action'])) {
 				$buttonText = $result['api']['text'] ?? "Go to Holds";
@@ -2546,6 +2554,11 @@ class User extends DataObject {
 			$accountSummary = $this->getCachedAccountSummary('ils');
 			$accountSummary->incrementNumberOfUnavailableHolds();
 			$accountSummary->markHoldsStale();
+
+			if (!empty($result['api']['action'])) {
+				$buttonText = $result['api']['text'] ?? "Go to Holds";
+				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
+			}
 		}
 		return $result;
 	}
@@ -2603,7 +2616,11 @@ class User extends DataObject {
 				'inAttribute' => true,
 			]);
 
-			$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='{$viewHoldsText}'>{$viewHoldsText}</a>";
+			if (!$this->disableCirculationActions) {
+				$result['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='{$viewHoldsText}'>{$viewHoldsText}</a>";
+			}else{
+				$result['viewHoldsAction'] = '';
+			}
 			if (!empty($result['api']['action'])) {
 				$buttonText = $result['api']['text'] ?? "Go to Holds";
 				$result['modalButtons'] = "<a href='/MyAccount/Holds' class='btn btn-primary btn-wrap'>$buttonText</a>";
@@ -2672,7 +2689,12 @@ class User extends DataObject {
 	}
 
 	function freezeHold(string $recordId, string $holdId, ?string $reactivationDate) : array {
-		return $this->getCatalogDriver()->freezeHold($this, $recordId, $holdId, $reactivationDate);
+		$result = $this->getCatalogDriver()->freezeHold($this, $recordId, $holdId, $reactivationDate);
+		if ($result['success']){
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->markHoldsStale();
+		}
+		return $result;
 	}
 
 	function freezeAllHolds($reactivationDate = false) : array {
@@ -2902,7 +2924,12 @@ class User extends DataObject {
 	}
 
 	function thawHold(string $recordId, string $holdId): array {
-		return $this->getCatalogDriver()->thawHold($this, $recordId, $holdId);
+		$result = $this->getCatalogDriver()->thawHold($this, $recordId, $holdId);
+		if ($result['success']){
+			$accountSummary = $this->getCachedAccountSummary('ils');
+			$accountSummary->markHoldsStale();
+		}
+		return $result;
 	}
 
 	function freezeOverDriveHold($overDriveId): array {
@@ -3096,6 +3123,7 @@ class User extends DataObject {
 			$readingHistoryEntry = new ReadingHistoryEntry();
 			$readingHistoryEntry->userId = $this->id;
 			$readingHistoryEntry->deleted = 0;
+			$readingHistoryEntry->whereAdd('checkOutDate > 0');
 			$readingHistoryEntry->orderBy('checkOutDate ASC');
 			$readingHistoryEntry->limit(0, 1);
 			if ($readingHistoryEntry->find(true)) {
@@ -3324,7 +3352,7 @@ class User extends DataObject {
 		return false;
 	}
 
-	public function canMasquerade() {
+	public function canMasquerade() : bool {
 		if (self::canClientIpUseMasquerade()) {
 			return $this->hasPermission([
 				'Masquerade as any user',
@@ -4896,6 +4924,7 @@ class User extends DataObject {
 		if (array_key_exists('User Lists', $enabledModules)) {
 			$sections['user_lists'] = new AdminSection('User Lists');
 			$sections['user_lists']->addAction(new AdminAction('Settings', 'Define settings for indexing user lists within Aspen Discovery.', '/UserLists/Settings'), 'Administer List Indexing Settings');
+			$sections['user_lists']->addAction(new AdminAction('User List Facet Settings', 'Define facets for user list searches.', '/UserLists/UserListFacets'), 'Administer User List Facet Settings');
 			$sections['user_lists']->addAction(new AdminAction('Indexing Log', 'View the indexing log for User Lists.', '/UserLists/IndexingLog'), [
 				'View System Reports',
 				'View Indexing Logs',
@@ -6365,7 +6394,11 @@ class User extends DataObject {
 							'inAttribute' => true
 						]);
 						$recordId = $_REQUEST['catalogKey'] ?? '';
-						$results['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+						if (!$this->disableCirculationActions) {
+							$results['viewHoldsAction'] = "<a id='onHoldAction$recordId' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='$viewHoldsText'>$viewHoldsText</a>";
+						}else{
+							$results['viewHoldsAction'] = '';
+						}
 
 						//If we have a cached account summary, add one to the number of unavailable holds (no ILSs move a hold to active immediately)
 						$accountSummary = $this->getCachedAccountSummary('ils');

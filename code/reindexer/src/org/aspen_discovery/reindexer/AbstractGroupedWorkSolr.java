@@ -63,6 +63,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected HashSet<String> issns = new HashSet<>();
 	protected HashSet<String> keywords = new HashSet<>();
 	protected HashSet<String> languages = new HashSet<>();
+	protected String primaryLanguage;
 	protected HashSet<String> translations = new HashSet<>();
 	protected Long languageBoost = 1L;
 	protected Long languageBoostSpanish = 1L;
@@ -1065,6 +1066,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 
 	void setLanguages(HashSet<String> languages) {
 		this.languages.addAll(languages);
+	}
+
+	void setPrimaryLanguage(String primaryLanguage) {
+		this.primaryLanguage = primaryLanguage;
 	}
 
 	void setTranslations(HashSet<String> translations) {

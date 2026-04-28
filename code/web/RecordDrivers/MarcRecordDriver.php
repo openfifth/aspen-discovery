@@ -669,20 +669,27 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	private $_title = null;
 	/**
 	 * Get the full title of the record.
 	 *
 	 * @return  string
 	 */
 	public function getTitle() {
-		return $this->getFirstFieldValue('245', [
-			'a',
-			'b',
-			'f',
-			'g',
-			'n',
-			'p',
-		]);
+		if ($this->_title == null) {
+			$this->_title = $this->getFirstFieldValue('245', [
+				'a',
+				'b',
+				'f',
+				'g',
+				'n',
+				'p',
+			]);
+			if ($this->_title == '<>.') {
+				$this->_title = '';
+			}
+		}
+		return $this->_title;
 	}
 
 	private $_alternateGraphicRepresentations = null;
@@ -892,11 +899,12 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $this->getAuthor();
 	}
 
-	private $author = null;
-	public function getAuthor() {
+	private null|string $author = null;
+	public function getAuthor() : ?string {
 		if ($this->author == null) {
 			$author = $this->getFirstFieldValue('100', [
 				'a',
+				'b',
 				'c',
 				'd',
 				'q'
@@ -1890,7 +1898,7 @@ class MarcRecordDriver extends GroupedWorkSubDriver {
 		return $this->upcs;
 	}
 
-	public function getMoreDetailsOptions() {
+	public function getMoreDetailsOptions() : array {
 		global $interface;
 		/** @var Library $library */
 		global $library;

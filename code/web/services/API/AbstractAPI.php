@@ -106,6 +106,7 @@ abstract class AbstractAPI extends Action{
 		}
 	}
 
+	private $_userForAPICall = null;
 	/**
 	 * Get user for API call - supports both OAuth2 and traditional authentication
 	 * @return bool|User
@@ -138,25 +139,27 @@ abstract class AbstractAPI extends Action{
 			return false;
 		}
 
-		//Set translations up based on the active user's desired language
-		if (empty($_REQUEST['language']) && $user !== false) {
-			global $activeLanguage;
-			global $translator;
-			$userLanguage = new Language();
-			$userLanguage->code = $user->interfaceLanguage;
-			if ($userLanguage->find(true)) {
-				if ($userLanguage->code != $activeLanguage->code) {
-					$activeLanguage = $userLanguage;
-					$translator = new Translator('lang', $userLanguage->code);
+			//Set translations up based on the active user's desired language
+			if (empty($_REQUEST['language']) && $user !== false) {
+				global $activeLanguage;
+				global $translator;
+				$userLanguage = new Language();
+				$userLanguage->code = $user->interfaceLanguage;
+				if ($userLanguage->find(true)) {
+					if ($userLanguage->code != $activeLanguage->code) {
+						$activeLanguage = $userLanguage;
+						$translator = new Translator('lang', $userLanguage->code);
+					}
 				}
 			}
+
+			if ($user !== false && $user->allowAppRequestLogging) {
+				$this->logPatronRequest($user->id);
+			}
+			$this->_userForAPICall = $user;
 		}
 
-		if ($user !== false && $user->allowAppRequestLogging) {
-			$this->logPatronRequest($user->id);
-		}
-
-		return $user;
+		return $this->_userForAPICall;
 	}
 
 	/**

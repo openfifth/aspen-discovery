@@ -1824,11 +1824,24 @@ AspenDiscovery.Admin = (function () {
 			return false;
 		},
 		setDateFilterFieldVisibility: function (propertyName) {
-			var selectedValue = $('#filterType_' + propertyName).val();
+			let selectedValue = $('#filterType_' + propertyName).val();
 			if (selectedValue === 'afterTime') {
 				$('#filterValue_' + propertyName).show();
 				$('#filterValue2_' + propertyName).val('').hide();
 			} else if (selectedValue === 'beforeTime') {
+				$('#filterValue_' + propertyName).val('').hide();
+				$('#filterValue2_' + propertyName).show();
+			} else {
+				$('#filterValue_' + propertyName).show();
+				$('#filterValue2_' + propertyName).show();
+			}
+		},
+		setIntegerFilterFieldVisibility: function (propertyName) {
+			let selectedValue = $('#filterType_' + propertyName).val();
+			if (selectedValue === 'equals' || selectedValue === 'greaterThan' || selectedValue === 'greaterThanOrEqual') {
+				$('#filterValue_' + propertyName).show();
+				$('#filterValue2_' + propertyName).val('').hide();
+			} else if (selectedValue === 'lessThan' || selectedValue === 'lessThanOrEqual') {
 				$('#filterValue_' + propertyName).val('').hide();
 				$('#filterValue2_' + propertyName).show();
 			} else {

@@ -6768,6 +6768,32 @@ class Library extends DataObject {
 		if (!empty($structure['ilsSection']['properties']['thirdPartyRegistrationSection']['properties']['thirdPartyRegistrationLocation'])) {
 			$structure['ilsSection']['properties']['thirdPartyRegistrationSection']['properties']['thirdPartyRegistrationLocation']['values'] = $thirdPartyRegistrationLocations;
 		}
+
+		//Update combined results
+		$combinedResultsSectionStructure = $structure['combinedResultsSection']['properties']['combinedResultSections']['structure'];
+		if ($this->ebscohostSearchSettingId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['ebscohost']);
+		}
+		if ($this->edsSettingsId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['ebsco_eds']);
+		}
+		if ($this->summonSettingsId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['summon']);
+		}
+		if ($this->galeSettingsId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['gale']);
+		}
+		if ($this->getCloudSourceSettingId() == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['cloudsource']);
+		}
+		if (!$this->enableInnReachIntegration) {
+			unset($combinedResultsSectionStructure['source']['values']['innReach']);
+		}
+		if (!$this->ILLSystem != 3) {
+			unset($combinedResultsSectionStructure['source']['values']['shareIt']);
+		}
+		$structure['combinedResultsSection']['properties']['combinedResultSections']['structure'] = $combinedResultsSectionStructure;
+
 		return $structure;
 	}
 
@@ -6981,5 +7007,21 @@ class Library extends DataObject {
 			}
 		}
 		return $this->_cloudSourceSettingId;
+	}
+
+	private null|bool|PalaceProjectSetting $_palaceProjectSettings = false;
+	public function getPalaceProjectSettings() : ?PalaceProjectSetting {
+		if ($this->_palaceProjectSettings === false) {
+			$this->_palaceProjectSettings = null;
+			if ($this->palaceProjectScopeId > 0) {
+				require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectScope.php';
+				$palaceProjectScope = new PalaceProjectScope();
+				$palaceProjectScope->id = $this->palaceProjectScopeId;
+				if ($palaceProjectScope->find(true)){
+					$this->_palaceProjectSettings = $palaceProjectScope->getSettings();
+				}
+			}
+		}
+		return $this->_palaceProjectSettings;
 	}
 }

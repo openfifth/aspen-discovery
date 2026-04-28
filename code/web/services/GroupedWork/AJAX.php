@@ -162,6 +162,7 @@ class GroupedWork_AJAX extends JSON_Action {
 
 		global $interface;
 		global $memoryWatcher;
+		global $library;
 
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 		$id = $_REQUEST['id'];
@@ -181,8 +182,42 @@ class GroupedWork_AJAX extends JSON_Action {
 		$enrichmentData = $recordDriver->loadEnrichment();
 		$memoryWatcher->logMemory('Loaded Enrichment information from NoveList');
 
-		//Process series data
+		//Process series data if series module is on
 		$titles = [];
+		if ($library->useSeriesSearchIndex) {
+			$seriesInfo = $recordDriver->getSeries(true);
+			if (empty($seriesInfo) || empty($seriesInfo['seriesId'])) {
+				$enrichmentResult['seriesInfo'] = [
+					'titles' => $titles,
+					'currentIndex' => 0,
+				];
+			}else{
+				$seriesId = $seriesInfo['seriesId'];
+
+				require_once ROOT_DIR . '/sys/Series/Series.php';
+				$series = new Series();
+				$series->id = $seriesId;
+				if ($series->find(true)) {
+					$seriesMembers = $series->getSeriesMembers($series->getDefaultSortMethodName(), false, false);
+					$titles = [];
+					$currentIndex = 1;
+					foreach ($seriesMembers as $index => $seriesMember) {
+						$titles[] = $this->getScrollerTitleForSeriesMember($seriesMember, $index, 'Series');
+						if ($seriesMember->groupedWorkPermanentId == $id) {
+							$currentIndex = $index;
+						}
+					}
+
+					$seriesInfo = [
+						'titles' => $titles,
+						'currentIndex' => $currentIndex,
+					];
+					$enrichmentResult['seriesInfo'] = $seriesInfo;
+				}
+			}
+		}
+
+		//Process Novelist if on.
 		/** @var NovelistData $novelistData */
 		if (isset($enrichmentData['novelist'])) {
 			$novelistData = $enrichmentData['novelist'];
@@ -250,6 +285,7 @@ class GroupedWork_AJAX extends JSON_Action {
 				$interface->assign($detailOption, true);
 			}
 			$interface->assign('series', $series);
+			$interface->assign('summId', $id);
 			$enrichmentResult['seriesSummary'] = $interface->fetch('GroupedWork/series-summary.tpl');
 		}
 
@@ -477,6 +513,70 @@ class GroupedWork_AJAX extends JSON_Action {
 		];
 	}
 
+	private function getScrollerTitleForSeriesMember(SeriesMember $seriesMember, $index, $scrollerName) : array {
+		$recordDriver = $seriesMember->getRecordDriver();
+		if ($recordDriver != null) {
+			$cover = $recordDriver->getBookcoverUrl('medium');
+		}else{
+			$cover = '';
+		}
+		$title = preg_replace("~\\s*([/:])\\s*$~", "", $seriesMember->displayName);
+		$series = $seriesMember->getSeries()->displayName;
+
+		if (isset($series)) {
+			$title .= ' (' . $series;
+			if (!empty($seriesMember->volume)) {
+				$title .= ' Volume ' . $seriesMember->volume;
+			}
+			$title .= ')';
+		}
+
+		if ($recordDriver != null) {
+			global $interface;
+			$interface->assign('index', $index);
+			$interface->assign('scrollerName', $scrollerName);
+			$interface->assign('id', $recordDriver->getPermanentId());
+			$interface->assign('title', $title);
+			$interface->assign('linkUrl', $recordDriver->getLinkUrl());
+			$interface->assign('bookCoverUrl', $cover);
+			$interface->assign('bookCoverUrlMedium', $cover);
+			$formattedTitle = $interface->fetch('RecordDrivers/GroupedWork/scroller-title.tpl');
+		} else {
+			$originalId = $_REQUEST['id'];
+			$formattedTitle = "<div id=\"scrollerTitle$scrollerName$index\" class=\"scrollerTitle\" onclick=\"return AspenDiscovery.showElementInPopup('$title', '#noResults$index')\">" . "<img src=\"$cover\" class=\"scrollerTitleCover\" alt=\"$title Cover\"/>" . "</div>";
+			$formattedTitle .= "<div id=\"noResults$index\" style=\"display:none\">
+					<div class=\"row\">
+						<div class=\"result-label col-md-3\">Author: </div>
+						<div class=\"col-md-9 result-value notranslate\">
+							<a href='/Author/Home?author=\"{$seriesMember->getSeries()->author}\"'>{$seriesMember->getSeries()->author}</a>
+						</div>
+					</div>
+					<div class=\"series row\">
+						<div class=\"result-label col-md-3\">Series: </div>
+						<div class=\"col-md-9 result-value\">
+							<a href=\"/GroupedWork/$originalId/Series\">$series</a>
+						</div>
+					</div>
+					<div class=\"row related-manifestation\">
+						<div class=\"col-sm-12\">
+							" . translate([
+					'text' => "The library does not own any copies of this title.",
+					'isPublicFacing' => true,
+				]) . "
+						</div>
+					</div>
+				</div>";
+		}
+
+		return [
+			'id' => $seriesMember->groupedWorkPermanentId ?? '',
+			'image' => $cover,
+			'title' => $title,
+			'author' => $seriesMember->getSeries()->author ?? '',
+			'formattedTitle' => $formattedTitle,
+		];
+	}
+
 	/** @noinspection PhpUnused */
 	function getGoDeeperData() : array {
 		$this->checkRequiredParameters(['id']);
@@ -549,6 +649,7 @@ class GroupedWork_AJAX extends JSON_Action {
 		]);
 
 		// button template
+		$interface->assign('summId', $recordDriver->getPermanentId());
 		$interface->assign('workId', $recordDriver->getPermanentId());
 		$interface->assign('escapeId', $escapedId);
 		$interface->assign('buttonLabel', $buttonLabel);
@@ -1592,6 +1693,8 @@ class GroupedWork_AJAX extends JSON_Action {
 	/** @noinspection PhpUnused */
 	function getCopyDetails() : array {
 		$this->checkRequiredParameters(['id']);
+		$this->checkRequiredParameters(['recordId']);
+		$this->checkRequiredParameters(['format']);
 
 		global $interface;
 		global $library;
@@ -1629,69 +1732,67 @@ class GroupedWork_AJAX extends JSON_Action {
 		$interface->assign('relatedManifestation', $relatedManifestation);
 		$interface->assign('isEContent', $relatedManifestation->isEContent());
 
-		$summary = null;
 		$infoToShow = [
 			'volume'   => false,
 			'note'     => false,
 			'dueDate' => false,
 			'barcode'  => false
 		];
-		if ($whereIsItDisplayStyle == 2) {
-			foreach ($relatedManifestation->getRelatedRecords() as $record) {
-				$recordDriver = new MarcRecordDriver($record->id);
-				if ($recordDriver->isValid()) {
-					$summary = $recordDriver->getSortedCopies();
-
-					foreach ($summary as $summaryItem) {
-						if (!empty($summaryItem['volume'])) {
-							$infoToShow['volume'] = true;
-						}
-						if (!empty($summaryItem['note'])) {
-							$infoToShow['note'] = true;
-						}
-						if (!empty($summaryItem['dueDate'])) {
-							$infoToShow['dueDate'] = true;
-						}
-						if (!empty($summaryItem['barcode'])) {
-							$infoToShow['barcode'] = true;
-						}
-
-						if (!in_array(false, $infoToShow, true)) {
-							break; // Exit when ALL four are true
-						}
-					}
+		if ($recordId != $id) {
+			$record = $recordDriver->getRelatedRecord($recordId);
+			if ($record != null) {
+				if (!empty($record->getUnsuppressedVolumeData())) {
+					$infoToShow['volume'] = true;
 				}
-			}
-		}
-		if ($summary == null) {
-			if ($recordId != $id) {
-				$record = $recordDriver->getRelatedRecord($recordId);
-				if ($record != null) {
-					if (!empty($record->getUnsuppressedVolumeData())) {
-						$infoToShow['volume'] = true;
-					}
-					foreach ($relatedManifestation->getVariations() as $variation) {
-						foreach ($variation->getRecords() as $recordWithVariation) {
-							if ($recordWithVariation->id == $recordId) {
+				foreach ($relatedManifestation->getVariations() as $variation) {
+					foreach ($variation->getRecords() as $recordWithVariation) {
+						if ($recordWithVariation->id == $recordId) {
+							if ($whereIsItDisplayStyle == 1) {
 								$summary = $recordWithVariation->getItemSummary();
-								break;
+							}else{
+								$summary = $recordWithVariation->getItemDetails();
 							}
-						}
-						if (!empty($summary)) {
 							break;
 						}
 					}
-				} else {
-					foreach ($relatedManifestation->getVariations() as $variation) {
-						if ($recordId == $id . '_' . $variation->label) {
-							$summary = $variation->getItemSummary();
-							break;
-						}
+					if (!empty($summary)) {
+						break;
 					}
 				}
 			} else {
+				foreach ($relatedManifestation->getVariations() as $variation) {
+					if ($recordId == $id . '_' . $variation->label) {
+						if ($whereIsItDisplayStyle == 1) {
+							$summary = $variation->getItemSummary();
+						}else{
+							$summary = $variation->getItemDetails();
+						}
+						break;
+					}
+				}
+			}
+		} else {
+			if ($whereIsItDisplayStyle == 1) {
 				$summary = $relatedManifestation->getItemSummary();
-				$infoToShow['volume'] = $relatedManifestation->hasVolumes();
+			}else{
+				$summary = $relatedManifestation->getItemDetails();
+			}
+			$infoToShow['volume'] = $relatedManifestation->hasVolumes();
+		}
+		if ($whereIsItDisplayStyle == 2) {
+			foreach ($summary as $item) {
+				if (!empty($item['volume'])) {
+					$infoToShow['volume'] = true;
+				}
+				if (!empty($item['note'])) {
+					$infoToShow['note'] = true;
+				}
+				if (!empty($item['dueDate'])) {
+					$infoToShow['dueDate'] = true;
+				}
+				if (!empty($item['barcode'])) {
+					$infoToShow['barcode'] = true;
+				}
 			}
 		}
 		$interface->assign('infoToShow', $infoToShow);

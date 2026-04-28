@@ -496,7 +496,7 @@ class ListAPI extends AbstractAPI {
 
 		$user = $this->getUserForApiCall();
 		if (!$user) {
-			$user = UserAccount::getLoggedInUser(); // not sure why this is here... are we calling this API in Discovery?
+			$user = UserAccount::getLoggedInUser(); // This is here because the API is called from Discovery when loading Browse Categories
 		}
 
 		if (isset($_REQUEST['numTitles'])) {
