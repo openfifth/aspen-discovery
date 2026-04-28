@@ -93,6 +93,55 @@ class MaterialsRequest_ManageTitleRequests extends Admin_Admin {
 		} else {
 			$interface->assign('error', "You must be logged in to manage requests.");
 		}
+		// Get Statuses
+		$materialsRequestStatus = new MaterialsRequestStatus();
+		$materialsRequestStatus->orderBy('isDefault DESC, isOpen DESC, description ASC');
+		$materialsRequestStatus->libraryId = $homeLibrary->libraryId;
+		$materialsRequestStatus->find();
+		$availableStatuses = [];
+		while ($materialsRequestStatus->fetch()) {
+			$availableStatuses[$materialsRequestStatus->id] = $materialsRequestStatus->description;
+		}
+		$interface->assign('availableStatuses', $availableStatuses);
+		// Get Assignees
+		if (is_null($homeLibrary)) {
+			//User does not have a home library, this is likely an admin account.  Use the active library
+			global $library;
+			$homeLibrary = $library;
+		}
+		$locations = new Location();
+		$locations->libraryId = $homeLibrary->libraryId;
+		$locations->find();
+		$locationsForLibrary = [];
+		while ($locations->fetch()) {
+			$locationsForLibrary[] = $locations->locationId;
+		}
+		//Get a list of other users that are materials request users for this library
+		$permission = new Permission();
+		$permission->name = 'Manage Library Materials Requests';
+		if ($permission->find(true)) {
+			//Get roles for the user
+			$rolePermissions = new RolePermissions();
+			$rolePermissions->permissionId = $permission->id;
+			$rolePermissions->find();
+			$assignees = [];
+			while ($rolePermissions->fetch()) {
+				// Get Available Assignees
+				$materialsRequestManagers = new User();
+				if (count($locationsForLibrary) > 0) {
+					if ($materialsRequestManagers->query("SELECT * from user WHERE id IN (SELECT userId FROM user_roles WHERE roleId = $rolePermissions->roleId) AND ((id IN (SELECT userId from user_administration_locations WHERE locationId IN (" . implode(', ', $locationsForLibrary) . "))) OR homeLocationId IN (" . implode(', ', $locationsForLibrary) . "))")) {
+						while ($materialsRequestManagers->fetch()) {
+							if (empty($materialsRequestManagers->displayName)) {
+								$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->firstname . ' ' . $materialsRequestManagers->lastname;
+							} else {
+								$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->getDisplayName();
+							}
+						}
+					}
+				}
+			}
+			$interface->assign('assignees', $assignees);
+		}
 		$interface->assign('allRequests', $allRequests);
 
 

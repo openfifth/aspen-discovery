@@ -58,6 +58,7 @@ AspenDiscovery.MaterialsRequest = (function(){
 			var selectedRequests = $("input.select:checked").map(function() {
 				return $(this).attr('name') + "=" + $(this).val();
 			}).get().join("&");
+			console.log(selectedRequests);
 			if (selectedRequests.length === 0){
 				if (promptToSelectAll){
 					var ret = confirm('You have not selected any requests, process all requests?');
@@ -306,6 +307,34 @@ AspenDiscovery.MaterialsRequest = (function(){
 			var params = {
 				method:  'updateMaterialsTitleRequests',
 				updates: JSON.stringify(updates),
+			};
+
+			$.getJSON(url, params,
+				function(data) {
+					if (data.success) {
+						AspenDiscovery.showMessage(data.title, data.modalBody);
+					} else {
+						AspenDiscovery.showMessage('An error occurred', data.message);
+					}
+				}
+			).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+
+		updateSelectedTitleRequests: function () {
+			var newStatus = $("#newStatus").val();
+			var newAssignee = $("#newAssignee").val();
+			if (newAssignee === "unselected" && newStatus === "unselected"){
+				alert("Please select a new assignee and/or status to update.");
+				return false;
+			}
+			var selectedRequests = this.getSelectedRequests(false);
+			var url = Globals.path + "/MaterialsRequest/AJAX";
+			var params = {
+				method:  'updateSelectedTitleRequests',
+				selectedRequests: selectedRequests,
+				newStatus: newStatus,
+				newAssignee: newAssignee
 			};
 
 			$.getJSON(url, params,

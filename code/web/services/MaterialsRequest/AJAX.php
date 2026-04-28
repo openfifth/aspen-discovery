@@ -562,6 +562,67 @@ class MaterialsRequest_AJAX extends JSON_Action {
 			];
 		}
 	}
+	/** @noinspection PhpUnused */
+	function updateSelectedTitleRequests(): array {
+		$selectedRequests = $_REQUEST['selectedRequests'];
+		$newStatus = $_REQUEST['newStatus'] === 'unselected' ? null : $_REQUEST['newStatus'];
+		$newAssignee = $_REQUEST['newAssignee'] === 'unselected' ? null : $_REQUEST['newAssignee'];
+
+		if (!empty($selectedRequests)) {
+			preg_match_all('/select\[(\d+)\]/', $selectedRequests, $matches);
+			$titleRequestIds = $matches[1];
+
+			$numAssigneeUpdates = 0;
+			$numStatusUpdates = 0;
+			$numRequestsToUpdate = 0;
+
+			foreach ($titleRequestIds as $titleRequestId) {
+
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->materialsRequestTitleId = $titleRequestId;
+				$materialsRequest->find();
+
+				while ($materialsRequest->fetch()) {
+					$numRequestsToUpdate++;
+					$sameAssignee = true;
+					$sameStatus = true;
+					if (!empty($newAssignee)) {
+						if ($materialsRequest->assignedTo != $newAssignee) {
+							$materialsRequest->assignedTo = $newAssignee;
+							$sameAssignee = false;
+						}
+					}
+					if (!empty($newStatus)) {
+						if ($materialsRequest->status != $newStatus) {
+							$materialsRequest->status = $newStatus;
+							$sameStatus = false;
+						}
+					}
+					if ($materialsRequest->update()){
+						if (!$sameAssignee) {
+							$numAssigneeUpdates++;
+						}
+						if (!$sameStatus) {
+							$numStatusUpdates++;
+						}
+					}
+				}
+			}
+			if ($numAssigneeUpdates != 0 || $numStatusUpdates != 0) {
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => "Successfully updated " . $numAssigneeUpdates . " assignees and " . $numStatusUpdates . " statuses of " . $numRequestsToUpdate . " requests.",
+				];
+			}
+		}
+		return [
+			'success' => false,
+		];
+	}
 
 	/** @noinspection PhpUnused */
 	function showSelectHoldCandidateForm() : array {
