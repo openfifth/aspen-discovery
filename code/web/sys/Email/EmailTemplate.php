@@ -42,6 +42,7 @@ class EmailTemplate extends DataObject {
 				'campaignComplete' => 'Campaign Complete',
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
+				'savedSearchAlert' => 'Saved Search Alert',
 			];
 		}
 		require_once ROOT_DIR . '/sys/Translation/Language.php';
@@ -269,15 +270,27 @@ class EmailTemplate extends DataObject {
 		if ($templateFound) {
 			return $emailTemplate;
 		}else{
-			return null;
+			return EmailTemplate::getDefaultTemplate($templateType);
 		}
+	}
+
+	public static function getDefaultTemplate(string $templateType) : ?EmailTemplate {
+		global $activeLanguage;
+		$emailTemplate = new EmailTemplate();
+		$emailTemplate->templateType = $templateType;
+		$emailTemplate->languageCode = $activeLanguage->code;
+		if ($templateType === 'savedSearchAlert') {
+			$emailTemplate->subject = 'New Results in Your Saved Searches';
+			$emailTemplate->plainTextBody = 'There are new results appearing in your saved searches!';
+			return $emailTemplate;
+		}
+		return null;
 	}
 
 	public function sendEmail($toEmail, $parameters) : bool {
 		if (empty($toEmail)) {
 			return false;
 		}
-		$plainTextBody = $this->plainTextBody;
 		$updatedBody = $this->applyParameters($this->plainTextBody, $parameters);
 		$updatedSubject = $this->applyParameters($this->subject, $parameters);
 
@@ -318,6 +331,9 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%campaign.name%', $parameters['campaignName'] ?? '', $text);
 			$text = str_replace('%milestone.name%', $parameters['milestoneName'] ?? '', $text);
 			$text = str_replace('%milestone.reward%', $parameters['milestoneReward'] ?? '', $text);
+		} elseif ($this->templateType == 'savedSearchAlert') {
+			$text = str_replace('%titles%', $parameters['titles'] ?? '', $text);
+			$text = str_replace('%searchHistoryUrl%', $parameters['searchHistoryUrl'] ?? '', $text);
 		}
 		return $text;
 	}

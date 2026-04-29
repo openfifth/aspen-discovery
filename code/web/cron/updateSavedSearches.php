@@ -118,12 +118,18 @@ if ($search->getNumResults() > 0) {
 					if ($userForSearch->notifySavedSearches == TRUE) {
 						$userLibrary = $userForSearch->getHomeLibrary();
 						$baseUrl = $userLibrary->getBaseUrl();
-						$key = $userForSearch->email . '|' . $baseUrl;
-						if (array_key_exists($key, $usersWithUpdatesToEmail)) {
-							$usersWithUpdatesToEmail[$key][] = $searchEntry->title;
+						$key = $userForSearch->id . '|' . $baseUrl;
+
+						if (!isset($usersWithUpdatesToEmail[$key])) {
+							$usersWithUpdatesToEmail[$key] = [
+								'user' => $userForSearch,
+								'library' => $userLibrary,
+								'baseUrl' => $baseUrl,
+								'titles' => [$searchEntry->title],
+							];
 						}
 						else {
-							$usersWithUpdatesToEmail[$key] = [$searchEntry->title];
+							$usersWithUpdatesToEmail[$key]['titles'][] = $searchEntry->title;
 						}
 					}
 				}
@@ -150,31 +156,25 @@ $searchUpdateLogEntry->endTime = time();
 $searchUpdateLogEntry->update();
 
 // Now that we know all of the searches that have updates, let's send a single email to each distinct email address from that set.
-require_once ROOT_DIR . '/sys/Email/Mailer.php';
-$mailer = new Mailer();
-foreach ($usersWithUpdatesToEmail as $key => $searchTitles) {
-	$keySeparated = explode('|', $key);
-	$emailAddress = $keySeparated[0];
-	$baseUrl = $keySeparated[1];
-	$body = translate([
-		'text' => 'There are new results appearing in your saved searches!',
-		'isPublicFacing' => true,
-	]) . "\r\n" . $baseUrl . '/Search/History?require_login';
-	$htmlBody = '<p>' . translate([
-		'text' => 'There are new results appearing in %1%your saved searches%2%!',
-		1 => '<a href="' . $baseUrl . '/Search/History?require_login">',
-		2 => '</a>',
-		'isPublicFacing' => true,
-	]) . '</p><ul>';
-	foreach ($searchTitles as $searchTitle) {
-		$body .= "\r\n" . $searchTitle;
-		$htmlBody .= '<li>' . $searchTitle . '</li>';
+require_once ROOT_DIR . '/sys/Email/EmailTemplate.php';
+$emailTemplate = EmailTemplate::getActiveTemplate('savedSearchAlert');
+$emailTemplate->plainTextBody .= '%searchHistoryUrl%';
+$emailTemplate->plainTextBody .= '%titles%';
+foreach ($usersWithUpdatesToEmail as $data) {
+
+	if (empty($data['user']) || empty($data['titles'])) {
+		continue;
 	}
-	$htmlBody .= '</ul>';
-	$result = $mailer->send($emailAddress, translate([
-		'text' => "New Results in Your Saved Searches",
-		'isPublicFacing' => true,
-	]), $body, null, $htmlBody);
+	$emailAddress = $data['user']->email;
+
+	$parameters = [
+		'user' => $data['user'],
+		'library' => $data['library'],
+		'titles' => "\r\n" . implode("\r\n", $data['titles']),
+		'searchHistoryUrl' => "\r\n" . $data['baseUrl'] . '/Search/History?require_login'
+	];
+
+	$emailTemplate->sendEmail($emailAddress, $parameters);
 }
 
 $numUpdated = ($searchUpdateLogEntry->numUpdated > 0) ? $searchUpdateLogEntry->numUpdated : 0;

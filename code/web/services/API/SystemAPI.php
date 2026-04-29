@@ -429,6 +429,12 @@ class SystemAPI extends AbstractAPI {
 			}
 		}
 
+		//Get Plugin Updates
+		global $plugins;
+		foreach ($plugins as $plugin) {
+			$baseUpdates = array_merge($baseUpdates, $plugin->getDatabaseUpdates());
+		}
+
 		return $baseUpdates;
 	}
 
