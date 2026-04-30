@@ -3821,16 +3821,30 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			$checkoutLocationSetting = $scoSettings->getCheckoutLocationSetting($currentLocation->code);
 			$itemKey = $lookupItemResponse->key;
 			$currentItemLocation = $lookupItemResponse->fields->currentLocation->key;
+			$owningLocationCode = $lookupItemResponse->fields->currentLibrary->key;
 
 			if ($checkoutLocationSetting == 0) {
 				//Use the active location, no change needed
 				$doCheckout = true;
+				/** @var Location $locationSingleton **/
+				global $locationSingleton;
+				$activeLocation = $locationSingleton->getActiveLocation();
+				if (empty($activeLocation)) {
+					global $library;
+					$libraryLocations = $library->getLocations();
+					if (!empty($libraryLocations)) {
+						$activeLocation = reset($libraryLocations);
+					}
+				}
+				$checkoutLocationCode = !empty($activeLocation) ? $activeLocation->code : '';
 			}elseif ($checkoutLocationSetting == 1) {
 				//Use home location for the user
 				$currentLocation = $patron->getHomeLocation();
+				$checkoutLocationCode = $currentLocation->code;
 				$doCheckout = true;
 			}else {
 				$doCheckout = true;
+				$checkoutLocationCode = $owningLocationCode;
 
 				if ($currentItemLocation == 'CHECKEDOUT') {
 					$result['message'] = translate([
@@ -3863,6 +3877,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 										$curPickupBranch->code = $hold->fields->pickupLibrary->key;
 										if ($curPickupBranch->find(true)) {
 											$currentLocation = $curPickupBranch;
+											$checkoutLocationCode = $curPickupBranch->code;
 										}else{
 											//We didn't get a valid code, use the passed in location
 										}
@@ -3877,6 +3892,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 						$curPickupBranch->code = $currentItemLocation;
 						if ($curPickupBranch->find(true)) {
 							$currentLocation = $curPickupBranch;
+							$checkoutLocationCode = $curPickupBranch->code;
 						}else{
 							//We didn't get a valid code, use the passed in location
 						}
