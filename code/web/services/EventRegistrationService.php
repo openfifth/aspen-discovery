@@ -86,14 +86,26 @@ class EventRegistrationService {
 	}
 
 	public static function getAttendeeCategoryBreakdown(int $eventInstanceId): array {
+		return self::resolveAttendeeCategoryBreakdown($eventInstanceId);
+	}
+
+	public static function getRegistrationAttendeeCategoryBreakdown(int $registrationId, int $eventInstanceId): array {
+		return self::resolveAttendeeCategoryBreakdown($eventInstanceId, $registrationId);
+	}
+
+	private static function resolveAttendeeCategoryBreakdown(int $eventInstanceId, ?int $registrationId = null): array {
 		$categories = self::getEventTypeAttendeeCategories($eventInstanceId);
 		if (empty($categories)) {
 			return [];
 		}
-
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
-		$countsByCategory = UserAspenEventInstanceRegistrationAttendee::getCategoryAttendeeCountsForInstance($eventInstanceId);
+		$countsByCategory = $registrationId !== null
+			? UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration($registrationId)
+			: UserAspenEventInstanceRegistrationAttendee::getCategoryAttendeeCountsForInstance($eventInstanceId);
+		return self::buildCategoryBreakdown($categories, $countsByCategory);
+	}
 
+	private static function buildCategoryBreakdown(array $categories, array $countsByCategory): array {
 		$breakdown = [];
 		foreach ($categories as $eventTypeAttendeeCategory) {
 			$attendeeCategory = $eventTypeAttendeeCategory->getCategory();
@@ -105,7 +117,6 @@ class EventRegistrationService {
 				'count' => $countsByCategory[(int)$eventTypeAttendeeCategory->attendeeCategoryId] ?? 0,
 			];
 		}
-
 		return $breakdown;
 	}
 
