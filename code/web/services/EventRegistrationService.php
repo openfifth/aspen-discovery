@@ -334,13 +334,13 @@ class EventRegistrationService {
 	}
 
 	public static function saveToUserEvents(EventInstance $instance, int $userId, ?int $savedByStaffId = null): void {
-		require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
-		$setting = new AspenEventSetting();
-		if (!$setting->find(true)) {
+		require_once ROOT_DIR . '/sys/Events/EventsIndexingSetting.php';
+		$indexingSetting = new EventsIndexingSetting();
+		if (!$indexingSetting->find(true)) {
 			return;
 		}
 
-		$sourceId = 'aspenEvent_' . $setting->id . '_' . $instance->id;
+		$sourceId = 'aspenEvent_' . $indexingSetting->id . '_' . $instance->id;
 
 		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
 		$entry = new UserEventsEntry();
