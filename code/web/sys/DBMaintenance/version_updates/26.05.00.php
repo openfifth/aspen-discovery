@@ -66,6 +66,14 @@ function getUpdates26_05_00(): array {
 				"INSERT INTO email_template (name, templateType, languageCode, subject, plainTextBody, htmlBody) VALUES ('Default Saved Search Alert', 'savedSearchAlert', 'en', 'New Library Materials Match Your Saved Searches', 'The library has added new materials to its collection that may be of interest based on your saved searches (%searchHistory.url%). You may view and request the material via the link(s) below.\r\n\r\n%searchHistory.updatedSearchesWithSampleTitles%', '<p>The library has added new materials to its collection that may be of interest based on your <a href=\'%searchHistory.url%\'>saved searches</a>. You may view and request the material via the link(s) below.</p><div>%searchHistory.updatedSearchesWithSampleTitlesHtml%</div>')"
 			]
 		], //create_plugin_permission
+		'self_check_completion_message_name' => [
+			'title' => 'Add a name to Self Check Completion Message',
+			'description' => 'Add permission to administer plugins',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE self_check_completion_message ADD COLUMN name TEXT"
+			]
+		]
 
 		//kirstien
 
