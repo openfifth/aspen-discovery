@@ -70,6 +70,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 				'registeredByStaff' => $registration->wasRegisteredByStaff(),
 				'staffName' => $staffUser ? $staffUser->getDisplayName() : null,
 				'dateRegistered' => $registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : null,
+				'registrationStatus' => $registration->status,
 				'attendeeCategoryBreakdown' => EventRegistrationService::getRegistrationAttendeeCategoryBreakdown((int)$registration->id, (int)$eventInstanceId),
 			];
 		}
@@ -151,6 +152,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 			$user ? $user->email : '',
 			$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
 			$registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : '-',
+			$registration->status,
 		];
 	}
 
@@ -173,12 +175,12 @@ class Events_AttendanceManagement extends Admin_Admin {
 		echo "Total Registrations: " . count($registrations) . "\n";
 		echo str_repeat("=", 80) . "\n\n";
 
-		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . "Attended\n";
-		echo str_repeat("-", 137) . "\n";
+		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . str_pad("Status", 15) . "Attended\n";
+		echo str_repeat("-", 152) . "\n";
 
 		foreach ($registrations as $registration) {
-			[$patronName, $barcode, $email, $registeredBy, $dateRegistered] = $this->buildBaseRegistrationRow($registration);
-			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . "[ ]\n";
+			[$patronName, $barcode, $email, $registeredBy, $dateRegistered, $registrationStatus] = $this->buildBaseRegistrationRow($registration);
+			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . str_pad($registrationStatus, 15) . "[ ]\n";
 		}
 		exit;
 	}
@@ -201,7 +203,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 		$output = fopen('php://output', 'w');
 
-		$headers = ['Patron Name', 'Barcode', 'Email', 'Registered By', 'Date Registered', 'Attended'];
+		$headers = ['Patron Name', 'Barcode', 'Email', 'Registered By', 'Date Registered', 'Registration Status', 'Attended'];
 
 		foreach ($customFields as $fieldId => $field) {
 			$headers[] = $field['label'];

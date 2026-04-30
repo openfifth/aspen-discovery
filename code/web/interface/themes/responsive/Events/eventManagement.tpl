@@ -131,6 +131,7 @@
 								<th>{translate text="Email" isAdminFacing=true}</th>
 								<th>{translate text="Registered By" isAdminFacing=true}</th>
 								<th>{translate text="Date Registered" isAdminFacing=true}</th>
+								<th>{translate text="Registration Status" isAdminFacing=true}</th>
 								{if $hasAttendeeCategories}
 									<th>{translate text="Attendees" isAdminFacing=true}</th>
 								{/if}
@@ -152,6 +153,7 @@
 										{/if}
 									</td>
 									<td>{$reg.dateRegistered|default:"-"}</td>
+									<td>{$reg.registrationStatus|escape}</td>
 									{if $hasAttendeeCategories}
 										<td>
 											{if !empty($reg.attendeeCategoryBreakdown)}
