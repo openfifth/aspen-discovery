@@ -70,9 +70,11 @@ class Events_AttendanceManagement extends Admin_Admin {
 				'registeredByStaff' => $registration->wasRegisteredByStaff(),
 				'staffName' => $staffUser ? $staffUser->getDisplayName() : null,
 				'dateRegistered' => $registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : null,
+				'attendeeCategoryBreakdown' => EventRegistrationService::getRegistrationAttendeeCategoryBreakdown((int)$registration->id, (int)$eventInstanceId),
 			];
 		}
 		$interface->assign('registrations', $registrationData);
+		$interface->assign('hasAttendeeCategories', !empty($registrationData) && !empty($registrationData[0]['attendeeCategoryBreakdown']));
 
 		$this->display('eventManagement.tpl', 'Attendance Management - ' . $parentEvent->title);
 	}
