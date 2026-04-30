@@ -3748,7 +3748,7 @@ class Koha extends AbstractIlsDriver {
 				'login_password' => $user->ils_password,
 				'login_userid' => $user->ils_barcode,
 				'csrf_token' => $csrfToken,
-				'login_op' => 'cud-login'
+				'op' => 'cud-login'
 			];
 		}
 
