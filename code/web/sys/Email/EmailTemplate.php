@@ -9,7 +9,7 @@ class EmailTemplate extends DataObject {
 	public $languageCode;
 	public $subject;
 	public $plainTextBody;
-	//TODO: Add HTML Body
+	public $htmlBody;
 
 	private $_libraries;
 
@@ -27,22 +27,25 @@ class EmailTemplate extends DataObject {
 				$isCarlX = true;
 			}
 		}
-		if ($isCarlX){
-			$availableTemplates = [
-				'welcome' => 'Welcome',
-				'duplicateNameDOB' => 'Duplicate Name and Birthdate',
-				'duplicateEmail' => 'Duplicate Email'
-			];
-		} else {
-			$availableTemplates = [
-				'welcome' => 'Welcome',
+		$availableTemplates = [
+			'welcome' => 'Welcome',
+			'savedSearchAlert' => 'Saved Search Alert',
+		];
+		global $enabledModules;
+		if (in_array('Community Engagement', $enabledModules)) {
+			$availableTemplates += [
 				'campaignStart' => 'Campaign Start',
 				'campaignEnd' => 'Campaign Ending',
 				'campaignEnroll' => 'Campaign Enrollment',
 				'campaignComplete' => 'Campaign Complete',
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
-				'savedSearchAlert' => 'Saved Search Alert',
+			];
+		}
+		if ($isCarlX){
+			$availableTemplates += [
+				'duplicateNameDOB' => 'Duplicate Name and Birthdate',
+				'duplicateEmail' => 'Duplicate Email'
 			];
 		}
 		require_once ROOT_DIR . '/sys/Translation/Language.php';
@@ -107,6 +110,15 @@ class EmailTemplate extends DataObject {
 				'description' => 'The plain text body of the email',
 				'hideInLists' => true,
 				'required' => true,
+				'autocomplete' => false,
+			],
+			'htmlBody' => [
+				'property' => 'htmlBody',
+				'type' => 'html',
+				'label' => 'HTML Body',
+				'description' => 'The html body of the email (will use plain text if left blank)',
+				'hideInLists' => true,
+				'required' => false,
 				'autocomplete' => false,
 			],
 			'libraries' => [
@@ -280,8 +292,9 @@ class EmailTemplate extends DataObject {
 		$emailTemplate->templateType = $templateType;
 		$emailTemplate->languageCode = $activeLanguage->code;
 		if ($templateType === 'savedSearchAlert') {
-			$emailTemplate->subject = 'New Results in Your Saved Searches';
-			$emailTemplate->plainTextBody = 'There are new results appearing in your saved searches!';
+			$emailTemplate->subject = 'New Library Materials Match Your Saved Searches';
+			$emailTemplate->plainTextBody = "The library has added new materials to its collection that may be of interest based on your saved searches (%searchHistory.url%). You may view and request the material via the link(s) below.\r\n\r\n%searchHistory.updatedSearchesWithSampleTitles%";
+			$emailTemplate->htmlBody = "<p>The library has added new materials to its collection that may be of interest based on your <a href='%searchHistory.url%'>saved searches</a>. You may view and request the material via the link(s) below.</p><div>%searchHistory.updatedSearchesWithSampleTitlesHtml%</div>";
 			return $emailTemplate;
 		}
 		return null;
@@ -291,12 +304,18 @@ class EmailTemplate extends DataObject {
 		if (empty($toEmail)) {
 			return false;
 		}
-		$updatedBody = $this->applyParameters($this->plainTextBody, $parameters);
+		$updatedPlainTextBody = $this->applyParameters($this->plainTextBody, $parameters);
+		if (empty($this->htmlBody)) {
+			$updatedHtmlBody = $updatedPlainTextBody;
+			$updatedHtmlBody = str_replace("\r\n", "<br/>", $updatedHtmlBody);
+		}else{
+			$updatedHtmlBody = $this->applyParameters($this->htmlBody, $parameters);
+		}
 		$updatedSubject = $this->applyParameters($this->subject, $parameters);
 
 		require_once ROOT_DIR . '/sys/Email/Mailer.php';
 		$mail = new Mailer();
-		return $mail->send($toEmail, $updatedSubject, $updatedBody);
+		return $mail->send($toEmail, $updatedSubject, $updatedPlainTextBody, null, $updatedHtmlBody);
 	}
 
 	private function applyParameters($text, $parameters) {
@@ -332,8 +351,11 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%milestone.name%', $parameters['milestoneName'] ?? '', $text);
 			$text = str_replace('%milestone.reward%', $parameters['milestoneReward'] ?? '', $text);
 		} elseif ($this->templateType == 'savedSearchAlert') {
-			$text = str_replace('%titles%', $parameters['titles'] ?? '', $text);
-			$text = str_replace('%searchHistoryUrl%', $parameters['searchHistoryUrl'] ?? '', $text);
+			$text = str_replace('%searchHistory.url%', $parameters['searchHistory']['url'] ?? '', $text);
+			$text = str_replace('%searchHistory.updatedSearchesWithSampleTitlesHtml%', $parameters['searchHistory']['updatedSearchesWithSampleTitlesHtml'] ?? '', $text);
+			$text = str_replace('%searchHistory.updatedSearchesWithSampleTitles%', $parameters['searchHistory']['updatedSearchesWithSampleTitles'] ?? '', $text);
+			$text = str_replace('%searchHistory.updatedSearchesHtml%', $parameters['searchHistory']['updatedSearchesHtml'] ?? '', $text);
+			$text = str_replace('%searchHistory.updatedSearches%', $parameters['searchHistory']['updatedSearches'] ?? '', $text);
 		}
 		return $text;
 	}

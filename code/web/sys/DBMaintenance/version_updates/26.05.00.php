@@ -24,7 +24,6 @@ function getUpdates26_05_00(): array {
 				'ALTER TABLE self_reg_municipality_values_sierra ADD COLUMN extendExpirationToMonthEnd TINYINT(1) DEFAULT 0',
 			]
 		], //municipality_extend_registration
-
 		'create_plugin_table' => [
 			'title' => 'Create Plugin Table',
 			'description' => 'Create the plugin table for storing plugin information and configuration',
@@ -43,13 +42,28 @@ function getUpdates26_05_00(): array {
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci"
 			]
 		], //create_plugin_table
-
 		'create_plugin_permission' => [
 			'title' => 'Create Plugin Administration Permission',
 			'description' => 'Add permission to administer plugins',
 			'continueOnError' => false,
 			'sql' => [
 				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('System Administration', 'Administer Plugins', '', 80, 'Controls if the user can administer plugins.')"
+			]
+		], //create_plugin_permission
+		'add_html_body_to_email_templates' => [
+			'title' => 'Add HTML Body to Email Templates',
+			'description' => 'Add HTML Body to Email Templates',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE email_template ADD COLUMN htmlBody TEXT"
+			]
+		], //add_html_body_to_email_templates
+		'setup_default_saved_search_email_template' => [
+			'title' => 'Setup Default Saved Search Email Template',
+			'description' => 'Add permission to administer plugins',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO email_template (name, templateType, languageCode, subject, plainTextBody, htmlBody) VALUES ('Default Saved Search Alert', 'savedSearchAlert', 'en', 'New Library Materials Match Your Saved Searches', 'The library has added new materials to its collection that may be of interest based on your saved searches (%searchHistory.url%). You may view and request the material via the link(s) below.\r\n\r\n%searchHistory.updatedSearchesWithSampleTitles%', '<p>The library has added new materials to its collection that may be of interest based on your <a href=\'%searchHistory.url%\'>saved searches</a>. You may view and request the material via the link(s) below.</p><div>%searchHistory.updatedSearchesWithSampleTitlesHtml%</div>')"
 			]
 		], //create_plugin_permission
 
