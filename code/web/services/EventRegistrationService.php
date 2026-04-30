@@ -292,6 +292,7 @@ class EventRegistrationService {
 			$homeLibrary = $library;
 		}
 
+		require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
 		self::sendEventEmail($userId, 'registerForEventFromWaitingList', [
 			'eventDate' => DateUtils::formatHumanDate($instance->date),
 			'eventTime' => $instance->time,
