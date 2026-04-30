@@ -124,42 +124,59 @@
 							</form>
 						</div>
 						<table class="table table-striped table-bordered" id="registrationsTable">
-							<thead>
-								<tr>
-									<th>{translate text="Patron Name" isAdminFacing=true}</th>
-									<th>{translate text="Barcode" isAdminFacing=true}</th>
-									<th>{translate text="Email" isAdminFacing=true}</th>
-									<th>{translate text="Registered By" isAdminFacing=true}</th>
-									<th>{translate text="Date Registered" isAdminFacing=true}</th>
-									<th style="text-align: center;">{translate text="Attended" isAdminFacing=true}</th>
-									<th>{translate text="Actions" isAdminFacing=true}</th>
-								</tr>
-							</thead>
-							<tbody>
-								{foreach from=$registrations item=reg}
-									<tr id="registration-row-{$reg.id}">
-										<td>{$reg.userName|escape}</td>
-										<td>{$reg.userBarcode|escape}</td>
-										<td>{$reg.userEmail|escape}</td>
+						<thead>
+							<tr>
+								<th>{translate text="Patron Name" isAdminFacing=true}</th>
+								<th>{translate text="Barcode" isAdminFacing=true}</th>
+								<th>{translate text="Email" isAdminFacing=true}</th>
+								<th>{translate text="Registered By" isAdminFacing=true}</th>
+								<th>{translate text="Date Registered" isAdminFacing=true}</th>
+								{if $hasAttendeeCategories}
+									<th>{translate text="Attendees" isAdminFacing=true}</th>
+								{/if}
+								<th style="text-align: center;">{translate text="Attended" isAdminFacing=true}</th>
+								<th>{translate text="Actions" isAdminFacing=true}</th>
+							</tr>
+						</thead>
+						<tbody>
+							{foreach from=$registrations item=reg}
+								<tr id="registration-row-{$reg.id}">
+									<td>{$reg.userName|escape}</td>
+									<td>{$reg.userBarcode|escape}</td>
+									<td>{$reg.userEmail|escape}</td>
+									<td>
+										{if $reg.registeredByStaff}
+											{$reg.staffName|escape}
+										{else}
+											<em>{translate text="Self" isAdminFacing=true}</em>
+										{/if}
+									</td>
+									<td>{$reg.dateRegistered|default:"-"}</td>
+									{if $hasAttendeeCategories}
 										<td>
-											{if $reg.registeredByStaff}
-												{$reg.staffName|escape}
-											{else}
-												<em>{translate text="Self" isAdminFacing=true}</em>
+											{if !empty($reg.attendeeCategoryBreakdown)}
+												<table style="margin:0; border-collapse:collapse;">
+													{foreach from=$reg.attendeeCategoryBreakdown item=category}
+														<tr>
+															<td style="padding:0 8px 0 0;">{$category.name|escape}:</td>
+															<td style="padding:0; text-align:right;">{$category.count}</td>
+														</tr>
+													{/foreach}
+												</table>
 											{/if}
 										</td>
-										<td>{$reg.dateRegistered|default:"-"}</td>
-										<td style="text-align: center;">
-											<input type="checkbox" id="attended-{$reg.id}" {if $reg.attended}checked {/if}onchange="AspenDiscovery.Events.toggleAttendance({$reg.id}, this.checked);">
-										</td>
-										<td>
-											<button type="button" class="btn btn-xs btn-danger" onclick="AspenDiscovery.Events.staffUnregisterUser({$eventInstanceId}, {$reg.userId});">
-												<i class="fas fa-times"></i> {translate text="Cancel" isAdminFacing=true}
-											</button>
-										</td>
-									</tr>
-								{/foreach}
-							</tbody>
+									{/if}
+									<td style="text-align: center;">
+										<input type="checkbox" id="attended-{$reg.id}" {if $reg.attended}checked {/if}onchange="AspenDiscovery.Events.toggleAttendance({$reg.id}, this.checked);">
+									</td>
+									<td>
+										<button type="button" class="btn btn-xs btn-danger" onclick="AspenDiscovery.Events.staffUnregisterUser({$eventInstanceId}, {$reg.userId});">
+											<i class="fas fa-times"></i> {translate text="Cancel" isAdminFacing=true}
+										</button>
+									</td>
+								</tr>
+							{/foreach}
+						</tbody>
 						</table>
 					{else}
 						<div class="alert alert-info">
