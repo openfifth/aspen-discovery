@@ -99,6 +99,7 @@ class Holiday extends DataObject {
 		$location->selectAdd();
 		$location->selectAdd('locationId');
 		$location->selectAdd('displayName');
+		$location->showInHolidayHoursTable = 1;
 		if ($libraryId > 0) {
 			$location->libraryId = $libraryId;
 		}

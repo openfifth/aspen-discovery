@@ -135,6 +135,7 @@ class Location extends DataObject {
 
 	/** @noinspection PhpUnused */
 	public $allowUpdatingHoursFromILS;
+	public $showInHolidayHoursTable;
 	/** @noinspection PhpUnused */
 	public $allowUpdatingContactInfoFromILS;
 
@@ -172,6 +173,7 @@ class Location extends DataObject {
 			'statGroup',
 			'isMainBranch',
 			'showInLocationsAndHoursList',
+			'showInHolidayHoursTable',
 			'validHoldPickupBranch',
 			'useScope',
 			'restrictSearchByLocation',
@@ -465,6 +467,16 @@ class Location extends DataObject {
 				'default' => true,
 				'editPermissions' => ['Location Address and Hours Settings'],
 				'affectsLiDA' => true,
+			],
+			'showInHolidayHoursTable' => [
+				'property' => 'showInHolidayHoursTable',
+				'type' => 'checkbox',
+				'label' => 'Show in Holidays & Special Hours table',
+				'description' => 'Whether or not this location shows in the holiday & special hours table',
+				'note' => 'Turning it off deletes all holiday rows for this location',
+				'hideInLists' => true,
+				'default' => true,
+				'editPermissions' => ['Location Address and Hours Settings'],
 			],
 			'allowUpdatingContactInfoFromILS' => [
 				'property' => 'allowUpdatingContactInfoFromILS',
@@ -2155,6 +2167,9 @@ class Location extends DataObject {
 			$this->saveThemes();
 			$this->saveEventMapping();
 			$this->saveSublocations();
+			if (empty($this->showInHolidayHoursTable)) {
+				$this->clearLocationHolidays();
+			}
 		}
 		return $ret;
 	}
@@ -2178,6 +2193,9 @@ class Location extends DataObject {
 			$this->saveThemes();
 			$this->saveEventMapping();
 			$this->saveSublocations();
+			if (empty($this->showInHolidayHoursTable)) {
+				$this->clearLocationHolidays();
+			}
 		}
 		return $ret;
 	}
@@ -2247,6 +2265,13 @@ class Location extends DataObject {
 			$this->saveOneToManyOptions($this->_hours, 'locationId');
 			unset($this->_hours);
 		}
+	}
+
+	private function clearLocationHolidays(): void {
+		require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
+		$holidayLocation = new Holiday();
+		$holidayLocation->locationId = $this->locationId;
+		$holidayLocation->delete(true);
 	}
 
 	public function getCloudLibraryScope(): int {

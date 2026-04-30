@@ -179,6 +179,14 @@ function getUpdates26_05_00(): array {
 				"ALTER TABLE holiday ADD INDEX LibraryDate (libraryId, date)",
 			]
 		], //extend_holiday_table
+		'add_show_in_holiday_hours_table_to_location_table' => [
+			'title' => 'Add Show In Holiday Hours table to Location Table',
+			'description' => 'Add a column to the location table to indicate whether the library uses the holiday hours table',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE location ADD COLUMN showInHolidayHoursTable TINYINT(1) NOT NULL DEFAULT 1',
+			]
+		], //add_use_holiday_hours_table_to_location_table
 
 		//imani
 		// Aspen Progressive Web Application(PWA) updates moved
