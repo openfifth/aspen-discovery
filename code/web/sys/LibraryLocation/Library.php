@@ -4828,7 +4828,7 @@ class Library extends DataObject {
 			'holidaysSection' => [
 				'property' => 'holidaysSection',
 				'type' => 'section',
-				'label' => 'Holidays',
+				'label' => 'Holidays and Special Hours',
 				'hideInLists' => true,
 				'helpLink' => '',
 				'renderAsHeading' => false,
@@ -4846,7 +4846,7 @@ class Library extends DataObject {
 					'holidays' => [
 						'property' => 'holidays',
 						'type' => 'oneToMany',
-						'label' => 'Holidays',
+						'label' => 'Holidays and Special Hours',
 						'renderAsHeading' => false,
 						'description' => 'Holidays (automatically loaded from Koha)',
 						'keyThis' => 'libraryId',

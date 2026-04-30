@@ -165,6 +165,20 @@ function getUpdates26_05_00(): array {
 				"UPDATE grouped_work_facet SET facetName = 'content_rating', displayName = 'Content Rating', displayNamePlural = 'Content Ratings' WHERE facetName = 'mpaa_rating';",
 			],
 		], //migrate_old_mpaa_rating_to_content_rating
+		'extend_holiday_table' => [
+			'title' => 'Extend Holiday Table',
+			'description' => 'Extend Holiday Table, add special hours fields',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE holiday ADD COLUMN locationId INT(11) NOT NULL",
+				"ALTER TABLE holiday ADD COLUMN closed TINYINT(1) NOT NULL DEFAULT 1",
+				"ALTER TABLE holiday ADD COLUMN open varchar(10) DEFAULT NULL",
+				"ALTER TABLE holiday ADD COLUMN close varchar(10) DEFAULT NULL",
+				"ALTER TABLE holiday DROP INDEX LibraryDate",
+				"ALTER TABLE holiday ADD UNIQUE KEY LocationDate (locationId, date)",
+				"ALTER TABLE holiday ADD INDEX LibraryDate (libraryId, date)",
+			]
+		], //extend_holiday_table
 
 		//imani
 		// Aspen Progressive Web Application(PWA) updates moved
