@@ -120,7 +120,9 @@ $userAgentString = 'Unknown';
 if (isset($_SERVER['HTTP_USER_AGENT'])) {
 	$userAgentString = $_SERVER['HTTP_USER_AGENT'];
 	// Remove everything after the first "/" to avoid storing version information.
-	$userAgentString = substr($userAgentString, 0, strpos($userAgentString, "/"));
+	if (strpos($userAgentString, '/') !== false) {
+		$userAgentString = substr($userAgentString, 0, strpos($userAgentString, "/"));
+	}
 }
 try {
 	// Check if user agent tracking is disabled
