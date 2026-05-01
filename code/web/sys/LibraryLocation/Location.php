@@ -2338,16 +2338,38 @@ class Location extends DataObject {
 			// format $timeToCheck according to MySQL default date format
 			$todayFormatted = date('Y-m-d', $timeToCheck);
 
-			// check to see if today is a holiday
-			require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
-			$holiday = new Holiday();
-			$holiday->date = $todayFormatted;
-			$holiday->libraryId = $location->libraryId;
-			if ($holiday->find(true)) {
-				return [
-					'closed' => true,
-					'closureReason' => $holiday->name,
-				];
+			// check to see if today is a holiday or special hours
+			if (!empty($location->showInHolidayHoursTable)) {
+				require_once ROOT_DIR . '/sys/LibraryLocation/Holiday.php';
+				$holiday = new Holiday();
+				$holiday->date = $todayFormatted;
+				$holiday->locationId = $locationId;
+				if ($holiday->find(true)) {
+					if (!empty($holiday->closed)) {
+						return [
+							'closed' => true,
+							'closureReason' => $holiday->name,
+						];
+					}
+					$specialOpen = !empty($holiday->open) ? ltrim($holiday->open, '0') : null;
+					$specialClose = !empty($holiday->close) ? ltrim($holiday->close, '0') : null;
+
+					if ($specialOpen !== null && $specialClose !== null) {
+						if ($specialOpen == $specialClose) {
+							return [
+								'closed' => true,
+								'closureReason' => $holiday->name,
+							];
+						}
+						return [[
+							'open' => $specialOpen,
+							'close' => $specialClose,
+							'closed' => false,
+							'openFormatted' => ($holiday->open == '12:00' ? 'Noon' : date("g:i A", strtotime($holiday->open))),
+							'closeFormatted' => ($holiday->close == '12:00' ? 'Noon' : date("g:i A", strtotime($holiday->close))),
+						]];
+					}
+				}
 			}
 
 			// get the day of the week (0=Sunday to 6=Saturday)
