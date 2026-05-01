@@ -12,6 +12,7 @@ Smarty_Autoloader::register(true);
 require_once ROOT_DIR . '/sys/DB/DataObject.php';
 require_once ROOT_DIR . '/sys/Interface.php';
 require_once ROOT_DIR . '/sys/AspenError.php';
+require_once ROOT_DIR . '/sys/BotChecker.php';
 require_once ROOT_DIR . '/sys/Module.php';
 require_once ROOT_DIR . '/sys/Administration/Permission.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
@@ -144,11 +145,14 @@ try {
 		if ($userAgent->find(true)) {
 			$userAgentId = $userAgent->id;
 		}else{
-			if (!$userAgent->insert()) {
+			$userAgentToInsert = new UserAgent();
+			$userAgentToInsert->userAgent = $userAgentString;
+			$userAgentToInsert->isBot = BotChecker::isRequestFromBot();
+			if (!$userAgentToInsert->insert()) {
 				$logger->log("Could not insert user agent $userAgentString", Logger::LOG_ERROR);
-				$logger->log($userAgent->getLastError(), Logger::LOG_ERROR);
+				$logger->log($userAgentToInsert->getLastError(), Logger::LOG_ERROR);
 			}
-			$userAgentId = $userAgent->id;
+			$userAgentId = $userAgentToInsert->id;
 		}
 		require_once ROOT_DIR . '/sys/SystemLogging/UsageByUserAgent.php';
 		$usageByUserAgent = new UsageByUserAgent();
