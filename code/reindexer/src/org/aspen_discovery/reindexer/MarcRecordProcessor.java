@@ -586,7 +586,7 @@ abstract class MarcRecordProcessor {
 		if (!durations.isEmpty()){
 			String duration = durations.iterator().next();
 			for(RecordInfo ilsRecord : ilsRecords){
-				if (primaryFormatCategory.equals("Audio Books")) {
+				if (ilsRecord.getPrimaryFormatCategory().equals("Audio Books")) {
 					//try to get total minutes and save as duration if not zero
 					int durationMinutes = AspenStringUtils.extractTotalMinutes(duration);
 					if (durationMinutes != 0){
