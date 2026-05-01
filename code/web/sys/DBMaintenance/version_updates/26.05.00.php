@@ -73,11 +73,28 @@ function getUpdates26_05_00(): array {
 			'sql' => [
 				"ALTER TABLE self_check_completion_message ADD COLUMN name TEXT"
 			]
-		]
+		], //self_check_completion_message_name
 
 		//kirstien
 
 		//kodi
+		'indexed_duration' => [
+			'title' => 'Add indexed_duration Table',
+			'description' => 'Add table for indexing duration of grouped work variations (audiobooks).',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS indexed_duration  (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+					duration int(11)
+				) ENGINE = InnoDB',
+			]
+		], //indexed_duration
+		'indexed_duration_id' => [
+			'title' => 'Add durationId Column',
+			'description' => 'Add durationId column to grouped_work_records.',
+			'sql' => [
+				'ALTER TABLE grouped_work_records ADD COLUMN durationId int(11)'
+			]
+		], // indexed_duration_id
 
 		//yanjun
 

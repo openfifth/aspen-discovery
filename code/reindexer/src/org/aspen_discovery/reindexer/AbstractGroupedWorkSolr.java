@@ -78,6 +78,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected Long numHoldings = 0L;
 	protected HashSet<String> oclcs = new HashSet<>();
 	protected HashSet<String> physicals = new HashSet<>();
+	protected HashSet<Integer> durations = new HashSet<>();
 	protected double popularity;
 	protected long totalHolds;
 
@@ -990,6 +991,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 
 	void addPhysical(Set<String> fieldList) {
 		this.physicals.addAll(fieldList);
+	}
+
+	void addDuration(Set<Integer> fieldList) {
+		this.durations.addAll(fieldList);
 	}
 
 	void addPhysical(String field) {
