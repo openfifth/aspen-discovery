@@ -571,14 +571,18 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		$isWaitingListFull = $this->isWaitingListFull();
 		$interface->assign('isWaitingListFull', $isWaitingListFull);
 		$eventObject = $this->getEventObject();
-		$interface->assign('registrationAction', $eventObject ? $eventObject->getRegistrationAction(
+		$registrationAction = $eventObject ? $eventObject->getRegistrationAction(
 			$this->isRegisteredForEvent(),
 			$this->isEventFull(),
 			$this->isWaitingListEnabled(),
 			$waitingListInfo['onWaitingList'],
 			$waitingListInfo['canRegister'],
 			$isWaitingListFull
-		) : 'none');
+		) : 'none';
+		if ($registrationAction === 'showPosition' && $eventObject !== null && $eventObject->hasUnregisteredLinkedUsers()) {
+			$registrationAction = 'joinWaitingList';
+		}
+		$interface->assign('registrationAction', $registrationAction);
 		$interface->assign('displayWaitingListSeats', $this->getDisplayWaitingListSeats());
 	}
 

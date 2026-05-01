@@ -423,6 +423,62 @@ class EventInstance extends DataObject {
 		return $this->getWaitingListCount() >= $capacity;
 	}
 
+	public function hasUnregisteredLinkedUsers(): bool {
+		$viewer = UserAccount::getActiveUserObj();
+		if (!$viewer) {
+			return false;
+		}
+		foreach ($viewer->getLinkedUsers() as $linkedUser) {
+			$status = $this->getUserEventRegistrationStatus((int)$linkedUser->id);
+			if (!$status['isRegistered'] && !$status['isOnWaitingList']) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public function getUserEventRegistrationStatus(int $userId): array {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $this->id;
+
+		$isRegistered = $registration->isUserRegisteredForEvent($userId);
+
+		$waitingListInfo = ['onWaitingList' => false, 'position' => null, 'canRegister' => false];
+		if (!$isRegistered) {
+			$waitingListInfo = $registration->getWaitingListInfo();
+		}
+
+		$isEventFull = !$this->hasAvailableSeats();
+		$isWaitingListFull = $this->isWaitingListFull();
+		$registrationAction = $this->getRegistrationAction(
+			$isRegistered,
+			$isEventFull,
+			$this->isWaitingListEnabled(),
+			$waitingListInfo['onWaitingList'],
+			$waitingListInfo['canRegister'],
+			$isWaitingListFull
+		);
+
+		$position = $waitingListInfo['position'];
+		$positionMessage = null;
+		if ($waitingListInfo['onWaitingList'] && $position !== null) {
+			$positionMessage = str_replace('%1%', $position, translate([
+				'text' => 'You are number %1% on the waiting list',
+				'isPublicFacing' => true,
+			]));
+		}
+
+		return [
+			'isRegistered' => $isRegistered,
+			'isOnWaitingList' => $waitingListInfo['onWaitingList'],
+			'waitingListPosition' => $position,
+			'waitingListPositionMessage' => $positionMessage,
+			'registrationAction' => $registrationAction,
+		];
+	}
+
 	public function inviteNextOnWaitingList(): bool {
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
@@ -446,15 +502,23 @@ class EventInstance extends DataObject {
 			}
 
 			if (!$user->canReceiveEventNotifications()) {
-				$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$this->id})", Logger::LOG_WARNING);
-				continue;
+				// if the patron isn't reachable and their account has been linked, attempt to contact the viewer account holder instead
+				require_once ROOT_DIR . '/sys/Account/UserLink.php';
+				$viewer = UserLink::getPrimaryAccount((int)$user->id);
+				if ($viewer === null || !$viewer->canReceiveEventNotifications()) {
+					$logger->log("Waiting list candidate skipped — user {$user->id} unreachable for event notifications (instance {$this->id})", Logger::LOG_WARNING);
+					continue;
+				}
+				$notifyUserId = (int)$viewer->id;
+			} else {
+				$notifyUserId = (int)$user->id;
 			}
 
 			$candidate->status = 'invited';
 			$candidate->notifiedAt = date('Y-m-d H:i:s');
 			$candidate->update();
 
-			$this->sendEventInstanceRegistrationInvitation((int)$candidate->userId);
+			$this->sendEventInstanceRegistrationInvitation($notifyUserId);
 			return true;
 		}
 
