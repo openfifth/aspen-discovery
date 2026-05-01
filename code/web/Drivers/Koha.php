@@ -2112,7 +2112,54 @@ class Koha extends AbstractIlsDriver {
     	return max($fees);
 	}
 
+	public function getPreRenewalFeeMessage(string $itemId): string|null {
+		$item = $this->getItemForRenewal($itemId);
+		if (!$item) {
+			return null;
+		}
+
+		$rawFee = $this->calculateRenewalFeeForItem($item['itype'], $item['branchcode']);
+		if (!$rawFee) {
+			return null;
+		}
+
+		return translate([
+			'text'           => 'You will be charged a renewal fee of %1%.',
+			'1'              => $this->formatFee($rawFee),
+			'isPublicFacing' => true,
+		]);
+	}
+
+	private function getItemForRenewal(string $itemId): array|null {
+		$this->initDatabaseConnection();
+		$sql = "SELECT items.itype, issues.branchcode FROM issues LEFT JOIN items ON items.itemnumber = issues.itemnumber WHERE issues.itemnumber = " . (int)$itemId . " LIMIT 1";
+		$result = mysqli_query($this->dbConnection, $sql);
+		if (!$result) {
+			return null;
+		}
+		$row = $result->fetch_assoc();
+		$result->close();
+		return $row ?: null;
+	}
+
+	public function calculateRenewalFeeForItem(string $itemType, string $locationCode): string|null {
+		$patron = UserAccount::getActiveUserObj();
+		$fee = $this->getRawCirculationRuleFee('rental_charge', [
+			'patronCategoryId' => $patron->patronType,
+			'itemTypeId'       => $itemType,
+			'locationId'       => $locationCode,
+		]);
+		if (!$fee || $fee === '0.000000') {
+			return null;
+		}
+		return $fee;
+	}
+
 	private function getRawReserveFeeByContext(array $context): string|null {
+		return $this->getRawCirculationRuleFee('hold_fee', $context);
+	}
+
+	private function getRawCirculationRuleFee(string $ruleName, array $context): string|null {
 		$oauthToken = $this->getOAuthToken();
 		if (!$oauthToken) {
 			return null;
@@ -2120,9 +2167,9 @@ class Koha extends AbstractIlsDriver {
 
 		['itemTypeId' => $itemTypeId, 'locationId' => $locationId, 'patronCategoryId' => $patronCategoryId] = $context;
 
-		$url = $this->getWebServiceURL() . "/api/v1/circulation_rules?effective=true&item_type_id=$itemTypeId&library_id=$locationId&patron_category_id=$patronCategoryId&rules=hold_fee";
+		$url = $this->getWebServiceURL() . "/api/v1/circulation_rules?effective=true&item_type_id=$itemTypeId&library_id=$locationId&patron_category_id=$patronCategoryId&rules=$ruleName";
 
-		$curlWrapper = new CurlWrapper(); 
+		$curlWrapper = new CurlWrapper();
 		$customHeaders = [
 			'Authorization: Bearer ' . $oauthToken,
 			'User-Agent: Aspen Discovery',
@@ -2133,9 +2180,7 @@ class Koha extends AbstractIlsDriver {
 		$response = $curlWrapper->curlGetPage($url);
 
 		if ($curlWrapper->getResponseCode() == 200) {
-			return json_decode($response, true)[0]['hold_fee'];
-		} else {
-			return null;
+			return json_decode($response, true)[0][$ruleName];
 		}
 		return null;
 	}
@@ -3101,6 +3146,15 @@ class Koha extends AbstractIlsDriver {
 			}
 
 			$maxRenewals = 0;
+
+			if (!isset($_REQUEST['confirmedRenewal'])) {
+				$feeMessage = $this->getPreRenewalFeeMessage($itemId);
+				if ($feeMessage) {
+					$result['confirmRenewalFee'] = true;
+					$result['message'] = $feeMessage;
+					return $result;
+				}
+			}
 
 			$params = [
 				'service' => 'RenewLoan',
