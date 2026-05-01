@@ -4240,7 +4240,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$isWaitingListFull = EventRegistrationService::isWaitingListFull($eventInstance);
 				$events[$entry->sourceId]['waitingListFull'] = $isWaitingListFull;
 				$events[$entry->sourceId]['registrationStatusMessage'] = EventRegistrationService::getRegistrationStatusMessage($waitingList, $userOnWaitingList, $userCanRegisterFromWaitingList, $userWaitingListPosition ?? 0, $eventFull, $isWaitingListFull);
-				$events[$entry->sourceId]['registrationAction'] = EventRegistrationService::getRegistrationAction(
+				$registrationAction = EventRegistrationService::getRegistrationAction(
 					$registration,
 					$eventFull,
 					$waitingList,
@@ -4248,6 +4248,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$userCanRegisterFromWaitingList,
 					$isWaitingListFull
 				);
+				$events[$entry->sourceId]['registrationAction'] = $registrationAction;
 			}
 		}
 
@@ -8383,6 +8384,9 @@ class MyAccount_AJAX extends JSON_Action {
 				$canRegister,
 				$isWaitingListFull
 			);
+			if ($registrationAction === 'showPosition' && EventRegistrationService::hasUnregisteredLinkedUsers($eventInstance)) {
+				$registrationAction = 'joinWaitingList';
+			}
 			$interface->assign('userIsRegistered', $isRegistered);
 			$interface->assign('registrationAction', $registrationAction);
 
@@ -8420,38 +8424,29 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		$activeUserId = UserAccount::getActiveUserId();
-		if ($userId != $activeUserId) {
-			$isLinkedUser = false;
-			$activeUser = UserAccount::getActiveUserObj();
-			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
-				if ($linkedUser->id == $userId) {
-					$isLinkedUser = true;
-					break;
-				}
-			}
-			if (!$isLinkedUser) {
-				$result['message'] = translate([
-					'text' => 'You do not have permission to view registration information for this user.',
-					'isPublicFacing' => true,
-				]);
-				return $result;
-			}
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		if (!UserAccount::isAuthorizedToActOnBehalfOf((int)$userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to view registration information for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->userId = $userId;
-		$registration->eventInstanceId = $eventInstanceId;
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate(['text' => 'Event not found.', 'isPublicFacing' => true]);
+			return $result;
+		}
 
 		$result['success'] = true;
 		$result['message'] = translate([
 			'text' => 'Registration information found',
 			'isPublicFacing' => true,
 		]);
-		$result['body'] = [
-			'isRegistered' => $registration->isUserRegisteredForEvent($userId),
-		];
+		$result['body'] = EventRegistrationService::getUserEventRegistrationStatus((int)$userId, $eventInstance);
 		return $result;
 	}
 
@@ -8634,24 +8629,13 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$this->requireLoggedInUser(null, 'You must be logged in to register for events.');
 
-		require_once ROOT_DIR . '/sys/Account/User.php';
-		$activeUserId = UserAccount::getActiveUserId();
-		if ($userId != $activeUserId) {
-			$isLinkedUser = false;
-			$activeUser = UserAccount::getActiveUserObj();
-			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
-				if ($linkedUser->id == $userId) {
-					$isLinkedUser = true;
-					break;
-				}
-			}
-			if (!$isLinkedUser) {
-				$result['message'] = translate([
-					'text' => 'You do not have permission to manage registrations for this user.',
-					'isPublicFacing' => true,
-				]);
-				return $result;
-			}
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		if (!UserAccount::isAuthorizedToActOnBehalfOf((int)$userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to manage registrations for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
 		}
 
 		require_once ROOT_DIR . '/sys/Account/User.php';
@@ -12008,8 +11992,18 @@ class MyAccount_AJAX extends JSON_Action {
 			])
 		];
 
-		$userId = UserAccount::getActiveUserId();
+		$activeUserId = (int)UserAccount::getActiveUserId();
+		$userId = isset($_REQUEST['userId']) ? (int)$_REQUEST['userId'] : $activeUserId;
 		$eventInstanceId = (int)($_REQUEST['eventInstanceId'] ?? 0);
+
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		if (!UserAccount::isAuthorizedToActOnBehalfOf($userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to manage registrations for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
 
 		if ($eventInstanceId <= 0) {
 			$result['message'] = translate([
@@ -12022,7 +12016,7 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
-		
+
 		if (!$eventInstance->find(true)) {
 			$result['message'] = translate([
 				'text' => 'Event not found.',
@@ -12039,7 +12033,6 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 		if (EventRegistrationService::isWaitingListFull($eventInstance)) {
 			$result['message'] = translate([
 				'text' => 'The waiting list for this event is full.',
@@ -12081,11 +12074,38 @@ class MyAccount_AJAX extends JSON_Action {
 			'text' => 'Added to Waiting List',
 			'isPublicFacing' => true,
 		]);
+
+		if ($userId !== $activeUserId) {
+			require_once ROOT_DIR . '/sys/Account/User.php';
+			$linkedUser = new User();
+			$linkedUser->id = $userId;
+			$linkedUser->find(true);
+			$subject = $linkedUser->getDisplayName();
+			$auxVerb = 'has';
+			$linkVerb = 'is';
+			$pronoun = 'their';
+			$reflexive = 'them';
+		} else {
+			$subject = 'You';
+			$auxVerb = 'have';
+			$linkVerb = 'are';
+			$pronoun = 'your';
+			$reflexive = 'you';
+		}
+
 		$message = translate([
-			'text' => "You have been added to the waiting list for %1%. You are in position #%2%. <br><br> To receive waiting list invites, make sure a contact email is saved to your account and that event email notifications are enabled in your preferences. Without both, your spot is held but, as we have no way to let you know when it is your turn to register you will not be able to access registration",
+			'text' => "%1% %6% been added to the waiting list for %2%. %1% %7% in position #%3%. <br><br> To receive waiting list invites, make sure a contact email is saved to %4% account and that event email notifications are enabled in %4% preferences. Without both, %4% spot is held but, as we have no way to let %5% know when it is %4% turn to register %5% will not be able to access registration",
 			'isPublicFacing' => true,
 		]);
-		$result['message'] = str_replace(['%1%', '%2%'], [$event->title, $position], $message);
+		$result['message'] = str_replace(['%1%', '%2%', '%3%', '%4%', '%5%', '%6%', '%7%'], [$subject, $event->title, $position, $pronoun, $reflexive, $auxVerb, $linkVerb], $message);
+
+		if ($userId !== $activeUserId) {
+			$fallbackNote = translate([
+				'text' => "If %1% cannot be reached, we will attempt to notify you instead, provided you have a contact email saved and event email notifications enabled on your account.",
+				'isPublicFacing' => true,
+			]);
+			$result['message'] .= ' ' . str_replace('%1%', $subject, $fallbackNote);
+		}
 		$result['position'] = $position;
 
 		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
@@ -12107,8 +12127,18 @@ class MyAccount_AJAX extends JSON_Action {
 			])
 		];
 
-		$userId = UserAccount::getActiveUserId();
+		$activeUserId = (int)UserAccount::getActiveUserId();
+		$userId = isset($_REQUEST['userId']) ? (int)$_REQUEST['userId'] : $activeUserId;
 		$eventInstanceId = (int)($_REQUEST['eventInstanceId'] ?? 0);
+
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		if (!UserAccount::isAuthorizedToActOnBehalfOf($userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to manage registrations for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
 
 		if ($eventInstanceId <= 0) {
 			$result['message'] = translate([
@@ -12143,10 +12173,69 @@ class MyAccount_AJAX extends JSON_Action {
 			'text' => 'Removed from Waiting List',
 			'isPublicFacing' => true,
 		]);
-		$result['message'] = translate([
-			'text' => 'You have been removed from the waiting list.',
-			'isPublicFacing' => true,
-		]);
+
+		if ($userId !== $activeUserId) {
+			require_once ROOT_DIR . '/sys/Account/User.php';
+			$linkedUser = new User();
+			$linkedUser->id = $userId;
+			$linkedUser->find(true);
+			$message = translate([
+				'text' => '%1% has been removed from the waiting list.',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = str_replace('%1%', $linkedUser->getDisplayName(), $message);
+		} else {
+			$result['message'] = translate([
+				'text' => 'You have been removed from the waiting list.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	public function getJoinWaitlistModal(): array {
+		$this->requireLoggedInUser();
+		$result = [
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+			'message' => translate(['text' => 'Unknown error occurred', 'isPublicFacing' => true]),
+		];
+
+		$sourceId = $_REQUEST['sourceId'] ?? '';
+		$eventInstanceId = (int)preg_replace("/aspenEvent_\d+_/", '', $sourceId);
+
+		if ($eventInstanceId <= 0) {
+			$result['message'] = translate(['text' => 'Invalid Event ID.', 'isPublicFacing' => true]);
+			return $result;
+		}
+
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return $result;
+		}
+
+		global $interface, $library;
+
+		$interface->assign('eventSourceId', $sourceId);
+		$interface->assign('userId', $user->id);
+		$interface->assign('userDisplayName', $user->getDisplayName());
+		$interface->assign('userEmail', $user->email);
+		$interface->assign('userHomeLocation', $user->getHomeLocationName());
+
+		$linkedUsers = [];
+		if ($library->allowLinkedAccounts) {
+			$linkedUsers = $user->getLinkedUsers();
+			foreach ($linkedUsers as $linkedUser) {
+				$linkedUser->loadContactInformation();
+			}
+		}
+		$interface->assign('linkedUsers', $linkedUsers);
+
+		$result['success'] = true;
+		$result['hasLinkedAccounts'] = count($linkedUsers) > 0;
+		$result['title'] = translate(['text' => 'Join Waiting List', 'isPublicFacing' => true]);
+		$result['body'] = $interface->fetch('AspenEvents/joinWaitlistModal.tpl');
 		return $result;
 	}
 

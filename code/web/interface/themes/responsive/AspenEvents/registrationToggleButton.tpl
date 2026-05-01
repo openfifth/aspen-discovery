@@ -17,7 +17,7 @@
 				{translate text='Join Waiting List' isPublicFacing=true}
 			</button>
 		{elseif $registrationAction == 'showPosition'}
-			<button class="btn btn-primary" disabled>
+			<button id="aspen-events-waiting-list-position-{$eventSourceId}" class="btn btn-primary" disabled>
 				{translate text='You are number %1% on the waiting list' 1=$userWaitingListPosition isPublicFacing=true}
 			</button>
 			<button id="aspen-events-toggle-registration-button-{$eventSourceId}" type="button" class="btn btn-warning" onclick="return AspenDiscovery.Account.leaveEventWaitingList('{$eventSourceId}');">
