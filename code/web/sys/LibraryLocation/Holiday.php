@@ -15,6 +15,7 @@ class Holiday extends DataObject {
 	public $closed;					// tinyint(1)
 	public $open;					// varchar(10)
 	public $close;					// varchar(10)
+	public $locationIds = [];      // group locations
 
 	public function getNumericColumnNames(): array {
 		return [
@@ -60,14 +61,6 @@ class Holiday extends DataObject {
 				'label' => 'Holiday Name',
 				'description' => 'The name of a holiday',
 			],
-			'locationId' => [
-				'property' => 'locationId',
-				'type' => 'enum',
-				'values' => $locationList,
-				'label' => 'Location',
-				'description' => 'The location this holiday or special-hours entry applies to.',
-				'required' => true,
-			],
 			'closed' => [
 				'property' => 'closed',
 				'type' => 'checkbox',
@@ -87,22 +80,32 @@ class Holiday extends DataObject {
 				'label' => 'Closing Hour',
 				'description' => 'The closing hour. Use 24 hour format HH:MM, eg: 16:30',
 			],
+			'locationIds' => [
+				'property' => 'locationIds',
+				'type' => 'multiSelect',
+				'listStyle' => 'checkboxList',
+				'values' => $locationList,
+				'label' => 'Locations',
+				'description' => 'Locations this holiday or special-hours entry applies to.',
+				'useKeysForValues' => true,
+				'default' => array_keys($locationList),
+			],
 		];
 
 		self::$_objectStructure[$context] = $structure;
 		return self::$_objectStructure[$context];
 	}
 
-	private static function getHolidayLocationsList(): array {
-		$libraryId = !empty($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
+	public static function getHolidayLocationsList(?int $libraryId = null): array {
+		if ($libraryId === null) {
+			$libraryId = !empty($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
+		}
 		$location = new Location();
 		$location->selectAdd();
 		$location->selectAdd('locationId');
 		$location->selectAdd('displayName');
 		$location->showInHolidayHoursTable = 1;
-		if ($libraryId > 0) {
-			$location->libraryId = $libraryId;
-		}
+		$location->libraryId = $libraryId;
 		$location->orderBy('displayName');
 		$location->find();
 		$locationList = [];

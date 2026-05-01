@@ -5894,12 +5894,44 @@ class Library extends DataObject {
 		if (!isset($this->_holidays)) {
 			$this->_holidays = [];
 			if (!empty($this->libraryId)) {
+				$allLocationIds = array_map('intval', array_keys(Holiday::getHolidayLocationsList($this->libraryId)));
 				$holiday = new Holiday();
 				$holiday->libraryId = $this->libraryId;
-				$holiday->orderBy('date');
+				$holiday->orderBy('date, closed');
 				$holiday->find();
+				$groupedHolidays = [];
+				$index = -1;
 				while ($holiday->fetch()) {
-					$this->_holidays[$holiday->id] = clone($holiday);
+					$groupKey = implode('|', [
+						$holiday->date ?? '',
+						$holiday->name ?? '',
+						$holiday->closed ?? 0,
+						$holiday->open ?? '',
+						$holiday->close ?? '',
+					]);
+					if (!isset($groupedHolidays[$groupKey])) {
+						$groupedHoliday = new Holiday();
+						$groupedHoliday->id = $index;
+						$groupedHoliday->libraryId = $this->libraryId;
+						$groupedHoliday->date = $holiday->date;
+						$groupedHoliday->name = $holiday->name;
+						$groupedHoliday->closed = $holiday->closed;
+						$groupedHoliday->open = $holiday->open;
+						$groupedHoliday->close = $holiday->close;
+						$groupedHoliday->locationIds = [];
+						$groupedHolidays[$groupKey] = $groupedHoliday;
+						$index--;
+					}
+					$locationId = $holiday->locationId;
+					if (in_array($locationId, $allLocationIds)) {
+						$groupedHolidays[$groupKey]->locationIds[$locationId] = $locationId;
+					}
+				}
+				// Ignore holidays with invalid locationIds
+				foreach ($groupedHolidays as $groupedHoliday) {
+					if (!empty($groupedHoliday->locationIds)) {
+						$this->_holidays[$groupedHoliday->id] = $groupedHoliday;
+					}
 				}
 			}
 		}
@@ -5908,7 +5940,28 @@ class Library extends DataObject {
 
 	public function saveHolidays() : void {
 		if (isset ($this->_holidays) && is_array($this->_holidays)) {
-			$this->saveOneToManyOptions($this->_holidays, 'libraryId');
+			// We can delete and reinsert holiday rows on library save because library updates are infrequent
+			$existingHoliday = new Holiday();
+			$existingHoliday->libraryId = $this->libraryId;
+			$existingHoliday->delete(true);
+
+			foreach ($this->_holidays as $groupedHoliday) {
+				if (!empty($groupedHoliday->_deleteOnSave)) {
+					continue;
+				}
+				$locationIds = $groupedHoliday->locationIds ?? [];
+				foreach ($locationIds as $locationId) {
+					$holiday = new Holiday();
+					$holiday->libraryId = $this->libraryId;
+					$holiday->locationId = $locationId;
+					$holiday->date = $groupedHoliday->date;
+					$holiday->name = $groupedHoliday->name;
+					$holiday->closed = $groupedHoliday->closed ?? 0;
+					$holiday->open = $groupedHoliday->open ?? null;
+					$holiday->close = $groupedHoliday->close ?? null;
+					$holiday->insert();
+				}
+			}
 			unset($this->_holidays);
 		}
 	}
