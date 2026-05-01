@@ -121,4 +121,25 @@ class Holiday extends DataObject {
 		}
 		return $result;
 	}
+
+	public function insert(string $context = ''): int|bool {
+		$this->clearStoredTime();
+		return parent::insert($context);
+	}
+
+	public function update(string $context = ''): int|bool {
+		$this->clearStoredTime();
+		return parent::update($context);
+	}
+
+	private function clearStoredTime(): void {
+		// DataObject::update() skips null string fields, so we manually clear stored times.
+		if ($this->open === null) {
+			$this->setProperty('open', '', ['type' => 'time']);
+		}
+		if ($this->close === null) {
+			$this->setProperty('close', '', ['type' => 'time']);
+		}
+	}
+
 }
