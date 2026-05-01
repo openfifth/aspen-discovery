@@ -180,6 +180,7 @@ class EventField extends DataObject {
 			'facetName' => $this->facetName,
 		];
 		if ($type == 'enum') {
+			require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 			$allowableValues = array_map('trim', explode("\n", $this->allowableValues));
 			$keys = array_map([StringUtils::class, 'toCamelCase'], $allowableValues);
 			$structure['values'] = array_combine($keys, $allowableValues);
