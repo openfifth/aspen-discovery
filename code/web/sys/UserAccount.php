@@ -291,6 +291,19 @@ class UserAccount {
 		return 'false';
 	}
 
+	public static function isAuthorizedToActOnBehalfOf(int $userId): bool {
+		$activeUserId = (int)self::getActiveUserId();
+		if ($userId === $activeUserId) {
+			return true;
+		}
+		foreach (self::getActiveUserObj()->getLinkedUsers() as $linkedUser) {
+			if ($linkedUser->id == $userId) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function getUserHomeLocationId() {
 		UserAccount::loadUserObjectFromDatabase();
 		if (UserAccount::$primaryUserObjectFromDB != false) {
