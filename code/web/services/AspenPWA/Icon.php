@@ -13,7 +13,7 @@ class AspenPWA_Icon extends Action {
 
 	function launch()
 	{
-		$settings = AspenPWASetting::getSettingsForCurrentLibrary;
+		$settings = AspenPWASetting::getSettingsForCurrentLibrary();
 		$success = true;
 		//TODO we should return an error code instead of 200
 		// if we have no settings
