@@ -413,10 +413,10 @@ class GroupedWorksSolrConnector2 extends Solr {
 				$defaultSortDirection = 'desc';
 				break;
 			case 'author':
-				$sortField = 'authorStr asc, title_sort';
+				$sortField = 'author_sort asc, title_sort';
 				break;
 			case 'title':
-				$sortField = 'title_sort asc, authorStr';
+				$sortField = 'title_sort asc, author_sort';
 				break;
 			case 'callnumber_sort':
 				$searchLibrary = Library::getSearchLibrary($this->getSearchSource());
