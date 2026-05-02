@@ -187,7 +187,7 @@ class EBSCOhostSearchSetting extends DataObject {
 		return parent::delete($useWhere, $hardDelete);
 	}
 
-	public function updateDatabasesFromEBSCOhost() : bool {
+	public function updateDatabasesFromEBSCOhost() : string|true {
 		$currentDatabases = $this->getDatabases();
 		/** @var SearchObject_EbscohostSearcher $ebscohostSearch */
 		$ebscohostSearch = SearchObjectFactory::initSearchObject('Ebscohost');
@@ -200,7 +200,8 @@ class EBSCOhostSearchSetting extends DataObject {
 
 		$databaseList = $ebscohostSearch->getDatabases();
 		if (empty($databaseList)) {
-			return false;
+			$connectionError = SearchObject_EbscohostSearcher::getLastConnectionError();
+			return $connectionError ?: 'EBSCOhost returned no databases. Check credentials and profile ID.';
 		}
 		//Get a list of all databases that exist to check for things that have been removed.
 		$removedDatabases = [];

@@ -1459,6 +1459,7 @@ abstract class MarcRecordProcessor {
 				for (RecordInfo ilsRecord : ilsRecords){
 					ilsRecord.setPrimaryLanguage(translatedLanguage);
 				}
+				groupedWork.setPrimaryLanguage(translatedLanguage);
 			}
 			isFirstLanguage = false;
 			String languageBoost = indexer.translateSystemValue("language_boost", language, identifier);
@@ -1516,12 +1517,13 @@ abstract class MarcRecordProcessor {
 		//author_additional = 505r:245c
 		groupedWork.addAuthorAdditional(MarcUtil.getFieldList(record, "505r:245c"));
 		//set display author based on 100/110
-		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100acdq:110ab");
+		String displayAuthor = MarcUtil.getFirstFieldVal(record, "100abcdq:110ab");
 		if (displayAuthor != null && displayAuthor.indexOf(';') > 0){
 			displayAuthor = displayAuthor.substring(0, displayAuthor.indexOf(';') -1);
 		}
 		//a title of <>. is an indicator that additional info may be in the 880
-		if ((MarcUtil.getFirstFieldVal(record, "245a").equals("<>."))) {
+		String title = MarcUtil.getFirstFieldVal(record, "245a");
+		if (title != null && title.equals("<>.")) {
 			List<DataField> altAuthorField = MarcUtil.getDataFields(record, 880);
 			Iterator<DataField> fieldIterator = altAuthorField.iterator();
 			DataField field880;
@@ -1571,7 +1573,7 @@ abstract class MarcRecordProcessor {
 			String title = titleField.getSubfieldsAsString("a");
 			//noinspection SpellCheckingInspection
 			String subTitle = titleField.getSubfieldsAsString("bfgnp", " ");
-			if (title.equals("<>.")) { //a title of <>. is an indicator that the title may be in the 880
+			if (title != null && title.equals("<>.")) { //a title of <>. is an indicator that the title may be in the 880
 				List<DataField> altTitleField = MarcUtil.getDataFields(record, 880);
 				Iterator<DataField> fieldIterator = altTitleField.iterator();
 				DataField field880;

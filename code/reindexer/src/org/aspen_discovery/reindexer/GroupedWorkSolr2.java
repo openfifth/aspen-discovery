@@ -91,7 +91,8 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 			if (languages.isEmpty()) {
 				languages.add(groupedWorkIndexer.getTreatUnknownLanguageAs());
 			}
-			doc.addField("language", languages);
+			doc.addField("all_languages", languages);
+			doc.addField("language", primaryLanguage);
 			doc.addField("translation", translations);
 			doc.addField("language_boost", languageBoost);
 			doc.addField("language_boost_es", languageBoostSpanish);

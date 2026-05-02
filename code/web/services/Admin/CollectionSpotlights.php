@@ -29,7 +29,7 @@ class Admin_CollectionSpotlights extends ObjectEditor {
 			if (empty($libraries)) {
 				$object->whereAdd('libraryId = -1');
 			}else{
-				$object->whereAdd('libraryId IN (' . implode(',', $libraries) . ') OR libraryId = -1');
+				$object->whereAdd('libraryId IN (' . implode(',', array_keys($libraries)) . ') OR libraryId = -1');
 			}
 		}
 		$object->orderBy($this->getSort());
@@ -90,7 +90,7 @@ class Admin_CollectionSpotlights extends ObjectEditor {
 			if (empty($libraries)) {
 				$collectionSpotlight->whereAdd('libraryId = -1');
 			}else{
-				$collectionSpotlight->whereAdd('libraryId IN (' . implode(',', $libraries) . ') OR libraryId = -1');
+				$collectionSpotlight->whereAdd('libraryId IN (' . implode(',', array_keys($libraries)) . ') OR libraryId = -1');
 			}
 		}
 		$collectionSpotlight->orderBy('name ASC');

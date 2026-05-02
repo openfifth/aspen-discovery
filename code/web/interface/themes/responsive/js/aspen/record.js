@@ -34,6 +34,7 @@ AspenDiscovery.Record = (function () {
 								if (existingButton.length === 0) {
 									$(data.viewHoldsAction).insertBefore('#actionButton' + id);
 									$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
+									$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
 								}
 								AspenDiscovery.showMessage(data.title, data.message, false, false);
 								AspenDiscovery.Account.loadMenuData();
@@ -45,6 +46,7 @@ AspenDiscovery.Record = (function () {
 							if (existingButton.length === 0) {
 								$(data.viewHoldsAction).insertBefore('#actionButton' + id);
 								$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
+								$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
 							}
 							AspenDiscovery.showMessage(data.title, data.message, false, false);
 						}
@@ -189,6 +191,7 @@ AspenDiscovery.Record = (function () {
 						if (existingButton.length === 0) {
 							$(data.viewHoldsAction).insertBefore('#actionButton' + id);
 							$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
+							$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
 						}
 						if (!data.autologout) {
 							AspenDiscovery.Account.loadMenuData();
@@ -387,6 +390,7 @@ AspenDiscovery.Record = (function () {
 						if (existingButton.length === 0) {
 							$(data.viewHoldsAction).insertBefore('#actionButton' + id);
 							$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
+							$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
 						}
 						if (!data.autologout) {
 							AspenDiscovery.Account.loadMenuData();
@@ -570,7 +574,7 @@ AspenDiscovery.Record = (function () {
 						AspenDiscovery.toggleButtonSpinner(requestTitleButton, false);
 						$('.modal-body').html(data.message);
 					} else {
-						AspenDiscovery.showMessage(data.title, data.message, false);
+						AspenDiscovery.showMessageWithButtons(data.title, data.message, data.modalButtons);
 						AspenDiscovery.Account.loadMenuData();
 					}
 				} else {
@@ -833,8 +837,8 @@ AspenDiscovery.Record = (function () {
 			return false;
 		},
 
-		getLargeCover: function (recordId){
-			var url = Globals.path + '/Record/' + recordId + '/AJAX?method=getLargeCover';
+		getLargeCover: function (module, recordId){
+			var url = Globals.path + '/' + module + '/' + recordId + '/AJAX?method=getLargeCover';
 			$.getJSON(url, function (data){
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
 				}
