@@ -73,7 +73,7 @@ function getUpdates26_05_00(): array {
 			'sql' => [
 				"ALTER TABLE self_check_completion_message ADD COLUMN name TEXT"
 			]
-		]
+		], //self_check_completion_message_name
 
 		//kirstien
 
@@ -90,6 +90,39 @@ function getUpdates26_05_00(): array {
 		//pedro
 
 		//mark j
+		'user_agent_consolidation' => [
+			'title' => 'Consolidate User Agents and Stats',
+			'description' => 'Consolidating user agents and their corresponding stats to remove duplicates that only differ by version details. This will allow for cleaner reporting and bot detection.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_agent DROP INDEX userAgent, ADD INDEX userAgent (userAgent(512))",
+				"UPDATE user_agent SET userAgent = SUBSTRING_INDEX(userAgent, '/', 1) WHERE userAgent LIKE '%/%'",
+				"CREATE TABLE user_agent_temp LIKE user_agent",
+				"INSERT INTO user_agent_temp (userAgent, isBot, blockAccess)
+				 SELECT userAgent,
+						MAX(isBot),
+						MAX(blockAccess)
+				 FROM user_agent
+				 GROUP BY userAgent",
+				"CREATE TABLE usage_by_user_agent_temp LIKE usage_by_user_agent",
+				"INSERT INTO usage_by_user_agent_temp (userAgentId, year, month, instance, numRequests, numBlockedRequests)
+				 SELECT consolidated_user_agent.id,
+						usage_by_user_agent.year,
+						usage_by_user_agent.month,
+						usage_by_user_agent.instance,
+						SUM(usage_by_user_agent.numRequests),
+						SUM(usage_by_user_agent.numBlockedRequests)
+				 FROM usage_by_user_agent
+				 INNER JOIN user_agent original_user_agent ON usage_by_user_agent.userAgentId = original_user_agent.id
+				 INNER JOIN user_agent_temp consolidated_user_agent ON consolidated_user_agent.userAgent <=> original_user_agent.userAgent
+				 GROUP BY consolidated_user_agent.id, usage_by_user_agent.year, usage_by_user_agent.month, usage_by_user_agent.instance",
+				"DROP TABLE usage_by_user_agent",
+				"RENAME TABLE usage_by_user_agent_temp TO usage_by_user_agent",
+				"DROP TABLE user_agent",
+				"RENAME TABLE user_agent_temp TO user_agent",
+				"ALTER TABLE user_agent DROP INDEX userAgent, ADD UNIQUE INDEX userAgent (userAgent(512))"
+			]
+		], //user_agent_consolidation
 
 		//lucas
 
