@@ -2202,10 +2202,12 @@ class Location extends DataObject {
 
 	public function delete(bool $useWhere = false, bool $hardDelete = false) : bool|int {
 		$ret = parent::delete($useWhere, $hardDelete);
-		if ($ret && !empty($this->id)) {
+		if ($ret && !empty($this->locationId)) {
 			$locationMap = new EventsBranchMapping();
 			$locationMap->locationId = $this->locationId;
 			$locationMap->delete(true);
+
+			$this->clearLocationHolidays();
 		}
 		return $ret;
 	}
