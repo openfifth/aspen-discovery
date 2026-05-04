@@ -108,6 +108,7 @@ class User extends DataObject {
 	/** @var User[] $linkedUsers */
 	private $linkedUsers;
 	private $viewers;
+	private $viewerIds;
 
 	//Data that we load, but don't store in the User table
 	public $_fullname;
@@ -1078,26 +1079,65 @@ class User extends DataObject {
 	 */
 	/** @noinspection PhpUnused */
 	function getViewers() {
-		if (is_null($this->viewers)) {
-			$this->viewers = [];
-			/* var Library $library */ global $library;
-			if ($this->id && $library->allowLinkedAccounts) {
-				require_once ROOT_DIR . '/sys/Account/UserLink.php';
-				$userLink = new UserLink();
-				$userLink->linkedAccountId = $this->id;
-				$userLink->find();
-				while ($userLink->fetch()) {
-					$linkedUser = new User();
-					$linkedUser->id = $userLink->primaryAccountId;
-					if ($linkedUser->find(true)) {
-						if (!$linkedUser->isBlockedAccount($this->id)) {
-							$this->viewers[] = clone($linkedUser);
-						}
-					}
-				}
+		if (!is_null($this->viewers)) {
+			return $this->viewers;
+		}
+		
+		$this->viewers = [];
+		$this->loadViewerIds();
+
+		foreach ($this->viewerIds as $viewerId) {
+			$viewer = new User();
+			$viewer->id = $viewerId;
+			if ($viewer->find(true)) {
+				$this->viewers[] = clone($viewer);
 			}
 		}
+
 		return $this->viewers;
+	}
+
+	/**
+	 * Fetches and sets the list of ids of users that can view this account
+	 */
+	/** @noinspection PhpUnused */
+	function loadViewerIds(): void {
+		if (!is_null($this->viewerIds)) {
+			return;
+		}
+
+		$this->viewerIds = [];
+
+		global $library;
+		if (!$this->id || !$library->allowLinkedAccounts) {
+			return;
+		}
+
+		require_once ROOT_DIR . '/sys/Account/UserLink.php';
+		$userLink = new UserLink();
+		$userLink->linkedAccountId = $this->id;
+		$userLink->find();
+
+		while ($userLink->fetch()) {
+			$viewerStub = new User();
+			$viewerStub->id = $userLink->primaryAccountId;
+			// we need to instantiate the stub so isBlockedAccount can be called, however there is no need to load the User data from the DB
+			if (!$viewerStub->isBlockedAccount($this->id)) {
+				$this->viewerIds[] = $userLink->primaryAccountId;
+			}
+		}
+		return;
+	}
+
+	/**
+	 * Returns a list of ids of users that can view this account
+	 */
+	/** @noinspection PhpUnused */
+	function getViewerIds(): array {
+		if (is_null($this->viewerIds)) {
+			$this->loadViewerIds();
+		}
+		return $this->viewerIds;
 	}
 
 	/**
@@ -4874,6 +4914,7 @@ class User extends DataObject {
 					'View Event Reports for Home Library'
 				]);
 			}
+			$sections['events']->addAction(new AdminAction('Aspen Events Settings', 'Aspen Native Events Settings that will apply to all events for a given library, regardless of type.', '/Events/AspenEventSettings'), 'Administer Events for All Locations');
 			$sections['events']->addAction(new AdminAction('Assabet - Interactive Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/AssabetSettings'), 'Administer Assabet Settings');
 			$sections['events']->addAction(new AdminAction('Communico - Attend Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/CommunicoSettings'), 'Administer Communico Settings');
 			$sections['events']->addAction(new AdminAction('Library Market - Calendar Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LMLibraryCalendarSettings'), 'Administer LibraryMarket LibraryCalendar Settings');

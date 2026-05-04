@@ -2372,6 +2372,73 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		toggleManageEvent: function (eventSourceId) {
+			let savedEventDetailsModalWrapper = document.getElementById(`aspen-events-registration-button-${eventSourceId}-wrapper`)
+			savedEventDetailsModalWrapper.hidden = !savedEventDetailsModalWrapper.hidden;
+		},
+
+		toggleUserEventRegistration: function (eventSourceId) {
+			if (!Globals.loggedIn) {
+				return;
+			}
+
+			const userSelector = document.getElementById(`eventUserSelector-${eventSourceId}`);
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
+
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'toggleUserRegistrationToEvent',
+				eventSourceId,
+				userId
+			};
+
+			$.getJSON(url, params, function (data) {
+				AspenDiscovery.showMessage(data.title, data.message, false, data.success);
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		updateEventRegistrationUser: function (selector, eventSourceId) {
+			const selectedOption = selector.options[selector.selectedIndex];
+			const email = selectedOption.dataset.email || '';
+			const location = selectedOption.dataset.location || '';
+
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = selector ? selector.value : (userIdField ? userIdField.value : null);
+
+			AspenDiscovery.Account.isUserRegisteredForEvent(eventSourceId, userId).then((data) => AspenDiscovery.Account.updateEventButtonTextContent(data, eventSourceId));
+			document.getElementById(`eventRegistrationUserId-${eventSourceId}`).value = selector.value;
+			document.getElementById(`eventUserEmail-${eventSourceId}`).textContent = email;
+			document.getElementById(`eventUserLocation-${eventSourceId}`).textContent = location;
+
+			const changeLink = document.getElementById(`eventUserEmailChangeLink-${eventSourceId}`);
+			if (changeLink) {
+				const primaryUserId = selector.options[0].value;
+				changeLink.style.display = (selector.value === primaryUserId) ? '' : 'none';
+			}
+		},
+
+		updateEventButtonTextContent: function (userRegistrationData, eventSourceId) {
+			if (!userRegistrationData.success) {
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = 'Unavailable';
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).setAttribute('disabled', true);
+				return;
+			}
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = userRegistrationData.body.isRegistered ? 'Unregister' : 'Register';
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).removeAttribute('disabled');
+		},
+
+		isUserRegisteredForEvent: function (eventSourceId, userId) {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'isUserRegisteredForEvent',
+				eventSourceId,
+				userId
+			};
+
+			return $.getJSON(url, params).fail(AspenDiscovery.ajaxFail);
+		},
+
 		deleteSavedEvent: function (id, page, filter) {
 			if (confirm("Are you sure you want to remove this event?")) {
 				var url = Globals.path + '/MyAccount/AJAX?method=deleteSavedEvent&id=' + id;
