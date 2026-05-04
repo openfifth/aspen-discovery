@@ -536,7 +536,7 @@ abstract class MarcRecordProcessor {
 				//Remove dates
 				award = award.replaceAll("\\d{2,4}", "");
 				//Remove punctuation
-				award = award.replaceAll("[^\\w\\s]", "");
+				award = award.replaceAll("[^\\p{L}\\p{N}\\s]", "");
 			}
 			awards.add(award.trim());
 		}
