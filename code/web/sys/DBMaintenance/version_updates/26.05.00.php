@@ -73,7 +73,7 @@ function getUpdates26_05_00(): array {
 			'sql' => [
 				"ALTER TABLE self_check_completion_message ADD COLUMN name TEXT"
 			]
-		]
+		], //self_check_completion_message_name
 
 		//kirstien
 
