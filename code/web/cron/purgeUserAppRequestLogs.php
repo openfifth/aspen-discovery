@@ -17,10 +17,7 @@ $logEntry->whereAdd('time < DATE_SUB(NOW(), INTERVAL 24 HOUR)');
 $logEntry->find();
 $numRemoved = 0;
 
-while ($logEntry->fetch()) {
-	$logEntry->delete();
-	$numRemoved++;
-}
+$numRemoved = $logEntry->delete(true);
 
 $cronLogEntry->notes .= "User App Request Logs Purge complete: $numRemoved entries removed.";
 $cronLogEntry->endTime = time();

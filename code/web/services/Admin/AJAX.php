@@ -242,9 +242,12 @@ class Admin_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/LocalEnrichment/CollectionSpotlight.php';
 		$collectionSpotlight = new CollectionSpotlight();
 		if (!UserAccount::userHasPermission('Administer All Collection Spotlights')) {
-			//Get all spotlights for the library
-			$userLibrary = Library::getPatronHomeLibrary();
-			$collectionSpotlight->libraryId = $userLibrary->libraryId;
+			$libraries = Library::getLibraryList(true);
+			if (empty($libraries)) {
+				$collectionSpotlight->whereAdd('libraryId = -1');
+			}else{
+				$collectionSpotlight->whereAdd('libraryId IN (' . implode(',', array_keys($libraries)) . ') OR libraryId = -1');
+			}
 		}
 		$collectionSpotlight->orderBy('name');
 		$existingCollectionSpotlights = $collectionSpotlight->fetchAll('id', 'name');
@@ -1715,6 +1718,11 @@ class Admin_AJAX extends JSON_Action {
 			'Send Notifications to Home Library',
 			'Send Notifications to Home Location',
 			'Send Notifications to Home Library Locations',
+			'Send Aspen Progressive Web Application(PWA) Notifications to All Libraries',
+			'Send Aspen Progressive Web Application(PWA) Notifications to All Locations',
+			'Send Aspen Progressive Web Application(PWA) Notifications to Home Library',
+			'Send Aspen Progressive Web Application(PWA) Notifications to Home Location',
+			'Send Aspen PWA Notifications to Home Library Locations'
 		]);
 		$result = $this->failureResultAdmin(null, 'Unknown error getting devices');
 

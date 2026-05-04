@@ -1484,6 +1484,7 @@ class Koha extends AbstractIlsDriver {
 			$user->_state = $userFromDb['state'];
 			$user->_zip = $userFromDb['zipcode'];
 			$user->phone = $userFromDb['phone'];
+			$user->email = $userFromDb['email'];
 			$user->_dateOfBirth = $userFromDb['dateofbirth'];
 		}
 	}
@@ -1663,7 +1664,7 @@ class Koha extends AbstractIlsDriver {
 			$hasMorePages = true;
 			while ($hasMorePages) {
 				$checkedInParam = $checkedIn ? 'true' : 'false';
-				$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage;
+				$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage . "&_match=exact";
 				$extraHeaders = [
 					'Accept-Encoding: gzip, deflate',
 					'Content-Type: application/json',
