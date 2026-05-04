@@ -9250,7 +9250,26 @@ AspenDiscovery.Browse = (function(){
 					var resultsTabPanel = document.getElementById('swiper-browse-category-' + categoryTextId) ;
 					resultsTabPanel.innerHTML = "";
 					var browseSwiper = new Swiper('.swiper-browse-category-' + categoryTextId, {
-						slidesPerView: 5,
+						slidesPerView: 3,
+						slidesPerGroup: 3,
+						breakpoints: {
+							640: {
+								slidesPerView: 4,
+								slidesPerGroup: 4,
+							},
+							1024: {
+								slidesPerView: 5,
+								slidesPerGroup: 5,
+							},
+							1300: {
+								slidesPerView: 6,
+								slidesPerGroup: 6,
+							},
+							1600: {
+								slidesPerView: 7,
+								slidesPerGroup: 7,
+							}
+						},
 						spaceBetween: 20,
 						direction: 'horizontal',
 
@@ -9516,7 +9535,26 @@ AspenDiscovery.Browse = (function(){
 					if (wrapper) wrapper.innerHTML = '';
 
 					const browseSwiper = new Swiper(container, {
-						slidesPerView: 5,
+						slidesPerView: 3,
+						slidesPerGroup: 3,
+						breakpoints: {
+							640: {
+								slidesPerView: 4,
+								slidesPerGroup: 4,
+							},
+							1024: {
+								slidesPerView: 5,
+								slidesPerGroup: 5,
+							},
+							1300: {
+								slidesPerView: 6,
+								slidesPerGroup: 6,
+							},
+							1600: {
+								slidesPerView: 7,
+								slidesPerGroup: 7,
+							}
+						},
 						spaceBetween : 20,
 						direction    : 'horizontal',
 						a11y         : { enabled: true },
