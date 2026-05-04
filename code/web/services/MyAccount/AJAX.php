@@ -7190,6 +7190,14 @@ class MyAccount_AJAX extends JSON_Action {
 				$createCustomer->EmailAddress = $patron->email;
 				$createCustomer->Invoices = [$createInvoice];
 
+				$PageResultOptions = [
+					'AllowRegisterAccount' => true,
+					'InvoiceOptions' => [
+						'AllowViewRelated' => false,
+						'AllowRemindMe' => false,
+					]
+				];
+
 				$postParams = [
 					'CreateCustomerRecord' => true,
 					'Customers' => [
@@ -7202,6 +7210,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'PostBackURL' => $configArray['Site']['url'] . "/InvoiceCloud/Process",
 					'BillerReference' => $payment->id,
 					'ViewMode' => 0,
+					'PageResultOptions' => $PageResultOptions,
 				];
 
 				$paymentRequest = new CurlWrapper();
