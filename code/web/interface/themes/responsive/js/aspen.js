@@ -3330,15 +3330,15 @@ AspenDiscovery.Account = (function () {
 			location.replace(location.pathname + paramString)
 		},
 
-		changeHoldPickupLocation: function (patronId, recordId, holdId, currentLocation, source) {
+		changeHoldPickupLocation: function (patronId, recordId, holdId, currentLocation, currentSublocation, source) {
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=getChangeHoldLocationForm&patronId=" + patronId + "&recordId=" + recordId + "&holdId=" + holdId + "&currentLocation=" + currentLocation + "&source=" + source, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=getChangeHoldLocationForm&patronId=" + patronId + "&recordId=" + recordId + "&holdId=" + holdId + "&currentLocation=" + currentLocation + "&currentSublocation=" + currentSublocation + "&source=" + source, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons)
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.changeHoldPickupLocation(patronId, recordId, holdId, currentLocation);
+					return AspenDiscovery.Account.changeHoldPickupLocation(patronId, recordId, holdId, currentLocation, currentSublocation, source);
 				}, false);
 			}
 			return false;
@@ -5142,7 +5142,7 @@ AspenDiscovery.Account = (function () {
 			});
 			return false;
 		},
-		generateChangeSublocationSelect: function () {
+		generateChangeSublocationSelect: function (currentSublocation) {
 			var locationCode = $('#newPickupLocation').val();
 			var selectPlaceholder = document.getElementById("sublocationSelectPlaceHolder");
 			var url = Globals.path + '/MyAccount/AJAX';
@@ -5154,7 +5154,10 @@ AspenDiscovery.Account = (function () {
 			selectPlaceholder.innerHTML = '';
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
-					selectPlaceholder.innerHTML = data.selectHtml;
+					selectPlaceholder.innerHTML = data.selectHtml
+					if (currentSublocation !== undefined) {
+						document.getElementById('pickupSublocation').value = currentSublocation;
+					}
 				}
 			});
 			return false;

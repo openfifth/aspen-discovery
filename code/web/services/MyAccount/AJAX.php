@@ -1933,6 +1933,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$sourceId = $_REQUEST['source'] . ":" . $_REQUEST['recordId'];
 
 		$currentLocation = $_REQUEST['currentLocation'];
+		$currentSublocationId = $_REQUEST['currentSublocation'];
 		if (!is_numeric($currentLocation)) {
 			$location = new Location();
 			$location->code = $currentLocation;
@@ -1943,6 +1944,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		}
 		$interface->assign('currentLocation', $currentLocation);
+		$interface->assign('currentSublocation', $currentSublocationId);
 
 		$location = new Location();
 		$pickupBranches = $location->getPickupBranches($patronOwningHold);
