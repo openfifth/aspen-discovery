@@ -97,6 +97,13 @@ function getUpdates26_05_00(): array {
 		], // indexed_duration_id
 
 		//yanjun
+		'add_hoopla_flex_batch_size' => [
+			'title' => 'Add Hoopla Flex Batch Size',
+			'description' => 'Add a batch size for Hoopla Flex availability updates',
+			'sql' => [
+				"ALTER TABLE hoopla_settings ADD COLUMN hooplaFlexBatchSize int(3) DEFAULT 50",
+			]
+		], //add_hoopla_flex_batch_size
 		'migrate_old_mpaa_rating_to_content_rating' => [
 			'title' => 'Migrate old mpaa_rating to content_rating',
 			'description' => 'Migrate old mpaa_rating to content_rating',
