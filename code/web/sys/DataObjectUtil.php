@@ -74,6 +74,11 @@ class DataObjectUtil {
 					$validationResults['errors'][] = $property['property'] . ' does not match ' . $property['property'] . 'Repeat';
 				}
 			}
+			if (in_array($property['type'], ['regularExpression', 'multilineRegularExpression']) && !empty($value)) {
+				if (!DataObjectUtil::isValidRegularExpression($value)) {
+					$validationResults['errors'][] = ($property['label'] ?? $property['property']) . ' is not a valid regular expression.';
+				}
+			}
 
 			//Check to see if there is a custom validation routine
 			if (isset($property['serverValidation'])) {
