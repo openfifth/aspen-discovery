@@ -78,6 +78,23 @@ function getUpdates26_05_00(): array {
 		//kirstien
 
 		//kodi
+		'indexed_duration' => [
+			'title' => 'Add indexed_duration Table',
+			'description' => 'Add table for indexing duration of grouped work variations (audiobooks).',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS indexed_duration  (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+					duration int(11)
+				) ENGINE = InnoDB',
+			]
+		], //indexed_duration
+		'indexed_duration_id' => [
+			'title' => 'Add durationId Column',
+			'description' => 'Add durationId column to grouped_work_records.',
+			'sql' => [
+				'ALTER TABLE grouped_work_records ADD COLUMN durationId int(11)'
+			]
+		], // indexed_duration_id
 
 		//yanjun
 		'add_hoopla_flex_batch_size' => [
@@ -87,6 +104,13 @@ function getUpdates26_05_00(): array {
 				"ALTER TABLE hoopla_settings ADD COLUMN hooplaFlexBatchSize int(3) DEFAULT 50",
 			]
 		], //add_hoopla_flex_batch_size
+		'migrate_old_mpaa_rating_to_content_rating' => [
+			'title' => 'Migrate old mpaa_rating to content_rating',
+			'description' => 'Migrate old mpaa_rating to content_rating',
+			'sql' => [
+				"UPDATE grouped_work_facet SET facetName = 'content_rating', displayName = 'Content Rating', displayNamePlural = 'Content Ratings' WHERE facetName = 'mpaa_rating';",
+			],
+		], //migrate_old_mpaa_rating_to_content_rating
 
 		//imani
 		// Aspen Progressive Web Application(PWA) updates moved
@@ -167,6 +191,39 @@ function getUpdates26_05_00(): array {
 		//pedro
 
 		//mark j
+		'user_agent_consolidation' => [
+			'title' => 'Consolidate User Agents and Stats',
+			'description' => 'Consolidating user agents and their corresponding stats to remove duplicates that only differ by version details. This will allow for cleaner reporting and bot detection.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_agent DROP INDEX userAgent, ADD INDEX userAgent (userAgent(512))",
+				"UPDATE user_agent SET userAgent = SUBSTRING_INDEX(userAgent, '/', 1) WHERE userAgent LIKE '%/%'",
+				"CREATE TABLE user_agent_temp LIKE user_agent",
+				"INSERT INTO user_agent_temp (userAgent, isBot, blockAccess)
+				 SELECT userAgent,
+						MAX(isBot),
+						MAX(blockAccess)
+				 FROM user_agent
+				 GROUP BY userAgent",
+				"CREATE TABLE usage_by_user_agent_temp LIKE usage_by_user_agent",
+				"INSERT INTO usage_by_user_agent_temp (userAgentId, year, month, instance, numRequests, numBlockedRequests)
+				 SELECT consolidated_user_agent.id,
+						usage_by_user_agent.year,
+						usage_by_user_agent.month,
+						usage_by_user_agent.instance,
+						SUM(usage_by_user_agent.numRequests),
+						SUM(usage_by_user_agent.numBlockedRequests)
+				 FROM usage_by_user_agent
+				 INNER JOIN user_agent original_user_agent ON usage_by_user_agent.userAgentId = original_user_agent.id
+				 INNER JOIN user_agent_temp consolidated_user_agent ON consolidated_user_agent.userAgent <=> original_user_agent.userAgent
+				 GROUP BY consolidated_user_agent.id, usage_by_user_agent.year, usage_by_user_agent.month, usage_by_user_agent.instance",
+				"DROP TABLE usage_by_user_agent",
+				"RENAME TABLE usage_by_user_agent_temp TO usage_by_user_agent",
+				"DROP TABLE user_agent",
+				"RENAME TABLE user_agent_temp TO user_agent",
+				"ALTER TABLE user_agent DROP INDEX userAgent, ADD UNIQUE INDEX userAgent (userAgent(512))"
+			]
+		], //user_agent_consolidation
 		'web_resource_show_in_explore_more' => [
 			'title' => 'Add Option to Web Resources to Show in Explore More',
 			'description' => 'Add option in web builder resource settings to show in explore more',
@@ -185,6 +242,13 @@ function getUpdates26_05_00(): array {
 		//pedro
 
 		//other
-
+		'remove_site_active_ticket_feed' => [
+			 'title' => 'Remove Active Ticket Feed',
+			 'description' => 'Deletes the Active Ticket Feed field from the Greenhouse Site List settings.',
+			 'continueOnError' => false,
+			 'sql' => [
+				 'ALTER TABLE aspen_sites DROP COLUMN IF EXISTS activeTicketFeed'
+			 ]
+		 ], //remove_site_active_ticket_feed
 	];
 }

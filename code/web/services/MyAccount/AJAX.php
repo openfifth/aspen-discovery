@@ -2264,24 +2264,31 @@ class MyAccount_AJAX extends JSON_Action {
 
 	function renewCheckout(): array {
 		$this->requireLoggedInUser();
-		$this->checkRequiredParameters(['patronId', 'recordId', 'renewIndicator']);
-		if (strpos($_REQUEST['renewIndicator'], '|') > 0) {
-			[
-				$itemId,
-				$itemIndex,
-			] = explode('|', $_REQUEST['renewIndicator']);
-		} else {
-			$itemId = $_REQUEST['renewIndicator'];
-			$itemIndex = null;
-		}
-
-
+		$this->checkRequiredParameters(['patronId', 'recordId']);
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
-		$renewIndicator = $_REQUEST['renewIndicator'];
+		$renewIndicator = $_REQUEST['renewIndicator'] ?? '';
 		$patron = $user->getUserReferredTo($patronId);
+		$itemId = null;
+		$itemIndex = null;
+
 		if ($patron) {
+			$accountProfile = $patron->getAccountProfile();
+			// Evolve does not require a renew indicator
+			$requiresRenewIndicator = !($accountProfile && $accountProfile->driver === 'Evolve');
+			if ($requiresRenewIndicator) {
+				$this->checkRequiredParameters(['renewIndicator']);
+				if (strpos($renewIndicator, '|') > 0) {
+					[
+						$itemId,
+						$itemIndex,
+					] = explode('|', $renewIndicator);
+				} else {
+					$itemId = $renewIndicator;
+					$itemIndex = null;
+				}
+			}
 			$renewResults = $patron->renewCheckout($recordId, $itemId, $itemIndex);
 		} else {
 			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
@@ -7190,6 +7197,14 @@ class MyAccount_AJAX extends JSON_Action {
 				$createCustomer->EmailAddress = $patron->email;
 				$createCustomer->Invoices = [$createInvoice];
 
+				$PageResultOptions = [
+					'AllowRegisterAccount' => true,
+					'InvoiceOptions' => [
+						'AllowViewRelated' => false,
+						'AllowRemindMe' => false,
+					]
+				];
+
 				$postParams = [
 					'CreateCustomerRecord' => true,
 					'Customers' => [
@@ -7202,6 +7217,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'PostBackURL' => $configArray['Site']['url'] . "/InvoiceCloud/Process",
 					'BillerReference' => $payment->id,
 					'ViewMode' => 0,
+					'PageResultOptions' => $PageResultOptions,
 				];
 
 				$paymentRequest = new CurlWrapper();
@@ -7714,7 +7730,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$updateDebtInIls = false;
 
 		if ($rc == 'A') {
-			$payment->completed = true;
 			if ($recNo) {
 				$payment->heyCentricPaymentReferenceNumber = $recNo;
 			}
