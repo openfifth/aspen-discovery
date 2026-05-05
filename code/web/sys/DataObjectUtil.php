@@ -92,6 +92,13 @@ class DataObjectUtil {
 		return $validationResults;
 	}
 
+	static function isValidRegularExpression(string $value) : bool {
+		set_error_handler(function() {}, E_WARNING);
+		$result = preg_match('/' . $value . '/', '') !== false;
+		restore_error_handler();
+		return $result;
+	}
+
 	static function updateFromUI($object, $structure, $fieldLocks) : void {
 		foreach ($structure as $property) {
 			if (($fieldLocks != null && !in_array($property['property'], $fieldLocks)) || $fieldLocks == null) {
