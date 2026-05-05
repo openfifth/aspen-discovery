@@ -2716,7 +2716,7 @@ class Record_AJAX extends JSON_Action {
 		if ($successCount > 0) {
 			$thisUser = translate([
 				'text' => 'You',
-				'isOublicFacing' => true,
+				'isPublicFacing' => true,
 			]);
 			if (!empty($user->parentUser)) {
 				$thisUser = $user->displayName;
