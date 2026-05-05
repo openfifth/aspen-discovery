@@ -422,7 +422,7 @@ function migrateMaterialsRequestTitleData(): void {
 	global $aspen_db;
 
 	$titleColumns = [
-		'title', 'author', 'format', 'formatId', 'isbn', 'season', 'upc', 'issn',
+		'title', 'author', 'format', 'formatId', 'isbn', 'upc', 'issn',
 		'hasExistingRecord', 'lastCheckForExistingRecord', 'existingRecordUrl'
 	];
 	$columnList = implode(', ', $titleColumns);
