@@ -17,6 +17,7 @@ class Grouping_Record {
 	private null|int|string $sortablePublicationDate = null;
 	public ?string $placeOfPublication;
 	public ?string $physical;
+	public ?int $duration;
 	public bool|string $closedCaptioned;
 	public string $variationFormat;
 	public string|int $variationId;
@@ -81,6 +82,7 @@ class Grouping_Record {
 			$this->publicationDate = $recordDetails['publicationDate'];
 			$this->placeOfPublication = $recordDetails['placeOfPublication'];
 			$this->physical = $recordDetails['physicalDescription'];
+			$this->duration = $recordDetails['duration'];
 			$this->language = $recordDetails['language'];
 			if (isset($recordDetails['isClosedCaptioned'])) {
 				$this->closedCaptioned = $recordDetails['isClosedCaptioned'];

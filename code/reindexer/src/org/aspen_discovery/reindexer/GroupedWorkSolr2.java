@@ -105,6 +105,7 @@ public class GroupedWorkSolr2 extends AbstractGroupedWorkSolr implements Cloneab
 
 			//faceting and refined searching
 			doc.addField("physical", physicals);
+			doc.addField("duration", durations);
 			doc.addField("edition", editions);
 			doc.addField("dateSpan", dateSpans);
 			//series.values().removeAll(GroupedWorkIndexer.hideSeries);

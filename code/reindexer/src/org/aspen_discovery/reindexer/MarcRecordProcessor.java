@@ -585,6 +585,25 @@ abstract class MarcRecordProcessor {
 		groupedWork.addPhysical(physicalDescriptions);
 	}
 
+	void loadDuration(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record, HashSet<RecordInfo> ilsRecords) {
+		Set<String> durations = MarcUtil.getFieldList(record, "300a");
+		Set<Integer> durationSet = new HashSet<>();
+		if (!durations.isEmpty()){
+			String duration = durations.iterator().next();
+			for(RecordInfo ilsRecord : ilsRecords){
+				if (ilsRecord.getPrimaryFormatCategory().equals("Audio Books")) {
+					//try to get total minutes and save as duration if not zero
+					int durationMinutes = AspenStringUtils.extractTotalMinutes(duration);
+					if (durationMinutes != 0){
+						ilsRecord.setDuration(durationMinutes);
+						durationSet.add(durationMinutes);
+					}
+				}
+			}
+		}
+		groupedWork.addDuration(durationSet);
+	}
+
 	private String getCallNumberSubject(org.marc4j.marc.Record record) {
 		String val = MarcUtil.getFirstFieldVal(record, "090a:050a");
 
