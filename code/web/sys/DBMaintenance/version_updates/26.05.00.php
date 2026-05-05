@@ -359,7 +359,7 @@ function getUpdates26_05_00(): array {
 				"INSERT INTO user_agent_temp (userAgent, isBot, blockAccess)
 				 SELECT userAgent,
 						MAX(isBot),
-						MAX(blockAccess)
+						MIN(blockAccess)
 				 FROM user_agent
 				 GROUP BY userAgent",
 				"CREATE TABLE usage_by_user_agent_temp LIKE usage_by_user_agent",
