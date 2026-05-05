@@ -1,12 +1,14 @@
-<?php
+<?php /** @noinspection PhpMissingFieldTypeInspection */
 
 require_once ROOT_DIR . '/sys/ExploreMoreSourceEntry.php';
 
 class ExploreMoreSourceGroup extends DataObject {
+	public $__table = 'explore_more_source_group';
 	public $id;
 	public $name;
-	public $__table = 'explore_more_source_group';
 
+	protected $_exploreMoreSources = null;
+	
 	public function __get($name) {
 		if ($name === 'exploreMoreSources') {
 			return $this->getExploreMoreSources();
@@ -14,9 +16,9 @@ class ExploreMoreSourceGroup extends DataObject {
 		return parent::__get($name);
 	}
 
-	public function getExploreMoreSources() {
-		if (!isset($this->exploreMoreSources) || $this->exploreMoreSources === null) {
-			$this->exploreMoreSources = [];
+	public function getExploreMoreSources() : ?array {
+		if (!isset($this->_exploreMoreSources) && !empty($this->id)) {
+			$this->_exploreMoreSources = [];
 			$entry = new ExploreMoreSourceEntry();
 			$entry->exploreMoreSourceGroupId = $this->id;
 			$entry->orderBy('weight ASC');
@@ -24,16 +26,16 @@ class ExploreMoreSourceGroup extends DataObject {
 			while ($entry->fetch()) {
 				$clonedEntry = clone($entry);
 				$clonedEntry->sourceName = $clonedEntry->getSourceName();
-				$this->exploreMoreSources[$entry->id] = $clonedEntry;
+				$this->_exploreMoreSources[$entry->id] = $clonedEntry;
 			}
 		}
-		return $this->exploreMoreSources;
+		return $this->_exploreMoreSources;
 	}
 
 	/**
 	 * Ensure all ExploreMoreSource records are present as entries for this group
 	 */
-	public static function ensureDefaultEntries($groupId) {
+	public static function ensureDefaultEntries($groupId) : array {
 		require_once ROOT_DIR . '/sys/ExploreMoreSourceEntry.php';
 		require_once ROOT_DIR . '/sys/ExploreMoreSource.php';
 		$group = new ExploreMoreSourceGroup();
@@ -42,7 +44,7 @@ class ExploreMoreSourceGroup extends DataObject {
 			// Group not found
 			return [];
 		}
-		// Only ensure entries exist, do not assign to $group->exploreMoreSources
+		// Only ensure entries exist, do not assign to $group->_exploreMoreSources
 		$entries = [];
 		$entry = new ExploreMoreSourceEntry();
 		$entry->exploreMoreSourceGroupId = $group->id;
@@ -56,7 +58,6 @@ class ExploreMoreSourceGroup extends DataObject {
 		// If no entries exist, auto-populate with all sources
 		if (!$hasEntries) {
 			$source = new ExploreMoreSource();
-			$source->orderBy('weight ASC');
 			$source->find();
 			$weight = 1;
 			while ($source->fetch()) {
@@ -116,8 +117,8 @@ class ExploreMoreSourceGroup extends DataObject {
 
 	public function update(string $context = '') : int|bool {
 		$result = parent::update($context);
-		if (isset($this->exploreMoreSources) && is_array($this->exploreMoreSources)) {
-			foreach ($this->exploreMoreSources as $entry) {
+		if (isset($this->_exploreMoreSources) && is_array($this->_exploreMoreSources)) {
+			foreach ($this->_exploreMoreSources as $entry) {
 				if (isset($entry->_deleteOnSave) && $entry->_deleteOnSave) {
 					$entry->delete();
 				} else {
