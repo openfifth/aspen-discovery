@@ -62,6 +62,10 @@ class DataObjectUtil {
 				}
 				continue;
 			}
+			if ($property['type'] == 'oneToMany' && isset($property['structure'])) {
+				DataObjectUtil::validateSubObjectRegexes($property, $object, $validationResults['errors']);
+				continue;
+			}
 			$value = $_REQUEST[$property['property']] ?? null;
 			if (isset($property['required']) && $property['required']) {
 				if ($value == null && strlen($value) > 0) {
@@ -91,6 +95,19 @@ class DataObjectUtil {
 			$validationResults['validatedOk'] = false;
 		}
 		return $validationResults;
+	}
+
+	private static function validateSubObjectRegexes(array $property, $object, array &$errors) : void {
+		$subObjects = $object->{$property['property']} ?? [];
+		foreach ($subObjects as $subObject) {
+			if ($subObject->_deleteOnSave ?? false) {
+				continue;
+			}
+			foreach ($property['structure'] as $subProperty) {
+				$subValue = $subObject->{$subProperty['property']} ?? null;
+				DataObjectUtil::validateRegexPropertyIfApplicable($subValue, $subProperty, $errors);
+			}
+		}
 	}
 
 	private static function validateRegexPropertyIfApplicable(mixed $value, array $property, array &$errors) : void {
