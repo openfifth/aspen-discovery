@@ -74,6 +74,7 @@ class DataObjectUtil {
 					$validationResults['errors'][] = $property['property'] . ' does not match ' . $property['property'] . 'Repeat';
 				}
 			}
+			DataObjectUtil::validateRegexPropertyIfApplicable($value, $property, $validationResults['errors']);
 
 			//Check to see if there is a custom validation routine
 			if (isset($property['serverValidation'])) {
@@ -90,6 +91,23 @@ class DataObjectUtil {
 			$validationResults['validatedOk'] = false;
 		}
 		return $validationResults;
+	}
+
+	private static function validateRegexPropertyIfApplicable(mixed $value, array $property, array &$errors) : void {
+		if (!DataObjectUtil::isRegularExpressionProperty($property)) {
+			return;
+		}
+		if (!DataObjectUtil::isValidRegularExpression($value)) {
+			DataObjectUtil::addRegularExpressionError($property, $errors);
+		}
+	}
+
+	private static function isRegularExpressionProperty(array $property) : bool {
+		return in_array($property['type'], ['regularExpression', 'multilineRegularExpression']);
+	}
+
+	private static function addRegularExpressionError(array $property, array &$errors) : void {
+		$errors[] = ($property['label'] ?? $property['property']) . ' is not a valid regular expression.';
 	}
 
 	static function isValidRegularExpression(mixed $value) : bool {
