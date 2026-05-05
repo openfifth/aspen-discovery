@@ -5006,37 +5006,31 @@ class Library extends DataObject {
 			],
 		];
 
-		global $library;
-		global $logger;
-		$accountProfile = $library->getAccountProfile();
-		$ils = $accountProfile ? $accountProfile->ils : '';
-		if ($ils == 'koha') {
-			$kohaDriver = new Koha($accountProfile);
-			if ($kohaDriver->supportsHyperholdsGrouping()) {
-				$newField = [
-					'property' => 'allowHoldsToBeGrouped',
-					'type' => 'checkbox',
-					'label' => 'Allow Grouping Holds',
-					'description' => 'Whether or not the user can group their holds.',
-					'hideInLists' => true,
-					'default' => 0,
-					'permissions' => ['Library ILS Connection'],
-					'note' => 'Applies to Koha Only'
-				];
+		$catalogDriver = CatalogFactory::getCatalogConnectionInstance();
+		if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
+			$newField = [
+				'property' => 'allowHoldsToBeGrouped',
+				'type' => 'checkbox',
+				'label' => 'Allow Grouping Holds',
+				'description' => 'Whether or not the user can group their holds.',
+				'hideInLists' => true,
+				'default' => 0,
+				'permissions' => ['Library ILS Connection'],
+				'note' => 'Applies to Koha Only'
+			];
 
-				$holdsProps = $structure['ilsSection']['properties']['holdsSection']['properties'] ?? [];
-				$insertAfter = 'maxDaysToFreeze';
-				$newHoldsProps = [];
+			$holdsProps = $structure['ilsSection']['properties']['holdsSection']['properties'] ?? [];
+			$insertAfter = 'maxDaysToFreeze';
+			$newHoldsProps = [];
 
-				foreach ($holdsProps as $key => $value) {
-					$newHoldsProps[$key] = $value;
-					if ($key === $insertAfter) {
-						$newHoldsProps['allowHoldsToBeGrouped'] = $newField;
-					}
+			foreach ($holdsProps as $key => $value) {
+				$newHoldsProps[$key] = $value;
+				if ($key === $insertAfter) {
+					$newHoldsProps['allowHoldsToBeGrouped'] = $newField;
 				}
-				$structure['ilsSection']['properties']['holdsSection']['properties'] = $newHoldsProps;
 			}
-		} 
+			$structure['ilsSection']['properties']['holdsSection']['properties'] = $newHoldsProps;
+		}
 
 		//Update settings based on what we have access to
 		$hasCourseReserves = false;
