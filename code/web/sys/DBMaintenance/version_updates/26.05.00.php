@@ -74,12 +74,51 @@ function getUpdates26_05_00(): array {
 				"ALTER TABLE self_check_completion_message ADD COLUMN name TEXT"
 			]
 		], //self_check_completion_message_name
+		'sort_search_interpreter_terms' => [
+			'title' => 'Sort Search Interpreter Special Terms',
+			'description' => 'Sort Search Interpreter Special Terms',
+			'sql' => [
+				'ALTER TABLE search_interpreter_special_terms ADD COLUMN weight int(11) NOT NULL DEFAULT 0',
+				'UPDATE search_interpreter_special_terms set weight = id'
+			]
+		], //sort_search_interpreter_terms
 
 		//kirstien
 
 		//kodi
+		'indexed_duration' => [
+			'title' => 'Add indexed_duration Table',
+			'description' => 'Add table for indexing duration of grouped work variations (audiobooks).',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS indexed_duration  (
+					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY, 
+					duration int(11)
+				) ENGINE = InnoDB',
+			]
+		], //indexed_duration
+		'indexed_duration_id' => [
+			'title' => 'Add durationId Column',
+			'description' => 'Add durationId column to grouped_work_records.',
+			'sql' => [
+				'ALTER TABLE grouped_work_records ADD COLUMN durationId int(11)'
+			]
+		], // indexed_duration_id
 
 		//yanjun
+		'add_hoopla_flex_batch_size' => [
+			'title' => 'Add Hoopla Flex Batch Size',
+			'description' => 'Add a batch size for Hoopla Flex availability updates',
+			'sql' => [
+				"ALTER TABLE hoopla_settings ADD COLUMN hooplaFlexBatchSize int(3) DEFAULT 50",
+			]
+		], //add_hoopla_flex_batch_size
+		'migrate_old_mpaa_rating_to_content_rating' => [
+			'title' => 'Migrate old mpaa_rating to content_rating',
+			'description' => 'Migrate old mpaa_rating to content_rating',
+			'sql' => [
+				"UPDATE grouped_work_facet SET facetName = 'content_rating', displayName = 'Content Rating', displayNamePlural = 'Content Ratings' WHERE facetName = 'mpaa_rating';",
+			],
+		], //migrate_old_mpaa_rating_to_content_rating
 
 		//imani
 		// Aspen Progressive Web Application(PWA) updates moved
@@ -156,10 +195,138 @@ function getUpdates26_05_00(): array {
 		//galen
 
 		//chloe
+		'pay360_rename_wsldUrl_to_wsdlUrl' => [
+			'title' => 'Rename wsldUrl to wsdlUrl in Pay360 Settings',
+			'description' => 'Corrects a Typo in the Column Name (WSLD → WSDL)',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE pay360_setting CHANGE COLUMN wsldUrl wsdlUrl VARCHAR(255)",
+			],
+		], // pay360_rename_wsldUrl_to_wsdlUrl
+		'pay360_drop_identifier_column' => [
+			'title' => 'Remove Unused Identifier Column from Pay360 Settings',
+			'description' => 'Removes an Unused Column from the pay360_setting Table',
+			'continueOnError' => true,
+			'sql' => [
+				"ALTER TABLE pay360_setting DROP COLUMN identifier",
+			],
+		], // pay360_drop_identifier_column
+		'pay360_drop_request_parameter_table' => [
+			'title' => 'Remove Unused Pay360 Request Parameter Table',
+			'description' => 'Drops the pay360_request_parameter Table Which is Not Used by the Pay360 Integration',
+			'continueOnError' => true,
+			'sql' => [
+				"DROP TABLE IF EXISTS pay360_request_parameter",
+			],
+		], // pay360_drop_request_parameter_table
 
 		//pedro
 
 		//mark j
+		'create_explore_more_source_tables' => [
+			'title' => 'Create Explore More Tables',
+			'description' => 'Adds tables to control Explore More sources with sorting and visibility by library and location.',
+			'continueOnError' => false,
+			'sql' => [
+				"CREATE TABLE IF NOT EXISTS explore_more_source (
+				id INT(11) NOT NULL AUTO_INCREMENT,
+				source VARCHAR(50) NOT NULL,
+				showInExploreMore TINYINT(1) NOT NULL DEFAULT 1,
+				PRIMARY KEY (id),
+				UNIQUE KEY (source)
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
+				"CREATE TABLE IF NOT EXISTS explore_more_source_library (
+				id INT(11) NOT NULL AUTO_INCREMENT,
+				exploreMoreSourceId INT(11) NOT NULL,
+				libraryId INT(11) NOT NULL,
+				PRIMARY KEY (id),
+				UNIQUE KEY (exploreMoreSourceId, libraryId),
+				FOREIGN KEY (exploreMoreSourceId) REFERENCES explore_more_source(id) ON DELETE CASCADE
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
+				"CREATE TABLE IF NOT EXISTS explore_more_source_location (
+				id INT(11) NOT NULL AUTO_INCREMENT,
+				exploreMoreSourceId INT(11) NOT NULL,
+				locationId INT(11) NOT NULL,
+				PRIMARY KEY (id),
+				UNIQUE KEY (exploreMoreSourceId, locationId),
+				FOREIGN KEY (exploreMoreSourceId) REFERENCES explore_more_source(id) ON DELETE CASCADE
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;",
+				"CREATE TABLE IF NOT EXISTS explore_more_source_group (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				name VARCHAR(100) NOT NULL
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+				"CREATE TABLE IF NOT EXISTS explore_more_source_entry (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				exploreMoreSourceGroupId INT NOT NULL,
+				exploreMoreSourceId INT NOT NULL,
+				weight INT NOT NULL DEFAULT 0,
+				FOREIGN KEY (exploreMoreSourceGroupId) REFERENCES explore_more_source_group(id) ON DELETE CASCADE,
+				FOREIGN KEY (exploreMoreSourceId) REFERENCES explore_more_source(id) ON DELETE CASCADE
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;",
+			],
+		], //create_explore_more_source_tables
+		'add_explore_more_permissions' => [
+			'title' => 'Add Explore More Permissions',
+			'description' => 'Adds permissions needed to allow administration of Explore More.',
+			'continueOnError' => true,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Local Enrichment', 'Administer All Explore More', '', 40, 'Allows users to administer Explore More sources.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer All Explore More'))",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Local Enrichment', 'Administer Library Explore More', '', 40, 'Allows users to administer Explore More sources for their library.')",
+			],
+		], //add_explore_more_permissions
+		'insert_default_explore_more_sources' => [
+			'title' => 'Insert Default Explore More Sources',
+			'description' => 'Populate the explore_more_source table with the default sources.',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Catalog', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('EBSCO EDS', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('EBSCOhost', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Summon', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Gale', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('CloudSource', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Events', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Web Indexer', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Lists', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Open Archives', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Series', 1);",
+				"INSERT INTO explore_more_source (source, showInExploreMore) VALUES ('Genealogy', 1);",
+			],
+		], //insert_default_explore_more_sources
+		'user_agent_consolidation' => [
+			'title' => 'Consolidate User Agents and Stats',
+			'description' => 'Consolidating user agents and their corresponding stats to remove duplicates that only differ by version details. This will allow for cleaner reporting and bot detection.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_agent DROP INDEX userAgent, ADD INDEX userAgent (userAgent(512))",
+				"UPDATE user_agent SET userAgent = SUBSTRING_INDEX(userAgent, '/', 1) WHERE userAgent LIKE '%/%'",
+				"CREATE TABLE user_agent_temp LIKE user_agent",
+				"INSERT INTO user_agent_temp (userAgent, isBot, blockAccess)
+				 SELECT userAgent,
+						MAX(isBot),
+						MAX(blockAccess)
+				 FROM user_agent
+				 GROUP BY userAgent",
+				"CREATE TABLE usage_by_user_agent_temp LIKE usage_by_user_agent",
+				"INSERT INTO usage_by_user_agent_temp (userAgentId, year, month, instance, numRequests, numBlockedRequests)
+				 SELECT consolidated_user_agent.id,
+						usage_by_user_agent.year,
+						usage_by_user_agent.month,
+						usage_by_user_agent.instance,
+						SUM(usage_by_user_agent.numRequests),
+						SUM(usage_by_user_agent.numBlockedRequests)
+				 FROM usage_by_user_agent
+				 INNER JOIN user_agent original_user_agent ON usage_by_user_agent.userAgentId = original_user_agent.id
+				 INNER JOIN user_agent_temp consolidated_user_agent ON consolidated_user_agent.userAgent <=> original_user_agent.userAgent
+				 GROUP BY consolidated_user_agent.id, usage_by_user_agent.year, usage_by_user_agent.month, usage_by_user_agent.instance",
+				"DROP TABLE usage_by_user_agent",
+				"RENAME TABLE usage_by_user_agent_temp TO usage_by_user_agent",
+				"DROP TABLE user_agent",
+				"RENAME TABLE user_agent_temp TO user_agent",
+				"ALTER TABLE user_agent DROP INDEX userAgent, ADD UNIQUE INDEX userAgent (userAgent(512))"
+			]
+		], //user_agent_consolidation
 		'web_resource_show_in_explore_more' => [
 			'title' => 'Add Option to Web Resources to Show in Explore More',
 			'description' => 'Add option in web builder resource settings to show in explore more',
@@ -178,6 +345,13 @@ function getUpdates26_05_00(): array {
 		//pedro
 
 		//other
-
+		'remove_site_active_ticket_feed' => [
+			 'title' => 'Remove Active Ticket Feed',
+			 'description' => 'Deletes the Active Ticket Feed field from the Greenhouse Site List settings.',
+			 'continueOnError' => false,
+			 'sql' => [
+				 'ALTER TABLE aspen_sites DROP COLUMN IF EXISTS activeTicketFeed'
+			 ]
+		 ], //remove_site_active_ticket_feed
 	];
 }

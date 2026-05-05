@@ -2264,24 +2264,31 @@ class MyAccount_AJAX extends JSON_Action {
 
 	function renewCheckout(): array {
 		$this->requireLoggedInUser();
-		$this->checkRequiredParameters(['patronId', 'recordId', 'renewIndicator']);
-		if (strpos($_REQUEST['renewIndicator'], '|') > 0) {
-			[
-				$itemId,
-				$itemIndex,
-			] = explode('|', $_REQUEST['renewIndicator']);
-		} else {
-			$itemId = $_REQUEST['renewIndicator'];
-			$itemIndex = null;
-		}
-
-
+		$this->checkRequiredParameters(['patronId', 'recordId']);
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
-		$renewIndicator = $_REQUEST['renewIndicator'];
+		$renewIndicator = $_REQUEST['renewIndicator'] ?? '';
 		$patron = $user->getUserReferredTo($patronId);
+		$itemId = null;
+		$itemIndex = null;
+
 		if ($patron) {
+			$accountProfile = $patron->getAccountProfile();
+			// Evolve does not require a renew indicator
+			$requiresRenewIndicator = !($accountProfile && $accountProfile->driver === 'Evolve');
+			if ($requiresRenewIndicator) {
+				$this->checkRequiredParameters(['renewIndicator']);
+				if (strpos($renewIndicator, '|') > 0) {
+					[
+						$itemId,
+						$itemIndex,
+					] = explode('|', $renewIndicator);
+				} else {
+					$itemId = $renewIndicator;
+					$itemIndex = null;
+				}
+			}
 			$renewResults = $patron->renewCheckout($recordId, $itemId, $itemIndex);
 		} else {
 			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
@@ -7190,6 +7197,14 @@ class MyAccount_AJAX extends JSON_Action {
 				$createCustomer->EmailAddress = $patron->email;
 				$createCustomer->Invoices = [$createInvoice];
 
+				$PageResultOptions = [
+					'AllowRegisterAccount' => true,
+					'InvoiceOptions' => [
+						'AllowViewRelated' => false,
+						'AllowRemindMe' => false,
+					]
+				];
+
 				$postParams = [
 					'CreateCustomerRecord' => true,
 					'Customers' => [
@@ -7202,6 +7217,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'PostBackURL' => $configArray['Site']['url'] . "/InvoiceCloud/Process",
 					'BillerReference' => $payment->id,
 					'ViewMode' => 0,
+					'PageResultOptions' => $PageResultOptions,
 				];
 
 				$paymentRequest = new CurlWrapper();
@@ -7714,7 +7730,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$updateDebtInIls = false;
 
 		if ($rc == 'A') {
-			$payment->completed = true;
 			if ($recNo) {
 				$payment->heyCentricPaymentReferenceNumber = $recNo;
 			}
@@ -7802,76 +7817,23 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		// start the polling process for status updates (no webhooks available) 
-		global $configArray;
-		$serverName = $_SERVER['aspen_server'];
-		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
-		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($payment->id) . ' >> ' . escapeshellarg($logFilePath) . ' . 2>&1 &';
-		exec($pollCommand);
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::spawnPoller($pay360SettingsId, $payment->id);
 
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
 	function completePay360Order(): void {
-		global $configArray;
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		if (!isset($_REQUEST['paymentId']) || !isset($_REQUEST['settingsId']) || !is_numeric($_REQUEST['paymentId']) || !is_numeric($_REQUEST['settingsId'])) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		$paymentId = intval($_REQUEST['paymentId']);
-		$pay360SettingsId = intval($_REQUEST['settingsId']);
-
-		$payment = new UserPayment();
-		$payment->id = $paymentId;
-		$payment->find(true);
-		if ($payment->userId !== UserAccount::getActiveUserId()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome();
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+		$this->requireLoggedInUser();
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::completeOrder();
 	}
 
-	/** @noinspection PhpUnused */
 	function handlePay360OrderNotAttempted(): void {
-		global $configArray;
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		if (!isset($_REQUEST['settingsId']) || !isset($_REQUEST['paymentId']) || !is_numeric($_REQUEST['paymentId']) || !is_numeric($_REQUEST['settingsId'])) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		$paymentId = intval($_REQUEST['paymentId']);
-		$pay360SettingsId = intval($_REQUEST['settingsId']);
-
-		$payment = new UserPayment();
-		$payment->id = $paymentId;
-		$payment->find(true);
-		if ($payment->userId !== UserAccount::getActiveUserId()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome([], false);
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+		$this->requireLoggedInUser();
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::handleNotAttempted();
 	}
 
 	/** @noinspection PhpUnused */
