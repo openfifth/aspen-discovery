@@ -8694,6 +8694,7 @@ class MyAccount_AJAX extends JSON_Action {
 		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
 
 		// so the registered may manage their registration, also add the event to the active user's saved events if the user this was added for is a linked user
+		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
 			EventRegistrationService::saveToUserEvents($eventInstance, $activeUserId);
 		}
