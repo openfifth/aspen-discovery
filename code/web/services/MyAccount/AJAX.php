@@ -11907,13 +11907,7 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 		global $logger;
 
-		if (!UserAccount::isLoggedIn()) {
-			return [
-				'success' => false,
-				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
-				'message' => translate(['text' => 'Please log in to group holds', 'isPublicFacing' => true])
-			];
-		}
+		$this->requireLoggedInUser(null, 'You must be logged in to group holds.  Please close this dialog and login again.');
 
 		$holdIds = $_REQUEST['holdIds'] ?? [];
 		$forceGrouped = $_REQUEST['forceGrouped'] ?? false;
@@ -12033,20 +12027,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	public function requestDeleteHoldGroupConfirmation() {
 		global $interface;
-
-		if (!UserAccount::isLoggedIn()) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in to alter hold groups.  Please close this dialog and login again.',
-					'isPublicFacing' => true,
-				])
-			];
-		}
+		$this->requireLoggedInUser(null, 'You must be logged in to alter hold groups. Please close this dialog and login again.');
 
 		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
 		$visualHoldId = $_REQUEST['visualHoldId'] ?? '';
@@ -12080,21 +12061,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	public function deleteHoldGroup() {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
-		$user = UserAccount::getLoggedInUser();
-
-		if (empty($user)) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in to alter hold groups.  Please close this dialog and login again.',
-					'isPublicFacing' => true,
-				])
-			];
-		}
+		$this->requireLoggedInUser(null, 'You must be logged in to alter hold groups. Please close this dialog and login again.');
 
 		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
 		$userId = $_REQUEST['userId'] ?? null;
