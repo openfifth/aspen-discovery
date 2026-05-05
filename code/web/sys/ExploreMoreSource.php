@@ -12,20 +12,35 @@ class ExploreMoreSource extends DataObject {
 	private $libraries = [];
 	private $locations = [];
 
-	public function setLibraries($libraries) {
-		if (!is_array($libraries)) {
-			if ($libraries === null || $libraries === '') {
-				$libraries = [];
+	private function normalizeSelectedIds($values): array {
+		if (!is_array($values)) {
+			if ($values === null || $values === '') {
+				$values = [];
 			} else {
-				$libraries = [$libraries];
+				$values = [$values];
 			}
 		}
-		// Normalize all values to strings and remove empty values
-		$this->libraries = array_values(array_filter(array_map('strval', $libraries), function($v) { return $v !== '' && $v !== null; }));
+		$normalizedValues = [];
+		foreach ($values as $key => $value) {
+			$selectedId = $value;
+			if (($selectedId === null || $selectedId === '') && $key !== null && $key !== '') {
+				$selectedId = $key;
+			}
+			if ($selectedId === null || $selectedId === '') {
+				continue;
+			}
+			$selectedId = (string)$selectedId;
+			$normalizedValues[$selectedId] = $selectedId;
+		}
+		return $normalizedValues;
+	}
+
+	public function setLibraries($libraries) {
+		$this->libraries = $this->normalizeSelectedIds($libraries);
 	}
 
 	public function setLocations($locations) {
-		$this->locations = $locations;
+		$this->locations = $this->normalizeSelectedIds($locations);
 	}
 
 	/** @var ExploreMoreSource[] */
@@ -52,12 +67,12 @@ class ExploreMoreSource extends DataObject {
 				$obj->exploreMoreSourceId = $this->id;
 				$obj->find();
 				while ($obj->fetch()) {
-					$this->libraries[] = (string)$obj->libraryId;
+					$libraryId = (string)$obj->libraryId;
+					$this->libraries[$libraryId] = $libraryId;
 				}
 			}
 		}
-		// Normalize and reindex
-		$this->libraries = array_values(array_map('strval', $this->libraries));
+		$this->libraries = $this->normalizeSelectedIds($this->libraries);
 		return $this->libraries;
 	}
 
@@ -69,12 +84,12 @@ class ExploreMoreSource extends DataObject {
 				$obj->exploreMoreSourceId = $this->id;
 				$obj->find();
 				while ($obj->fetch()) {
-					$this->locations[] = (string)$obj->locationId;
+					$locationId = (string)$obj->locationId;
+					$this->locations[$locationId] = $locationId;
 				}
 			}
 		}
-		// Normalize and reindex
-		$this->locations = array_values(array_map('strval', $this->locations));
+		$this->locations = $this->normalizeSelectedIds($this->locations);
 		return $this->locations;
 	}
 
