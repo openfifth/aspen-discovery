@@ -16,7 +16,7 @@
 
 <div id="hyperhold_details_{$record.visual_hold_id}" class="holdDetails" style="display:none; margin-top:15px;">
 	{foreach from=$record.holds item=hold name="holdLoop"}
-		{include file="MyAccount/ilsHold.tpl" record=$hold section='pending'resultIndex=$smarty.foreach.holdLoop.iteration showCovers=$showCovers}
+		{include file="MyAccount/ilsHold.tpl" record=$hold section='pending' resultIndex=$smarty.foreach.holdLoop.iteration showCovers=$showCovers}
 	{/foreach}
 </div>
 <div>
