@@ -244,12 +244,11 @@ function getUpdates26_05_00(): array {
 		'add_explore_more_permissions' => [
 			'title' => 'Add Explore More Permissions',
 			'description' => 'Adds permissions needed to allow administration of Explore More.',
-			'continueOnError' => false,
+			'continueOnError' => true,
 			'sql' => [
 				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Local Enrichment', 'Administer All Explore More', '', 40, 'Allows users to administer Explore More sources.')",
 				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Administer All Explore More'))",
 				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Local Enrichment', 'Administer Library Explore More', '', 40, 'Allows users to administer Explore More sources for their library.')",
-				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='Library Admin'), (SELECT id from permissions where name='Administer Library Explore More'))",
 			],
 		], //add_explore_more_permissions
 		'insert_default_explore_more_sources' => [
