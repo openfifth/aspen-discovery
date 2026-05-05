@@ -3919,12 +3919,10 @@ class MyAccount_AJAX extends JSON_Action {
 				$allowSelectingHoldsToExport = $library->allowSelectingHoldsToExport;
 			}
 
-			$allowHoldsToBeGrouped = false;
 			$catalogDriver = $user->getCatalogDriver();
-			if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
-				$userHomeLibrary = $user->getHomeLibrary();
-				$allowHoldsToBeGrouped = $userHomeLibrary ? $userHomeLibrary->allowHoldsToBeGrouped : $library->allowHoldsToBeGrouped;
-			}
+			$allowHoldsToBeGrouped = $catalogDriver && $catalogDriver->supportsHyperholdsGrouping()
+				? User::resolveAllowHoldsToBeGrouped($user, $library)
+				: false;
 		
 			if ($allowHoldsToBeGrouped) {
 				$patronId = $user->unique_ils_id;

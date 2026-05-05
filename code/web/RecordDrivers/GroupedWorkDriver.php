@@ -2248,15 +2248,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		$timer->logTime("Assigned all information to show search results");
 
 		$user = UserAccount::getActiveUserObj();
-		$allowHoldsToBeGrouped = false;
-
-		if ($user) {
-			$catalogDriver = $user->getCatalogDriver();
-			if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
-				$userHomeLibrary = $user->getHomeLibrary();
-				$allowHoldsToBeGrouped = $userHomeLibrary ? $userHomeLibrary->allowHoldsToBeGrouped : $library->allowHoldsToBeGrouped;
-			}
-		}
+		$catalogDriver = $user ? $user->getCatalogDriver() : null;
+		$allowHoldsToBeGrouped = $catalogDriver && $catalogDriver->supportsHyperholdsGrouping()
+			? User::resolveAllowHoldsToBeGrouped($user, $library)
+			: false;
 
 		$interface->assign('allowHoldsToBeGrouped', $allowHoldsToBeGrouped);
 

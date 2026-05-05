@@ -1834,6 +1834,18 @@ class User extends DataObject {
 		}
 	}
 
+	static function resolveAllowHoldsToBeGrouped(?User $user, Library $library): bool {
+		if ($user == null) {
+			return false;
+		}
+
+		if ($user->getHomeLibrary() != null) {
+			return (bool)$user->getHomeLibrary()->allowHoldsToBeGrouped;
+		}
+
+		return (bool)$library->allowHoldsToBeGrouped;
+	}
+
 	/** @noinspection PhpUnused */
 	public function getNumHoldsAvailableTotal($includeLinkedUsers = true) {
 		$this->updateRuntimeInformation();

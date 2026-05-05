@@ -357,12 +357,10 @@ class Record_AJAX extends JSON_Action {
 			$interface->assign('allowEditionSelection', $allowEditionSelection);
 
 			$currentFormat = null;
-			$allowHoldsToBeGrouped = false;
 			$catalogDriver = $marcRecord->getCatalogDriver();
-			if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
-				$userHomeLibrary = $user ? $user->getHomeLibrary() : null;
-				$allowHoldsToBeGrouped = $userHomeLibrary ? $userHomeLibrary->allowHoldsToBeGrouped : $library->allowHoldsToBeGrouped;
-			}
+			$allowHoldsToBeGrouped = $catalogDriver && $catalogDriver->supportsHyperholdsGrouping()
+				? User::resolveAllowHoldsToBeGrouped($user, $library)
+				: false;
 
 			if (isset($_REQUEST['format']) && !empty($_REQUEST['format'])) {
 				$currentFormat = $_REQUEST['format'];
@@ -667,13 +665,11 @@ class Record_AJAX extends JSON_Action {
 					'success' => true,
 				];
 				if ($holdType != 'none') {
-					$allowHoldsToBeGrouped = false;
 					$groupedWorkId = '';
 					$catalogDriver = $marcRecord->getCatalogDriver();
-					if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
-						$userHomeLibrary = $user ? $user->getHomeLibrary() : null;
-						$allowHoldsToBeGrouped = $userHomeLibrary ? $userHomeLibrary->allowHoldsToBeGrouped : $library->allowHoldsToBeGrouped;
-					}
+					$allowHoldsToBeGrouped = $catalogDriver && $catalogDriver->supportsHyperholdsGrouping()
+						? User::resolveAllowHoldsToBeGrouped($user, $library)
+						: false;
 					if ($allowEditionSelection && $allowHoldsToBeGrouped) {
 						$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
 						if ($groupedWorkDriver) {
