@@ -62,6 +62,24 @@ class DataObjectUtil {
 				}
 				continue;
 			}
+			if ($property['type'] == 'oneToMany' && isset($property['structure'])) {
+				$subObjects = $object->{$property['property']} ?? [];
+				foreach ($subObjects as $subObject) {
+					if ($subObject->_deleteOnSave ?? false) {
+						continue;
+					}
+					foreach ($property['structure'] as $subProperty) {
+						if (!in_array($subProperty['type'], ['regularExpression', 'multilineRegularExpression'])) {
+							continue;
+						}
+						$subValue = $subObject->{$subProperty['property']} ?? null;
+						if (!empty($subValue) && !DataObjectUtil::isValidRegularExpression($subValue)) {
+							$validationResults['errors'][] = ($subProperty['label'] ?? $subProperty['property']) . ' is not a valid regular expression.';
+						}
+					}
+				}
+				continue;
+			}
 			$value = $_REQUEST[$property['property']] ?? null;
 			if (isset($property['required']) && $property['required']) {
 				if ($value == null && strlen($value) > 0) {
