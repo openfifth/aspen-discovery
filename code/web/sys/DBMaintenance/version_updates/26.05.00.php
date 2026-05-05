@@ -141,6 +141,15 @@ function getUpdates26_05_00(): array {
 			]
 		], // indexed_duration_id
 
+		'update_cloudsource_urls' => [
+			'title' => 'Update Cloud Source URLs',
+			'description' => 'Update Cloud Source URL variable names for API vs Patron url.',
+			'sql' => [
+				'ALTER TABLE cloudsource_setting CHANGE baseUrl apiUrl VARCHAR(255)',
+				'ALTER TABLE cloudsource_setting ADD COLUMN patronUrl VARCHAR(255)',
+			]
+		], //update_cloudsource_urls
+
 		//yanjun
 		'add_hoopla_flex_batch_size' => [
 			'title' => 'Add Hoopla Flex Batch Size',
