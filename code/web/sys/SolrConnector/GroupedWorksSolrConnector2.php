@@ -2,6 +2,7 @@
 
 require_once 'Solr.php';
 require_once ROOT_DIR . '/sys/SearchObject/GroupedWorkSearcher2.php';
+require_once ROOT_DIR . '/sys/SystemVariables.php';
 
 class GroupedWorksSolrConnector2 extends Solr {
 	function __construct($host, $index = '') {
@@ -10,21 +11,19 @@ class GroupedWorksSolrConnector2 extends Solr {
 
 	function getSearchSpecs()
 	{
-		/** @var Library $library */
-		global $library;
-
-		$useCustomSearchSpecs = isset($library) && !empty($library->customGroupedWorkSearchSpecs);
+		$systemVariables = SystemVariables::getSystemVariables();
+		$useCustomSearchSpecs = $systemVariables && !empty($systemVariables->customGroupedWorkSearchSpecs);
 		if(!$useCustomSearchSpecs)
 		{
 			// Fall back to default grouped work search specs
 			return $this->getSearchSpecsFile();
 		}
-		$specs = $library->customGroupedWorkSearchSpecs;
-		if (!file_exist(specs) ||!is_readable(specs))
+		$specs = $systemVariables->customGroupedWorkSearchSpecs;
+		if (!file_exists($specs) ||!is_readable($specs))
 		{
 			// Log warning if file doesn't exist or isn't readable
 			global $logger;
-			$logger->log("Custom grouped work search specs is not an accessible file. Interpreting as yaml text instead of a path for library {$library->subdomain}", Logger::LOG_WARNING);
+			$logger->log("Custom grouped work search specs is not an accessible file. Interpreting as yaml text instead of a path for system variables", Logger::LOG_WARNING);
 		}
 		return $specs;			
 	}
