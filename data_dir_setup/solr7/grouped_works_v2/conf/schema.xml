@@ -221,6 +221,7 @@
 		<field name="author" type="searchable_text_unstemmed" indexed="true" stored="false" />
 		<field name="author_display" type="unchanged_string" indexed="false" stored="true" multiValued="false"/> <!-- The author to display to the user -->
 		<field name="authorStr" type="unchanged_string" indexed="true" stored="true" termVectors="true"/>
+		<field name="author_sort" type="alphaOnlySort" indexed="true" stored="true"/> <!-- author for sorting -->
 		<field name="author_exact" type="text-exact" indexed="true" stored="true" />
 		<field name="author_left" type="text-left" indexed="true" stored="true" />
 		<field name="author-letter" type="unchanged_string" indexed="true" stored="true"/>
