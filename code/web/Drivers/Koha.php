@@ -1938,6 +1938,7 @@ class Koha extends AbstractIlsDriver {
 					'isPublicFacing' => true,
 				]);
 				$hold_result['success'] = true;
+				$hold_result['hold_id'] = $response['content']['hold_id'] ?? null;
 				// Result for API or app use
 				$hold_result['api']['title'] = translate([
 					'text' => 'Hold placed successfully',

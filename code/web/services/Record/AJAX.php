@@ -2693,24 +2693,6 @@ class Record_AJAX extends JSON_Action {
 		$catalogDriver = $user->getCatalogDriver();
 		$patronId = $user->unique_ils_id;
 
-		// Get existing hold IDs
-		$existingHoldIds = [];
-		if (count($records) > 1) {
-			$existingHolds = $catalogDriver->getHolds($user);
-			$existingHoldsToCheck = array_merge(
-				$existingHolds['unavailable'] ?? [],
-				$existingHolds['available'] ?? []
-			);
-			
-			foreach ($existingHoldsToCheck as $holdObj) {
-				if (!is_object($holdObj)) continue;
-				$cancelId = $holdObj->cancelId ?? null;
-				if ($cancelId) {
-					$existingHoldIds[] = (int)$cancelId;
-				}
-			}
-		}
-
 		$successCount = 0;
 		$failedRecords = [];
 		$realHoldIds = [];
@@ -2722,6 +2704,9 @@ class Record_AJAX extends JSON_Action {
 			if (!empty($holdResult['success'])) {
 				$successCount++;
 				$successfulRecords[] = $recordId;
+				if (!empty($holdResult['hold_id'])) {
+					$realHoldIds[] = (int)$holdResult['hold_id'];
+				}
 			} else {
 				$failedRecords[] = $recordId;
 			}
@@ -2746,28 +2731,6 @@ class Record_AJAX extends JSON_Action {
 
 			foreach ($successfulRecords as $recordId) {
 				$viewHoldsActions[$recordId] = "<a id='onHoldAction{$recordId}' href='/MyAccount/Holds' class='btn btn-sm btn-info btn-wrap' title='{$viewHoldsText}'>{$viewHoldsText}</a>";
-			}
-		}
-
-		if ($successCount > 1) {
-			$patronHolds = $catalogDriver->getHolds($user);
-
-			$holdsToCheck = array_merge(
-				$patronHolds['unavailable'] ?? [],
-				$patronHolds['available'] ?? []
-			);
-
-			// Build the array from patron holds, excluding existing holds
-			foreach ($holdsToCheck as $holdObj) {
-				if (!is_object($holdObj)) continue;
-				$cancelId = $holdObj->cancelId ?? null;
-				if ($cancelId) {
-					$holdIdInt = (int)$cancelId;
-					// Only include if this is a new hold
-					if (!in_array($holdIdInt, $existingHoldIds)) {
-						$realHoldIds[] = $holdIdInt;
-					}
-				}
 			}
 		}
 
