@@ -106,6 +106,7 @@ class Library extends DataObject {
 	public $allowCancellingAvailableHolds;
 	public $allowCancellingInTransitHolds;
 	public $allowFreezeHolds;   //tinyint(4)
+	public $allowHoldsToBeGrouped;
 	public $maxDaysToFreeze;
 	public $offerImmediateHoldFreeze;
 	public $showHoldButton;
@@ -5004,6 +5005,32 @@ class Library extends DataObject {
 				],
 			],
 		];
+
+		$catalogDriver = CatalogFactory::getCatalogConnectionInstance();
+		if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
+			$newField = [
+				'property' => 'allowHoldsToBeGrouped',
+				'type' => 'checkbox',
+				'label' => 'Allow Grouping Holds',
+				'description' => 'Whether or not the user can group their holds.',
+				'hideInLists' => true,
+				'default' => 0,
+				'permissions' => ['Library ILS Connection'],
+				'note' => 'Applies to Koha Only'
+			];
+
+			$holdsProps = $structure['ilsSection']['properties']['holdsSection']['properties'] ?? [];
+			$insertAfter = 'maxDaysToFreeze';
+			$newHoldsProps = [];
+
+			foreach ($holdsProps as $key => $value) {
+				$newHoldsProps[$key] = $value;
+				if ($key === $insertAfter) {
+					$newHoldsProps['allowHoldsToBeGrouped'] = $newField;
+				}
+			}
+			$structure['ilsSection']['properties']['holdsSection']['properties'] = $newHoldsProps;
+		}
 
 		//Update settings based on what we have access to
 		$hasCourseReserves = false;
