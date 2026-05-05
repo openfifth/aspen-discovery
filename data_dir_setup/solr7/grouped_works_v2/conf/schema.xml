@@ -322,7 +322,7 @@
 		<field name="barcode" type="unchanged_string" indexed="true" stored="false" multiValued="true"/>
 
 		<!-- awards and ratings -->
-		<field name="mpaa_rating" type="unchanged_string" indexed="true" stored="true" multiValued="true" docValues="true"/>
+		<field name="content_rating" type="unchanged_string" indexed="true" stored="true" multiValued="true" docValues="true"/>
 		<field name="awards_facet" type="unchanged_string" indexed="true" stored="true" multiValued="true" docValues="true" termVectors="true"/>
 		<field name="lexile_score" type="integer" indexed="true" stored="true" multiValued="false" default="-1" docValues="true"/>
 		<field name="lexile_code" type="unchanged_string" indexed="true" stored="true" multiValued="false" docValues="true"/>
