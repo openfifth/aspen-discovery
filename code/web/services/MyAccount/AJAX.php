@@ -3919,47 +3919,35 @@ class MyAccount_AJAX extends JSON_Action {
 				$allowSelectingHoldsToExport = $library->allowSelectingHoldsToExport;
 			}
 
-			$accountProfile = $library->getAccountProfile();
 			$allowHoldsToBeGrouped = false;
-			if ($accountProfile) {
-				$ils = $accountProfile->ils;
-				if ($ils == 'koha') {
-					require_once ROOT_DIR . '/Drivers/Koha.php';
-					$kohaDriver = new Koha($accountProfile);
-					if ($kohaDriver->supportsHyperholdsGrouping()) {
-						$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
-						if ($user) {
-							if ($user->getHomeLibrary() != null) {
-								$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
-							}
-						}
-						if ($allowHoldsToBeGrouped) {
-							$catalogDriver = $user->getCatalogDriver();
-							$patronId = $user->unique_ils_id;
-							$groupedHoldsResponse = $catalogDriver->getPatronHoldGroups($patronId);
-							$groupedHolds = [];
-
-							if (isset($groupedHoldsResponse['content'])) {
-								if (is_string($groupedHoldsResponse['content'])) {
-									$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
-								} elseif (is_array($groupedHoldsResponse['content'])) {
-									$groupedHolds = $groupedHoldsResponse['content'];
-								} else {
-									$logger->log(
-										'Unexpected type for groupedHoldsResponse["content"]: ' . gettype($groupedHoldsResponse['content']),
-										Logger::LOG_ERROR
-									);
-								}
-							} elseif (is_array($groupedHoldsResponse)) {
-								$groupedHolds = $groupedHoldsResponse;
-							} else {
-								$logger->log(
-									'Unexpected type for groupedHoldsResponse: ' . gettype($groupedHoldsResponse),
-									Logger::LOG_ERROR
-								);
-							}
-						}
+			$catalogDriver = $user->getCatalogDriver();
+			if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
+				$userHomeLibrary = $user->getHomeLibrary();
+				$allowHoldsToBeGrouped = $userHomeLibrary ? $userHomeLibrary->allowHoldsToBeGrouped : $library->allowHoldsToBeGrouped;
+			}
+		
+			if ($allowHoldsToBeGrouped) {
+				$patronId = $user->unique_ils_id;
+				$groupedHoldsResponse = $catalogDriver->getPatronHoldGroups($patronId);
+				$groupedHolds = [];
+				if (isset($groupedHoldsResponse['content'])) {
+					if (is_string($groupedHoldsResponse['content'])) {
+						$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
+					} elseif (is_array($groupedHoldsResponse['content'])) {
+						$groupedHolds = $groupedHoldsResponse['content'];
+					} else {
+						$logger->log(
+							'Unexpected type for groupedHoldsResponse["content"]: ' . gettype($groupedHoldsResponse['content']),
+							Logger::LOG_ERROR
+						);
 					}
+				} elseif (is_array($groupedHoldsResponse)) {
+					$groupedHolds = $groupedHoldsResponse;
+				} else {
+					$logger->log(
+						'Unexpected type for groupedHoldsResponse: ' . gettype($groupedHoldsResponse),
+						Logger::LOG_ERROR
+					);
 				}
 			}
 
@@ -3983,16 +3971,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('allowFreezeHolds', false);
 			}
 
-			if ($source === 'ils') {
-				if ($user->getHomeLibrary() != null) {
-					$allowHoldsToBeGrouped = $user->getHomeLibrary()->allowHoldsToBeGrouped;
-				} else {
-					$allowHoldsToBeGrouped = $library->allowHoldsToBeGrouped;
-				}
-				$interface->assign('allowHoldsToBeGrouped', $allowHoldsToBeGrouped);
-			} else {
-				$interface->assign('allowHoldsToBeGrouped', false);
-			}
+			$interface->assign('allowHoldsToBeGrouped', $source === 'ils' ? $allowHoldsToBeGrouped : false);
 
 			$showPosition = $user->showHoldPosition();
 			$suspendRequiresReactivationDate = $user->suspendRequiresReactivationDate();
