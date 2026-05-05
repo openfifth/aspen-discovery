@@ -7817,76 +7817,23 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		// start the polling process for status updates (no webhooks available) 
-		global $configArray;
-		$serverName = $_SERVER['aspen_server'];
-		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
-		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($payment->id) . ' >> ' . escapeshellarg($logFilePath) . ' . 2>&1 &';
-		exec($pollCommand);
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::spawnPoller($pay360SettingsId, $payment->id);
 
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
 	function completePay360Order(): void {
-		global $configArray;
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		if (!isset($_REQUEST['paymentId']) || !isset($_REQUEST['settingsId']) || !is_numeric($_REQUEST['paymentId']) || !is_numeric($_REQUEST['settingsId'])) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		$paymentId = intval($_REQUEST['paymentId']);
-		$pay360SettingsId = intval($_REQUEST['settingsId']);
-
-		$payment = new UserPayment();
-		$payment->id = $paymentId;
-		$payment->find(true);
-		if ($payment->userId !== UserAccount::getActiveUserId()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome();
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+		$this->requireLoggedInUser();
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::completeOrder();
 	}
 
-	/** @noinspection PhpUnused */
 	function handlePay360OrderNotAttempted(): void {
-		global $configArray;
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		if (!isset($_REQUEST['settingsId']) || !isset($_REQUEST['paymentId']) || !is_numeric($_REQUEST['paymentId']) || !is_numeric($_REQUEST['settingsId'])) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		$paymentId = intval($_REQUEST['paymentId']);
-		$pay360SettingsId = intval($_REQUEST['settingsId']);
-
-		$payment = new UserPayment();
-		$payment->id = $paymentId;
-		$payment->find(true);
-		if ($payment->userId !== UserAccount::getActiveUserId()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome([], false);
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+		$this->requireLoggedInUser();
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::handleNotAttempted();
 	}
 
 	/** @noinspection PhpUnused */
