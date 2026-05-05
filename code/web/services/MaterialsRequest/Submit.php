@@ -262,16 +262,17 @@ class MaterialsRequest_Submit extends Action {
 									if ($materialsRequestTitle->find(true)) {
 										//if found, update existing materials_request_title row
 										$materialsRequestTitle->dateLastRequested = $materialsRequest->dateUpdated;
+										foreach (['isbn', 'upc', 'issn', 'title', 'author', 'format'] as $field) {
+											if (!empty($materialsRequest->$field) && empty($materialsRequestTitle->$field)) {
+												$materialsRequestTitle->$field = $materialsRequest->$field;
+											}
+										}
 										$materialsRequestTitle->update();
 									} else {
 										//else insert new materials_request_title row
-										$materialsRequestTitle->isbn = $materialsRequest->isbn ?: null;
-										$materialsRequestTitle->upc = $materialsRequest->upc ?: null;
-										$materialsRequestTitle->issn = $materialsRequest->issn ?: null;
-										$materialsRequestTitle->title = $materialsRequest->title  ?: null;
-										$materialsRequestTitle->author = $materialsRequest->author  ?: null;
-										$materialsRequestTitle->format = $materialsRequest->format  ?: null;
-										$materialsRequestTitle->formatId = $materialsRequest->formatId ?: null;
+										foreach (['isbn', 'upc', 'issn', 'title', 'author', 'format', 'formatId'] as $field) {
+											$materialsRequestTitle->$field = $materialsRequest->$field ?: null;
+										}
 										$materialsRequestTitle->dateFirstRequested = $materialsRequest->dateUpdated;
 										$materialsRequestTitle->dateLastRequested = $materialsRequest->dateUpdated;
 										$materialsRequestTitle->insert();
