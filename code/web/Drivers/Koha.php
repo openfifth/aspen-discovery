@@ -1845,6 +1845,12 @@ class Koha extends AbstractIlsDriver {
 		}
 		//Get a specific item number to place a hold on even though we are placing a title level hold.
 		//because.... Koha
+		if (str_contains($recordId, ':')) {
+			[
+				$source,
+				$recordId,
+			] = explode(':', $recordId);
+		}
 		require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 		$recordDriver = new MarcRecordDriver($recordId);
 		if (!$recordDriver->isValid()) {
@@ -1874,12 +1880,6 @@ class Koha extends AbstractIlsDriver {
 		}
 		//Just a regular bib level hold
 		$hold_result['title'] = $recordDriver->getTitle();
-		if (str_contains($recordId, ':')) {
-			[
-				$source,
-				$recordId,
-			] = explode(':', $recordId);
-		}
 		$holdParams = [
 			'patron_id' => (int)$patron->unique_ils_id,
 			'pickup_library_id' => $pickupBranch,
