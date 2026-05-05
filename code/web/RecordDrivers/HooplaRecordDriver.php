@@ -120,6 +120,8 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			$interface->assign('audience', $audience);
 		}
 		unset($rawData->price);
+		unset($rawData->ppuPrice);
+		unset($rawData->ppuPrices);
 		unset($rawData->audience);
 
 		$interface->assign('hooplaExtract', $rawData);
@@ -138,6 +140,17 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			return $this->hooplaExtract->title;
 		} elseif (!empty($this->hooplaRawMetadata->subtitle)) {
 			return $this->hooplaExtract->title . ': ' . $this->hooplaRawMetadata->subtitle;
+		} elseif (!empty($this->hooplaRawMetadata->seasonNumber)) {
+			if (empty($this->hooplaRawMetadata->seriesName)) {
+				$title = $this->hooplaExtract->title;
+			}else{
+				$title = $this->hooplaRawMetadata->seriesName;
+			}
+			$title .= " - Season " . $this->hooplaRawMetadata->seasonNumber;
+			if (!empty($this->hooplaRawMetadata->episodeNumber)) {
+				$title .= " : Episode " . $this->hooplaRawMetadata->episodeNumber;
+			}
+			return $title;
 		} else {
 			return $this->hooplaExtract->title;
 		}
@@ -194,7 +207,7 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
-	public function getMoreDetailsOptions() {
+	public function getMoreDetailsOptions() : array {
 		global $interface;
 
 		$isbn = $this->getCleanISBN();
@@ -603,8 +616,6 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 			$statusSummary['status'] = "Unavailable";
 			$statusSummary['available'] = false;
 			$statusSummary['class'] = 'unavailable';
-			$statusSummary['showPlaceHold'] = false;
-			$statusSummary['showCheckout'] = false;
 		} else {
 			// Check if it's a Flex title
 			if ($this->getHooplaType() == 'Flex') {
@@ -613,21 +624,15 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 					$statusSummary['status'] = "Available from Hoopla";
 					$statusSummary['available'] = true;
 					$statusSummary['class'] = 'available';
-					$statusSummary['showPlaceHold'] = false;
-					$statusSummary['showCheckout'] = true;
 				} else {
 					$statusSummary['status'] = "Checked Out";
 					$statusSummary['available'] = false;
 					$statusSummary['class'] = 'checkedOut';
-					$statusSummary['showPlaceHold'] = true;
-					$statusSummary['showCheckout'] = false;
 				}
 			} else {
 				$statusSummary['status'] = "Available from Hoopla";
 				$statusSummary['available'] = true;
 				$statusSummary['class'] = 'available';
-				$statusSummary['showPlaceHold'] = false;
-				$statusSummary['showCheckout'] = true;
 			}
 		}
 		return $statusSummary;

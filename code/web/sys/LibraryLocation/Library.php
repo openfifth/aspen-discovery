@@ -107,6 +107,7 @@ class Library extends DataObject {
 	public $allowCancellingAvailableHolds;
 	public $allowCancellingInTransitHolds;
 	public $allowFreezeHolds;   //tinyint(4)
+	public $allowHoldsToBeGrouped;
 	public $maxDaysToFreeze;
 	public $offerImmediateHoldFreeze;
 	public $showHoldButton;
@@ -167,6 +168,7 @@ class Library extends DataObject {
 	public $ncrSettingId;
 	public $usernameField;
 	public $eventsDefaultCalendarView;
+	public $allowEventRegistration;
 
 	public /** @noinspection PhpUnused */
 		$repeatSearchOption;
@@ -505,7 +507,6 @@ class Library extends DataObject {
 	public $campaignCompletionNewEmail;
 	public $displayCampaignLeaderboard;
 	/** @noinspection PhpUnused */
-	public $communityEngagementAdminUserSelect;
 	public $displayOnlyUsersForLocationInUserAdmin;
 	public $allowAdminToEnrollUsersInAdminView;
 	public $displayDigitalRewardOnlyWhenAwarded;
@@ -545,6 +546,9 @@ class Library extends DataObject {
 
 	// Gale Settings
 	public $galeSettingsId;
+
+	// Aspen Progressive Web Application(PWA) Settings
+	public $AspenPWASettingId;
 
 	/** @var Holiday[] */
 	private $_holidays;
@@ -1066,6 +1070,16 @@ class Library extends DataObject {
 		$galeSettingsList[-1] = 'none';
 		while ($galeSettings->fetch()) {
 			$galeSettingsList[$galeSettings->id] = $galeSettings->name;
+		}
+
+		require_once ROOT_DIR . '/sys/AspenPWA/Setting.php';
+		$AspenPWASetting = new AspenPWASetting();
+		$AspenPWASetting->orderBy('name');
+		$AspenPWASettings = [];
+		$AspenPWASetting->find();
+		$AspenPWASettings[-1] = 'none';
+		while ($AspenPWASetting->fetch()) {
+			$AspenPWASettings[$AspenPWASetting->id] = $AspenPWASetting->name;
 		}
 
 		$barcodeTypes = [
@@ -2366,9 +2380,9 @@ class Library extends DataObject {
 								'description' => 'Whether or not the user can cancel in transit holds.',
 								'hideInLists' => true,
 								'default' => 1,
-								'note' => 'Applies to CARL.X Only',
+								'note' => 'Applies to CARL.X and Symphony Only',
 								'permissions' => ['Library ILS Connection'],
-								'relatedIls' => ['carlx'],
+								'relatedIls' => ['carlx', 'symphony'],
 							],
 							'allowFreezeHolds' => [
 								'property' => 'allowFreezeHolds',
@@ -3753,10 +3767,11 @@ class Library extends DataObject {
 						'label' => 'Aspen Events to Include',
 						'description' => 'Which events to include when searching this library',
 						'values' => [
+							'0' => 'Do not show the option to search Events',
 							'1' => 'All events at all locations',
 							'2' => "Events that occur at one of this library's locations",
 						],
-						'default' => '2',
+						'default' => '0',
 					],
 					'eventsDefaultCalendarView' => [
 						'property' => 'eventsDefaultCalendarView',
@@ -3770,6 +3785,14 @@ class Library extends DataObject {
 						'default' => '0',
 						'label' => 'Default Calendar View',
 						'description' => 'The default page your events calendar will load to',
+						'hideInLists' => true,
+					],
+					'allowEventRegistration' => [
+						'property' => 'allowEventRegistration',
+						'type' =>'checkbox',
+						'default' => '0',
+						'label' => 'Allow Event Registration',
+						'description' => 'Whether to allow staff with Event administration permissions to enable registration on a per event basis',
 						'hideInLists' => true,
 					],
 				]
@@ -4393,17 +4416,6 @@ class Library extends DataObject {
 						'default' => 0,
 						'hideInLists'=> true,
 					],
-					'communityEngagementAdminUserSelect' => [
-						'property' => 'communityEngagementAdminUserSelect',
-						'type' => 'enum',
-						'label' => 'Admin View User Select',
-						'description' => 'Whether to use a dropdown or a search bar to select users in the Community Engagement Admin View section',
-						'values' => [
-							'dropdown' => 'Dropdown',
-							'searchbar' => 'Search bar',
-						],
-						'default' => 'dropdown',
-					],
 					'displayOnlyUsersForLocationInUserAdmin' => [
 						'property' => 'displayOnlyUsersForLocationInUserAdmin',
 						'type' => 'checkbox',
@@ -4735,7 +4747,7 @@ class Library extends DataObject {
 				'label' => 'Talpa Search',
 				'hideInLists' => true,
 				'renderAsHeading' => true,
-//				'permissions' => ['Library Web Builder Options'],
+				//'permissions' => ['Library Web Builder Options'],
 				'properties' => [
 					'enableTalpaSearch' => [
 						'property' => 'enableTalpaSearch',
@@ -4984,7 +4996,53 @@ class Library extends DataObject {
 					],
 				],
 			],
+
+			'AspenPWASection' => [
+				'property' => 'AspenPWASection',
+				'type' => 'section',
+				'label' => 'Aspen Progressive Web Application(PWA)',
+				'hideInLists' => true,
+				'renderAsHeading' => true,
+				'permissions' => ['Administer Aspen Progressive Web Application(PWA) Settings'],
+				'properties' => [
+					'AspenPWASettingId' => [
+						'property' => 'AspenPWASettingId',
+						'type' => 'enum',
+						'values' => $AspenPWASettings,
+						'label' => 'Aspen Progressive Web Application(PWA) Settings',
+						'description' => 'The General Settings to use for Aspen Progressive Web Application(PWA)',
+						'hideInLists' => true,
+						'default' => -1,
+					],
+				],
+			],
 		];
+
+		$catalogDriver = CatalogFactory::getCatalogConnectionInstance();
+		if ($catalogDriver && $catalogDriver->supportsHyperholdsGrouping()) {
+			$newField = [
+				'property' => 'allowHoldsToBeGrouped',
+				'type' => 'checkbox',
+				'label' => 'Allow Grouping Holds',
+				'description' => 'Whether or not the user can group their holds.',
+				'hideInLists' => true,
+				'default' => 0,
+				'permissions' => ['Library ILS Connection'],
+				'note' => 'Applies to Koha Only'
+			];
+
+			$holdsProps = $structure['ilsSection']['properties']['holdsSection']['properties'] ?? [];
+			$insertAfter = 'maxDaysToFreeze';
+			$newHoldsProps = [];
+
+			foreach ($holdsProps as $key => $value) {
+				$newHoldsProps[$key] = $value;
+				if ($key === $insertAfter) {
+					$newHoldsProps['allowHoldsToBeGrouped'] = $newField;
+				}
+			}
+			$structure['ilsSection']['properties']['holdsSection']['properties'] = $newHoldsProps;
+		}
 
 		//Update settings based on what we have access to
 		$hasCourseReserves = false;
@@ -6640,6 +6698,7 @@ class Library extends DataObject {
 		$suspendRequiresReactivationDate = false;
 		$showDateWhenSuspending = true;
 		$catalogHasAccountNotifications = false;
+		$reactivateDateNotRequired = false;
 
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
 		if ($catalog != null) {
@@ -6790,6 +6849,32 @@ class Library extends DataObject {
 		if (!empty($structure['ilsSection']['properties']['thirdPartyRegistrationSection']['properties']['thirdPartyRegistrationLocation'])) {
 			$structure['ilsSection']['properties']['thirdPartyRegistrationSection']['properties']['thirdPartyRegistrationLocation']['values'] = $thirdPartyRegistrationLocations;
 		}
+
+		//Update combined results
+		$combinedResultsSectionStructure = $structure['combinedResultsSection']['properties']['combinedResultSections']['structure'];
+		if ($this->ebscohostSearchSettingId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['ebscohost']);
+		}
+		if ($this->edsSettingsId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['ebsco_eds']);
+		}
+		if ($this->summonSettingsId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['summon']);
+		}
+		if ($this->galeSettingsId == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['gale']);
+		}
+		if ($this->getCloudSourceSettingId() == -1) {
+			unset($combinedResultsSectionStructure['source']['values']['cloudsource']);
+		}
+		if (!$this->enableInnReachIntegration) {
+			unset($combinedResultsSectionStructure['source']['values']['innReach']);
+		}
+		if (!$this->ILLSystem != 3) {
+			unset($combinedResultsSectionStructure['source']['values']['shareIt']);
+		}
+		$structure['combinedResultsSection']['properties']['combinedResultSections']['structure'] = $combinedResultsSectionStructure;
+
 		return $structure;
 	}
 
@@ -7003,5 +7088,21 @@ class Library extends DataObject {
 			}
 		}
 		return $this->_cloudSourceSettingId;
+	}
+
+	private null|bool|PalaceProjectSetting $_palaceProjectSettings = false;
+	public function getPalaceProjectSettings() : ?PalaceProjectSetting {
+		if ($this->_palaceProjectSettings === false) {
+			$this->_palaceProjectSettings = null;
+			if ($this->palaceProjectScopeId > 0) {
+				require_once ROOT_DIR . '/sys/PalaceProject/PalaceProjectScope.php';
+				$palaceProjectScope = new PalaceProjectScope();
+				$palaceProjectScope->id = $this->palaceProjectScopeId;
+				if ($palaceProjectScope->find(true)){
+					$this->_palaceProjectSettings = $palaceProjectScope->getSettings();
+				}
+			}
+		}
+		return $this->_palaceProjectSettings;
 	}
 }

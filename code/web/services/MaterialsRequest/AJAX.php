@@ -1,4 +1,5 @@
 <?php
+require_once ROOT_DIR . '/JSON_Action.php';
 
 require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequest.php';
 require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
@@ -6,312 +7,276 @@ require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
 /**
  * MaterialsRequest AJAX Page, handles returning asynchronous information about Materials Requests.
  */
-class MaterialsRequest_AJAX extends Action {
-
-	function AJAX() {}
-
-	function launch() : void {
-		$method = $_GET['method'];
-		if (method_exists($this, $method)) {
-			header('Content-type: application/json');
-			header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
-			header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
-			$result = $this->$method();
-			echo json_encode($result);
-		} else {
-			echo json_encode(['error' => 'invalid_method']);
-		}
-	}
+class MaterialsRequest_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function cancelRequest() : array {
-		if (!UserAccount::isLoggedIn()) {
-			return [
-				'success' => false,
-				'error' => 'Could not cancel the request, you must be logged in to cancel the request.',
-			];
-		} elseif (!isset($_REQUEST['id'])) {
-			return [
-				'success' => false,
-				'error' => 'Could not cancel the request, no id provided.',
-			];
-		} else {
-			$id = $_REQUEST['id'];
-			require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequest.php';
-			require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
-			$materialsRequest = new MaterialsRequest();
-			$materialsRequest->id = $id;
-			$materialsRequest->createdBy = UserAccount::getActiveUserId();
-			if ($materialsRequest->find(true)) {
-				//get the correct status to set based on the user's home library
-				$homeLibrary = Library::getPatronHomeLibrary();
-				if (is_null($homeLibrary)) {
-					global $library;
-					$homeLibrary = $library;
-				}
-				$cancelledStatus = new MaterialsRequestStatus();
-				$cancelledStatus->isPatronCancel = 1;
-				$cancelledStatus->libraryId = $homeLibrary->libraryId;
-				$cancelledStatus->find(true);
-				$materialsRequest->status = $cancelledStatus->id;
-				if ($cancelledStatus->checkForHolds == 0) {
-					$materialsRequest->readyForHolds = 0;
-				}
-				$materialsRequest->dateUpdated = time();
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['id']);
 
-				if ($materialsRequest->update()) {
-					require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestUsage.php';
-					MaterialsRequestUsage::incrementStat($materialsRequest->status, $materialsRequest->libraryId);
+		$id = $_REQUEST['id'];
+		require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequest.php';
+		require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
+		$materialsRequest = new MaterialsRequest();
+		$materialsRequest->id = $id;
+		$materialsRequest->createdBy = UserAccount::getActiveUserId();
+		if ($materialsRequest->find(true)) {
+			//get the correct status to set based on the user's home library
+			$homeLibrary = Library::getPatronHomeLibrary();
+			if (is_null($homeLibrary)) {
+				global $library;
+				$homeLibrary = $library;
+			}
+			$cancelledStatus = new MaterialsRequestStatus();
+			$cancelledStatus->isPatronCancel = 1;
+			$cancelledStatus->libraryId = $homeLibrary->libraryId;
+			$cancelledStatus->find(true);
+			$materialsRequest->status = $cancelledStatus->id;
+			if ($cancelledStatus->checkForHolds == 0) {
+				$materialsRequest->readyForHolds = 0;
+			}
+			$materialsRequest->dateUpdated = time();
 
-					return ['success' => true];
-				} else {
-					return [
-						'success' => false,
-						'error' => 'Could not cancel the request, error during update.',
-					];
-				}
+			if ($materialsRequest->update()) {
+				require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestUsage.php';
+				MaterialsRequestUsage::incrementStat($materialsRequest->status, $materialsRequest->libraryId);
+
+				return ['success' => true];
 			} else {
 				return [
 					'success' => false,
-					'error' => 'Could not cancel the request, could not find a request for the provided id.',
+					'error' => 'Could not cancel the request, error during update.',
 				];
 			}
+		} else {
+			return [
+				'success' => false,
+				'error' => 'Could not cancel the request, could not find a request for the provided id.',
+			];
 		}
 	}
 
 	/** @noinspection PhpUnused */
 	function updateMaterialsRequest() : array {
 		global $interface;
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['id']);
 
-		if (!isset($_REQUEST['id'])) {
-			$interface->assign('error', translate([
-				'text' => 'Please provide an id of the materials request to view.',
-				'isPublicFacing' => true,
-			]));
-		} else {
-			$id = $_REQUEST['id'];
-			if (ctype_digit($id)) {
-				if (UserAccount::isLoggedIn()) {
-					$user = UserAccount::getLoggedInUser();
-					$staffLibrary = $user->getHomeLibrary(); // staff member's home library
-					if (is_null($staffLibrary)) {
-						global $library;
-						$staffLibrary = $library;
-					}
+		$id = $_REQUEST['id'];
+		if (ctype_digit($id)) {
+			$user = UserAccount::getLoggedInUser();
+			$staffLibrary = $user->getHomeLibrary(); // staff member's home library
+			if (is_null($staffLibrary)) {
+				global $library;
+				$staffLibrary = $library;
+			}
 
-					if (!empty($staffLibrary)) {
-						// Material Request
-						require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequest.php';
-						require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
-						$materialsRequest = new MaterialsRequest();
-						$materialsRequest->id = $id;
+			if (!empty($staffLibrary)) {
+				// Material Request
+				require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequest.php';
+				require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->id = $id;
 
-						// Statuses
-						$statusQuery = new MaterialsRequestStatus();
-						$materialsRequest->joinAdd($statusQuery, 'INNER', 'status', 'status', 'id');
+				// Statuses
+				$statusQuery = new MaterialsRequestStatus();
+				$materialsRequest->joinAdd($statusQuery, 'INNER', 'status', 'status', 'id');
 
-						// Pick-up Locations
-						$locationQuery = new Location();
-						$materialsRequest->joinAdd($locationQuery, "LEFT", 'location', 'holdPickupLocation', 'locationId');
+				// Pick-up Locations
+				$locationQuery = new Location();
+				$materialsRequest->joinAdd($locationQuery, "LEFT", 'location', 'holdPickupLocation', 'locationId');
 
-						// Format Labels
-						$formats = new MaterialsRequestFormat();
-						$formats->libraryId = $staffLibrary->libraryId;
-						$usingDefaultFormats = $formats->count() == 0;
+				// Format Labels
+				$formats = new MaterialsRequestFormat();
+				$formats->libraryId = $staffLibrary->libraryId;
+				$usingDefaultFormats = $formats->count() == 0;
 
-						$materialsRequest->selectAdd();
-						$materialsRequest->selectAdd('materials_request.*, status.description as statusLabel, location.displayName as location');
-						if (!$usingDefaultFormats) {
-							$materialsRequest->joinAdd($formats, 'LEFT', 'materials_request_formats', 'formatId', 'id');
-							$materialsRequest->selectAdd('materials_request_formats.formatLabel,materials_request_formats.authorLabel, materials_request_formats.specialFields');
+				$materialsRequest->selectAdd();
+				$materialsRequest->selectAdd('materials_request.*, status.description as statusLabel, location.displayName as location');
+				if (!$usingDefaultFormats) {
+					$materialsRequest->joinAdd($formats, 'LEFT', 'materials_request_formats', 'formatId', 'id');
+					$materialsRequest->selectAdd('materials_request_formats.formatLabel,materials_request_formats.authorLabel, materials_request_formats.specialFields');
+				}
+
+				if ($materialsRequest->find(true)) {
+					$canUpdate = false;
+					$isAdminUser = false;
+
+					//Load user information
+					$requestUser = new User();
+					$requestUser->id = $materialsRequest->createdBy;
+					if ($requestUser->find(true)) {
+						$interface->assign('requestUser', $requestUser);
+
+						// Get the Fields to Display for the form
+						$requestFormFields = $materialsRequest->getRequestFormFields($staffLibrary->libraryId, true);
+						$interface->assign('requestFormFields', $requestFormFields);
+
+						if ($user->id == $materialsRequest->createdBy) {
+							$canUpdate = true;
+							$isAdminUser = UserAccount::userHasPermission('Manage Library Materials Requests');
+						} elseif (UserAccount::userHasPermission('Manage Library Materials Requests')) {
+							//User can update if the home library of the requester is their library
+
+							$requestUserLibrary = $requestUser->getHomeLibrary();
+							if (is_null($requestUserLibrary)) {
+								global $library;
+								$requestUserLibrary = $library;
+							}
+							$canUpdate = $requestUserLibrary->libraryId == $staffLibrary->libraryId;
+							$isAdminUser = true;
 						}
+						if ($canUpdate) {
+							$interface->assign('isAdminUser', $isAdminUser);
+							//Get a list of formats to show
+							$availableFormats = MaterialsRequest::getFormats(false);
+							$interface->assign('availableFormats', $availableFormats);
 
-						if ($materialsRequest->find(true)) {
-							$canUpdate = false;
-							$isAdminUser = false;
-
-							//Load user information
-							$requestUser = new User();
-							$requestUser->id = $materialsRequest->createdBy;
-							if ($requestUser->find(true)) {
-								$interface->assign('requestUser', $requestUser);
-
-								// Get the Fields to Display for the form
-								$requestFormFields = $materialsRequest->getRequestFormFields($staffLibrary->libraryId, true);
-								$interface->assign('requestFormFields', $requestFormFields);
-
-								if ($user->id == $materialsRequest->createdBy) {
-									$canUpdate = true;
-									$isAdminUser = UserAccount::userHasPermission('Manage Library Materials Requests');
-								} elseif (UserAccount::userHasPermission('Manage Library Materials Requests')) {
-									//User can update if the home library of the requester is their library
-
-									$requestUserLibrary = $requestUser->getHomeLibrary();
-									if (is_null($requestUserLibrary)) {
-										global $library;
-										$requestUserLibrary = $library;
+							// Get Author Labels for all Formats
+							[
+								$formatAuthorLabels,
+								$specialFieldFormats,
+							] = $materialsRequest->getAuthorLabelsAndSpecialFields($staffLibrary->libraryId);
+							if ($usingDefaultFormats) {
+								$defaultFormats = MaterialsRequestFormat::getDefaultMaterialRequestFormats();
+								/** @var MaterialsRequestFormat $format */
+								foreach ($defaultFormats as $format) {
+									// Get the default values for this request
+									if ($materialsRequest->format == $format->format) {
+										/** @noinspection PhpUndefinedFieldInspection */
+										$materialsRequest->formatLabel = $format->formatLabel;
+										/** @noinspection PhpUndefinedFieldInspection */
+										$materialsRequest->authorLabel = $format->authorLabel;
+										/** @noinspection PhpUndefinedFieldInspection */
+										$materialsRequest->specialFields = $format->specialFields;
+										break;
 									}
-									$canUpdate = $requestUserLibrary->libraryId == $staffLibrary->libraryId;
-									$isAdminUser = true;
 								}
-								if ($canUpdate) {
-									$interface->assign('isAdminUser', $isAdminUser);
-									//Get a list of formats to show
-									$availableFormats = MaterialsRequest::getFormats(false);
-									$interface->assign('availableFormats', $availableFormats);
+							}
 
-									// Get Author Labels for all Formats
-									[
-										$formatAuthorLabels,
-										$specialFieldFormats,
-									] = $materialsRequest->getAuthorLabelsAndSpecialFields($staffLibrary->libraryId);
-									if ($usingDefaultFormats) {
-										$defaultFormats = MaterialsRequestFormat::getDefaultMaterialRequestFormats();
-										/** @var MaterialsRequestFormat $format */
-										foreach ($defaultFormats as $format) {
-											// Get the default values for this request
-											if ($materialsRequest->format == $format->format) {
-												/** @noinspection PhpUndefinedFieldInspection */
-												$materialsRequest->formatLabel = $format->formatLabel;
-												/** @noinspection PhpUndefinedFieldInspection */
-												$materialsRequest->authorLabel = $format->authorLabel;
-												/** @noinspection PhpUndefinedFieldInspection */
-												$materialsRequest->specialFields = $format->specialFields;
-												break;
-											}
-										}
+							$interface->assign('formatAuthorLabelsJSON', json_encode($formatAuthorLabels));
+							$interface->assign('specialFieldFormatsJSON', json_encode($specialFieldFormats));
+
+							$interface->assign('materialsRequest', $materialsRequest);
+							$interface->assign('showUserInformation', true);
+
+							$interface->assign('checkRequestsForExistingTitles', $staffLibrary->checkRequestsForExistingTitles);
+
+							// Hold Pick-up Locations
+							$location = new Location();
+							$locationList = $location->getPickupBranches($requestUser);
+							$pickupLocations = [];
+							foreach ($locationList as $curLocation) {
+								if (is_object($curLocation)) {
+									$pickupLocations[] = [
+										'id' => $curLocation->locationId,
+										'displayName' => $curLocation->displayName,
+										'selected' => $curLocation->locationId == $materialsRequest->holdPickupLocation ? 'selected' : '',
+									];
+								}
+							}
+
+							// Add bookmobile Stop to the pickup locations if that form field is being used.
+							foreach ($requestFormFields as $category) {
+								/** @var MaterialsRequestFormFields $formField */
+								foreach ($category as $formField) {
+									if ($formField->fieldType == 'bookmobileStop') {
+										$pickupLocations[] = [
+											'id' => 'bookmobile',
+											'displayName' => $formField->fieldLabel,
+											'selected' => $materialsRequest->holdPickupLocation == 'bookmobile',
+										];
+										break 2;
 									}
+								}
+							}
 
-									$interface->assign('formatAuthorLabelsJSON', json_encode($formatAuthorLabels));
-									$interface->assign('specialFieldFormatsJSON', json_encode($specialFieldFormats));
+							$interface->assign('pickupLocations', $pickupLocations);
 
-									$interface->assign('materialsRequest', $materialsRequest);
-									$interface->assign('showUserInformation', true);
+							// Get Statuses
+							$materialsRequestStatus = new MaterialsRequestStatus();
+							$materialsRequestStatus->orderBy('isDefault DESC, isOpen DESC, description ASC');
+							$materialsRequestStatus->libraryId = $staffLibrary->libraryId;
+							$materialsRequestStatus->find();
+							$availableStatuses = [];
+							while ($materialsRequestStatus->fetch()) {
+								$availableStatuses[$materialsRequestStatus->id] = $materialsRequestStatus->description;
+							}
+							$interface->assign('availableStatuses', $availableStatuses);
 
-									$interface->assign('checkRequestsForExistingTitles', $staffLibrary->checkRequestsForExistingTitles);
-
-									// Hold Pick-up Locations
-									$location = new Location();
-									$locationList = $location->getPickupBranches($requestUser);
-									$pickupLocations = [];
-									foreach ($locationList as $curLocation) {
-										if (is_object($curLocation)) {
-											$pickupLocations[] = [
-												'id' => $curLocation->locationId,
-												'displayName' => $curLocation->displayName,
-												'selected' => $curLocation->locationId == $materialsRequest->holdPickupLocation ? 'selected' : '',
-											];
-										}
-									}
-
-									// Add bookmobile Stop to the pickup locations if that form field is being used.
-									foreach ($requestFormFields as $category) {
-										/** @var MaterialsRequestFormFields $formField */
-										foreach ($category as $formField) {
-											if ($formField->fieldType == 'bookmobileStop') {
-												$pickupLocations[] = [
-													'id' => 'bookmobile',
-													'displayName' => $formField->fieldLabel,
-													'selected' => $materialsRequest->holdPickupLocation == 'bookmobile',
-												];
-												break 2;
-											}
-										}
-									}
-
-									$interface->assign('pickupLocations', $pickupLocations);
-
-									// Get Statuses
-									$materialsRequestStatus = new MaterialsRequestStatus();
-									$materialsRequestStatus->orderBy('isDefault DESC, isOpen DESC, description ASC');
-									$materialsRequestStatus->libraryId = $staffLibrary->libraryId;
-									$materialsRequestStatus->find();
-									$availableStatuses = [];
-									while ($materialsRequestStatus->fetch()) {
-										$availableStatuses[$materialsRequestStatus->id] = $materialsRequestStatus->description;
-									}
-									$interface->assign('availableStatuses', $availableStatuses);
-
-									// Get Assignees
-									$homeLibrary = Library::getPatronHomeLibrary();
-									if (is_null($homeLibrary)) {
-										//User does not have a home library, this is likely an admin account.  Use the active library
-										global $library;
-										$homeLibrary = $library;
-									}
-									$locations = new Location();
-									$locations->libraryId = $homeLibrary->libraryId;
-									$locations->find();
-									$locationsForLibrary = [];
-									while ($locations->fetch()) {
-										$locationsForLibrary[] = $locations->locationId;
-									}
-									//Get a list of other users that are materials request users for this library
-									$permission = new Permission();
-									$permission->name = 'Manage Library Materials Requests';
-									if ($permission->find(true)) {
-										//Get roles for the user
-										$rolePermissions = new RolePermissions();
-										$rolePermissions->permissionId = $permission->id;
-										$rolePermissions->find();
-										$assignees = [];
-										while ($rolePermissions->fetch()) {
-											// Get Available Assignees
-											$materialsRequestManagers = new User();
-											if (count($locationsForLibrary) > 0) {
-												if ($materialsRequestManagers->query("SELECT * from user WHERE id IN (SELECT userId FROM user_roles WHERE roleId = $rolePermissions->roleId) AND ((id IN (SELECT userId from user_administration_locations WHERE locationId IN (" . implode(', ', $locationsForLibrary) . "))) OR homeLocationId IN (" . implode(', ', $locationsForLibrary) . "))")) {
-													while ($materialsRequestManagers->fetch()) {
-														if (empty($materialsRequestManagers->displayName)) {
-															$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->firstname . ' ' . $materialsRequestManagers->lastname;
-														} else {
-															$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->getDisplayName();
-														}
-													}
+							// Get Assignees
+							$homeLibrary = Library::getPatronHomeLibrary();
+							if (is_null($homeLibrary)) {
+								//User does not have a home library, this is likely an admin account.  Use the active library
+								global $library;
+								$homeLibrary = $library;
+							}
+							$locations = new Location();
+							$locations->libraryId = $homeLibrary->libraryId;
+							$locations->find();
+							$locationsForLibrary = [];
+							while ($locations->fetch()) {
+								$locationsForLibrary[] = $locations->locationId;
+							}
+							//Get a list of other users that are materials request users for this library
+							$permission = new Permission();
+							$permission->name = 'Manage Library Materials Requests';
+							if ($permission->find(true)) {
+								//Get roles for the user
+								$rolePermissions = new RolePermissions();
+								$rolePermissions->permissionId = $permission->id;
+								$rolePermissions->find();
+								$assignees = [];
+								while ($rolePermissions->fetch()) {
+									// Get Available Assignees
+									$materialsRequestManagers = new User();
+									if (count($locationsForLibrary) > 0) {
+										if ($materialsRequestManagers->query("SELECT * from user WHERE id IN (SELECT userId FROM user_roles WHERE roleId = $rolePermissions->roleId) AND ((id IN (SELECT userId from user_administration_locations WHERE locationId IN (" . implode(', ', $locationsForLibrary) . "))) OR homeLocationId IN (" . implode(', ', $locationsForLibrary) . "))")) {
+											while ($materialsRequestManagers->fetch()) {
+												if (empty($materialsRequestManagers->displayName)) {
+													$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->firstname . ' ' . $materialsRequestManagers->lastname;
+												} else {
+													$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->getDisplayName();
 												}
 											}
 										}
-										$interface->assign('assignees', $assignees);
 									}
-
-									// Get Barcode Column
-									$interface->assign('barCodeColumn', 'ils_barcode');
-
-								} else {
-									$interface->assign('error', translate([
-										'text' => 'Sorry, you don\'t have permission to update this materials request.',
-										'isPublicFacing' => true,
-									]));
 								}
-							} else {
-								$interface->assign('error', translate([
-									'text' => "Sorry, we couldn't find the user that made this materials request.",
-									'isPublicFacing' => true,
-								]));
+								$interface->assign('assignees', $assignees);
 							}
+
+							// Get Barcode Column
+							$interface->assign('barCodeColumn', 'ils_barcode');
+
 						} else {
 							$interface->assign('error', translate([
-								'text' => "Sorry, we couldn't find a materials request for that id.",
+								'text' => 'Sorry, you don\'t have permission to update this materials request.',
 								'isPublicFacing' => true,
 							]));
 						}
 					} else {
 						$interface->assign('error', translate([
-							'text' => 'We could not determine your home library.',
+							'text' => "Sorry, we couldn't find the user that made this materials request.",
 							'isPublicFacing' => true,
 						]));
 					}
 				} else {
 					$interface->assign('error', translate([
-						'text' => 'Please log in to view & edit the materials request.',
+						'text' => "Sorry, we couldn't find a materials request for that id.",
 						'isPublicFacing' => true,
 					]));
 				}
 			} else {
 				$interface->assign('error', translate([
-					'text' => 'Sorry, invalid id for a materials request.',
+					'text' => 'We could not determine your home library.',
 					'isPublicFacing' => true,
 				]));
 			}
+		} else {
+			$interface->assign('error', translate([
+				'text' => 'Sorry, invalid id for a materials request.',
+				'isPublicFacing' => true,
+			]));
 		}
 		return [
 			'title' => 'Update Materials Request',
@@ -325,108 +290,101 @@ class MaterialsRequest_AJAX extends Action {
 
 	/** @noinspection PhpUnused */
 	function MaterialsRequestDetails() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['id']);
+
 		global $interface;
 		$user = UserAccount::getLoggedInUser();
-		if (!isset($_REQUEST['id'])) {
-			$interface->assign('error', translate([
-				'text' => 'Please provide an id of the materials request to view.',
-				'isPublicFacing' => true,
-			]));
-		} elseif (empty($user)) {
-			$interface->assign('error', translate([
-				'text' => 'Please log in to view details.',
-				'isPublicFacing' => true,
-			]));
-		} else {
-			$id = $_REQUEST['id'];
-			if (!empty($id) && ctype_digit($id)) {
-				$requestLibrary = $user->getHomeLibrary(); // staff member's or patron's home library
-				if (is_null($requestLibrary)) {
-					global $library;
-					$requestLibrary = $library;
+
+		$id = $_REQUEST['id'];
+		if (!empty($id) && ctype_digit($id)) {
+			$requestLibrary = $user->getHomeLibrary(); // staff member's or patron's home library
+			if (is_null($requestLibrary)) {
+				global $library;
+				$requestLibrary = $library;
+			}
+			if (!empty($requestLibrary)) {
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->id = $id;
+
+				$staffView = $_REQUEST['staffView'] ?? true;
+				$requestFormFields = $materialsRequest->getRequestFormFields($requestLibrary->libraryId, $staffView);
+				$interface->assign('requestFormFields', $requestFormFields);
+
+
+				// Statuses
+				$statusQuery = new MaterialsRequestStatus();
+				$materialsRequest->joinAdd($statusQuery, 'INNER', 'status', 'status', 'id');
+
+				// Pick-up Locations
+				$locationQuery = new Location();
+				$materialsRequest->joinAdd($locationQuery, "LEFT", 'location', 'holdPickupLocation', 'locationId');
+
+				// Format Labels
+				$formats = new MaterialsRequestFormat();
+				$formats->libraryId = $requestLibrary->libraryId;
+				$usingDefaultFormats = $formats->count() == 0;
+
+				$materialsRequest->selectAdd();
+				$materialsRequest->selectAdd('materials_request.*, status.description as statusLabel, location.displayName as location');
+				if (!$usingDefaultFormats) {
+					$materialsRequest->joinAdd($formats, 'LEFT', 'materials_request_formats', 'formatId', 'id');
+					$materialsRequest->selectAdd('materials_request_formats.formatLabel,materials_request_formats.authorLabel, materials_request_formats.specialFields');
 				}
-				if (!empty($requestLibrary)) {
-					$materialsRequest = new MaterialsRequest();
-					$materialsRequest->id = $id;
 
-					$staffView = $_REQUEST['staffView'] ?? true;
-					$requestFormFields = $materialsRequest->getRequestFormFields($requestLibrary->libraryId, $staffView);
-					$interface->assign('requestFormFields', $requestFormFields);
-
-
-					// Statuses
-					$statusQuery = new MaterialsRequestStatus();
-					$materialsRequest->joinAdd($statusQuery, 'INNER', 'status', 'status', 'id');
-
-					// Pick-up Locations
-					$locationQuery = new Location();
-					$materialsRequest->joinAdd($locationQuery, "LEFT", 'location', 'holdPickupLocation', 'locationId');
-
-					// Format Labels
-					$formats = new MaterialsRequestFormat();
-					$formats->libraryId = $requestLibrary->libraryId;
-					$usingDefaultFormats = $formats->count() == 0;
-
-					$materialsRequest->selectAdd();
-					$materialsRequest->selectAdd('materials_request.*, status.description as statusLabel, location.displayName as location');
-					if (!$usingDefaultFormats) {
-						$materialsRequest->joinAdd($formats, 'LEFT', 'materials_request_formats', 'formatId', 'id');
-						$materialsRequest->selectAdd('materials_request_formats.formatLabel,materials_request_formats.authorLabel, materials_request_formats.specialFields');
+				if ($materialsRequest->find(true)) {
+					if ($usingDefaultFormats) {
+						$defaultFormats = MaterialsRequestFormat::getDefaultMaterialRequestFormats();
+						/** @var MaterialsRequestFormat $format */
+						foreach ($defaultFormats as $format) {
+							if ($materialsRequest->format == $format->format) {
+								/** @noinspection PhpUndefinedFieldInspection */
+								$materialsRequest->formatLabel = $format->formatLabel;
+								/** @noinspection PhpUndefinedFieldInspection */
+								$materialsRequest->authorLabel = $format->authorLabel;
+								/** @noinspection PhpUndefinedFieldInspection */
+								$materialsRequest->specialFields = $format->specialFields;
+								break;
+							}
+						}
 					}
 
-					if ($materialsRequest->find(true)) {
-						if ($usingDefaultFormats) {
-							$defaultFormats = MaterialsRequestFormat::getDefaultMaterialRequestFormats();
-							/** @var MaterialsRequestFormat $format */
-							foreach ($defaultFormats as $format) {
-								if ($materialsRequest->format == $format->format) {
-									/** @noinspection PhpUndefinedFieldInspection */
-									$materialsRequest->formatLabel = $format->formatLabel;
-									/** @noinspection PhpUndefinedFieldInspection */
-									$materialsRequest->authorLabel = $format->authorLabel;
-									/** @noinspection PhpUndefinedFieldInspection */
-									$materialsRequest->specialFields = $format->specialFields;
-									break;
-								}
-							}
-						}
+					$interface->assign('materialsRequest', $materialsRequest);
 
-						$interface->assign('materialsRequest', $materialsRequest);
+					if (UserAccount::userHasPermission('Manage Library Materials Requests')) {
+						$interface->assign('showUserInformation', true);
+						//Load user information
+						$requestUser = new User();
+						$requestUser->id = $materialsRequest->createdBy;
+						if ($requestUser->find(true)) {
+							$interface->assign('requestUser', $requestUser);
 
-						if (UserAccount::userHasPermission('Manage Library Materials Requests')) {
-							$interface->assign('showUserInformation', true);
-							//Load user information
-							$requestUser = new User();
-							$requestUser->id = $materialsRequest->createdBy;
-							if ($requestUser->find(true)) {
-								$interface->assign('requestUser', $requestUser);
+							// Get Barcode Column
+							$interface->assign('barCodeColumn', 'ils_barcode');
 
-								// Get Barcode Column
-								$interface->assign('barCodeColumn', 'ils_barcode');
-
-							}
-						} else {
-							$interface->assign('showUserInformation', false);
 						}
 					} else {
-						$interface->assign('error', translate([
-							'text' => "Sorry, we couldn't find a materials request for that id.",
-							'isPublicFacing' => true,
-						]));
+						$interface->assign('showUserInformation', false);
 					}
 				} else {
 					$interface->assign('error', translate([
-						'text' => 'Could not determine your home library.',
+						'text' => "Sorry, we couldn't find a materials request for that id.",
 						'isPublicFacing' => true,
 					]));
 				}
 			} else {
 				$interface->assign('error', translate([
-					'text' => 'Invalid Request ID.',
+					'text' => 'Could not determine your home library.',
 					'isPublicFacing' => true,
 				]));
 			}
+		} else {
+			$interface->assign('error', translate([
+				'text' => 'Invalid Request ID.',
+				'isPublicFacing' => true,
+			]));
 		}
+
 		return [
 			'title' => translate([
 				'text' => 'Materials Request Details',
@@ -439,7 +397,238 @@ class MaterialsRequest_AJAX extends Action {
 	}
 
 	/** @noinspection PhpUnused */
+	function ManageMaterialsTitleRequest() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['id']);
+
+		global $interface;
+		$user = UserAccount::getLoggedInUser();
+
+		$id = $_REQUEST['id'];
+		if (!empty($id) && ctype_digit($id)) {
+			$staffLibrary = $user->getHomeLibrary(); // staff member's or patron's home library
+			if (is_null($staffLibrary)) {
+				global $library;
+				$staffLibrary = $library;
+			}
+			if (!empty($staffLibrary)) {
+				$materialsRequests = [];
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->materialsRequestTitleId = $id;
+
+				if ($materialsRequest->find()) {
+					while ($materialsRequest->fetch()) {
+						$materialsRequests[$materialsRequest->id] = clone($materialsRequest);
+					}
+					$interface->assign('materialsRequests', $materialsRequests);
+
+					$columnsToDisplay = [
+						'id' => 'Materials Request Id',
+						'assignedTo' => 'Assigned To',
+						'statusLabel' => 'Status',
+						'dateCreated' => 'Created On',
+						'dateUpdated' => 'Updated On',
+					];
+
+					$interface->assign('columnsToDisplay', $columnsToDisplay);
+
+					// Get Statuses
+					$materialsRequestStatus = new MaterialsRequestStatus();
+					$materialsRequestStatus->orderBy('isDefault DESC, isOpen DESC, description ASC');
+					$materialsRequestStatus->libraryId = $staffLibrary->libraryId;
+					$materialsRequestStatus->find();
+					$availableStatuses = [];
+					while ($materialsRequestStatus->fetch()) {
+						$availableStatuses[$materialsRequestStatus->id] = $materialsRequestStatus->description;
+					}
+					$interface->assign('availableStatuses', $availableStatuses);
+
+					// Get Assignees
+					$homeLibrary = Library::getPatronHomeLibrary();
+					if (is_null($homeLibrary)) {
+						//User does not have a home library, this is likely an admin account.  Use the active library
+						global $library;
+						$homeLibrary = $library;
+					}
+					$locations = new Location();
+					$locations->libraryId = $homeLibrary->libraryId;
+					$locations->find();
+					$locationsForLibrary = [];
+					while ($locations->fetch()) {
+						$locationsForLibrary[] = $locations->locationId;
+					}
+					//Get a list of other users that are materials request users for this library
+					$permission = new Permission();
+					$permission->name = 'Manage Library Materials Requests';
+					if ($permission->find(true)) {
+						//Get roles for the user
+						$rolePermissions = new RolePermissions();
+						$rolePermissions->permissionId = $permission->id;
+						$rolePermissions->find();
+						$assignees = [];
+						while ($rolePermissions->fetch()) {
+							// Get Available Assignees
+							$materialsRequestManagers = new User();
+							if (count($locationsForLibrary) > 0) {
+								if ($materialsRequestManagers->query("SELECT * from user WHERE id IN (SELECT userId FROM user_roles WHERE roleId = $rolePermissions->roleId) AND ((id IN (SELECT userId from user_administration_locations WHERE locationId IN (" . implode(', ', $locationsForLibrary) . "))) OR homeLocationId IN (" . implode(', ', $locationsForLibrary) . "))")) {
+									while ($materialsRequestManagers->fetch()) {
+										if (empty($materialsRequestManagers->displayName)) {
+											$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->firstname . ' ' . $materialsRequestManagers->lastname;
+										} else {
+											$assignees[$materialsRequestManagers->id] = $materialsRequestManagers->getDisplayName();
+										}
+									}
+								}
+							}
+						}
+						$interface->assign('assignees', $assignees);
+					}
+				} else {
+					$interface->assign('error', translate([
+						'text' => "Sorry, we couldn't find any materials requests for that id.",
+						'isPublicFacing' => true,
+					]));
+				}
+			} else {
+				$interface->assign('error', translate([
+					'text' => 'Could not determine your home library.',
+					'isPublicFacing' => true,
+				]));
+			}
+		} else {
+			$interface->assign('error', translate([
+				'text' => 'Invalid Request ID.',
+				'isPublicFacing' => true,
+			]));
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'Manage Title Requests',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MaterialsRequest/ajax-request-title-manage.tpl'),
+			'modalButtons' => $interface->get_template_vars('error') == null ? "<button class='btn btn-primary' onclick='return AspenDiscovery.MaterialsRequest.updateMaterialsTitleRequests()'>" . translate([
+					'text' => "Update Requests",
+					'isPublicFacing' => true,
+				]) . "</button>" : '',
+		];
+	}
+	/** @noinspection PhpUnused */
+	function updateMaterialsTitleRequests(): array {
+		$updates = json_decode($_GET['updates'], true);
+
+		if (!empty($updates)) {
+			$numUpdates = 0;
+			$numToUpdate = count($updates);
+			foreach ($updates as $requestId  => $data) {
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->id = $requestId;
+				if ($materialsRequest->find(true)){
+					$materialsRequest->assignedTo = $data['newAssignee'];
+					$materialsRequest->status = $data['newStatus'];
+					if ($materialsRequest->update()){
+						$numUpdates++;
+					}
+				}
+			}
+			if ($numUpdates == $numToUpdate) {
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => "Successfully updated " . $numUpdates . " of " . $numToUpdate . " requests.",
+				];
+			} else {
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Partial Success',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => "Only successfully updated " . $numUpdates . " of " . $numToUpdate . " requests.",
+				];
+			}
+		} else {
+			return [
+				'success' => true,
+				'title' => translate([
+					'text' => 'No Changes',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => "No changes were selected or made.",
+			];
+		}
+	}
+	/** @noinspection PhpUnused */
+	function updateSelectedTitleRequests(): array {
+		$selectedRequests = $_REQUEST['selectedRequests'];
+		$newStatus = $_REQUEST['newStatus'] === 'unselected' ? null : $_REQUEST['newStatus'];
+		$newAssignee = $_REQUEST['newAssignee'] === 'unselected' ? null : $_REQUEST['newAssignee'];
+
+		if (!empty($selectedRequests)) {
+			preg_match_all('/select\[(\d+)\]/', $selectedRequests, $matches);
+			$titleRequestIds = $matches[1];
+
+			$numAssigneeUpdates = 0;
+			$numStatusUpdates = 0;
+			$numRequestsToUpdate = 0;
+
+			foreach ($titleRequestIds as $titleRequestId) {
+
+				$materialsRequest = new MaterialsRequest();
+				$materialsRequest->materialsRequestTitleId = $titleRequestId;
+				$materialsRequest->find();
+
+				while ($materialsRequest->fetch()) {
+					$numRequestsToUpdate++;
+					$sameAssignee = true;
+					$sameStatus = true;
+					if (!empty($newAssignee)) {
+						if ($materialsRequest->assignedTo != $newAssignee) {
+							$materialsRequest->assignedTo = $newAssignee;
+							$sameAssignee = false;
+						}
+					}
+					if (!empty($newStatus)) {
+						if ($materialsRequest->status != $newStatus) {
+							$materialsRequest->status = $newStatus;
+							$sameStatus = false;
+						}
+					}
+					if ($materialsRequest->update()){
+						if (!$sameAssignee) {
+							$numAssigneeUpdates++;
+						}
+						if (!$sameStatus) {
+							$numStatusUpdates++;
+						}
+					}
+				}
+			}
+			if ($numAssigneeUpdates != 0 || $numStatusUpdates != 0) {
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+					]),
+					'modalBody' => "Successfully updated " . $numAssigneeUpdates . " assignees and " . $numStatusUpdates . " statuses of " . $numRequestsToUpdate . " requests.",
+				];
+			}
+		}
+		return [
+			'success' => false,
+		];
+	}
+
+	/** @noinspection PhpUnused */
 	function showSelectHoldCandidateForm() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission('Manage Library Materials Requests');
+
 		global $interface;
 
 		if (empty($_REQUEST['id']) || !is_numeric($_REQUEST['id'])) {
@@ -479,6 +668,9 @@ class MaterialsRequest_AJAX extends Action {
 
 	/** @noinspection PhpUnused */
 	function selectHoldCandidate() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission('Manage Library Materials Requests');
+
 		if (empty($_REQUEST['requestId']) || !is_numeric($_REQUEST['requestId'])) {
 			return [
 				'success' => false,
@@ -541,6 +733,9 @@ class MaterialsRequest_AJAX extends Action {
 
 	/** @noinspection PhpUnused */
 	function checkForExistingRecord() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission('Manage Library Materials Requests');
+
 		$result = [
 			'success' => false,
 			'hasExistingRecord' => false,
@@ -636,7 +831,11 @@ class MaterialsRequest_AJAX extends Action {
 		return [];
 	}
 
+	/** @noinspection PhpUnused */
 	public function exportUsageData(): void {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['View Dashboards', 'View System Reports']);
+
 		require_once ROOT_DIR . '/services/MaterialsRequest/UsageGraphs.php';
 		$MaterialsRequestUsageGraph = new MaterialsRequest_UsageGraphs(); 
 		$MaterialsRequestUsageGraph->buildCSV('MaterialsRequest');

@@ -18,6 +18,9 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class HooplaProcessor2 {
 	private final GroupedWorkIndexer indexer;
@@ -121,11 +124,21 @@ class HooplaProcessor2 {
 				}
 				JSONObject rawResponse = new JSONObject(rawResponseString);
 
-				if (rawResponse.has("title")){
-					title = rawResponse.getString("title");
-				}
-				if (rawResponse.has("subtitle")){
-					subTitle = rawResponse.getString("subtitle");
+				if (rawResponse.has("seasonNumber")) {
+					if (rawResponse.has("seriesName")){
+						title = rawResponse.getString("seriesName");
+					}
+					title += " - Season " + rawResponse.get("seasonNumber").toString();
+					if (rawResponse.has("episodeNumber")) {
+						title += " Episode " + rawResponse.get("episodeNumber").toString();
+					}
+				}else {
+					if (rawResponse.has("title")) {
+						title = rawResponse.getString("title");
+					}
+					if (rawResponse.has("subtitle")) {
+						subTitle = rawResponse.getString("subtitle");
+					}
 				}
 
 				String fullTitle = title + " " + subTitle;
@@ -153,12 +166,11 @@ class HooplaProcessor2 {
 
 				if (!series.isEmpty()){
 					groupedWork.addSeries(series);
-					if (rawResponse.has("episodeNumber")) {
-						String volume = rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
-						groupedWork.addSeriesWithVolume(series, volume, 2, false);
-					}
 					if (rawResponse.has("seriesNumber")) {
 						String volume = rawResponse.optString("seriesNumber", rawResponse.optString("volume", ""));
+						if (rawResponse.has("episodeNumber") || rawResponse.has("episode")) {
+							volume += " Episode " + rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
+						}
 						groupedWork.addSeriesWithVolume(series, volume, 2, false);
 					}
 				}
@@ -435,8 +447,12 @@ class HooplaProcessor2 {
 
 				groupedWork.addPublicationDate(releaseYear);
 				//physical description
-				if (rawResponse.has("duration")){
-					groupedWork.addPhysical(rawResponse.getString("duration"));
+				if (primaryFormat.equals("eAudiobook") && rawResponse.has("duration")) {
+					int duration = AspenStringUtils.extractTotalMinutes(rawResponse.getString("duration"));
+					hooplaRecord.setDuration(duration);
+					Set<Integer> durationSet = new HashSet<>();
+					durationSet.add(duration);
+					groupedWork.addDuration(durationSet);
 				}
 
 				//Description

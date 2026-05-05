@@ -908,7 +908,27 @@ public class RecordGroupingProcessor {
 			}
 		}
 		if (activeLanguage == null || activeLanguage.equals("|||") || activeLanguage.equals("   ") || activeLanguage.contains(" ")){
-			activeLanguage = "unk";
+			String secondaryLanguageField = "041a";
+			activeLanguage = null;
+			languages = MarcUtil.getFieldList(marcRecord, secondaryLanguageField);
+			for (String language : languages){
+				language = language.replaceAll("^[^a-zA-Z]+|[^a-zA-Z]+$|\\p{Punct}", "");
+				language = translateValue("language_to_three_letter_code", language);
+				if (language == null || language.length() != 3 || language.contains(" ")) {
+					continue;
+				}
+				if (activeLanguage == null){
+					activeLanguage = language;
+				}else{
+					if (!activeLanguage.equals(language)){
+						activeLanguage = "mul";
+						break;
+					}
+				}
+			}
+			if (activeLanguage == null) {
+				activeLanguage = "unk";
+			}
 		}
 		return activeLanguage;
 	}
@@ -1077,15 +1097,21 @@ public class RecordGroupingProcessor {
 	public String groupHooplaRecord(JSONObject itemDetails, long hooplaId) throws JSONException {
 		//Perform record grouping on the record
 		String title;
-		String subTitle;
+		String subTitle = "";
 		title = itemDetails.getString("title");
 		if (itemDetails.has("titleTitle")){
 			title = itemDetails.getString("titleTitle");
 			subTitle = itemDetails.getString("title");
-		}else if (itemDetails.has("subtitle")){
+		}else if (itemDetails.has("subtitle")) {
 			subTitle = itemDetails.getString("subtitle");
-		}else{
-			subTitle = "";
+		}else if (itemDetails.has("seasonNumber")){
+			if (itemDetails.has("seriesName")){
+				title = itemDetails.getString("seriesName");
+			}
+			title += " - Season " + itemDetails.get("seasonNumber").toString();
+			if (itemDetails.has("episodeNumber")){
+				title += " Episode " + itemDetails.get("episodeNumber").toString();
+			}
 		}
 		String mediaType = itemDetails.optString("format", itemDetails.optString("kind", ""));
 		String primaryFormat;
@@ -1105,6 +1131,9 @@ public class RecordGroupingProcessor {
 				break;
 			case "MUSIC":
 				primaryFormat = "eMusic";
+				break;
+			case "BINGEPASS":
+				primaryFormat = "Binge Pass";
 				break;
 			default:
 				logger.error("Unhandled hoopla mediaType " + mediaType);
@@ -1168,8 +1197,15 @@ public class RecordGroupingProcessor {
 		JSONObject titleMetadata = titleDetails.getJSONObject("metadata");
 
 		title = titleMetadata.getString("title");
+		title = GroupedWork.removeComplexSubtitlesFromTitle(title);
+
 		if (titleMetadata.has("subtitle")){
 			subTitle = titleMetadata.getString("subtitle");
+			String subtitleLower = subTitle.toLowerCase(Locale.ROOT);
+			if (subtitleLower.contains("book club") || subtitleLower.contains("award winner") || subtitleLower.contains("read with jenna")
+				|| subtitleLower.contains("number one bestseller")) {
+				subTitle = "";
+			}
 		}else{
 			subTitle = "";
 		}
@@ -1195,10 +1231,12 @@ public class RecordGroupingProcessor {
 		switch (type) {
 			//noinspection HttpUrlsUsage
 			case "http://bib.schema.org/Audiobook":
+			case "http://schema.org/Audiobook":
 				primaryFormat = "eAudiobook";
 				break;
 			//noinspection HttpUrlsUsage
 			case "http://schema.org/EBook":
+			case "http://schema.org/Book":
 				//TODO: May need to check the subjects to determine if this is a comic/graphic novel
 				primaryFormat = "eBook";
 				break;

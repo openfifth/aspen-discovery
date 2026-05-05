@@ -60,61 +60,7 @@
 								<div class="result-value col-sm-8 col-xs-12">
 									{assign var=seriesLimit value=$numSeriesToShowBeforeMore+1}
 									{assign var=totalSeriesShown value=0}
-									{if !empty($summSeries)}
-										{if !empty($summSeries.fromNovelist)}
-											{assign var=totalSeriesShown value=$totalSeriesShown+1}
-											<a href="/GroupedWork/{$summId}/Series">{$summSeries.seriesTitle}</a>{if !empty($summSeries.volume)} <strong>{translate text=volume isPublicFacing=true} {$summSeries.volume|format_float_with_min_decimals}</strong>{/if}<br>
-											{if !empty($summSeries.additionalSeries)}
-												{foreach from=$summSeries.additionalSeries item=additional}
-													{assign var=totalSeriesShown value=$totalSeriesShown+1}
-													{if $totalSeriesShown == $seriesLimit}
-														<a onclick="$('#moreSeries_{$summId}').show();$('#moreSeriesLink_{$summId}').hide();" id="moreSeriesLink_{$summId}">{translate text='More Series...' isPublicFacing=true}</a>
-														<div id="moreSeries_{$summId}" style="display:none">
-													{/if}
-													<a href="/Search/Results?searchIndex=Series&lookfor={$additional.seriesTitle}&sort=year+asc%2Ctitle+asc">{$additional.seriesTitle}</a>{if !empty($additional.volume)}<strong> {translate text="volume %1%" 1=$additional.volume|format_float_with_min_decimals isPublicFacing=true}</strong>{/if}<br>
-												{/foreach}
-												{if $totalSeriesShown >= $seriesLimit}
-													</div>
-												{/if}
-											{/if}
-										{elseif !empty($summSeries.fromSeriesIndex)}
-											{if !$summSeries.hidden}
-												{assign var=totalSeriesShown value=$totalSeriesShown+1}
-												<a href="/Series/{$summSeries.seriesId}">{$summSeries.seriesTitle}</a>{if !empty($summSeries.volume)}<strong> {translate text="volume %1%" 1=$summSeries.volume|format_float_with_min_decimals isPublicFacing=true}</strong>{/if}<br>
-											{/if}
-											{if !empty($summSeries.additionalSeries)}
-												{foreach from=$summSeries.additionalSeries item=additional}
-													{if !$additional.hidden}
-														{assign var=totalSeriesShown value=$totalSeriesShown+1}
-														{if $totalSeriesShown == $seriesLimit}
-															<a onclick="$('#moreSeries_{$summId}').show();$('#moreSeriesLink_{$summId}').hide();" id="moreSeriesLink_{$summId}">{translate text='More Series...' isPublicFacing=true}</a>
-															<div id="moreSeries_{$summId}" style="display:none">
-														{/if}
-														<a href="/Series/{$additional.seriesId}">{$additional.seriesTitle}</a>{if !empty($additional.volume)}<strong> {translate text="volume %1%" 1=$additional.volume|format_float_with_min_decimals isPublicFacing=true}</strong>{/if}<br>
-													{/if}
-												{/foreach}
-												{if $totalSeriesShown >= $seriesLimit}
-													</div>
-												{/if}
-											{/if}
-										{elseif !empty($summSeries.seriesTitle)}
-											{assign var=totalSeriesShown value=$totalSeriesShown+1}
-											<a href="/Search/Results?searchIndex=Series&lookfor={$summSeries.seriesTitle}&sort=year+asc%2Ctitle+asc">{$summSeries.seriesTitle}</a>{if !empty($summSeries.volume)}<strong> {translate text="volume %1%" 1=$summSeries.volume|format_float_with_min_decimals isPublicFacing=true}</strong>{/if}<br>
-											{if !empty($summSeries.additionalSeries)}
-												{foreach from=$summSeries.additionalSeries item=additional}
-													{assign var=totalSeriesShown value=$totalSeriesShown+1}
-													{if $totalSeriesShown == $seriesLimit}
-														<a onclick="$('#moreSeries_{$summId}').show();$('#moreSeriesLink_{$summId}').hide();" id="moreSeriesLink_{$summId}">{translate text='More Series...' isPublicFacing=true}</a>
-														<div id="moreSeries_{$summId}" style="display:none">
-													{/if}
-													<a href="/Search/Results?searchIndex=Series&lookfor={$additional.seriesTitle}&sort=year+asc%2Ctitle+asc">{$additional.seriesTitle}</a>{if !empty($additional.volume)}<strong> {translate text="volume %1%" 1=$additional.volume|format_float_with_min_decimals isPublicFacing=true}</strong>{/if}<br>
-												{/foreach}
-												{if $totalSeriesShown >= $seriesLimit}
-													</div>
-												{/if}
-											{/if}
-										{/if}
-									{/if}
+									{include "GroupedWork/series-shared.tpl" summSeries=$summSeries seriesLimit=$seriesLimit}
 								</div>
 							</div>
 						{/if}
@@ -236,6 +182,21 @@
 								{translate text=$summLanguage isPublicFacing=true isMetadata=true}
 							{/if}
 						</div>
+					{/if}
+
+					{if $allowHoldsToBeGrouped}
+						<div class="col-xs-12" style="display: flex; flex-wrap: wrap; align-items: flex-start; margin-top:10px;">
+							<div class="metadata-columns" style="display: flex; flex-wrap: wrap; flex:1;">
+								{include file="GroupedWork/metadataBlocks.tpl"}
+							</div>
+							<div class="metadata-action" style="margin-left:auto; flex-shrink:0;">
+								<a href="#" id="hyperholdGroupedWorkButton" class="btn btn-primary btn-sm" aria-label="{translate text='Place a hold on this grouped work' isPublicFacing=true}" onclick="AspenDiscovery.Record.placeHyperhold('{$summId}'); return false;">
+									{translate text="Place Hyperhold" isPublicFacing=true}
+								</a>
+							</div>
+						</div>
+					{else}
+						{include file="GroupedWork/metadataBlocks.tpl"}
 					{/if}
 
 					{include file="GroupedWork/relatedLists.tpl" isSearchResults=true}

@@ -1,11 +1,14 @@
 <?php
 
+use JetBrains\PhpStorm\NoReturn;
+
 require_once ROOT_DIR . '/JSON_Action.php';
 
 class MyAccount_AJAX extends JSON_Action {
+	/** @noinspection PhpMissingClassConstantTypeInspection */
 	const SORT_LAST_ALPHA = 'zzzzz';
 
-	function launch($method = null) : void {
+	function launch($method = null): void {
 		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
 		switch ($method) {
 			case 'renewItem':
@@ -25,16 +28,18 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getAddBrowseCategoryFromListForm() : array {
+	function getAddBrowseCategoryFromListForm(): array {
 		global $interface;
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Administer All Browse Categories', 'Administer Library Browse Categories','Administer Selected Browse Category Groups']);
 
 		// Select List Creation using Object Editor functions
 		require_once ROOT_DIR . '/sys/Browse/SubBrowseCategories.php';
-		$temp = SubBrowseCategories::getObjectStructure('');
+		$temp = SubBrowseCategories::getObjectStructure();
 		$temp['subCategoryId']['values'] = [0 => 'Select One'] + $temp['subCategoryId']['values'];
 		// add default option that denotes nothing has been selected to the options list
-		// (this preserves the keys' numeric values (which is essential as they are the Id values) as well as the array's order)
-		// btw addition of arrays is kinda a cool trick.
+		// (this preserves the keys' numeric values (which is essential as they are the ID values) as well as the array's order)
+		// (btw addition of arrays is kinda a cool trick)
 		$interface->assign('propName', 'addAsSubCategoryOf');
 		$interface->assign('property', $temp['subCategoryId']);
 
@@ -55,151 +60,48 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function addAccountLink(): array {
-		if (!UserAccount::isLoggedIn()) {
-			$result = [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Unable to link accounts',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'Sorry, you must be logged in to manage accounts.',
-					'isPublicFacing' => true,
-				]),
-			];
-		} else {
-			$username = $_REQUEST['username'];
-			$password = $_REQUEST['password'];
-			$accountToLink = UserAccount::validateAccount($username, $password);
+		$this->requireLoggedInUser('Unable to link accounts', 'You must be logged in to link accounts, please login again');
+		$this->checkRequiredParameters(['username', 'password']);
 
-			if (!UserAccount::isLoggedIn()) {
-				$result = [
-					'success' => false,
-					'title' => translate([
-						'text' => 'Unable to link accounts',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => 'You must be logged in to link accounts, please login again',
-						'isPublicFacing' => true,
-					]),
-				];
-			} elseif ($accountToLink) {
-				$user = UserAccount::getLoggedInUser();
-				$userPtype = $user->getPType();
+		$username = $_REQUEST['username'];
+		$password = $_REQUEST['password'];
+		$accountToLink = UserAccount::validateAccount($username, $password);
 
-				if ($accountToLink->id != $user->id) {
-					$linkeePtype = $accountToLink->getPType();
-					if ($linkeePtype != null) {
-						require_once ROOT_DIR . '/sys/Account/PType.php';
-						$linkingSettingUser = PType::getAccountLinkingSetting($userPtype);
-						$linkingSettingLinkee = PType::getAccountLinkingSetting($linkeePtype);
+		if ($accountToLink) {
+			$user = UserAccount::getLoggedInUser();
+			$userPtype = $user->getPType();
 
-						if (($accountToLink->disableAccountLinking == 0) && ($linkingSettingUser != '1' && $linkingSettingUser != '3') && ($linkingSettingLinkee != '2' && $linkingSettingLinkee != '3')) {
-							$addResult = $user->addLinkedUser($accountToLink);
-							if ($addResult === true) {
-								$result = [
-									'success' => true,
-									'title' => translate([
-										'text' => 'Success',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => 'Successfully linked accounts.',
-										'isPublicFacing' => true,
-									]),
-								];
-							} else { // insert failure or user is blocked from linking account or account & account to link are the same account
-								$result = [
-									'success' => false,
-									'title' => translate([
-										'text' => 'Unable to link accounts',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => 'Sorry, we could not link to that account.  Accounts cannot be linked if all libraries do not allow account linking.  Please contact your local library if you have questions.',
-										'isPublicFacing' => true,
-									]),
-								];
-							}
-						} else {
-							if ($linkingSettingUser == '1' || $linkingSettingUser == '3') {
-								$result = [
-									'success' => false,
-									'title' => translate([
-										'text' => 'Unable to link accounts',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => 'Sorry, you are not permitted to link to others.',
-										'isPublicFacing' => true,
-									]),
-								];
-							} else if ($linkingSettingLinkee == '2' || $linkingSettingLinkee == '3') {
-								$result = [
-									'success' => false,
-									'title' => translate([
-										'text' => 'Unable to link accounts',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => 'Sorry, that account cannot be linked to.',
-										'isPublicFacing' => true,
-									]),
-								];
-							} else {
-								$result = [
-									'success' => false,
-									'title' => translate([
-										'text' => 'Unable to link accounts',
-										'isPublicFacing' => true,
-									]),
-									'message' => translate([
-										'text' => 'Sorry, this user does not allow account linking.',
-										'isPublicFacing' => true,
-									]),
-								];
-							}
+			if ($accountToLink->id != $user->id) {
+				$linkeePtype = $accountToLink->getPType();
+				if ($linkeePtype != null) {
+					require_once ROOT_DIR . '/sys/Account/PType.php';
+					$linkingSettingUser = PType::getAccountLinkingSetting($userPtype);
+					$linkingSettingLinkee = PType::getAccountLinkingSetting($linkeePtype);
+
+					if (($accountToLink->disableAccountLinking == 0) && ($linkingSettingUser != '1' && $linkingSettingUser != '3') && ($linkingSettingLinkee != '2' && $linkingSettingLinkee != '3')) {
+						$addResult = $user->addLinkedUser($accountToLink);
+						if ($addResult === true) {
+							$result = $this->successResult('Success', 'Successfully linked accounts.');
+						} else { // insert failure or user is blocked from linking account or account & account to link are the same account
+							$result = $this->failureResult( 'Unable to link accounts', 'Sorry, we could not link to that account.  Accounts cannot be linked if all libraries do not allow account linking.  Please contact your local library if you have questions.');
 						}
-					}else{
-						$result = [
-							'success' => false,
-							'title' => translate([
-								'text' => 'Unable to link accounts',
-								'isPublicFacing' => true,
-							]),
-							'message' => translate([
-								'text' => 'Sorry, this user type cannot be linked to.',
-								'isPublicFacing' => true,
-							]),
-						];
+					} else {
+						if ($linkingSettingUser == '1' || $linkingSettingUser == '3') {
+							$result = $this->failureResult( 'Unable to link accounts', 'Sorry, you are not permitted to link to others.');
+						} else if ($linkingSettingLinkee == '2' || $linkingSettingLinkee == '3') {
+							$result = $this->failureResult( 'Unable to link accounts', 'Sorry, that account cannot be linked to.');
+						} else {
+							$result = $this->failureResult( 'Unable to link accounts', 'Sorry, this user does not allow account linking.');
+						}
 					}
 				} else {
-					$result = [
-						'success' => false,
-						'title' => translate([
-							'text' => 'Unable to link accounts',
-							'isPublicFacing' => true,
-						]),
-						'message' => translate([
-							'text' => 'You cannot link to yourself.',
-							'isPublicFacing' => true,
-						]),
-					];
+					$result = $this->failureResult( 'Unable to link accounts', 'Sorry, this user type cannot be linked to.');
 				}
 			} else {
-				$result = [
-					'success' => false,
-					'title' => translate([
-						'text' => 'Unable to link accounts',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => 'The information for the user to link to was not correct.',
-						'isPublicFacing' => true,
-					]),
-				];
+				$result = $this->failureResult( 'Unable to link accounts', 'You cannot link to yourself.');
 			}
+		} else {
+			$result = $this->failureResult('Unable to link accounts', 'The information for the user to link to was not correct.');
 		}
 
 		return $result;
@@ -207,123 +109,54 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function removeManagingAccount(): array {
-		if (!UserAccount::isLoggedIn()) {
-			$result = [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Unable to Remove Account Link',
-					'isAdminFacing' => 'true',
-				]),
-				'message' => translate([
-					'text' => 'Sorry, you must be logged in to manage accounts.',
-					'isPublicFacing' => true,
-				]),
-			];
-		} else {
-			$accountToRemove = $_REQUEST['idToRemove'];
-			$user = UserAccount::getLoggedInUser();
-			if ($user->removeManagingAccount($accountToRemove)) {
-				global $librarySingleton;
-				// Get Library Settings from the home library of the current user-account being displayed
-				$patronHomeLibrary = $librarySingleton->getPatronHomeLibrary($user);
-				if ($patronHomeLibrary->allowPinReset == 1) {
-					$result = [
-						'success' => true,
-						'title' => translate([
-							'text' => 'Linked Account Removed',
-							'isAdminFacing' => 'true',
-						]),
-						'message' => translate([
-							'text' => 'Successfully removed linked account. Removing this link does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Would you like to change your password?',
-							'isPublicFacing' => true,
-						]),
-						'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.redirectPinReset(); return false;'>" . translate([
-								'text' => "Request PIN Change",
-								'isPublicFacing' => true,
-							]) . "</button>",
-					];
-				} else {
-					$result = [
-						'success' => true,
-						'title' => translate([
-							'text' => 'Linked Account Removed',
-							'isAdminFacing' => 'true',
-						]),
-						'message' => translate([
-							'text' => 'Successfully removed linked account. Removing this link does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Please contact your library if you wish to update your PIN/Password.',
-							'isPublicFacing' => true,
-						]),
-					];
-				}
-			} else {
+		$this->requireLoggedInUser('Unable to Remove Account Link', 'Sorry, you must be logged in to manage accounts');
+		$this->checkRequiredParameters(['idToRemove']);
+
+		$accountToRemove = $_REQUEST['idToRemove'];
+		$user = UserAccount::getLoggedInUser();
+		if ($user->removeManagingAccount($accountToRemove)) {
+			global $librarySingleton;
+			// Get Library Settings from the home library of the current user-account being displayed
+			$patronHomeLibrary = $librarySingleton->getPatronHomeLibrary($user);
+			if ($patronHomeLibrary->allowPinReset == 1) {
 				$result = [
-					'success' => false,
+					'success' => true,
 					'title' => translate([
-						'text' => 'Unable to Remove Account Link',
+						'text' => 'Linked Account Removed',
 						'isAdminFacing' => 'true',
 					]),
 					'message' => translate([
-						'text' => 'Sorry, we could not remove that account.',
+						'text' => 'Successfully removed linked account. Removing this link does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Would you like to change your password?',
 						'isPublicFacing' => true,
 					]),
+					'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.redirectPinReset(); return false;'>" . translate([
+							'text' => "Request PIN Change",
+							'isPublicFacing' => true,
+						]) . "</button>",
 				];
+			} else {
+				$result = $this->successResult('Linked Account Removed', 'Successfully removed linked account. Removing this link does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Please contact your library if you wish to update your PIN/Password.');
 			}
+		} else {
+			$result = $this->failureResult('Unable to Remove Account Link', 'Sorry, we could not remove that account.');
 		}
+
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
 	function removeAccountLink(): array {
-		if (!UserAccount::isLoggedIn()) {
-			$result = [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Unable to Remove Account Link',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => translate([
-						'Sorry, you must be logged in to manage accounts.',
-						'isPublicFacing' => true,
-					]),
-					'isPublicFacing' => true,
-				]),
-			];
+		$this->requireLoggedInUser('Unable to Remove Account Link', 'Sorry, you must be logged in to manage accounts');
+		$this->checkRequiredParameters(['idToRemove']);
+
+		$accountToRemove = $_REQUEST['idToRemove'];
+		$user = UserAccount::getLoggedInUser();
+		if ($user->removeLinkedUser($accountToRemove)) {
+			$result = $this->successResult('Success', 'Successfully removed linked account.');
 		} else {
-			$accountToRemove = $_REQUEST['idToRemove'];
-			$user = UserAccount::getLoggedInUser();
-			if ($user->removeLinkedUser($accountToRemove)) {
-				$result = [
-					'success' => true,
-					'title' => translate([
-						'text' => 'Success',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => translate([
-							'text' => 'Successfully removed linked account.',
-							'isPublicFacing' => true,
-						]),
-						'isPublicFacing' => true,
-					]),
-				];
-			} else {
-				$result = [
-					'success' => false,
-					'title' => translate([
-						'text' => 'Unable to Remove Account Link',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => translate([
-							'text' => 'Sorry, we could remove that account.',
-							'isPublicFacing' => true,
-						]),
-						'isPublicFacing' => true,
-					]),
-				];
-			}
+			$result = $this->failureResult('Unable to Remove Account Link', 'Sorry, we could remove that account.');
 		}
+
 		return $result;
 	}
 
@@ -331,6 +164,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function disableAccountLinkingInfo(): array {
+		$this->requireLoggedInUser();
+
 		$user = UserAccount::getActiveUserObj();
 		if ($user->disableAccountLinking == 1) {
 			return [
@@ -368,81 +203,56 @@ class MyAccount_AJAX extends JSON_Action {
 	//USED UPON SUBMITTING
 
 	/** @noinspection PhpUnused */
-	function toggleAccountLinking() {
-		if (!UserAccount::isLoggedIn()) {
-			$result = [
-				'message' => translate([
-					'text' => 'Sorry, you must be logged in to manage accounts.',
-					'isPublicFacing' => true,
-				]),
-			];
-		} else {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->disableAccountLinking == 1) {
-				$success = $user->accountLinkingToggle();
-				$result = [
-					'success' => $success,
-					'title' => translate([
-						'text' => 'Linking Enabled',
-						'isPublicFacing' => true,
-					]),
-					'message' => translate([
-						'text' => 'Account linking has been enabled',
-						'isPublicFacing' => true,
-					]),
-				];
-			} else {
-				if ($user->disableAccountLinking == 0) {
-					$success = $user->accountLinkingToggle();
-					global $librarySingleton;
-					// Get Library Settings from the home library of the current user-account being displayed
-					$patronHomeLibrary = $librarySingleton->getPatronHomeLibrary($user);
-					if ($patronHomeLibrary->allowPinReset == 1) {
-						$result = [
-							'success' => $success,
-							'title' => translate([
-								'text' => 'Linking Disabled',
-								'isPublicFacing' => true,
-							]),
-							'message' => translate([
-								'text' => 'Account linking has been disabled. Disabling account linking does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Would you like to change your password?',
-								'isPublicFacing' => true,
-							]),
-							'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.redirectPinReset(); return false;'>" . translate([
-									'text' => "Request PIN Change",
-									'isPublicFacing' => true,
-								]) . "</button>",
-						];
-					} else {
-						$result = [
-							'success' => $success,
-							'title' => translate([
-								'text' => 'Linking Disabled',
-								'isAdminFacing' => 'true',
-							]),
-							'message' => translate([
-								'text' => 'Account linking has been disabled. Disabling account linking does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Please contact your library if you wish to update your PIN/Password.',
-								'isPublicFacing' => true,
-							]),
-						];
+	function toggleAccountLinking() : array {
+		$this->requireLoggedInUser(null, 'Sorry, you must be logged in to manage accounts.');
 
-					}
-				} else {
+		$user = UserAccount::getActiveUserObj();
+		if ($user->disableAccountLinking == 1) {
+			$success = $user->accountLinkingToggle();
+			if ($success) {
+				$result = $this->successResult('Linking Enabled', 'Account linking has been enabled');
+			}else{
+				$result = $this->failureResult('Linking Enabled', 'Account linking could not be enabled');
+			}
+		} else {
+			if ($user->disableAccountLinking == 0) {
+				$success = $user->accountLinkingToggle();
+				global $librarySingleton;
+				// Get Library Settings from the home library of the current user-account being displayed
+				$patronHomeLibrary = $librarySingleton->getPatronHomeLibrary($user);
+				if ($patronHomeLibrary->allowPinReset == 1) {
 					$result = [
-						'success' => false,
-						'message' => translate([
-							'text' => 'Sorry, something went wrong and we were unable to process this request.',
+						'success' => $success,
+						'title' => translate([
+							'text' => 'Linking Disabled',
 							'isPublicFacing' => true,
 						]),
+						'message' => translate([
+							'text' => 'Account linking has been disabled. Disabling account linking does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Would you like to change your password?',
+							'isPublicFacing' => true,
+						]),
+						'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.redirectPinReset(); return false;'>" . translate([
+								'text' => "Request PIN Change",
+								'isPublicFacing' => true,
+							]) . "</button>",
 					];
+				} else {
+					if ($success) {
+						$result = $this->successResult('Linking Disabled', 'Account linking has been disabled. Disabling account linking does not guarantee the security of your account. If another user has your barcode and PIN/password they will still be able to access your account. Please contact your library if you wish to update your PIN/Password.');
+					}else{
+						$result = $this->failureResult('Linking Disabled', 'Account linking could not be disabled');
+					}
 				}
+			} else {
+				$result = $this->failureResult(null, 'Sorry, something went wrong and we were unable to process this request.');
 			}
 		}
+
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getTermsModalContent() {
+	function getTermsModalContent() : array {
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
 		$selfRegTerms = $catalog->getSelfRegistrationTerms();
 		return [
@@ -459,13 +269,15 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getAddAccountLinkForm() {
+	function getAddAccountLinkForm() : array {
+		$this->requireLoggedInUser();
+
 		global $interface;
 		global $library;
 
 		$interface->assign('enableSelfRegistration', 0);
-		$interface->assign('usernameLabel', str_replace('Your', '', $library->loginFormUsernameLabel ? $library->loginFormUsernameLabel : 'Your Name'));
-		$interface->assign('passwordLabel', str_replace('Your', '', $library->loginFormPasswordLabel ? $library->loginFormPasswordLabel : 'Library Card Number'));
+		$interface->assign('usernameLabel', str_replace('Your', '', $library->loginFormUsernameLabel ?? 'Your Name'));
+		$interface->assign('passwordLabel', str_replace('Your', '', $library->loginFormPasswordLabel ?? 'Library Card Number'));
 		// Display Page
 		return [
 			'title' => translate([
@@ -481,7 +293,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function allowAccountLink() {
+	function allowAccountLink() : array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/sys/Account/UserMessage.php';
 
 		$activeUserId = UserAccount::getActiveUserId();
@@ -495,18 +309,16 @@ class MyAccount_AJAX extends JSON_Action {
 			$userMessage->update();
 		}
 
-		return [
-			'success' => true,
-			'message' => 'Account Link Accepted',
-		];
+		return $this->successResult(null, 'Account Link Accepted');
 	}
 
 	/** @noinspection PhpUnused */
-	function getBulkAddToListForm() {
+	function getBulkAddToListForm() : array {
 		global $interface;
 		// Display Page
 		$interface->assign('listId', strip_tags($_REQUEST['listId']));
 
+		/** @noinspection JSUnresolvedReference */
 		return [
 			'title' => translate([
 				'text' => 'Add titles to list',
@@ -521,10 +333,11 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function saveSearch() {
+	function saveSearch() : array {
+		$this->requireLoggedInUser();
+
 		$result = [
 			'success' => false,
-			'message' => 'Unknown error saving search',
 		];
 		$searchId = $_REQUEST['searchId'];
 		$title = $_REQUEST['title'];
@@ -580,7 +393,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getSaveSearchForm() {
+	function getSaveSearchForm() : array {
 		global $interface;
 
 		$searchId = $_REQUEST['searchId'];
@@ -603,7 +416,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function confirmCancelHold(): array {
+	function confirmCancelHold() : array {
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
 		$cancelId = $_REQUEST['cancelId'];
@@ -627,47 +440,31 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function cancelHold(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Cancelling hold failed',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Error cancelling hold.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser(null, 'You must be logged in to cancel a hold.  Please close this dialog and login again.');
+		$result = $this->failureResult('Cancelling hold failed', 'Error cancelling hold.');
 
-		if (!UserAccount::isLoggedIn()) {
+		//Determine which user the hold is on so we can cancel it.
+		$patronId = $_REQUEST['patronId'];
+		$user = UserAccount::getLoggedInUser();
+		$patronOwningHold = $user->getUserReferredTo($patronId);
+
+		if ($patronOwningHold === false) {
 			$result['message'] = translate([
-				'text' => 'You must be logged in to cancel a hold.  Please close this dialog and login again.',
+				'text' => 'Sorry, you do not have access to cancel holds for the supplied user.',
 				'isPublicFacing' => true,
-			]);;
+			]);
 		} else {
-			//Determine which user the hold is on so we can cancel it.
-			$patronId = $_REQUEST['patronId'];
-			$user = UserAccount::getLoggedInUser();
-			$patronOwningHold = $user->getUserReferredTo($patronId);
-
-			if ($patronOwningHold == false) {
+			//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
+			if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
 				$result['message'] = translate([
-					'text' => 'Sorry, you do not have access to cancel holds for the supplied user.',
+					'text' => 'Information about the hold to be cancelled was not provided.',
 					'isPublicFacing' => true,
-				]);;
+				]);
 			} else {
-				//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
-				if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
-					$result['message'] = translate([
-						'text' => 'Information about the hold to be cancelled was not provided.',
-						'isPublicFacing' => true,
-					]);;
-				} else {
-					$cancelId = $_REQUEST['cancelId'];
-					$recordId = $_REQUEST['recordId'];
-					$isIll = $_REQUEST['isIll'] ?? false;
-					$result = $patronOwningHold->cancelHold($recordId, $cancelId, $isIll);
-				}
+				$cancelId = $_REQUEST['cancelId'];
+				$recordId = $_REQUEST['recordId'];
+				$isIll = $_REQUEST['isIll'] ?? false;
+				$result = $patronOwningHold->cancelHold($recordId, $cancelId, $isIll);
 			}
 		}
 
@@ -716,111 +513,87 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	/** @noinspection PhpMissingReturnTypeInspection */
-	function cancelHoldSelectedItems() : array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Error cancelling hold.',
-				'isPublicFacing' => true,
-			]),
-		];
+	/** @noinspection PhpUnused */
+	function cancelHoldSelectedItems(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to cancel a hold.  Please close this dialog and login again.');
+		$tmpResult = $this->failureResult('Error', 'Error cancelling selected holds.');
 
-		if (!UserAccount::isLoggedIn()) {
-			$result['message'] = translate([
-				'text' => 'You must be logged in to cancel a hold.  Please close this dialog and login again.',
-				'isPublicFacing' => true
-			]);
-		} else {
-			$success = 0;
-			$user = UserAccount::getLoggedInUser();
-			$allHolds = $user->getHolds(true, 'sortTitle', 'expire', 'all');
-			$allUnavailableHolds = $allHolds['unavailable'];
-			if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
-				$total = count($_REQUEST['selected']);
-				foreach ($_REQUEST['selected'] as $selected => $ignore) {
-					@list($patronId, $recordId, $cancelId) = explode('|', $selected);
-					$patronOwningHold = $user->getUserReferredTo($patronId);
-					if ($patronOwningHold == false) {
-						$tmpResult = [
-							'success' => false,
-							'title' => translate([
-								'text' => 'Error',
-								'isPublicFacing' => true,
-							]),
-							'message' => translate([
-								'text' => 'Sorry, it looks like you don\'t have access to that patron.',
-								'isPublicFacing' => true
-							]),
-						];
-					} else {
-						$holdType = 'unknown';
-						foreach ($allUnavailableHolds as $key) {
-							if ($key->sourceId == $recordId) {
-								$holdType = $key->source;
-								break;
-							}
+		$success = 0;
+		$user = UserAccount::getLoggedInUser();
+		$allHolds = $user->getHolds();
+		$allUnavailableHolds = $allHolds['unavailable'];
+		if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
+			$total = count($_REQUEST['selected']);
+			foreach ($_REQUEST['selected'] as $selected => $ignore) {
+				@list($patronId, $recordId, $cancelId) = explode('|', $selected);
+				$patronOwningHold = $user->getUserReferredTo($patronId);
+				if ($patronOwningHold === false) {
+					$tmpResult = $this->failureResult('Error', 'Sorry, it looks like you don\'t have access to that patron.');
+				} else {
+					$holdType = 'unknown';
+					$isIll = false;
+					foreach ($allUnavailableHolds as $key) {
+						if ($key->sourceId == $recordId) {
+							$holdType = $key->source;
+							$isIll = $key->isIll;
+							break;
 						}
-						if ($holdType == 'ils') {
-							$tmpResult = $user->cancelHold($recordId, $cancelId, $key->isIll);
-							if (!empty($tmpResult['success'])) {
-								$success++;
-							}
-						} elseif ($holdType == 'axis360') {
-							require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
-							$driver = new Axis360Driver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
-							if (!empty($tmpResult['success'])) {
-								$success++;
-							}
-						} elseif ($holdType == 'overdrive') {
-							require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
-							$driver = new OverDriveDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
-							if (!empty($tmpResult['success'])) {
-								$success++;
-							}
-						} elseif ($holdType == 'cloud_library') {
-							require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-							$driver = new CloudLibraryDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
-							if (!empty($tmpResult['success'])) {
-								$success++;
-							}
-						} elseif ($holdType == 'hoopla') {
-							require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
-							$driver = new HooplaDriver();
-							$tmpResult = $driver->cancelHold($user, $recordId);
-							if (!empty($tmpResult['success'])) {
-								$success++;
-							}
-						}
-
-						$message = '<div class="alert alert-success">' . translate([
-								'text' => '%1% of %2% holds were cancelled',
-								1 => $success,
-								2 => $total,
-								'isPublicFacing' => true,
-								'inAttribute' => true,
-							]) . '</div>';
-						$tmpResult['message'] = $message;
-						$tmpResult['title'] = translate([
-							'text' => 'Success',
-							'isPublicFacing' => true,
-						]);
 					}
+					if ($holdType == 'ils') {
+						$tmpResult = $patronOwningHold->cancelHold($recordId, $cancelId, $isIll);
+						if (!empty($tmpResult['success'])) {
+							$success++;
+						}
+					} elseif ($holdType == 'axis360') {
+						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
+						$driver = new Axis360Driver();
+						$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
+						if (!empty($tmpResult['success'])) {
+							$success++;
+						}
+					} elseif ($holdType == 'overdrive') {
+						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
+						$driver = new OverDriveDriver();
+						$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
+						if (!empty($tmpResult['success'])) {
+							$success++;
+						}
+					} elseif ($holdType == 'cloud_library') {
+						require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+						$driver = new CloudLibraryDriver();
+						$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
+						if (!empty($tmpResult['success'])) {
+							$success++;
+						}
+					} elseif ($holdType == 'hoopla') {
+						require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
+						$driver = new HooplaDriver();
+						$tmpResult = $driver->cancelHold($patronOwningHold, $recordId);
+						if (!empty($tmpResult['success'])) {
+							$success++;
+						}
+					}
+
+					$message = '<div class="alert alert-success">' . translate([
+							'text' => '%1% of %2% holds were cancelled',
+							1 => $success,
+							2 => $total,
+							'isPublicFacing' => true,
+							'inAttribute' => true,
+						]) . '</div>';
+					$tmpResult['message'] = $message;
+					$tmpResult['title'] = translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+					]);
 				}
-			} else {
-				$tmpResult['message'] = translate([
-					'text' => 'No holds were selected to canceled',
-					'isPublicFacing' => true,
-					'inAttribute' => true,
-				]);
 			}
+		} else {
+			$tmpResult['message'] = translate([
+				'text' => 'No holds were selected to canceled',
+				'isPublicFacing' => true,
+				'inAttribute' => true,
+			]);
 		}
 
 		return $tmpResult;
@@ -828,42 +601,30 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function cancelVdxRequest(): array {
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Error cancelling request.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser(null, 'You must be logged in to cancel a request.  Please close this dialog and login again.');
+		$result = $this->failureResult(null, 'Error cancelling request.');
 
-		if (!UserAccount::isLoggedIn()) {
+		//Determine which user the request is on so we can cancel it.
+		$patronId = $_REQUEST['patronId'];
+		$user = UserAccount::getLoggedInUser();
+		$patronOwningHold = $user->getUserReferredTo($patronId);
+
+		if ($patronOwningHold === false) {
 			$result['message'] = translate([
-				'text' => 'You must be logged in to cancel a request.  Please close this dialog and login again.',
+				'text' => 'Sorry, you do not have access to cancel requests for the supplied user.',
 				'isPublicFacing' => true,
-			]);;
+			]);
 		} else {
-			//Determine which user the request is on so we can cancel it.
-			$patronId = $_REQUEST['patronId'];
-			$user = UserAccount::getLoggedInUser();
-			$patronOwningHold = $user->getUserReferredTo($patronId);
-
-			if ($patronOwningHold == false) {
+			//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
+			if (empty($_REQUEST['requestId']) || !isset($_REQUEST['cancelId'])) {
 				$result['message'] = translate([
-					'text' => 'Sorry, you do not have access to cancel requests for the supplied user.',
+					'text' => 'Information about the requests to be cancelled was not provided.',
 					'isPublicFacing' => true,
-				]);;
+				]);
 			} else {
-				//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
-				if (empty($_REQUEST['requestId']) || !isset($_REQUEST['cancelId'])) {
-					$result['message'] = translate([
-						'text' => 'Information about the requests to be cancelled was not provided.',
-						'isPublicFacing' => true,
-					]);;
-				} else {
-					$requestId = $_REQUEST['requestId'];
-					$cancelId = $_REQUEST['cancelId'];
-					$result = $patronOwningHold->cancelVdxRequest($requestId, $cancelId);
-				}
+				$requestId = $_REQUEST['requestId'];
+				$cancelId = $_REQUEST['cancelId'];
+				$result = $patronOwningHold->cancelVdxRequest($requestId, $cancelId);
 			}
 		}
 
@@ -872,6 +633,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmCancelHoldAll(): array {
+		$this->requireLoggedInUser();
+
 		$cancelButtonLabel = translate([
 			'text' => 'Confirm Cancel Holds',
 			'isPublicFacing' => true,
@@ -889,91 +652,75 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function cancelAllHolds() {
-		$tmpResult = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true
-			]),
-			'message' => translate([
-				'text' => 'Unable to cancel all holds',
-				'isPublicFacing' => true
-			]),
-		];
+	/** @noinspection PhpUnused */
+	function cancelAllHolds() : array {
+		$this->requireLoggedInUser();
+		$tmpResult = $this->failureResult('Error', 'Unable to cancel all holds');
 		$user = UserAccount::getLoggedInUser();
-		if ($user) {
-			$allHolds = $user->getHolds(true, 'sortTitle', 'expire', 'all');
-			$allUnavailableHolds = $allHolds['unavailable'];
-			$total = count($allUnavailableHolds);
-			$success = 0;
 
-			/** Hold $hold **/
-			foreach ($allUnavailableHolds as $hold) {
-				// cancel each hold
-				$recordId = $hold->sourceId;
-				$cancelId = $hold->cancelId;
-				$holdType = $hold->source;
-				$isIll = $hold->isIll;
-				$patronId = $hold->patronId ?? $user->id;
-				$patron = $user->getUserReferredTo($patronId);
-				if ($patron && $hold->cancelable) {
-					if ($holdType == 'ils') {
-						$tmpResult = $user->cancelHold($recordId, $cancelId, $isIll);
-						if ($tmpResult['success']) {
-							$success++;
-						}
-					} elseif ($holdType == 'axis360') {
-						require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
-						$driver = new Axis360Driver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
-						if ($tmpResult['success']) {
-							$success++;
-						}
-					} elseif ($holdType == 'overdrive') {
-						require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
-						$driver = new OverDriveDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
-						if ($tmpResult['success']) {
-							$success++;
-						}
-					} elseif ($holdType == 'cloud_library') {
-						require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-						$driver = new CloudLibraryDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
-						if ($tmpResult['success']) {
-							$success++;
-						}
-					} elseif ($holdType == 'hoopla') {
-						require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
-						$driver = new HooplaDriver();
-						$tmpResult = $driver->cancelHold($user, $recordId);
-						if ($tmpResult['success']) {
-							$success++;
-						}
+		$allHolds = $user->getHolds();
+		$allUnavailableHolds = $allHolds['unavailable'];
+		$total = count($allUnavailableHolds);
+		$success = 0;
+
+		/** Hold $hold **/
+		foreach ($allUnavailableHolds as $hold) {
+			// cancel each hold
+			$recordId = $hold->sourceId;
+			$cancelId = $hold->cancelId;
+			$holdType = $hold->source;
+			$isIll = $hold->isIll;
+			$patron = $user->getUserReferredTo($hold->userId);
+			if ($patron && $hold->cancelable) {
+				if ($holdType == 'ils') {
+					$tmpResult = $patron->cancelHold($recordId, $cancelId, $isIll);
+					if ($tmpResult['success']) {
+						$success++;
+					}
+				} elseif ($holdType == 'axis360') {
+					require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
+					$driver = new Axis360Driver();
+					$tmpResult = $driver->cancelHold($patron, $recordId);
+					if ($tmpResult['success']) {
+						$success++;
+					}
+				} elseif ($holdType == 'overdrive') {
+					require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
+					$driver = new OverDriveDriver();
+					$tmpResult = $driver->cancelHold($patron, $recordId);
+					if ($tmpResult['success']) {
+						$success++;
+					}
+				} elseif ($holdType == 'cloud_library') {
+					require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+					$driver = new CloudLibraryDriver();
+					$tmpResult = $driver->cancelHold($patron, $recordId);
+					if ($tmpResult['success']) {
+						$success++;
+					}
+				} elseif ($holdType == 'hoopla') {
+					require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
+					$driver = new HooplaDriver();
+					$tmpResult = $driver->cancelHold($patron, $recordId);
+					if ($tmpResult['success']) {
+						$success++;
 					}
 				}
-
-				$message = '<div class="alert alert-success">' . translate([
-						'text' => '%1% of %2% holds were canceled',
-						1 => $success,
-						2 => $total,
-						'isPublicFacing' => true,
-						'inAttribute' => true,
-					]) . '</div>';
-				$tmpResult['message'] = $message;
-				$tmpResult['title'] = translate([
-					'text' => 'Success',
-					'isPublicFacing' => true
-				]);
-
 			}
-		} else {
-			$tmpResult['message'] = translate([
-				'text' => 'You must be logged in to cancel holds',
-				'isPublicFacing' => true,
-				'inAttribute' => true,
+
+			$message = '<div class="alert alert-success">' . translate([
+					'text' => '%1% of %2% holds were canceled',
+					1 => $success,
+					2 => $total,
+					'isPublicFacing' => true,
+					'inAttribute' => true,
+				]) . '</div>';
+			$tmpResult['message'] = $message;
+			$tmpResult['title'] = translate([
+				'text' => 'Success',
+				'isPublicFacing' => true
 			]);
+
 		}
 
 		return $tmpResult;
@@ -981,6 +728,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmReplaceHold(): array {
+		$this->requireLoggedInUser();
 		global $library;
 		$user = UserAccount::getLoggedInUser();
 		$bypassPickupChoice = false;
@@ -1021,80 +769,76 @@ class MyAccount_AJAX extends JSON_Action {
 
 		if (!$bypassPickupChoice) {
 			global $interface;
-			/** @var $interface UInterface
-			 * @var $user User
-			 */
-			if (UserAccount::isLoggedIn()) {
-				$patronOwningHold = $user->getUserReferredTo($patronId);
-				$defaultPickupLocation = $user->pickupLocationId;
-				$sourceId = 'ils:' . $_REQUEST['recordId'];
 
-				$location = new Location();
-				$pickupBranches = $location->getPickupBranches($patronOwningHold);
-				$pickupSublocations = [];
+			$patronOwningHold = $user->getUserReferredTo($patronId);
+			$defaultPickupLocation = $user->pickupLocationId;
+			$sourceId = 'ils:' . $_REQUEST['recordId'];
 
-				$pickupAt = 0;
-				require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-				$marcRecord = new MarcRecordDriver($sourceId);
-				if ($marcRecord->isValid()) {
-					$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
-					$pickupAt = $relatedRecord->getHoldPickupSetting();
-					if ($pickupAt > 0) {
-						$itemLocations = $marcRecord->getValidPickupLocations($pickupAt);
-						foreach ($pickupBranches as $locationKey => $location) {
-							if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
-								unset($pickupBranches[$locationKey]);
-							}
-						}
-					}
+			$location = new Location();
+			$pickupBranches = $location->getPickupBranches($patronOwningHold);
+			$pickupSublocations = [];
 
+			$pickupAt = 0;
+			require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
+			$marcRecord = new MarcRecordDriver($sourceId);
+			if ($marcRecord->isValid()) {
+				$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
+				$pickupAt = $relatedRecord->getHoldPickupSetting();
+				if ($pickupAt > 0) {
+					$itemLocations = $marcRecord->getValidPickupLocations($pickupAt);
 					foreach ($pickupBranches as $locationKey => $location) {
-						if (is_object($location)) {
-							$pickupSublocations[$locationKey] = $user->getValidSublocations($location->locationId);
-						}
-					}
-
-					$catalogDriver = $user->getCatalogDriver();
-					if (!empty($catalogDriver) && $catalogDriver->restrictValidPickupLocationsForRecordByILS()) {
-						$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
-						if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
-							$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
-							$pickupBranches = array_filter($pickupBranches, function ($location) use ($validLocationCodesFromILS) {
-								if (!is_object($location)) {
-									return true;
-								}
-								foreach ($validLocationCodesFromILS as $validCode) {
-									if (str_starts_with($validCode, $location->code)) {
-										return true;
-									}
-								}
-								return false;
-							});
-						} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
-							$pickupBranches = [];
+						if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
+							unset($pickupBranches[$locationKey]);
 						}
 					}
 				}
 
-				$interface->assign('patronId', $patronId);
-				$interface->assign('defaultPickupLocation', $defaultPickupLocation);
-				$interface->assign('pickupAt', $pickupAt);
-				$interface->assign('pickupLocations', $pickupBranches);
-				$interface->assign('pickupSublocations', $pickupSublocations);
-				$pickupLocationId = null;
+				foreach ($pickupBranches as $locationKey => $location) {
+					if (is_object($location)) {
+						$pickupSublocations[$locationKey] = $user->getValidSublocations($location->locationId);
+					}
+				}
 
-				return [
-					'title' => translate([
-						'text' => 'Place Hold',
-						'isPublicFacing' => true,
-					]),
-					'modalBody' => $interface->fetch("MyAccount/replaceHoldForm.tpl"),
-					'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\");'>" . translate([
-							'text' => 'Confirm Pickup Location',
-							'isPublicFacing' => true,
-						]) . '</button>',
-				];
+				$catalogDriver = $user->getCatalogDriver();
+				if (!empty($catalogDriver) && $catalogDriver->restrictValidPickupLocationsForRecordByILS()) {
+					$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
+					if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
+						$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
+						$pickupBranches = array_filter($pickupBranches, function ($location) use ($validLocationCodesFromILS) {
+							if (!is_object($location)) {
+								return true;
+							}
+							foreach ($validLocationCodesFromILS as $validCode) {
+								if (str_starts_with($validCode, $location->code)) {
+									return true;
+								}
+							}
+							return false;
+						});
+					} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
+						$pickupBranches = [];
+					}
+				}
 			}
+
+			$interface->assign('patronId', $patronId);
+			$interface->assign('defaultPickupLocation', $defaultPickupLocation);
+			$interface->assign('pickupAt', $pickupAt);
+			$interface->assign('pickupLocations', $pickupBranches);
+			$interface->assign('pickupSublocations', $pickupSublocations);
+			$pickupLocationId = null;
+
+			return [
+				'title' => translate([
+					'text' => 'Place Hold',
+					'isPublicFacing' => true,
+				]),
+				'modalBody' => $interface->fetch("MyAccount/replaceHoldForm.tpl"),
+				'modalButtons' => "<button type='button' class='tool btn btn-primary' onclick='AspenDiscovery.Account.replaceHold(\"$patronId\", \"$recordId\", \"$pickupLocationId\", \"$isIll\");'>" . translate([
+						'text' => 'Confirm Pickup Location',
+						'isPublicFacing' => true,
+					]) . '</button>',
+			];
 		}
 		return [
 			'title' => translate([
@@ -1111,47 +855,31 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function replaceHold(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Replacing hold failed',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Error replacing hold.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser(null, 'You must be logged in to replace a hold.  Please close this dialog and login again.');
+		$result = $this->failureResult('Replacing hold failed', 'Error replacing hold.');
 
-		if (!UserAccount::isLoggedIn()) {
+		//Determine which user the hold is on so we can cancel it.
+		$patronId = $_REQUEST['patronId'];
+		$user = UserAccount::getLoggedInUser();
+		$patronOwningHold = $user->getUserReferredTo($patronId);
+
+		if ($patronOwningHold === false) {
 			$result['message'] = translate([
-				'text' => 'You must be logged in to replace a hold.  Please close this dialog and login again.',
+				'text' => 'Sorry, you do not have access to replace holds for the supplied user.',
 				'isPublicFacing' => true,
-			]);;
+			]);
 		} else {
-			//Determine which user the hold is on so we can cancel it.
-			$patronId = $_REQUEST['patronId'];
-			$user = UserAccount::getLoggedInUser();
-			$patronOwningHold = $user->getUserReferredTo($patronId);
-
-			if ($patronOwningHold === false) {
+			//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
+			if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
 				$result['message'] = translate([
-					'text' => 'Sorry, you do not have access to replace holds for the supplied user.',
+					'text' => 'Information about the hold to be replace was not provided.',
 					'isPublicFacing' => true,
-				]);;
+				]);
 			} else {
-				//MDN 9/20/2015 The recordId can be empty for INN-Reach holds
-				if (empty($_REQUEST['cancelId']) && empty($_REQUEST['recordId'])) {
-					$result['message'] = translate([
-						'text' => 'Information about the hold to be replace was not provided.',
-						'isPublicFacing' => true,
-					]);;
-				} else {
-					$pickupLocationId = $_REQUEST['pickupLocationId'];
-					$recordId = $_REQUEST['recordId'];
-					$isIll = $_REQUEST['isIll'] ?? false;
-					$result = $patronOwningHold->placeHold($recordId, $pickupLocationId, $isIll);
-				}
+				$pickupLocationId = $_REQUEST['pickupLocationId'];
+				$recordId = $_REQUEST['recordId'];
+				$isIll = $_REQUEST['isIll'] ?? false;
+				$result = $patronOwningHold->placeHold($recordId, $pickupLocationId, $isIll);
 			}
 		}
 
@@ -1180,79 +908,70 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function freezeHold(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to freeze a hold.  Please close this dialog and login again.');
+		$this->checkRequiredParameters(['patronId']);
 		$user = UserAccount::getLoggedInUser();
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Error freezing hold.',
-				'isPublicFacing' => true,
-			]),
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true,
-			]),
-		];
-		if (!$user) {
+		$result = $this->failureResult(null, 'Error freezing hold.');
+		$patronId = $_REQUEST['patronId'];
+		$patronOwningHold = $user->getUserReferredTo($patronId);
+
+		if ($patronOwningHold === false) {
 			$result['message'] = translate([
-				'text' => 'You must be logged in to freeze a hold.  Please close this dialog and login again.',
+				'text' => 'Sorry, you do not have access to freeze holds for the supplied user.',
 				'isPublicFacing' => true,
 			]);
-		} elseif (!empty($_REQUEST['patronId'])) {
-			$patronId = $_REQUEST['patronId'];
-			$patronOwningHold = $user->getUserReferredTo($patronId);
-
-			if ($patronOwningHold == false) {
+		} else {
+			if (empty($_REQUEST['recordId']) || empty($_REQUEST['holdId'])) {
+				// We aren't getting all the expected data, so make a log entry & tell user.
+				global $logger;
+				$logger->log('Freeze Hold, no record or hold Id was passed in AJAX call.', Logger::LOG_ERROR);
 				$result['message'] = translate([
-					'text' => 'Sorry, you do not have access to freeze holds for the supplied user.',
+					'text' => 'Information about the hold to be frozen was not provided.',
 					'isPublicFacing' => true,
 				]);
 			} else {
-				if (empty($_REQUEST['recordId']) || empty($_REQUEST['holdId'])) {
-					// We aren't getting all the expected data, so make a log entry & tell user.
-					global $logger;
-					$logger->log('Freeze Hold, no record or hold Id was passed in AJAX call.', Logger::LOG_ERROR);
-					$result['message'] = translate([
-						'text' => 'Information about the hold to be frozen was not provided.',
-						'isPublicFacing' => true,
-					]);
-				} else {
-					$recordId = $_REQUEST['recordId'];
-					$holdId = $_REQUEST['holdId'];
-					$reactivationDate = isset($_REQUEST['reactivationDate']) ? $_REQUEST['reactivationDate'] : null;
-					$result = $patronOwningHold->freezeHold($recordId, $holdId, $reactivationDate);
-					if ($result['success']) {
-						$message = '<div class="alert alert-success">' . $result['message'] . '</div>';
-						$result['message'] = $message;
-						$result['title'] = translate([
-							'text' => 'Success',
-							'isPublicFacing' => true,
-						]);
-					} else {
-						$message = '<div class="alert alert-danger">' . $result['message'] . '</div>';
-						$result['message'] = $message;
-						$result['title'] = translate([
+				$recordId = $_REQUEST['recordId'];
+				$holdId = $_REQUEST['holdId'];
+				$reactivationDate = $_REQUEST['reactivationDate'] ?? null;
+
+				if ($_REQUEST['isAlreadyFrozen'] === 'true') {
+					// If we get here, we are updating the reactivation date, so we thaw the hold and freeze it again.
+					$thawResult = $patronOwningHold->thawHold($recordId, $holdId);
+					if (!$thawResult['success']) {
+						$message = '<div class="alert alert-danger">' . $thawResult['message'] . '</div>';
+						$thawResult['message'] = $message;
+						$thawResult['title'] = translate([
 							'text' => 'Error',
 							'isPublicFacing' => true,
 						]);
+						return $thawResult;
 					}
+				}
 
-					if (!$result['success'] && is_array($result['message'])) {
+				$result = $patronOwningHold->freezeHold($recordId, $holdId, $reactivationDate);
+				if ($result['success']) {
+					$message = '<div class="alert alert-success">' . $result['message'] . '</div>';
+					$result['message'] = $message;
+					$result['title'] = translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+					]);
+				} else {
+					if (is_array($result['message'])) {
 						/** @var string[] $messageArray */
 						$messageArray = $result['message'];
 						$result['message'] = implode('; ', $messageArray);
 						// Millennium Holds assumes there can be more than one item processed. Here we know only one got processed,
 						// but do implode as a fallback
 					}
+					$message = '<div class="alert alert-danger">' . $result['message'] . '</div>';
+					$result['message'] = $message;
+					$result['title'] = translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]);
 				}
 			}
-		} else {
-			// We aren't getting all the expected data, so make a log entry & tell user.
-			global $logger;
-			$logger->log('Freeze Hold, no patron Id was passed in AJAX call.', Logger::LOG_ERROR);
-			$result['message'] = translate([
-				'text' => 'No Patron was specified.',
-				'isPublicFacing' => true,
-			]);
 		}
 
 		return $result;
@@ -1260,6 +979,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmFreezeHoldSelected(): array {
+		$this->requireLoggedInUser();
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
@@ -1300,127 +1020,110 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function freezeHoldSelectedItems() {
+	/** @noinspection PhpUnused */
+	function freezeHoldSelectedItems() : array {
+		$this->requireLoggedInUser();
 		$user = UserAccount::getLoggedInUser();
-		$tmpResult = [ // set default response
-			'success' => false,
-			'message' => translate([
-				'text' => 'Error freezing hold.',
-				'isPublicFacing' => true,
-			]),
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true,
-			]),
-		];
+		$tmpResult = $this->failureResult(null, 'Error freezing hold.');
 
-		if (!UserAccount::isLoggedIn()) {
-			$tmpResult['message'] = translate([
-				'text' => 'You must be logged in to freeze a hold.  Please close this dialog and login again.',
-				'isPublicFacing' => true,
-			]);
-		} else {
-			$reactivationDate = isset($_REQUEST['reactivationDate']) ? $_REQUEST['reactivationDate'] : null;
-			$user = UserAccount::getLoggedInUser();
-			$allHolds = $user->getHolds(true, 'sortTitle', 'expire', 'all');
-			$allUnavailableHolds = $allHolds['unavailable'];
-			$success = 0;
-			$failed = 0;
-			if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
-				$total = count($_REQUEST['selected']);
-				foreach ($_REQUEST['selected'] as $selected => $ignore) {
-					@list($patronId, $recordId, $holdId) = explode('|', $selected);
-					$patronOwningHold = $user->getUserReferredTo($patronId);
-					if ($patronOwningHold == false) {
-						$tmpResult = [
-							'success' => false,
-							'message' => translate([
-								'text' => 'Sorry, it looks like you don\'t have access to that patron.',
-								'isPublicFacing' => true,
-								'inAttribute' => true,
-							]),
-						];
-					} else {
-						foreach ($allUnavailableHolds as $key) {
-							if ($key->sourceId == $recordId) {
-								$holdType = $key->source;
-								$frozen = $key->frozen;
-								$canFreeze = $key->canFreeze;
-								break;
-							}
+		$reactivationDate = $_REQUEST['reactivationDate'] ?? null;
+		$user = UserAccount::getLoggedInUser();
+		$allHolds = $user->getHolds();
+		$allUnavailableHolds = $allHolds['unavailable'];
+		$success = 0;
+		$failed = 0;
+		if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
+			$total = count($_REQUEST['selected']);
+			foreach ($_REQUEST['selected'] as $selected => $ignore) {
+				@list($patronId, $recordId, $holdId) = explode('|', $selected);
+				$patronOwningHold = $user->getUserReferredTo($patronId);
+				if ($patronOwningHold === false) {
+					$tmpResult = [
+						'success' => false,
+						'message' => translate([
+							'text' => 'Sorry, it looks like you don\'t have access to that patron.',
+							'isPublicFacing' => true,
+							'inAttribute' => true,
+						]),
+					];
+				} else {
+					$frozen = 0;
+					$canFreeze = 0;
+					$holdType = 'unknown';
+					foreach ($allUnavailableHolds as $key) {
+						if ($key->sourceId == $recordId) {
+							$holdType = $key->source;
+							$frozen = $key->frozen;
+							$canFreeze = $key->canFreeze;
+							break;
 						}
-						if ($frozen != 1 && $canFreeze == 1) {
-							if ($holdType == 'ils') {
-								$tmpResult = $patronOwningHold->freezeHold($recordId, $holdId, $reactivationDate);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
-							} elseif ($holdType == 'axis360') {
-								require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
-								$driver = new Axis360Driver();
-								$tmpResult = $driver->freezeHold($patronOwningHold, $recordId);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
-							} elseif ($holdType == 'overdrive') {
-								require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
-								$driver = new OverDriveDriver();
-								$tmpResult = $driver->freezeHold($patronOwningHold, $recordId, $reactivationDate);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
-								//cloudLibrary holds can't be frozen
-//							} else if ($holdType == 'cloud_library') {
-//								require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-//								$driver = new CloudLibraryDriver();
-//								$tmpResult = $driver->freezeHold($user, $recordId);
-//								if($tmpResult['success']){$success++;}else{$failed++;}
+					}
+					if ($frozen != 1 && $canFreeze == 1) {
+						if ($holdType == 'ils') {
+							$tmpResult = $patronOwningHold->freezeHold($recordId, $holdId, $reactivationDate);
+							if ($tmpResult['success']) {
+								$success++;
 							} else {
 								$failed++;
 							}
-						} else {
-							if ($canFreeze == 0) {
-								$failed++;
-							} elseif ($frozen == 1) {
+						} elseif ($holdType == 'axis360') {
+							require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
+							$driver = new Axis360Driver();
+							$tmpResult = $driver->freezeHold($patronOwningHold, $recordId);
+							if ($tmpResult['success']) {
+								$success++;
+							} else {
 								$failed++;
 							}
-						}
-
-						if ($success == 0) {
-							$alertStatus = 'alert-danger';
-						} else if ($success != $total) {
-							$alertStatus = 'alert-warning';
+						} elseif ($holdType == 'overdrive') {
+							require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
+							$driver = new OverDriveDriver();
+							$tmpResult = $driver->freezeHold($patronOwningHold, $recordId);
+							if ($tmpResult['success']) {
+								$success++;
+							} else {
+								$failed++;
+							}
+							//cloudLibrary holds can't be frozen
 						} else {
-							$alertStatus = 'alert-success';
+							$failed++;
 						}
-						$message = '<div class="alert ' . $alertStatus . '">' . translate([
-								'text' => '%1% of %2% holds were frozen',
-								1 => $success,
-								2 => $total,
-								'isPublicFacing' => true,
-								'inAttribute' => true,
-							]) . '</div>';
-						$tmpResult['message'] = $message;
-						$tmpResult['title'] = translate([
-							'text' => 'Your results',
-							'isPublicFacing' => true,
-						]);
-
+					} else {
+						if ($canFreeze == 0) {
+							$failed++;
+						} elseif ($frozen == 1) {
+							$failed++;
+						}
 					}
+
+					if ($success == 0) {
+						$alertStatus = 'alert-danger';
+					} else if ($success != $total) {
+						$alertStatus = 'alert-warning';
+					} else {
+						$alertStatus = 'alert-success';
+					}
+					$message = '<div class="alert ' . $alertStatus . '">' . translate([
+							'text' => '%1% of %2% holds were frozen',
+							1 => $success,
+							2 => $total,
+							'isPublicFacing' => true,
+							'inAttribute' => true,
+						]) . '</div>';
+					$tmpResult['message'] = $message;
+					$tmpResult['title'] = translate([
+						'text' => 'Your results',
+						'isPublicFacing' => true,
+					]);
+
 				}
-			} else {
-				$tmpResult['message'] = translate([
-					'text' => 'No holds were selected to freeze',
-					'isPublicFacing' => true,
-					'inAttribute' => true,
-				]);
 			}
+		} else {
+			$tmpResult['message'] = translate([
+				'text' => 'No holds were selected to freeze',
+				'isPublicFacing' => true,
+				'inAttribute' => true,
+			]);
 		}
 
 		return $tmpResult;
@@ -1428,6 +1131,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmFreezeHoldAll(): array {
+		$this->requireLoggedInUser();
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$freezeButtonLabel = translate([
@@ -1464,7 +1168,9 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function freezeHoldAll() {
+	/** @noinspection PhpUnused */
+	function freezeHoldAll() : array {
+		$this->requireLoggedInUser();
 		$user = UserAccount::getLoggedInUser();
 		$tmpResult['title'] = translate([
 			'text' => 'Error',
@@ -1474,13 +1180,8 @@ class MyAccount_AJAX extends JSON_Action {
 			'text' => 'Error freezing hold.',
 			'isPublicFacing' => true,
 		]);
-		if (!$user) {
-			$tmpResult['message'] = translate([
-				'text' => 'You must be logged in to modify a hold.  Please close this dialog and login again.',
-				'isPublicFacing' => true,
-			]);
-		} elseif (!empty($_REQUEST['patronId'])) {
-			$reactivationDate = isset($_REQUEST['reactivationDate']) ? $_REQUEST['reactivationDate'] : false;
+		if (!empty($_REQUEST['patronId'])) {
+			$reactivationDate = $_REQUEST['reactivationDate'] ?? false;
 			$tmpResult = $user->freezeAllHolds($reactivationDate);
 		} else {
 			// We aren't getting all the expected data, so make a log entry & tell user.
@@ -1494,30 +1195,17 @@ class MyAccount_AJAX extends JSON_Action {
 		return $tmpResult;
 	}
 
+	/** @noinspection PhpUnused */
 	function thawHold(): array {
+		$this->requireLoggedInUser();
 		$user = UserAccount::getLoggedInUser();
-		$result = [ // set default response
-			'success' => false,
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Error thawing hold.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$result = $this->failureResult(null, 'Error thawing hold.');
 
-		if (!$user) {
-			$result['message'] = translate([
-				'text' => 'You must be logged in to thaw a hold.  Please close this dialog and login again.',
-				'isPublicFacing' => true,
-			]);
-		} elseif (!empty($_REQUEST['patronId'])) {
+		if (!empty($_REQUEST['patronId'])) {
 			$patronId = $_REQUEST['patronId'];
 			$patronOwningHold = $user->getUserReferredTo($patronId);
 
-			if ($patronOwningHold == false) {
+			if ($patronOwningHold === false) {
 				$result['message'] = translate([
 					'text' => 'Sorry, you do not have access to thaw holds for the supplied user.',
 					'isPublicFacing' => true,
@@ -1553,6 +1241,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmThawHoldSelected(): array {
+		$this->requireLoggedInUser();
+
 		$patronId = $_REQUEST['patronId'];
 		$recordId = $_REQUEST['recordId'];
 		$holdId = $_REQUEST['holdId'];
@@ -1574,120 +1264,98 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function thawHoldSelectedItems() {
-		$result = [ // set default response
-			'success' => false,
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Error thawing hold.',
-				'isPublicFacing' => true,
-			]),
-		];
+	function thawHoldSelectedItems(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to thaw a hold.  Please close this dialog and login again.');
+		$tmpResult = [];
 
-		if (!UserAccount::isLoggedIn()) {
-			$result['message'] = translate([
-				'text' => 'You must be logged in to thaw a hold.  Please close this dialog and login again.',
-				'isPublicFacing' => true,
-			]);
-		} else {
-			$success = 0;
-			$failed = 0;
-			$user = UserAccount::getLoggedInUser();
-			$allHolds = $user->getHolds(true, 'sortTitle', 'expire', 'all');
-			$allUnavailableHolds = $allHolds['unavailable'];
-			if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
-				$total = count($_REQUEST['selected']);
-				foreach ($_REQUEST['selected'] as $selected => $ignore) {
-					@list($patronId, $recordId, $holdId) = explode('|', $selected);
-					$patronOwningHold = $user->getUserReferredTo($patronId);
-					if ($patronOwningHold == false) {
-						$tmpResult = [
-							'success' => false,
-							'message' => translate([
-								'text' => 'Sorry, it looks like you don\'t have access to that patron.',
-								'isPublicFacing' => true,
-							]),
-						];
-					} else {
-						foreach ($allUnavailableHolds as $key) {
-							if ($key->sourceId == $recordId) {
-								$holdType = $key->source;
-								$frozen = $key->frozen;
-								$canFreeze = $key->canFreeze;
-								break;
-							}
+		$success = 0;
+		$failed = 0;
+		$user = UserAccount::getLoggedInUser();
+		$allHolds = $user->getHolds();
+		$allUnavailableHolds = $allHolds['unavailable'];
+		if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
+			$total = count($_REQUEST['selected']);
+			foreach ($_REQUEST['selected'] as $selected => $ignore) {
+				@list($patronId, $recordId, $holdId) = explode('|', $selected);
+				$patronOwningHold = $user->getUserReferredTo($patronId);
+				if ($patronOwningHold === false) {
+					$tmpResult = [
+						'success' => false,
+						'message' => translate([
+							'text' => 'Sorry, it looks like you don\'t have access to that patron.',
+							'isPublicFacing' => true,
+						]),
+					];
+				} else {
+					$frozen = 0;
+					$canFreeze = 0;
+					$holdType = 'unknown';
+					foreach ($allUnavailableHolds as $key) {
+						if ($key->sourceId == $recordId) {
+							$holdType = $key->source;
+							$frozen = $key->frozen;
+							$canFreeze = $key->canFreeze;
+							break;
 						}
-						if ($frozen != 0 && $canFreeze == 1) {
-							if ($holdType == 'ils') {
-								$tmpResult = $user->thawHold($recordId, $holdId);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
-							} elseif ($holdType == 'axis360') {
-								require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
-								$driver = new Axis360Driver();
-								$tmpResult = $driver->thawHold($user, $recordId);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
-							} elseif ($holdType == 'overdrive') {
-								require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
-								$driver = new OverDriveDriver();
-								$tmpResult = $driver->thawHold($user, $recordId);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
-							} elseif ($holdType == 'cloud_library') {
-								require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-								$driver = new CloudLibraryDriver();
-								$tmpResult = $driver->thawHold($user, $recordId);
-								if ($tmpResult['success']) {
-									$success++;
-								} else {
-									$failed++;
-								}
+					}
+					if ($frozen != 0 && $canFreeze == 1) {
+						if ($holdType == 'ils') {
+							$tmpResult = $patronOwningHold->thawHold($recordId, $holdId);
+							if ($tmpResult['success']) {
+								$success++;
 							} else {
 								$failed++;
 							}
-						}
-
-						if ($success == 0) {
-							$alertStatus = 'alert-danger';
-						} else if ($success != $total) {
-							$alertStatus = 'alert-warning';
+						} elseif ($holdType == 'axis360') {
+							require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
+							$driver = new Axis360Driver();
+							$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
+							if ($tmpResult['success']) {
+								$success++;
+							} else {
+								$failed++;
+							}
+						} elseif ($holdType == 'overdrive') {
+							require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
+							$driver = new OverDriveDriver();
+							$tmpResult = $driver->thawHold($patronOwningHold, $recordId);
+							if ($tmpResult['success']) {
+								$success++;
+							} else {
+								$failed++;
+							}
 						} else {
-							$alertStatus = 'alert-success';
+							$failed++;
 						}
-						$message = '<div class="alert ' . $alertStatus . '">' . translate([
-								'text' => '%1% of %2% holds were thawed',
-								1 => $success,
-								2 => $total,
-								'isPublicFacing' => true,
-								'inAttribute' => true,
-							]) . '</div>';
-						$tmpResult['message'] = $message;
-						$tmpResult['title'] = translate([
-							'text' => 'Your results',
-							'isPublicFacing' => true,
-						]);
 					}
+
+					if ($success == 0) {
+						$alertStatus = 'alert-danger';
+					} else if ($success != $total) {
+						$alertStatus = 'alert-warning';
+					} else {
+						$alertStatus = 'alert-success';
+					}
+					$message = '<div class="alert ' . $alertStatus . '">' . translate([
+							'text' => '%1% of %2% holds were thawed',
+							1 => $success,
+							2 => $total,
+							'isPublicFacing' => true,
+							'inAttribute' => true,
+						]) . '</div>';
+					$tmpResult['message'] = $message;
+					$tmpResult['title'] = translate([
+						'text' => 'Your results',
+						'isPublicFacing' => true,
+					]);
 				}
-			} else {
-				$tmpResult['message'] = translate([
-					'text' => 'No holds were selected to thaw',
-					'isPublicFacing' => true,
-					'inAttribute' => true,
-				]);
 			}
+		} else {
+			$tmpResult['message'] = translate([
+				'text' => 'No holds were selected to thaw',
+				'isPublicFacing' => true,
+				'inAttribute' => true,
+			]);
 		}
 
 		return $tmpResult;
@@ -1695,6 +1363,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function confirmThawHoldAll(): array {
+		$this->requireLoggedInUser();
+
 		$patronId = $_REQUEST['patronId'];
 		$thawButtonLabel = translate([
 			'text' => 'Confirm Thaw Holds',
@@ -1713,19 +1383,16 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	function thawHoldAll() {
+	/** @noinspection PhpUnused */
+	function thawHoldAll() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to modify a hold.  Please close this dialog and login again.');
 		$tmpResult['title'] = translate([
 			'text' => 'Error',
 			'isPublicFacing' => true,
 		]);
 		$user = UserAccount::getLoggedInUser();
 
-		if (!$user) {
-			$tmpResult['message'] = translate([
-				'text' => 'You must be logged in to modify a hold.  Please close this dialog and login again.',
-				'isPublicFacing' => true,
-			]);
-		} elseif (!empty($_REQUEST['patronId'])) {
+		if (!empty($_REQUEST['patronId'])) {
 			$tmpResult = $user->thawAllHolds();
 
 		} else {
@@ -1739,212 +1406,200 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function addList() {
+	function addList() : array {
+		$this->requireLoggedInUser(null, "You must be logged in to create a list");
 		$return = [];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getLoggedInUser();
-			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-			$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
-			if (strlen(trim($title)) == 0) {
-				$return['success'] = "false";
-				$return['message'] = "You must provide a title for the list";
-			} else {
-				//If the record is not valid, skip the whole thing since the title could be bad too
-				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events' && $_REQUEST['source'] != 'CloudSource') {
-					$recordToAdd = urldecode($_REQUEST['sourceId']);
-					if (!preg_match("/^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}|[A-Z0-9_-]+:[A-Z0-9_-]+|\d+$/i", $recordToAdd)) {
-						$return['success'] = false;
-						$return['message'] = 'The recordId provided is not valid';
-						return $return;
-					}
-				}
-
-				$list = new UserList();
-				$list->title = strip_tags($title);
-				$list->user_id = $user->id;
-				$list->deleted = "0";
-				//Check to see if there is already a list with this id
-				$existingList = false;
-				if ($list->find(true)) {
-					$existingList = true;
-				}
-				if (isset($_REQUEST['desc'])) {
-					$desc = $_REQUEST['desc'];
-					if (is_array($desc)) {
-						$desc = reset($desc);
-					}
-				} else {
-					$desc = "";
-				}
-
-				$list->description = strip_tags(urldecode($desc));
-				$list->public = isset($_REQUEST['public']) && $_REQUEST['public'] == 'true';
-				$list->searchable = isset($_REQUEST['searchable']) && $_REQUEST['searchable'] == 'true';
-				$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && $_REQUEST['displayListAuthor'] == 'true';
-
-				$list->listGroupId = -1;
-				if (isset($_REQUEST['addToListGroupOption'])) {
-					$addToListGroupOption = $_REQUEST['addToListGroupOption'];
-					$addToListGroupNested = $_REQUEST['addToListGroupNested'] ?? 'none';
-					if ($addToListGroupOption == 'new') {
-						//Create a new list group
-						require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
-						$listGroup = new UserListGroup();
-						$listGroup->title = $_REQUEST['addToListGroupNewName'];
-						$listGroup->userId = $user->id;
-						if ($addToListGroupNested != 'none') {
-							$listGroup->parentGroupId = $addToListGroupNested;
-						}
-						$listGroup->insert();
-						$list->listGroupId = $listGroup->id;
-					} elseif ($addToListGroupOption == "existing" && is_numeric($addToListGroupNested)) {
-						//Add to an existing list group
-						$list->listGroupId = intval($addToListGroupNested);
-					}
-				}
-
-				if ($existingList) {
-					$list->update();
-				} else {
-					$list->insert();
-				}
-
-				$totalRecords = $list->numValidListItems();
-
-				if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId'])) {
-					$sourceId = urldecode($_REQUEST['sourceId']);
-					$source = urldecode($_REQUEST['source']);
-					require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
-					//Check to see if the user has already added the title to the list.
-					$userListEntry = new UserListEntry();
-					$userListEntry->listId = $list->id;
-					$userListEntry->source = $source;
-					$userListEntry->sourceId = $sourceId;
-					$userListEntry->weight = $totalRecords++;
-					if (!$userListEntry->find(true)) {
-						$userListEntry->dateAdded = time();
-						if ($userListEntry->source == 'GroupedWork') {
-							require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
-							$groupedWork = new GroupedWork();
-							$groupedWork->permanent_id = $userListEntry->sourceId;
-							if ($groupedWork->find(true)) {
-								$userListEntry->title = mb_substr($groupedWork->full_title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Lists') {
-							require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-							$list = new UserList();
-							$list->id = $userListEntry->sourceId;
-							if ($list->find(true)) {
-								$userListEntry->title = mb_substr($list->title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Events') {
-							if (preg_match('`^communico`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
-								$recordDriver = new CommunicoEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} elseif (preg_match('`^libcal`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
-								$recordDriver = new SpringshareLibCalEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} elseif (preg_match('`^assabet`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
-								$recordDriver = new AssabetEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} else {
-								require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
-								$recordDriver = new LibraryCalendarEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							}
-						} elseif ($userListEntry->source == 'OpenArchives') {
-							require_once ROOT_DIR . '/RecordDrivers/OpenArchivesRecordDriver.php';
-							$recordDriver = new OpenArchivesRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Genealogy') {
-							require_once ROOT_DIR . '/sys/Genealogy/Person.php';
-							$person = new Person();
-							$person->personId = $userListEntry->sourceId;
-							if ($person->find(true)) {
-								$userListEntry->title = mb_substr($person->firstName . $person->middleName . $person->lastName, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'EbscoEds') {
-							require_once ROOT_DIR . '/RecordDrivers/EbscoRecordDriver.php';
-							$recordDriver = new EbscoRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Ebscohost') {
-							require_once ROOT_DIR . '/RecordDrivers/EbscohostRecordDriver.php';
-							$recordDriver = new EbscohostRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Summon') {
-							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
-							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'CloudSource') {
-							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
-							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Gale') {
-							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
-							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						}
-						$userListEntry->insert();
-					}
-				}
-
-				$return['success'] = 'true';
-				$return['newId'] = $list->id;
-
-				$userObject = UserAccount::getActiveUserObj();
-				if ($userObject->lastListUsed != $list->id) {
-					$userObject->lastListUsed = $list->id;
-					$userObject->update();
-				}
-				if ($existingList) {
-					$return['message'] = "Updated list $list->title successfully";
-				} else {
-					$return['message'] = "Created list $list->title successfully";
+		$user = UserAccount::getLoggedInUser();
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
+		if (strlen(trim($title)) == 0) {
+			$return['success'] = "false";
+			$return['message'] = "You must provide a title for the list";
+		} else {
+			//If the record is not valid, skip the whole thing since the title could be bad too
+			if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId']) && $_REQUEST['source'] != 'Events' && $_REQUEST['source'] != 'CloudSource') {
+				$recordToAdd = urldecode($_REQUEST['sourceId']);
+				if (!preg_match("/^[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}|[A-Z0-9_-]+:[A-Z0-9_-]+|\d+$/i", $recordToAdd)) {
+					$return['success'] = false;
+					$return['message'] = 'The recordId provided is not valid';
+					return $return;
 				}
 			}
-		} else {
-			$return['success'] = "false";
-			$return['message'] = "You must be logged in to create a list";
+
+			$list = new UserList();
+			$list->title = strip_tags($title);
+			$list->user_id = $user->id;
+			$list->deleted = "0";
+			//Check to see if there is already a list with this id
+			$existingList = false;
+			if ($list->find(true)) {
+				$existingList = true;
+			}
+			if (isset($_REQUEST['desc'])) {
+				$desc = $_REQUEST['desc'];
+				if (is_array($desc)) {
+					$desc = reset($desc);
+				}
+			} else {
+				$desc = "";
+			}
+
+			$list->description = strip_tags(urldecode($desc));
+			$list->public = isset($_REQUEST['public']) && $_REQUEST['public'] == 'true';
+			if (UserAccount::userHasPermission('Include Lists In Search Results')) {
+				$list->searchable = isset($_REQUEST['searchable']) && $_REQUEST['searchable'] == 'true';
+				$list->displayListAuthor = isset($_REQUEST['displayListAuthor']) && $_REQUEST['displayListAuthor'] == 'true';
+				$list->customAuthorName = $_REQUEST['customAuthorName'] ?? '';
+			}
+
+			$list->listGroupId = -1;
+			if (isset($_REQUEST['addToListGroupOption'])) {
+				$addToListGroupOption = $_REQUEST['addToListGroupOption'];
+				$addToListGroupNested = $_REQUEST['addToListGroupNested'] ?? 'none';
+				if ($addToListGroupOption == 'new') {
+					//Create a new list group
+					require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+					$listGroup = new UserListGroup();
+					$listGroup->title = $_REQUEST['addToListGroupNewName'];
+					$listGroup->userId = $user->id;
+					if ($addToListGroupNested != 'none') {
+						$listGroup->parentGroupId = $addToListGroupNested;
+					}
+					$listGroup->insert();
+					$list->listGroupId = $listGroup->id;
+				} elseif ($addToListGroupOption == "existing" && is_numeric($addToListGroupNested)) {
+					//Add to an existing list group
+					$list->listGroupId = intval($addToListGroupNested);
+				}
+			}
+
+			if ($existingList) {
+				$list->update();
+			} else {
+				$list->insert();
+			}
+
+			$totalRecords = $list->numValidListItems();
+
+			if (!empty($_REQUEST['sourceId']) && !is_array($_REQUEST['sourceId'])) {
+				$sourceId = urldecode($_REQUEST['sourceId']);
+				$source = urldecode($_REQUEST['source']);
+				require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+				//Check to see if the user has already added the title to the list.
+				$userListEntry = new UserListEntry();
+				$userListEntry->listId = $list->id;
+				$userListEntry->source = $source;
+				$userListEntry->sourceId = $sourceId;
+				$userListEntry->weight = $totalRecords++;
+				if (!$userListEntry->find(true)) {
+					$userListEntry->dateAdded = time();
+					if ($userListEntry->source == 'GroupedWork') {
+						require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+						$groupedWork = new GroupedWork();
+						$groupedWork->permanent_id = $userListEntry->sourceId;
+						if ($groupedWork->find(true)) {
+							$userListEntry->title = mb_substr($groupedWork->full_title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'Lists') {
+						require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+						$list = new UserList();
+						$list->id = $userListEntry->sourceId;
+						if ($list->find(true)) {
+							$userListEntry->title = mb_substr($list->title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'Events') {
+						if (str_starts_with($userListEntry->sourceId, 'communico')) {
+							require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
+							$recordDriver = new CommunicoEventRecordDriver($userListEntry->sourceId);
+						} elseif (str_starts_with($userListEntry->sourceId, 'libcal')) {
+							require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
+							$recordDriver = new SpringshareLibCalEventRecordDriver($userListEntry->sourceId);
+						} elseif (str_starts_with($userListEntry->sourceId, 'assabet')) {
+							require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
+							$recordDriver = new AssabetEventRecordDriver($userListEntry->sourceId);
+						} else {
+							require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
+							$recordDriver = new LibraryCalendarEventRecordDriver($userListEntry->sourceId);
+						}
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'OpenArchives') {
+						require_once ROOT_DIR . '/RecordDrivers/OpenArchivesRecordDriver.php';
+						$recordDriver = new OpenArchivesRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'Genealogy') {
+						require_once ROOT_DIR . '/sys/Genealogy/Person.php';
+						$person = new Person();
+						$person->personId = $userListEntry->sourceId;
+						if ($person->find(true)) {
+							$userListEntry->title = mb_substr($person->firstName . $person->middleName . $person->lastName, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'EbscoEds') {
+						require_once ROOT_DIR . '/RecordDrivers/EbscoRecordDriver.php';
+						$recordDriver = new EbscoRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'Ebscohost') {
+						require_once ROOT_DIR . '/RecordDrivers/EbscohostRecordDriver.php';
+						$recordDriver = new EbscohostRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'Summon') {
+						require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
+						$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'CloudSource') {
+						require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+						$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif ($userListEntry->source == 'Gale') {
+						require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+						$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					}
+					$userListEntry->insert();
+				}
+			}
+
+			$return['success'] = 'true';
+			$return['newId'] = $list->id;
+
+			$userObject = UserAccount::getActiveUserObj();
+			if ($userObject->lastListUsed != $list->id) {
+				$userObject->lastListUsed = $list->id;
+				$userObject->update();
+			}
+			if ($existingList) {
+				$return['message'] = "Updated list $list->title successfully";
+			} else {
+				$return['message'] = "Created list $list->title successfully";
+			}
 		}
 
 		return $return;
 	}
 
 	/** @noinspection PhpUnused */
-	function getCreateListForm() {
+	function getCreateListForm() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 
 		if (isset($_REQUEST['sourceId'])) {
@@ -2019,17 +1674,11 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getLoginForm() {
+	function getLoginForm() : array {
 		global $interface;
 		global $library;
-		/** @var Location $locationSingleton */
-		global $locationSingleton;
+		/** @var Location $locationSingleton */ global $locationSingleton;
 		global $configArray;
-
-		$result = [
-			'success' => false,
-			'message' => 'Unable to load login form',
-		];
 
 		$isPrimaryAccountAuthenticationSSO = UserAccount::isPrimaryAccountAuthenticationSSO();
 		$interface->assign('isPrimaryAccountAuthenticationSSO', $isPrimaryAccountAuthenticationSSO);
@@ -2040,8 +1689,8 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($library->defaultRememberMe && !$locationSingleton->getOpacStatus()) {
 			$interface->assign('checkRememberMe', 1);
 		}
-		$interface->assign('usernameLabel', $library->loginFormUsernameLabel ? $library->loginFormUsernameLabel : 'Your Name');
-		$interface->assign('passwordLabel', $library->loginFormPasswordLabel ? $library->loginFormPasswordLabel : 'Library Card Number');
+		$interface->assign('usernameLabel', $library->loginFormUsernameLabel ?? 'Your Name');
+		$interface->assign('passwordLabel', $library->loginFormPasswordLabel ?? 'Library Card Number');
 
 		//SSO
 		$loginOptions = 0;
@@ -2230,7 +1879,12 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getMasqueradeAsForm() {
+	function getMasqueradeAsForm() : array {
+		$this->requireLoggedInUser();
+		$user = UserAccount::getLoggedInUser();
+		if (!$user->canMasquerade()) {
+			$this->failureResult("Error", "You do not have permissions to masquerade");
+		}
 		global $library;
 		global $interface;
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
@@ -2250,135 +1904,127 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function initiateMasquerade() {
+	function initiateMasquerade() : array {
+		$this->requireLoggedInUser();
 		require_once ROOT_DIR . '/services/MyAccount/Masquerade.php';
 		return MyAccount_Masquerade::initiateMasquerade();
 	}
 
 	/** @noinspection PhpUnused */
-	function endMasquerade() {
+	function endMasquerade() : array {
+		$this->requireLoggedInUser();
 		require_once ROOT_DIR . '/services/MyAccount/Masquerade.php';
 		return MyAccount_Masquerade::endMasquerade();
 	}
 
 	/** @noinspection PhpUnused */
-	function getChangeHoldLocationForm() : array {
+	function getChangeHoldLocationForm(): array {
+		$this->requireLoggedInUser(null, "You must be logged in.  Please close this dialog and login before changing your hold's pick-up location.");
 		global $interface;
-		/** @var $interface UInterface
-		 * @var $user User
-		 */
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getLoggedInUser();
-			$patronId = $_REQUEST['patronId'];
-			$interface->assign('patronId', $patronId);
-			$patronOwningHold = $user->getUserReferredTo($patronId);
+		$user = UserAccount::getLoggedInUser();
+		$patronId = $_REQUEST['patronId'];
+		$interface->assign('patronId', $patronId);
+		$patronOwningHold = $user->getUserReferredTo($patronId);
 
-			$id = $_REQUEST['holdId'];
-			$interface->assign('holdId', $id);
+		$id = $_REQUEST['holdId'];
+		$interface->assign('holdId', $id);
 
-			$recordId = $_REQUEST['recordId'];
-			$sourceId = $_REQUEST['source'] . ":" . $_REQUEST['recordId'];
+		$recordId = $_REQUEST['recordId'];
+		$sourceId = $_REQUEST['source'] . ":" . $_REQUEST['recordId'];
 
-			$currentLocation = $_REQUEST['currentLocation'];
-			if (!is_numeric($currentLocation)) {
-				$location = new Location();
-				$location->code = $currentLocation;
-				if ($location->find(true)) {
-					$currentLocation = $location->locationId;
-				} else {
-					$currentLocation = null;
+		$currentLocation = $_REQUEST['currentLocation'];
+		$currentSublocationId = $_REQUEST['currentSublocation'];
+		if (!is_numeric($currentLocation)) {
+			$location = new Location();
+			$location->code = $currentLocation;
+			if ($location->find(true)) {
+				$currentLocation = $location->locationId;
+			} else {
+				$currentLocation = null;
+			}
+		}
+		$interface->assign('currentLocation', $currentLocation);
+		$interface->assign('currentSublocation', $currentSublocationId);
+
+		$location = new Location();
+		$pickupBranches = $location->getPickupBranches($patronOwningHold);
+		$pickupSublocations = [];
+
+		$pickupAt = 0;
+		require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
+		$marcRecord = new MarcRecordDriver($sourceId);
+		if ($marcRecord->isValid()) {
+			$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
+			$pickupAt = $relatedRecord->getHoldPickupSetting();
+			if ($pickupAt > 0) {
+				$itemLocations = $marcRecord->getValidPickupLocations($pickupAt);
+				foreach ($pickupBranches as $locationKey => $location) {
+					if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
+						unset($pickupBranches[$locationKey]);
+					}
 				}
 			}
-			$interface->assign('currentLocation', $currentLocation);
 
-			$location = new Location();
-			$pickupBranches = $location->getPickupBranches($patronOwningHold);
-			$pickupSublocations = [];
+			foreach ($pickupBranches as $locationKey => $location) {
+				if (is_object($location)) {
+					$pickupSublocations[$locationKey] = $user->getValidSublocations($location->locationId);
+				}
+			}
 
-			$pickupAt = 0;
-			require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
-			$marcRecord = new MarcRecordDriver($sourceId);
-			if ($marcRecord->isValid()) {
-				$relatedRecord = $marcRecord->getGroupedWorkDriver()->getRelatedRecord($marcRecord->getIdWithSource());
-				$pickupAt = $relatedRecord->getHoldPickupSetting();
-				if ($pickupAt > 0) {
-					$itemLocations = $marcRecord->getValidPickupLocations($pickupAt);
-					foreach ($pickupBranches as $locationKey => $location) {
-						if (is_object($location) && !in_array(strtolower($location->code), $itemLocations)) {
-							unset($pickupBranches[$locationKey]);
+			$catalogDriver = $user->getCatalogDriver();
+			if (!empty($catalogDriver) && $catalogDriver->restrictValidPickupLocationsForRecordByILS()) {
+				$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
+				if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
+					$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
+					$pickupBranches = array_filter($pickupBranches, function ($location) use ($validLocationCodesFromILS) {
+						if (!is_object($location)) {
+							return true;
 						}
-					}
-				}
-
-				foreach ($pickupBranches as $locationKey => $location) {
-					if (is_object($location)) {
-						$pickupSublocations[$locationKey] = $user->getValidSublocations($location->locationId);
-					}
-				}
-
-				$catalogDriver = $user->getCatalogDriver();
-				if (!empty($catalogDriver) && $catalogDriver->restrictValidPickupLocationsForRecordByILS()) {
-					$getPickupLocationsFromILS = $catalogDriver->getValidPickupLocationsForRecordFromILS($marcRecord->getUniqueID(), $user);
-					if (!empty($getPickupLocationsFromILS['locationCodes']) && $getPickupLocationsFromILS['success']) {
-						$validLocationCodesFromILS = $getPickupLocationsFromILS['locationCodes'];
-						$pickupBranches = array_filter($pickupBranches, function($location) use ($validLocationCodesFromILS) {
-							if (!is_object($location)) {
+						foreach ($validLocationCodesFromILS as $validCode) {
+							if (str_starts_with($validCode, $location->code)) {
 								return true;
 							}
-							foreach ($validLocationCodesFromILS as $validCode) {
-								if (str_starts_with($validCode, $location->code)) {
-									return true;
-								}
-							}
-							return false;
-						});
-					} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
-						$pickupBranches = [];
-					}
+						}
+						return false;
+					});
+				} elseif (empty($getPickupLocationsFromILS['useDefaultLocationFiltering'])) {
+					$pickupBranches = [];
 				}
 			}
-
-			$interface->assign('pickupAt', $pickupAt);
-			$interface->assign('pickupLocations', $pickupBranches);
-			$interface->assign('pickupSublocations', $pickupSublocations);
-
-			$results = [
-				'title' => translate([
-					'text' => 'Change Hold Location',
-					'isPublicFacing' => true,
-				]),
-				'modalBody' => $interface->fetch("MyAccount/changeHoldLocation.tpl"),
-				'modalButtons' => '<button type="button" class="tool btn btn-primary" onclick="AspenDiscovery.Account.doChangeHoldLocation(); return false;">' . translate([
-						'text' => 'Change Location',
-						'isPublicFacing' => true,
-					]) . '</button>',
-			];
-		} else {
-			$results = [
-				'title' => 'Please login',
-				'modalBody' => translate([
-					'text' => "You must be logged in.  Please close this dialog and login before changing your hold's pick-up location.",
-					'isPublicFacing' => true,
-				]),
-				'modalButtons' => "",
-			];
 		}
 
-		return $results;
+		$interface->assign('pickupAt', $pickupAt);
+		$interface->assign('pickupLocations', $pickupBranches);
+		$interface->assign('pickupSublocations', $pickupSublocations);
+
+		return [
+			'title' => translate([
+				'text' => 'Change Hold Location',
+				'isPublicFacing' => true,
+			]),
+			'modalBody' => $interface->fetch("MyAccount/changeHoldLocation.tpl"),
+			'modalButtons' => '<button type="button" class="tool btn btn-primary" onclick="AspenDiscovery.Account.doChangeHoldLocation(); return false;">' . translate([
+					'text' => 'Change Location',
+					'isPublicFacing' => true,
+				]) . '</button>',
+		];
 	}
 
 	/** @noinspection PhpUnused */
-	function getReactivationDateForm() {
+	function getReactivationDateForm() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$patronOwningHold = $user->getUserReferredTo($patronId);
-		if ($patronOwningHold != false) {
+		$isAlreadyFrozen = $_REQUEST['isAlreadyFrozen'];
+		if ($patronOwningHold !== false) {
 			$id = $_REQUEST['holdId'];
 			$interface->assign('holdId', $id);
 			$interface->assign('patronId', $patronId);
 			$interface->assign('recordId', $_REQUEST['recordId']);
+			$interface->assign('isAlreadyFrozen', $isAlreadyFrozen);
 
 			$reactivateDateNotRequired = $user->reactivateDateNotRequired();
 			$interface->assign('reactivateDateNotRequired', $reactivateDateNotRequired);
@@ -2396,7 +2042,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 
 			$title = translate([
-				'text' => 'Freeze Hold',
+				'text' => $isAlreadyFrozen === 'true' ? 'Change Activation Date' : 'Freeze Hold',
 				'isPublicFacing' => true,
 			]); // language customization
 			return [
@@ -2416,7 +2062,8 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function changeHoldLocation() {
+	function changeHoldLocation() : array {
+		$this->requireLoggedInUser(null, "You must be logged in.  Please close this dialog and login to change this hold's pick up location.");
 		try {
 			$holdId = $_REQUEST['holdId'];
 			$newPickupLocation = $_REQUEST['newLocation'];
@@ -2432,42 +2079,28 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			}
 
-			if (UserAccount::isLoggedIn()) {
-				$user = UserAccount::getLoggedInUser();
-				$patronId = $_REQUEST['patronId'];
-				$patronOwningHold = $user->getUserReferredTo($patronId);
-				if ($patronOwningHold != false) {
-					if ($patronOwningHold->validatePickupBranch($newPickupLocation)) {
-						return $patronOwningHold->changeHoldPickUpLocation($holdId, $newPickupLocation, $pickupSublocation);
-					} else {
-						return [
-							'result' => false,
-							'message' => translate([
-								'text' => 'The selected pickup location is not valid.',
-								'isPublicFacing' => true,
-							]),
-						];
-					}
+			$user = UserAccount::getLoggedInUser();
+			$patronId = $_REQUEST['patronId'];
+			$patronOwningHold = $user->getUserReferredTo($patronId);
+			if ($patronOwningHold !== false) {
+				if ($patronOwningHold->validatePickupBranch($newPickupLocation)) {
+					return $patronOwningHold->changeHoldPickUpLocation($holdId, $newPickupLocation, $pickupSublocation);
 				} else {
 					return [
 						'result' => false,
 						'message' => translate([
-							'text' => 'The logged in user does not have permission to change hold location for the specified user, please login as that user.',
+							'text' => 'The selected pickup location is not valid.',
 							'isPublicFacing' => true,
 						]),
 					];
 				}
 			} else {
-				return $results = [
-					'title' => translate([
-						'text' => 'Please login',
+				return [
+					'result' => false,
+					'message' => translate([
+						'text' => 'The logged in user does not have permission to change hold location for the specified user, please login as that user.',
 						'isPublicFacing' => true,
 					]),
-					'modalBody' => translate([
-						'text' => "You must be logged in.  Please close this dialog and login to change this hold's pick up location.",
-						'isPublicFacing' => true,
-					]),
-					'modalButtons' => "",
 				];
 			}
 
@@ -2489,7 +2122,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function requestPinReset() {
+	function requestPinReset() : array {
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
 
 		//Get the list of pickup branch locations for display in the user interface.
@@ -2497,7 +2130,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getCitationFormatsForm() : array {
+	function getCitationFormatsForm(): array {
 		global $interface;
 		$interface->assign('listId', $_REQUEST['listId']);
 		$interface->assign('selectedResourceTypes', $_REQUEST['selectedResourceTypes']);
@@ -2520,11 +2153,11 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function sendMyListEmail() : array {
+	function sendMyListEmail(): array {
 		global $interface;
 
 		// Get data from AJAX request
-		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) { // validly formatted List Id
+		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) { // validly formatted List ID
 			$listId = $_REQUEST['listId'];
 			$to = $_REQUEST['to'];
 			$from = $_REQUEST['from'] ?? '';
@@ -2538,14 +2171,14 @@ class MyAccount_AJAX extends JSON_Action {
 				// Load the User object for the owner of the list (if necessary):
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					$_GET['id'] = $list->id;
-					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
-					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|', $_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|', $_REQUEST['activeFilters']);
 
 					//The user can access the list
 					if (count($selectedResourceTypes) && in_array('GroupedWork', $selectedResourceTypes) && !empty($activeFilters)) {
 						$titleDetailInfo = $list->getListRecordsUsingSolr(0, -1, false, 'recordDrivers', null, null, $activeFilters);
 						$titleDetails = $titleDetailInfo['formattedRecords'];
-					}else{
+					} else {
 						$titleDetails = $list->getListRecords(0, -1, false, 'recordDrivers', null, null, false, 0, $selectedResourceTypes);
 					}
 					// get all titles for email list, not just a page's worth
@@ -2606,7 +2239,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getEmailMyListForm() : array {
+	function getEmailMyListForm(): array {
 		global $interface;
 		if (isset($_REQUEST['listId']) && ctype_digit($_REQUEST['listId'])) {
 			$listId = $_REQUEST['listId'];
@@ -2625,52 +2258,42 @@ class MyAccount_AJAX extends JSON_Action {
 					]) . '</button>',
 			];
 		} else {
-			return [
-				'success' => false,
-				'message' => 'You must provide the id of the list to email',
-			];
+			return $this->failureResult(null, 'You must provide the id of the list to email');
 		}
 	}
 
-	function renewCheckout() : array {
-		if (isset($_REQUEST['patronId']) && isset($_REQUEST['recordId']) && isset($_REQUEST['renewIndicator'])) {
-			if (strpos($_REQUEST['renewIndicator'], '|') > 0) {
-				[
-					$itemId,
-					$itemIndex,
-				] = explode('|', $_REQUEST['renewIndicator']);
-			} else {
-				$itemId = $_REQUEST['renewIndicator'];
-				$itemIndex = null;
-			}
+	function renewCheckout(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['patronId', 'recordId']);
+		$user = UserAccount::getLoggedInUser();
+		$patronId = $_REQUEST['patronId'];
+		$recordId = $_REQUEST['recordId'];
+		$renewIndicator = $_REQUEST['renewIndicator'] ?? '';
+		$patron = $user->getUserReferredTo($patronId);
+		$itemId = null;
+		$itemIndex = null;
 
-			if (!UserAccount::isLoggedIn()) {
-				$renewResults = [
-					'success' => false,
-					'message' => 'Not Logged in.',
-				];
-			} else {
-				$user = UserAccount::getLoggedInUser();
-				$patronId = $_REQUEST['patronId'];
-				$recordId = $_REQUEST['recordId'];
-				$renewIndicator = $_REQUEST['renewIndicator'];
-				$patron = $user->getUserReferredTo($patronId);
-				if ($patron) {
-					$renewResults = $patron->renewCheckout($recordId, $itemId, $itemIndex);
+		if ($patron) {
+			$accountProfile = $patron->getAccountProfile();
+			// Evolve does not require a renew indicator
+			$requiresRenewIndicator = !($accountProfile && $accountProfile->driver === 'Evolve');
+			if ($requiresRenewIndicator) {
+				$this->checkRequiredParameters(['renewIndicator']);
+				if (strpos($renewIndicator, '|') > 0) {
+					[
+						$itemId,
+						$itemIndex,
+					] = explode('|', $renewIndicator);
 				} else {
-					$renewResults = [
-						'success' => false,
-						'message' => 'Sorry, it looks like you don\'t have access to that patron.',
-					];
+					$itemId = $renewIndicator;
+					$itemIndex = null;
 				}
 			}
+			$renewResults = $patron->renewCheckout($recordId, $itemId, $itemIndex);
 		} else {
-			//error message
-			$renewResults = [
-				'success' => false,
-				'message' => 'Item to renew not specified',
-			];
+			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
 		}
+
 		global $interface;
 		$interface->assign('renewResults', $renewResults);
 		if (isset($renewResults['confirmRenewalFee']) && $renewResults['confirmRenewalFee']) {
@@ -2699,75 +2322,62 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function renewSelectedItems() {
-		if (!UserAccount::isLoggedIn()) {
-			$renewResults = [
-				'success' => false,
-				'message' => 'Not Logged in.',
-			];
-		} else {
-			if (isset($_REQUEST['selected'])) {
-				$user = UserAccount::getLoggedInUser();
-				if (method_exists($user, 'renewCheckout')) {
-					$failure_messages = [];
-					$renewResults = [];
-					$failedRenewals = 0;
-					if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
-						foreach ($_REQUEST['selected'] as $selected => $ignore) {
-							//Suppress errors because sometimes we don't get an item index
-							@list($patronId, $recordId, $itemId, $itemIndex) = explode('|', $selected);
-							$patron = $user->getUserReferredTo($patronId);
-							if ($patron) {
-								$tmpResult = $patron->renewCheckout($recordId, $itemId, $itemIndex);
-							} else {
-								$tmpResult = [
-									'success' => false,
-									'message' => 'Sorry, it looks like you don\'t have access to that patron.',
-								];
-							}
+	function renewSelectedItems() : array {
+		$this->requireLoggedInUser();
 
-							if (!$tmpResult['success']) {
-								$failedRenewals++;
-								if (isset($tmpResult['confirmRenewalFee']) && $tmpResult['confirmRenewalFee']) {
-									$failure_messages = translate([
-										'text' => 'Renewing some overdue items will result in a charge to your account. Please renew overdue items individually.',
-										'isPublicFacing' => true,
-									]);
-								} else {
-									$failure_messages[] = $tmpResult['message'];
-								}
+		if (isset($_REQUEST['selected'])) {
+			$user = UserAccount::getLoggedInUser();
+			if (method_exists($user, 'renewCheckout')) {
+				$failure_messages = [];
+				$renewResults = [];
+				$failedRenewals = 0;
+				if (is_array($_REQUEST['selected'])) {
+					foreach ($_REQUEST['selected'] as $selected => $ignore) {
+						//Suppress errors because sometimes we don't get an item index
+						@list($patronId, $recordId, $itemId, $itemIndex) = explode('|', $selected);
+						$patron = $user->getUserReferredTo($patronId);
+						if ($patron) {
+							$tmpResult = $patron->renewCheckout($recordId, $itemId, $itemIndex);
+						} else {
+							$tmpResult = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
+						}
+
+						if (!$tmpResult['success']) {
+							$failedRenewals++;
+							if (isset($tmpResult['confirmRenewalFee']) && $tmpResult['confirmRenewalFee']) {
+								$failure_messages = translate([
+									'text' => 'Renewing some overdue items will result in a charge to your account. Please renew overdue items individually.',
+									'isPublicFacing' => true,
+								]);
+							} else {
+								$failure_messages[] = $tmpResult['message'];
 							}
 						}
-						$renewResults['Total'] = count($_REQUEST['selected']);
-						$renewResults['NotRenewed'] = $failedRenewals;
-						$renewResults['Renewed'] = $renewResults['Total'] - $failedRenewals;
-					} else {
-						$failure_messages[] = 'No items were selected to renew';
-						$renewResults['Total'] = 0;
-						$renewResults['NotRenewed'] = 0;
 					}
-					if ($failure_messages) {
-						$renewResults['success'] = false;
-						$renewResults['message'] = $failure_messages;
-					} else {
-						$renewResults['success'] = true;
-						$renewResults['message'] = "All items were renewed successfully.";
-					}
+					$renewResults['Total'] = count($_REQUEST['selected']);
+					$renewResults['NotRenewed'] = $failedRenewals;
+					$renewResults['Renewed'] = $renewResults['Total'] - $failedRenewals;
 				} else {
-					AspenError::raiseError(new AspenError('Cannot Renew Item - ILS Not Supported'));
-					$renewResults = [
-						'success' => false,
-						'message' => 'Cannot Renew Items - ILS Not Supported.',
-					];
+					$failure_messages[] = 'No items were selected to renew';
+					$renewResults['Total'] = 0;
+					$renewResults['NotRenewed'] = 0;
+				}
+				if ($failure_messages) {
+					$renewResults['success'] = false;
+					$renewResults['message'] = $failure_messages;
+				} else {
+					$renewResults['success'] = true;
+					$renewResults['message'] = "All items were renewed successfully.";
 				}
 			} else {
-				//error message
-				$renewResults = [
-					'success' => false,
-					'message' => 'Items to renew not specified.',
-				];
+				AspenError::raiseError(new AspenError('Cannot Renew Item - ILS Not Supported'));
+				$renewResults = $this->failureResult(null, 'Cannot Renew Items - ILS Not Supported.');
 			}
+		} else {
+			//error message
+			$renewResults = $this->failureResult(null, 'Items to renew not specified.');
 		}
+
 		global $interface;
 		$interface->assign('renew_message_data', $renewResults);
 
@@ -2778,20 +2388,22 @@ class MyAccount_AJAX extends JSON_Action {
 			]),
 			'modalBody' => $interface->fetch('Record/renew-results.tpl'),
 			'success' => $renewResults['success'],
-			'renewed' => isset($renewResults['Renewed']) ? $renewResults['Renewed'] : [],
+			'renewed' => $renewResults['Renewed'] ?? [],
 		];
 	}
 
-	function renewAll() : array {
+	function renewAll(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to renew titles');
 		$renewResults = [
 			'success' => false,
 			'message' => ['Unable to renew all titles'],
 		];
 		$user = UserAccount::getLoggedInUser();
-		if ($user) {
+		if ($user){
+			// Renew linked accounts as well if applicable
 			$renewResults = $user->renewAll(true);
 		} else {
-			$renewResults['message'] = ['You must be logged in to renew titles'];
+			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
 		}
 
 		global $interface;
@@ -2818,12 +2430,13 @@ class MyAccount_AJAX extends JSON_Action {
 			]),
 			'modalBody' => $interface->fetch('Record/renew-results.tpl'),
 			'success' => $renewResults['success'],
-			'renewed' => $renewResults['Renewed'],
+			'renewed' => $renewResults['Renewed'] ?? 0,
 		];
 	}
 
 	/** @noinspection PhpUnused */
-	function setListEntryPositions() {
+	function setListEntryPositions() : array {
+		$this->requireLoggedInUser();
 		$success = false; // assume failure
 		$listId = $_REQUEST['listID'];
 		$updates = $_REQUEST['updates'];
@@ -2855,550 +2468,494 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataIls() {
+	function getMenuDataIls() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
 		global $timer;
 		global $interface;
 
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->hasIlsConnection()) {
-				$ilsSummary = $user->getAccountSummary();
-				$ilsSummary->setMaterialsRequests($user->getNumMaterialsRequests());
-				if ($user->getLinkedUsers() != null) {
-					$selectedLinkedUser = $this->setFilterLinkedUser();
-					$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
-					if ($selectedLinkedUser) {
-						$filterLinkedUser = new User();
-						$filterLinkedUser->id = $selectedLinkedUser;
-						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $filterLinkedUser->getAccountSummary();
-							$ilsSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
-							$ilsSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
-						}
-					} else {
-						/** @var User $user */
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $linkedUser->getAccountSummary();
-							$ilsSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
-							$ilsSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+		$result = $this->failureResult(null, 'Unknown Error');
 
-						}
+		$user = UserAccount::getActiveUserObj();
+		if ($user->hasIlsConnection()) {
+			$ilsSummary = $user->getAccountSummary();
+			$ilsSummary->setMaterialsRequests($user->getNumMaterialsRequests());
+			if ($user->getLinkedUsers() != null) {
+				$selectedLinkedUser = $this->setFilterLinkedUser();
+				$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
+				if ($selectedLinkedUser) {
+					$filterLinkedUser = new User();
+					$filterLinkedUser->id = $selectedLinkedUser;
+					if ($filterLinkedUser->find(true)) {
+						$filterLinkedUserSummary = $filterLinkedUser->getAccountSummary();
+						$ilsSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
+						$ilsSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
 					}
-					if ($selectedLinkedUserCheckouts) {
-						$filterLinkedUserCheckouts = new User();
-						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
-						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $filterLinkedUserCheckouts->getAccountSummary();
-							$ilsSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
-							$ilsSummary->numOverdue = $filterLinkedUserCheckoutsSummary->numOverdue;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $linkedUser->getAccountSummary();
-							$ilsSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
-							$ilsSummary->numOverdue += $linkedUserSummary->numOverdue;
-						}
-					}
+				} else {
+					/** @var User $user */
 					foreach ($user->getLinkedUsers() as $linkedUser) {
 						$linkedUserSummary = $linkedUser->getAccountSummary();
-						$ilsSummary->totalFines += $linkedUserSummary->totalFines;
-						$ilsSummary->setMaterialsRequests($ilsSummary->getMaterialsRequests() + $linkedUser->getNumMaterialsRequests());
+						$ilsSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
+						$ilsSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+
 					}
 				}
-				$timer->logTime("Loaded ILS Summary for User and linked users");
-
-				$ilsSummary->setReadingHistory($user->getReadingHistorySize());
-
-				$searchEntry = new SearchEntry();
-				$searchEntry->user_id = $user->id;
-				$searchEntry->saved = 1;
-				$searchEntry->hasNewResults = 1;
-				$searchEntry->find();
-				$ilsSummary->hasUpdatedSavedSearches = ($searchEntry->getNumResults() > 0);
-				$ilsSummary->setNumUpdatedSearches($searchEntry->getNumResults());
-
-				//Expiration and fines
-				$interface->assign('ilsSummary', $ilsSummary);
-				$interface->setFinesRelatedTemplateVariables();
-
-				if ($interface->getVariable('expiredMessage')) {
-					$interface->assign('expiredMessage', str_replace('%date%', date('M j, Y', $ilsSummary->expirationDate), $interface->getVariable('expiredMessage')));
-				}
-				if ($interface->getVariable('expirationNearMessage')) {
-					$interface->assign('expirationNearMessage', str_replace('%date%', date('M j, Y', $ilsSummary->expirationDate), $interface->getVariable('expirationNearMessage')));
-				}
-
-				$showRenewalLink = $user->showRenewalLink($ilsSummary);
-				$interface->assign('showRenewalLink', $showRenewalLink);
-				if ($showRenewalLink) {
-					$userLibrary = $user->getHomeLibrary();
-					if ($userLibrary->enableCardRenewal == 2) {
-						if (!empty($userLibrary->cardRenewalUrl)) {
-							$interface->assign('cardRenewalLink', $userLibrary->cardRenewalUrl);
-						}
-					} elseif ($userLibrary->enableCardRenewal == 3) {
-						require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
-						$quipuECardSettings = new QuipuECardSetting();
-						if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
-							$interface->assign('cardRenewalLink', "/MyAccount/eRENEW");
-						}
+				if ($selectedLinkedUserCheckouts) {
+					$filterLinkedUserCheckouts = new User();
+					$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
+					if ($filterLinkedUserCheckouts->find(true)) {
+						$filterLinkedUserCheckoutsSummary = $filterLinkedUserCheckouts->getAccountSummary();
+						$ilsSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
+						$ilsSummary->numOverdue = $filterLinkedUserCheckoutsSummary->numOverdue;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $linkedUser->getAccountSummary();
+						$ilsSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
+						$ilsSummary->numOverdue += $linkedUserSummary->numOverdue;
 					}
 				}
-
-				$ilsSummary->setExpirationNotice($interface->fetch('MyAccount/expirationNotice.tpl'));
-				$ilsSummary->setFinesBadge($interface->fetch('MyAccount/finesBadge.tpl'));
-
-				$result = [
-					'success' => true,
-					'summary' => $ilsSummary->toArray(),
-				];
-			} else {
-				$result['message'] = translate([
-					'text' => 'Unknown Error',
-					'isPublicFacing' => true,
-				]);
+				foreach ($user->getLinkedUsers() as $linkedUser) {
+					$linkedUserSummary = $linkedUser->getAccountSummary();
+					$ilsSummary->totalFines += $linkedUserSummary->totalFines;
+					$ilsSummary->setMaterialsRequests($ilsSummary->getMaterialsRequests() + $linkedUser->getNumMaterialsRequests());
+				}
 			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
-		}
-		return $result;
-	}
+			$timer->logTime("Loaded ILS Summary for User and linked users");
 
-	/** @noinspection PhpUnused */
-	function getMenuDataCloudLibrary() {
-		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
+			$ilsSummary->setReadingHistory($user->getReadingHistorySize());
+
+			$searchEntry = new SearchEntry();
+			$searchEntry->user_id = $user->id;
+			$searchEntry->saved = 1;
+			$searchEntry->hasNewResults = 1;
+			$searchEntry->find();
+			$ilsSummary->hasUpdatedSavedSearches = ($searchEntry->getNumResults() > 0);
+			$ilsSummary->setNumUpdatedSearches($searchEntry->getNumResults());
+
+			//Expiration and fines
+			$interface->assign('ilsSummary', $ilsSummary);
+			$interface->setFinesRelatedTemplateVariables();
+
+			if ($interface->getVariable('expiredMessage')) {
+				$interface->assign('expiredMessage', str_replace('%date%', date('M j, Y', $ilsSummary->expirationDate), $interface->getVariable('expiredMessage')));
+			}
+			if ($interface->getVariable('expirationNearMessage')) {
+				$interface->assign('expirationNearMessage', str_replace('%date%', date('M j, Y', $ilsSummary->expirationDate), $interface->getVariable('expirationNearMessage')));
+			}
+
+			$showRenewalLink = $user->showRenewalLink($ilsSummary);
+			$interface->assign('showRenewalLink', $showRenewalLink);
+			if ($showRenewalLink) {
+				$userLibrary = $user->getHomeLibrary();
+				if ($userLibrary->enableCardRenewal == 2) {
+					if (!empty($userLibrary->cardRenewalUrl)) {
+						$interface->assign('cardRenewalLink', $userLibrary->cardRenewalUrl);
+					}
+				} elseif ($userLibrary->enableCardRenewal == 3) {
+					require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
+					$quipuECardSettings = new QuipuECardSetting();
+					if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
+						$interface->assign('cardRenewalLink', "/MyAccount/eRENEW");
+					}
+				}
+			}
+
+			$ilsSummary->setExpirationNotice($interface->fetch('MyAccount/expirationNotice.tpl'));
+			$ilsSummary->setFinesBadge($interface->fetch('MyAccount/finesBadge.tpl'));
+
+			$result = [
+				'success' => true,
+				'summary' => $ilsSummary->toArray(),
+			];
+		} else {
+			$result['message'] = translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->isValidForEContentSource('cloud_library')) {
-				require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
-				$driver = new CloudLibraryDriver();
-				$cloudLibrarySummary = $driver->getAccountSummary($user);
-				if ($user->getLinkedUsers() != null) {
-					/** @var User $user */
-
-					$selectedLinkedUser = $this->setFilterLinkedUser();
-					$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
-					if ($selectedLinkedUser) {
-						$filterLinkedUser = new User();
-						$filterLinkedUser->id = $selectedLinkedUser;
-						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
-							$cloudLibrarySummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
-							$cloudLibrarySummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$cloudLibrarySummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
-							$cloudLibrarySummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
-						}
-					}
-					if ($selectedLinkedUserCheckouts) {
-						$filterLinkedUserCheckouts = new User();
-						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
-						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
-							$cloudLibrarySummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$cloudLibrarySummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
-						}
-					}
-				}
-				$timer->logTime("Loaded cloudLibrary Summary for User and linked users");
-				$result = [
-					'success' => true,
-					'summary' => $cloudLibrarySummary->toArray(),
-				];
-			} else {
-				$result['message'] = translate([
-					'text' => 'Unknown Error',
-					'isPublicFacing' => true,
-				]);
-			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
+			]);
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataAxis360() {
+	function getMenuDataCloudLibrary() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
 		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user->isValidForEContentSource('cloud_library')) {
+			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
+			$driver = new CloudLibraryDriver();
+			$cloudLibrarySummary = $driver->getAccountSummary($user);
+			if ($user->getLinkedUsers() != null) {
+				/** @var User $user */
+
+				$selectedLinkedUser = $this->setFilterLinkedUser();
+				$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
+				if ($selectedLinkedUser) {
+					$filterLinkedUser = new User();
+					$filterLinkedUser->id = $selectedLinkedUser;
+					if ($filterLinkedUser->find(true)) {
+						$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
+						$cloudLibrarySummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
+						$cloudLibrarySummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$cloudLibrarySummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+						$cloudLibrarySummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
+					}
+				}
+				if ($selectedLinkedUserCheckouts) {
+					$filterLinkedUserCheckouts = new User();
+					$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
+					if ($filterLinkedUserCheckouts->find(true)) {
+						$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
+						$cloudLibrarySummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$cloudLibrarySummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
+					}
+				}
+			}
+			$timer->logTime("Loaded cloudLibrary Summary for User and linked users");
+			$result = [
+				'success' => true,
+				'summary' => $cloudLibrarySummary->toArray(),
+			];
+		} else {
+			$result['message'] = translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->isValidForEContentSource('axis360')) {
-				require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
-				$driver = new Axis360Driver();
-				$axis360Summary = $driver->getAccountSummary($user);
-				if ($user->getLinkedUsers() != null) {
-					/** @var User $user */
-					$selectedLinkedUser = $this->setFilterLinkedUser();
-					$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
-					if ($selectedLinkedUser) {
-						$filterLinkedUser = new User();
-						$filterLinkedUser->id = $selectedLinkedUser;
-						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
-							$axis360Summary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
-							$axis360Summary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$axis360Summary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
-							$axis360Summary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
-						}
-					}
-					if ($selectedLinkedUserCheckouts) {
-						$filterLinkedUserCheckouts = new User();
-						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
-						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
-							$axis360Summary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$axis360Summary->numCheckedOut += $linkedUserSummary->numCheckedOut;
-
-						}
-					}
-				}
-				$timer->logTime("Loaded Boundless Summary for User and linked users");
-				$result = [
-					'success' => true,
-					'summary' => $axis360Summary->toArray(),
-				];
-			} else {
-				$result['message'] = translate([
-					'text' => 'Unknown Error',
-					'isPublicFacing' => true,
-				]);
-			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
+			]);
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataHoopla() {
+	function getMenuDataAxis360() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
 		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user->isValidForEContentSource('axis360')) {
+			require_once ROOT_DIR . '/Drivers/Axis360Driver.php';
+			$driver = new Axis360Driver();
+			$axis360Summary = $driver->getAccountSummary($user);
+			if ($user->getLinkedUsers() != null) {
+				/** @var User $user */
+				$selectedLinkedUser = $this->setFilterLinkedUser();
+				$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
+				if ($selectedLinkedUser) {
+					$filterLinkedUser = new User();
+					$filterLinkedUser->id = $selectedLinkedUser;
+					if ($filterLinkedUser->find(true)) {
+						$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
+						$axis360Summary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
+						$axis360Summary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$axis360Summary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+						$axis360Summary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
+					}
+				}
+				if ($selectedLinkedUserCheckouts) {
+					$filterLinkedUserCheckouts = new User();
+					$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
+					if ($filterLinkedUserCheckouts->find(true)) {
+						$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
+						$axis360Summary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$axis360Summary->numCheckedOut += $linkedUserSummary->numCheckedOut;
+
+					}
+				}
+			}
+			$timer->logTime("Loaded Boundless Summary for User and linked users");
+			$result = [
+				'success' => true,
+				'summary' => $axis360Summary->toArray(),
+			];
+		} else {
+			$result['message'] = translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->isValidForEContentSource('hoopla')) {
-				require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
-				$driver = new HooplaDriver();
-				$hooplaSummary = $driver->getAccountSummary($user);
-
-				if ($user->getLinkedUsers() != null) {
-					/** @var User $user */
-					$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
-					if ($selectedLinkedUserCheckouts) {
-						$filterLinkedUserCheckouts = new User();
-						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
-						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
-							$hooplaSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
-							$hooplaSummary->numCheckoutsRemaining = $filterLinkedUserCheckoutsSummary->numCheckoutsRemaining;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							if ($linkedUserSummary != false) {
-								$hooplaSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
-								$hooplaSummary->numCheckoutsRemaining += $linkedUserSummary->numCheckoutsRemaining;
-								$hooplaSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
-								$hooplaSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
-							}
-						}
-					}
-				}
-				$timer->logTime("Loaded Hoopla Summary for User and linked users");
-				$result = [
-					'success' => true,
-					'summary' => $hooplaSummary->toArray(),
-				];
-			} else {
-				$result['message'] = 'Invalid for Hoopla';
-			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
+			]);
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataOverdrive() {
+	function getMenuDataHoopla() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
 		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user->isValidForEContentSource('hoopla')) {
+			require_once ROOT_DIR . '/Drivers/HooplaDriver.php';
+			$driver = new HooplaDriver();
+			$hooplaSummary = $driver->getAccountSummary($user);
+
+			if ($user->getLinkedUsers() != null) {
+				/** @var User $user */
+				$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
+				if ($selectedLinkedUserCheckouts) {
+					$filterLinkedUserCheckouts = new User();
+					$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
+					if ($filterLinkedUserCheckouts->find(true)) {
+						$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
+						$hooplaSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
+						$hooplaSummary->numCheckoutsRemaining = $filterLinkedUserCheckoutsSummary->numCheckoutsRemaining;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+
+						$hooplaSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
+						$hooplaSummary->numCheckoutsRemaining += $linkedUserSummary->numCheckoutsRemaining;
+						$hooplaSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+						$hooplaSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
+					}
+				}
+			}
+			$timer->logTime("Loaded Hoopla Summary for User and linked users");
+			$result = [
+				'success' => true,
+				'summary' => $hooplaSummary->toArray(),
+			];
+		} else {
+			$result['message'] = 'Invalid for Hoopla';
+		}
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function getMenuDataOverdrive() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
+		global $timer;
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
+		$driver = new OverDriveDriver();
+		$readerName = $driver->getReaderName();
+		if ($user->isValidForEContentSource('overdrive')) {
+			$overDriveSummary = $driver->getAccountSummary($user);
+			if ($user->getLinkedUsers() != null) {
+				/** @var User $user */
+
+				$selectedLinkedUser = $this->setFilterLinkedUser();
+				$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
+				if ($selectedLinkedUser) {
+					$filterLinkedUser = new User();
+					$filterLinkedUser->id = $selectedLinkedUser;
+					if ($filterLinkedUser->find(true)) {
+						$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
+						$overDriveSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
+						$overDriveSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$overDriveSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
+						$overDriveSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+					}
+				}
+				if ($selectedLinkedUserCheckouts) {
+					$filterLinkedUserCheckouts = new User();
+					$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
+					if ($filterLinkedUserCheckouts->find(true)) {
+						$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
+						$overDriveSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
+
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$overDriveSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
+					}
+				}
+			}
+			$timer->logTime("Loaded " . $readerName . " Summary for User and linked users");
+			$result = [
+				'success' => true,
+				'summary' => $overDriveSummary->toArray(),
+			];
+		} else {
+			$result['message'] = 'Invalid for ' . $readerName;
+		}
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function getMenuDataPalaceProject() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
+		global $timer;
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user->isValidForEContentSource('palace_project')) {
+			require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
+			$driver = new PalaceProjectDriver();
+			$palaceProjectSummary = $driver->getAccountSummary($user);
+			if ($user->getLinkedUsers() != null) {
+				/** @var User $user */
+				$selectedLinkedUser = $this->setFilterLinkedUser();
+				$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
+				if ($selectedLinkedUser) {
+					$filterLinkedUser = new User();
+					$filterLinkedUser->id = $selectedLinkedUser;
+					if ($filterLinkedUser->find(true)) {
+						$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
+						$palaceProjectSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
+						$palaceProjectSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$palaceProjectSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
+						$palaceProjectSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
+					}
+				}
+				if ($selectedLinkedUserCheckouts) {
+					$filterLinkedUserCheckouts = new User();
+					$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
+					if ($filterLinkedUserCheckouts->find(true)) {
+						$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
+						$palaceProjectSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
+					}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$palaceProjectSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
+					}
+				}
+			}
+			$timer->logTime("Loaded Palace Project Summary for User and linked users");
+			$result = [
+				'success' => true,
+				'summary' => $palaceProjectSummary->toArray(),
+			];
+		} else {
+			$result['message'] = translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			require_once ROOT_DIR . '/Drivers/OverDriveDriver.php';
-			$driver = new OverDriveDriver();
-			$readerName = $driver->getReaderName();
-			if ($user->isValidForEContentSource('overdrive')) {
-				$overDriveSummary = $driver->getAccountSummary($user);
-				if ($user->getLinkedUsers() != null) {
-					/** @var User $user */
-
-					$selectedLinkedUser = $this->setFilterLinkedUser();
-					$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
-					if ($selectedLinkedUser) {
-						$filterLinkedUser = new User();
-						$filterLinkedUser->id = $selectedLinkedUser;
-						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
-							$overDriveSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
-							$overDriveSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$overDriveSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
-							$overDriveSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
-						}
-					}
-					if ($selectedLinkedUserCheckouts) {
-						$filterLinkedUserCheckouts = new User();
-						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
-						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
-							$overDriveSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
-
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$overDriveSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
-						}
-					}
-				}
-				$timer->logTime("Loaded " . $readerName . " Summary for User and linked users");
-				$result = [
-					'success' => true,
-					'summary' => $overDriveSummary->toArray(),
-				];
-			} else {
-				$result['message'] = 'Invalid for ' . $readerName;
-			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
+			]);
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataPalaceProject() {
+	function getMenuDataInterlibraryLoan() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
 		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->isValidForEContentSource('palace_project')) {
-				require_once ROOT_DIR . '/Drivers/PalaceProjectDriver.php';
-				$driver = new PalaceProjectDriver();
-				$palaceProjectSummary = $driver->getAccountSummary($user);
-				if ($user->getLinkedUsers() != null) {
-					/** @var User $user */
-					$selectedLinkedUser = $this->setFilterLinkedUser();
-					$selectedLinkedUserCheckouts = $this->setFilterLinkedUserCheckouts();
-					if ($selectedLinkedUser) {
-						$filterLinkedUser = new User();
-						$filterLinkedUser->id = $selectedLinkedUser;
-						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
-							$palaceProjectSummary->numAvailableHolds = $filterLinkedUserSummary->numAvailableHolds;
-							$palaceProjectSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$palaceProjectSummary->numAvailableHolds += $linkedUserSummary->numAvailableHolds;
-							$palaceProjectSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
-						}
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user->hasInterlibraryLoan()) {
+			require_once ROOT_DIR . '/Drivers/VdxDriver.php';
+			$driver = new VdxDriver();
+			$vdxSummary = $driver->getAccountSummary($user);
+			if ($user->getLinkedUsers() != null) {
+				/** @var User $user */
+				$selectedLinkedUser = $this->setFilterLinkedUser();
+				if ($selectedLinkedUser) {
+					$filterLinkedUser = new User();
+					$filterLinkedUser->id = $selectedLinkedUser;
+					if ($filterLinkedUser->find(true)) {
+						$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
+						$vdxSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
 					}
-					if ($selectedLinkedUserCheckouts) {
-						$filterLinkedUserCheckouts = new User();
-						$filterLinkedUserCheckouts->id = $selectedLinkedUserCheckouts;
-						if ($filterLinkedUserCheckouts->find(true)) {
-							$filterLinkedUserCheckoutsSummary = $driver->getAccountSummary($filterLinkedUserCheckouts);
-							$palaceProjectSummary->numCheckedOut = $filterLinkedUserCheckoutsSummary->numCheckedOut;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$palaceProjectSummary->numCheckedOut += $linkedUserSummary->numCheckedOut;
-						}
+				} else {
+					foreach ($user->getLinkedUsers() as $linkedUser) {
+						$linkedUserSummary = $driver->getAccountSummary($linkedUser);
+						$vdxSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
 					}
 				}
-				$timer->logTime("Loaded Palace Project Summary for User and linked users");
-				$result = [
-					'success' => true,
-					'summary' => $palaceProjectSummary->toArray(),
-				];
-			} else {
-				$result['message'] = translate([
-					'text' => 'Unknown Error',
-					'isPublicFacing' => true,
-				]);
 			}
+			$timer->logTime("Loaded VDX Summary for User and linked users");
+			$result = [
+				'success' => true,
+				'summary' => $vdxSummary->toArray(),
+			];
 		} else {
-			$result['message'] = 'You must be logged in to get menu data';
+			$result['message'] = 'Invalid for VDX';
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataInterlibraryLoan() {
-		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->hasInterlibraryLoan()) {
-				require_once ROOT_DIR . '/Drivers/VdxDriver.php';
-				$driver = new VdxDriver();
-				$vdxSummary = $driver->getAccountSummary($user);
-				if ($user->getLinkedUsers() != null) {
-					/** @var User $user */
-					$selectedLinkedUser = $this->setFilterLinkedUser();
-					if ($selectedLinkedUser) {
-						$filterLinkedUser = new User();
-						$filterLinkedUser->id = $selectedLinkedUser;
-						if ($filterLinkedUser->find(true)) {
-							$filterLinkedUserSummary = $driver->getAccountSummary($filterLinkedUser);
-							$vdxSummary->numUnavailableHolds = $filterLinkedUserSummary->numUnavailableHolds;
-						}
-					} else {
-						foreach ($user->getLinkedUsers() as $linkedUser) {
-							$linkedUserSummary = $driver->getAccountSummary($linkedUser);
-							$vdxSummary->numUnavailableHolds += $linkedUserSummary->numUnavailableHolds;
-						}
-					}
-				}
-				$timer->logTime("Loaded VDX Summary for User and linked users");
-				$result = [
-					'success' => true,
-					'summary' => $vdxSummary->toArray(),
-				];
-			} else {
-				$result['message'] = 'Invalid for VDX';
-			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
-		}
-		return $result;
-	}
-
-	/** @noinspection PhpUnused */
-	function getRatingsData() {
+	function getRatingsData() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 		$result = [];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getLoggedInUser();
-			$interface->assign('user', $user);
 
-			//Count of ratings
-			$result['ratings'] = $user->getNumRatings();
-			$result['notInterested'] = $user->getNumNotInterested();
-		}//User is not logged in
+		$user = UserAccount::getLoggedInUser();
+		$interface->assign('user', $user);
+
+		//Count of ratings
+		$result['ratings'] = $user->getNumRatings();
+		$result['notInterested'] = $user->getNumNotInterested();
 
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getListData() {
+	function getListData() : array {
+		$this->requireLoggedInUser();
 		global $timer;
 		global $interface;
 		global $configArray;
 		global $memCache;
 		$result = [];
-		if (UserAccount::isLoggedIn()) {
-			//Load a list of lists
-			$userListData = $memCache->get('user_list_data_' . UserAccount::getActiveUserId());
-			if ($userListData == null || isset($_REQUEST['reload'])) {
-				$lists = [];
-				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-				$tmpList = new UserList();
-				$tmpList->user_id = UserAccount::getActiveUserId();
-				$tmpList->whereAdd('deleted = 0');
-				$tmpList->orderBy("title ASC");
-				$tmpList->find();
-				if ($tmpList->getNumResults() > 0) {
-					while ($tmpList->fetch()) {
-						$lists[$tmpList->id] = [
-							'name' => $tmpList->title,
-							'url' => '/MyAccount/MyList/' . $tmpList->id,
-							'id' => $tmpList->id,
-							'numTitles' => $tmpList->numValidListItems(),
-						];
-					}
+
+		//Load a list of lists
+		$userListData = $memCache->get('user_list_data_' . UserAccount::getActiveUserId());
+		if ($userListData == null || isset($_REQUEST['reload'])) {
+			$lists = [];
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$tmpList = new UserList();
+			$tmpList->user_id = UserAccount::getActiveUserId();
+			$tmpList->whereAdd('deleted = 0');
+			$tmpList->orderBy("title ASC");
+			$tmpList->find();
+			if ($tmpList->getNumResults() > 0) {
+				while ($tmpList->fetch()) {
+					$lists[$tmpList->id] = [
+						'name' => $tmpList->title,
+						'url' => '/MyAccount/MyList/' . $tmpList->id,
+						'id' => $tmpList->id,
+						'numTitles' => $tmpList->numValidListItems(),
+					];
 				}
-				$memCache->set('user_list_data_' . UserAccount::getActiveUserId(), $lists, $configArray['Caching']['user']);
-				$timer->logTime("Load Lists");
-			} else {
-				$lists = $userListData;
-				$timer->logTime("Load Lists from cache");
 			}
+			$memCache->set('user_list_data_' . UserAccount::getActiveUserId(), $lists, $configArray['Caching']['user']);
+			$timer->logTime("Load Lists");
+		} else {
+			$lists = $userListData;
+			$timer->logTime("Load Lists from cache");
+		}
 
-			$interface->assign('lists', $lists);
-			$result['lists'] = $interface->fetch('MyAccount/listsMenu.tpl');
-
-		}//User is not logged in
+		$interface->assign('lists', $lists);
+		$result['lists'] = $interface->fetch('MyAccount/listsMenu.tpl');
 
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	public function exportCheckouts() {
+	public function exportCheckouts() : array {
+		$this->requireLoggedInUser();
+
 		if (session_status() == PHP_SESSION_NONE) {
 			session_start();
 		}
@@ -3426,7 +2983,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$showOut = $user->showOutDateInCheckouts();
 		$showRenewed = $user->showTimesRenewed();
-		$showRenewalsRemaining = $user->showRenewalsRemaining();
 		$showWaitList = $user->showWaitListInCheckouts();
 
 		try {
@@ -3458,7 +3014,6 @@ class MyAccount_AJAX extends JSON_Action {
 			fputcsv($fp, $fields);
 
 			//Loop Through The Report Data
-			/** @var Checkout $row */
 			foreach ($allCheckedOut as $row) {
 				$titleCell = preg_replace("~([/:])$~", "", $row->title);
 				if (!empty($row->title2)) {
@@ -3547,12 +3102,13 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	public function exportHolds() {
+	public function exportHolds() : array {
+		$this->requireLoggedInUser();
+
 		$source = $_REQUEST['source'];
 		$user = UserAccount::getActiveUserObj();
 
 		$showPosition = $user->showHoldPosition();
-		$showExpireTime = $user->showHoldExpirationTime();
 		$selectedAvailableSortOption = $this->setSortByUserObj('availableHoldSort', 'availableHold', $user);
 		$selectedUnavailableSortOption = $this->setSortByUserObj('unavailableHoldSort', 'unavailableHold', $user);
 		if ($selectedAvailableSortOption == null) {
@@ -3565,9 +3121,9 @@ class MyAccount_AJAX extends JSON_Action {
 		$selectedHolds = isset($_REQUEST['selectedHolds']) ? json_decode($_REQUEST['selectedHolds'], true) : [];
 
 		if (!empty($selectedHolds)) {
-			$allHolds = $this->filterHoldsBySelected($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source),$selectedHolds);
+			$allHolds = $this->filterHoldsBySelected($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedHolds);
 		} else {
-			$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source),$selectedUser);
+			$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source), $selectedUser);
 		}
 
 
@@ -3592,28 +3148,26 @@ class MyAccount_AJAX extends JSON_Action {
 				if (count($allHolds[$exportType]) == 0) {
 					continue;
 				}
+				$holdType = translate([
+					'text' => 'Holds - ' . ucfirst($exportType),
+					'isPublicFacing' => true,
+				]);
+				$header = array($holdType);
+				fputcsv($fp, $header);
+				$titleCol = translate([
+					'text' => 'Title',
+					'isPublicFacing' => true,
+				]);
+				$authorCol = translate([
+					'text' => 'Author',
+					'isPublicFacing' => true,
+				]);
+				$formatCol = translate([
+					'text' => 'Format',
+					'isPublicFacing' => true,
+				]);
 				if ($exportType == "available") {
-					// Section header
-					$holdType = translate([
-						'text' => 'Holds - ' . ucfirst($exportType),
-						'isPublicFacing' => true,
-					]);
-					$header = array($holdType);
-					fputcsv($fp, $header);
-
 					// Column names
-					$titleCol = translate([
-						'text' => 'Title',
-						'isPublicFacing' => true,
-					]);
-					$authorCol = translate([
-						'text' => 'Author',
-						'isPublicFacing' => true,
-					]);
-					$formatCol = translate([
-						'text' => 'Format',
-						'isPublicFacing' => true,
-					]);
 					$placedCol = translate([
 						'text' => 'Placed',
 						'isPublicFacing' => true,
@@ -3649,7 +3203,7 @@ class MyAccount_AJAX extends JSON_Action {
 					}
 					fputcsv($fp, $availFields);
 
-					/** @var Hold $row **/
+					/** @var Hold $row * */
 					foreach ($allHolds['available'] as $row) {
 						$title = preg_replace("~([/:])$~", "", $row->title);
 						if (isset ($row->title2)) {
@@ -3729,26 +3283,7 @@ class MyAccount_AJAX extends JSON_Action {
 						fputcsv($fp, $availValues);
 					}
 				} elseif ($exportType == "cancelled") {
-					// Section header
-					$holdType = translate([
-						'text' => 'Holds - ' . ucfirst($exportType),
-						'isPublicFacing' => true,
-					]);
-					$header = array($holdType);
-					fputcsv($fp, $header);
 					// Col names
-					$titleCol = translate([
-						'text' => 'Title',
-						'isPublicFacing' => true,
-					]);
-					$authorCol = translate([
-						'text' => 'Author',
-						'isPublicFacing' => true,
-					]);
-					$formatCol = translate([
-						'text' => 'Format',
-						'isPublicFacing' => true,
-					]);
 					$cancelledCol = translate([
 						'text' => 'Cancellation Date',
 						'isPublicFacing' => true,
@@ -3843,25 +3378,7 @@ class MyAccount_AJAX extends JSON_Action {
 					}
 				} else {
 					// Section header
-					$holdType = translate([
-						'text' => 'Holds - ' . ucfirst($exportType),
-						'isPublicFacing' => true,
-					]);
-					$header = array($holdType);
-					fputcsv($fp, $header);
 					// Col names
-					$titleCol = translate([
-						'text' => 'Title',
-						'isPublicFacing' => true,
-					]);
-					$authorCol = translate([
-						'text' => 'Author',
-						'isPublicFacing' => true,
-					]);
-					$formatCol = translate([
-						'text' => 'Format',
-						'isPublicFacing' => true,
-					]);
 					$placedCol = translate([
 						'text' => 'Placed',
 						'isPublicFacing' => true,
@@ -3977,61 +3494,64 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	public function exportReadingHistory(): void {
+		$this->requireLoggedInUser();
+
 		$user = UserAccount::getActiveUserObj();
-		if ($user) {
-			$selectedSortOption = $this->setSort('sort', 'readingHistory');
-			if ($selectedSortOption == null) {
-				$selectedSortOption = 'checkedOut';
-			}
-			$readingHistory = $user->getReadingHistory(1, -1, $selectedSortOption, '', true);
 
-			header('Content-Type: text/csv; charset=utf-8');
-			header('Content-Disposition: attachment;filename="ReadingHistory.csv"');
-			header('Cache-Control: max-age=0');
-			$fp = fopen('php://output', 'w');
-			try {
-				$fields = array(
-					'Title',
-					'Author',
-					'Format',
-					'Last used'
-				);
-				fputcsv($fp, $fields);
-
-				foreach ($readingHistory['titles'] as $row) {
-					$title = $row['title'];
-					$author = $row['author'];
-					$format = is_array($row['format']) ? implode(',', $row['format']) : $row['format'];
-					if ($row['checkedOut']) {
-						$lastCheckout = translate([
-							'text' => 'In Use',
-							'isPublicFacing' => true,
-						]);
-					} else {
-						if (is_numeric($row['checkout'])) {
-							$lastCheckout = date('M Y', $row['checkout']);
-						} else {
-							$lastCheckout = $row['checkout'];
-						}
-					}
-					$results = array(
-						$title,
-						$author,
-						$format,
-						$lastCheckout
-					);
-					fputcsv($fp, $results);
-				}
-			} catch (Exception $e) {
-				global $logger;
-				$logger->log("Error exporting to csv " . $e->getMessage(), Logger::LOG_ERROR);
-			}
+		$selectedSortOption = $this->setSort('sort', 'readingHistory');
+		if ($selectedSortOption == null) {
+			$selectedSortOption = 'checkedOut';
 		}
+		$readingHistory = $user->getReadingHistory(1, -1, $selectedSortOption, '', true);
+
+		header('Content-Type: text/csv; charset=utf-8');
+		header('Content-Disposition: attachment;filename="ReadingHistory.csv"');
+		header('Cache-Control: max-age=0');
+		$fp = fopen('php://output', 'w');
+		try {
+			$fields = array(
+				'Title',
+				'Author',
+				'Format',
+				'Last used'
+			);
+			fputcsv($fp, $fields);
+
+			foreach ($readingHistory['titles'] as $row) {
+				$title = $row['title'];
+				$author = $row['author'];
+				$format = is_array($row['format']) ? implode(',', $row['format']) : $row['format'];
+				if ($row['checkedOut']) {
+					$lastCheckout = translate([
+						'text' => 'In Use',
+						'isPublicFacing' => true,
+					]);
+				} else {
+					if (is_numeric($row['checkout'])) {
+						$lastCheckout = date('M Y', $row['checkout']);
+					} else {
+						$lastCheckout = $row['checkout'];
+					}
+				}
+				$results = array(
+					$title,
+					$author,
+					$format,
+					$lastCheckout
+				);
+				fputcsv($fp, $results);
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log("Error exporting to csv " . $e->getMessage(), Logger::LOG_ERROR);
+		}
+
 		exit;
 	}
 
 	/** @noinspection PhpUnused */
 	public function getCheckouts(): array {
+		$this->requireLoggedInUser(null, 'Your session has ended, please login to view checkouts.');
 		global $interface;
 		global $library;
 
@@ -4039,24 +3559,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$result = [
 			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
 			'showCostSavings' => false,
 		];
 
 		global $offlineMode;
-		if (!UserAccount::isLoggedIn()) {
-			$result = [
-				'success' => false,
-				'message' => translate([
-					'text' => 'Your session has ended, please login to view checkouts.',
-					'isPublicFacing' => true,
-				]),
-				'showCostSavings' => false,
-			];
-		} else if (!$offlineMode || $interface->getVariable('enableEContentWhileOffline')) {
+		if (!$offlineMode || $interface->getVariable('enableEContentWhileOffline')) {
 			$source = $_REQUEST['source'];
 			$interface->assign('source', $source);
 			$this->setShowCovers();
@@ -4085,118 +3592,111 @@ class MyAccount_AJAX extends JSON_Action {
 				'format' => 'Format',
 			];
 			$user = UserAccount::getActiveUserObj();
-			if (UserAccount::isLoggedIn() == false || empty($user)) {
-				$result['message'] = translate([
-					'text' => "Your login has timed out. Please login again.",
-					'isPublicFacing' => true,
-				]);
+
+			if ($user->getHomeLibrary() != null) {
+				$allowSelectingCheckoutsToExport = $user->getHomeLibrary()->allowSelectingCheckoutsToExport;
 			} else {
-
-				if ($user->getHomeLibrary() != null) {
-					$allowSelectingCheckoutsToExport = $user->getHomeLibrary()->allowSelectingCheckoutsToExport;
-				} else {
-					$allowSelectingCheckoutsToExport = $library->allowSelectingCheckoutsToExport;
-				}
-				$interface->assign('allowSelectingCheckoutsToExport', $allowSelectingCheckoutsToExport);
-
-
-				if (count($user->getLinkedUsers()) > 0) {
-					$sortOptions['libraryAccount'] = 'Library Account';
-				}
-				if ($showWaitList) {
-					$sortOptions['holdQueueLength'] = 'Wait List';
-				}
-				if ($showRenewed) {
-					$sortOptions['renewed'] = 'Times Renewed';
-				}
-				if ($showRenewalsRemaining) {
-					$sortOptions['renewalsRemainingAsc'] = 'Renewals Remaining Asc';
-					$sortOptions['renewalsRemainingDesc'] = 'Renewals Remaining Desc';
-				}
-
-				$interface->assign('sortOptions', $sortOptions);
-
-				$interface->assign('showNotInterested', false);
-
-				// Get My Transactions
-				$selectedUser = $this->setFilterLinkedUserCheckouts();
-
-				$allCheckedOut = $this->filterCheckoutsByUser($user->getCheckouts(true, $source), $selectedUser);
-
-				foreach ($allCheckedOut as $checkout) {
-					if ($checkout->canRenew == 1) {
-						$renewableCheckouts++;
-					}
-				}
-
-				$interface->assign('renewableCheckouts', $renewableCheckouts);
-				$selectedSortOption = $this->setSortByUserObj('sort', 'checkout', $user);
-
-				//Map LiDA Sort Options to Aspen
-				if ($selectedSortOption == null) {
-					$selectedSortOption = 'dueDate';
-				}elseif (!array_key_exists($selectedSortOption, $sortOptions)) {
-					if (array_key_exists($selectedSortOption, User::$lidaToAspenCheckoutSortMapping)) {
-						$selectedSortOption = User::$lidaToAspenCheckoutSortMapping[$selectedSortOption];
-					}else{
-						$selectedSortOption = 'dueDate';
-					}
-				}
-				if (isset($_REQUEST['sort'])) {
-					$user->updateSortPreferences();
-				}
-
-				$interface->assign('defaultSortOption', $selectedSortOption);
-				$allCheckedOut = $this->sortCheckouts($selectedSortOption, $allCheckedOut);
-
-				$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-				$recordsPerPage = 100; // Could be made configurable in the future if requested.
-				$totalCheckouts = count($allCheckedOut);
-				if ($recordsPerPage != -1) {
-					$interface->assign('page', $page);
-					$link = $_SERVER['REQUEST_URI'];
-					if (preg_match('/[&?]page=/', $link)) {
-						$link = preg_replace('/page=\d+/', 'page=%d', $link);
-					} else {
-						$link .= (str_contains($link, '?') ? '&' : '?') . 'page=%d';
-					}
-					$options = [
-						'totalItems' => $totalCheckouts,
-						'fileName' => $link,
-						'perPage' => $recordsPerPage,
-						'append' => false,
-						'linkRenderingObject' => $this,
-						'linkRenderingFunction' => 'renderCheckoutPaginationLink',
-						'source' => $source,
-						'sort' => $selectedSortOption,
-						'selectedUser' => $selectedUser,
-					];
-					$pager = new Pager($options);
-					$interface->assign('pageLinks', $pager->getLinks());
-					$interface->assign('recordsPerPage', $recordsPerPage);
-					$interface->assign('startIndex', ($page - 1) * $recordsPerPage);
-					$displayedCheckouts = array_slice($allCheckedOut, ($page - 1) * $recordsPerPage, $recordsPerPage);
-				} else {
-					$displayedCheckouts = $allCheckedOut;
-				}
-				$interface->assign('transList', $displayedCheckouts);
-
-				$result['success'] = true;
-				$result['message'] = "";
-				$result['checkoutInfoLastLoaded'] = $user->getFormattedCheckoutInfoLastLoaded();
-
-				$readerName = new OverDriveDriver();
-				$readerName = $readerName->getReaderName();
-				$interface->assign('readerName', $readerName);
-
-				if ($interface->getVariable('enableCostSavings') && $source == 'all') {
-					//Get costs savings
-					$result['showCostSavings'] = true;
-					$result['costSavingsMessage'] = $user->getCurrentCostSavingsMessage(true);
-				}
-
-				$result['checkouts'] = $interface->fetch('MyAccount/checkoutsList.tpl');
+				$allowSelectingCheckoutsToExport = $library->allowSelectingCheckoutsToExport;
 			}
+			$interface->assign('allowSelectingCheckoutsToExport', $allowSelectingCheckoutsToExport);
+
+
+			if (count($user->getLinkedUsers()) > 0) {
+				$sortOptions['libraryAccount'] = 'Library Account';
+			}
+			if ($showWaitList) {
+				$sortOptions['holdQueueLength'] = 'Wait List';
+			}
+			if ($showRenewed) {
+				$sortOptions['renewed'] = 'Times Renewed';
+			}
+			if ($showRenewalsRemaining) {
+				$sortOptions['renewalsRemainingAsc'] = 'Renewals Remaining Asc';
+				$sortOptions['renewalsRemainingDesc'] = 'Renewals Remaining Desc';
+			}
+
+			$interface->assign('sortOptions', $sortOptions);
+
+			$interface->assign('showNotInterested', false);
+
+			// Get My Transactions
+			$selectedUser = $this->setFilterLinkedUserCheckouts();
+
+			$allCheckedOut = $this->filterCheckoutsByUser($user->getCheckouts(true, $source), $selectedUser);
+
+			foreach ($allCheckedOut as $checkout) {
+				if ($checkout->canRenew == 1) {
+					$renewableCheckouts++;
+				}
+			}
+
+			$interface->assign('renewableCheckouts', $renewableCheckouts);
+			$selectedSortOption = $this->setSortByUserObj('sort', 'checkout', $user);
+
+			//Map LiDA Sort Options to Aspen
+			if ($selectedSortOption == null) {
+				$selectedSortOption = 'dueDate';
+			} elseif (!array_key_exists($selectedSortOption, $sortOptions)) {
+				if (array_key_exists($selectedSortOption, User::$lidaToAspenCheckoutSortMapping)) {
+					$selectedSortOption = User::$lidaToAspenCheckoutSortMapping[$selectedSortOption];
+				} else {
+					$selectedSortOption = 'dueDate';
+				}
+			}
+			if (isset($_REQUEST['sort'])) {
+				$user->updateSortPreferences();
+			}
+
+			$interface->assign('defaultSortOption', $selectedSortOption);
+			$allCheckedOut = $this->sortCheckouts($selectedSortOption, $allCheckedOut);
+
+			$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+			$recordsPerPage = 100; // Could be made configurable in the future if requested.
+			$totalCheckouts = count($allCheckedOut);
+			if ($recordsPerPage != -1) {
+				$interface->assign('page', $page);
+				$link = $_SERVER['REQUEST_URI'];
+				if (preg_match('/[&?]page=/', $link)) {
+					$link = preg_replace('/page=\d+/', 'page=%d', $link);
+				} else {
+					$link .= (str_contains($link, '?') ? '&' : '?') . 'page=%d';
+				}
+				$options = [
+					'totalItems' => $totalCheckouts,
+					'fileName' => $link,
+					'perPage' => $recordsPerPage,
+					'append' => false,
+					'linkRenderingObject' => $this,
+					'linkRenderingFunction' => 'renderCheckoutPaginationLink',
+					'source' => $source,
+					'sort' => $selectedSortOption,
+					'selectedUser' => $selectedUser,
+				];
+				$pager = new Pager($options);
+				$interface->assign('pageLinks', $pager->getLinks());
+				$interface->assign('recordsPerPage', $recordsPerPage);
+				$interface->assign('startIndex', ($page - 1) * $recordsPerPage);
+				$displayedCheckouts = array_slice($allCheckedOut, ($page - 1) * $recordsPerPage, $recordsPerPage);
+			} else {
+				$displayedCheckouts = $allCheckedOut;
+			}
+			$interface->assign('transList', $displayedCheckouts);
+
+			$result['success'] = true;
+			$result['message'] = "";
+			$result['checkoutInfoLastLoaded'] = $user->getFormattedCheckoutInfoLastLoaded();
+
+			$readerName = new OverDriveDriver();
+			$readerName = $readerName->getReaderName();
+			$interface->assign('readerName', $readerName);
+
+			if ($interface->getVariable('enableCostSavings') && $source == 'all') {
+				//Get costs savings
+				$result['showCostSavings'] = true;
+				$result['costSavingsMessage'] = $user->getCurrentCostSavingsMessage(true);
+			}
+
+			$result['checkouts'] = $interface->fetch('MyAccount/checkoutsList.tpl');
 		} else {
 			$result['message'] = translate([
 				'text' => 'The catalog is offline',
@@ -4209,12 +3709,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	private function normalizeRecordId(string $recordId): string {
 		$recordId = urldecode($recordId);
-
 		$recordId = trim($recordId);
-
-		$recordId = strtolower($recordId);
-
-		return $recordId;
+		return strtolower($recordId);
 	}
 
 	public function filterHoldsBySelected(array $allHolds, $selectedHolds): array {
@@ -4244,7 +3740,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hold->recordId = $this->normalizeRecordId($hold->recordId);
 			$matchFound = false;
 			foreach ($selectedHolds as $selectedHold) {
-				if (strval($hold->recordId) === strval($selectedHold['recordId'])) {
+				if ($hold->recordId === strval($selectedHold['recordId'])) {
 					$matchFound = true;
 					break;
 				}
@@ -4258,7 +3754,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hold->recordId = $this->normalizeRecordId($hold->recordId);
 			$matchFound = false;
 			foreach ($selectedHolds as $selectedHold) {
-				if (strval($hold->recordId) === strval($selectedHold['recordId'])) {
+				if ($hold->recordId === strval($selectedHold['recordId'])) {
 					$matchFound = true;
 					break;
 				}
@@ -4299,7 +3795,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$matchFound = false;
 			foreach ($selectedCheckouts as $selectedCheckout) {
-				if (strval($checkout->recordId) === strval($selectedCheckout['recordId'])) {
+				if ($checkout->recordId === strval($selectedCheckout['recordId'])) {
 					$matchFound = true;
 					break;
 				}
@@ -4312,7 +3808,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 
-	public function filterHolds(array $allHolds, string $selectedUser): array {
+	private function filterHolds(array $allHolds, string $selectedUser): array {
 
 		$filteredHolds = [
 			'available' => [],
@@ -4321,7 +3817,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 
 		// Check if we're filtering by a specific user
-		$allUsersSelected = (empty($selectedUser) || $selectedUser === "" || $selectedUser === '[""]');
+		$allUsersSelected = (empty($selectedUser) || $selectedUser === '[""]');
 
 		foreach ($allHolds['available'] as $key => $hold) {
 			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
@@ -4346,10 +3842,10 @@ class MyAccount_AJAX extends JSON_Action {
 		return $filteredHolds;
 	}
 
-	public function filterCheckoutsByUser(array $allCheckedOut, string $selectedUser): array {
+	private function filterCheckoutsByUser(array $allCheckedOut, string $selectedUser): array {
 		$filteredCheckouts = [];
 
-		$allUsersSelected = (empty($selectedUser) || $selectedUser === "" || $selectedUser === '[""]');
+		$allUsersSelected = (empty($selectedUser) || $selectedUser === '[""]');
 
 		foreach ($allCheckedOut as $key => $checkout) {
 			if ($allUsersSelected || intval($checkout->userId) === intval($selectedUser)) {
@@ -4360,7 +3856,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return $filteredCheckouts;
 	}
 
-	public function setFilterLinkedUser() : string {
+	public function setFilterLinkedUser(): string {
 		$selectedUser = '';
 		if (isset($_REQUEST['selectedUser'])) {
 			$selectedUser = $_REQUEST['selectedUser'];
@@ -4376,7 +3872,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return (string)$selectedUser;
 	}
 
-	public function setFilterLinkedUserCheckouts() : string {
+	public function setFilterLinkedUserCheckouts(): string {
 
 		$selectedUser = '';
 		if (isset($_REQUEST['selectedUserCheckouts'])) {
@@ -4397,6 +3893,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	public function getHolds(): array {
+		$this->requireLoggedInUser(null, "Your login has timed out. Please login again.");
 		global $interface;
 
 		$result = [
@@ -4406,192 +3903,263 @@ class MyAccount_AJAX extends JSON_Action {
 		global $offlineMode;
 		if (!$offlineMode || $interface->getVariable('enableEContentWhileOffline')) {
 			global $library;
+			global $logger;
 
 			$source = $_REQUEST['source'];
 			$interface->assign('source', $source);
 			$this->setShowCovers();
 
 			$user = UserAccount::getActiveUserObj();
-			if (!UserAccount::isLoggedIn() || empty($user)) {
-				$result['message'] = translate([
-					'text' => "Your login has timed out. Please login again.",
-					'isPublicFacing' => true,
-				]);
+
+			$selectedUser = $this->setFilterLinkedUser();
+
+			if ($user->getHomeLibrary() != null) {
+				$allowSelectingHoldsToExport = $user->getHomeLibrary()->allowSelectingHoldsToExport;
 			} else {
-				$selectedUser = $this->setFilterLinkedUser();
+				$allowSelectingHoldsToExport = $library->allowSelectingHoldsToExport;
+			}
 
-				if ($user->getHomeLibrary() != null) {
-					$allowSelectingHoldsToExport = $user->getHomeLibrary()->allowSelectingHoldsToExport;
+			$catalogDriver = $user->getCatalogDriver();
+			$allowHoldsToBeGrouped = $catalogDriver && $catalogDriver->supportsHyperholdsGrouping()
+				? User::resolveAllowHoldsToBeGrouped($user, $library)
+				: false;
+		
+			if ($allowHoldsToBeGrouped) {
+				$patronId = $user->unique_ils_id;
+				$groupedHoldsResponse = $catalogDriver->getPatronHoldGroups($patronId);
+				$groupedHolds = [];
+				if (isset($groupedHoldsResponse['content'])) {
+					if (is_string($groupedHoldsResponse['content'])) {
+						$groupedHolds = json_decode($groupedHoldsResponse['content'], true) ?: [];
+					} elseif (is_array($groupedHoldsResponse['content'])) {
+						$groupedHolds = $groupedHoldsResponse['content'];
+					} else {
+						$logger->log(
+							'Unexpected type for groupedHoldsResponse["content"]: ' . gettype($groupedHoldsResponse['content']),
+							Logger::LOG_ERROR
+						);
+					}
+				} elseif (is_array($groupedHoldsResponse)) {
+					$groupedHolds = $groupedHoldsResponse;
 				} else {
-					$allowSelectingHoldsToExport = $library->allowSelectingHoldsToExport;
+					$logger->log(
+						'Unexpected type for groupedHoldsResponse: ' . gettype($groupedHoldsResponse),
+						Logger::LOG_ERROR
+					);
 				}
+			}
 
-				$interface->assign('allowSelectingHoldsToExport', $allowSelectingHoldsToExport);
+			$interface->assign('allowSelectingHoldsToExport', $allowSelectingHoldsToExport);
 
 
-				if ($source != 'interlibrary_loan') {
-					if ($user->getHomeLibrary() != null) {
-						$allowFreezeHolds = $user->getHomeLibrary()->allowFreezeHolds;
-					} else {
-						$allowFreezeHolds = $library->allowFreezeHolds;
-					}
-					if ($allowFreezeHolds) {
-						$interface->assign('allowFreezeAllHolds', true);
-					} else {
-						$interface->assign('allowFreezeAllHolds', false);
-					}
-					$interface->assign('allowFreezeHolds', true);
+			if ($source != 'interlibrary_loan') {
+				if ($user->getHomeLibrary() != null) {
+					$allowFreezeHolds = $user->getHomeLibrary()->allowFreezeHolds;
+				} else {
+					$allowFreezeHolds = $library->allowFreezeHolds;
+				}
+				if ($allowFreezeHolds) {
+					$interface->assign('allowFreezeAllHolds', true);
 				} else {
 					$interface->assign('allowFreezeAllHolds', false);
-					$interface->assign('allowFreezeHolds', false);
 				}
-
-				$showPosition = $user->showHoldPosition();
-				$suspendRequiresReactivationDate = $user->suspendRequiresReactivationDate();
-				$interface->assign('suspendRequiresReactivationDate', $suspendRequiresReactivationDate);
-				$showPlacedColumn = $user->showHoldPlacedDate();
-				$interface->assign('showPlacedColumn', $showPlacedColumn);
-
-				$location = new Location();
-				$pickupBranches = $location->getPickupBranches($user);
-				$interface->assign('numPickupBranches', count($pickupBranches));
-
-				// Define sorting options
-				$unavailableHoldSortOptions = [
-					'title' => 'Title',
-					'author' => 'Author',
-					'format' => 'Format',
-				];
-				$unavailableHoldSortOptions['status'] = 'Status';
-				if ($source == 'all' || $source == 'ils') {
-					$unavailableHoldSortOptions['location'] = 'Pickup Location';
-				}
-				if ($showPosition) {
-					$unavailableHoldSortOptions['position'] = 'Position';
-				}
-				if ($showPlacedColumn) {
-					$unavailableHoldSortOptions['placed'] = 'Date Placed';
-				}
-				if ($library->showHoldCancelDate) {
-					$unavailableHoldSortOptions['cancelDate'] = 'Hold Cancellation Date';
-				}
-				if ($user->suspendRequiresReactivationDate()) {
-					$unavailableHoldSortOptions['reactivate'] = 'Reactivation Date';
-				}
-
-				/*$cancelledHoldSortOptions = [
-					'title' => 'Title',
-					'author' => 'Author',
-					'format' => 'Format',
-					'cancellationDate' => 'Cancellation Date',
-				];*/
-
-				$availableHoldSortOptions = [
-					'title' => 'Title',
-					'author' => 'Author',
-					'format' => 'Format',
-					'expire' => 'Expiration Date',
-					'placed' => 'Date Placed',
-				];
-				if ($source == 'all' || $source == 'ils') {
-					$availableHoldSortOptions['location'] = 'Pickup Location';
-				}
-
-				if (count($user->getLinkedUsers()) > 0) {
-					$unavailableHoldSortOptions['libraryAccount'] = 'Library Account';
-					$availableHoldSortOptions['libraryAccount'] = 'Library Account';
-				}
-
-				$interface->assign('sortOptions', [
-					'available' => $availableHoldSortOptions,
-					'unavailable' => $unavailableHoldSortOptions,
-					/*'cancelled' => $cancelledHoldSortOptions,*/
-				]);
-
-				$selectedAvailableSortOption = $this->setSortByUserObj('availableHoldSort', 'availableHold', $user);
-				$selectedUnavailableSortOption = $this->setSortByUserObj('unavailableHoldSort', 'unavailableHold', $user);
-				/*$selectedCancelledSortOption = $this->setSortByUserObj('cancelledHoldSort', 'cancelledHold', $user);*/
-
-				if ($selectedAvailableSortOption == null) {
-					$selectedAvailableSortOption = 'expire';
-				}elseif (!array_key_exists($selectedAvailableSortOption, $availableHoldSortOptions)) {
-					if (array_key_exists($selectedAvailableSortOption, User::$lidaToAspenAvailableHoldSortMapping)) {
-						$selectedAvailableSortOption = User::$lidaToAspenAvailableHoldSortMapping[$selectedAvailableSortOption];
-					}else{
-						$selectedAvailableSortOption = 'expire';
-					}
-				}
-				if ($selectedUnavailableSortOption == null) {
-					$selectedAvailableSortOption = ($showPosition ? 'position' : 'title');
-				}elseif (!array_key_exists($selectedUnavailableSortOption, $unavailableHoldSortOptions)) {
-					if (array_key_exists($selectedUnavailableSortOption, User::$lidaToAspenUnavailableHoldSortMapping)) {
-						$selectedUnavailableSortOption = User::$lidaToAspenUnavailableHoldSortMapping[$selectedUnavailableSortOption];
-					}else{
-						$selectedUnavailableSortOption = ($showPosition ? 'position' : 'title');
-					}
-				}
-/*				if ($selectedCancelledSortOption == null) {
-					$selectedAvailableSortOption = ($showPosition ? 'position' : 'title');
-				}elseif (!array_key_exists($selectedCancelledSortOption, $cancelledHoldSortOptions)) {
-					if (array_key_exists($selectedCancelledSortOption, User::$lidaToAspenUnavailableHoldSortMapping)) {
-						$selectedCancelledSortOption = User::$lidaToAspenUnavailableHoldSortMapping[$selectedCancelledSortOption];
-					}else{
-						$selectedCancelledSortOption = ($showPosition ? 'position' : 'title');
-					}
-				}*/
-
-				$user->updateSortPreferences();
-
-				$defaultCancelledSortOption = 'cancellationDate';
-				$interface->assign('defaultSortOption', [
-					'available' => $selectedAvailableSortOption,
-					'unavailable' => $selectedUnavailableSortOption,
-					/*'cancelled' => $defaultCancelledSortOption,*/
-				]);
-
-				$showDateWhenSuspending = $user->showDateWhenSuspending();
-				$interface->assign('showDateWhenSuspending', $showDateWhenSuspending);
-
-				$interface->assign('showPosition', $showPosition);
-				$interface->assign('showNotInterested', false);
-
-				global $offlineMode;
-				$allHolds = null;
-				if (!$offlineMode) {
-					if ($user) {
-						$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
-						$interface->assign('recordList', $allHolds);
-					}
-				}
-
-				$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
-				$interface->assign('notification_method', strtolower($notification_method));
-				$interface->assign('userId', $user->id);
-
-				$result['success'] = true;
-				$result['message'] = "";
-				$result['holdInfoLastLoaded'] = $user->getFormattedHoldInfoLastLoaded();
-
-				$showCancelled = false;
-				if ($library->showCancelledHolds && $library->getAccountProfile()->ils == "polaris") {
-					$showCancelled = true;
-				}
-
-				$readerName = new OverDriveDriver();
-				$readerName = $readerName->getReaderName();
-				$interface->assign('readerName', $readerName);
-				$interface->assign('showCancelled', $showCancelled);
-
-				if ($source == 'ils') {
-					$showAvailableHoldsSection = $library->showHoldsReadyForPickupSection == 1 || ($allHolds != null && count($allHolds['available']) > 0);
-					$interface->assign('showAvailableHoldsSection', $showAvailableHoldsSection);
-				}else{
-					$interface->assign('showAvailableHoldsSection', true);
-				}
-				$interface->assign('showHoldHelpMessages', $user->showHoldHelpMessages);
-
-				$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
+				$interface->assign('allowFreezeHolds', true);
+			} else {
+				$interface->assign('allowFreezeAllHolds', false);
+				$interface->assign('allowFreezeHolds', false);
 			}
+
+			$interface->assign('allowHoldsToBeGrouped', $source === 'ils' ? $allowHoldsToBeGrouped : false);
+
+			$showPosition = $user->showHoldPosition();
+			$suspendRequiresReactivationDate = $user->suspendRequiresReactivationDate();
+			$interface->assign('suspendRequiresReactivationDate', $suspendRequiresReactivationDate);
+			$showPlacedColumn = $user->showHoldPlacedDate();
+			$interface->assign('showPlacedColumn', $showPlacedColumn);
+
+			$location = new Location();
+			$pickupBranches = $location->getPickupBranches($user);
+			$interface->assign('numPickupBranches', count($pickupBranches));
+
+			// Define sorting options
+			$unavailableHoldSortOptions = [
+				'title' => 'Title',
+				'author' => 'Author',
+				'format' => 'Format',
+			];
+			$unavailableHoldSortOptions['status'] = 'Status';
+			if ($source == 'all' || $source == 'ils') {
+				$unavailableHoldSortOptions['location'] = 'Pickup Location';
+			}
+			if ($showPosition) {
+				$unavailableHoldSortOptions['position'] = 'Position';
+			}
+			if ($showPlacedColumn) {
+				$unavailableHoldSortOptions['placed'] = 'Date Placed';
+			}
+			if ($library->showHoldCancelDate) {
+				$unavailableHoldSortOptions['cancelDate'] = 'Hold Cancellation Date';
+			}
+			if ($user->suspendRequiresReactivationDate()) {
+				$unavailableHoldSortOptions['reactivate'] = 'Reactivation Date';
+			}
+
+			$availableHoldSortOptions = [
+				'title' => 'Title',
+				'author' => 'Author',
+				'format' => 'Format',
+				'expire' => 'Expiration Date',
+				'placed' => 'Date Placed',
+			];
+			if ($source == 'all' || $source == 'ils') {
+				$availableHoldSortOptions['location'] = 'Pickup Location';
+			}
+
+			if (count($user->getLinkedUsers()) > 0) {
+				$unavailableHoldSortOptions['libraryAccount'] = 'Library Account';
+				$availableHoldSortOptions['libraryAccount'] = 'Library Account';
+			}
+
+			$interface->assign('sortOptions', [
+				'available' => $availableHoldSortOptions,
+				'unavailable' => $unavailableHoldSortOptions,
+				/*'cancelled' => $cancelledHoldSortOptions,*/
+			]);
+
+			$selectedAvailableSortOption = $this->setSortByUserObj('availableHoldSort', 'availableHold', $user);
+			$selectedUnavailableSortOption = $this->setSortByUserObj('unavailableHoldSort', 'unavailableHold', $user);
+			/*$selectedCancelledSortOption = $this->setSortByUserObj('cancelledHoldSort', 'cancelledHold', $user);*/
+
+			if ($selectedAvailableSortOption == null) {
+				$selectedAvailableSortOption = 'expire';
+			} elseif (!array_key_exists($selectedAvailableSortOption, $availableHoldSortOptions)) {
+				if (array_key_exists($selectedAvailableSortOption, User::$lidaToAspenAvailableHoldSortMapping)) {
+					$selectedAvailableSortOption = User::$lidaToAspenAvailableHoldSortMapping[$selectedAvailableSortOption];
+				} else {
+					$selectedAvailableSortOption = 'expire';
+				}
+			}
+			if ($selectedUnavailableSortOption == null) {
+				$selectedAvailableSortOption = ($showPosition ? 'position' : 'title');
+			} elseif (!array_key_exists($selectedUnavailableSortOption, $unavailableHoldSortOptions)) {
+				if (array_key_exists($selectedUnavailableSortOption, User::$lidaToAspenUnavailableHoldSortMapping)) {
+					$selectedUnavailableSortOption = User::$lidaToAspenUnavailableHoldSortMapping[$selectedUnavailableSortOption];
+				} else {
+					$selectedUnavailableSortOption = ($showPosition ? 'position' : 'title');
+				}
+							}
+
+			$user->updateSortPreferences();
+
+			$defaultCancelledSortOption = 'cancellationDate';
+			$interface->assign('defaultSortOption', [
+				'available' => $selectedAvailableSortOption,
+				'unavailable' => $selectedUnavailableSortOption,
+				/*'cancelled' => $defaultCancelledSortOption,*/
+			]);
+
+			$showDateWhenSuspending = $user->showDateWhenSuspending();
+			$interface->assign('showDateWhenSuspending', $showDateWhenSuspending);
+
+			$interface->assign('showPosition', $showPosition);
+			$interface->assign('showNotInterested', false);
+
+			global $offlineMode;
+			$allHolds = null;
+			if (!$offlineMode) {
+				$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
+				$hyperHolds = [];
+				$hiddenHoldIds = [];
+
+				if (!empty($groupedHolds) && !empty($allHolds['unavailable'])) {
+					foreach($groupedHolds as $group) {
+						if (!empty($group['holds']) && is_array($group['holds']) && count ($group['holds']) > 1) {
+							$groupBiblioIds = [];
+							$groupHoldIds = [];
+							foreach ($group['holds'] as $hold) {
+								$groupBiblioIds[] = $hold['biblio_id'] ?? null;
+								$groupHoldIds[] = $hold['hold_id'] ?? null;
+							}
+							$matchingHolds = [];
+							foreach ($allHolds['unavailable'] as $holdKey => $holdObj) {
+								if (in_array($holdObj->recordId, $groupBiblioIds)) {
+									$matchingHolds[] = $holdObj;
+									$hiddenHoldIds[] = $holdKey;
+								}
+							}
+							if (count($matchingHolds) > 1) {
+								$hyperHolds[] = [
+									'visual_hold_id' => $group['visual_hold_group_id'],
+									'hold_group_id' => $group['hold_group_id'],
+									'holdCount' => count($matchingHolds),
+									'holds' => $matchingHolds,
+									'type' => 'hyperhold',
+									'userName' => $group['linked_user_name'] ?? $user->displayName,
+								];
+							}
+						}
+					}
+				}
+
+				if (!empty($hiddenHoldIds)) {
+					foreach ($hiddenHoldIds as $holdKey) {
+						unset($allHolds['unavailable'][$holdKey]);
+					}
+				}
+
+				$interface->assign('hyperHolds', $hyperHolds);
+				$interface->assign('hasHyperHolds', !empty($hyperHolds));
+				$interface->assign('recordList', $allHolds);
+
+				if (!empty($hyperHolds)) {
+					foreach ($hyperHolds as $hyperHold) {
+						$holdGroupId = $hyperHold['hold_group_id'];
+						$visualGroupId = $hyperHold['visual_hold_id'];
+
+						foreach ($hyperHold['holds'] as $holdObj) {
+							$holdObj->holdGroupId = $holdGroupId;
+							$holdObj->visualHoldGroupId = $visualGroupId;
+
+							$holdRecord = new Hold();
+							$holdRecord->id = $holdObj->id;
+							if ($holdRecord->find(true)) {
+								$holdRecord->holdGroupId = $holdGroupId;
+								$holdRecord->visualHoldGroupId = $visualGroupId;
+								$holdRecord->update();
+							}
+						}
+					}
+				}
+			}
+
+			$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
+			$interface->assign('notification_method', strtolower($notification_method));
+			$interface->assign('userId', $user->id);
+
+			$result['success'] = true;
+			$result['message'] = "";
+			$result['holdInfoLastLoaded'] = $user->getFormattedHoldInfoLastLoaded();
+
+			$showCancelled = false;
+			if ($library->showCancelledHolds && $library->getAccountProfile()->ils == "polaris") {
+				$showCancelled = true;
+			}
+
+			$readerName = new OverDriveDriver();
+			$readerName = $readerName->getReaderName();
+			$interface->assign('readerName', $readerName);
+			$interface->assign('showCancelled', $showCancelled);
+
+			if ($source == 'ils') {
+				$showAvailableHoldsSection = $library->showHoldsReadyForPickupSection == 1 || ($allHolds != null && count($allHolds['available']) > 0);
+				$interface->assign('showAvailableHoldsSection', $showAvailableHoldsSection);
+			} else {
+				$interface->assign('showAvailableHoldsSection', true);
+			}
+			$interface->assign('showHoldHelpMessages', $user->showHoldHelpMessages);
+
+			$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
+
 		} else {
 			$result['message'] = translate([
 				'text' => 'The catalog is offline',
@@ -4601,23 +4169,25 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	public function getVendor($sourceId) {
-		if (preg_match('`^communico`', $sourceId)) {
+	private function getVendor($sourceId) : string {
+		if (str_starts_with($sourceId, 'communico')) {
 			return "communico";
-		} elseif (preg_match('`^libcal`', $sourceId)) {
+		} elseif (str_starts_with($sourceId, 'libcal')) {
 			return "springshare";
-		} elseif (preg_match('`^lc_`', $sourceId)) {
+		} elseif (str_starts_with($sourceId, 'lc_')) {
 			return "library_market";
-		} elseif (preg_match('`^assabet`', $sourceId)) {
+		} elseif (str_starts_with($sourceId, 'assabet')) {
 			return "assabet";
+		} else {
+			return '';
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	public function getSavedEvents() {
+	public function getSavedEvents() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 		global $timer;
-		global $library;
 
 		//Load user ratings
 		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
@@ -4661,7 +4231,34 @@ class MyAccount_AJAX extends JSON_Action {
 		$eventRecords = $searchObject->getRecords(array_keys($eventIds));
 
 		foreach ($eventIds as $curEventId => $entry) {
-			$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
+			$nativeAspenEvent = strpos($entry->sourceId, 'aspenEvent') !== false;
+			$registration = null;
+			$numberOfSeats = null;
+			$availableSeats = null;
+			$eventFull = null;
+
+			// check aspen native events registration
+			if($nativeAspenEvent) {
+				$eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $entry->sourceId);
+
+				require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+				$aspenEventRegistration = new UserAspenEventInstanceRegistration();
+				$aspenEventRegistration->userId = UserAccount::getActiveUserId();
+				$aspenEventRegistration->eventInstanceId = $eventInstanceId;
+				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
+
+				require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+				$eventInstance = new EventInstance();
+				$eventInstance->id = $eventInstanceId;
+				if ($eventInstance->find(true)) {
+					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
+					$availableSeats = $eventInstance->getAvailableSeats();
+					$eventFull = !$eventInstance->hasAvailableSeats();
+				}
+			} else {
+				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
+			}
+
 			if (array_key_exists($curEventId, $eventRecords)) {
 				$eventRecordDriver = $eventRecords[$curEventId];
 				$events[$entry->sourceId] = [
@@ -4693,9 +4290,14 @@ class MyAccount_AJAX extends JSON_Action {
 					'vendor' => self::getVendor($entry->sourceId)
 				];
 			}
+			if($nativeAspenEvent) {
+				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
+				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
+				$events[$entry->sourceId]['isEventFull'] = $eventFull;
+			}
 		}
 
-		$filter = isset($_REQUEST['eventsFilter']) ? $_REQUEST['eventsFilter'] : '';
+		$filter = $_REQUEST['eventsFilter'] ?? '';
 		$interface->assign('eventsFilter', $filter);
 
 		// Process Paging
@@ -4710,6 +4312,27 @@ class MyAccount_AJAX extends JSON_Action {
 		$pager = new Pager($options);
 		$interface->assign('pageLinks', $pager->getLinks());
 		$interface->assign('events', $events);
+		$interface->assign('userId', $user->id);
+
+		$user = UserAccount::getLoggedInUser();
+		if ($user) {
+			$interface->assign('loggedIn', true);
+			$interface->assign('userId', $user->id);
+			$interface->assign('userDisplayName', $user->getDisplayName());
+			$interface->assign('userEmail', $user->email);
+			$interface->assign('userHomeLocation', $user->getHomeLocationName());
+			$linkedUsers = [];
+			global $library;
+			if ($library->allowLinkedAccounts) {
+				$linkedUsers = $user->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					$linkedUser->loadContactInformation();
+				}
+			}
+			$interface->assign('allowEventRegistration', isset($library->allowEventRegistration) && $library->allowEventRegistration != 0);
+			$interface->assign('linkedUsers', $linkedUsers);
+		}
+
 
 		$result['success'] = true;
 		$result['message'] = "";
@@ -4718,106 +4341,97 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	public function getReadingHistory() {
+	public function getReadingHistory() : array {
+		$this->requireLoggedInUser();
+
 		global $interface;
 		$showCovers = $this->setShowCovers();
 
 		require_once ROOT_DIR . '/sys/IP/IPAddress.php';
 		$interface->assign('showDebuggingInformation', IPAddress::showDebuggingInformation());
 
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
+		$user = UserAccount::getActiveUserObj();
+
+		$patronId = empty($_REQUEST['patronId']) ? $user->id : $_REQUEST['patronId'];
+		$interface->assign('selectedUser', $patronId);
+
+		$patron = $user->getUserReferredTo($patronId);
+		if (!$patron) {
+			AspenError::raiseError(new AspenError("The patron provided is invalid"));
+		}
+
+		// Define sorting options
+		$sortOptions = [
+			'title' => translate([
+				'text' => 'Title',
 				'isPublicFacing' => true,
 			]),
-			'showCostSavings' => false,
+			'author' => translate([
+				'text' => 'Author',
+				'isPublicFacing' => true,
+			]),
+			'checkedOut' => translate([
+				'text' => 'Last Used',
+				'isPublicFacing' => true,
+			]),
+			'format' => translate([
+				'text' => 'Format',
+				'isPublicFacing' => true,
+			]),
 		];
+		$selectedSortOption = $this->setSort('sort', 'readingHistory');
+		if ($selectedSortOption == null || !array_key_exists($selectedSortOption, $sortOptions)) {
+			$selectedSortOption = 'checkedOut';
+		}
 
+		$interface->assign('sortOptions', $sortOptions);
+		$interface->assign('defaultSortOption', $selectedSortOption);
+		$page = $_REQUEST['page'] ?? 1;
+		$interface->assign('page', $page);
 
-		$user = UserAccount::getActiveUserObj();
-		if ($user) {
-			$patronId = empty($_REQUEST['patronId']) ? $user->id : $_REQUEST['patronId'];
-			$interface->assign('selectedUser', $patronId);
+		$recordsPerPage = 20;
+		$interface->assign('curPage', $page);
 
-			$patron = $user->getUserReferredTo($patronId);
-			if (!$patron) {
-				AspenError::raiseError(new AspenError("The patron provided is invalid"));
-			}
+		$filter = $_REQUEST['readingHistoryFilter'] ?? '';
+		$interface->assign('readingHistoryFilter', $filter);
 
-			// Define sorting options
-			$sortOptions = [
-				'title' => translate([
-					'text' => 'Title',
-					'isPublicFacing' => true,
-				]),
-				'author' => translate([
-					'text' => 'Author',
-					'isPublicFacing' => true,
-				]),
-				'checkedOut' => translate([
-					'text' => 'Last Used',
-					'isPublicFacing' => true,
-				]),
-				'format' => translate([
-					'text' => 'Format',
-					'isPublicFacing' => true,
-				]),
-			];
-			$selectedSortOption = $this->setSort('sort', 'readingHistory');
-			if ($selectedSortOption == null || !array_key_exists($selectedSortOption, $sortOptions)) {
-				$selectedSortOption = 'checkedOut';
-			}
+		$result = $patron->getReadingHistory($page, $recordsPerPage, $selectedSortOption, $filter);
 
-			$interface->assign('sortOptions', $sortOptions);
-			$interface->assign('defaultSortOption', $selectedSortOption);
-			$page = $_REQUEST['page'] ?? 1;
-			$interface->assign('page', $page);
-
-			$recordsPerPage = 20;
-			$interface->assign('curPage', $page);
-
-			$filter = $_REQUEST['readingHistoryFilter'] ?? '';
-			$interface->assign('readingHistoryFilter', $filter);
-
-			$result = $patron->getReadingHistory($page, $recordsPerPage, $selectedSortOption, $filter);
-
-			$link = $_SERVER['REQUEST_URI'];
-			if (preg_match('/[&?]page=/', $link)) {
-				$link = preg_replace("/page=\\d+/", "page=%d", $link);
+		$link = $_SERVER['REQUEST_URI'];
+		if (preg_match('/[&?]page=/', $link)) {
+			$link = preg_replace("/page=\\d+/", "page=%d", $link);
+		} else {
+			if (strpos($link, "?") > 0) {
+				$link .= "&page=%d";
 			} else {
-				if (strpos($link, "?") > 0) {
-					$link .= "&page=%d";
-				} else {
-					$link .= "?page=%d";
-				}
-			}
-			if ($recordsPerPage != '-1') {
-				$options = [
-					'totalItems' => $result['numTitles'],
-					'fileName' => $link,
-					'perPage' => $recordsPerPage,
-					'append' => false,
-					'linkRenderingObject' => $this,
-					'linkRenderingFunction' => 'renderReadingHistoryPaginationLink',
-					'patronId' => $patronId,
-					'sort' => $selectedSortOption,
-					'showCovers' => $showCovers,
-					'filter' => urlencode($filter),
-				];
-				$pager = new Pager($options);
-
-				$interface->assign('pageLinks', $pager->getLinks());
-			}
-			if (!($result instanceof AspenError)) {
-				$interface->assign('historyActive', $result['historyActive']);
-				$interface->assign('transList', $result['titles']);
-				$patronHomeLibrary = $patron->getHomeLibrary();
-				$interface->assign('library', $patronHomeLibrary);
-				$result['showCostSavings'] = $patronHomeLibrary->enableCostSavings && $patron->enableCostSavings;
-				$result['costSavingsMessage'] = $user->getTotalCostSavingsMessage(true);
+				$link .= "?page=%d";
 			}
 		}
+		if ($recordsPerPage != '-1') {
+			$options = [
+				'totalItems' => $result['numTitles'],
+				'fileName' => $link,
+				'perPage' => $recordsPerPage,
+				'append' => false,
+				'linkRenderingObject' => $this,
+				'linkRenderingFunction' => 'renderReadingHistoryPaginationLink',
+				'patronId' => $patronId,
+				'sort' => $selectedSortOption,
+				'showCovers' => $showCovers,
+				'filter' => urlencode($filter),
+			];
+			$pager = new Pager($options);
+
+			$interface->assign('pageLinks', $pager->getLinks());
+		}
+
+		$interface->assign('historyActive', $result['historyActive']);
+		$interface->assign('transList', $result['titles']);
+		$patronHomeLibrary = $patron->getHomeLibrary();
+		$interface->assign('library', $patronHomeLibrary);
+		$result['showCostSavings'] = $patronHomeLibrary->enableCostSavings && $patron->enableCostSavings;
+		$result['costSavingsMessage'] = $user->getTotalCostSavingsMessage(true);
+
 		$result['success'] = true;
 		$result['message'] = "";
 		$result['readingHistory'] = $interface->fetch('MyAccount/readingHistoryList.tpl');
@@ -4829,21 +4443,21 @@ class MyAccount_AJAX extends JSON_Action {
 	function renderReadingHistoryPaginationLink(int $page, array $options): string {
 		$currentPage = isset($_REQUEST['page']) && is_numeric($_REQUEST['page']) ? $_REQUEST['page'] : 1;
 		$activeClass = ($currentPage == $page) ? ' active' : '';
-		return "<a class='page-link btn btn-default btn-sm $activeClass' onclick='AspenDiscovery.Account.loadReadingHistory(\"{$options['patronId']}\", \"{$options['sort']}\", \"{$page}\", undefined, \"{$options['filter']}\")'>";
+		return "<a class='page-link btn btn-default btn-sm $activeClass' onclick='AspenDiscovery.Account.loadReadingHistory(\"{$options['patronId']}\", \"{$options['sort']}\", \"$page\", undefined, \"{$options['filter']}\")'>";
 	}
 
 	/** @noinspection PhpUnused */
 	function renderCheckoutPaginationLink(int $page, array $options): string {
 		$currentPage = isset($_REQUEST['page']) && is_numeric($_REQUEST['page']) ? $_REQUEST['page'] : 1;
 		$activeClass = ($currentPage == $page) ? ' active' : '';
-		return "<a class='page-link btn btn-default btn-sm $activeClass' onclick='AspenDiscovery.Account.loadCheckouts(\"{$options['source']}\", \"{$options['sort']}\", undefined, \"{$options['selectedUser']}\", \"{$page}\")'>";
+		return "<a class='page-link btn btn-default btn-sm $activeClass' onclick='AspenDiscovery.Account.loadCheckouts(\"{$options['source']}\", \"{$options['sort']}\", undefined, \"{$options['selectedUser']}\", \"$page\")'>";
 	}
 
-	private function isValidTimeStamp($timestamp) {
+	private function isValidTimeStamp($timestamp) : bool {
 		return is_numeric($timestamp) && ($timestamp <= PHP_INT_MAX) && ($timestamp >= ~PHP_INT_MAX);
 	}
 
-	function setShowCovers() {
+	public function setShowCovers() : bool {
 		global $interface;
 		// Hide Covers when the user has set that setting on a Search Results Page
 		// this is the same setting as used by the MyAccount Pages for now.
@@ -4860,7 +4474,7 @@ class MyAccount_AJAX extends JSON_Action {
 		return $showCovers;
 	}
 
-	function setSort($requestParameter, $sortType) {
+	function setSort($requestParameter, $sortType) : ?string {
 		$sort = null;
 		if (isset($_REQUEST[$requestParameter])) {
 			$sort = $_REQUEST[$requestParameter];
@@ -4873,16 +4487,16 @@ class MyAccount_AJAX extends JSON_Action {
 		return $sort;
 	}
 
-	function setSortByUserObj(string $requestParameter, string $sortType, User $user) : ?string {
+	function setSortByUserObj(string $requestParameter, string $sortType, User $user): ?string {
 		$sort = null;
 		if (isset($_REQUEST[$requestParameter])) {
 			$sort = $_REQUEST[$requestParameter];
 		} else {
 			if ($sortType == 'checkout') {
 				$sort = $user->checkoutSort;
-			}elseif ($sortType == 'availableHold') {
+			} elseif ($sortType == 'availableHold') {
 				$sort = $user->holdSortAvailable;
-			}elseif ($sortType == 'unavailableHold') {
+			} elseif ($sortType == 'unavailableHold') {
 				$sort = $user->holdSortUnavailable;
 			}
 		}
@@ -4901,9 +4515,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$curTransaction++;
 			$sortTitle = !empty($curTitle->getSortTitle()) ? $curTitle->getSortTitle() : (empty($curTitle->getTitle()) ? $this::SORT_LAST_ALPHA : $curTitle->getTitle());
 			$sortKey = $sortTitle;
-			if ($selectedSortOption == 'title') {
-				$sortKey = $sortTitle;
-			} elseif ($selectedSortOption == 'author') {
+			if ($selectedSortOption == 'author') {
 				$sortKey = (empty($curTitle->getAuthor()) ? $this::SORT_LAST_ALPHA : $curTitle->getAuthor()) . '-' . $sortTitle;
 			} elseif ($selectedSortOption == 'dueDate' || $selectedSortOption == 'dueDateDesc') {
 				if (isset($curTitle->dueDate)) {
@@ -4929,12 +4541,12 @@ class MyAccount_AJAX extends JSON_Action {
 				$sortKey = str_pad($numRenewalsRemaining, 3, '0', STR_PAD_LEFT) . '-' . $sortTitle;
 			} elseif ($selectedSortOption == 'renewalsRemainingDesc') {
 				$numRenewalsRemaining = $curTitle->maxRenewals - $curTitle->renewCount;
-				$sortKey = str_pad(999-$numRenewalsRemaining, 3, '0', STR_PAD_LEFT) . '-' . $sortTitle;
+				$sortKey = str_pad(999 - $numRenewalsRemaining, 3, '0', STR_PAD_LEFT) . '-' . $sortTitle;
 			} elseif ($selectedSortOption == 'libraryAccount') {
 				$sortKey = $curTitle->getUserName() . '-' . $sortTitle;
 			}
 			$sortKey = strtolower($sortKey);
-			$sortKey = utf8_encode($sortKey . '-' . $curTransaction);
+			$sortKey = mb_convert_encoding($sortKey . '-' . $curTransaction, 'UTF-8', 'ISO-8859-1');
 
 			$allCheckedOut[$sortKey] = $curTitle;
 			unset($allCheckedOut[$i]);
@@ -4952,42 +4564,30 @@ class MyAccount_AJAX extends JSON_Action {
 	/** @noinspection PhpUnused */
 
 	function deleteReadingHistoryEntry(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Failed to Delete Reading History Entry',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'An unknown error has occurred deleting this reading history entry.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser(null, 'You must be logged in to delete from the reading history.');
+		$result = $this->failureResult('Failed to Delete Reading History Entry', 'An unknown error has occurred deleting this reading history entry.');
 
 		$user = UserAccount::getActiveUserObj();
-		if ($user) {
-			$patronId = $_REQUEST['patronId'];
-			$patron = $user->getUserReferredTo($patronId);
-			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user.';
-			} else {
-				$entryId = $_REQUEST['entryId'] ?? null;
-				if (!empty($entryId)) {
-					$selectedTitles = [$entryId => $entryId];
-					$readingHistoryAction = 'deleteMarked';
-					$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
-				} else {
-					$result['message'] = 'No reading history entry ID was provided.';
-				}
-			}
+		$patronId = $_REQUEST['patronId'];
+		$patron = $user->getUserReferredTo($patronId);
+		if ($patron == null) {
+			$result['message'] = 'You do not have permissions to delete reading history for this user.';
 		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history.';
+			$entryId = $_REQUEST['entryId'] ?? null;
+			if (!empty($entryId)) {
+				$selectedTitles = [$entryId => $entryId];
+				$readingHistoryAction = 'deleteMarked';
+				$result = $patron->doReadingHistoryAction($readingHistoryAction, $selectedTitles);
+			} else {
+				$result['message'] = 'No reading history entry ID was provided.';
+			}
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
 	function updateReadingHistoryReturnDate(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to update reading history.');
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -4997,13 +4597,6 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 
 		$user = UserAccount::getActiveUserObj();
-		if (!$user) {
-			$result['message'] = translate([
-				'text' => 'You must be logged in to update reading history.',
-				'isPublicFacing' => true,
-			]);
-			return $result;
-		}
 
 		$entryId = $_REQUEST['entryId'] ?? null;
 		$newReturnDate = $_REQUEST['newReturnDate'] ?? null;
@@ -5097,6 +4690,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function deleteGroupedReadingHistoryEntry(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to delete from the reading history.');
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -5106,70 +4700,68 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 
 		$user = UserAccount::getActiveUserObj();
-		if ($user) {
-			$patronId = $_REQUEST['patronId'];
-			$patron = $user->getUserReferredTo($patronId);
-			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user.';
-			} else {
-				$groupedWorkPermanentId = $_REQUEST['groupedWorkPermanentId'] ?? null;
-				$title = $_REQUEST['title'] ?? null;
-				$author = $_REQUEST['author'] ?? null;
 
-				if (!empty($groupedWorkPermanentId) || (!empty($title))) {
-					require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
-					$readingHistoryEntry = new ReadingHistoryEntry();
-					$readingHistoryEntry->userId = $patron->id;
-					$readingHistoryEntry->deleted = 0;
-
-					// Match by groupedWorkPermanentId if available, otherwise by title/author
-					if (!empty($groupedWorkPermanentId)) {
-						$readingHistoryEntry->groupedWorkPermanentId = $groupedWorkPermanentId;
-					} else {
-						$readingHistoryEntry->title = $title;
-						if (!empty($author)) {
-							$readingHistoryEntry->author = $author;
-						}
-					}
-
-					$readingHistoryEntry->find();
-					$numDeleted = 0;
-					while ($readingHistoryEntry->fetch()) {
-						$readingHistoryEntry->deleted = 1;
-						$readingHistoryEntry->update();
-						$numDeleted++;
-					}
-
-					if ($numDeleted > 0) {
-						$result['success'] = true;
-						$result['title'] = translate([
-							'text' => 'Successfully Deleted Reading History Entry',
-							'isPublicFacing' => true,
-						]);
-						//Based on user testing, this was confusing to users since they only clicked
-						// on a button to delete the group. Simplify to just indicate it was deleted.
-						$result['message'] = translate([
-							'text' => "Deleted entry from your reading history.",
-							'isPublicFacing' => true,
-						]);
-					} else {
-						$result['message'] = translate([
-							'text' => 'No entries found to delete.',
-							'isPublicFacing' => true,
-						]);
-					}
-				} else {
-					$result['message'] = 'No reading history entry information was provided.';
-				}
-			}
+		$patronId = $_REQUEST['patronId'];
+		$patron = $user->getUserReferredTo($patronId);
+		if ($patron == null) {
+			$result['message'] = 'You do not have permissions to delete reading history for this user.';
 		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history.';
+			$groupedWorkPermanentId = $_REQUEST['groupedWorkPermanentId'] ?? null;
+			$title = $_REQUEST['title'] ?? null;
+			$author = $_REQUEST['author'] ?? null;
+
+			if (!empty($groupedWorkPermanentId) || (!empty($title))) {
+				require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+				$readingHistoryEntry = new ReadingHistoryEntry();
+				$readingHistoryEntry->userId = $patron->id;
+				$readingHistoryEntry->deleted = 0;
+
+				// Match by groupedWorkPermanentId if available, otherwise by title/author
+				if (!empty($groupedWorkPermanentId)) {
+					$readingHistoryEntry->groupedWorkPermanentId = $groupedWorkPermanentId;
+				} else {
+					$readingHistoryEntry->title = $title;
+					if (!empty($author)) {
+						$readingHistoryEntry->author = $author;
+					}
+				}
+
+				$readingHistoryEntry->find();
+				$numDeleted = 0;
+				while ($readingHistoryEntry->fetch()) {
+					$readingHistoryEntry->deleted = 1;
+					$readingHistoryEntry->update();
+					$numDeleted++;
+				}
+
+				if ($numDeleted > 0) {
+					$result['success'] = true;
+					$result['title'] = translate([
+						'text' => 'Successfully Deleted Reading History Entry',
+						'isPublicFacing' => true,
+					]);
+					//Based on user testing, this was confusing to users since they only clicked
+					// on a button to delete the group. Simplify to just indicate it was deleted.
+					$result['message'] = translate([
+						'text' => "Deleted entry from your reading history.",
+						'isPublicFacing' => true,
+					]);
+				} else {
+					$result['message'] = translate([
+						'text' => 'No entries found to delete.',
+						'isPublicFacing' => true,
+					]);
+				}
+			} else {
+				$result['message'] = 'No reading history entry information was provided.';
+			}
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
 	function deleteSelectedReadingHistoryEntries(): array {
+		$this->requireLoggedInUser(null, 'You must be logged in to delete from the reading history.');
 		$result = [
 			'success' => false,
 			'title' => translate([
@@ -5179,196 +4771,149 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 
 		$user = UserAccount::getActiveUserObj();
-		if ($user) {
-			$patronId = $_REQUEST['patronId'];
-			$patron = $user->getUserReferredTo($patronId);
-			if ($patron == null) {
-				$result['message'] = 'You do not have permissions to delete reading history for this user.';
-			} else {
-				$ids = $_REQUEST['ids'] ?? [];
-				if (is_array($ids) && count($ids) > 0) {
-					require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
-					$totalDeleted = 0;
-					$numFailed = 0;
-					// For each selected grouped entry, delete all associated checkout records.
-					foreach ($ids as $id) {
-						$groupedEntry = new ReadingHistoryEntry();
-						$groupedEntry->id = $id;
-						$groupedEntry->userId = $patron->id;
-						$groupedEntry->deleted = 0;
-						if ($groupedEntry->find(true)) {
-							// Now find and delete all entries with the same groupedWorkPermanentId (or title/author).
-							$deleteQuery = new ReadingHistoryEntry();
-							$deleteQuery->userId = $patron->id;
-							$deleteQuery->deleted = 0;
-							if (!empty($groupedEntry->groupedWorkPermanentId)) {
-								$deleteQuery->groupedWorkPermanentId = $groupedEntry->groupedWorkPermanentId;
-							} else {
-								$deleteQuery->title = $groupedEntry->title;
-								if (!empty($groupedEntry->author)) {
-									$deleteQuery->author = $groupedEntry->author;
-								}
-							}
-							$deleteQuery->find();
-							while ($deleteQuery->fetch()) {
-								$deleteQuery->deleted = 1;
-								$deleteQuery->update();
-							}
-							$totalDeleted++;
-						} else {
-							$numFailed++;
-						}
-					}
 
-					if ($totalDeleted > 0) {
-						$result['success'] = true;
-						$result['title'] = translate([
-							'text' => $totalDeleted === 1 ? 'Successfully Deleted Reading History Entry' : 'Successfully Deleted Reading History Entries',
-							'isPublicFacing' => true,
-						]);
-						if ($numFailed > 0) {
-							$deletedText = $totalDeleted === 1 ? 'entry' : 'entries';
-							$failedText = $numFailed === 1 ? 'entry' : 'entries';
-							$result['message'] = translate([
-								'text' => "Deleted %1% $deletedText from your reading history. %2% $failedText could not be deleted.",
-								1 => $totalDeleted,
-								2 => $numFailed,
-								'isPublicFacing' => true,
-							]);
+		$patronId = $_REQUEST['patronId'];
+		$patron = $user->getUserReferredTo($patronId);
+		if ($patron == null) {
+			$result['message'] = 'You do not have permissions to delete reading history for this user.';
+		} else {
+			$ids = $_REQUEST['ids'] ?? [];
+			if (is_array($ids) && count($ids) > 0) {
+				require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+				$totalDeleted = 0;
+				$numFailed = 0;
+				// For each selected grouped entry, delete all associated checkout records.
+				foreach ($ids as $id) {
+					$groupedEntry = new ReadingHistoryEntry();
+					$groupedEntry->id = $id;
+					$groupedEntry->userId = $patron->id;
+					$groupedEntry->deleted = 0;
+					if ($groupedEntry->find(true)) {
+						// Now find and delete all entries with the same groupedWorkPermanentId (or title/author).
+						$deleteQuery = new ReadingHistoryEntry();
+						$deleteQuery->userId = $patron->id;
+						$deleteQuery->deleted = 0;
+						if (!empty($groupedEntry->groupedWorkPermanentId)) {
+							$deleteQuery->groupedWorkPermanentId = $groupedEntry->groupedWorkPermanentId;
 						} else {
-							$entryText = $totalDeleted === 1 ? 'entry' : 'entries';
-							$result['message'] = translate([
-								'text' => "Deleted %1% $entryText from your reading history.",
-								1 => $totalDeleted,
-								'isPublicFacing' => true,
-							]);
+							$deleteQuery->title = $groupedEntry->title;
+							if (!empty($groupedEntry->author)) {
+								$deleteQuery->author = $groupedEntry->author;
+							}
 						}
+						$deleteQuery->find();
+						while ($deleteQuery->fetch()) {
+							$deleteQuery->deleted = 1;
+							$deleteQuery->update();
+						}
+						$totalDeleted++;
 					} else {
-						$result['success'] = false;
-						$result['title'] = translate([
-							'text' => 'Failed to Delete Reading History Entries',
+						$numFailed++;
+					}
+				}
+
+				if ($totalDeleted > 0) {
+					$result['success'] = true;
+					$result['title'] = translate([
+						'text' => $totalDeleted === 1 ? 'Successfully Deleted Reading History Entry' : 'Successfully Deleted Reading History Entries',
+						'isPublicFacing' => true,
+					]);
+					if ($numFailed > 0) {
+						$deletedText = $totalDeleted === 1 ? 'entry' : 'entries';
+						$failedText = $numFailed === 1 ? 'entry' : 'entries';
+						$result['message'] = translate([
+							'text' => "Deleted %1% $deletedText from your reading history. %2% $failedText could not be deleted.",
+							1 => $totalDeleted,
+							2 => $numFailed,
 							'isPublicFacing' => true,
 						]);
+					} else {
+						$entryText = $totalDeleted === 1 ? 'entry' : 'entries';
 						$result['message'] = translate([
-							'text' => 'No entries could be deleted from your reading history.',
+							'text' => "Deleted %1% $entryText from your reading history.",
+							1 => $totalDeleted,
 							'isPublicFacing' => true,
 						]);
 					}
 				} else {
-					$result['message'] = 'No reading history entries were selected.';
+					$result['success'] = false;
+					$result['title'] = translate([
+						'text' => 'Failed to Delete Reading History Entries',
+						'isPublicFacing' => true,
+					]);
+					$result['message'] = translate([
+						'text' => 'No entries could be deleted from your reading history.',
+						'isPublicFacing' => true,
+					]);
 				}
+			} else {
+				$result['message'] = 'No reading history entries were selected.';
 			}
-		} else {
-			$result['message'] = 'You must be logged in to delete from the reading history.';
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissMessage() : array {
+	function dismissMessage(): array {
+		$this->requireLoggedInUser();
 		require_once ROOT_DIR . '/sys/Account/UserMessage.php';
 		if (!isset($_REQUEST['messageId'])) {
-			return [
-				'success' => false,
-				'message' => 'Message Id not provided',
-			];
+			return $this->failureResult(null, 'Message Id not provided');
 		} else {
-			if (UserAccount::getActiveUserId() === false) {
-				return [
-					'success' => false,
-					'message' => 'User is not logged in',
-				];
-			} else {
-				$message = new UserMessage();
-				$message->id = $_REQUEST['messageId'];
-				if ($message->find(true)) {
-					if ($message->userId != UserAccount::getActiveUserId()) {
-						return [
-							'success' => false,
-							'message' => 'Message is not for the active user',
-						];
-					} else {
-						$message->isDismissed = 1;
-						$message->update();
-						return [
-							'success' => true,
-							'message' => 'Message was dismissed',
-						];
-					}
+			$message = new UserMessage();
+			$message->id = $_REQUEST['messageId'];
+			if ($message->find(true)) {
+				if ($message->userId != UserAccount::getActiveUserId()) {
+					return $this->failureResult(null, 'Message is not for the active user');
 				} else {
-					return [
-						'success' => false,
-						'message' => 'Could not find the message to dismiss',
-					];
+					$message->isDismissed = 1;
+					$message->update();
+					return $this->successResult(null, 'Message was dismissed');
 				}
+			} else {
+				return $this->failureResult(null, 'Could not find the message to dismiss');
 			}
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissSystemMessage() : array {
+	function dismissSystemMessage(): array {
+		$this->requireLoggedInUser();
 		require_once ROOT_DIR . '/sys/LocalEnrichment/SystemMessage.php';
 		if (!isset($_REQUEST['messageId'])) {
-			return [
-				'success' => false,
-				'message' => 'Message Id not provided',
-			];
+			return $this->failureResult(null, 'Message Id not provided');
 		} else {
-			if (UserAccount::getActiveUserId() === false) {
-				return [
-					'success' => false,
-					'message' => 'User is not logged in',
-				];
-			} else {
-				$message = new SystemMessage();
-				$message->id = $_REQUEST['messageId'];
-				if ($message->find(true)) {
-					require_once ROOT_DIR . '/sys/LocalEnrichment/SystemMessageDismissal.php';
-					$systemMessageDismissal = new SystemMessageDismissal();
-					$systemMessageDismissal->userId = UserAccount::getActiveUserId();
-					$systemMessageDismissal->systemMessageId = $message->id;
-					if ($systemMessageDismissal->find(true)) {
-						return [
-							'success' => true,
-							'message' => 'Message was already dismissed',
-						];
-					} else {
-						$systemMessageDismissal->insert();
-						return [
-							'success' => true,
-							'message' => 'Message was dismissed',
-						];
-					}
+			$message = new SystemMessage();
+			$message->id = $_REQUEST['messageId'];
+			if ($message->find(true)) {
+				require_once ROOT_DIR . '/sys/LocalEnrichment/SystemMessageDismissal.php';
+				$systemMessageDismissal = new SystemMessageDismissal();
+				$systemMessageDismissal->userId = UserAccount::getActiveUserId();
+				$systemMessageDismissal->systemMessageId = $message->id;
+				if ($systemMessageDismissal->find(true)) {
+					return $this->successResult(null, 'Message was already dismissed');
 				} else {
-					return [
-						'success' => false,
-						'message' => 'Could not find the message to dismiss',
-					];
+					$systemMessageDismissal->insert();
+					return $this->successResult(null, 'Message was dismissed');
 				}
+			} else {
+				return $this->failureResult(null, 'Could not find the message to dismiss');
 			}
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissHoldHelpMessages() : array {
-		if (UserAccount::getActiveUserId() === false) {
-			return [
-				'success' => false,
-				'message' => 'User is not logged in',
-			];
-		} else {
-			$user = UserAccount::getLoggedInUser();
-			$user->showHoldHelpMessages = 0;
-			$user->update();
-			return [
-				'success' => true,
-				'message' => 'The help messages will no longer be shown',
-			];
-		}
+	function dismissHoldHelpMessages(): array {
+		$this->requireLoggedInUser();
+
+		$user = UserAccount::getLoggedInUser();
+		$user->showHoldHelpMessages = 0;
+		$user->update();
+		return $this->successResult(null, 'The help messages will no longer be shown');
 	}
 
 	/** @noinspection PhpUnused */
-	function createGenericDonation($paymentType = '') {
+	private function createGenericDonation($paymentType = '') : array {
 		$transactionDate = time();
 		$user = UserAccount::getLoggedInUser();
 
@@ -5438,7 +4983,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$currencyFormat = numfmt_format_currency($setupCurrencyFormat, $minimumAmountToProcess, $currencyCode);
 
 		// check for good values
-		if (empty($_REQUEST['amount']) || empty($_REQUEST['emailAddress']) || empty($_REQUEST['firstName']) || empty($_REQUEST['lastName']) || (isset($_REQUEST['amount'])) && ($_REQUEST['amount'] < $minimumAmountToProcess)) {
+		if (empty($_REQUEST['amount']) || empty($_REQUEST['emailAddress']) || empty($_REQUEST['firstName']) || empty($_REQUEST['lastName']) || ($_REQUEST['amount'] < $minimumAmountToProcess)) {
 			$message = null;
 			if (!empty($_REQUEST['amount']) && $_REQUEST['amount'] < $minimumAmountToProcess) {
 				$thisAmount = numfmt_format_currency($setupCurrencyFormat, $_REQUEST['amount'], $currencyCode);
@@ -5624,7 +5169,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function addDonation($payment, $tempDonation) {
+	private function addDonation($payment, $tempDonation) : Donation {
 		require_once ROOT_DIR . '/sys/Donations/Donation.php';
 		$donation = new Donation();
 		$donation->paymentId = $payment->id;
@@ -5658,334 +5203,309 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function createGenericOrder($paymentType = '') {
+	private function createGenericOrder($paymentType = '') {
+		$this->requireLoggedInUser(null, 'You must be signed in to pay fines, please sign in.');
 		$transactionDate = time();
 		$user = UserAccount::getLoggedInUser();
-		if ($user == null) {
+
+		$patronId = $_REQUEST['patronId'];
+
+		$patron = $user->getUserReferredTo($patronId);
+
+		if ($patron === false) {
 			return [
 				'success' => false,
 				'message' => translate([
-					'text' => 'You must be signed in to pay fines, please sign in.',
+					'text' => 'Could not find the patron referred to, please try again.',
 					'isPublicFacing' => true,
 				]),
 			];
-		} else {
-			$patronId = $_REQUEST['patronId'];
+		}
+		$userLibrary = $patron->getHomeLibrary();
 
-			$patron = $user->getUserReferredTo($patronId);
+		global $library;
+		$paymentLibrary = $library;
+		$systemVariables = SystemVariables::getSystemVariables();
+		if ($systemVariables->libraryToUseForPayments == 0) {
+			$paymentLibrary = $userLibrary;
+		}
 
-			if ($patron == false) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'Could not find the patron referred to, please try again.',
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-			$userLibrary = $patron->getHomeLibrary();
-
-			global $library;
-			$paymentLibrary = $library;
-			$systemVariables = SystemVariables::getSystemVariables();
-			if ($systemVariables->libraryToUseForPayments == 0) {
-				$paymentLibrary = $userLibrary;
-			}
-
-			if (empty($_REQUEST['selectedFine']) && $paymentLibrary->finesToPay != 0) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'Select at least one fine to pay.',
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-			if (isset($_REQUEST['selectedFine'])) {
-				$selectedFines = $_REQUEST['selectedFine'];
-			}
-			$fines = $patron->getFines(false);
-			$useOutstanding = $patron->getCatalogDriver()->showOutstandingFines();
-
-			// For Sierra, check if user's account is locked
-			if (!empty($fines) && $patron->getCatalogDriver()->isPatronAccountLocked($patron, reset($fines[$patronId]))) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'This account is currently in use by staff.  Fine payments cannot be made at this time.  Please try again after a few moments or contact the library if this issue persists.',
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-
-			$finesPaid = '';
-			$purchaseUnits = [];
-			$purchaseUnits['items'] = [];
-			require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
-			$totalFines = 0;
-
-			$currencyCode = 'USD';
-			$variables = new SystemVariables();
-			if ($variables->find(true)) {
-				$currencyCode = $variables->currencyCode;
-			}
-
-			//List how fines have been paid by type
-			//0 = no payments applied
-			//1 = partial payment applied
-			//2 = fully paid
-			$finesPaidByType = [];
-
-			foreach ($fines[$patronId] as $fine) {
-				$finePayment = 0;
-				$addToOrder = false;
-				if ($paymentLibrary->finesToPay == 0) {
-					$addToOrder = true;
-				} else {
-					foreach ($selectedFines as $fineId => $status) {
-						if ($fine['fineId'] == $fineId) {
-							$addToOrder = true;
-						}
-					}
-				}
-				if ($addToOrder) {
-					$finePayment = 2;
-					if (!empty($finesPaid)) {
-						$finesPaid .= ',';
-					}
-					$fineId = $fine['fineId'];
-					$finesPaid .= $fineId;
-					if (isset($_REQUEST['amountToPay'][$fineId])) {
-						$fineAmount = $_REQUEST['amountToPay'][$fineId];
-						$maxFineAmount = $useOutstanding ? $fine['amountOutstandingVal'] : $fine['amountVal'];
-						if (!is_numeric($fineAmount) || $fineAmount <= 0 || round($fineAmount, 2) > round($maxFineAmount, 2)) {
-							return [
-								'success' => false,
-								'message' => translate([
-									'text' => 'Invalid amount entered for fine. Please enter an amount over 0 and less than the total amount owed.',
-									'isPublicFacing' => true,
-								]),
-							];
-						}
-						$finesPaid .= '|' . $fineAmount;
-						if ($fineAmount != $maxFineAmount) {
-							//Record this is a partially paid fine
-							$finePayment = 1;
-						}
-
-					} else {
-						$fineAmount = $useOutstanding ? $fine['amountOutstandingVal'] : $fine['amountVal'];
-						$finesPaid .= '|' . $fineAmount;
-					}
-
-					$name = StringUtils::trimStringToLengthAtWordBoundary($fine['reason'], 120, true);
-					if (empty($name)) {
-						$name = StringUtils::trimStringToLengthAtWordBoundary($fine['message'], 120, true);
-					}
-					$purchaseUnits['items'][] = [
-						'custom_id' => $paymentLibrary->subdomain,
-						'name' => $name,
-						'description' => StringUtils::trimStringToLengthAtWordBoundary($fine['message'], 120, true),
-						'unit_amount' => [
-							'currency_code' => $currencyCode,
-							'value' => round($fineAmount, 2),
-						],
-						'quantity' => 1,
-					];
-					$totalFines += $fineAmount;
-				}
-
-				if (!array_key_exists(strtolower($fine['type']), $finesPaidByType)) {
-					$finesPaidByType[strtolower($fine['type'])] = $finePayment;
-				} else {
-					if ($finePayment == 0) {
-						if ($finesPaidByType[strtolower($fine['type'])] >= 1) {
-							$finesPaidByType[strtolower($fine['type'])] = 1;
-						}
-					} elseif ($finePayment == 1) {
-						$finesPaidByType[strtolower($fine['type'])] = 1;
-					} elseif ($finePayment == 2) {
-						if ($finesPaidByType[strtolower($fine['type'])] != 2) {
-							$finesPaidByType[strtolower($fine['type'])] = 1;
-						}
-					}
-				}
-			}
-
-			//Determine if fines have been paid in the proper order
-			if (!empty($paymentLibrary->finePaymentOrder)) {
-				$paymentOrder = explode('|', strtolower($paymentLibrary->finePaymentOrder));
-
-				//Add another category for everything else.
-				$paymentOrder[] = '!!other!!';
-				//Find the actual status for each category
-				$paymentOrder = array_flip($paymentOrder);
-				foreach ($paymentOrder as $paymentOrderKey => $value) {
-					//-1 indicates there are no fines for this type
-					$paymentOrder[$paymentOrderKey] = -1;
-				}
-
-				foreach ($finesPaidByType as $type => $finePayment) {
-					if (array_key_exists($type, $paymentOrder)) {
-						$paymentOrder[$type] = $finePayment;
-					} else {
-						if ($finePayment > $paymentOrder['!!other!!']) {
-							$paymentOrder['!!other!!'] = $finePayment;
-						}
-					}
-				}
-
-				//This is the order everything should be paid in.
-				//We want to check to be sure nothing is partially or fully paid if the previous status is not fully paid
-				$paymentKeys = array_keys($paymentOrder);
-				for ($i = 0; $i < count($paymentKeys) - 1; $i++) {
-					$lastPaymentType = $paymentKeys[$i];
-					$lastPaymentStatus = $paymentOrder[$lastPaymentType];
-					for ($j = $i + 1; $j < count($paymentKeys); $j++) {
-						$nextPaymentType = $paymentKeys[$j];
-						$nextPaymentStatus = $paymentOrder[$nextPaymentType];
-						//We have a problem if a lower priority fine is partially or fully paid and the higher priority is not fully paid
-						if ($lastPaymentStatus != -1 && $lastPaymentStatus != 2 && $nextPaymentStatus >= 1) {
-							return [
-								'success' => false,
-								'message' => translate([
-									'text' => 'You must pay all fines of type <strong>%1%</strong> before paying other types.',
-									1 => $lastPaymentType,
-									'isPublicFacing' => true,
-								]),
-							];
-						}
-					}
-				}
-			}
-
-			if ($totalFines < $paymentLibrary->minimumFineAmount) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'You must select at least %1% in fines to pay.',
-						1 => sprintf('$%01.2f', $paymentLibrary->minimumFineAmount),
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-
-			$purchaseUnits['amount'] = [
-				'currency_code' => $currencyCode,
-				'value' => round($totalFines, 2),
-				'breakdown' => [
-					'item_total' => [
-						'currency_code' => $currencyCode,
-						'value' => round($totalFines, 2),
-					],
-				],
-			];
-
-			if ($totalFines < $paymentLibrary->minimumFineAmount) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'You must select at least %1% in fines to pay.',
-						1 => sprintf('$%01.2f', $paymentLibrary->minimumFineAmount),
-						'isPublicFacing' => true,
-					]),
-				];
-			}
-
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			require_once ROOT_DIR . '/sys/Account/UserPaymentLine.php';
-			$payment = new UserPayment();
-			$payment->userId = $patronId;
-			$payment->completed = 0;
-			$payment->finesPaid = $finesPaid;
-			$payment->totalPaid = $totalFines;
-			$payment->paymentType = $paymentType;
-			$payment->transactionDate = $transactionDate;
-			$payment->transactionType = "fine";
-			global $interface;
-			$payment->requestingUrl = $interface->getVariable('url');
-
-			global $library;
-			$payment->paidFromInstance = $library->subdomain;
-
-			if (isset($_REQUEST['token'])) {
-				if ($paymentType == 'ACI') {
-					$payment->aciToken = $_REQUEST['token'];
-					// Generate 16 bytes (128 bits) of random data or use the data passed into the function.
-					$data = random_bytes(16);
-					assert(strlen($data) == 16);
-
-					// Set version to 0100
-					$data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-					// Set bits 6-7 to 10
-					$data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-
-					// Output the 36 character UUID.
-					$uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-					$payment->orderId = $uuid;
-				}
-				if ($paymentType == 'deluxe') {
-					$payment->deluxeRemittanceId = $_REQUEST['token'];
-				}
-				if ($paymentType == 'square') {
-					$payment->squareToken = $_REQUEST['token'];
-				}
-				if ($paymentType == 'stripe') {
-					$payment->stripeToken = $_REQUEST['token'];
-				}
-			}
-
-			$paymentInsert = $payment->insert();
-			$paymentId = $payment->id;
-
-			//Add payment lines for each fine paid
-			foreach ($fines[$patronId] as $fine) {
-				$addToOrder = false;
-				if ($paymentLibrary->finesToPay == 0) {
-					$addToOrder = true;
-				} else {
-					foreach ($selectedFines as $fineId => $status) {
-						if ($fine['fineId'] == $fineId) {
-							$addToOrder = true;
-							break;
-						}
-					}
-				}
-
-				if ($addToOrder) {
-					$fineId = $fine['fineId'];
-					$paymentLine = new UserPaymentLine();
-					$paymentLine->paymentId = $paymentId;
-					$description = $fine['reason'];
-					if (!empty($description) && !empty($fine['message'])) {
-						$description .= " - " . $fine['message'];
-					}
-					$paymentLine->description = $description;
-					if (isset($_REQUEST['amountToPay'][$fineId])) {
-						$fineAmount = $_REQUEST['amountToPay'][$fineId];
-					} else {
-						$fineAmount = $useOutstanding ? $fine['amountOutstandingVal'] : $fine['amountVal'];
-					}
-					$paymentLine->amountPaid = $fineAmount;
-					$paymentLine->insert();
-				}
-			}
-
-			$purchaseUnits['custom_id'] = $paymentLibrary->subdomain;
-
-
+		if (empty($_REQUEST['selectedFine']) && $paymentLibrary->finesToPay != 0) {
 			return [
-				$paymentLibrary,
-				$userLibrary,
-				$payment,
-				$purchaseUnits,
-				$patron,
+				'success' => false,
+				'message' => translate([
+					'text' => 'Select at least one fine to pay.',
+					'isPublicFacing' => true,
+				]),
 			];
 		}
+		$selectedFines = $_REQUEST['selectedFine'] ?? [];
+		$fines = $patron->getFines(false);
+		$useOutstanding = $patron->getCatalogDriver()->showOutstandingFines();
+
+		// For Sierra, check if user's account is locked
+		if (!empty($fines) && $patron->getCatalogDriver()->isPatronAccountLocked($patron, reset($fines[$patronId]))) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'This account is currently in use by staff.  Fine payments cannot be made at this time.  Please try again after a few moments or contact the library if this issue persists.',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		$finesPaid = '';
+		$purchaseUnits = [];
+		$purchaseUnits['items'] = [];
+		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
+		$totalFines = 0;
+
+		$currencyCode = 'USD';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+
+		//List how fines have been paid by type
+		//0 = no payments applied
+		//1 = partial payment applied
+		//2 = fully paid
+		$finesPaidByType = [];
+
+		foreach ($fines[$patronId] as $fine) {
+			$finePayment = 0;
+			$addToOrder = false;
+			if ($paymentLibrary->finesToPay == 0) {
+				$addToOrder = true;
+			} else {
+				foreach ($selectedFines as $fineId => $status) {
+					if ($fine['fineId'] == $fineId) {
+						$addToOrder = true;
+					}
+				}
+			}
+			if ($addToOrder) {
+				$finePayment = 2;
+				if (!empty($finesPaid)) {
+					$finesPaid .= ',';
+				}
+				$fineId = $fine['fineId'];
+				$finesPaid .= $fineId;
+				if (isset($_REQUEST['amountToPay'][$fineId])) {
+					$fineAmount = $_REQUEST['amountToPay'][$fineId];
+					$maxFineAmount = $useOutstanding ? $fine['amountOutstandingVal'] : $fine['amountVal'];
+					if (!is_numeric($fineAmount) || $fineAmount <= 0 || round($fineAmount, 2) > round($maxFineAmount, 2)) {
+						return [
+							'success' => false,
+							'message' => translate([
+								'text' => 'Invalid amount entered for fine. Please enter an amount over 0 and less than the total amount owed.',
+								'isPublicFacing' => true,
+							]),
+						];
+					}
+					$finesPaid .= '|' . $fineAmount;
+					if ($fineAmount != $maxFineAmount) {
+						//Record this is a partially paid fine
+						$finePayment = 1;
+					}
+
+				} else {
+					$fineAmount = $useOutstanding ? $fine['amountOutstandingVal'] : $fine['amountVal'];
+					$finesPaid .= '|' . $fineAmount;
+				}
+
+				$name = StringUtils::trimStringToLengthAtWordBoundary($fine['reason'], 120, true);
+				if (empty($name)) {
+					$name = StringUtils::trimStringToLengthAtWordBoundary($fine['message'], 120, true);
+				}
+				$purchaseUnits['items'][] = [
+					'custom_id' => $paymentLibrary->subdomain,
+					'name' => $name,
+					'description' => StringUtils::trimStringToLengthAtWordBoundary($fine['message'], 120, true),
+					'unit_amount' => [
+						'currency_code' => $currencyCode,
+						'value' => round($fineAmount, 2),
+					],
+					'quantity' => 1,
+				];
+				$totalFines += $fineAmount;
+			}
+
+			if (!array_key_exists(strtolower($fine['type']), $finesPaidByType)) {
+				$finesPaidByType[strtolower($fine['type'])] = $finePayment;
+			} else {
+				if ($finePayment == 0) {
+					if ($finesPaidByType[strtolower($fine['type'])] >= 1) {
+						$finesPaidByType[strtolower($fine['type'])] = 1;
+					}
+				} elseif ($finePayment == 1) {
+					$finesPaidByType[strtolower($fine['type'])] = 1;
+				} elseif ($finePayment == 2) {
+					if ($finesPaidByType[strtolower($fine['type'])] != 2) {
+						$finesPaidByType[strtolower($fine['type'])] = 1;
+					}
+				}
+			}
+		}
+
+		//Determine if fines have been paid in the proper order
+		if (!empty($paymentLibrary->finePaymentOrder)) {
+			$paymentOrder = explode('|', strtolower($paymentLibrary->finePaymentOrder));
+
+			//Add another category for everything else.
+			$paymentOrder[] = '!!other!!';
+			//Find the actual status for each category
+			$paymentOrder = array_flip($paymentOrder);
+			foreach ($paymentOrder as $paymentOrderKey => $value) {
+				//-1 indicates there are no fines for this type
+				$paymentOrder[$paymentOrderKey] = -1;
+			}
+
+			foreach ($finesPaidByType as $type => $finePayment) {
+				if (array_key_exists($type, $paymentOrder)) {
+					$paymentOrder[$type] = $finePayment;
+				} else {
+					if ($finePayment > $paymentOrder['!!other!!']) {
+						$paymentOrder['!!other!!'] = $finePayment;
+					}
+				}
+			}
+
+			//This is the order everything should be paid in.
+			//We want to check to be sure nothing is partially or fully paid if the previous status is not fully paid
+			$paymentKeys = array_keys($paymentOrder);
+			for ($i = 0; $i < count($paymentKeys) - 1; $i++) {
+				$lastPaymentType = $paymentKeys[$i];
+				$lastPaymentStatus = $paymentOrder[$lastPaymentType];
+				for ($j = $i + 1; $j < count($paymentKeys); $j++) {
+					$nextPaymentType = $paymentKeys[$j];
+					$nextPaymentStatus = $paymentOrder[$nextPaymentType];
+					//We have a problem if a lower priority fine is partially or fully paid and the higher priority is not fully paid
+					if ($lastPaymentStatus != -1 && $lastPaymentStatus != 2 && $nextPaymentStatus >= 1) {
+						return [
+							'success' => false,
+							'message' => translate([
+								'text' => 'You must pay all fines of type <strong>%1%</strong> before paying other types.',
+								1 => $lastPaymentType,
+								'isPublicFacing' => true,
+							]),
+						];
+					}
+				}
+			}
+		}
+
+		$purchaseUnits['amount'] = [
+			'currency_code' => $currencyCode,
+			'value' => round($totalFines, 2),
+			'breakdown' => [
+				'item_total' => [
+					'currency_code' => $currencyCode,
+					'value' => round($totalFines, 2),
+				],
+			],
+		];
+
+		if ($totalFines < $paymentLibrary->minimumFineAmount) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'You must select at least %1% in fines to pay.',
+					1 => sprintf('$%01.2f', $paymentLibrary->minimumFineAmount),
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+		require_once ROOT_DIR . '/sys/Account/UserPaymentLine.php';
+		$payment = new UserPayment();
+		$payment->userId = $patronId;
+		$payment->completed = 0;
+		$payment->finesPaid = $finesPaid;
+		$payment->totalPaid = $totalFines;
+		$payment->paymentType = $paymentType;
+		$payment->transactionDate = $transactionDate;
+		$payment->transactionType = "fine";
+		global $interface;
+		$payment->requestingUrl = $interface->getVariable('url');
+
+		global $library;
+		$payment->paidFromInstance = $library->subdomain;
+
+		if (isset($_REQUEST['token'])) {
+			if ($paymentType == 'ACI') {
+				$payment->aciToken = $_REQUEST['token'];
+				// Generate 16 bytes (128 bits) of random data or use the data passed into the function.
+				/** @noinspection PhpUnhandledExceptionInspection */
+				$data = random_bytes(16);
+				assert(strlen($data) == 16);
+
+				// Set version to 0100
+				$data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+				// Set bits 6-7 to 10
+				$data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+
+				// Output the 36 character UUID.
+				$uuid = vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+				$payment->orderId = $uuid;
+			}
+			if ($paymentType == 'deluxe') {
+				$payment->deluxeRemittanceId = $_REQUEST['token'];
+			}
+			if ($paymentType == 'square') {
+				$payment->squareToken = $_REQUEST['token'];
+			}
+			if ($paymentType == 'stripe') {
+				$payment->stripeToken = $_REQUEST['token'];
+			}
+		}
+
+		$payment->insert();
+		$paymentId = $payment->id;
+
+		//Add payment lines for each fine paid
+		foreach ($fines[$patronId] as $fine) {
+			$addToOrder = false;
+			if ($paymentLibrary->finesToPay == 0) {
+				$addToOrder = true;
+			} else {
+				foreach ($selectedFines as $fineId => $status) {
+					if ($fine['fineId'] == $fineId) {
+						$addToOrder = true;
+						break;
+					}
+				}
+			}
+
+			if ($addToOrder) {
+				$fineId = $fine['fineId'];
+				$paymentLine = new UserPaymentLine();
+				$paymentLine->paymentId = $paymentId;
+				$description = $fine['reason'];
+				if (!empty($description) && !empty($fine['message'])) {
+					$description .= " - " . $fine['message'];
+				}
+				$paymentLine->description = $description;
+				$fineAmount = $_REQUEST['amountToPay'][$fineId] ?? ($useOutstanding ? $fine['amountOutstandingVal'] : $fine['amountVal']);
+				$paymentLine->amountPaid = $fineAmount;
+				$paymentLine->insert();
+			}
+		}
+
+		$purchaseUnits['custom_id'] = $paymentLibrary->subdomain;
+
+		return [
+			$paymentLibrary,
+			$userLibrary,
+			$payment,
+			$purchaseUnits,
+			$patron,
+		];
 	}
 
 	/** @noinspection PhpUnused */
-	function createPayPalOrder() {
+	function createPayPalOrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -6058,10 +5578,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ExternalRequestLogEntry::logRequest('fine_payment.createPayPalOrder', 'POST', $accessTokenUrl, $payPalAuthRequest->getHeaders(), json_encode($postParams), $payPalAuthRequest->getResponseCode(), $accessTokenResults, ['client_secret' => $clientSecret]);
 
 			if (empty($decodedAccessTokenResults->access_token)) {
-				return [
-					'success' => false,
-					'message' => 'Unable to authenticate with PayPal, please try again in a few minutes.',
-				];
+				return $this->failureResult(null, 'Unable to authenticate with PayPal, please try again in a few minutes.');
 			} else {
 				$accessToken = $decodedAccessTokenResults->access_token;
 			}
@@ -6101,10 +5618,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ExternalRequestLogEntry::logRequest('fine_payment.createPayPalOrder', 'POST', $paymentRequestUrl, $payPalPaymentRequest->getHeaders(), json_encode($postParams), $payPalPaymentRequest->getResponseCode(), $paymentResponse, []);
 
 			if ($decodedPaymentResponse->status != 'CREATED') {
-				return [
-					'success' => false,
-					'message' => 'Unable to create your order in PayPal.',
-				];
+				return $this->failureResult(null, 'Unable to create your order in PayPal.');
 			}
 
 			//Log the request in the database so we can validate it on return
@@ -6120,7 +5634,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function completePayPalOrder() {
+	function completePayPalOrder() : array {
 		global $configArray;
 
 		$orderId = $_REQUEST['orderId'];
@@ -6130,11 +5644,11 @@ class MyAccount_AJAX extends JSON_Action {
 		global $library;
 		$paymentLibrary = $library;
 
+		require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+		$payment = new UserPayment();
+		$payment->orderId = $orderId;
 		if ($transactionType == 'donation') {
 			//Get the order information
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			$payment = new UserPayment();
-			$payment->orderId = $orderId;
 			$payment->transactionType = 'donation';
 			if ($payment->find(true)) {
 				require_once ROOT_DIR . '/sys/Donations/Donation.php';
@@ -6148,9 +5662,6 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		} else {
 			//Get the order information
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			$payment = new UserPayment();
-			$payment->orderId = $orderId;
 			$payment->userId = $patronId;
 			if ($payment->find(true)) {
 
@@ -6202,10 +5713,7 @@ class MyAccount_AJAX extends JSON_Action {
 			ExternalRequestLogEntry::logRequest('fine_payment.completePayPalOrder', 'POST', $accessTokenUrl, $payPalAuthRequest->getHeaders(), json_encode($postParams), $payPalAuthRequest->getResponseCode(), $accessTokenResults, ['client_secret' => $clientSecret]);
 
 			if (empty($decodedAccessTokenResults->access_token)) {
-				return [
-					'success' => false,
-					'message' => 'Unable to authenticate with PayPal, please try again in a few minutes.',
-				];
+				return $this->failureResult(null, 'Unable to authenticate with PayPal, please try again in a few minutes.');
 			} else {
 				$accessToken = $decodedAccessTokenResults->access_token;
 			}
@@ -6223,7 +5731,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentResponse = $payPalPaymentRequest->curlGetPage($paymentRequestUrl);
 			$decodedPaymentResponse = json_decode($paymentResponse);
 
-			ExternalRequestLogEntry::logRequest('fine_payment.completePayPalOrder', 'GET', $paymentRequestUrl, $payPalPaymentRequest->getHeaders(),'', $payPalPaymentRequest->getResponseCode(), $paymentResponse, []);
+			ExternalRequestLogEntry::logRequest('fine_payment.completePayPalOrder', 'GET', $paymentRequestUrl, $payPalPaymentRequest->getHeaders(), '', $payPalPaymentRequest->getResponseCode(), $paymentResponse, []);
 
 			$purchaseUnits = $decodedPaymentResponse->purchase_units;
 			if (!empty($purchaseUnits)) {
@@ -6266,18 +5774,15 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 		} else {
 			if ($payment->completed) {
-				return [
-					'success' => false,
-					'message' => 'This payment has already been processed',
-				];
+				return $this->failureResult(null, 'This payment has already been processed');
 			} else {
 				$user = UserAccount::getActiveUserObj();
 				$patron = $user->getUserReferredTo($patronId);
 
 				$result = $patron->completeFinePayment($payment);
-				if ($result['success'] == false) {
+				if (!$result['success']) {
 					//If the payment does not complete in the ILS, add information to the payment for tracking
-					//Also send an email to the admin that it was completed in PayPal, but not the ILS
+					//Also email the admin that it was completed in PayPal, but not the ILS
 					$payment->message .= translate([
 							'text' => 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt.',
 							'isPublicFacing' => true
@@ -6302,9 +5807,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function createSquareOrder() {
-		global $configArray;
-
+	function createSquareOrder() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('square');
@@ -6317,21 +5820,21 @@ class MyAccount_AJAX extends JSON_Action {
 		} else {
 			if ($transactionType == 'donation') {
 				[
-					$paymentLibrary,
-					$userLibrary,
+					,
+					,
 					$payment,
-					$purchaseUnits,
-					$patron,
+					,
+					,
 					$tempDonation,
 				] = $result;
-				$donation = $this->addDonation($payment, $tempDonation);
+				$this->addDonation($payment, $tempDonation);
 			} else {
 				[
-					$paymentLibrary,
-					$userLibrary,
+					,
+					,
 					$payment,
-					$purchaseUnits,
-					$patron,
+					,
+					,
 				] = $result;
 			}
 
@@ -6412,7 +5915,6 @@ class MyAccount_AJAX extends JSON_Action {
 			$payment->squareToken = $paymentToken;
 			if ($payment->find(true)) {
 				$paymentId = $payment->id;
-				$paymentAmount = $payment->totalPaid;
 				$body = [
 					'idempotency_key' => strval($paymentId),
 					// Square needs this to be a string, so guarantee it
@@ -6459,10 +5961,7 @@ class MyAccount_AJAX extends JSON_Action {
 							}
 						} else {
 							if ($payment->completed) {
-								return [
-									'success' => false,
-									'message' => 'This payment has already been processed'
-								];
+								return $this->failureResult(null, 'This payment has already been processed');
 							} else {
 								$payment->transactionId = $paymentResults->id;
 								$payment->orderId = $paymentResults->order_id;
@@ -6480,10 +5979,7 @@ class MyAccount_AJAX extends JSON_Action {
 							}
 						}
 					} else {
-						return [
-							'success' => false,
-							'message' => 'Payment status is ' . ($paymentResults->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.'
-						];
+						return $this->failureResult(null, 'Payment status is ' . ($paymentResults->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.');
 					}
 				} else {
 					$error = $decodedPaymentRequestResults->error;
@@ -6497,16 +5993,11 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			}
 		}
-		return [
-			'success' => false,
-			'message' => 'Your payment with Square could not be completed. Please contact library staff for assistance.'
-		];
+		return $this->failureResult(null, 'Your payment with Square could not be completed. Please contact library staff for assistance.');
 	}
 
 	/** @noinspection PhpUnused */
-	function createStripeOrder() {
-		global $configArray;
-
+	function createStripeOrder() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('stripe');
@@ -6519,21 +6010,21 @@ class MyAccount_AJAX extends JSON_Action {
 		} else {
 			if ($transactionType == 'donation') {
 				[
-					$paymentLibrary,
-					$userLibrary,
+					,
+					,
 					$payment,
-					$purchaseUnits,
-					$patron,
+					,
+					,
 					$tempDonation,
 				] = $result;
-				$donation = $this->addDonation($payment, $tempDonation);
+				$this->addDonation($payment, $tempDonation);
 			} else {
 				[
-					$paymentLibrary,
-					$userLibrary,
+					,
+					,
 					$payment,
-					$purchaseUnits,
-					$patron,
+					,
+					,
 				] = $result;
 			}
 
@@ -6545,7 +6036,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function completeStripeOrder() : array {
+	function completeStripeOrder(): array {
 		global $configArray;
 
 		$patronId = $_REQUEST['patronId'];
@@ -6579,21 +6070,30 @@ class MyAccount_AJAX extends JSON_Action {
 					if ($stripeSettings->find(true)) {
 						//header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCompleted?id=' . $payment->id);
 						$result = $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
-						$result['submitPaymentText'] = translate(['text' => 'Submit Payment', 'isPublicFacing'=>true]);
+						$result['submitPaymentText'] = translate([
+							'text' => 'Submit Payment',
+							'isPublicFacing' => true
+						]);
 						return $result;
 					} else {
 						return [
 							'success' => false,
 							'message' => 'Could not complete donation. Stripe is not setup for this library.',
-							'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
+							'submitPaymentText' => translate([
+								'text' => 'Submit Payment',
+								'isPublicFacing' => true
+							])
 						];
 					}
 				}
-			}else{
+			} else {
 				return [
 					'success' => false,
 					'message' => 'Payment settings were not properly configured.',
-					'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
+					'submitPaymentText' => translate([
+						'text' => 'Submit Payment',
+						'isPublicFacing' => true
+					])
 				];
 			}
 		} else {
@@ -6617,27 +6117,36 @@ class MyAccount_AJAX extends JSON_Action {
 				$stripeSettings->id = $paymentLibrary->stripeSettingId;
 				if ($stripeSettings->find(true)) {
 					$result = $stripeSettings->submitTransaction($payment, $paymentMethodId, $transactionType);
-					$result['submitPaymentText'] = translate(['text' => 'Submit Payment', 'isPublicFacing'=>true]);
+					$result['submitPaymentText'] = translate([
+						'text' => 'Submit Payment',
+						'isPublicFacing' => true
+					]);
 					return $result;
 				} else {
 					return [
 						'success' => false,
 						'message' => 'Could not complete payment. Stripe is not setup for this library.',
-						'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
+						'submitPaymentText' => translate([
+							'text' => 'Submit Payment',
+							'isPublicFacing' => true
+						])
 					];
 				}
 			} else {
 				return [
 					'success' => false,
 					'message' => 'Unable to find payment in system to complete.',
-					'submitPaymentText' => translate(['text' => 'Submit Payment', 'isPublicFacing'=>true])
+					'submitPaymentText' => translate([
+						'text' => 'Submit Payment',
+						'isPublicFacing' => true
+					])
 				];
 			}
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function createMSBOrder() {
+	function createMSBOrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -6659,7 +6168,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$patron,
 					$tempDonation,
 				] = $result;
-				$donation = $this->addDonation($payment, $tempDonation);
+				$this->addDonation($payment, $tempDonation);
 			} else {
 				/** @noinspection PhpUnusedLocalVariableInspection */
 				[
@@ -6688,7 +6197,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function createCompriseOrder() {
+	function createCompriseOrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -6701,7 +6210,6 @@ class MyAccount_AJAX extends JSON_Action {
 		if (array_key_exists('success', $result) && $result['success'] === false) {
 			return $result;
 		} else {
-			global $activeLanguage;
 			$currencyCode = 'USD';
 			$variables = new SystemVariables();
 			if ($variables->find(true)) {
@@ -6748,12 +6256,11 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentRequestUrl .= '&UserName=' . urlencode($compriseSettings->username);
 				$paymentRequestUrl .= '&Password=' . urlencode($compriseSettings->password);
 				$paymentRequestUrl .= '&Amount=' . number_format($payment->totalPaid, 2, '.', '');
+				$paymentRequestUrl .= "&URLPostBack=" . urlencode($configArray['Site']['url'] . '/Comprise/Complete');
 				if ($transactionType == 'donation') {
-					$paymentRequestUrl .= "&URLPostBack=" . urlencode($configArray['Site']['url'] . '/Comprise/Complete');
 					$paymentRequestUrl .= "&URLReturn=" . urlencode($configArray['Site']['url'] . '/Donations/DonationCompleted?id=' . $payment->id);
 					$paymentRequestUrl .= "&URLCancel=" . urlencode($configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
 				} else {
-					$paymentRequestUrl .= "&URLPostBack=" . urlencode($configArray['Site']['url'] . '/Comprise/Complete');
 					$paymentRequestUrl .= "&URLReturn=" . urlencode($configArray['Site']['url'] . '/MyAccount/CompriseCompleted?payment=' . $payment->id);
 					$paymentRequestUrl .= "&URLCancel=" . urlencode($configArray['Site']['url'] . '/MyAccount/CompriseCancel?payment=' . $payment->id);
 				}
@@ -6769,16 +6276,13 @@ class MyAccount_AJAX extends JSON_Action {
 					'paymentRequestUrl' => $paymentRequestUrl,
 				];
 			} else {
-				return [
-					'success' => false,
-					'message' => 'Comprise was not properly configured',
-				];
+				return $this->failureResult(null, 'Comprise was not properly configured');
 			}
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function createProPayOrder() {
+	function createProPayOrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -6841,6 +6345,7 @@ class MyAccount_AJAX extends JSON_Action {
 				], true);
 
 				//Create the payer if one doesn't exist already.
+				$proPayPayerAccountId = null;
 				if (empty($patron->proPayPayerAccountId)) {
 					$createPayer = new stdClass();
 					$createPayer->EmailAddress = $patron->email;
@@ -6862,7 +6367,6 @@ class MyAccount_AJAX extends JSON_Action {
 						$jsonResponse = json_decode($createPayerResponse);
 						if ($patron != null) {
 							$patron->proPayPayerAccountId = $jsonResponse->ExternalAccountID;
-							$proPayPayerAccountId = null;
 							$patron->update();
 						} else {
 							$proPayPayerAccountId = $jsonResponse->ExternalAccountID;
@@ -6927,9 +6431,9 @@ class MyAccount_AJAX extends JSON_Action {
 					}
 					$requestElements->ProcessCard = true;
 					if ($transactionType == 'donation') {
-						$requestElements->ReturnURL = $configArray['Site']['url'] . "/ProPay/{$payment->id}/Complete?type=" . $payment->transactionType . "&donation=" . $donation->id;
+						$requestElements->ReturnURL = $configArray['Site']['url'] . "/ProPay/$payment->id/Complete?type=" . $payment->transactionType . "&donation=" . $donation->id;
 					} else {
-						$requestElements->ReturnURL = $configArray['Site']['url'] . "/ProPay/{$payment->id}/Complete?type=" . $payment->transactionType;
+						$requestElements->ReturnURL = $configArray['Site']['url'] . "/ProPay/$payment->id/Complete?type=" . $payment->transactionType;
 					}
 					$requestElements->SecurityCodeRequirementType = 1;
 					$requestElements->StoreCard = false;
@@ -6975,29 +6479,20 @@ class MyAccount_AJAX extends JSON_Action {
 							'paymentRequestUrl' => $paymentRequestUrl,
 						];
 					} else {
-						return [
-							'success' => false,
-							'message' => 'Could not connect to the payment processor',
-						];
+						return $this->failureResult(null, 'Could not connect to the payment processor');
 					}
 				} else {
-					return [
-						'success' => false,
-						'message' => 'Payer Account ID could not be determined.',
-					];
+					return $this->failureResult(null, 'Payer Account ID could not be determined.');
 				}
 
 			} else {
-				return [
-					'success' => false,
-					'message' => 'ProPay was not properly configured',
-				];
+				return $this->failureResult(null, 'ProPay was not properly configured');
 			}
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function createWorldPayOrder() {
+	function createWorldPayOrder() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('worldpay');
@@ -7027,10 +6522,16 @@ class MyAccount_AJAX extends JSON_Action {
 					$patron,
 				] = $result;
 			}
-		
+
 			// Log the WorldPay order creation request
 			require_once ROOT_DIR . '/sys/SystemLogging/ExternalRequestLogEntry.php';
-			ExternalRequestLogEntry::logRequest('fine_payment.createworldpayorder', 'GET', '/MyAccount/AJAX?method=createWorldPayOrder', [], json_encode($_REQUEST), '200', json_encode(['success' => true, 'paymentId' => $payment->id,'url' => $payment->url, 'transactionDate' => $payment->transactionDate, 'userId' => $payment->userId]), []);
+			ExternalRequestLogEntry::logRequest('fine_payment.createworldpayorder', 'GET', '/MyAccount/AJAX?method=createWorldPayOrder', [], json_encode($_REQUEST), '200', json_encode([
+				'success' => true,
+				'paymentId' => $payment->id,
+				'url' => $payment->url,
+				'transactionDate' => $payment->transactionDate,
+				'userId' => $payment->userId
+			]), []);
 
 			return [
 				'success' => true,
@@ -7040,10 +6541,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function checkWorldPayOrderStatus() {
+	function checkWorldPayOrderStatus() : array {
 		$result = [
 			'success' => false,
-			'message' => 'Unable to check user payment status',
 		];
 
 		if (empty($_REQUEST['paymentId'])) {
@@ -7079,9 +6579,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function createXPressPayOrder() {
-		global $configArray;
-
+	function createXPressPayOrder() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('xpresspay');
@@ -7143,9 +6641,8 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	function createCertifiedPaymentsByDeluxeOrder() {
-		global $configArray;
-
+	/** @noinspection PhpUnused */
+	function createCertifiedPaymentsByDeluxeOrder() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('deluxe');
@@ -7201,7 +6698,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function createNCROrder() {
+	function createNCROrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -7285,7 +6782,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$payment->orderId = $transactionIdentifier;
 				$payment->update();
 
-				$resultJSON = $newRedirectRequest->curlPostBodyData($url, $postParams, true);
+				$resultJSON = $newRedirectRequest->curlPostBodyData($url, $postParams);
 				$result = json_decode($resultJSON);
 
 				ExternalRequestLogEntry::logRequest('fine_payment.createNCROrder', 'POST', $url, $newRedirectRequest->getHeaders(), json_encode($postParams), $newRedirectRequest->getResponseCode(), $resultJSON, []);
@@ -7302,15 +6799,13 @@ class MyAccount_AJAX extends JSON_Action {
 					'paymentRequestUrl' => $paymentRequestUrl,
 				];
 			} else {
-				return [
-					'success' => false,
-					'message' => 'NCR was not properly configured for the library.',
-				];
+				return $this->failureResult(null, 'NCR was not properly configured for the library.');
 			}
 		}
 	}
 
-	function createSnapPayOrder() {
+	/** @noinspection PhpUnused */
+	function createSnapPayOrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -7375,7 +6870,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$lineItem = new stdClass(); //line items need to be objects not arrays
 				$lineItem->identifiers[0] = "SnapPay Invoice";
 				$lineItem->amount = $payment->totalPaid;
-				$lineItem->paymentType = $snapPaySetting->paymentTypeId;
+				$lineItem->paymentType = '';
 
 // create the HMAC signature
 				$apiAuthCode = $snapPaySetting->apiAuthenticationCode;
@@ -7386,9 +6881,12 @@ class MyAccount_AJAX extends JSON_Action {
 				$currencycode = 'USD'; // TO DO: fix this hardcode
 				$paymentmode = 'CC'; // TO DO: allow ACH too
 				$email = $patron->email;
+				/** @noinspection PhpUnhandledExceptionInspection */
 				$nonce = bin2hex(random_bytes(16));
 
+				/** @noinspection PhpUnhandledExceptionInspection */
 				$epochStart = new DateTime("1970-01-01 00:00:00", new DateTimeZone("UTC"));
+				/** @noinspection PhpUnhandledExceptionInspection */
 				$timeSpan = (new DateTime("now", new DateTimeZone("UTC")))->getTimestamp() - $epochStart->getTimestamp();
 				$requestTimeStamp = (string)$timeSpan;
 
@@ -7396,7 +6894,7 @@ class MyAccount_AJAX extends JSON_Action {
 // Convert base64-encoded apiAuthCode to byte array
 				$secretKeyByteArray = base64_decode($apiAuthCode);
 // Encode signatureRawData to byte array using UTF-8
-				$signature = utf8_encode($signatureRawData);
+				$signature = mb_convert_encoding($signatureRawData, 'UTF-8', 'ISO-8859-1');
 // Compute HMAC SHA-256 hash
 				$signatureBytes = hash_hmac('sha256', $signature, $secretKeyByteArray, true);
 // Convert hash to base64-encoded string
@@ -7404,11 +6902,12 @@ class MyAccount_AJAX extends JSON_Action {
 // Format signatureData string
 				$signatureData = sprintf("%s:%s:%s", $requestSignatureBase64String, $nonce, $requestTimeStamp);
 // Encode signatureData to byte array using UTF-8 and convert to base64-encoded string
-				$HmacValue = base64_encode(utf8_encode($signatureData));
+				$HmacValue = base64_encode(mb_convert_encoding($signatureData, 'UTF-8', 'ISO-8859-1'));
 
 				$postParams = [
 					'udf1' => $payment->id,
-					'udf9' => $payment->id, // Aspen user payment id is duplicated in udf1 and udf9. As of 2025 05 23, Nashville's SnapPay configuration has udf9 associated with the SnapPay 'orderId' field, which is searchable via SnapPay GetTransaction API.
+					'udf9' => $payment->id,
+					// Aspen user payment id is duplicated in udf1 and udf9. As of 2025 05 23, Nashville's SnapPay configuration has udf9 associated with the SnapPay 'orderId' field, which is searchable via SnapPay GetTransaction API.
 					'udf8' => $sessionValue,
 					'accountid' => $snapPaySetting->accountId,
 					'customerid' => $patron->id,
@@ -7424,9 +6923,9 @@ class MyAccount_AJAX extends JSON_Action {
 					'enableemailreceipt' => 'Y',
 					// TO DO: allow N too
 					'redirectionurl' => $configArray['Site']['url'] . "/SnapPay/Complete?u=" . $payment->id,
-					// TO DO: documentation: FISERV pdf has 'redirectionurl'; error has 'redirecturl'; 'redirectionurl ' is correct
+					// TO DO: documentation: FISERV PDF has 'redirectionurl'; error has 'redirecturl'; 'redirectionurl ' is correct
 					'signature' => $HmacValue,
-					// TO DO: documentation: FISERV pdf has 'signature'; error has 'Signature'; 'signature' is correct
+					// TO DO: documentation: FISERV PDF has 'signature'; error has 'Signature'; 'signature' is correct
 					'firstname' => $patron->firstname,
 					'lastname' => $patron->lastname,
 					'addressline1' => $patron->_address1,
@@ -7444,15 +6943,13 @@ class MyAccount_AJAX extends JSON_Action {
 					'paymentRequestUrl' => $paymentRequestUrl,
 				];
 			} else {
-				return [
-					'success' => false,
-					'message' => 'SnapPay was not properly configured for the library.',
-				];
+				return $this->failureResult(null, 'SnapPay was not properly configured for the library.');
 			}
 		}
 	}
 
-	function createPayPalPayflowOrder() {
+	/** @noinspection PhpUnused */
+	function createPayPalPayflowOrder() : array {
 		global $configArray;
 		global $interface;
 		global $activeLanguage;
@@ -7511,6 +7008,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 
 			//Create unique token
+			/** @noinspection PhpUnhandledExceptionInspection */
 			$uid = random_bytes(12);
 			$tokenId = bin2hex($uid);
 
@@ -7559,24 +7057,23 @@ class MyAccount_AJAX extends JSON_Action {
 			$tokenResults = PayPalPayflowSetting::parsePayflowString($tokenResults);
 
 			if ($tokenResults['RESULT'] != 0) {
-				return [
-					'success' => false,
-					'message' => 'Unable to authenticate with Payflow, please try again in a few minutes.',
-				];
+				return $this->failureResult(null, 'Unable to authenticate with Payflow, please try again in a few minutes.');
 			} else {
 				$token = $tokenResults['SECURETOKEN'];
 				$tokenId = $tokenResults['SECURETOKENID'];
 			}
 
+			/** @noinspection HtmlUnknownAttribute */
+			/** @noinspection HtmlDeprecatedAttribute */
 			return [
 				'success' => true,
-				'paymentIframe' => "<iframe class='fulfillmentFrame' id='payflow-link-iframe' src='{$iframeUrl}/?SECURETOKEN={$token}&SECURETOKENID={$tokenId}' sandbox='allow-top-navigation allow-scripts allow-same-origin allow-forms allow-modals' border='0' frameborder='0' scrolling='yes' allowtransparency='true'>\n</iframe>",
+				'paymentIframe' => "<iframe class='fulfillmentFrame' id='payflow-link-iframe' src='$iframeUrl/?SECURETOKEN=$token&SECURETOKENID=$tokenId' sandbox='allow-top-navigation allow-scripts allow-same-origin allow-forms allow-modals' border='0' frameborder='0' scrolling='yes' allowtransparency='true'>\n</iframe>",
 			];
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function createACIOrder() {
+	function createACIOrder() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('ACI');
@@ -7588,20 +7085,20 @@ class MyAccount_AJAX extends JSON_Action {
 		} else {
 			if ($transactionType == 'donation') {
 				[
-					$paymentLibrary,
-					$userLibrary,
+					,
+					,
 					$payment,
-					$purchaseUnits,
-					$patron,
-					$tempDonation,
+					,
+					,
+					,
 				] = $result;
 			} else {
 				[
-					$paymentLibrary,
-					$userLibrary,
+					,
+					,
 					$payment,
-					$purchaseUnits,
-					$patron,
+					,
+					,
 				] = $result;
 			}
 			$payment->aciToken = $_REQUEST['token'];
@@ -7614,7 +7111,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function completeACIOrder() {
+	function completeACIOrder() : array {
 		global $configArray;
 
 		$patronId = $_REQUEST['patronId'];
@@ -7629,24 +7126,26 @@ class MyAccount_AJAX extends JSON_Action {
 		require_once ROOT_DIR . '/sys/Donations/Donation.php';
 		require_once ROOT_DIR . '/sys/ECommerce/ACISpeedpaySetting.php';
 
+		$payment = new UserPayment();
+		$payment->id = $paymentId;
 		if ($transactionType == 'donation') {
 			//Get the order information
-			$payment = new UserPayment();
-			$payment->id = $paymentId;
 			$payment->transactionType = 'donation';
 			if ($payment->find(true)) {
 				$donation = new Donation();
 				$donation->paymentId = $payment->id;
 				if (!$donation->find(true)) {
 					header("Location: " . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+					return [];
+				}else{
+					return $this->failureResult(null, 'ACI Donation payment not applied.');
 				}
 			} else {
 				header("Location: " . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+				return [];
 			}
 		} else {
 			//Get the order information
-			$payment = new UserPayment();
-			$payment->id = $paymentId;
 			$payment->userId = $patronId;
 			if ($payment->find(true)) {
 
@@ -7665,34 +7164,23 @@ class MyAccount_AJAX extends JSON_Action {
 				$aciSpeedpaySettings = new ACISpeedpaySetting();
 				$aciSpeedpaySettings->id = $paymentLibrary->aciSpeedpaySettingId;
 				if ($aciSpeedpaySettings->find(true)) {
-					return $aciSpeedpaySettings->submitTransaction($patron, $payment, $fundingToken, $billerAccount, $accessToken);
+					return $aciSpeedpaySettings->submitTransaction($patron, $payment, $fundingToken, $billerAccount);
 				} else {
-					return [
-						'success' => false,
-						'message' => 'Could not complete payment. ACI Speedpay is not setup for this library.'
-					];
+					return $this->failureResult(null, 'Could not complete payment. ACI Speedpay is not setup for this library.');
 				}
 			} else {
-				return [
-					'success' => false,
-					'message' => 'Unable to find payment in system to complete.'
-				];
+				return $this->failureResult(null, 'Unable to find payment in system to complete.');
 			}
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissPlacard() {
+	function dismissPlacard() : array {
+		$this->requireLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$placardId = $_REQUEST['placardId'];
 
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
-		];
+		$result = $this->failureResult(null, 'Unknown Error');
 
 		if ($patronId != UserAccount::getActiveUserId()) {
 			$result['message'] = 'Incorrect user information, please login again.';
@@ -7775,13 +7263,10 @@ class MyAccount_AJAX extends JSON_Action {
 				$authResponse = $authRequest->curlGetPage($url);
 				$decodedAuthResponse = json_decode($authResponse);
 
-				ExternalRequestLogEntry::logRequest('fine_payment.createInvoiceCloudOrder','GET', $url, $authRequest->getHeaders(),'', $authRequest->getResponseCode(), $authResponse, []);
+				ExternalRequestLogEntry::logRequest('fine_payment.createInvoiceCloudOrder', 'GET', $url, $authRequest->getHeaders(), '', $authRequest->getResponseCode(), $authResponse, []);
 
 				if (!$decodedAuthResponse->Active) {
-					return [
-						'success' => false,
-						'message' => 'Unable to create your order in InvoiceCloud. Library has an inactive account.'
-					];
+					return $this->failureResult(null, 'Unable to create your order in InvoiceCloud. Library has an inactive account.');
 				}
 
 				$now = time();
@@ -7789,7 +7274,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$createInvoice = new StdClass();
 				$createInvoice->InvoiceNumber = $token;
 				$createInvoice->TypeID = intval($invoiceCloudSetting->invoiceTypeId);
-				$createInvoice->BalanceDue = $payment->totalPaid;
+				$createInvoice->BalanceDue = number_format((float)$payment->totalPaid, 2, '.', '');
 				$ccServiceFee = $invoiceCloudSetting->ccServiceFee;
 				if (isset($ccServiceFee) && str_contains($ccServiceFee, '%')) {
 					$percent = floatval(str_replace('%', '', $ccServiceFee));
@@ -7806,6 +7291,14 @@ class MyAccount_AJAX extends JSON_Action {
 				$createCustomer->EmailAddress = $patron->email;
 				$createCustomer->Invoices = [$createInvoice];
 
+				$PageResultOptions = [
+					'AllowRegisterAccount' => true,
+					'InvoiceOptions' => [
+						'AllowViewRelated' => false,
+						'AllowRemindMe' => false,
+					]
+				];
+
 				$postParams = [
 					'CreateCustomerRecord' => true,
 					'Customers' => [
@@ -7818,6 +7311,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'PostBackURL' => $configArray['Site']['url'] . "/InvoiceCloud/Process",
 					'BillerReference' => $payment->id,
 					'ViewMode' => 0,
+					'PageResultOptions' => $PageResultOptions,
 				];
 
 				$paymentRequest = new CurlWrapper();
@@ -7830,7 +7324,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentResponse = $paymentRequest->curlPostBodyData($url, $postParams);
 				$decodedPaymentResponse = json_decode($paymentResponse);
 
-				ExternalRequestLogEntry::logRequest('fine_payment.createInvoiceCloudOrder','POST', $url, $paymentRequest->getHeaders(),json_encode($postParams), $paymentRequest->getResponseCode(), $paymentResponse, []);
+				ExternalRequestLogEntry::logRequest('fine_payment.createInvoiceCloudOrder', 'POST', $url, $paymentRequest->getHeaders(), json_encode($postParams), $paymentRequest->getResponseCode(), $paymentResponse, []);
 
 				if ($decodedPaymentResponse->Message != 'SUCCESS') {
 					return [
@@ -7846,15 +7340,13 @@ class MyAccount_AJAX extends JSON_Action {
 					'paymentRequestUrl' => $paymentRequestUrl,
 				];
 			} else {
-				return [
-					'success' => false,
-					'message' => 'InvoiceCloud was not properly configured for the library.',
-				];
+				return $this->failureResult(null, 'InvoiceCloud was not properly configured for the library.');
 			}
 		}
 	}
 
-	function createHeyCentricOrder(){
+	/** @noinspection PhpUnused */
+	function createHeyCentricOrder() : array {
 		global $configArray;
 
 		$transactionType = $_REQUEST['type'];
@@ -7893,165 +7385,165 @@ class MyAccount_AJAX extends JSON_Action {
 		$heyCentricSettings->id = $homeLocationHeyCentricSettingId != -1 ? $homeLocationHeyCentricSettingId : $paymentLibrary->heyCentricSettingId;
 
 		if (!$heyCentricSettings->find(true)) {
-			return [
-				'success' => false,
-				'message' => 'HeyCentric was not properly configured',
-			];
+			return $this->failureResult(null, 'HeyCentric was not properly configured');
 		}
 
 		$urlParameterSettings = $heyCentricSettings->__get('urlParameterSettingList');
 
 		$finesSelected = [];
 
-		foreach(explode(',', $payment->finesPaid) as $fineSelected) {
-			$finesSelected[] = ['id' => explode('|', $fineSelected)[0], 'amount' => explode('|', $fineSelected)[1]];
+		foreach (explode(',', $payment->finesPaid) as $fineSelected) {
+			$finesSelected[] = [
+				'id' => explode('|', $fineSelected)[0],
+				'amount' => explode('|', $fineSelected)[1]
+			];
 		}
 
 		$locationDetails = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getAdditionalLocationDetails($patron->getHomeLocationCode()) : [];
 
 		// URL parameters
 		$paymentRequestUrl = $heyCentricSettings->baseUrl;
-		if($urlParameterSettings["client_includeInUrl"]) {
+		if ($urlParameterSettings["client_includeInUrl"]) {
 			$paymentRequestUrl .= "client=";
-			if(isset($urlParameterSettings['client_kohaAdditionalField']) && $urlParameterSettings['client_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['client_kohaAdditionalField']) && $urlParameterSettings['client_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['client_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['client_value'] &&  $urlParameterSettings['client_value'] ? $urlParameterSettings['client_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['client_value']) ? $urlParameterSettings['client_value'] : "";
 			}
 		}
-		if($urlParameterSettings["area_includeInUrl"]) {
+		if ($urlParameterSettings["area_includeInUrl"]) {
 			$paymentRequestUrl .= "&area=";
-			if(isset($urlParameterSettings['area_kohaAdditionalField']) && $urlParameterSettings['area_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['area_kohaAdditionalField']) && $urlParameterSettings['area_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['area_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['area_value'] &&  $urlParameterSettings['area_value'] ? $urlParameterSettings['area_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['area_value']) ? $urlParameterSettings['area_value'] : "";
 			}
 		}
-		if($urlParameterSettings["till_includeInUrl"]) {
+		if ($urlParameterSettings["till_includeInUrl"]) {
 			$paymentRequestUrl .= "&till=";
-			if(isset($urlParameterSettings['till_kohaAdditionalField']) && $urlParameterSettings['till_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['till_kohaAdditionalField']) && $urlParameterSettings['till_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['till_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['till_value'] &&  $urlParameterSettings['till_value'] ? $urlParameterSettings['till_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['till_value']) ? $urlParameterSettings['till_value'] : "";
 			}
 		}
-		if($urlParameterSettings["entity_includeInUrl"]) {
+		if ($urlParameterSettings["entity_includeInUrl"]) {
 			$paymentRequestUrl .= "&entity=";
-			if(isset($urlParameterSettings['entity_kohaAdditionalField']) && $urlParameterSettings['entity_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['entity_kohaAdditionalField']) && $urlParameterSettings['entity_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['entity_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['entity_value'] &&  $urlParameterSettings['entity_value'] ? $urlParameterSettings['entity_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['entity_value']) ? $urlParameterSettings['entity_value'] : "";
 			}
 		}
-		if($urlParameterSettings["co_includeInUrl"]) {
+		if ($urlParameterSettings["co_includeInUrl"]) {
 			$paymentRequestUrl .= "&co=";
-			if(isset($urlParameterSettings['co_kohaAdditionalField']) && $urlParameterSettings['co_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['co_kohaAdditionalField']) && $urlParameterSettings['co_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['co_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['co_value'] &&  $urlParameterSettings['co_value'] ? $urlParameterSettings['co_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['co_value']) ? $urlParameterSettings['co_value'] : "";
 			}
 		}
-		if($urlParameterSettings["bu_includeInUrl"]) {
+		if ($urlParameterSettings["bu_includeInUrl"]) {
 			$paymentRequestUrl .= "&bu=";
-			if(isset($urlParameterSettings['bu_kohaAdditionalField']) && $urlParameterSettings['bu_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['bu_kohaAdditionalField']) && $urlParameterSettings['bu_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['bu_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['bu_value'] &&  $urlParameterSettings['bu_value'] ? $urlParameterSettings['bu_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['bu_value']) ? $urlParameterSettings['bu_value'] : "";
 			}
 		}
-		if($urlParameterSettings["lang_includeInUrl"]) {
+		if ($urlParameterSettings["lang_includeInUrl"]) {
 			$paymentRequestUrl .= "&lang=";
-			if(isset($urlParameterSettings['lang_kohaAdditionalField']) && $urlParameterSettings['lang_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['lang_kohaAdditionalField']) && $urlParameterSettings['lang_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['lang_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['lang_value'] &&  $urlParameterSettings['lang_value'] ? $urlParameterSettings['lang_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['lang_value']) ? $urlParameterSettings['lang_value'] : "";
 			}
 		}
-		if($urlParameterSettings["mode_includeInUrl"]) {
+		if ($urlParameterSettings["mode_includeInUrl"]) {
 			$paymentRequestUrl .= "&mode=";
-			if(isset($urlParameterSettings['mode_kohaAdditionalField']) && $urlParameterSettings['mode_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['mode_kohaAdditionalField']) && $urlParameterSettings['mode_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['mode_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['mode_value'] &&  $urlParameterSettings['mode_value'] ? $urlParameterSettings['mode_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['mode_value']) ? $urlParameterSettings['mode_value'] : "";
 			}
 		}
 
 		// hash parameters
 		$hashParams = "";
-		if($urlParameterSettings["client_includeInHash"]) {
+		if ($urlParameterSettings["client_includeInHash"]) {
 			$hashParams .= "client=";
-			if(isset($urlParameterSettings['client_kohaAdditionalField']) && $urlParameterSettings['client_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['client_kohaAdditionalField']) && $urlParameterSettings['client_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['client_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "client=" . $urlParameterSettings['client_value'] ? $urlParameterSettings['client_value'] : "";
 			}
 		}
-		if($urlParameterSettings["area_includeInHash"]) {
+		if ($urlParameterSettings["area_includeInHash"]) {
 			$hashParams .= "&area=";
-			if(isset($urlParameterSettings['area_kohaAdditionalField']) && $urlParameterSettings['area_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['area_kohaAdditionalField']) && $urlParameterSettings['area_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['area_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "area=" . $urlParameterSettings['area_value'] ? $urlParameterSettings['area_value'] : "";
 			}
 		}
-		if($urlParameterSettings["till_includeInHash"]) {
+		if ($urlParameterSettings["till_includeInHash"]) {
 			$hashParams .= "&till=";
-			if(isset($urlParameterSettings['till_kohaAdditionalField']) && $urlParameterSettings['till_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['till_kohaAdditionalField']) && $urlParameterSettings['till_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['till_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "till=" . $urlParameterSettings['till_value'] ? $urlParameterSettings['till_value'] : "";
 			}
 		}
-		if($urlParameterSettings["entity_includeInHash"]) {
+		if ($urlParameterSettings["entity_includeInHash"]) {
 			$hashParams .= "&entity=";
-			if(isset($urlParameterSettings['entity_kohaAdditionalField']) && $urlParameterSettings['entity_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['entity_kohaAdditionalField']) && $urlParameterSettings['entity_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['entity_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "entity=" . $urlParameterSettings['entity_value'] ? $urlParameterSettings['entity_value'] : "";
 			}
 		}
-		if($urlParameterSettings["co_includeInHash"]) {
+		if ($urlParameterSettings["co_includeInHash"]) {
 			$hashParams .= "&co=";
-			if(isset($urlParameterSettings['co_kohaAdditionalField']) && $urlParameterSettings['co_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['co_kohaAdditionalField']) && $urlParameterSettings['co_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['co_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "co=" . $urlParameterSettings['co_value'] ? $urlParameterSettings['co_value'] : "";
 			}
 		}
-		if($urlParameterSettings["bu_includeInHash"]) {
+		if ($urlParameterSettings["bu_includeInHash"]) {
 			$hashParams .= "&bu=";
-			if(isset($urlParameterSettings['bu_kohaAdditionalField']) && $urlParameterSettings['bu_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['bu_kohaAdditionalField']) && $urlParameterSettings['bu_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['bu_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "bu=" . $urlParameterSettings['bu_value'] ? $urlParameterSettings['bu_value'] : "";
 			}
 		}
-		if($urlParameterSettings["lang_includeInHash"]) {
+		if ($urlParameterSettings["lang_includeInHash"]) {
 			$hashParams .= "&lang=";
-			if(isset($urlParameterSettings['lang_kohaAdditionalField']) && $urlParameterSettings['lang_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['lang_kohaAdditionalField']) && $urlParameterSettings['lang_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['lang_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "lang=" . $urlParameterSettings['lang_value'] ? $urlParameterSettings['lang_value'] : "";
 			}
 		}
-		if($urlParameterSettings["mode_includeInHash"]) {
+		if ($urlParameterSettings["mode_includeInHash"]) {
 			$hashParams .= "&mode=";
-			if(isset($urlParameterSettings['mode_kohaAdditionalField']) && $urlParameterSettings['mode_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['mode_kohaAdditionalField']) && $urlParameterSettings['mode_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['mode_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($locationDetails[$snakeCaseFieldName]) && $locationDetails[$snakeCaseFieldName] ? $locationDetails[$snakeCaseFieldName] : "none specified");
 			} else {
@@ -8060,200 +7552,200 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// multiline hash and URL parameters
-		foreach($finesSelected as $index => $fine) {
+		foreach ($finesSelected as $index => $fine) {
 			$fineDetails = $patron->getCatalogDriver()->hasAdditionalFineFields() ? $patron->getCatalogDriver()->getFineById($fine['id'], true) : [];
 			$multilineSuffix = $index > 0 ? "_$index=" : "=";
 
 			// URL parameters
-			if($urlParameterSettings["pmtTyp_includeInUrl"]) {
+			if ($urlParameterSettings["pmtTyp_includeInUrl"]) {
 				$paymentRequestUrl .= "&pmtTyp" . $multilineSuffix;
-				if(isset($urlParameterSettings['pmtTyp_kohaAdditionalField']) && $urlParameterSettings['pmtTyp_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['pmtTyp_kohaAdditionalField']) && $urlParameterSettings['pmtTyp_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['pmtTyp_kohaAdditionalField']));
-					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName]: "none specified");
+					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['pmtTyp_value'] &&  $urlParameterSettings['pmtTyp_value'] ? $urlParameterSettings['pmtTyp_value'] : "";
+					$paymentRequestUrl .= !empty($urlParameterSettings['pmtTyp_value']) ? $urlParameterSettings['pmtTyp_value'] : "";
 				}
 			}
-			if($urlParameterSettings["val1_includeInUrl"]) {
+			if ($urlParameterSettings["val1_includeInUrl"]) {
 				$paymentRequestUrl .= "&val1" . $multilineSuffix;
-				if(isset($urlParameterSettings['val1_kohaAdditionalField']) && $urlParameterSettings['val1_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val1_kohaAdditionalField']) && $urlParameterSettings['val1_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['val1_value'] &&  $urlParameterSettings['val1_value'] ? $urlParameterSettings['val1_value'] : urlencode($fineDetails['fineId']);
+					$paymentRequestUrl .= !empty($urlParameterSettings['val1_value']) ? $urlParameterSettings['val1_value'] : urlencode($fineDetails['fineId']);
 				}
 			}
-			if($urlParameterSettings["val1Desc_includeInUrl"]) {
+			if ($urlParameterSettings["val1Desc_includeInUrl"]) {
 				$paymentRequestUrl .= "&val1Desc" . $multilineSuffix;
-				if(isset($urlParameterSettings['val1Desc_kohaAdditionalField']) && $urlParameterSettings['val1Desc_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val1Desc_kohaAdditionalField']) && $urlParameterSettings['val1Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1Desc_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					global $logger;
-					$paymentRequestUrl .= $urlParameterSettings['val1Desc_value'] &&  $urlParameterSettings['val1Desc_value'] &&  $urlParameterSettings['val1Desc_value'] ? $urlParameterSettings['val1Desc_value'] : urlencode($fineDetails['message']);
+					$paymentRequestUrl .= !empty($urlParameterSettings['val1Desc_value']) ? $urlParameterSettings['val1Desc_value'] : urlencode($fineDetails['message']);
 				}
 			}
-			if($urlParameterSettings["val2_includeInUrl"]) {
+			if ($urlParameterSettings["val2_includeInUrl"]) {
 				$paymentRequestUrl .= "&val2" . $multilineSuffix;
-				if(isset($urlParameterSettings['val2_kohaAdditionalField']) && $urlParameterSettings['val2_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val2_kohaAdditionalField']) && $urlParameterSettings['val2_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['val2_value'] &&  $urlParameterSettings['val2_value'] ? $urlParameterSettings['val2_value'] : "";
+					$paymentRequestUrl .= !empty($urlParameterSettings['val2_value']) ? $urlParameterSettings['val2_value'] : "";
 				}
 			}
-			if($urlParameterSettings["val2Desc_includeInUrl"]) {
+			if ($urlParameterSettings["val2Desc_includeInUrl"]) {
 				$paymentRequestUrl .= "&val2Desc" . $multilineSuffix;
-				if(isset($urlParameterSettings['val2Desc_kohaAdditionalField']) && $urlParameterSettings['val2Desc_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val2Desc_kohaAdditionalField']) && $urlParameterSettings['val2Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2Desc_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['val2Desc_value'] &&  $urlParameterSettings['val2Desc_value'] ? $urlParameterSettings['val2Desc_value'] : "";
-				}$paymentRequestUrl .= "&val2Desc" . $multilineSuffix . $urlParameterSettings['val2Desc_value'];
+					$paymentRequestUrl .= !empty($urlParameterSettings['val2Desc_value']) ? $urlParameterSettings['val2Desc_value'] : "";
+				}
+				$paymentRequestUrl .= "&val2Desc" . $multilineSuffix . $urlParameterSettings['val2Desc_value'];
 			}
-			if($urlParameterSettings["am_includeInUrl"]) {
+			if ($urlParameterSettings["am_includeInUrl"]) {
 				$paymentRequestUrl .= "&am" . $multilineSuffix;
-				if(isset($urlParameterSettings['am_kohaAdditionalField']) && $urlParameterSettings['am_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['am_kohaAdditionalField']) && $urlParameterSettings['am_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['am_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['am_value'] &&  $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
+					$paymentRequestUrl .= !empty($urlParameterSettings['am_value']) ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
 				}
 			}
-			if($urlParameterSettings["cmt_includeInUrl"]) {
+			if ($urlParameterSettings["cmt_includeInUrl"]) {
 				$paymentRequestUrl .= "&cmt" . $multilineSuffix;
-				if(isset($urlParameterSettings['cmt_kohaAdditionalField']) && $urlParameterSettings['cmt_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['cmt_kohaAdditionalField']) && $urlParameterSettings['cmt_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['cmt_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['cmt_value'] &&  $urlParameterSettings['cmt_value'] ? $urlParameterSettings['cmt_value'] : "";
+					$paymentRequestUrl .= !empty($urlParameterSettings['cmt_value']) ? $urlParameterSettings['cmt_value'] : "";
 				}
 			}
-			if($urlParameterSettings["extRef_includeInUrl"]) {
+			if ($urlParameterSettings["extRef_includeInUrl"]) {
 				$paymentRequestUrl .= "&extRef" . $multilineSuffix;
-				if(isset($urlParameterSettings['extRef_kohaAdditionalField']) && $urlParameterSettings['extRef_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['extRef_kohaAdditionalField']) && $urlParameterSettings['extRef_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['extRef_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= $urlParameterSettings['extRef_value'] &&  $urlParameterSettings['extRef_value'] ? $urlParameterSettings['extRef_value'] : "";
+					$paymentRequestUrl .= !empty($urlParameterSettings['extRef_value']) ? $urlParameterSettings['extRef_value'] : "";
 				}
 			}
 
 			// hash parameters
-			if($urlParameterSettings["pmtTyp_includeInHash"]) {
+			if ($urlParameterSettings["pmtTyp_includeInHash"]) {
 				$hashParams .= "&pmtTyp" . $multilineSuffix;
-				if(isset($urlParameterSettings['pmtTyp_kohaAdditionalField']) && $urlParameterSettings['pmtTyp_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['pmtTyp_kohaAdditionalField']) && $urlParameterSettings['pmtTyp_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['pmtTyp_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['pmtTyp_value']) &&  $urlParameterSettings['pmtTyp_value'] ? $urlParameterSettings['pmtTyp_value'] : "";
+					$hashParams .= isset($urlParameterSettings['pmtTyp_value']) && $urlParameterSettings['pmtTyp_value'] ? $urlParameterSettings['pmtTyp_value'] : "";
 				}
 			}
-			if($urlParameterSettings["val1_includeInHash"]) {
+			if ($urlParameterSettings["val1_includeInHash"]) {
 				$hashParams .= "&val1" . $multilineSuffix;
-				if(isset($urlParameterSettings['val1_kohaAdditionalField']) && $urlParameterSettings['val1_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val1_kohaAdditionalField']) && $urlParameterSettings['val1_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['val1_value']) &&  $urlParameterSettings['val1_value'] ? $urlParameterSettings['val1_value'] : urlencode($fineDetails['fineId']);
+					$hashParams .= isset($urlParameterSettings['val1_value']) && $urlParameterSettings['val1_value'] ? $urlParameterSettings['val1_value'] : urlencode($fineDetails['fineId']);
 				}
 			}
-			if($urlParameterSettings["val1Desc_includeInHash"]) {
+			if ($urlParameterSettings["val1Desc_includeInHash"]) {
 				$hashParams .= "&val1Desc" . $multilineSuffix;
-				if(isset($urlParameterSettings['val1Desc_kohaAdditionalField']) && $urlParameterSettings['val1Desc_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val1Desc_kohaAdditionalField']) && $urlParameterSettings['val1Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val1Desc_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['val1Desc_value']) &&  $urlParameterSettings['val1Desc_value'] ? $urlParameterSettings['val1Desc_value'] : urlencode($fineDetails['message']);
+					$hashParams .= isset($urlParameterSettings['val1Desc_value']) && $urlParameterSettings['val1Desc_value'] ? $urlParameterSettings['val1Desc_value'] : urlencode($fineDetails['message']);
 				}
 			}
-			if($urlParameterSettings["val2_includeInHash"]) {
+			if ($urlParameterSettings["val2_includeInHash"]) {
 				$hashParams .= "&val2" . $multilineSuffix;
-				if(isset($urlParameterSettings['val2_kohaAdditionalField']) && $urlParameterSettings['val2_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val2_kohaAdditionalField']) && $urlParameterSettings['val2_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['val2_value']) &&  $urlParameterSettings['val2_value'] ? $urlParameterSettings['val2_value'] : "";
+					$hashParams .= isset($urlParameterSettings['val2_value']) && $urlParameterSettings['val2_value'] ? $urlParameterSettings['val2_value'] : "";
 				}
 			}
-			if($urlParameterSettings["val2Desc_includeInHash"]) {
+			if ($urlParameterSettings["val2Desc_includeInHash"]) {
 				$hashParams .= "&val2Desc" . $multilineSuffix;
-				if(isset($urlParameterSettings['val2Desc_kohaAdditionalField']) && $urlParameterSettings['val2Desc_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['val2Desc_kohaAdditionalField']) && $urlParameterSettings['val2Desc_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['val2Desc_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['val2Desc_value']) &&  $urlParameterSettings['val2Desc_value'] ? $urlParameterSettings['val2Desc_value'] : "";
+					$hashParams .= isset($urlParameterSettings['val2Desc_value']) && $urlParameterSettings['val2Desc_value'] ? $urlParameterSettings['val2Desc_value'] : "";
 				}
 			}
-			if($urlParameterSettings["am_includeInHash"]) {
+			if ($urlParameterSettings["am_includeInHash"]) {
 				$hashParams .= "&am" . $multilineSuffix;
-				if(isset($urlParameterSettings['am_kohaAdditionalField']) && $urlParameterSettings['am_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['am_kohaAdditionalField']) && $urlParameterSettings['am_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['am_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['am_value']) &&  $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
+					$hashParams .= isset($urlParameterSettings['am_value']) && $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
 				}
 			}
-			if($urlParameterSettings["cmt_includeInHash"]) {
+			if ($urlParameterSettings["cmt_includeInHash"]) {
 				$hashParams .= "&cmt" . $multilineSuffix;
-				if(isset($urlParameterSettings['cmt_kohaAdditionalField']) && $urlParameterSettings['cmt_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['cmt_kohaAdditionalField']) && $urlParameterSettings['cmt_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['cmt_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['cmt_value']) &&  $urlParameterSettings['cmt_value'] ? $urlParameterSettings['cmt_value'] : "";
+					$hashParams .= isset($urlParameterSettings['cmt_value']) && $urlParameterSettings['cmt_value'] ? $urlParameterSettings['cmt_value'] : "";
 				}
 			}
-			if($urlParameterSettings["extRef_includeInHash"]) {
+			if ($urlParameterSettings["extRef_includeInHash"]) {
 				$hashParams .= "&extRef" . $multilineSuffix;
-				if(isset($urlParameterSettings['extRef_kohaAdditionalField']) && $urlParameterSettings['extRef_kohaAdditionalField'] != "none") {
+				if (isset($urlParameterSettings['extRef_kohaAdditionalField']) && $urlParameterSettings['extRef_kohaAdditionalField'] != "none") {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['extRef_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['extRef_value']) &&  $urlParameterSettings['extRef_value'] ? $urlParameterSettings['extRef_value'] : "";
+					$hashParams .= isset($urlParameterSettings['extRef_value']) && $urlParameterSettings['extRef_value'] ? $urlParameterSettings['extRef_value'] : "";
 				}
 			}
 		}
 
 		// hash parameters
-		if($urlParameterSettings["rurl_includeInHash"]) {
+		if ($urlParameterSettings["rurl_includeInHash"]) {
 			$hashParams .= "&rurl=";
-			if(isset($urlParameterSettings['rurl_kohaAdditionalField']) && $urlParameterSettings['rurl_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['rurl_kohaAdditionalField']) && $urlParameterSettings['rurl_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['rurl_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "rurl=" . $urlParameterSettings['rurl_value'] ? $urlParameterSettings['rurl_value'] : "";
 			}
 		}
-		if($urlParameterSettings["burl_includeInHash"]) {
+		if ($urlParameterSettings["burl_includeInHash"]) {
 			$hashParams .= "&burl=";
-			if(isset($urlParameterSettings['burl_kohaAdditionalField']) && $urlParameterSettings['burl_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['burl_kohaAdditionalField']) && $urlParameterSettings['burl_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['burl_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "burl=" . $urlParameterSettings['burl_value'] ? $urlParameterSettings['burl_value'] : "";
 			}
 		}
-		if($urlParameterSettings["email_includeInHash"]) {
+		if ($urlParameterSettings["email_includeInHash"]) {
 			$hashParams .= "&email=";
-			if(isset($urlParameterSettings['email_kohaAdditionalField']) && $urlParameterSettings['email_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['email_kohaAdditionalField']) && $urlParameterSettings['email_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['email_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "email=" . $urlParameterSettings['email_value'] ? $urlParameterSettings['email_value'] : $patron->email;
 			}
 		}
-		if($urlParameterSettings["ccemail_includeInHash"]) {
+		if ($urlParameterSettings["ccemail_includeInHash"]) {
 			$hashParams .= "&ccemail=";
-			if(isset($urlParameterSettings['ccemail_kohaAdditionalField']) && $urlParameterSettings['ccemail_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['ccemail_kohaAdditionalField']) && $urlParameterSettings['ccemail_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['ccemail_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
 				$hashParams .= "ccemail=" . $urlParameterSettings['ccemail_value'] ? $urlParameterSettings['ccemail_value'] : "";
 			}
 		}
-		if($urlParameterSettings["sid_includeInHash"]) {
+		if ($urlParameterSettings["sid_includeInHash"]) {
 			$hashParams .= "&sid=";
-			if(isset($urlParameterSettings['sid_kohaAdditionalField']) && $urlParameterSettings['sid_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['sid_kohaAdditionalField']) && $urlParameterSettings['sid_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['sid_kohaAdditionalField']));
 				$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
@@ -8262,49 +7754,49 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// URL parameters
-		if($urlParameterSettings["rurl_includeInUrl"]) {
+		if ($urlParameterSettings["rurl_includeInUrl"]) {
 			$paymentRequestUrl .= "&rurl=";
-			if(isset($urlParameterSettings['rurl_kohaAdditionalField']) && $urlParameterSettings['rurl_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['rurl_kohaAdditionalField']) && $urlParameterSettings['rurl_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['rurl_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['rurl_value'] && $urlParameterSettings['rurl_value'] ? $urlParameterSettings['rurl_value'] . "/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id : $configArray['Site']['url'] . "/MyAccount/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id;
+				$paymentRequestUrl .= !empty($urlParameterSettings['rurl_value']) ? $urlParameterSettings['rurl_value'] . "/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id : $configArray['Site']['url'] . "/MyAccount/AJAX?method=completeHeyCentricOrder%26paymentId=" . $payment->id;
 			}
 		}
-		if($urlParameterSettings["burl_includeInUrl"]) {
+		if ($urlParameterSettings["burl_includeInUrl"]) {
 			$paymentRequestUrl .= "&burl=";
-			if(isset($urlParameterSettings['burl_kohaAdditionalField']) && $urlParameterSettings['burl_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['burl_kohaAdditionalField']) && $urlParameterSettings['burl_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['burl_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['burl_value'] ? $urlParameterSettings['burl_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['burl_value']) ? $urlParameterSettings['burl_value'] : "";
 			}
 		}
-		if($urlParameterSettings["email_includeInUrl"]) {
+		if ($urlParameterSettings["email_includeInUrl"]) {
 			$paymentRequestUrl .= "&email=";
-			if(isset($urlParameterSettings['email_kohaAdditionalField']) && $urlParameterSettings['email_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['email_kohaAdditionalField']) && $urlParameterSettings['email_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['email_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['email_value'] ? $urlParameterSettings['email_value'] : $patron->email;
+				$paymentRequestUrl .= !empty($urlParameterSettings['email_value']) ? $urlParameterSettings['email_value'] : $patron->email;
 			}
 		}
-		if($urlParameterSettings["ccemail_includeInUrl"]) {
+		if ($urlParameterSettings["ccemail_includeInUrl"]) {
 			$paymentRequestUrl .= "&ccemail=";
-			if(isset($urlParameterSettings['ccemail_kohaAdditionalField']) && $urlParameterSettings['ccemail_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['ccemail_kohaAdditionalField']) && $urlParameterSettings['ccemail_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['ccemail_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['ccemail_value'] ? $urlParameterSettings['ccemail_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['ccemail_value']) ? $urlParameterSettings['ccemail_value'] : "";
 			}
 		}
-		if($urlParameterSettings["sid_includeInUrl"]) {
+		if ($urlParameterSettings["sid_includeInUrl"]) {
 			$paymentRequestUrl .= "&sid=";
-			if(isset($urlParameterSettings['sid_kohaAdditionalField']) && $urlParameterSettings['sid_kohaAdditionalField'] != "none") {
+			if (isset($urlParameterSettings['sid_kohaAdditionalField']) && $urlParameterSettings['sid_kohaAdditionalField'] != "none") {
 				$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['sid_kohaAdditionalField']));
 				$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 			} else {
-				$paymentRequestUrl .= $urlParameterSettings['sid_value'] ? $urlParameterSettings['sid_value'] : "";
+				$paymentRequestUrl .= !empty($urlParameterSettings['sid_value']) ? $urlParameterSettings['sid_value'] : "";
 			}
 		}
 
@@ -8317,6 +7809,7 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
+	/** @noinspection PhpUnused */
 	function completeHeyCentricOrder(): void {
 		global $configArray;
 		$paymentId = $_REQUEST['paymentId'];
@@ -8331,7 +7824,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$updateDebtInIls = false;
 
 		if ($rc == 'A') {
-			$payment->completed = true;
 			if ($recNo) {
 				$payment->heyCentricPaymentReferenceNumber = $recNo;
 			}
@@ -8356,7 +7848,8 @@ class MyAccount_AJAX extends JSON_Action {
 		header("Location: " . $configArray['Site']['url'] . "/MyAccount/Fines?" . $params);
 	}
 
-	function createPay360Order(){
+	/** @noinspection PhpUnused */
+	function createPay360Order() : array {
 		$transactionType = $_REQUEST['type'];
 		if ($transactionType == 'donation') {
 			$result = $this->createGenericDonation('Pay360');
@@ -8392,8 +7885,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$selectedFines = [];
 
-		foreach(explode(',', $payment->finesPaid) as $selectedFine) {
-			$selectedFines[] = ['id' => explode('|', $selectedFine)[0], 'amount' => explode('|', $selectedFine)[1]];
+		foreach (explode(',', $payment->finesPaid) as $selectedFine) {
+			$selectedFines[] = [
+				'id' => explode('|', $selectedFine)[0],
+				'amount' => explode('|', $selectedFine)[1]
+			];
 		}
 
 		require_once ROOT_DIR . '/services/Pay360/Client.php';
@@ -8402,202 +7898,110 @@ class MyAccount_AJAX extends JSON_Action {
 
 
 		if (!$success) {
-			return [
-				'success' => false,
-				'message' => 'Could not connect to Pay360.'
-			];
+			return $this->failureResult(null, 'Could not connect to Pay360.');
 		}
 
 		$result = [
 			'success' => true,
 			'message' => 'Redirecting to payment processor',
-			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl, 
+			'paymentRequestUrl' => $client->invokeResponse->invokeResult->redirectUrl,
 		];
 
 		if (!$client->isPay360PollingEnabled()) {
 			return $result;
 		}
 
-		// start the polling process for status updates (no webhooks available) 
-		global $configArray;
-		$serverName = $_SERVER['aspen_server'];
-		$logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
-		$pollCommand = 'php ' . ROOT_DIR . "/scripts/pay360-poll.php $serverName " . escapeshellarg($pay360SettingsId) . ' ' . escapeshellarg($payment->id) . ' >> ' . escapeshellarg($logFilePath) . ' . 2>&1 &';
-		exec($pollCommand);
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::spawnPoller($pay360SettingsId, $payment->id);
 
 		return $result;
 	}
 
+	/** @noinspection PhpUnused */
 	function completePay360Order(): void {
-		global $configArray;
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-		
-		if (
-			!isset($_REQUEST['paymentId']) ||
-			!isset($_REQUEST['settingsId']) ||
-			!is_numeric($_REQUEST['paymentId']) || 
-			!is_numeric($_REQUEST['settingsId'])
-		) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		$paymentId = intval($_REQUEST['paymentId']);
-		$pay360SettingsId = intval($_REQUEST['settingsId']);
-
-		$payment = new UserPayment();
-		$payment->id = $paymentId;
-		$payment->find(true);
-		if ($payment->userId !== UserAccount::getActiveUserId()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome();
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+		$this->requireLoggedInUser();
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::completeOrder();
 	}
 
-	function handlePay360OrderNotAttempted():void {
-		global $configArray;
-		if (!UserAccount::isLoggedIn()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		if (
-			!isset($_REQUEST['settingsId']) ||
-			!isset($_REQUEST['paymentId']) ||
-			!is_numeric($_REQUEST['paymentId']) || 
-			!is_numeric($_REQUEST['settingsId'])
-		) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		$paymentId = intval($_REQUEST['paymentId']);
-		$pay360SettingsId = intval($_REQUEST['settingsId']);
-
-		$payment = new UserPayment();
-		$payment->id = $paymentId;
-		$payment->find(true);
-		if ($payment->userId !== UserAccount::getActiveUserId()) {
-			header("Location: " . $configArray['Site']['url']);
-			return;
-		}
-
-		require_once ROOT_DIR . '/services/Pay360/Client.php';
-		$client = new Pay360_Client($pay360SettingsId, $paymentId, [], null, false, $payment);
-		$client->getOrderStatus(true);
-		$client->handleOutcome([], false);
-		header("Location: " . $configArray['Site']['url'] . "/MyAccount/PaymentDetails?paymentId=" . $paymentId);
+	function handlePay360OrderNotAttempted(): void {
+		$this->requireLoggedInUser();
+		require_once ROOT_DIR . '/services/Pay360/PaymentHandler.php';
+		Pay360_PaymentHandler::handleNotAttempted();
 	}
 
 	/** @noinspection PhpUnused */
-	function dismissBrowseCategory() {
+	function dismissBrowseCategory() : array {
+		$this->requireLoggedInUser();
+
 		$patronId = UserAccount::getActiveUserId();
 		$browseCategoryId = $_REQUEST['browseCategoryId'];
 
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown Error',
-				'isPublicFacing' => true,
-			]),
-		];
+		$result = $this->failureResult(null, 'Unknown Error');
 
-		if ($patronId != UserAccount::getActiveUserId()) {
-			$result['message'] = 'Incorrect user information, please login again.';
-		} else {
-			if ($browseCategoryId != "system_saved_searches" && strpos($browseCategoryId, "system_saved_searches") !== false) {
-				$label = explode('_', $browseCategoryId);
-				$id = $label[3];
-				$searchEntry = new SearchEntry();
-				$searchEntry->id = $id;
-				if (!$searchEntry->find(true)) {
-					$result['message'] = 'Invalid browse category provided, please try again.';
-				} else {
-					require_once ROOT_DIR . '/sys/Browse/BrowseCategoryDismissal.php';
-					$browseCategoryDismissal = new BrowseCategoryDismissal();
-					$browseCategoryDismissal->browseCategoryId = $browseCategoryId;
-					$browseCategoryDismissal->userId = $patronId;
-					if ($browseCategoryDismissal->find(true)) {
-						$result['message'] = translate([
-							'text' => 'You already dismissed this browse category',
-							'isPublicFacing' => true,
-						]);
-					} else {
-						$browseCategoryDismissal->insert();
-						$result = [
-							'success' => true,
-							'title' => translate([
-								'text' => 'Preferences updated',
-								'isPublicFacing' => true,
-							]),
-							'message' => translate([
-								'text' => 'Browse category has been hidden',
-								'isPublicFacing' => true,
-							]),
-						];
-					}
-				}
-			} elseif ($browseCategoryId != "system_user_lists" && str_starts_with($browseCategoryId, "system_user_lists")) {
-				$label = explode('_', $browseCategoryId);
-				$id = $label[3];
-				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-				$userList = new UserList();
-				$userList->id = $id;
-				if (!$userList->find(true)) {
-					$result['message'] = 'Invalid browse category provided, please try again.';
-				} else {
-					require_once ROOT_DIR . '/sys/Browse/BrowseCategoryDismissal.php';
-					$browseCategoryDismissal = new BrowseCategoryDismissal();
-					$browseCategoryDismissal->browseCategoryId = $browseCategoryId;
-					$browseCategoryDismissal->userId = $patronId;
-					if ($browseCategoryDismissal->find(true)) {
-						$result['message'] = translate([
-							'text' => 'You already dismissed this browse category',
-							'isPublicFacing' => true,
-						]);
-					} else {
-						$browseCategoryDismissal->insert();
-						$result = [
-							'success' => true,
-							'title' => translate([
-								'text' => 'Preferences updated',
-								'isPublicFacing' => true,
-							]),
-							'message' => translate([
-								'text' => 'Browse category has been hidden',
-								'isPublicFacing' => true,
-							]),
-						];
-					}
-				}
+		if ($browseCategoryId != "system_saved_searches" && str_contains($browseCategoryId, "system_saved_searches")) {
+			$label = explode('_', $browseCategoryId);
+			$id = $label[3];
+			$searchEntry = new SearchEntry();
+			$searchEntry->id = $id;
+			if (!$searchEntry->find(true)) {
+				$result['message'] = 'Invalid browse category provided, please try again.';
 			} else {
-				require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
-				$browseCategory = new BrowseCategory();
-				$browseCategory->textId = $browseCategoryId;
-				if (!$browseCategory->find(true)) {
-					$result['message'] = 'Invalid browse category provided, please try again.';
+				require_once ROOT_DIR . '/sys/Browse/BrowseCategoryDismissal.php';
+				$browseCategoryDismissal = new BrowseCategoryDismissal();
+				$browseCategoryDismissal->browseCategoryId = $browseCategoryId;
+				$browseCategoryDismissal->userId = $patronId;
+				if ($browseCategoryDismissal->find(true)) {
+					$result['message'] = translate([
+						'text' => 'You already dismissed this browse category',
+						'isPublicFacing' => true,
+					]);
 				} else {
-					require_once ROOT_DIR . '/sys/Browse/BrowseCategoryDismissal.php';
-					$browseCategoryDismissal = new BrowseCategoryDismissal();
-					$browseCategoryDismissal->browseCategoryId = $browseCategoryId;
-					$browseCategoryDismissal->userId = $patronId;
-					if ($browseCategoryDismissal->find(true)) {
-						$result['message'] = "User already dismissed this category.";
-					} else {
-						$browseCategoryDismissal->insert();
-						$browseCategory->numTimesDismissed += 1;
-						$browseCategory->update();
-						$result = ['success' => true];
-					}
+					$browseCategoryDismissal->insert();
+					$result = $this->successResult('Preferences updated', 'Browse category has been hidden');
+				}
+			}
+		} elseif ($browseCategoryId != "system_user_lists" && str_starts_with($browseCategoryId, "system_user_lists")) {
+			$label = explode('_', $browseCategoryId);
+			$id = $label[3];
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$userList = new UserList();
+			$userList->id = $id;
+			if (!$userList->find(true)) {
+				$result['message'] = 'Invalid browse category provided, please try again.';
+			} else {
+				require_once ROOT_DIR . '/sys/Browse/BrowseCategoryDismissal.php';
+				$browseCategoryDismissal = new BrowseCategoryDismissal();
+				$browseCategoryDismissal->browseCategoryId = $browseCategoryId;
+				$browseCategoryDismissal->userId = $patronId;
+				if ($browseCategoryDismissal->find(true)) {
+					$result['message'] = translate([
+						'text' => 'You already dismissed this browse category',
+						'isPublicFacing' => true,
+					]);
+				} else {
+					$browseCategoryDismissal->insert();
+					$result = $this->successResult('Preferences updated', 'Browse category has been hidden');
+				}
+			}
+		} else {
+			require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
+			$browseCategory = new BrowseCategory();
+			$browseCategory->textId = $browseCategoryId;
+			if (!$browseCategory->find(true)) {
+				$result['message'] = 'Invalid browse category provided, please try again.';
+			} else {
+				require_once ROOT_DIR . '/sys/Browse/BrowseCategoryDismissal.php';
+				$browseCategoryDismissal = new BrowseCategoryDismissal();
+				$browseCategoryDismissal->browseCategoryId = $browseCategoryId;
+				$browseCategoryDismissal->userId = $patronId;
+				if ($browseCategoryDismissal->find(true)) {
+					$result['message'] = "User already dismissed this category.";
+				} else {
+					$browseCategoryDismissal->insert();
+					$browseCategory->numTimesDismissed += 1;
+					$browseCategory->update();
+					$result = ['success' => true];
 				}
 			}
 		}
@@ -8606,7 +8010,8 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getHiddenBrowseCategories() {
+	function getHiddenBrowseCategories() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 
 		if (isset($_REQUEST['patronId'])) {
@@ -8625,7 +8030,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($browseCategoryDismissals->count() > 0) {
 				$categories = [];
 				foreach ($hiddenCategories as $hiddenCategory) {
-					if ($hiddenCategory->browseCategoryId != 'system_saved_searches' && strpos($hiddenCategory->browseCategoryId, "system_saved_searches") !== false) {
+					if ($hiddenCategory->browseCategoryId != 'system_saved_searches' && str_contains($hiddenCategory->browseCategoryId, "system_saved_searches")) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$savedSearchesBrowseCategory = new BrowseCategory();
@@ -8647,7 +8052,7 @@ class MyAccount_AJAX extends JSON_Action {
 							$category['description'] = "";
 							$categories[] = $category;
 						}
-					} elseif ($hiddenCategory->browseCategoryId != 'system_user_lists' && strpos($hiddenCategory->browseCategoryId, "system_user_lists") !== false) {
+					} elseif ($hiddenCategory->browseCategoryId != 'system_user_lists' && str_contains($hiddenCategory->browseCategoryId, "system_user_lists")) {
 						$parentLabel = "";
 						require_once ROOT_DIR . '/sys/Browse/BrowseCategory.php';
 						$userListsBrowseCategory = new BrowseCategory();
@@ -8712,32 +8117,21 @@ class MyAccount_AJAX extends JSON_Action {
 				];
 			}
 		} else {
-			return [
-				'success' => false,
-				'message' => 'You must be logged in to show hidden browse categories.',
-			];
+			return $this->failureResult(null, 'You must be logged in to show hidden browse categories.');
 		}
 	}
 
-	function showBrowseCategory() {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Show hidden browse categories',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Sorry your visible browse categories not be updated',
-				'isPublicFacing' => true,
-			]),
-		];
+	/** @noinspection PhpUnused */
+	function showBrowseCategory() : array {
+		$this->requireLoggedInUser();
+		$result = $this->failureResult('Show hidden browse categories', 'Sorry your visible browse categories not be updated');
 
 		$patronId = $_REQUEST['patronId'];
 
 		if (isset($_REQUEST['selected']) && is_array($_REQUEST['selected'])) {
 			$categoriesToShow = $_REQUEST['selected'];
 			foreach ($categoriesToShow as $showThisCategory => $selected) {
-				if ($showThisCategory != "system_saved_searches" && strpos($showThisCategory, "system_saved_searches") !== false) {
+				if ($showThisCategory != "system_saved_searches" && str_contains($showThisCategory, "system_saved_searches")) {
 					$label = explode('_', $showThisCategory);
 					$id = $label[3];
 					$searchEntry = new SearchEntry();
@@ -8759,7 +8153,7 @@ class MyAccount_AJAX extends JSON_Action {
 							$result['message'] = "User already had this category visible.";
 						}
 					}
-				} elseif ($showThisCategory != "system_user_lists" && strpos($showThisCategory, "system_user_lists") !== false) {
+				} elseif ($showThisCategory != "system_user_lists" && str_contains($showThisCategory, "system_user_lists")) {
 					$label = explode('_', $showThisCategory);
 					$id = $label[3];
 					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
@@ -8810,300 +8204,534 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function updateAutoRenewal() {
+	function updateAutoRenewal() : array {
+		$this->requireLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
 		$allowAutoRenewal = ($_REQUEST['allowAutoRenewal'] == 'on' || $_REQUEST['allowAutoRenewal'] == 'true');
 
-		if (!UserAccount::isLoggedIn()) {
-			$result = [
-				'success' => false,
-				'message' => 'Sorry, you must be logged in to change auto renewal.',
-			];
+		$user = UserAccount::getActiveUserObj();
+		if ($user->id == $patronId) {
+			$result = $user->updateAutoRenewal($allowAutoRenewal);
 		} else {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->id == $patronId) {
-				$result = $user->updateAutoRenewal($allowAutoRenewal);
-			} else {
-				$result = [
-					'success' => false,
-					'message' => 'Invalid user information, please logout and login again.',
-				];
-			}
+			$result = $this->failureResult(null, 'Invalid user information, please logout and login again.');
 		}
+
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function eventRegistrationModal() {
+	function eventRegistrationModal() : array {
 		$eventUrl = $_REQUEST['regLink'];
-		if (isset($_REQUEST['vendor'])) {
-			$vendor = $_REQUEST['vendor'];
-			$body = "";
-			global $library;
-			require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
-			$libraryEventSettings = new LibraryEventsSetting();
-			$libraryEventSettings->settingSource = $vendor;
-			$libraryEventSettings->libraryId = $library->libraryId;
-			if ($libraryEventSettings->find(true)) {
-				if ($vendor == 'communico') {
-					require_once ROOT_DIR . '/sys/Events/CommunicoSetting.php';
-					$communicoSettings = new CommunicoSetting();
-					$communicoSettings->id = $libraryEventSettings->settingId;
-					if ($communicoSettings->find(true)) {
-						$body = $communicoSettings->registrationModalBody;
-					}
-				} else if ($vendor == 'springshare') {
-					require_once ROOT_DIR . '/sys/Events/SpringshareLibCalSetting.php';
-					$springshareSettings = new SpringshareLibCalSetting();
-					$springshareSettings->id = $libraryEventSettings->settingId;
-					if ($springshareSettings->find(true)) {
-						$body = $springshareSettings->registrationModalBody;
-					}
-				} else if ($vendor == 'library_market') {
-					require_once ROOT_DIR . '/sys/Events/LMLibraryCalendarSetting.php';
-					$libraryMarketSettings = new LMLibraryCalendarSetting();
-					$libraryMarketSettings->id = $libraryEventSettings->settingId;
-					if ($libraryMarketSettings->find(true)) {
-						$body = $libraryMarketSettings->registrationModalBody;
-					}
-				} else if ($vendor == 'assabet') {
-					require_once ROOT_DIR . '/sys/Events/AssabetSetting.php';
-					$assabetSettings = new AssabetSetting();
-					$assabetSettings->id = $libraryEventSettings->settingId;
-					if ($assabetSettings->find(true)) {
-						$body = $assabetSettings->registrationModalBody;
-					}
-				}
+		$result =  [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Registration Information',
+				'isPublicFacing' => true,
+			]),
+			'buttons' => '<a href="' . $eventUrl . '" class="btn btn-primary" target="_blank" aria-label="' . translate([
+					'text' => 'Go to Registration',
+					'isPublicFacing' => true,
+					'inAttribute' => true
+				]) . ' (' . translate([
+					'text' => 'opens in a new window',
+					'isPublicFacing' => true,
+					'inAttribute' => true
+				]) . ')"><i class="fas fa-external-link-alt" role="presentation"></i> ' . translate([
+					'text' => 'Go to Registration',
+					'isPublicFacing' => true,
+				]) . '</a>',
+		];
+
+		if (!isset($_REQUEST['vendor'])) {
+			return $result;
+		}
+
+		$vendor = $_REQUEST['vendor'];
+		$body = "";
+
+		global $library;
+		require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
+		$libraryEventSettings = new LibraryEventsSetting();
+		$libraryEventSettings->settingSource = $vendor;
+		$libraryEventSettings->libraryId = $library->libraryId;
+		if (!$libraryEventSettings->find(true)) {
+			return $result;
+		}
+		if ($vendor == 'communico') {
+			require_once ROOT_DIR . '/sys/Events/CommunicoSetting.php';
+			$communicoSettings = new CommunicoSetting();
+			$communicoSettings->id = $libraryEventSettings->settingId;
+			if ($communicoSettings->find(true)) {
+				$body = $communicoSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'springshare') {
+			require_once ROOT_DIR . '/sys/Events/SpringshareLibCalSetting.php';
+			$springshareSettings = new SpringshareLibCalSetting();
+			$springshareSettings->id = $libraryEventSettings->settingId;
+			if ($springshareSettings->find(true)) {
+				$body = $springshareSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'library_market') {
+			require_once ROOT_DIR . '/sys/Events/LMLibraryCalendarSetting.php';
+			$libraryMarketSettings = new LMLibraryCalendarSetting();
+			$libraryMarketSettings->id = $libraryEventSettings->settingId;
+			if ($libraryMarketSettings->find(true)) {
+				$body = $libraryMarketSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'assabet') {
+			require_once ROOT_DIR . '/sys/Events/AssabetSetting.php';
+			$assabetSettings = new AssabetSetting();
+			$assabetSettings->id = $libraryEventSettings->settingId;
+			if ($assabetSettings->find(true)) {
+				$body = $assabetSettings->registrationModalBody;
+			}
+		} else if ($vendor == 'aspenEvents') {
+			require_once ROOT_DIR . '/sys/Events/AspenEventSetting.php';
+			$aspenEventSettings = new AspenEventSetting();
+			$aspenEventSettings->id = $libraryEventSettings->settingId;
+			if (!$aspenEventSettings->find(true)) {
+				unset($result['buttons']);
+				$result['message'] = translate([
+					'text' => 'Aspen Events are not configured for this library.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
 			}
 
-			return [
-				'success' => true,
-				'title' => translate([
-					'text' => 'Registration Information',
+			$body = $aspenEventSettings->getRegistrationModalBody() ?? '';
+
+			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+			$sourceId = AspenEventRecordDriver::sanitizeSourceId($_REQUEST['sourceId'] ?? '');
+			if ($sourceId === null) {
+				return AspenEventRecordDriver::invalidSourceIdResult();
+			}
+			$eventInstanceId = AspenEventRecordDriver::extractEventInstanceId($sourceId);
+
+			require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+			$eventInstance = new EventInstance();
+			$eventInstance->id = $eventInstanceId;
+			if (!$eventInstance->find(true)) {
+				unset($result['buttons']);
+				$result['message'] = translate([
+					'text' => 'Event not found.',
 					'isPublicFacing' => true,
-				]),
-				'body' => $body,
-				'buttons' => '<a href="' . $eventUrl . '" class="btn btn-primary" target="_blank" aria-label="' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ' (' . translate([
-						'text' => 'opens in a new window',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ')"><i class="fas fa-external-link-alt" role="presentation"></i> ' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-					]) . '</a>',
-			];
-		} else {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Registration Information',
+				]);
+				return $result;
+			}
+
+			global $interface;
+			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
+			$available = $eventInstance->getAvailableSeats();
+			$interface->assign('numberOfSeats', $numberOfSeats);
+			$interface->assign('availableSeats', $available);
+			$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+
+			$user = UserAccount::getLoggedInUser();
+			if (empty($user)) {
+				// Marking this as 'success' as there is no server error, and we do want the user to access the login button
+				$result['success'] = true;
+				$result['buttons'] = $interface->fetch('AspenEvents/loginToRegisterButton.tpl');
+				$result['body'] = translate([
+					'text' => 'You must log in to register to events.',
 					'isPublicFacing' => true,
-				]),
-				'buttons' => '<a href="' . $eventUrl . '" class="btn btn-primary" target="_blank" aria-label="' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ' (' . translate([
-						'text' => 'opens in a new window',
-						'isPublicFacing' => true,
-						'inAttribute' => true
-					]) . ')"><i class="fas fa-external-link-alt" role="presentation"></i> ' . translate([
-						'text' => 'Go to Registration',
-						'isPublicFacing' => true,
-					]) . '</a>',
-			];
+				]);
+				return $result;
+			}
+
+			$interface->assign('eventSourceId', $sourceId);
+
+			$interface->assign('loggedIn', true);
+			$interface->assign('userId', $user->id);
+			$interface->assign('userDisplayName', $user->getDisplayName());
+			$interface->assign('userEmail', $user->email);
+			$interface->assign('userHomeLocation', $user->getHomeLocationName());
+
+			$linkedUsers = [];
+			if ($library->allowLinkedAccounts) {
+				$linkedUsers = $user->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					$linkedUser->loadContactInformation();
+				}
+			}
+			$interface->assign('linkedUsers', $linkedUsers);
+			
+			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
+			$recordDriver = new AspenEventRecordDriver($sourceId);	
+			$interface->assign('isRegistered', $recordDriver->isUserRegisteredForEvent());
+
+			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
+			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 		}
+
+		$result['success'] = true;
+		$result['body'] = $body;
+
+		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function saveEvent() {
+	function isUserRegisteredForEvent(): array {
+		$result = [
+			'success' => false,
+		];
+		$this->requireLoggedInUser(null, 'You must be logged in to check event registration.');
+		$eventSourceId = $_REQUEST['eventSourceId'];
+		$eventInstanceId = preg_replace("/aspenEvent_\d+_/", '', $eventSourceId);
+		$userId = $_REQUEST['userId'];
+
+		if (!$userId || !$eventInstanceId) {
+			$result['message'] = translate([
+				'text' => 'Event or User information is missing.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$isLinkedUser = false;
+			$activeUser = UserAccount::getActiveUserObj();
+			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
+				if ($linkedUser->id == $userId) {
+					$isLinkedUser = true;
+					break;
+				}
+			}
+			if (!$isLinkedUser) {
+				$result['message'] = translate([
+					'text' => 'You do not have permission to view registration information for this user.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+
+		$result['success'] = true;
+		$result['message'] = translate([
+			'text' => 'Registration information found',
+			'isPublicFacing' => true,
+		]);
+		$result['body'] = [
+			'isRegistered' => $registration->isUserRegisteredForEvent($userId),
+		];
+		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	function saveEvent() : array {
+		$this->requireLoggedInUser(null, 'Please login before saving an event.');
 		$result = [];
 		$regRequired = 0; // set a default
 
-		if (!UserAccount::isLoggedIn()) {
+		require_once ROOT_DIR . '/services/MyAccount/MyEvents.php';
+		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
+		$sourceId = $_REQUEST['sourceId'];
+		$source = $_REQUEST['source'];
+		$vendor = $_REQUEST['vendor'];
+
+		$userEventsEntry = new UserEventsEntry();
+		$userEventsEntry->userId = UserAccount::getActiveUserId();
+
+		if (empty($sourceId) || empty($source) || empty($vendor)) {
 			$result['success'] = false;
 			$result['message'] = translate([
-				'text' => 'Please login before saving an event.',
+				'text' => 'Unable to save event, not correctly specified. Must include the source id, source, and event vendor.',
 				'isPublicFacing' => true,
 			]);
 		} else {
-			require_once ROOT_DIR . '/services/MyAccount/MyEvents.php';
-			require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
-			$sourceId = $_REQUEST['sourceId'];
-			$source = $_REQUEST['source'];
-			$vendor = $_REQUEST['vendor'];
+			$userEventsEntry->sourceId = $sourceId;
+			$externalUrl = null;
 
-			$userEventsEntry = new UserEventsEntry();
-			$userEventsEntry->userId = UserAccount::getActiveUserId();
+			if (str_starts_with($userEventsEntry->sourceId, 'communico')) {
+				require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
+				$recordDriver = new CommunicoEventRecordDriver($userEventsEntry->sourceId);
+				if ($recordDriver->isValid()) {
+					$title = $recordDriver->getTitle();
+					$userEventsEntry->title = mb_substr($title, 0, 50);
+					$eventDate = $recordDriver->getStartDate();
+					$userEventsEntry->eventDate = $eventDate->getTimestamp();
+					if ($recordDriver->isRegistrationRequired()) {
+						$regRequired = 1;
+					} else {
+						$regRequired = 0;
+					}
+					$userEventsEntry->regRequired = $regRequired;
+					$userEventsEntry->location = $recordDriver->getBranch();
+					$externalUrl = $recordDriver->getExternalUrl();
+				}
+			} elseif (str_starts_with($userEventsEntry->sourceId, 'libcal')) {
+				require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
+				$recordDriver = new SpringshareLibCalEventRecordDriver($userEventsEntry->sourceId);
+				if ($recordDriver->isValid()) {
+					$title = $recordDriver->getTitle();
+					$userEventsEntry->title = mb_substr($title, 0, 50);
+					$eventDate = $recordDriver->getStartDate();
+					$userEventsEntry->eventDate = $eventDate->getTimestamp();
+					if ($recordDriver->isRegistrationRequired()) {
+						$regRequired = 1;
+					} else {
+						$regRequired = 0;
+					}
+					$userEventsEntry->regRequired = $regRequired;
+					$userEventsEntry->location = $recordDriver->getBranch();
+					$externalUrl = $recordDriver->getExternalUrl();
+				}
+			} elseif (str_starts_with($userEventsEntry->sourceId, 'lc_')) {
+				require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
+				$recordDriver = new LibraryCalendarEventRecordDriver($userEventsEntry->sourceId);
+				if ($recordDriver->isValid()) {
+					$title = $recordDriver->getTitle();
+					$userEventsEntry->title = mb_substr($title, 0, 50);
+					$eventDate = $recordDriver->getStartDate();
+					$userEventsEntry->eventDate = $eventDate->getTimestamp();
+					if ($recordDriver->isRegistrationRequired()) {
+						$regRequired = 1;
+					} else {
+						$regRequired = 0;
+					}
+					$userEventsEntry->regRequired = $regRequired;
+					$userEventsEntry->location = $recordDriver->getBranch();
+					$externalUrl = $recordDriver->getExternalUrl();
+				}
+			} elseif (str_starts_with($userEventsEntry->sourceId, 'assabet_')) {
+				require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
+				$recordDriver = new AssabetEventRecordDriver($userEventsEntry->sourceId);
+				if ($recordDriver->isValid()) {
+					$title = $recordDriver->getTitle();
+					$userEventsEntry->title = mb_substr($title, 0, 50);
+					$eventDate = $recordDriver->getStartDate();
+					$userEventsEntry->eventDate = $eventDate->getTimestamp();
+					if ($recordDriver->isRegistrationRequired()) {
+						$regRequired = 1;
+					} else {
+						$regRequired = 0;
+					}
+					$userEventsEntry->regRequired = $regRequired;
+					$userEventsEntry->location = $recordDriver->getBranch();
+					$externalUrl = $recordDriver->getExternalUrl();
+				}
+			} elseif (str_starts_with($userEventsEntry->sourceId, 'aspenEvent_')) {
+				require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+				$recordDriver = new AspenEventRecordDriver($userEventsEntry->sourceId);
+				if ($recordDriver->isValid()) {
+					$title = $recordDriver->getTitle();
+					$userEventsEntry->title = mb_substr($title, 0, 50);
+					$eventDate = $recordDriver->getStartDate();
+					$userEventsEntry->eventDate = $eventDate->getTimestamp();
+					$userEventsEntry->displayEventBranchOnThumbnail = $recordDriver->getDisplayBranchOnThumbnail();
+					if ($recordDriver->isRegistrationRequired()) {
+						$regRequired = 1;
+					} else {
+						$regRequired = 0;
+					}
+					$userEventsEntry->regRequired = $regRequired;
+					$userEventsEntry->location = $recordDriver->getBranch();
+					$externalUrl = $recordDriver->getExternalUrl();
+				}
+			}
+			$existingEntry = false;
 
-			if (empty($sourceId) || empty($source) || empty($vendor)) {
-				$result['success'] = false;
-				$result['message'] = translate([
-					'text' => 'Unable to save event, not correctly specified. Must include the source id, source, and event vendor.',
-					'isPublicFacing' => true,
-				]);
+			if ($userEventsEntry->find(true)) {
+				$existingEntry = true;
+			}
+			$userEventsEntry->dateAdded = time();
+
+			if ($existingEntry) {
+				$userEventsEntry->update();
 			} else {
-				$userEventsEntry->sourceId = $sourceId;
+				$userEventsEntry->insert();
+			}
 
-				if (preg_match('`^communico`', $userEventsEntry->sourceId)) {
-					require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
-					$recordDriver = new CommunicoEventRecordDriver($userEventsEntry->sourceId);
-					if ($recordDriver->isValid()) {
-						$title = $recordDriver->getTitle();
-						$userEventsEntry->title = mb_substr($title, 0, 50);
-						$eventDate = $recordDriver->getStartDate();
-						$userEventsEntry->eventDate = $eventDate->getTimestamp();
-						if ($recordDriver->isRegistrationRequired()) {
-							$regRequired = 1;
-						} else {
-							$regRequired = 0;
-						}
-						$userEventsEntry->regRequired = $regRequired;
-						$userEventsEntry->location = $recordDriver->getBranch();
-						$externalUrl = $recordDriver->getExternalUrl();
-					}
-				} elseif (preg_match('`^libcal`', $userEventsEntry->sourceId)) {
-					require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
-					$recordDriver = new SpringshareLibCalEventRecordDriver($userEventsEntry->sourceId);
-					if ($recordDriver->isValid()) {
-						$title = $recordDriver->getTitle();
-						$userEventsEntry->title = mb_substr($title, 0, 50);
-						$eventDate = $recordDriver->getStartDate();
-						$userEventsEntry->eventDate = $eventDate->getTimestamp();
-						if ($recordDriver->isRegistrationRequired()) {
-							$regRequired = 1;
-						} else {
-							$regRequired = 0;
-						}
-						$userEventsEntry->regRequired = $regRequired;
-						$userEventsEntry->location = $recordDriver->getBranch();
-						$externalUrl = $recordDriver->getExternalUrl();
-					}
-				} elseif (preg_match('`^lc_`', $userEventsEntry->sourceId)) {
-					require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
-					$recordDriver = new LibraryCalendarEventRecordDriver($userEventsEntry->sourceId);
-					if ($recordDriver->isValid()) {
-						$title = $recordDriver->getTitle();
-						$userEventsEntry->title = mb_substr($title, 0, 50);
-						$eventDate = $recordDriver->getStartDate();
-						$userEventsEntry->eventDate = $eventDate->getTimestamp();
-						if ($recordDriver->isRegistrationRequired()) {
-							$regRequired = 1;
-						} else {
-							$regRequired = 0;
-						}
-						$userEventsEntry->regRequired = $regRequired;
-						$userEventsEntry->location = $recordDriver->getBranch();
-						$externalUrl = $recordDriver->getExternalUrl();
-					}
-				} elseif (preg_match('`^assabet_`', $userEventsEntry->sourceId)) {
-					require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
-					$recordDriver = new AssabetEventRecordDriver($userEventsEntry->sourceId);
-					if ($recordDriver->isValid()) {
-						$title = $recordDriver->getTitle();
-						$userEventsEntry->title = mb_substr($title, 0, 50);
-						$eventDate = $recordDriver->getStartDate();
-						$userEventsEntry->eventDate = $eventDate->getTimestamp();
-						if ($recordDriver->isRegistrationRequired()) {
-							$regRequired = 1;
-						} else {
-							$regRequired = 0;
-						}
-						$userEventsEntry->regRequired = $regRequired;
-						$userEventsEntry->location = $recordDriver->getBranch();
-						$externalUrl = $recordDriver->getExternalUrl();
-					}
-				} elseif (preg_match('`^aspenEvent_`', $userEventsEntry->sourceId)) {
-					require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-					$recordDriver = new AspenEventRecordDriver($userEventsEntry->sourceId);
-					if ($recordDriver->isValid()) {
-						$title = $recordDriver->getTitle();
-						$userEventsEntry->title = mb_substr($title, 0, 50);
-						$eventDate = $recordDriver->getStartDate();
-						$userEventsEntry->eventDate = $eventDate->getTimestamp();
-						$userEventsEntry->displayEventBranchOnThumbnail = $recordDriver->getDisplayBranchOnThumbnail();
-						if ($recordDriver->isRegistrationRequired()) {
-							$regRequired = 1;
-						} else {
-							$regRequired = 0;
-						}
-						$userEventsEntry->regRequired = $regRequired;
-						$userEventsEntry->location = $recordDriver->getBranch();
-						$externalUrl = $recordDriver->getExternalUrl();
-					}
-				}
-				$existingEntry = false;
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => "Added Successfully",
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'This event was saved to your events successfully.',
+				'isPublicFacing' => true,
+			]);
+			$result['regRequired'] = false;
 
-				if ($userEventsEntry->find(true)) {
-					$existingEntry = true;
-				}
-				$userEventsEntry->dateAdded = time();
-
-				if ($existingEntry) {
-					$userEventsEntry->update();
-				} else {
-					$userEventsEntry->insert();
-				}
-
-				$result['success'] = true;
-				$result['title'] = translate([
-					'text' => "Added Successfully",
-					'isPublicFacing' => true,
-				]);
+			if ($regRequired) {
 				$result['message'] = translate([
-					'text' => 'This event was saved to your events successfully.',
+					'text' => "This event was saved to your events successfully. Saving an event to your events is not the same as registering.",
 					'isPublicFacing' => true,
 				]);
-				$result['regRequired'] = false;
-
-				if ($regRequired) {
-					$result['message'] = translate([
-						'text' => "This event was saved to your events successfully. Saving an event to your events is not the same as registering.",
+				$result['buttons'] = "<button class='btn btn-primary' onclick='return AspenDiscovery.Account.regInfoModal(\"this\", \"$source\", \"$sourceId\", \"$vendor\", \"$externalUrl\");'>" . translate([
+						'text' => 'Registration Information',
 						'isPublicFacing' => true,
-					]);
-					$result['buttons'] = "<button class='btn btn-primary' onclick='return AspenDiscovery.Account.regInfoModal(\"this\", \"{$source}\", \"{$sourceId}\", \"{$vendor}\", \"{$externalUrl}\");'>" . translate([
-							'text' => 'Registration Information',
-							'isPublicFacing' => true,
-						]) . "</button>";
-					$result['regRequired'] = true;
-				}
+					]) . "</button>";
+				$result['regRequired'] = true;
 			}
 		}
 
 		return $result;
 	}
 
+	function toggleUserRegistrationToEvent(): array {
+		require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+		$sourceId = AspenEventRecordDriver::sanitizeSourceId($_REQUEST['eventSourceId'] ?? '');
+		if ($sourceId === null) {
+			return AspenEventRecordDriver::invalidSourceIdResult();
+		}
+		$eventInstanceId = AspenEventRecordDriver::extractEventInstanceId($sourceId);
+		$userId = (int)($_REQUEST['userId'] ?? 0);
+
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Event or User information is missing.',
+				'isPublicFacing' => true
+			]),
+		];
+
+		if (!$eventInstanceId || !$userId) {
+			return $result;
+		}
+
+		$this->requireLoggedInUser(null, 'You must be logged in to register for events.');
+
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$isLinkedUser = false;
+			$activeUser = UserAccount::getActiveUserObj();
+			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
+				if ($linkedUser->id == $userId) {
+					$isLinkedUser = true;
+					break;
+				}
+			}
+			if (!$isLinkedUser) {
+				$result['message'] = translate([
+					'text' => 'You do not have permission to manage registrations for this user.',
+					'isPublicFacing' => true,
+				]);
+				return $result;
+			}
+		}
+
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		$user = new User();
+		$user->id = $userId;
+		if(!$user->find(true)) {
+			$result['message']['text'] = 'User not found';
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate([
+				'text' => 'Event not found.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		$recordDriver = new AspenEventRecordDriver($sourceId);
+		if (!$recordDriver->isValid()) {
+			$result['message'] = translate([
+				'text' => 'Event instance not found.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		// unregister the user if registered
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+
+		if ($registration->isUserRegisteredForEvent()) {
+			$registration->delete();
+
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Registration Information',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'Your registration to this event was cancelled successfully.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		// add the event to saved events if it has not yet been saved
+		$recordDriver->saveUserEventEntry($sourceId, $userId);
+
+		// so the registered may manage their registration, also add the event to the active user's saved events if the user this was added for is a linked user
+		$activeUserId = UserAccount::getActiveUserId();
+		if ($userId != $activeUserId) {
+			$recordDriver->saveUserEventEntry($sourceId, $activeUserId);	
+		}
+
+		// so the parent linked account display all events their linked user is registered to, save the event if the user registering have had their account linked.
+		foreach ($user->getViewerIds() as $viewerId) {
+			$recordDriver->saveUserEventEntry($sourceId, $viewerId);	
+		}
+
+		if (!$eventInstance->hasAvailableSeats(1)) {
+			$result['message'] = translate([
+				'text' => "This event is full — no seats are currently available. We've saved it to your events list so you can keep track of it.",
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		// register the user
+		$registration->insert();
+
+		$result['success'] = true;
+		$result['title'] = translate([
+			'text' => 'Registration Information',
+			'isPublicFacing' => true,
+		]);
+		$result['message'] = translate([
+			'text' => 'Registration successful.',
+			'isPublicFacing' => true
+		]);
+		return $result;
+	}
+
 	/** @noinspection PhpUnused */
-	function deleteSavedEvent() {
+	function deleteSavedEvent() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to remove events.');
 		$id = $_GET['id'];
 		$result = ['result' => false];
-		if (!UserAccount::isLoggedIn()) {
-			$result['message'] = 'You must be logged in to remove events.';
+		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
+		$userEventsEntry = new UserEventsEntry();
+		$userEventsEntry->sourceId = $id;
+		$userEventsEntry->userId = UserAccount::getActiveUserId();
+		if ($userEventsEntry->find(true)) {
+			$userEventsEntry->delete();
+			$result = [
+				'result' => true,
+				'message' => 'Event successfully removed from your events.',
+			];
 		} else {
-			require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
-			$userEventsEntry = new UserEventsEntry();
-			$userEventsEntry->sourceId = $id;
-			$userEventsEntry->userId = UserAccount::getActiveUserId();
-			if ($userEventsEntry->find(true)) {
-				$userEventsEntry->delete();
-				$result = [
-					'result' => true,
-					'message' => 'Event successfully removed from your events.',
-				];
-			} else {
-				$result['message'] = 'Sorry, we could not find that event in the system.';
-			}
+			$result['message'] = 'Sorry, we could not find that event in the system.';
 		}
 
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function getSaveToListForm() {
+	function getSaveToListForm() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 		global $library;
 
@@ -9162,209 +8790,193 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function saveToList() {
+	function saveToList() : array {
+		$this->requireLoggedInUser(null, 'Please login before adding a title to list.');
 		$result = [];
 
-		if (!UserAccount::isLoggedIn()) {
-			$result['success'] = false;
-			$result['message'] = translate([
-				'text' => 'Please login before adding a title to list.',
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+		$result['success'] = true;
+		$sourceId = $_REQUEST['sourceId'];
+		$source = $_REQUEST['source'];
+		$listId = $_REQUEST['listId'];
+		$notes = $_REQUEST['notes'];
+
+		//Check to see if we need to create a list
+		$userList = new UserList();
+		$listOk = true;
+		$totalRecords = 0;
+		if (empty($listId)) {
+			$userList->title = translate([
+				'text' => "My Favorites",
 				'isPublicFacing' => true,
 			]);
+			$userList->user_id = UserAccount::getActiveUserId();
+			$userList->public = 0;
+			$userList->description = '';
+			$userList->insert();
 		} else {
-			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-			require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
-			$result['success'] = true;
-			$sourceId = $_REQUEST['sourceId'];
-			$source = $_REQUEST['source'];
-			$listId = $_REQUEST['listId'];
-			$notes = $_REQUEST['notes'];
-
-			//Check to see if we need to create a list
-			$userList = new UserList();
-			$listOk = true;
-			if (empty($listId)) {
-				$userList->title = translate([
-					'text' => "My Favorites",
+			$userList->id = $listId;
+			if (!$userList->find(true)) {
+				$result['success'] = false;
+				$result['message'] = translate([
+					'text' => 'Sorry, we could not find that list in the system.',
 					'isPublicFacing' => true,
 				]);
-				$userList->user_id = UserAccount::getActiveUserId();
-				$userList->public = 0;
-				$userList->description = '';
-				$userList->insert();
-				$totalRecords = 0;
+				$listOk = false;
 			} else {
-				$userList->id = $listId;
-				if (!$userList->find(true)) {
+				//Authorization check: Ensure list belongs to the logged-in user
+				$currentUser = UserAccount::getActiveUserObj();
+				if (!$currentUser->canEditList($userList)) {
 					$result['success'] = false;
 					$result['message'] = translate([
-						'text' => 'Sorry, we could not find that list in the system.',
+						'text' => 'You are not authorized to modify this list.',
 						'isPublicFacing' => true,
 					]);
-					$listOk = false;
-				} else {
-					//Authorization check: Ensure list belongs to logged in user
-					$currentUser = UserAccount::getActiveUserObj();
-					if (!$currentUser->canEditList($userList)) {
-						$result['success'] = false;
-						$result['message'] = translate([
-							'text' => 'You are not authorized to modify this list.',
-							'isPublicFacing' => true,
-						]);
-						return $result;
-					}
-					$totalRecords = $userList->numValidListItems();
+					return $result;
 				}
+				$totalRecords = $userList->numValidListItems();
 			}
+		}
 
-			if ($listOk) {
-				$userListEntry = new UserListEntry();
-				$userListEntry->listId = $userList->id;
+		if ($listOk) {
+			$userListEntry = new UserListEntry();
+			$userListEntry->listId = $userList->id;
 
-				//TODO: Validate the entry
-				$isValid = true;
-				if (!$isValid) {
-					$result['success'] = false;
+			//TODO: Validate the entry
+			if (empty($sourceId) || empty($source)) {
+				$result['success'] = false;
+				$result['message'] = translate([
+					'text' => 'Unable to add that to a list, not correctly specified.',
+					'isPublicFacing' => true,
+				]);
+			} else {
+				$userListEntry->source = $source;
+				$userListEntry->sourceId = $sourceId;
+				$userListEntry->weight = $totalRecords + 1;
+
+				if ($userListEntry->source == 'GroupedWork') {
+					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+					$groupedWork = new GroupedWork();
+					$groupedWork->permanent_id = $userListEntry->sourceId;
+					if ($groupedWork->find(true)) {
+						$userListEntry->title = mb_substr($groupedWork->full_title, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'Lists') {
+					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+					$list = new UserList();
+					$list->id = $userListEntry->sourceId;
+					if ($list->find(true)) {
+						$userListEntry->title = mb_substr($list->title, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'Events') {
+					if (str_starts_with($userListEntry->sourceId, 'communico')) {
+						require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
+						$recordDriver = new CommunicoEventRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif (str_starts_with($userListEntry->sourceId, 'libcal')) {
+						require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
+						$recordDriver = new SpringshareLibCalEventRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif (str_starts_with($userListEntry->sourceId, 'lc_')) {
+						require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
+						$recordDriver = new LibraryCalendarEventRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif (str_starts_with($userListEntry->sourceId, 'assabet_')) {
+						require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
+						$recordDriver = new AssabetEventRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					} elseif (str_starts_with($userListEntry->sourceId, 'aspenEvent_')) {
+						require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
+						$recordDriver = new AspenEventRecordDriver($userListEntry->sourceId);
+						if ($recordDriver->isValid()) {
+							$title = $recordDriver->getTitle();
+							$userListEntry->title = mb_substr($title, 0, 50);
+						}
+					}
+				} elseif ($userListEntry->source == 'OpenArchives') {
+					require_once ROOT_DIR . '/RecordDrivers/OpenArchivesRecordDriver.php';
+					$recordDriver = new OpenArchivesRecordDriver($userListEntry->sourceId);
+					if ($recordDriver->isValid()) {
+						$title = $recordDriver->getTitle();
+						$userListEntry->title = mb_substr($title, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'Genealogy') {
+					require_once ROOT_DIR . '/sys/Genealogy/Person.php';
+					$person = new Person();
+					$person->personId = $userListEntry->sourceId;
+					if ($person->find(true)) {
+						$userListEntry->title = mb_substr($person->firstName . $person->middleName . $person->lastName, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'EbscoEds') {
+					require_once ROOT_DIR . '/RecordDrivers/EbscoRecordDriver.php';
+					$recordDriver = new EbscoRecordDriver($userListEntry->sourceId);
+					if ($recordDriver->isValid()) {
+						$title = $recordDriver->getTitle();
+						$userListEntry->title = mb_substr($title, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'Summon') {
+					require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
+					$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
+					if ($recordDriver->isValid()) {
+						$title = $recordDriver->getTitle();
+						$userListEntry->title = mb_substr($title, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'CloudSource') {
+					require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
+					$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
+					if ($recordDriver->isValid()) {
+						$title = $recordDriver->getTitle();
+						$userListEntry->title = mb_substr($title, 0, 50);
+					}
+				} elseif ($userListEntry->source == 'Gale') {
+					require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
+					$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
+					if ($recordDriver->isValid()) {
+						$title = $recordDriver->getTitle();
+						$userListEntry->title = mb_substr($title, 0, 50);
+					}
+				}
+				$existingEntry = false;
+				if ($userListEntry->find(true)) {
+					$existingEntry = true;
+				}
+				$userListEntry->notes = strip_tags($notes);
+				$userListEntry->dateAdded = time();
+				if ($existingEntry) {
+					$userListEntry->update();
+				} else {
+					$userListEntry->insert();
+				}
+
+				$userObject = UserAccount::getActiveUserObj();
+				if ($userObject->lastListUsed != $userList->id) {
+					$userObject->lastListUsed = $userList->id;
+					$userObject->update();
+				}
+				$result['success'] = true;
+				if ($userListEntry->source == 'Events') {
 					$result['message'] = translate([
-						'text' => 'Sorry, that is not a valid entry for the list.',
+						'text' => 'This event was saved to your list successfully.',
 						'isPublicFacing' => true,
 					]);
 				} else {
-					if (empty($sourceId) || empty($source)) {
-						$result['success'] = false;
-						$result['message'] = translate([
-							'text' => 'Unable to add that to a list, not correctly specified.',
-							'isPublicFacing' => true,
-						]);
-					} else {
-						$userListEntry->source = $source;
-						$userListEntry->sourceId = $sourceId;
-						$userListEntry->weight = $totalRecords + 1;
-
-						if ($userListEntry->source == 'GroupedWork') {
-							require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
-							$groupedWork = new GroupedWork();
-							$groupedWork->permanent_id = $userListEntry->sourceId;
-							if ($groupedWork->find(true)) {
-								$userListEntry->title = mb_substr($groupedWork->full_title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Lists') {
-							require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-							$list = new UserList();
-							$list->id = $userListEntry->sourceId;
-							if ($list->find(true)) {
-								$userListEntry->title = mb_substr($list->title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Events') {
-							if (preg_match('`^communico`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/CommunicoEventRecordDriver.php';
-								$recordDriver = new CommunicoEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} elseif (preg_match('`^libcal`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/SpringshareLibCalEventRecordDriver.php';
-								$recordDriver = new SpringshareLibCalEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} elseif (preg_match('`^lc_`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/LibraryCalendarEventRecordDriver.php';
-								$recordDriver = new LibraryCalendarEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} elseif (preg_match('`^assabet_`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
-								$recordDriver = new AssabetEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							} elseif (preg_match('`^aspenEvent_`', $userListEntry->sourceId)) {
-								require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-								$recordDriver = new AspenEventRecordDriver($userListEntry->sourceId);
-								if ($recordDriver->isValid()) {
-									$title = $recordDriver->getTitle();
-									$userListEntry->title = mb_substr($title, 0, 50);
-								}
-							}
-						} elseif ($userListEntry->source == 'OpenArchives') {
-							require_once ROOT_DIR . '/RecordDrivers/OpenArchivesRecordDriver.php';
-							$recordDriver = new OpenArchivesRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Genealogy') {
-							require_once ROOT_DIR . '/sys/Genealogy/Person.php';
-							$person = new Person();
-							$person->personId = $userListEntry->sourceId;
-							if ($person->find(true)) {
-								$userListEntry->title = mb_substr($person->firstName . $person->middleName . $person->lastName, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'EbscoEds') {
-							require_once ROOT_DIR . '/RecordDrivers/EbscoRecordDriver.php';
-							$recordDriver = new EbscoRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Summon') {
-							require_once ROOT_DIR . '/RecordDrivers/SummonRecordDriver.php';
-							$recordDriver = new SummonRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'CloudSource') {
-							require_once ROOT_DIR . '/RecordDrivers/CloudSourceRecordDriver.php';
-							$recordDriver = new CloudSourceRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						} elseif ($userListEntry->source == 'Gale') {
-							require_once ROOT_DIR . '/RecordDrivers/GaleRecordDriver.php';
-							$recordDriver = new GaleRecordDriver($userListEntry->sourceId);
-							if ($recordDriver->isValid()) {
-								$title = $recordDriver->getTitle();
-								$userListEntry->title = mb_substr($title, 0, 50);
-							}
-						}
-						$existingEntry = false;
-						if ($userListEntry->find(true)) {
-							$existingEntry = true;
-						}
-						$userListEntry->notes = strip_tags($notes);
-						$userListEntry->dateAdded = time();
-						if ($existingEntry) {
-							$userListEntry->update();
-						} else {
-							$userListEntry->insert();
-						}
-
-						$userObject = UserAccount::getActiveUserObj();
-						if ($userObject->lastListUsed != $userList->id) {
-							$userObject->lastListUsed = $userList->id;
-							$userObject->update();
-						}
-						$result['success'] = true;
-						if ($userListEntry->source == 'Events') {
-							$result['message'] = translate([
-								'text' => 'This event was saved to your list successfully.',
-								'isPublicFacing' => true,
-							]);
-						} else {
-							$result['message'] = translate([
-								'text' => 'This title was saved to your list successfully.',
-								'isPublicFacing' => true,
-							]);
-						}
-					}
+					$result['message'] = translate([
+						'text' => 'This title was saved to your list successfully.',
+						'isPublicFacing' => true,
+					]);
 				}
 			}
 
@@ -9375,86 +8987,79 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function saveToReadingHistory(): array {
+		$this->requireLoggedInUser(null, 'Please login before adding a title to your reading history.');
 		$result = [];
 
-		if (!UserAccount::isLoggedIn()) {
+		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+		$sourceId = $_REQUEST['sourceId'];
+		$source = $_REQUEST['source'];
+		$year = $_REQUEST['year'];
+		$month = $_REQUEST['month'];
+
+		$user = UserAccount::getActiveUserObj();
+
+		$readingHistoryEntry = new ReadingHistoryEntry();
+		$readingHistoryEntry->userId = $user->id;
+
+		if (empty($sourceId) || empty($source)) {
 			$result['success'] = false;
 			$result['message'] = translate([
-				'text' => 'Please login before adding a title to your reading history.',
+				'text' => 'Unable to add that to reading history, not correctly specified.',
 				'isPublicFacing' => true,
 			]);
 		} else {
-			require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
-			$sourceId = $_REQUEST['sourceId'];
-			$source = $_REQUEST['source'];
-			$year = $_REQUEST['year'];
-			$month = $_REQUEST['month'];
+			if ($source == 'GroupedWork') {
+				$readingHistoryEntry->source = $source;
+				$readingHistoryEntry->groupedWorkPermanentId = $sourceId;
+				$readingHistoryEntry->sourceId = $sourceId;
 
-			$user = UserAccount::getActiveUserObj();
+				require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
+				require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
 
-			$readingHistoryEntry = new ReadingHistoryEntry();
-			$readingHistoryEntry->userId = $user->id;
-
-			if (empty($sourceId) || empty($source)) {
-				$result['success'] = false;
-				$result['message'] = translate([
-					'text' => 'Unable to add that to reading history, not correctly specified.',
-					'isPublicFacing' => true,
-				]);
-			} else {
-				if ($source == 'GroupedWork') {
-					$readingHistoryEntry->source = $source;
-					$readingHistoryEntry->groupedWorkPermanentId = $sourceId;
-					$readingHistoryEntry->sourceId = $sourceId;
-
-					require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
-					require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
-
-					$groupedWork = new GroupedWork();
-					$groupedWork->permanent_id = $sourceId;
-					if ($groupedWork->find(true)) {
-						$groupedWorkDriver = new GroupedWorkDriver($sourceId);
-						$readingHistoryEntry->title = mb_substr($groupedWorkDriver->getTitle(), 0, 150);
-						$readingHistoryEntry->author = mb_substr($groupedWorkDriver->getPrimaryAuthor(), 0, 75);
-						//Leave the format blank
-						$readingHistoryEntry->format = '';
-						$checkoutDate = mktime(0, 0, 0, $month, 1, $year);
-						$readingHistoryEntry->checkOutDate = $checkoutDate;
-						$readingHistoryEntry->checkInDate = $checkoutDate;
-						$readingHistoryEntry->isIll = 0;
-						$readingHistoryEntry->isManuallyAdded = 1;
-						//No cost savings updates since this is outside the library
-						if ($readingHistoryEntry->find(true)) {
-							$existingEntry = true;
-						} else {
-							$existingEntry = false;
-						}
-						if ($existingEntry) {
-							$readingHistoryEntry->deleted = 0;
-							$readingHistoryEntry->update();
-						} else {
-							$readingHistoryEntry->insert();
-						}
-
-						$result['success'] = true;
-						$result['message'] = translate([
-							'text' => 'This title was saved to your reading history successfully.',
-							'isPublicFacing' => true,
-						]);
+				$groupedWork = new GroupedWork();
+				$groupedWork->permanent_id = $sourceId;
+				if ($groupedWork->find(true)) {
+					$groupedWorkDriver = new GroupedWorkDriver($sourceId);
+					$readingHistoryEntry->title = mb_substr($groupedWorkDriver->getTitle(), 0, 150);
+					$readingHistoryEntry->author = mb_substr($groupedWorkDriver->getPrimaryAuthor(), 0, 75);
+					//Leave the format blank
+					$readingHistoryEntry->format = '';
+					$checkoutDate = mktime(0, 0, 0, $month, 1, $year);
+					$readingHistoryEntry->checkOutDate = $checkoutDate;
+					$readingHistoryEntry->checkInDate = $checkoutDate;
+					$readingHistoryEntry->isIll = 0;
+					$readingHistoryEntry->isManuallyAdded = 1;
+					//No cost savings updates since this is outside the library
+					if ($readingHistoryEntry->find(true)) {
+						$existingEntry = true;
 					} else {
-						$result['success'] = false;
-						$result['message'] = translate([
-							'text' => 'Could not find that title in the catalog.',
-							'isPublicFacing' => true,
-						]);
+						$existingEntry = false;
 					}
+					if ($existingEntry) {
+						$readingHistoryEntry->deleted = 0;
+						$readingHistoryEntry->update();
+					} else {
+						$readingHistoryEntry->insert();
+					}
+
+					$result['success'] = true;
+					$result['message'] = translate([
+						'text' => 'This title was saved to your reading history successfully.',
+						'isPublicFacing' => true,
+					]);
 				} else {
 					$result['success'] = false;
 					$result['message'] = translate([
-						'text' => 'Only catalog titles may be added to your reading history.',
+						'text' => 'Could not find that title in the catalog.',
 						'isPublicFacing' => true,
 					]);
 				}
+			} else {
+				$result['success'] = false;
+				$result['message'] = translate([
+					'text' => 'Only catalog titles may be added to your reading history.',
+					'isPublicFacing' => true,
+				]);
 			}
 		}
 
@@ -9462,7 +9067,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function reloadCover() {
+	function reloadCover() : array {
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 		if (isset($_REQUEST['id'])) {
 			$listId = htmlspecialchars($_GET["id"]);
@@ -9471,33 +9076,29 @@ class MyAccount_AJAX extends JSON_Action {
 
 			require_once ROOT_DIR . '/sys/Covers/BookCoverInfo.php';
 			$bookCoverInfo = new BookCoverInfo();
-			$bookCoverInfo->recordType = 'list';
-			$bookCoverInfo->recordId = $listEntry->listId;
+			$bookCoverInfo->setRecordType('list');
+			$bookCoverInfo->setRecordId($listEntry->listId);
 			if ($bookCoverInfo->find(true)) {
-				$bookCoverInfo->imageSource = '';
-				$bookCoverInfo->thumbnailLoaded = 0;
-				$bookCoverInfo->mediumLoaded = 0;
-				$bookCoverInfo->largeLoaded = 0;
+				$bookCoverInfo->setImageSource('');
+				$bookCoverInfo->setThumbnailLoaded(0);
+				$bookCoverInfo->setMediumLoaded(0);
+				$bookCoverInfo->setLargeLoaded(0);
 				$bookCoverInfo->update();
 				// Update dateUpdated to refresh cached image
 				$listEntry->updateParentListDateUpdated();
 			}
 
-			return [
-				'success' => true,
-				'message' => 'Covers have been reloaded.  You may need to refresh the page to clear your local cache.',
-			];
-		}else{
-			return [
-				'success' => false,
-				'message' => 'ID of the cover to reload was not supplied.',
-			];
+			return $this->successResult(null, 'Covers have been reloaded.  You may need to refresh the page to clear your local cache.');
+		} else {
+			return $this->failureResult(null, 'ID of the cover to reload was not supplied.');
 		}
 
 	}
 
 	/** @noinspection PhpUnused */
-	function getUploadListCoverForm() {
+	function getUploadListCoverForm() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Upload List Covers']);
 		global $interface;
 
 		$id = htmlspecialchars($_GET["id"]);
@@ -9517,59 +9118,61 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function uploadListCover() {
+	function uploadListCover() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Upload List Covers']);
+
 		$result = [
 			'success' => false,
 			'title' => 'Uploading custom list cover',
 			'message' => 'Sorry your cover could not be uploaded',
 		];
-		if (UserAccount::isLoggedIn() && (UserAccount::userHasPermission('Upload List Covers'))) {
-			if (isset($_FILES['coverFile'])) {
-				$uploadedFile = $_FILES['coverFile'];
-				if (isset($uploadedFile["error"]) && $uploadedFile["error"] == 4) {
-					$result['message'] = "No Cover file was uploaded";
+
+		if (isset($_FILES['coverFile'])) {
+			$uploadedFile = $_FILES['coverFile'];
+			if (isset($uploadedFile["error"]) && $uploadedFile["error"] == 4) {
+				$result['message'] = "No Cover file was uploaded";
+			} else {
+				if (isset($uploadedFile["error"]) && $uploadedFile["error"] > 0) {
+					$result['message'] = "Error in file upload for cover " . $uploadedFile["error"];
 				} else {
-					if (isset($uploadedFile["error"]) && $uploadedFile["error"] > 0) {
-						$result['message'] = "Error in file upload for cover " . $uploadedFile["error"];
-					} else {
-						$id = htmlspecialchars($_GET["id"]);
-						global $configArray;
-						$destPath = $configArray['Site']['coverPath'] . '/original/lists/';
-						if (!file_exists($destPath)) {
-							mkdir($destPath, 0755, true);
+					$id = htmlspecialchars($_GET["id"]);
+					global $configArray;
+					$destPath = $configArray['Site']['coverPath'] . '/original/lists/';
+					if (!file_exists($destPath)) {
+						mkdir($destPath, 0755, true);
+					}
+					$destFullPath = $destPath . $id . '.png';
+					$fileType = $uploadedFile["type"];
+					if ($fileType == 'image/png') {
+						if (copy($uploadedFile["tmp_name"], $destFullPath)) {
+							$result['success'] = true;
 						}
-						$destFullPath = $destPath . $id . '.png';
-						$fileType = $uploadedFile["type"];
-						if ($fileType == 'image/png') {
-							if (copy($uploadedFile["tmp_name"], $destFullPath)) {
+					} elseif ($fileType == 'image/gif') {
+						$imageResource = @imagecreatefromgif($uploadedFile["tmp_name"]);
+						if (!$imageResource) {
+							$result['message'] = 'Unable to process this image, please try processing in an image editor and reloading';
+						} else {
+							if (@imagepng($imageResource, $destFullPath, 9)) {
 								$result['success'] = true;
 							}
-						} elseif ($fileType == 'image/gif') {
-							$imageResource = @imagecreatefromgif($uploadedFile["tmp_name"]);
-							if (!$imageResource) {
-								$result['message'] = 'Unable to process this image, please try processing in an image editor and reloading';
-							} else {
-								if (@imagepng($imageResource, $destFullPath, 9)) {
-									$result['success'] = true;
-								}
-							}
-						} elseif ($fileType == 'image/jpg' || $fileType == 'image/jpeg') {
-							$imageResource = @imagecreatefromjpeg($uploadedFile["tmp_name"]);
-							if (!$imageResource) {
-								$result['message'] = 'Unable to process this image, please try processing in an image editor and reloading';
-							} else {
-								if (@imagepng($imageResource, $destFullPath, 9)) {
-									$result['success'] = true;
-								}
-							}
-						} else {
-							$result['message'] = 'Incorrect image type.  Please upload a PNG, GIF, or JPEG';
 						}
+					} elseif ($fileType == 'image/jpg' || $fileType == 'image/jpeg') {
+						$imageResource = @imagecreatefromjpeg($uploadedFile["tmp_name"]);
+						if (!$imageResource) {
+							$result['message'] = 'Unable to process this image, please try processing in an image editor and reloading';
+						} else {
+							if (@imagepng($imageResource, $destFullPath, 9)) {
+								$result['success'] = true;
+							}
+						}
+					} else {
+						$result['message'] = 'Incorrect image type.  Please upload a PNG, GIF, or JPEG';
 					}
 				}
-			} else {
-				$result['message'] = 'No cover was uploaded, please try again.';
 			}
+		} else {
+			$result['message'] = 'No cover was uploaded, please try again.';
 		}
 		if ($result['success']) {
 			$this->reloadCover();
@@ -9579,7 +9182,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getUploadListCoverFormByURL() {
+	function getUploadListCoverFormByURL() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Upload List Covers']);
 		global $interface;
 
 		$id = htmlspecialchars($_GET["id"]);
@@ -9599,7 +9204,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function uploadListCoverByURL() {
+	function uploadListCoverByURL() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Upload List Covers']);
 		$result = [
 			'success' => false,
 			'title' => 'Uploading custom list cover',
@@ -9610,26 +9217,24 @@ class MyAccount_AJAX extends JSON_Action {
 			$filename = basename($url);
 			$uploadedFile = file_get_contents($url);
 
-			if (isset($uploadedFile["error"]) && $uploadedFile["error"] == 4) {
+			if (!$uploadedFile) {
 				$result['message'] = "No Cover file was uploaded";
-			} else {
-				if (isset($uploadedFile["error"]) && $uploadedFile["error"] > 0) {
-					$result['message'] = "Error in file upload for cover " . $uploadedFile["error"];
+			}else{
+				$id = htmlspecialchars($_GET["id"]);
+				global $configArray;
+				$destPath = $configArray['Site']['coverPath'] . '/original/lists/';
+				if (!file_exists($destPath)) {
+					mkdir($destPath, 0755, true);
 				}
-			}
-
-			$id = htmlspecialchars($_GET["id"]);
-			global $configArray;
-			$destPath = $configArray['Site']['coverPath'] . '/original/lists/';
-			if (!file_exists($destPath)) {
-				mkdir($destPath, 0755, true);
-			}
-			$destFullPath = $destPath . $id . '.png';
-			$ext = pathinfo($filename, PATHINFO_EXTENSION);
-			if ($ext == "jpg" or $ext == "png" or $ext == "gif" or $ext == "jpeg") {
-				$upload = file_put_contents($destFullPath, file_get_contents($url));
-				if ($upload) {
-					$result['success'] = true;
+				$destFullPath = $destPath . $id . '.png';
+				$ext = pathinfo($filename, PATHINFO_EXTENSION);
+				if ($ext == "jpg" or $ext == "png" or $ext == "gif" or $ext == "jpeg") {
+					$upload = file_put_contents($destFullPath, file_get_contents($url));
+					if ($upload) {
+						$result['success'] = true;
+					} else {
+						$result['message'] = 'Could not save image';
+					}
 				} else {
 					$result['message'] = 'Incorrect image type.  Please upload a PNG, GIF, or JPEG';
 				}
@@ -9645,48 +9250,49 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function removeUploadedListCover() : array {
+	function removeUploadedListCover(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Upload List Covers']);
 		$result = [
 			'success' => false,
-			'title' => translate(['text'=>'Removing custom list cover','isAdminFacing'=>true]),
-			'message' => translate(['text'=>'Sorry your cover could not be removed','isAdminFacing'=>true]),
+			'title' => translate([
+				'text' => 'Removing custom list cover',
+				'isAdminFacing' => true
+			]),
+			'message' => translate([
+				'text' => 'Sorry your cover could not be removed',
+				'isAdminFacing' => true
+			]),
 		];
-		if (UserAccount::isLoggedIn() && (UserAccount::userHasPermission('Upload List Covers'))) {
-			$id = $_REQUEST['listId'] ?? null;
-			if (empty($id) || !is_numeric($id)) {
-				$result = [
-					'success' => false,
-					'title' => translate(['text'=>'Error','isAdminFacing'=>true]),
-					'message' => translate(['text'=>'Invalid List Id provided','isAdminFacing'=>true]),
-				];
-			}else{
-				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-				$userList = new UserList();
-				$userList->id = $id;
-				if ($userList->find(true)) {
-					$activeUser = UserAccount::getActiveUserObj();
-					if ($activeUser->canEditList($userList)){
-						global $configArray;
-						$customCoverPath =  $configArray['Site']['coverPath'] . '/original/lists/' . $id . '.png';
-						if (file_exists($customCoverPath)){
-							$fileRemoved = unlink($customCoverPath);
-						}else{
-							//No file existed, treat this as working
-							$fileRemoved = true;
-						}
-						if ($fileRemoved) {
-							$result = [
-								'success' => true,
-								'title' => translate(['text'=>'Removing Custom Cover','isAdminFacing'=>true]),
-								'message' => translate(['text'=>'The cover was removed successfully','isAdminFacing'=>true]),
-							];
-						}else{
-							$result = [
-								'success' => false,
-								'title' => translate(['text'=>'Error','isAdminFacing'=>true]),
-								'message' => translate(['text'=>'You do not have permissions to edit this list','isAdminFacing'=>true]),
-							];
-						}
+
+		$id = $_REQUEST['listId'] ?? null;
+		if (empty($id) || !is_numeric($id)) {
+			$result = [
+				'success' => false,
+				'title' => translate(['text'=>'Error','isAdminFacing'=>true]),
+				'message' => translate(['text'=>'Invalid List Id provided','isAdminFacing'=>true]),
+			];
+		}else{
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$userList = new UserList();
+			$userList->id = $id;
+			if ($userList->find(true)) {
+				$activeUser = UserAccount::getActiveUserObj();
+				if ($activeUser->canEditList($userList)){
+					global $configArray;
+					$customCoverPath =  $configArray['Site']['coverPath'] . '/original/lists/' . $id . '.png';
+					if (file_exists($customCoverPath)){
+						$fileRemoved = unlink($customCoverPath);
+					}else{
+						//No file existed, treat this as working
+						$fileRemoved = true;
+					}
+					if ($fileRemoved) {
+						$result = [
+							'success' => true,
+							'title' => translate(['text'=>'Removing Custom Cover','isAdminFacing'=>true]),
+							'message' => translate(['text'=>'The cover was removed successfully','isAdminFacing'=>true]),
+						];
 					}else{
 						$result = [
 							'success' => false,
@@ -9698,21 +9304,32 @@ class MyAccount_AJAX extends JSON_Action {
 					$result = [
 						'success' => false,
 						'title' => translate(['text'=>'Error','isAdminFacing'=>true]),
-						'message' => translate(['text'=>'Incorrect List Id provided','isAdminFacing'=>true]),
+						'message' => translate(['text'=>'You do not have permissions to edit this list','isAdminFacing'=>true]),
 					];
 				}
+			}else{
+				$result = [
+					'success' => false,
+					'title' => translate(['text'=>'Error','isAdminFacing'=>true]),
+					'message' => translate(['text'=>'Incorrect List Id provided','isAdminFacing'=>true]),
+				];
 			}
 		}
+
 		if ($result['success']) {
 			$_GET['id'] = $_REQUEST['listId'];
 			$this->reloadCover();
-			$result['message'] = translate(['text'=>'The cover has been removed', 'isAdminFacing' => true]);
+			$result['message'] = translate([
+				'text' => 'The cover has been removed',
+				'isAdminFacing' => true
+			]);
 		}
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function deleteListItems() : array {
+	function deleteListItems(): array {
+		$this->requireLoggedInUser();
 		$result = [
 			'success' => false,
 		];
@@ -9760,10 +9377,9 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function deleteList(): array {
-		$result = [
-			'success' => false,
-			'message' => 'The selected lists could not be deleted. Please try again or contact library staff.',
-		];
+		$this->requireLoggedInUser();
+
+		$result = $this->failureResult(null, 'The selected lists could not be deleted. Please try again or contact library staff.');
 
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
@@ -9802,13 +9418,14 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteListForm(): array {
+		$this->requireLoggedInUser();
+
 		$userObj = UserAccount::getActiveUserObj();
 		$hideUI = false;
-		if ($userObj !== false) {
-			$patronHomeLibrary = $userObj->getHomeLibrary();
-			if ($patronHomeLibrary) {
-				$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
-			}
+
+		$patronHomeLibrary = $userObj->getHomeLibrary();
+		if ($patronHomeLibrary) {
+			$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
 		}
 
 		if ($hideUI) {
@@ -9818,16 +9435,12 @@ class MyAccount_AJAX extends JSON_Action {
 			]);
 		} else {
 			$modalBody = translate([
-				'text' => 'Are you sure you want to delete this entire list? The list and all titles within it will be soft-deleted and can be restored by library staff within 30 days.',
-				'isPublicFacing' => true
-			]) . '<br/><br/>' .
-			'<div>' .
-			'<input type="checkbox" id="optOutSoftDeletion" style="margin-right: 5px;">' .
-			'<label class="form-check-label" for="optOutSoftDeletion">' . translate([
-				'text' => 'Opt Out of Soft Deletion',
-				'isPublicFacing' => true
-			]) . '</label>' .
-			'</div>';
+					'text' => 'Are you sure you want to delete this entire list? The list and all titles within it will be soft-deleted and can be restored by library staff within 30 days.',
+					'isPublicFacing' => true
+				]) . '<br/><br/>' . '<div>' . '<input type="checkbox" id="optOutSoftDeletion" style="margin-right: 5px;">' . '<label class="form-check-label" for="optOutSoftDeletion">' . translate([
+					'text' => 'Opt Out of Soft Deletion',
+					'isPublicFacing' => true
+				]) . '</label>' . '</div>';
 		}
 
 		$modalButtons = '<button id="confirmDeleteList" class="tool btn btn-danger" onclick="AspenDiscovery.Lists.doDeleteList()"><span class="fas fa-spinner fa-spin" style="display:none; margin-right: 4px;"></span>' . translate([
@@ -9851,13 +9464,13 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteSelectedListsForm(): array {
+		$this->requireLoggedInUser();
+
 		$userObj = UserAccount::getActiveUserObj();
 		$hideUI = false;
-		if ($userObj !== false) {
-			$patronHomeLibrary = $userObj->getHomeLibrary();
-			if ($patronHomeLibrary) {
-				$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
-			}
+		$patronHomeLibrary = $userObj->getHomeLibrary();
+		if ($patronHomeLibrary) {
+			$hideUI = !empty($patronHomeLibrary->hideSoftDeleteListUI);
 		}
 
 		if ($hideUI) {
@@ -9869,14 +9482,10 @@ class MyAccount_AJAX extends JSON_Action {
 			$modalBody = translate([
 					'text' => 'Are you sure you want to delete the selected lists? The lists and all titles within them will be soft-deleted and can be restored by library staff within 30 days.',
 					'isPublicFacing' => true
-				]) . '<br/><br/>' .
-				'<div>' .
-				'<input type="checkbox" id="optOutSoftDeletionBulk" style="margin-right: 5px;">' .
-				'<label class="form-check-label" for="optOutSoftDeletionBulk">' . translate([
+				]) . '<br/><br/>' . '<div>' . '<input type="checkbox" id="optOutSoftDeletionBulk" style="margin-right: 5px;">' . '<label class="form-check-label" for="optOutSoftDeletionBulk">' . translate([
 					'text' => 'Opt Out of Soft Deletion',
 					'isPublicFacing' => true
-				]) . '</label>' .
-				'</div>';
+				]) . '</label>' . '</div>';
 		}
 
 		$modalButtons = '<button id="confirmDeleteSelectedLists" class="tool btn btn-danger" onclick="AspenDiscovery.Account.doDeleteSelectedLists()"><span class="fas fa-spinner fa-spin" style="display:none; margin-right: 4px;"></span>' . translate([
@@ -9899,7 +9508,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getEditListForm() {
+	function getEditListForm() : array {
+		$this->requireLoggedInUser();
+
 		global $interface;
 
 		if (isset($_REQUEST['listId']) && isset($_REQUEST['listEntryId'])) {
@@ -9986,17 +9597,9 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function editListItem(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Updating list entry',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Sorry your list entry could not be updated',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser();
+
+		$result = $this->failureResult('Updating list entry', 'Sorry your list entry could not be updated');
 		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 		require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
 
@@ -10139,95 +9742,82 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function updateWeight() {
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Unknown error moving list entry',
-				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getLoggedInUser();
-			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
-			$list = new UserList();
-			$list->user_id = $user;
-			if ($list->find(true) && $user->canEditList($list)) {
-				if (isset($_REQUEST['listEntryId'])) {
-					require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
-					$listEntry = new UserListEntry();
-					$listEntry->id = $_REQUEST['listEntryId'];
-					if ($listEntry->find(true)) {
-						//Figure out new weights for list entries
-						$direction = $_REQUEST['direction'];
-						$oldWeight = $listEntry->weight;
-						if ($direction == 'up') {
-							$newWeight = $oldWeight - 1;
-						} else {
-							$newWeight = $oldWeight + 1;
-						}
+	function updateWeight() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to move a list entry');
 
-						$entryToSwap = new UserListEntry();
-						$entryToSwap->listId = $listEntry->listId;
-						$entryToSwap->weight = $newWeight;
-						if ($entryToSwap->find(true)) {
-							$listEntry->weight = $newWeight;
-							$listEntry->update();
-							$entryToSwap->weight = $oldWeight;
-							$entryToSwap->update();
-
-							$result['success'] = true;
-							$result['message'] = 'The list entry was moved successfully';
-							$result['swappedWithId'] = $entryToSwap->id;
-						} else {
-							if ($direction == 'up') {
-								$result['message'] = 'List entry is already at the top';
-							} else {
-								$result['message'] = 'List entry is already at the bottom';
-							}
-						}
+		$result = $this->failureResult(null, 'Unknown error moving list entry');
+		$user = UserAccount::getLoggedInUser();
+		require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+		$list = new UserList();
+		$list->user_id = $user;
+		if ($list->find(true) && $user->canEditList($list)) {
+			if (isset($_REQUEST['listEntryId'])) {
+				require_once ROOT_DIR . '/sys/UserLists/UserListEntry.php';
+				$listEntry = new UserListEntry();
+				$listEntry->id = $_REQUEST['listEntryId'];
+				if ($listEntry->find(true)) {
+					//Figure out new weights for list entries
+					$direction = $_REQUEST['direction'];
+					$oldWeight = $listEntry->weight;
+					if ($direction == 'up') {
+						$newWeight = $oldWeight - 1;
 					} else {
-						$result['message'] = 'Unable to find that list entry';
+						$newWeight = $oldWeight + 1;
+					}
+
+					$entryToSwap = new UserListEntry();
+					$entryToSwap->listId = $listEntry->listId;
+					$entryToSwap->weight = $newWeight;
+					if ($entryToSwap->find(true)) {
+						$listEntry->weight = $newWeight;
+						$listEntry->update();
+						$entryToSwap->weight = $oldWeight;
+						$entryToSwap->update();
+
+						$result['success'] = true;
+						$result['message'] = 'The list entry was moved successfully';
+						$result['swappedWithId'] = $entryToSwap->id;
+					} else {
+						if ($direction == 'up') {
+							$result['message'] = 'List entry is already at the top';
+						} else {
+							$result['message'] = 'List entry is already at the bottom';
+						}
 					}
 				} else {
-					$result['message'] = 'No list entry id was provided';
+					$result['message'] = 'Unable to find that list entry';
 				}
 			} else {
-				$result['message'] = 'You don\'t have the correct permissions to move a list entry';
+				$result['message'] = 'No list entry id was provided';
 			}
 		} else {
-			$result['message'] = 'You must be logged in to move a list entry';
+			$result['message'] = 'You don\'t have the correct permissions to move a list entry';
 		}
 		return $result;
 	}
 
-	function getSuggestionsSpotlight() {
-		$result = [
-			'success' => false,
-			'message' => 'Error loading suggestions spotlight.',
-		];
+	/** @noinspection PhpUnused */
+	function getSuggestionsSpotlight() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to view suggestions.  Please close this dialog and login again.');
+		$result = [];
 
-		if (!UserAccount::isLoggedIn()) {
-			$result['message'] = 'You must be logged in to view suggestions.  Please close this dialog and login again.';
-		} else {
-			require_once ROOT_DIR . '/sys/Suggestions.php';
-			require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
-			global $interface;
-			$interface->assign('listName', 'recommendedForYou');
-			$suggestions = Suggestions::getSuggestions(UserAccount::getActiveUserId());
-			foreach ($suggestions as $index => $suggestionInfo) {
-				$groupedWorkDriver = new GroupedWorkDriver($suggestionInfo['titleInfo']);
-				$result['suggestions'][] = $groupedWorkDriver->getSuggestionSpotlightResult($index);
-			}
-			$result['success'] = true;
-			$result['message'] = '';
+		require_once ROOT_DIR . '/sys/Suggestions.php';
+		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
+		global $interface;
+		$interface->assign('listName', 'recommendedForYou');
+		$suggestions = Suggestions::getSuggestions(UserAccount::getActiveUserId());
+		foreach ($suggestions as $index => $suggestionInfo) {
+			$groupedWorkDriver = new GroupedWorkDriver($suggestionInfo['titleInfo']);
+			$result['suggestions'][] = $groupedWorkDriver->getSuggestionSpotlightResult($index);
 		}
+		$result['success'] = true;
+		$result['message'] = '';
 
 		return $result;
 	}
 
 	/** @noinspection PhpUnused */
-	function get2FAEnrollment() {
+	function get2FAEnrollment() : array {
 		global $interface;
 
 		// if there were multiple verification methods available, you'd want to fetch them here for display
@@ -10236,14 +9826,13 @@ class MyAccount_AJAX extends JSON_Action {
 		$mandatoryEnrollment = $_REQUEST['mandatoryEnrollment'] ?? 'false';
 
 		if ($step == "register") {
-
-			function mask($str, $first, $last) {
+			function mask($str, $first, $last) : string {
 				$len = strlen($str);
 				$toShow = $first + $last;
 				return substr($str, 0, $len <= $toShow ? 0 : $first) . str_repeat("*", $len - ($len <= $toShow ? 0 : $toShow)) . substr($str, $len - $last, $len <= $toShow ? 0 : $last);
 			}
 
-			function mask_email($email) {
+			function mask_email($email) : string {
 				$mail_parts = explode("@", $email);
 				$domain_parts = explode('.', $mail_parts[1]);
 
@@ -10268,7 +9857,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('emailAddress', $email);
 
 			if ($hasValidEmail) {
-				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"{$mandatoryEnrollment}\"); return false;'>" . translate([
+				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>";
@@ -10302,7 +9891,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-verify.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"{$mandatoryEnrollment}\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10320,7 +9909,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-verify.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"{$mandatoryEnrollment}\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10342,7 +9931,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-backup.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentSuccess(\"{$mandatoryEnrollment}\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentSuccess(\"$mandatoryEnrollment\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10364,12 +9953,12 @@ class MyAccount_AJAX extends JSON_Action {
 				'body' => $interface->fetch('MyAccount/2fa/enroll-success.tpl'),
 			];
 		} else {
-			return false;
+			return $this->failureResult(null, 'Invalid 2FA step');
 		}
 	}
 
 	/** @noinspection PhpUnused */
-	function verify2FA() {
+	function verify2FA() : array {
 		$code = $_REQUEST['code'] ?? '0';
 		$isLoggingIn = $_REQUEST['loggingIn'] ?? false;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
@@ -10378,7 +9967,7 @@ class MyAccount_AJAX extends JSON_Action {
 			global $logger;
 			$logger->log("Starting AJAX/2faLogin session: " . session_id(), Logger::LOG_DEBUG);
 			$result = $twoFactorAuth->validateCode($code);
-			if ($result['success'] == true) {
+			if ($result['success']) {
 				UserAccount::$isAuthenticated = true;
 				try {
 					UserAccount::login();
@@ -10400,11 +9989,11 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function confirmCancel2FA() {
+	function confirmCancel2FA() : array {
+		$this->requireLoggedInUser();
 		global $interface;
 
 		// on submit of button, update user table for (un)enrollment status
-
 		return [
 			'success' => true,
 			'title' => translate([
@@ -10417,7 +10006,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function cancel2FA() {
+	function cancel2FA() : array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 		$twoFactorAuth->deactivate2FA();
@@ -10436,7 +10027,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function newBackupCodes() {
+	function newBackupCodes() : array {
+		$this->requireLoggedInUser();
+
 		global $interface;
 
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
@@ -10458,7 +10051,9 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function new2FACode() {
+	function new2FACode(): array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 		$twoFactorAuth->createCode();
@@ -10491,8 +10086,8 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($list->find(true)) {
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					// Get user's saved filters if logged in.
-					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
-					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|', $_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|', $_REQUEST['activeFilters']);
 
 					$list->buildCSV($selectedResourceTypes, $activeFilters);
 					// If buildCSV succeeds, it exits.
@@ -10536,8 +10131,8 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($list->find(true)) {
 				if ($list->public || (UserAccount::isLoggedIn() && UserAccount::getActiveUserId() == $list->user_id)) {
 					// Get user's saved filters if logged in.
-					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|',$_REQUEST['selectedResourceTypes']);
-					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|',$_REQUEST['activeFilters']);
+					$selectedResourceTypes = empty($_REQUEST['selectedResourceTypes']) ? [] : explode('|', $_REQUEST['selectedResourceTypes']);
+					$activeFilters = empty($_REQUEST['activeFilters']) ? [] : explode('|', $_REQUEST['activeFilters']);
 					$list->buildRIS($selectedResourceTypes, $activeFilters);
 					// If buildRIS succeeds, it exits.
 				} else {
@@ -10561,15 +10156,11 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	function getILSMessage() {
+	/** @noinspection PhpUnused */
+	function getILSMessage() : array {
+		$this->requireLoggedInUser();
 		global $interface;
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Something went wrong.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$result = $this->failureResult(null, 'Something went wrong.');
 
 		if (isset($_REQUEST['messageId']) && ctype_digit($_REQUEST['messageId'])) {
 			$userMessageId = $_REQUEST['messageId'];
@@ -10589,14 +10180,11 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	function markILSMessageAsRead() {
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Something went wrong.',
-				'isPublicFacing' => true,
-			]),
-		];
+	/** @noinspection PhpUnused */
+	function markILSMessageAsRead() : array {
+		$this->requireLoggedInUser();
+
+		$result = $this->failureResult(null, 'Something went wrong.');
 
 		if (isset($_REQUEST['messageId']) && ctype_digit($_REQUEST['messageId'])) {
 			$userMessageId = $_REQUEST['messageId'];
@@ -10621,14 +10209,11 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	function markILSMessageAsUnread() {
-		$result = [
-			'success' => false,
-			'message' => translate([
-				'text' => 'Something went wrong.',
-				'isPublicFacing' => true,
-			]),
-		];
+	/** @noinspection PhpUnused */
+	function markILSMessageAsUnread() : array {
+		$this->requireLoggedInUser();
+
+		$result = $this->failureResult(null, 'Something went wrong.');
 
 		if (isset($_REQUEST['messageId']) && ctype_digit($_REQUEST['messageId'])) {
 			$userMessageId = $_REQUEST['messageId'];
@@ -10653,7 +10238,10 @@ class MyAccount_AJAX extends JSON_Action {
 		return $result;
 	}
 
-	public function enrollCampaign() {
+	/** @noinspection PhpUnused */
+	public function enrollCampaign() : array {
+		$this->checkRequiredModule('Community Engagement');
+		$this->checkRequiredParameters(['campaignId', 'userId']);
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 		require_once ROOT_DIR . '/sys/Account/User.php';
@@ -10661,94 +10249,41 @@ class MyAccount_AJAX extends JSON_Action {
 		$campaignId = $_GET['campaignId'] ?? null;
 		$userId = $_GET['userId'] ?? null;
 
-		if (!$campaignId || !$userId) {
-			return[
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true
-				]),
-				'message' => translate([
-					'text' => 'Campaign ID or user ID is missing.',
-					'isPublicFacing' => true
-				])
-			];
-		}
-
 		$userCampaign = new UserCampaign();
 		$userCampaign->userId = $userId;
 		$userCampaign->campaignId = $campaignId;
 		$campaign = new Campaign();
 		$campaign->id = $campaignId;
 		if (!$campaign->find(true)) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true
-				]),
-				'message' => translate([
-					'text' => 'Campaign not found.',
-					'isPublicFacing' => true
-				])
-			];
+			return $this->failureResult('Error', 'Campaign not found.');
 		}
 
 		$today = new DateTime();
+		/** @noinspection PhpUnhandledExceptionInspection */
 		$enrollmentStartDate = !empty($campaign->enrollmentStartDate) ? new DateTime($campaign->enrollmentStartDate) : null;
+		/** @noinspection PhpUnhandledExceptionInspection */
 		$enrollmentEndDate = !empty($campaign->enrollmentEndDate) ? new DateTime($campaign->enrollmentEndDate) : null;
 
 		if ($enrollmentStartDate && $enrollmentEndDate) {
 			if ($today < $enrollmentStartDate) {
-				return [
-					'success' => false,
-					'title' => translate([
-						'text' => 'Cannot Enroll',
-						'isPublicFacing' => true
-					]),
-					'message' => translate([
-						'text' => 'Enrollment for this campaign has not started yet.',
-						'isPublicFacing' => true
-					])
-				];
+				return $this->failureResult('Cannot Enroll', 'Enrollment for this campaign has not started yet.');
 			}
 			if ($today > $enrollmentEndDate) {
-				return [
-					'success' => false,
-					'title' => translate([
-						'text' => 'Cannot Enroll',
-						'isPublicFacing' => true
-					]),
-					'message' => translate([
-						'text' => 'Enrollment for this campaign has ended.',
-						'isPublicFacing' => true
-					])
-				];
+				return $this->failureResult('Cannot Enroll', 'Enrollment for this campaign has ended.');
 			}
 		}
 
 		if ($userCampaign->find(true)) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Already Enrolled',
-					'isPublicFacing' => true
-				]),
-				'message' => translate([
-					'text' => 'User is already enrolled in this campaign.',
-					'isPublicFacing' => true
-				])
-			];
+			return $this->failureResult('Already Enrolled', 'User is already enrolled in this campaign.');
 		}
 
-		$this->applyCampaignProgress($userId, $campaignId);
-
 		if ($userCampaign->insert()) {
+
+			$this->applyCampaignProgress($userId, $campaignId);
+
 			$campaign->enrollmentCounter++;
 			$campaign->currentEnrollments++;
 			$campaign->update();
-
-
 
 			return [
 				'success' => true,
@@ -10764,61 +10299,21 @@ class MyAccount_AJAX extends JSON_Action {
 				])
 			];
 		} else {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true
-				]),
-				'message' => translate([
-					'text' => 'Failed to enroll user in campaign.',
-					'isPublicFacing' => true
-				]),
-			];
+			return $this->failureResult('Error', 'Failed to enroll user in campaign.');
 		}
 	}
 
-	public function unenrollCampaign() {
+	public function unenrollCampaign() : array {
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignExtraCreditActivityUsersProgress.php';
 
-
-
+		$this->checkRequiredModule('Community Engagement');
+		$this->checkRequiredParameters(['campaignId', 'userId']);
 		$campaignId = $_GET['campaignId'] ?? null;
 		$userId = $_GET['userId'] ?? null;
-
-
-		if (!$campaignId || !$userId) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true
-				]),
-				'message' => translate([
-					'text' => 'Campaign ID or user ID is missing.',
-					'isPublicFacing' => true
-				])
-			];
-		}
-
-		// $userId = UserAccount::getActiveUserId();
-		// if (!$userId) {
-		// 	return [
-		// 		'success' => false,
-		// 		'title' => translate([
-		// 			'text' => 'Error',
-		// 			'isPublicFacing' => true
-		// 		]),
-		// 		'message' => translate([
-		// 			'text' => 'User is not logged in.',
-		// 			'isPublicFacing' => true
-		// 		])
-		// 	];
-		// }
 
 		$userCampaign = new UserCampaign();
 		$userCampaign->userId = $userId;
@@ -10842,66 +10337,30 @@ class MyAccount_AJAX extends JSON_Action {
 
 					$extraCreditProgress = new CampaignExtraCreditActivityUsersProgress();
 					$extraCreditProgress->userId = $userId;
-					$extraCreditProgress->ce_campaign_id = $campaignId;
+					$extraCreditProgress->campaignId = $campaignId;
 					$extraCreditProgress->delete(true);
 					//Increase unenrollment counter
 					$campaign->unenrollmentCounter++;
 					$campaign->currentEnrollments--;
 					$campaign->update();
 
-					return [
-						'success' => true,
-						'title' => translate([
-							'text' => 'Success',
-							'isPublicFacing' => true
-						]),
-						'message' => translate([
-							'text' => 'You have successfully unenrolled.',
-							'isPublicFacing' => true
-						])
-					];
+					return $this->successResult('Success', 'You have successfully unenrolled.');
 				} else {
-					return [
-						'success' => false,
-						'title' => translate([
-							'text' => 'Error',
-							'isPublicFacing' => true
-						]),
-						'message' => translate([
-							'text' => 'Failed to unenroll.',
-							'isPublicFacing' => true
-						])
-					];
+					return $this->failureResult('Error', 'Failed to unenroll.');
 				}
 			} else {
-				return [
-					'success' => false,
-					'title' => translate([
-						'text' => 'Error',
-						'isPublicFacing' => true
-					]),
-					'message' => translate([
-						'text' => 'Campaign not found.',
-						'isPublicFacing' => true
-					])
-				];
+				return $this->failureResult('Error', 'Campaign not found.');
 			}
 		} else {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'User Not Enrolled',
-					'isPublicFacing' => true
-				]),
-				'message' => translate([
-					'text' => 'User is not enrolled in this campaign.',
-					'isPublicFacing' => true
-				])
-			];
+			return $this->failureResult('User Not Enrolled', 'User is not enrolled in this campaign.');
 		}
 	}
 
-	public function getEnrolledCampaigns() {
+	/** @noinspection PhpUnused */
+	public function getEnrolledCampaigns() : array {
+		$this->checkRequiredModule('Community Engagement');
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/sys/UserAccount.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 
@@ -10913,7 +10372,9 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	public function applyCampaignProgress($userId, $campaignId) {
+	public function applyCampaignProgress($userId, $campaignId) : void {
+		$this->checkRequiredModule('Community Engagement');
+
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
@@ -10933,12 +10394,12 @@ class MyAccount_AJAX extends JSON_Action {
 			$entityId = $entity->groupedWorkId;
 
 			if ($entityDate >= $campaignStartDate && $entityDate <= $campaignEndDate) {
-				$this->processCampaignMilestones($entity, $campaignId, $entityDate, $entityId);
+				CampaignMilestone::processCampaignMilestoneProgress($entity, $entity->__table, $userId, $entityDate, $entityId);
 			}
 		}
 	}
 
-	private function getUserEntities($userId) {
+	private function getUserEntities($userId) : array {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
 		require_once ROOT_DIR . '/sys/LocalEnrichment/UserWorkReview.php';
@@ -10949,8 +10410,8 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($hold->find()) {
 			while ($hold->fetch()) {
 				$hold->type = 'user_hold';
+				/** @noinspection PhpUndefinedFieldInspection */
 				$hold->date = $hold->createDate;
-				$hold->groupedWorkId = $hold->groupedWorkId;
 				$entities[] = clone $hold;
 			}
 		}
@@ -10960,8 +10421,8 @@ class MyAccount_AJAX extends JSON_Action {
 		if ($checkout->find()) {
 			while ($checkout->fetch()) {
 				$checkout->type = 'user_checkout';
+				/** @noinspection PhpUndefinedFieldInspection */
 				$checkout->date = $checkout->checkoutDate;
-				$checkout->groupedWorkId = $checkout->groupedWorkId;
 				$entities[] = clone $checkout;
 			}
 		}
@@ -10970,10 +10431,13 @@ class MyAccount_AJAX extends JSON_Action {
 		$review->userId = $userId;
 		if ($review->find()) {
 
-			while ($review->fetch()){
+			while ($review->fetch()) {
 
+				/** @noinspection PhpUndefinedFieldInspection */
 				$review->type = 'user_work_review';
+				/** @noinspection PhpUndefinedFieldInspection */
 				$review->date = $review->dateRated;
+				/** @noinspection PhpUndefinedFieldInspection */
 				$review->groupedWorkId = $review->groupedRecordPermanentId;
 				$entities[] = clone $review;
 			}
@@ -10981,7 +10445,9 @@ class MyAccount_AJAX extends JSON_Action {
 		return $entities;
 	}
 
-	private function processCampaignMilestones($entity, $campaignId, $entityDate, $entityId) {
+	private function processCampaignMilestones($entity, $campaignId, $entityId) : void {
+		$this->checkRequiredModule('Community Engagement');
+
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
 		require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
@@ -11013,221 +10479,42 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/**
-	 * Sends server-sent events (SSE) notifications about community engagement milestones and campaigns.
+	 * Returns polling results for toast notifications about community engagement progress.
+	 * @noinspection PhpUnused
 	 */
 
-	public function CommunityEngagementSSE() {
+	public function CommunityEngagementPoll() {
+		$this->checkRequiredModule('Community Engagement');
+		require_once ROOT_DIR . '/sys/CommunityEngagement/CommunityEngagementPoll.php';
 		$debug = false; // Set to true to enable debug mode. true for dev only.
-		if (UserAccount::isLoggedIn()) {
-
-			$patron = UserAccount::getActiveUserObj();
-
-			require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneProgressEntry.php';
-			require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestoneUsersProgress.php';
-			require_once ROOT_DIR . '/sys/CommunityEngagement/CampaignMilestone.php';
-			require_once ROOT_DIR . '/sys/CommunityEngagement/Campaign.php';
-			require_once ROOT_DIR . '/sys/CommunityEngagement/Milestone.php';
-			require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
-
-			header("X-Accel-Buffering: no");
-			header("Content-Type: text/event-stream");
-			header("Cache-Control: no-cache");
-
-			echo "event: established\n";
-			echo "data: connection established\n\n";
-
-			ob_end_flush();
-
-			$interval = 10;
-			global $interface;
-
-			while (true) {
-
-				if( $debug ){
-					global $logger;
-					$logger->log("RUNNING SSE ", Logger::LOG_ERROR);
-				}
-				// Break the loop if the client aborted the connection (closed the page)
-				if (connection_status() != CONNECTION_NORMAL || connection_aborted()) exit();
-
-				$campaignMilestoneProgressEntry = new CampaignMilestoneProgressEntry();
-				$campaignMilestoneProgressEntry->userId = $patron->id;
-				if(!$debug){
-					$campaignMilestoneProgressEntry->whereAdd("timestamp >= DATE_SUB(NOW(), INTERVAL " . $interval . " SECOND)");
-				}
-
-				if ($campaignMilestoneProgressEntry->find()) {
-					while ($campaignMilestoneProgressEntry->fetch()) {
-
-						# Prepare data
-						$campaign = new Campaign();
-						$campaign->id = $campaignMilestoneProgressEntry->ce_campaign_id;
-						$campaign->find(true);
-
-						$milestone = new Milestone();
-						$milestone->id = $campaignMilestoneProgressEntry->ce_milestone_id;
-						$milestone->find(true);
-
-						$campaignMilestoneUsersProgress = new CampaignMilestoneUsersProgress();
-						$campaignMilestoneUsersProgress->id = $campaignMilestoneProgressEntry->ce_campaign_milestone_users_progress_id;
-						$campaignMilestoneUsersProgress->find(true);
-
-						$campaignMilestone = new CampaignMilestone();
-						$campaignMilestone->campaignId = $campaignMilestoneProgressEntry->ce_campaign_id;
-						$campaignMilestone->milestoneId = $campaignMilestoneProgressEntry->ce_milestone_id;
-						$campaignMilestone->find(true);
-
-						$userCampaign = new UserCampaign();
-						$userCampaign->userId = $patron->id;
-						$userCampaign->campaignId = $campaignMilestoneProgressEntry->ce_campaign_id;
-						$userCampaign->find(true);
-
-						$unwantedOverflowProgress = $campaignMilestoneUsersProgress->progress > $campaignMilestone->goal &&  !$milestone->progressBeyondOneHundredPercent;
-						$wantedOverflowProgress = $campaignMilestoneUsersProgress->progress > $campaignMilestone->goal &&  $milestone->progressBeyondOneHundredPercent;
-						if( $unwantedOverflowProgress ){
-							exit();
-						}
-
-						# Handle milestone progress notification
-						echo "event: ce_notification\n";
-						echo "data: " . json_encode(
-								array(
-									'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_progress',
-									'title'=> translate(
-										[
-											'text' => 'Milestone progress! Good job!',
-											'isPublicFacing' => true
-										]
-									),
-								'body' => translate([
-									'text' => '%1% of %2% progressed!',
-									1=> $milestone->name,
-									2=> $campaign->name,
-									'isPublicFacing' => true,
-								]),
-								$campaignMilestoneUsersProgress->progress.'/'.$campaignMilestone->goal.' ' .$milestone->name,
-								'icon' => "fa-chart-line",
-								'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-										[
-											'text' => 'View all campaigns',
-											'isPublicFacing' => true
-										]
-									)]
-								)
-							) . "\n\n";
-
-						# Handle milestone completion notification
-						if ($campaignMilestoneUsersProgress->progress >= $campaignMilestone->goal && !$wantedOverflowProgress) {
-							echo "event: ce_notification\n";
-							echo "data: " . json_encode(
-								array(
-									'id'=> $campaignMilestoneProgressEntry->id . '_ce_milestone_completed',
-									'title'=> translate(
-										[
-											'text' => 'Milestone completed! Well done!',
-											'isPublicFacing' => true
-										]
-									),
-									'body' => translate([
-										'text' => '%1% of %2% complete.',
-										1 =>$milestone->name,
-										2=>$campaign->name,
-										'isPublicFacing' => true,
-									]),
-									'icon' => "fa-clipboard-check",
-									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-										[
-											'text' => 'View all campaigns',
-											'isPublicFacing' => true
-										]
-									)]
-								)
-							) . "\n\n";
-						}
-
-						# Handle campaign completion notification
-						if ($userCampaign->completed && !$wantedOverflowProgress) {
-							echo "event: ce_notification\n";
-							echo "data: " . json_encode(
-								array(
-									'id'=> $campaignMilestoneProgressEntry->id . '_ce_campaign_completed',
-									'title'=> translate(
-										[
-											'text' => 'Campaign completed! Awesome!',
-											'isPublicFacing' => true
-										]
-									),
-									'body' => translate([
-										'text' => '%1% campaign complete!',
-										1 => $campaign->name,
-										'isPublicFacing' => true
-									]),
-									'icon' => "fa-medal",
-									'link' => ['href' => '/MyAccount/MyCampaigns', 'text' => translate(
-										[
-											'text' => 'View all campaigns',
-											'isPublicFacing' => true
-										]
-									)]
-								)
-							) . "\n\n";
-						}
-					}
-				}else{
-					echo "event: heart_beat\n";
-					echo "data: No notifications found\n\n";
-				}
-
-				if (ob_get_contents()) {
-					ob_end_flush();
-				}
-				flush();
-
-				sleep($interval);
-			}
-		}
+		$CEPoll = new CommunityEngagementPoll($debug);
+		$CEPoll->CommunityEngagementPoll();
 	}
 
-	function getYearInReviewSlide() : array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Error',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Unknown error loading year in review slide.',
-				'isPublicFacing' => true,
-			]),
-		];
+	/** @noinspection PhpUnused */
+	function getYearInReviewSlide(): array {
+		$this->requireLoggedInUser(null, "You must be logged in.  Please close this dialog and login to view your Year in Review.");
+		$result = $this->failureResult('Error', 'Unknown error loading year in review slide.');
 
-		if (UserAccount::isLoggedIn()) {
-			$patron = UserAccount::getActiveUserObj();
+		$patron = UserAccount::getActiveUserObj();
 
-			//TODO: Take this out, the data should already be generated at this point
-			require_once ROOT_DIR . '/sys/YearInReview/YearInReviewGenerator.php';
-			generateYearInReview($patron);
+		require_once ROOT_DIR . '/sys/YearInReview/YearInReviewGenerator.php';
+		generateYearInReview($patron);
 
-			if ($patron->hasYearInReview()) {
-				$slideNumber = $_REQUEST['slide'] ?? 1;
-				if (is_numeric($slideNumber)) {
-					$yearInReviewSettings = $patron->getYearInReviewSetting();
-					$result = $yearInReviewSettings->getSlide($patron, (int)$slideNumber);
-				} else {
-					$result['message'] = translate([
-						'text' => "Invalid Slide Number.",
-						'isPublicFacing' => true,
-					]);
-				}
+		if ($patron->hasYearInReview()) {
+			$slideNumber = $_REQUEST['slide'] ?? 1;
+			if (is_numeric($slideNumber)) {
+				$yearInReviewSettings = $patron->getYearInReviewSetting();
+				$result = $yearInReviewSettings->getSlide($patron, (int)$slideNumber);
 			} else {
 				$result['message'] = translate([
-					'text' => "Year in Review is not active for your account.",
+					'text' => "Invalid Slide Number.",
 					'isPublicFacing' => true,
 				]);
 			}
 		} else {
 			$result['message'] = translate([
-				'text' => "You must be logged in.  Please close this dialog and login to view your Year in Review.",
+				'text' => "Year in Review is not active for your account.",
 				'isPublicFacing' => true,
 			]);
 		}
@@ -11236,7 +10523,8 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getYearInReviewSlideImage() {
+	#[NoReturn]
+	function getYearInReviewSlideImage() : void {
 		$gotImage = false;
 		//This returns an image to the browser
 		if (UserAccount::isLoggedIn()) {
@@ -11267,54 +10555,54 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getSublocationsSelect() : array {
+	function getSublocationsSelect(): array {
+		$this->requireLoggedInUser();
 		$html = '';
 		$success = false;
 		$context = $_REQUEST['context'] ?? '';
-		if (UserAccount::isLoggedIn()) {
-			$patron = UserAccount::getActiveUserObj();
-			if (isset($_REQUEST['locationCode'])) {
-				$location = new Location();
-				if ($context === 'myPreferences') {
-					$location->locationId = $_REQUEST['locationCode'];
-				} else {
-					$location->code = $_REQUEST['locationCode'];
-				}
-				if ($location->find(true)) {
-					$sublocations = [];
-					$allSublocations = $location->getPickupSublocations($patron);
-					foreach ($allSublocations as $sublocation) {
-						$sublocations[$sublocation->id] = $sublocation->name;
-					}
 
-					if (count($sublocations) > 1) {
-						$success = true;
-						if ($context === 'myPreferences') {
-							$labelText = 'Preferred Pickup Area';
-						} elseif ($context === 'changePickupLocation') {
-							$labelText = 'Select a new area to pickup your hold';
-						} else {
-							$labelText = 'Select your pickup area';
-						}
-						$html .= '<label class="control-label" for="pickupSublocation">' . translate([
-								'text' => $labelText,
-								'isPublicFacing' => true,
-							]) . '</label>';
-						$html .= '<div class="controls">';
-						$html .= '<select name="pickupSublocation" id="pickupSublocation" class="form-control">';
-						foreach ($sublocations as $location => $label) {
-							$selected = false;
-							if ($patron->pickupSublocationId === $location) {
-								$selected = true;
-							}
-							$html .= '<option value="' . $location . '"' . ($selected ? ' selected="selected"' : '') . '>' . $label . '</option>';
-						}
-						$html .= '</select>';
-						$html .= '</div>';
-					}
-				}
-
+		$patron = UserAccount::getActiveUserObj();
+		if (isset($_REQUEST['locationCode'])) {
+			$location = new Location();
+			if ($context === 'myPreferences') {
+				$location->locationId = $_REQUEST['locationCode'];
+			} else {
+				$location->code = $_REQUEST['locationCode'];
 			}
+			if ($location->find(true)) {
+				$sublocations = [];
+				$allSublocations = $location->getPickupSublocations($patron);
+				foreach ($allSublocations as $sublocation) {
+					$sublocations[$sublocation->id] = $sublocation->name;
+				}
+
+				if (count($sublocations) > 1) {
+					$success = true;
+					if ($context === 'myPreferences') {
+						$labelText = 'Preferred Pickup Area';
+					} elseif ($context === 'changePickupLocation') {
+						$labelText = 'Select a new area to pickup your hold';
+					} else {
+						$labelText = 'Select your pickup area';
+					}
+					$html .= '<label class="control-label" for="pickupSublocation">' . translate([
+							'text' => $labelText,
+							'isPublicFacing' => true,
+						]) . '</label>';
+					$html .= '<div class="controls">';
+					$html .= '<select name="pickupSublocation" id="pickupSublocation" class="form-control">';
+					foreach ($sublocations as $location => $label) {
+						$selected = false;
+						if ($patron->pickupSublocationId === $location) {
+							$selected = true;
+						}
+						$html .= '<option value="' . $location . '"' . ($selected ? ' selected="selected"' : '') . '>' . $label . '</option>';
+					}
+					$html .= '</select>';
+					$html .= '</div>';
+				}
+			}
+
 		}
 		return [
 			'success' => $success,
@@ -11323,40 +10611,20 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	public function getUserCheckouts(): array {
-
+		$this->checkRequiredModule('Community Engagement');
+		$this->checkRequiredParameters(['userId']);
 		$userId = $_REQUEST['userId'] ?? null;
-		if (empty($userId)) {
-			return ['success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'No User Id',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
 
 		$user = new User();
 		$user->id = $userId;
-		if (!$user->find(true)){
-			return ['success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'User not found',
-					'isPublicFacing' => true,
-				]),
-			];
+		if (!$user->find(true)) {
+			return $this->failureResult(null, 'User not found');
 		}
 
 		$user->checkoutInfoLastLoaded = 0;
 		$user->update();
 
-		$user->getCheckouts(true, 'all');
+		$user->getCheckouts();
 
 		return [
 			'success' => true,
@@ -11364,38 +10632,20 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	public function getUserHolds(): array {
+		$this->checkRequiredModule('Community Engagement');
+		$this->checkRequiredParameters(['userId']);
+
 		$userId = $_REQUEST['userId'] ?? null;
-		if (empty($userId)) {
-			return ['success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'No User Id',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
 
 		$user = new User();
 		$user->id = $userId;
-		if (!$user->find(true)){
-			return ['success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'User not found',
-					'isPublicFacing' => true,
-				]),
-			];
+		if (!$user->find(true)) {
+			return $this->failureResult(null, 'User not found');
 		}
 
 		$user->holdInfoLastLoaded = 0;
 		$user->update();
-		$user->getHolds(true, 'sortTitle', 'expire', 'all');
+		$user->getHolds();
 
 		return [
 			'success' => true,
@@ -11408,19 +10658,7 @@ class MyAccount_AJAX extends JSON_Action {
 	 * @noinspection PhpUnused
 	 */
 	public function refreshUserCirculationCache(): array {
-		if (!UserAccount::isLoggedIn()) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in to refresh circulation data.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
+		$this->requireLoggedInUser('Error', 'You must be logged in to refresh circulation data.');
 
 		$user = UserAccount::getActiveUserObj();
 
@@ -11448,27 +10686,13 @@ class MyAccount_AJAX extends JSON_Action {
 	 *
 	 * @return array
 	 */
+	/** @noinspection PhpUnused */
 	public function getUpdatedCirculationButtons(): array {
-		if (!UserAccount::isLoggedIn()) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in to get circulation buttons.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
+		$this->requireLoggedInUser('Error', 'You must be logged in to get circulation buttons.');
 
 		$recordData = $_REQUEST['recordData'] ?? [];
 		if (empty($recordData)) {
-			return [
-				'success' => false,
-				'message' => 'No record data provided',
-			];
+			return $this->failureResult(null, 'No record data provided');
 		}
 
 		$user = UserAccount::getActiveUserObj();
@@ -11534,6 +10758,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getEditListGroupParentForm(): array {
+		$this->requireLoggedInUser();
 		global $interface;
 		if (isset($_REQUEST['groupId'])) {
 			$groupId = $_REQUEST['groupId'];
@@ -11569,17 +10794,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function editListGroupParent(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Moving List Group',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Sorry your list group was unabled to be moved.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser();
+		$result = $this->failureResult('Moving List Group', 'Sorry your list group was unabled to be moved.');
 
 		$groupId = $_REQUEST['groupId'];
 		$listGroupMoveId = $_REQUEST['listGroupMove'];
@@ -11591,17 +10807,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($group->find(true)) {
 				$group->parentGroupId = $listGroupMoveId;
 				if ($group->update()) {
-					$result = [
-						'success' => true,
-						'title' => translate([
-							'text' => 'Moving List Group',
-							'isPublicFacing' => true,
-						]),
-						'message' => translate([
-							'text' => 'Your list group was successfully moved.',
-							'isPublicFacing' => true,
-						]),
-					];
+					$result = $this->successResult('Moving List Group', 'Your list group was successfully moved.');
 				} else {
 					$result['message'] = translate([
 						'text' => 'The list group could not be updated.',
@@ -11626,6 +10832,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getEditListGroupNameForm(): array {
+		$this->requireLoggedInUser();
 		global $interface;
 		if (isset($_REQUEST['groupId'])) {
 			$groupId = $_REQUEST['groupId'];
@@ -11654,17 +10861,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function editListGroupName(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Rename List Group',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Sorry your list group was unabled to be renamed.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser();
+		$result = $this->failureResult('Rename List Group', 'Sorry your list group was unabled to be renamed.');
 
 		$groupId = $_REQUEST['groupId'];
 		$newName = $_REQUEST['listGroupNameNew'];
@@ -11707,6 +10905,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getCreateListGroupForm(): array {
+		$this->requireLoggedInUser();
 		global $interface;
 		require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
 		$listGroup = new UserListGroup();
@@ -11732,34 +10931,30 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function createListGroup(): array {
+		$this->requireLoggedInUser(null, "You must be logged in to create a list group");
 		$result = [];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getLoggedInUser();
-			$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
-			if (strlen(trim($title)) == 0) {
-				$result['success'] = "false";
-				$result['message'] = "You must provide a title for the list";
-			} else {
-				$parentId = $_REQUEST['nestedGroupId'] ?? -1;
-				require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
-				$listGroup = new UserListGroup();
-				$listGroup->userId = $user->id;
-				$listGroup->title = $title;
-				$listGroup->parentGroupId = $parentId;
-				if ($listGroup->insert()) {
-					// Set the last viewed group to the newly created group
-					//$user->lastListGroupViewed = $listGroup->id;
-					//$user->update();
-					$result['success'] = "true";
-					$result['message'] = "List group $listGroup->title created successfully";
-				} else {
-					$result['success'] = "false";
-					$result['message'] = "Could not create list group";
-				}
-			}
-		} else {
+		$user = UserAccount::getLoggedInUser();
+		$title = (isset($_REQUEST['title']) && !is_array($_REQUEST['title'])) ? urldecode($_REQUEST['title']) : '';
+		if (strlen(trim($title)) == 0) {
 			$result['success'] = "false";
-			$result['message'] = "You must be logged in to create a list";
+			$result['message'] = "You must provide a title for the list";
+		} else {
+			$parentId = $_REQUEST['nestedGroupId'] ?? -1;
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$listGroup = new UserListGroup();
+			$listGroup->userId = $user->id;
+			$listGroup->title = $title;
+			$listGroup->parentGroupId = $parentId;
+			if ($listGroup->insert()) {
+				// Set the last viewed group to the newly created group
+				//$user->lastListGroupViewed = $listGroup->id;
+				//$user->update();
+				$result['success'] = "true";
+				$result['message'] = "List group $listGroup->title created successfully";
+			} else {
+				$result['success'] = "false";
+				$result['message'] = "Could not create list group";
+			}
 		}
 
 		return $result;
@@ -11767,16 +10962,19 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function getDeleteListGroupForm(): array {
+		$this->requireLoggedInUser();
 		$groupId = $_REQUEST['groupId'] ?? null;
 		$modalBody = translate([
 			'text' => 'Are you sure you want to delete the list group? If any lists remain in the group, they will be unassigned. This action cannot be undone.',
 			'isPublicFacing' => true
 		]);
 
+		/** @noinspection BadExpressionStatementJS */
 		$modalButtons = '<button id="confirmDeleteListGroup" class="tool btn btn-danger" onclick="AspenDiscovery.Account.deleteListGroup(' . $groupId . ')">' . translate([
 				'text' => 'Yes',
 				'isPublicFacing' => true
 			]) . '</button>';
+		/** @noinspection BadExpressionStatementJS */
 		$modalButtons .= '<button id="cancelDeleteListGroup" class="tool btn btn-default" onclick="AspenDiscovery.closeLightbox()">' . translate([
 				'text' => 'No',
 				'isPublicFacing' => true
@@ -11794,17 +10992,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function deleteListGroup(): array {
-		$result = [
-			'success' => false,
-			'title' => translate([
-				'text' => 'Delete List Group',
-				'isPublicFacing' => true,
-			]),
-			'message' => translate([
-				'text' => 'Sorry, the list group could not be deleted.',
-				'isPublicFacing' => true,
-			]),
-		];
+		$this->requireLoggedInUser();
+		$result = $this->failureResult('Delete List Group', 'Sorry, the list group could not be deleted.');
 
 		$groupId = $_REQUEST['groupId'] ?? null;
 		if ($groupId) {
@@ -11843,17 +11032,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$subGroup->update();
 					}
 
-					$result = [
-						'success' => true,
-						'title' => translate([
-							'text' => 'Delete List Group',
-							'isPublicFacing' => true,
-						]),
-						'message' => translate([
-							'text' => 'The list group was successfully deleted.',
-							'isPublicFacing' => true,
-						]),
-					];
+					$result = $this->successResult('Delete List Group', 'The list group was successfully deleted.');
 				} else {
 					$result['message'] = translate([
 						'text' => 'The list group could not be deleted.',
@@ -11878,35 +11057,27 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 	/** @noinspection PhpUnused */
-	function getMenuDataSearches() {
+	function getMenuDataSearches() : array {
+		$this->requireLoggedInUser(null, 'You must be logged in to get menu data');
 		global $timer;
-		$result = [
-			'success' => false,
-			'message' => translate([
+		$result = $this->failureResult(null, 'Unknown Error');
+
+		$user = UserAccount::getActiveUserObj();
+		if ($user->canSaveSearches()) {
+			$searchEntry = new SearchEntry();
+			$savedSearches = $searchEntry::getUserSavedSearches($user->id);
+			$recentSearches = $searchEntry::getUserRecentSearches(session_id(), $user->id);
+			$timer->logTime("Loaded user searches for menu data");
+			$result = [
+				'success' => true,
+				'numSavedSearches' => count($savedSearches),
+				'numRecentSearches' => count($recentSearches),
+			];
+		} else {
+			$result['message'] = translate([
 				'text' => 'Unknown Error',
 				'isPublicFacing' => true,
-			]),
-		];
-		if (UserAccount::isLoggedIn()) {
-			$user = UserAccount::getActiveUserObj();
-			if ($user->canSaveSearches()) {
-				$searchEntry = new SearchEntry();
-				$savedSearches = $searchEntry::getUserSavedSearches($user->id);
-				$recentSearches = $searchEntry::getUserRecentSearches(session_id(), $user->id);
-				$timer->logTime("Loaded user searches for menu data");
-				$result = [
-					'success' => true,
-					'numSavedSearches' => count($savedSearches),
-					'numRecentSearches' => count($recentSearches),
-				];
-			} else {
-				$result['message'] = translate([
-					'text' => 'Unknown Error',
-					'isPublicFacing' => true,
-				]);
-			}
-		} else {
-			$result['message'] = 'You must be logged in to get menu data';
+			]);
 		}
 		return $result;
 	}
@@ -11950,8 +11121,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$sortOptions = [
 			'id' => 'Id (Default)',
-			'created_asc' => 'Date Saved (Oldest First)',
-			'created_desc' => 'Date Saved (Newest First)',
 			'title_asc' => 'Name (A-Z)',
 			'title_desc' => 'Name (Z-A)',
 		];
@@ -11966,6 +11135,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	private function getSavedSearches(): array {
+		$this->requireLoggedInUser();
 		global $interface;
 
 		$interface->assign('noSavedSearches', false);
@@ -11978,132 +11148,127 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 
 		$user = UserAccount::getActiveUserObj();
-		if (!UserAccount::isLoggedIn() || empty($user)) {
+
+		$sort = $_REQUEST['sort'] ?? 'id';
+		$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+		$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
+		$filter = $_REQUEST['filter'] ?? '';
+		$interface->assign('limit', $limit);
+		$interface->assign('sort', $sort);
+		$interface->assign('filter', $filter);
+
+		$searches = [];
+		$savedSearches = [];
+		$savedSearch = new SearchEntry();
+		$savedSearch->whereAdd("searchSource <> 'user_list'");
+		$savedSearch->user_id = $user->id;
+		$savedSearch->saved = 1;
+		if (!empty($filter)) {
+			$escapedFilter = $savedSearch->escape('%' . $filter . '%');
+			$savedSearch->whereAdd("title LIKE $escapedFilter");
+		}
+		$totalCount = $savedSearch->count();
+		switch ($sort) {
+			case 'created_asc':
+				$savedSearch->orderBy('created ASC');
+				break;
+			case 'created_desc':
+				$savedSearch->orderBy('created DESC');
+				break;
+			case 'source_asc':
+				$savedSearch->orderBy('searchSource ASC');
+				break;
+			case 'source_desc':
+				$savedSearch->orderBy('searchSource DESC');
+				break;
+			case 'title_asc':
+				$savedSearch->orderBy('title ASC');
+				break;
+			case 'title_desc':
+				$savedSearch->orderBy('title DESC');
+				break;
+			default:
+				$savedSearch->orderBy('id DESC');
+				break;
+		}
+		$savedSearch->limit(($page - 1) * $limit, $limit);
+		$savedSearch->find();
+		while ($savedSearch->fetch()) {
+			$savedSearches[] = clone $savedSearch;
+		}
+
+		foreach ($savedSearches as $savedSearch) {
+			/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
+			$searchObject = SearchObjectFactory::initSearchObject($savedSearch->searchSource);
+			$size = strlen($savedSearch->search_object);
+			$minSO = unserialize($savedSearch->search_object);
+			$searchObject->deminify($minSO);
+			$searchObject->activateAllFacets();
+
+			$searchSourceLabels = [
+				'local' => 'Catalog',
+				'genealogy' => 'Genealogy',
+				'series' => 'Series'
+			];
+
+			$searchSourceLabel = $searchObject->getSearchSource();
+			if (array_key_exists($searchSourceLabel, $searchSourceLabels)) {
+				$searchSourceLabel = $searchSourceLabels[$searchSourceLabel];
+			}
+
+			$newItem = [
+				'id' => $savedSearch->id,
+				'time' => date("g:ia, jS M y", $searchObject->getStartTime()),
+				'title' => $savedSearch->title,
+				'url' => $searchObject->renderSearchUrl(),
+				'searchId' => $searchObject->getSearchId(),
+				'description' => $searchObject->displayQuery(),
+				'filters' => $searchObject->getFilterList(),
+				'hits' => number_format($searchObject->getResultTotal()),
+				'source' => $searchSourceLabel,
+				'speed' => round($searchObject->getQuerySpeed(), 2) . "s",
+				// Size is purely for debugging. Not currently displayed in the template.
+				// It's the size of the serialized, minified search in the database.
+				'size' => round($size / 1024, 3) . "kb",
+				'hasNewResults' => $savedSearch->hasNewResults == 1,
+			];
+
+			if ($savedSearch->hasNewResults) {
+				$searchObject->addFilter('time_since_added:Week');
+				$newItem['newTitlesUrl'] = $searchObject->renderSearchUrl();
+			}
+
+			$searches[] = $newItem;
+		}
+
+		if (count($searches) > 0) {
+			$interface->assign('searches', $searches);
+			$interface->assign('userSearchType', 'saved');
+			$interface->assign('totalPages', ceil($totalCount / $limit));
+			$interface->assign('currentPage', $page);
+			$interface->assign('totalCount', $totalCount);
+
+			$result['success'] = true;
+			$result['searches'] = $interface->fetch('Search/historyList.tpl');
+			$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
+			$result['totalCount'] = $totalCount;
+		} else if (!empty($filter)) {
+			$interface->assign('searches', $searches);
+			$interface->assign('userSearchType', 'saved');
+			$interface->assign('totalPages', ceil($totalCount / $limit));
+			$interface->assign('currentPage', $page);
+			$interface->assign('totalCount', $totalCount);
+
+			$result['success'] = true;
+			$result['searches'] = $interface->fetch('Search/historyList.tpl');
+			$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
+			$result['totalCount'] = $totalCount;
+		} else {
+			$interface->assign('noSavedSearches', true);
 			$result['message'] = translate([
-				'text' => "Your login has timed out. Please login again.",
+				'text' => 'No saved searches found.',
 				'isPublicFacing' => true,
 			]);
-		} else {
-			$searches = [];
-
-			$sort = $_REQUEST['sort'] ?? 'id';
-			$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-			$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
-			$filter = $_REQUEST['filter'] ?? '';
-			$interface->assign('limit', $limit);
-			$interface->assign('sort', $sort);
-			$interface->assign('filter', $filter);
-
-			$savedSearches = [];
-			$savedSearch = new SearchEntry();
-			$savedSearch->user_id = $user->id;
-			$savedSearch->saved = 1;
-			if (!empty($filter)) {
-				$escapedFilter = $savedSearch->escape('%' . $filter . '%');
-				$savedSearch->whereAdd("title LIKE $escapedFilter");
-			}
-			$totalCount = $savedSearch->count();
-			switch ($sort) {
-				case 'created_asc':
-					$savedSearch->orderBy('created ASC');
-					break;
-				case 'created_desc':
-					$savedSearch->orderBy('created DESC');
-					break;
-				case 'source_asc':
-					$savedSearch->orderBy('searchSource ASC');
-					break;
-				case 'source_desc':
-					$savedSearch->orderBy('searchSource DESC');
-					break;
-				case 'title_asc':
-					$savedSearch->orderBy('title ASC');
-					break;
-				case 'title_desc':
-					$savedSearch->orderBy('title DESC');
-					break;
-				default:
-					$savedSearch->orderBy('id DESC');
-					break;
-			}
-			$savedSearch->limit(($page - 1) * $limit, $limit);
-			$savedSearch->find();
-			while ($savedSearch->fetch()) {
-				$savedSearches[] = clone $savedSearch;
-			}
-
-			foreach ($savedSearches as $savedSearch) {
-				/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
-				$searchObject = SearchObjectFactory::initSearchObject();
-				$size = strlen($savedSearch->search_object);
-				$minSO = unserialize($savedSearch->search_object);
-				$searchObject->deminify($minSO);
-				$searchObject->activateAllFacets();
-
-				$searchSourceLabels = [
-					'local' => 'Catalog',
-					'genealogy' => 'Genealogy',
-				];
-
-				$searchSourceLabel = $searchObject->getSearchSource();
-				if (array_key_exists($searchSourceLabel, $searchSourceLabels)) {
-					$searchSourceLabel = $searchSourceLabels[$searchSourceLabel];
-				}
-
-				$newItem = [
-					'id' => $savedSearch->id,
-					'time' => date("g:ia, jS M y", $searchObject->getStartTime()),
-					'title' => $savedSearch->title,
-					'url' => $searchObject->renderSearchUrl(),
-					'searchId' => $searchObject->getSearchId(),
-					'description' => $searchObject->displayQuery(),
-					'filters' => $searchObject->getFilterList(),
-					'hits' => number_format($searchObject->getResultTotal()),
-					'source' => $searchSourceLabel,
-					'speed' => round($searchObject->getQuerySpeed(), 2) . "s",
-					// Size is purely for debugging. Not currently displayed in the template.
-					// It's the size of the serialized, minified search in the database.
-					'size' => round($size / 1024, 3) . "kb",
-					'hasNewResults' => $savedSearch->hasNewResults == 1,
-				];
-
-				if ($savedSearch->hasNewResults) {
-					$searchObject->addFilter('time_since_added:Week');
-					$newItem['newTitlesUrl'] = $searchObject->renderSearchUrl();
-				}
-
-				$searches[] = $newItem;
-			}
-
-			if (count($searches) > 0) {
-				$interface->assign('searches', $searches);
-				$interface->assign('userSearchType', 'saved');
-				$interface->assign('totalPages', ceil($totalCount / $limit));
-				$interface->assign('currentPage', $page);
-				$interface->assign('totalCount', $totalCount);
-
-				$result['success'] = true;
-				$result['searches'] = $interface->fetch('Search/historyList.tpl');
-				$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
-				$result['totalCount'] = $totalCount;
-			} else if (!empty($filter)) {
-				$interface->assign('searches', $searches);
-				$interface->assign('userSearchType', 'saved');
-				$interface->assign('totalPages', ceil($totalCount / $limit));
-				$interface->assign('currentPage', $page);
-				$interface->assign('totalCount', $totalCount);
-
-				$result['success'] = true;
-				$result['searches'] = $interface->fetch('Search/historyList.tpl');
-				$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
-				$result['totalCount'] = $totalCount;
-			} else {
-				$interface->assign('noSavedSearches', true);
-				$result['message'] = translate([
-					'text' => 'No saved searches found.',
-					'isPublicFacing' => true,
-				]);
-			}
 		}
 
 		return $result;
@@ -12111,6 +11276,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	private function getRecentSearches(): array {
+		$this->requireLoggedInUser(null, "Your login has timed out. Please login again.");
 		global $interface;
 		$interface->assign('noRecentSearches', false);
 		$result = [
@@ -12122,131 +11288,117 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 
 		$user = UserAccount::getActiveUserObj();
-		if (!UserAccount::isLoggedIn() || empty($user)) {
+
+		$searches = [];
+
+		$sort = $_REQUEST['sort'] ?? 'id';
+		$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+		$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
+		$interface->assign('limit', $limit);
+		$interface->assign('sort', $sort);
+
+		$savedSearches = [];
+		$savedSearch = new SearchEntry();
+		$savedSearch->whereAdd("session_id = '" . session_id() . "' OR user_id = " . $user->id);
+		$savedSearch->whereAdd("searchSource <> 'user_list'");
+		$savedSearch->saved = 0;
+		$totalCount = $savedSearch->count();
+		switch ($sort) {
+			case 'created_asc':
+				$savedSearch->orderBy('created ASC');
+				break;
+			case 'created_desc':
+				$savedSearch->orderBy('created DESC');
+				break;
+			case 'query_asc':
+				$savedSearch->orderBy('description ASC');
+				break;
+			case 'query_desc':
+				$savedSearch->orderBy('description DESC');
+				break;
+			default:
+				$savedSearch->orderBy('id DESC');
+				break;
+		}
+		$savedSearch->limit(($page - 1) * $limit, $limit);
+		$savedSearch->orderBy('id');
+		$savedSearch->find();
+		while ($savedSearch->fetch()) {
+			$savedSearches[] = clone $savedSearch;
+		}
+
+		foreach ($savedSearches as $savedSearch) {
+			/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
+			$searchObject = SearchObjectFactory::initSearchObject();
+			$searchObject->init();
+			$size = strlen($savedSearch->search_object);
+			$minSO = unserialize($savedSearch->search_object);
+			$searchObject = SearchObjectFactory::deminify($minSO);
+			$searchObject->activateAllFacets();
+
+			$searchSourceLabels = [
+				'local' => 'Catalog',
+				'genealogy' => 'Genealogy',
+			];
+
+			$searchSourceLabel = $searchObject->getSearchSource();
+			if (array_key_exists($searchSourceLabel, $searchSourceLabels)) {
+				$searchSourceLabel = $searchSourceLabels[$searchSourceLabel];
+			}
+
+			$newItem = [
+				'id' => $savedSearch->id,
+				'time' => date("g:ia, jS M y", $searchObject->getStartTime()),
+				'url' => $searchObject->renderSearchUrl(),
+				'searchId' => $searchObject->getSearchId(),
+				'description' => $searchObject->displayQuery(),
+				'filters' => $searchObject->getFilterList(),
+				'hits' => number_format($searchObject->getResultTotal()),
+				'source' => $searchSourceLabel,
+				'speed' => round($searchObject->getQuerySpeed(), 2) . "s",
+				// Size is purely for debugging. Not currently displayed in the template.
+				// It's the size of the serialized, minified search in the database.
+				'size' => round($size / 1024, 3) . "kb",
+				'hasNewResults' => $savedSearch->hasNewResults == 1,
+			];
+
+			$searches[] = $newItem;
+		}
+
+		if (count($searches) > 0) {
+			$interface->assign('searches', $searches);
+			$interface->assign('userSearchType', 'recent');
+			$interface->assign('totalPages', ceil($totalCount / $limit));
+			$interface->assign('currentPage', $page);
+			$interface->assign('totalCount', $totalCount);
+
+			$result['success'] = true;
+			$result['searches'] = $interface->fetch('Search/historyList.tpl');
+			$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
+			$result['totalCount'] = $totalCount;
+		} else {
+			$interface->assign('noRecentSearches', true);
 			$result['message'] = translate([
-				'text' => "Your login has timed out. Please login again.",
+				'text' => 'No recent searches found.',
 				'isPublicFacing' => true,
 			]);
-		} else {
-			$searches = [];
-
-			$sort = $_REQUEST['sort'] ?? 'id';
-			$page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-			$limit = isset($_REQUEST['limit']) ? (int)$_REQUEST['limit'] : 20;
-			$interface->assign('limit', $limit);
-			$interface->assign('sort', $sort);
-
-			$savedSearches = [];
-			$savedSearch = new SearchEntry();
-			$savedSearch->whereAdd("session_id = '" . session_id() . "' OR user_id = " . $user->id);
-			$savedSearch->saved = 0;
-			$totalCount = $savedSearch->count();
-			switch ($sort) {
-				case 'created_asc':
-					$savedSearch->orderBy('created ASC');
-					break;
-				case 'created_desc':
-					$savedSearch->orderBy('created DESC');
-					break;
-				case 'query_asc':
-					$savedSearch->orderBy('description ASC');
-					break;
-				case 'query_desc':
-					$savedSearch->orderBy('description DESC');
-					break;
-				default:
-					$savedSearch->orderBy('id DESC');
-					break;
-			}
-			$savedSearch->limit(($page - 1) * $limit, $limit);
-			$savedSearch->orderBy('id');
-			$savedSearch->find();
-			while ($savedSearch->fetch()) {
-				$savedSearches[] = clone $savedSearch;
-			}
-
-			foreach ($savedSearches as $savedSearch) {
-				/** @var SearchObject_AbstractGroupedWorkSearcher|SearchObject_BaseSearcher $searchObject */
-				$searchObject = SearchObjectFactory::initSearchObject();
-				$searchObject->init();
-				$size = strlen($savedSearch->search_object);
-				$minSO = unserialize($savedSearch->search_object);
-				$searchObject = SearchObjectFactory::deminify($minSO);
-				$searchObject->activateAllFacets();
-
-				$searchSourceLabels = [
-					'local' => 'Catalog',
-					'genealogy' => 'Genealogy',
-				];
-
-				$searchSourceLabel = $searchObject->getSearchSource();
-				if (array_key_exists($searchSourceLabel, $searchSourceLabels)) {
-					$searchSourceLabel = $searchSourceLabels[$searchSourceLabel];
-				}
-
-				$newItem = [
-					'id' => $savedSearch->id,
-					'time' => date("g:ia, jS M y", $searchObject->getStartTime()),
-					'url' => $searchObject->renderSearchUrl(),
-					'searchId' => $searchObject->getSearchId(),
-					'description' => $searchObject->displayQuery(),
-					'filters' => $searchObject->getFilterList(),
-					'hits' => number_format($searchObject->getResultTotal()),
-					'source' => $searchSourceLabel,
-					'speed' => round($searchObject->getQuerySpeed(), 2) . "s",
-					// Size is purely for debugging. Not currently displayed in the template.
-					// It's the size of the serialized, minified search in the database.
-					'size' => round($size / 1024, 3) . "kb",
-					'hasNewResults' => $savedSearch->hasNewResults == 1,
-				];
-
-				$searches[] = $newItem;
-			}
-
-			if (count($searches) > 0) {
-				$interface->assign('searches', $searches);
-				$interface->assign('userSearchType', 'recent');
-				$interface->assign('totalPages', ceil($totalCount / $limit));
-				$interface->assign('currentPage', $page);
-				$interface->assign('totalCount', $totalCount);
-
-				$result['success'] = true;
-				$result['searches'] = $interface->fetch('Search/historyList.tpl');
-				$result['pagination'] = $interface->fetch('Search/historyPagination.tpl');
-				$result['totalCount'] = $totalCount;
-			} else {
-				$interface->assign('noRecentSearches', true);
-				$result['message'] = translate([
-					'text' => 'No recent searches found.',
-					'isPublicFacing' => true,
-				]);
-			}
 		}
+
 		return $result;
 	}
 
-	public function removeCampaignModal() {
+	/** @noinspection PhpUnused */
+	public function removeCampaignModal() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredModule('Community Engagement');
 		$activeUser = UserAccount::getActiveUserObj();
-		if (!$activeUser) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
 
 		$userId = $activeUser->id;
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 
 		if (!$campaignId) {
 			return [
-				'sucess' =>false,
+				'sucess' => false,
 				'title' => translate([
 					'text' => 'Error',
 					'isPublicFacing' => true,
@@ -12264,7 +11416,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$campaign->id = $campaignId;
 		if (!$campaign->find(true)) {
 			return [
-				'sucess' =>false,
+				'sucess' => false,
 				'title' => translate([
 					'text' => 'Error',
 					'isPublicFacing' => true,
@@ -12280,8 +11432,11 @@ class MyAccount_AJAX extends JSON_Action {
 		global $interface;
 		$interface->assign('campaignName', $campaignName);
 
+		/** @noinspection BadExpressionStatementJS */
+		/** @noinspection JSVoidFunctionReturnValueUsed */
+		/** @noinspection CommaExpressionJS */
 		return [
-			'success' =>true,
+			'success' => true,
 			'title' => translate([
 				'text' => 'Remove Campaign',
 				'isPublicFacing' => true,
@@ -12294,55 +11449,25 @@ class MyAccount_AJAX extends JSON_Action {
 		];
 	}
 
-	public function removeCampaignFromUI() {
+	/** @noinspection PhpUnused */
+	public function removeCampaignFromUI() : array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredModule('Community Engagement');
 
 		$activeUser = UserAccount::getActiveUserObj();
-		if (!$activeUser) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'You must be logged in.',
-					'isPublicFacing' => true,
-				]),
-			];
-		}
 
 		$userId = $_REQUEST['userId'] ?? null;
 		$campaignId = $_REQUEST['campaignId'] ?? null;
 
 		if (!$campaignId || !$userId) {
-			return [
-				'success' => false,
-				'title' => translate([
-					'text' => 'Error',
-					'isPublicFacing' => true,
-				]),
-				'message' => translate([
-					'text' => 'Missing Parameter',
-					'isPublicFacing' => true,
-				]),
-			];
+			return $this->failureResult('Error', 'Missing Parameter');
 		}
 
 		$isAdmin = UserAccount::userHasPermission('View Community Engagement Admin View');
-		$isSelf  = ($activeUser->id == $userId);
+		$isSelf = ($activeUser->id == $userId);
 
-		 if (!$isAdmin && !$isSelf) {
-			 return [
-				 'success' => false,
-				 'title' => translate([
-					 'text' => 'Error',
-					 'isPublicFacing' => true,
-				 ]),
-				 'message' => translate([
-					 'text' => 'You do not have permission to perform this action.',
-					 'isPublicFacing' => true,
-				 ]),
-			 ];
+		if (!$isAdmin && !$isSelf) {
+			return $this->failureResult('Error', 'You do not have permission to perform this action.');
 		 }
 
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserRemovedCampaign.php';
@@ -12355,16 +11480,671 @@ class MyAccount_AJAX extends JSON_Action {
 			$removedCampaign->insert();
 		}
 
+		return $this->successResult('Success', 'Campaign removed from view');
+	}
+
+	/** @noinspection PhpUnused */
+	function getListTransferForm(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['listId']);
+
+		global $interface;
+		$interface->assign('listId', strip_tags($_REQUEST['listId']));
+
+		if (isset($_REQUEST['validationFailed'])) {
+			$interface->assign('hasListValidationError', $_REQUEST['validationFailed']);
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'List Transfer',
+				'isAdminFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/listTransferPopup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#transferListForm\").submit();'>" . translate([
+					'text' => 'Save',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listTransferValidation(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['listId', 'newListOwner']);
+
+		global $interface;
+
+		$listId = $_REQUEST['listId'];
+		$newListOwner = $_REQUEST['newListOwner'];
+
+		$patron = new User();
+		$escapedNewOwner = $patron->escape($newListOwner);
+		$patron->whereAdd("ils_barcode = $escapedNewOwner OR ils_username = $escapedNewOwner OR username = $escapedNewOwner");
+		$patron->find();
+		$numResults = $patron->count();
+		if ($numResults == 1 && $patron->find(true)) {
+			if ($patron->id == UserAccount::getActiveUserId()) {
+				return $this->failureResult(null, 'Cannot transfer a list to yourself.');
+			}else if ($patron->isStaff()) {
+				$interface->assign('listId', $listId);
+				$interface->assign('newListOwner', $patron);
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'List Transfer',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => $interface->fetch('MyAccount/listTransferConfirm.tpl'),
+					'modalButtons' => "<button id='listTransferProcesBtn' class='tool btn btn-primary' onclick='AspenDiscovery.Lists.listTransferProcess(\"$listId\", \"$patron->id\")'>" . translate([
+							'text' => 'Confirm',
+							'isAdminFacing' => 'true',
+						]) . "</button>",
+				];
+			}else{
+				return $this->failureResult(null, 'Cannot transfer a list to the specified user.');
+			}
+		}else{
+			return $this->failureResult(null, 'User not found.');
+		}
+	}
+
+	/** @noinspection PhpUnused */
+	function listTransferProcess(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['listId', 'userId']);
+
+		global $configArray;
+		$listId = $_REQUEST['listId'];
+		$newListOwner = $_REQUEST['userId'];
+
+		$results = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Unable to Transfer List',
+				'isAdminFacing' => true
+			]),
+			'message' => "",
+		];
+
+		$user = new User();
+		$user->id = $newListOwner;
+		if ($user->find(true)) {
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$list = new UserList();
+			$list->id = $listId;
+			if ($list->find(true)) {
+				$list->user_id = $user->id;
+				$list->listGroupId = -1;
+				if ($list->update()) {
+					require_once ROOT_DIR . '/sys/Email/Mailer.php';
+					$mailer = new Mailer();
+					$subject = translate([
+						'text' => 'An Aspen list has been transferred to you',
+						'isAdminFacing' => true,
+					]);
+					$body = translate([
+							'text' => 'The following list(s) have been transferred to your account by an administrator:',
+							'isPublicFacing' => true,
+						]) . "\r\n" . $configArray['Site']['url'] . '/MyAccount/MyList/' . $list->id;
+					$htmlBody = '<p>' . translate([
+							'text' => 'The following list(s) have been transferred to your account by an administrator:',
+							'isAdminFacing' => true,
+						]) . '</p>';
+					$htmlBody .= '<ul><li>' . translate([
+							'text' => '%1%' . $list->title . '%2%',
+							1 => '<a href="' . $configArray['Site']['url'] . '/MyAccount/MyList/' . $list->id . '">',
+							2 => '</a>',
+							'isPublicFacing' => true,
+						]) . '</li></ul>';
+					if ($mailer->send($user->email, $subject, $body, null, $htmlBody)) {
+						$results['success'] = true;
+					} else {
+						$results['title'] = translate([
+							'text' => 'Success',
+							'isAdminFacing' => true
+						]);
+						$results['message'] = "The list was transferred sucessfully but we were unable to send an email to the new list owner.";
+					}
+				} else {
+					$results['message'] = "There was an error updating the list owner: " . $list->getLastError();
+				}
+			} else {
+				$results['message'] = "Could not locate the list by id " . $listId;
+			}
+		} else {
+			$results['message'] = "Could not locate a user by id " . $newListOwner;
+		}
+
+		return $results;
+	}
+
+	/** @noinspection PhpUnused */
+	function getListGroupTransferForm(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['listGroupId']);
+
+		global $interface;
+		$interface->assign('listGroupId', strip_tags($_REQUEST['listGroupId']));
+
+		if (isset($_REQUEST['validationFailed'])) {
+			$interface->assign('hasListValidationError', $_REQUEST['validationFailed']);
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'List Group Transfer',
+				'isAdminFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/listGroupTransferPopup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#transferListGroupForm\").submit();'>" . translate([
+					'text' => 'Save',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listGroupTransferValidation(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['listGroupId', 'newListGroupOwner']);
+
+		global $interface;
+
+		$listGroupId = $_REQUEST['listGroupId'];
+		$newListOwner = $_REQUEST['newListGroupOwner'];
+
+		$patron = new User();
+		$escapedNewOwner = $patron->escape($newListOwner);
+		$patron->whereAdd("ils_barcode = $escapedNewOwner OR ils_username = $escapedNewOwner OR username = $escapedNewOwner");
+		$patron->find();
+		$numResults = $patron->count();
+		if ($numResults == 1 && $patron->find(true)) {
+			if ($patron->isStaff()) {
+				$interface->assign('listGroupId', $listGroupId);
+				$interface->assign('newListGroupOwner', $patron);
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'List Group Transfer',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => $interface->fetch('MyAccount/listGroupTransferConfirm.tpl'),
+					'modalButtons' => "<button id='listTransferProcesBtn' class='tool btn btn-primary' onclick='AspenDiscovery.Lists.listGroupTransferProcess(\"$listGroupId\", \"$patron->id\")'>" . translate([
+							'text' => 'Confirm',
+							'isAdminFacing' => 'true',
+						]) . "</button>",
+				];
+			}
+		}
+		return [
+			'success' => false
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listGroupTransferProcess(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['listGroupId', 'userId']);
+
+		global $configArray;
+		$listGroupId = $_REQUEST['listGroupId'];
+		$newListOwner = $_REQUEST['userId'];
+
+		$results = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Unable to Transfer List Group',
+				'isAdminFacing' => true
+			]),
+			'message' => "",
+		];
+
+		$user = new User();
+		$user->id = $newListOwner;
+		if ($user->find(true)) {
+			require_once ROOT_DIR . '/sys/UserLists/UserListGroup.php';
+			$listGroup = new UserListGroup();
+			$listGroup->id = $listGroupId;
+			if ($listGroup->find(true)) {
+				require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+				$lists = new UserList();
+				$lists->listGroupId = $listGroup->id;
+				$lists->find();
+				while ($lists->fetch()) {
+					$lists->user_id = $user->id;
+					$lists->update();
+				}
+				// since we aren't transferring the parent, we should orphan it
+				if ($listGroup->parentGroupId != -1) {
+					$listGroup->parentGroupId = -1;
+				}
+				$listGroup->userId = $user->id;
+				if ($listGroup->update()) {
+					require_once ROOT_DIR . '/sys/Email/Mailer.php';
+					$mailer = new Mailer();
+					$subject = translate([
+						'text' => 'An Aspen list group has been transferred to you',
+						'isAdminFacing' => true,
+					]);
+					$body = translate([
+							'text' => 'The following list group has been transferred to your account by an administrator:',
+							'isPublicFacing' => true,
+						]) . "\r\n" . $configArray['Site']['url'] . '/MyAccount/Lists?groupId=' . $listGroup->id;
+					$htmlBody = '<p>' . translate([
+							'text' => 'The following list group has been transferred to your account by an administrator:',
+							'isAdminFacing' => true,
+						]) . '</p>';
+					$htmlBody .= '<ul><li><a href="' . $configArray['Site']['url'] . '/MyAccount/Lists?groupId' . $listGroup->id . '">' . $listGroup->title . '</a></li></ul>';
+					if ($mailer->send($user->email, $subject, $body, null, $htmlBody)) {
+						$results['success'] = true;
+					} else {
+						$results['title'] = translate([
+							'text' => 'Success',
+							'isAdminFacing' => true
+						]);
+						$results['message'] = "The list group was transferred successfully but we were unable to send an email to the new list group owner.";
+					}
+				} else {
+					$results['message'] = "There was an error updating the list group owner: " . $listGroup->getLastError();
+				}
+			} else {
+				if ($listGroupId == -1) {
+					$results['message'] = "Cannot transfer the Unassigned List group.";
+				} else {
+					$results['message'] = "Could not locate the list group by id " . $listGroupId;
+				}
+			}
+		} else {
+			$results['message'] = "Could not locate a user by id " . $newListOwner;
+		}
+
+		return $results;
+	}
+
+	/** @noinspection PhpUnused */
+	function getListsTransferForm(): array {
+		$this->requireLoggedInUser();
+		global $interface;
+		$interface->assign('prevListOwner', strip_tags($_REQUEST['prevListOwner']));
+
+		if (isset($_REQUEST['validationFailed'])) {
+			$interface->assign('hasListValidationError', $_REQUEST['validationFailed']);
+		}
+
+		return [
+			'title' => translate([
+				'text' => 'Transfer All Lists',
+				'isAdminFacing' => true,
+			]),
+			'modalBody' => $interface->fetch('MyAccount/listsTransferPopup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='$(\"#transferListsForm\").submit();'>" . translate([
+					'text' => 'Save',
+					'isAdminFacing' => 'true',
+				]) . "</button>",
+
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listsTransferValidation(): array {
+		global $interface;
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['newListOwner']);
+
+		$newListOwner = $_REQUEST['newListOwner'];
+
+		$patron = new User();
+		$newListOwnerEscaped = $patron->escape($newListOwner);
+		$patron->whereAdd("ils_barcode = $newListOwnerEscaped OR ils_username = $newListOwnerEscaped OR username = $newListOwnerEscaped");
+		$patron->find();
+		$numResults = $patron->count();
+		if ($numResults == 1 && $patron->find(true)) {
+			if ($patron->isStaff()) {
+				$interface->assign('newListOwner', $patron);
+				return [
+					'success' => true,
+					'title' => translate([
+						'text' => 'Transfer All Lists',
+						'isAdminFacing' => true,
+					]),
+					'modalBody' => $interface->fetch('MyAccount/listsTransferConfirm.tpl'),
+					'modalButtons' => "<button id='listsTransferProcesBtn' class='tool btn btn-primary' onclick='AspenDiscovery.Lists.listsTransferProcess(\"$patron->id\")'>" . translate([
+							'text' => 'Confirm',
+							'isAdminFacing' => 'true',
+						]) . "</button>",
+				];
+			}
+		}
+		return [
+			'success' => false
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	function listsTransferProcess(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredParameters(['userId']);
+		global $configArray;
+		$newListOwner = $_REQUEST['userId'];
+
+		$results = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Unable to Transfer Lists',
+				'isAdminFacing' => true
+			]),
+			'message' => "",
+		];
+
+		$user = new User();
+		$user->id = $newListOwner;
+		if ($user->find(true)) {
+			$lists = [];
+			require_once ROOT_DIR . '/sys/UserLists/UserList.php';
+			$list = new UserList();
+			$list->user_id = UserAccount::getActiveUserId();
+			$list->find();
+			while ($list->fetch()) {
+				$lists[$list->id] = $list->title;
+				$list->user_id = $user->id;
+				$list->listGroupId = -1;
+				$list->update();
+			}
+			require_once ROOT_DIR . '/sys/Email/Mailer.php';
+			$mailer = new Mailer();
+			$subject = translate([
+				'text' => 'An Aspen list has been transferred to you',
+				'isAdminFacing' => true,
+			]);
+
+			$topLists = array_slice($lists, 0, 20, true); // true preserves keys
+			$body = translate([
+				'text' => 'The following list(s) have been transferred to your account by an administrator:',
+				'isPublicFacing' => true,
+			]);
+			$htmlBody = '<p>' . translate([
+					'text' => 'The following list(s) have been transferred to your account by an administrator:',
+					'isAdminFacing' => true,
+				]) . '</p><ul>';
+			foreach ($topLists as $listId => $listTitle) {
+				$body .= "\r\n" . $configArray['Site']['url'] . '/MyAccount/MyList/' . $listId;
+				$htmlBody .= '<li><a href="' . $configArray['Site']['url'] . '/MyAccount/MyList/' . $listId . '">' . $listTitle . '</a></li>';
+			}
+
+			if (count($lists) > 20) {
+				$body .= "\r\n" . translate([
+						'text' => 'To see additional transferred lists, please log in to your account.',
+						'isAdminFacing' => true
+					]);
+				$htmlBody .= '</br>' . translate([
+						'text' => 'To see additional transferred lists, please log in to your account.',
+						'isAdminFacing' => true
+					]);
+			}
+
+			if ($mailer->send($user->email, $subject, $body, null, $htmlBody)) {
+				$results['success'] = true;
+			} else {
+				$results['title'] = translate([
+					'text' => 'Success',
+					'isAdminFacing' => true
+				]);
+				$results['message'] = "The lists were transferred successfully but we were unable to send an email to the new list owner.";
+			}
+		} else {
+			$results['message'] = "Could not locate a user by id " . $newListOwner;
+		}
+
+		return $results;
+	}
+
+	public function groupPatronHolds() {
+		global $interface;
+		global $logger;
+
+		$this->requireLoggedInUser(null, 'You must be logged in to group holds.  Please close this dialog and login again.');
+
+		$holdIds = $_REQUEST['holdIds'] ?? [];
+		$forceGrouped = $_REQUEST['forceGrouped'] ?? false;
+		$userIds = $_REQUEST['userIds'] ?? null;
+
+
+		if (!is_array($userIds)) {
+			$userIds = [$userIds];
+		}
+
+		if (count(array_unique($userIds)) > 1) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'You cannot group holds from different users', 'isPublicFacing' => true])
+			];
+		}
+
+		// Convert string to array if needed
+		if (is_string($holdIds)) {
+			$holdIds = array_filter(array_map('trim', explode(',', $holdIds)));
+		}
+
+		if (!is_array($holdIds) || count($holdIds) <= 1) {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'Please select at least two holds to group', 'isPublicFacing' => true])
+			];
+		}
+
+		try {
+			$userId = $userIds[0];
+			$currentUser = UserAccount::getLoggedInUser();
+			$targetUser = new User();
+			$targetUser->id = $userId;
+
+			if (!$targetUser->find(true)) {
+				return [
+					'success' => false,
+					'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+					'message' => translate(['text' => 'Invalid user specified', 'isPublicFacing' => true])
+				];
+			}
+
+			$canManage = false;
+			if ($currentUser == $userId) {
+				$canManage = true;
+			} else {
+				$linkedUsers = $currentUser->getLinkedUsers();
+				foreach ($linkedUsers as $linkedUser) {
+					if ($linkedUser->id == $userId) {
+						$canManage = true;
+						break;
+					}
+				}
+			}
+
+			if (!$canManage) {
+				return [
+					'success' => false,
+					'title' => translate(['text' => 'Error' , 'isPublicFacing' => true]),
+					'message' => translate(['text' => 'You do not have permission to manage this user\'s holds.', 'isPublicFacing' => true])
+				];
+			}
+
+			$patronId = $targetUser->unique_ils_id;
+			$catalogDriver = $targetUser->getCatalogDriver();
+
+			if ($catalogDriver->driver instanceof Koha) {
+				// Pass forceGrouped to groupHolds
+				$groupedHolds = $catalogDriver->groupHolds($patronId, $holdIds, $forceGrouped);
+
+				// Check if holds are already in a group
+				if (isset($groupedHolds['error_code']) && $groupedHolds['error_code'] === 'HoldAlreadyBelongsToHoldGroup') {
+					$interface->assign('conflictIds', $groupedHolds['hold_ids'] ?? []);
+					return [
+						'success' => false,
+						'specialError' => 'holdAlreadyGrouped',
+						'title' => translate(['text' => 'Holds Already Grouped', 'isPublicFacing' => true]),
+						'modalBody' => $interface->fetch('HoldGroups/forceGroupedHoldsModal.tpl'),
+						'modalButtons' => "<button class='tool btn btn-danger' id='forcegroupHoldsGroupBtn' onclick='AspenDiscovery.Account.forceGroupHolds(" . json_encode($holdIds) . ", " . json_encode($userIds) . "); return false;'>"  
+								. translate(['text' => 'Continue to Group Holds', 'isPublicFacing' => true]) . "</button>",
+					];
+				}
+
+				if ($groupedHolds['success']) {
+					return [
+						'success' => true,
+						'title' => translate(['text' => 'Success', 'isPublicFacing' => true]),
+						'message' => translate(['text' => 'Holds grouped successfully', 'isPublicFacing' => true])
+					];
+				} else {
+					return [
+						'success' => false,
+						'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+						'message' => translate(['text' => 'Failed to group holds', 'isPublicFacing' => true])
+					];
+				}
+			} else {
+				return [
+					'success' => false,
+					'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+					'message' => translate(['text' => 'Your catalog driver does not support this feature', 'isPublicFacing' => true])
+				];
+			}
+		} catch (Exception $e) {
+			global $logger;
+			$logger->log('Error grouping patron holds: ' . $e->getMessage(), Logger::LOG_ERROR);
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'An error occurred while grouping holds', 'isPublicFacing' => true])
+			];
+		}
+	}
+
+	public function requestDeleteHoldGroupConfirmation() {
+		global $interface;
+		$this->requireLoggedInUser(null, 'You must be logged in to alter hold groups. Please close this dialog and login again.');
+
+		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
+		$visualHoldId = $_REQUEST['visualHoldId'] ?? '';
+		$userId = $_REQUEST['userId'] ?? '';
+
+		if (empty($holdGroupId)) {
+			return [
+				'success' => false,
+				'title' => 'Error',
+				'message' => 'No hold group specified.'
+			];
+		}
+
+		$interface->assign('holdGroupId', $holdGroupId);
+		$interface->assign('visualHoldId', $visualHoldId);
+		
+
 		return [
 			'success' => true,
 			'title' => translate([
-				'text' => 'Success',
-				'isPublicFacing' => true,
+				'text' => 'Confirm Ungroup',
+				'isPublicFacing' => true
 			]),
-			'message' => translate([
-				'text' => 'Campaign removed from view',
+			'modalBody' => $interface->fetch('HoldGroups/confirmDeleteHoldGroup.tpl'),
+			'modalButtons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.confirmDeleteHoldGroup(" . json_encode($holdGroupId) . ", " . json_encode($visualHoldId) . ", " . json_encode($userId) . "); return false;'>" .  translate([
+				'text' => "Ungroup Holds",
 				'isPublicFacing' => true,
-			]),
+			]) . "</button>",
 		];
+	}
+
+	public function deleteHoldGroup() {
+		require_once ROOT_DIR . '/sys/User/Hold.php';
+		$this->requireLoggedInUser(null, 'You must be logged in to alter hold groups. Please close this dialog and login again.');
+
+		$holdGroupId = $_REQUEST['holdGroupId'] ?? null;
+		$userId = $_REQUEST['userId'] ?? null;
+		$user = new User();
+		$user->id = $userId;
+
+		if ($user->find(true)) {
+			$patronId = $user->unique_ils_id;
+		} else {
+			return [
+				'success' => false,
+				'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+				'message' => translate(['text' => 'User not found', 'isPublicFacing' => true]),
+			];
+		}
+
+		if (empty($holdGroupId)) {
+			return [
+				'success' => false,
+				'title' => translate([
+					'text' => 'Error',
+					'isPublicFacing' => true,
+				]),
+				'message' => translate([
+					'text' => 'No hold group specified',
+					'isPublicFacing' => true,
+				])
+			];
+		}
+
+		$catalogDriver = $user->getCatalogDriver();
+		if ($catalogDriver->driver instanceof Koha) {
+			try {
+				$result = $catalogDriver->deletepatronHoldGroup($patronId, $holdGroupId);
+				if ($result === true) {
+					$holdRecord = new Hold();
+					$holdRecord->userId = $user;
+					$holdRecord->holdGroupId = $holdGroupId;
+					if ($holdRecord->find()) {
+						do {
+							$holdRecord->holdGroupId = '';
+							$holdRecord->visualHoldGroupId = '';
+							$holdRecord->update();
+						} while ($holdRecord->fetch());
+					}
+
+					return [
+						'success' => true,
+						'title' => translate([
+						'text' => 'Success',
+						'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'Hold Group Deleted',
+							'isPublicFacing' => true,
+						])
+					];
+				} else {
+					return [
+						'success' => false,
+						'title' => translate([
+							'text' => 'Error',
+							'isPublicFacing' => true,
+						]),
+						'message' => translate([
+							'text' => 'Failed to delete hold group',
+							'isPublicFacing' => true,
+						])
+					];
+				}
+			} catch (Exception $e) {
+				global $logger;
+				$logger->log('Error deleting hold group: ' . $e->getErrorMessage(), Logger::LOG_ERROR);
+				return [
+					'success' => false,
+					'title' => translate([
+						'text' => 'Error',
+						'isPublicFacing' => true,
+					]),
+					'message' => translate([
+						'text' => 'An error occurred while deleting the hold group',
+						'isPublicFacing' => true,
+					])
+				];
+			}
+		}
 	}
 }

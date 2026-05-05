@@ -149,17 +149,26 @@ class SeriesIndexer {
 			}
 
 			// Delete any series that are empty and were created more than 60 minutes ago.
-			long now = new Date().getTime() / 1000;
-			long createdTime = now - 60 * 60;
-			PreparedStatement getEmptySeriesStmt = dbConn.prepareStatement("SELECT id FROM series WHERE id NOT IN (SELECT seriesId FROM series_member) AND created < ?;");
-			getEmptySeriesStmt.setLong(1, createdTime);
-			ResultSet emptySeriesRS = getEmptySeriesStmt.executeQuery();
-			int seriesId;
-			while (emptySeriesRS.next()){
-				seriesId = emptySeriesRS.getInt("id");
-				dbConn.prepareStatement("DELETE from series WHERE id = " + seriesId).executeUpdate();
-				// Also delete that series id from Solr index.
-				updateServer.deleteByQuery("id:" + seriesId);
+			if (!fullReindex) {
+				//Only need to do cleanup if a full reindex is done
+				long now = new Date().getTime() / 1000;
+				long createdTime = now - 60 * 60;
+				PreparedStatement getEmptySeriesStmt = dbConn.prepareStatement("SELECT id FROM series WHERE id NOT IN (SELECT seriesId FROM series_member where series_member.deleted = 0) AND created < ?;");
+				getEmptySeriesStmt.setLong(1, createdTime);
+				ResultSet emptySeriesRS = getEmptySeriesStmt.executeQuery();
+				int seriesId;
+				logEntry.addNote("Removing empty series created more than 60 minutes ago");
+				while (emptySeriesRS.next()) {
+					seriesId = emptySeriesRS.getInt("id");
+					dbConn.prepareStatement("DELETE from series_member WHERE seriesId = " + seriesId).executeUpdate();
+					dbConn.prepareStatement("DELETE from series WHERE id = " + seriesId).executeUpdate();
+					// Also, delete that series id from the Solr index.
+					updateServer.deleteByQuery("recordtype:series AND id:" + seriesId);
+					logEntry.incDeleted();
+				}
+				logEntry.addNote("Finished removing empty series");
+				logEntry.saveResults();
+				updateServer.commit(false, false, true);
 			}
 
 		} catch (IOException e) {

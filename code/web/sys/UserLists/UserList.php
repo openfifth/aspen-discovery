@@ -11,6 +11,7 @@ class UserList extends DataObject {
 	public $created;
 	public $public;
 	public $searchable;
+	public $customAuthorName;
 	public $displayListAuthor;
 	public $deleted;
 	public $dateUpdated;
@@ -268,9 +269,8 @@ class UserList extends DataObject {
 		$listEntry = new UserListEntry();
 		$listEntry->listId = $this->id;
 		if ($forLiDA) {
-			if ($appVersion < 24.02) {
-				$listEntry->whereAdd("source <> 'Events'");
-			}
+			$validSources = AbstractAPI::getValidSourcesForLiDA('list');
+			$listEntry->whereAdd("source IN ('" . implode("','", $validSources) . "')");
 		}
 
 		if (!empty($selectedResourceTypes)) {
@@ -512,15 +512,15 @@ class UserList extends DataObject {
 		// Display of query is not right when reusing the global search object
 		/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
 		$searchObject = SearchObjectFactory::initSearchObject();
-		$searchObject->init('local', '');
+		$searchObject->init('user_list', '');
 		$searchObject->setSearchTerms([
 			'lookfor' => $this->id,
 			'index' => 'list_link',
 		]);
 		$searchObject->disableBoosting();
 		$searchObject->setPrimarySearch(false);
-		//Don't log this to search history
-		$searchObject->disableLogging();
+		//We need to log this to search history to be able to apply facets
+		//$searchObject->disableLogging();
 		$searchObject->setFieldsToReturn('id');
 		$searchObject->setPage(($start / $numItems) + 1);
 		$searchObject->setLimit($numItems);
@@ -2011,7 +2011,7 @@ class UserList extends DataObject {
 			'author' => 'author asc,title asc',
 			'dateAdded' => "list_entry_date_added_$this->id asc",
 			'recentlyAdded' => "list_entry_date_added_$this->id desc",
-			'call_number' => 'callnumber_sort',
+			'call_number' => "callnumber_sort_$solrScope asc,title asc",
 			'copies_available', 'availability_desc' => "available_copies_$solrScope desc,title asc",
 			'copies_available_asc', 'availability' => "available_copies_$solrScope asc,title asc",
 			'custom' => "list_entry_weight_$this->id asc",

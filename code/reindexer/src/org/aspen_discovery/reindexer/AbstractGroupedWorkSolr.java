@@ -8,6 +8,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.solr.common.SolrInputDocument;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class AbstractGroupedWorkSolr implements DebugLogger {
@@ -62,6 +63,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected HashSet<String> issns = new HashSet<>();
 	protected HashSet<String> keywords = new HashSet<>();
 	protected HashSet<String> languages = new HashSet<>();
+	protected String primaryLanguage;
 	protected HashSet<String> translations = new HashSet<>();
 	protected Long languageBoost = 1L;
 	protected Long languageBoostSpanish = 1L;
@@ -72,10 +74,11 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 	protected String fountasPinnell = "";
 	protected HashMap<String, Integer> literaryFormFull = new HashMap<>();
 	protected HashMap<String, Integer> literaryForm = new HashMap<>();
-	protected HashSet<String> mpaaRatings = new HashSet<>();
+	protected HashSet<String> contentRatings = new HashSet<>();
 	protected Long numHoldings = 0L;
 	protected HashSet<String> oclcs = new HashSet<>();
 	protected HashSet<String> physicals = new HashSet<>();
+	protected HashSet<Integer> durations = new HashSet<>();
 	protected double popularity;
 	protected long totalHolds;
 
@@ -199,7 +202,7 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		// noinspection unchecked
 		clonedWork.literaryForm = (HashMap<String, Integer>) literaryForm.clone();
 		// noinspection unchecked
-		clonedWork.mpaaRatings = (HashSet<String>) mpaaRatings.clone();
+		clonedWork.contentRatings = (HashSet<String>) contentRatings.clone();
 		// noinspection unchecked
 		clonedWork.oclcs = (HashSet<String>) oclcs.clone();
 		// noinspection unchecked
@@ -838,55 +841,86 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 			} else {
 				seriesWithVolumePriority.put(normalizedSeriesInfoWithVolume, priority);
 			}
-			if ((!this.seriesWithVolume.containsKey(normalizedSeriesInfoWithVolume) && !untraced) || (!this.seriesWithVolumeUntraced.containsKey(normalizedSeriesInfoWithVolume) && untraced)) {
+
+			HashMap<String, String> seriesMapToCheck;
+			if (untraced) {
+				seriesMapToCheck = this.seriesWithVolumeUntraced;
+				if (this.seriesWithVolume.containsKey(normalizedSeriesInfoWithVolume)) {
+					//Don't add to the untraced if we already have a traced version
+					return;
+				}
+			}else{
+				seriesMapToCheck = this.seriesWithVolume;
+			}
+			if (!seriesMapToCheck.containsKey(normalizedSeriesInfoWithVolume)) {
 				boolean okToAdd = true;
-				//Check to see if we have a similar series name (where one series name is fully contained in the other series).
-				// This helps to prevent cases where series of "Dark" and "Dark Series" both appear.
-				// When this occurs the more specific series (longer or with a volume) will be preserved.
-				// This logic only applies if the series module is NOT active.
+
 				if (!groupedWorkIndexer.hasSeriesModuleEnabled()) {
-					for (String existingSeries2 : this.seriesWithVolume.keySet()) {
-						String[] existingSeriesInfo = existingSeries2.split("\\|", 2);
-						String existingSeriesName = existingSeriesInfo[0];
-						String existingVolume = "";
-						if (existingSeriesInfo.length > 1) {
-							existingVolume = existingSeriesInfo[1];
-						}
-						//Get the longer series name
-						if (existingSeriesName.contains(seriesInfoLower)) {
-							//Use the old one unless it doesn't have a volume
-							if (existingVolume.isEmpty()) {
-								this.seriesWithVolume.remove(existingSeries2);
-								break;
-							} else {
-								if (volumeLower.equals(existingVolume)) {
-									okToAdd = false;
-									break;
-								} else if (volumeLower.isEmpty()) {
-									okToAdd = false;
-									break;
-								}
-							}
-						} else if (seriesInfoLower.contains(existingSeriesName)) {
-							//Before removing the old series, make sure the new one has a volume
-							if (!existingVolume.isEmpty() && existingVolume.equals(volumeLower)) {
-								this.seriesWithVolume.remove(existingSeries2);
-								break;
-							} else if (volume.isEmpty() && !existingVolume.isEmpty()) {
-								okToAdd = false;
-								break;
-							} else if (volume.isEmpty()) {
-								this.seriesWithVolume.remove(existingSeries2);
-								break;
-							}
+					//Check to see if we have a similar series name (where one series name is fully contained in the other series).
+					// This helps to prevent cases where series of "Dark" and "Dark Series" both appear.
+					// When this occurs, the more specific series (longer or with a volume) will be preserved.
+					// This logic only applies if the series module is NOT active.
+					// First Check the traced series
+					okToAdd = isSeriesOkToAdd(volume, this.seriesWithVolume, seriesInfoLower, volumeLower, okToAdd);
+
+					// Next, check the untraced series
+					if (okToAdd && untraced) {
+						okToAdd = isSeriesOkToAdd(volume, this.seriesWithVolumeUntraced, seriesInfoLower, volumeLower, okToAdd);
+					}
+				}
+
+				if (okToAdd) {
+					if (untraced) {
+						seriesMapToCheck.put(normalizedSeriesInfoWithVolume, seriesInfoWithVolume);
+					}else {
+						seriesMapToCheck.put(normalizedSeriesInfoWithVolume, seriesInfoWithVolume);
+						if (this.seriesWithVolumeUntraced.containsKey(normalizedSeriesInfoWithVolume)) {
+							this.seriesWithVolumeUntraced.remove(normalizedSeriesInfoWithVolume);
 						}
 					}
 				}
-				if (okToAdd) {
-					this.seriesWithVolume.put(normalizedSeriesInfoWithVolume, seriesInfoWithVolume);
+			}
+		}
+	}
+
+	private static boolean isSeriesOkToAdd(String volume, HashMap<String, String> seriesMapToCheck, String seriesInfoLower, String volumeLower, boolean okToAdd) {
+		for (String existingSeries2 : seriesMapToCheck.keySet()) {
+			String[] existingSeriesInfo = existingSeries2.split("\\|", 2);
+			String existingSeriesName = existingSeriesInfo[0];
+			String existingVolume = "";
+			if (existingSeriesInfo.length > 1) {
+				existingVolume = existingSeriesInfo[1];
+			}
+			//Get the longer series name
+			if (existingSeriesName.contains(seriesInfoLower)) {
+				//Use the old one unless it doesn't have a volume
+				if (existingVolume.isEmpty()) {
+					seriesMapToCheck.remove(existingSeries2);
+					break;
+				} else {
+					if (volumeLower.equals(existingVolume)) {
+						okToAdd = false;
+						break;
+					} else if (volumeLower.isEmpty()) {
+						okToAdd = false;
+						break;
+					}
+				}
+			} else if (seriesInfoLower.contains(existingSeriesName)) {
+				//Before removing the old series, make sure the new one has a volume
+				if (!existingVolume.isEmpty() && existingVolume.equals(volumeLower)) {
+					seriesMapToCheck.remove(existingSeries2);
+					break;
+				} else if (volume.isEmpty() && !existingVolume.isEmpty()) {
+					okToAdd = false;
+					break;
+				} else if (volume.isEmpty()) {
+					seriesMapToCheck.remove(existingSeries2);
+					break;
 				}
 			}
 		}
+		return okToAdd;
 	}
 
 	private void addSeriesInfoToField(String seriesInfo, HashMap<String, String> seriesField) {
@@ -957,6 +991,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 
 	void addPhysical(Set<String> fieldList) {
 		this.physicals.addAll(fieldList);
+	}
+
+	void addDuration(Set<Integer> fieldList) {
+		this.durations.addAll(fieldList);
 	}
 
 	void addPhysical(String field) {
@@ -1033,6 +1071,10 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 
 	void setLanguages(HashSet<String> languages) {
 		this.languages.addAll(languages);
+	}
+
+	void setPrimaryLanguage(String primaryLanguage) {
+		this.primaryLanguage = primaryLanguage;
 	}
 
 	void setTranslations(HashSet<String> translations) {
@@ -1251,8 +1293,8 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		return ratingFacet;
 	}
 
-	void addMpaaRating(String mpaaRating) {
-		this.mpaaRatings.add(mpaaRating);
+	void addContentRating(String contentRating) {
+		this.contentRatings.add(contentRating);
 	}
 
 	void addBarcodes(Set<String> barcodeList) {
@@ -1267,8 +1309,27 @@ public abstract class AbstractGroupedWorkSolr implements DebugLogger {
 		this.rating = rating;
 	}
 
+	private static final Pattern lexileMatchingPattern = Pattern.compile("(AD|NC|HL|IG|GN|BR|NP)(\\d+)");
 	void setLexileScore(String lexileScore) {
-		this.lexileScore = lexileScore;
+		if (lexileScore.endsWith("L")){
+			lexileScore = lexileScore.substring(0, lexileScore.length() - 1).trim();
+		}
+		if (AspenStringUtils.isNumeric(lexileScore)) {
+			lexileScore = AspenStringUtils.trimTrailingPunctuation(lexileScore);
+			if (lexileScore.contains(".")) {
+				//We expect the number to be an integer so trim anything that looks like a decimal
+				lexileScore = lexileScore.substring(0, lexileScore.indexOf('.')).trim();
+			}
+			this.lexileScore = lexileScore;
+		}else{
+			Matcher lexileMatcher = lexileMatchingPattern.matcher(lexileScore);
+			if (lexileMatcher.find()){
+				String lexileCode = lexileMatcher.group(1);
+				lexileScore = lexileMatcher.group(2);
+				this.setLexileCode(lexileCode);
+				this.lexileScore = lexileScore;
+			}
+		}
 	}
 
 	void setLexileCode(String lexileCode) {
