@@ -2899,10 +2899,10 @@ AspenDiscovery.Admin = (function () {
 			return false;
 		},
 
-		getNotificationDevicesForUser: function () {
+		getNotificationDevicesForUser: function (tokenType="expo") {
 			const barcode = $("#testPatronBarcode").val();
 			if (barcode) {
-				$.getJSON(Globals.path + "/Admin/AJAX?method=getNotificationDevicesForUser&user=" + barcode, function (data) {
+				$.getJSON(Globals.path + "/Admin/AJAX?method=getNotificationDevicesForUser&user=" + barcode + "&tokenType=" + tokenType, function (data) {
 					if (data.success) {
 						$("#error").html(data.message).hide();
 						$("#patronDevices").html(data.message).show();
