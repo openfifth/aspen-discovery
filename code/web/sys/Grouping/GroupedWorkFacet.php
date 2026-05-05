@@ -30,7 +30,7 @@ class GroupedWorkFacet extends FacetSetting {
 			"subject_facet" => "Subjects",
 			"topic_facet" => "Topics",
 			"target_audience" => "Audience",
-			"mpaa_rating" => "Movie Rating",
+			"content_rating" => "Content Rating",
 			"literary_form" => "Form",
 			"authorStr" => "Author",
 			"language" => "Language (Primary Only)",

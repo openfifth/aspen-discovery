@@ -3330,15 +3330,15 @@ AspenDiscovery.Account = (function () {
 			location.replace(location.pathname + paramString)
 		},
 
-		changeHoldPickupLocation: function (patronId, recordId, holdId, currentLocation, source) {
+		changeHoldPickupLocation: function (patronId, recordId, holdId, currentLocation, currentSublocation, source) {
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=getChangeHoldLocationForm&patronId=" + patronId + "&recordId=" + recordId + "&holdId=" + holdId + "&currentLocation=" + currentLocation + "&source=" + source, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=getChangeHoldLocationForm&patronId=" + patronId + "&recordId=" + recordId + "&holdId=" + holdId + "&currentLocation=" + currentLocation + "&currentSublocation=" + currentSublocation + "&source=" + source, function (data) {
 					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons)
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.changeHoldPickupLocation(patronId, recordId, holdId, currentLocation);
+					return AspenDiscovery.Account.changeHoldPickupLocation(patronId, recordId, holdId, currentLocation, currentSublocation, source);
 				}, false);
 			}
 			return false;
@@ -4546,6 +4546,73 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
+		toggleManageEvent: function (eventSourceId) {
+			let savedEventDetailsModalWrapper = document.getElementById(`aspen-events-registration-button-${eventSourceId}-wrapper`)
+			savedEventDetailsModalWrapper.hidden = !savedEventDetailsModalWrapper.hidden;
+		},
+
+		toggleUserEventRegistration: function (eventSourceId) {
+			if (!Globals.loggedIn) {
+				return;
+			}
+
+			const userSelector = document.getElementById(`eventUserSelector-${eventSourceId}`);
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
+
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'toggleUserRegistrationToEvent',
+				eventSourceId,
+				userId
+			};
+
+			$.getJSON(url, params, function (data) {
+				AspenDiscovery.showMessage(data.title, data.message, false, data.success);
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+
+		updateEventRegistrationUser: function (selector, eventSourceId) {
+			const selectedOption = selector.options[selector.selectedIndex];
+			const email = selectedOption.dataset.email || '';
+			const location = selectedOption.dataset.location || '';
+
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const userId = selector ? selector.value : (userIdField ? userIdField.value : null);
+
+			AspenDiscovery.Account.isUserRegisteredForEvent(eventSourceId, userId).then((data) => AspenDiscovery.Account.updateEventButtonTextContent(data, eventSourceId));
+			document.getElementById(`eventRegistrationUserId-${eventSourceId}`).value = selector.value;
+			document.getElementById(`eventUserEmail-${eventSourceId}`).textContent = email;
+			document.getElementById(`eventUserLocation-${eventSourceId}`).textContent = location;
+
+			const changeLink = document.getElementById(`eventUserEmailChangeLink-${eventSourceId}`);
+			if (changeLink) {
+				const primaryUserId = selector.options[0].value;
+				changeLink.style.display = (selector.value === primaryUserId) ? '' : 'none';
+			}
+		},
+
+		updateEventButtonTextContent: function (userRegistrationData, eventSourceId) {
+			if (!userRegistrationData.success) {
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = 'Unavailable';
+				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).setAttribute('disabled', true);
+				return;
+			}
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = userRegistrationData.body.isRegistered ? 'Unregister' : 'Register';
+			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).removeAttribute('disabled');
+		},
+
+		isUserRegisteredForEvent: function (eventSourceId, userId) {
+			const url = Globals.path + "/MyAccount/AJAX";
+			const params = {
+				method: 'isUserRegisteredForEvent',
+				eventSourceId,
+				userId
+			};
+
+			return $.getJSON(url, params).fail(AspenDiscovery.ajaxFail);
+		},
+
 		deleteSavedEvent: function (id, page, filter) {
 			if (confirm("Are you sure you want to remove this event?")) {
 				var url = Globals.path + '/MyAccount/AJAX?method=deleteSavedEvent&id=' + id;
@@ -5142,7 +5209,7 @@ AspenDiscovery.Account = (function () {
 			});
 			return false;
 		},
-		generateChangeSublocationSelect: function () {
+		generateChangeSublocationSelect: function (currentSublocation) {
 			var locationCode = $('#newPickupLocation').val();
 			var selectPlaceholder = document.getElementById("sublocationSelectPlaceHolder");
 			var url = Globals.path + '/MyAccount/AJAX';
@@ -5154,7 +5221,10 @@ AspenDiscovery.Account = (function () {
 			selectPlaceholder.innerHTML = '';
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
-					selectPlaceholder.innerHTML = data.selectHtml;
+					selectPlaceholder.innerHTML = data.selectHtml
+					if (currentSublocation !== undefined) {
+						document.getElementById('pickupSublocation').value = currentSublocation;
+					}
 				}
 			});
 			return false;
@@ -8300,10 +8370,10 @@ AspenDiscovery.Admin = (function () {
 			return false;
 		},
 
-		getNotificationDevicesForUser: function () {
+		getNotificationDevicesForUser: function (tokenType="expo") {
 			const barcode = $("#testPatronBarcode").val();
 			if (barcode) {
-				$.getJSON(Globals.path + "/Admin/AJAX?method=getNotificationDevicesForUser&user=" + barcode, function (data) {
+				$.getJSON(Globals.path + "/Admin/AJAX?method=getNotificationDevicesForUser&user=" + barcode + "&tokenType=" + tokenType, function (data) {
 					if (data.success) {
 						$("#error").html(data.message).hide();
 						$("#patronDevices").html(data.message).show();
@@ -9180,7 +9250,26 @@ AspenDiscovery.Browse = (function(){
 					var resultsTabPanel = document.getElementById('swiper-browse-category-' + categoryTextId) ;
 					resultsTabPanel.innerHTML = "";
 					var browseSwiper = new Swiper('.swiper-browse-category-' + categoryTextId, {
-						slidesPerView: 5,
+						slidesPerView: 3,
+						slidesPerGroup: 3,
+						breakpoints: {
+							640: {
+								slidesPerView: 4,
+								slidesPerGroup: 4,
+							},
+							1024: {
+								slidesPerView: 5,
+								slidesPerGroup: 5,
+							},
+							1300: {
+								slidesPerView: 6,
+								slidesPerGroup: 6,
+							},
+							1600: {
+								slidesPerView: 7,
+								slidesPerGroup: 7,
+							}
+						},
 						spaceBetween: 20,
 						direction: 'horizontal',
 
@@ -9446,7 +9535,26 @@ AspenDiscovery.Browse = (function(){
 					if (wrapper) wrapper.innerHTML = '';
 
 					const browseSwiper = new Swiper(container, {
-						slidesPerView: 5,
+						slidesPerView: 3,
+						slidesPerGroup: 3,
+						breakpoints: {
+							640: {
+								slidesPerView: 4,
+								slidesPerGroup: 4,
+							},
+							1024: {
+								slidesPerView: 5,
+								slidesPerGroup: 5,
+							},
+							1300: {
+								slidesPerView: 6,
+								slidesPerGroup: 6,
+							},
+							1600: {
+								slidesPerView: 7,
+								slidesPerGroup: 7,
+							}
+						},
 						spaceBetween : 20,
 						direction    : 'horizontal',
 						a11y         : { enabled: true },
@@ -10401,6 +10509,15 @@ AspenDiscovery.Events = (function(){
 						}
 						$("#accordion_body_Fields_for_this_Event_Type .panel-body").html(data.typeFields);
 						$('#accordion_body_Fields_for_this_Event_Type [data-toggle="tooltip"]').tooltip();
+				
+						// Wait a tick for the DOM to render before running the display logic
+						setTimeout(function() {
+							AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+							$('#registrationRequired').off('change').on('change', function() {
+								AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+							});
+						}, 0);
+
 						$("#propertyRowtitle").show();
 						$("#propertyRowinfoSection").show();
 						$("#propertyRowscheduleSection").show();
@@ -10980,6 +11097,34 @@ AspenDiscovery.Events = (function(){
 					AspenDiscovery.showMessage('Sorry', data.message);
 				}
 			})
+		},
+		handleRegistrationEnabledToggle: function () {
+			AspenDiscovery.Events.displayRegistrationNumberOfSeats();
+		},
+		displayRegistrationNumberOfSeats: function () {
+			const requireEventRegistration = document.getElementById('registrationRequired');
+			if (!requireEventRegistration) {
+				return;
+			}
+
+			let registrationNumberOfSeats = document.getElementById('propertyRownumberOfSeats');
+			if (!registrationNumberOfSeats) {
+				return;
+			}
+			
+			if (requireEventRegistration.checked) {
+				registrationNumberOfSeats.style.display = '';
+				return;
+			}
+			AspenDiscovery.Events.unsetNumberOfSeats();
+			registrationNumberOfSeats.style.display = 'none';
+		},
+		unsetNumberOfSeats: function () {
+			let numberofSeats = document.getElementById('numberOfSeats');
+			if (!numberofSeats) {
+				return;
+			}
+			numberofSeats.value = null;
 		},
 		saveEventsForType: function(doFullSave){
 			if (doFullSave) {

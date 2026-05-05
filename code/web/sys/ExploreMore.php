@@ -213,6 +213,35 @@ class ExploreMore {
 				$searchObjectSolr->setLimit($this->numEntriesToAdd + 1);
 				$results = $searchObjectSolr->processSearch(true, false);
 
+				// @todo: Adds a temporary check for libraries who may not have the show_in_explore_more field added to their Solr index yet.
+				// This can be removed once we're confident all libraries have the field.
+				// This code can, at that time, probably just be simplified to:
+				// $searchObjectSolr->addHiddenFilter('show_in_explore_more', 'true');
+				$hasShowInExploreMore = false;
+				if ($results && isset($results['response']['docs'])) {
+					foreach ($results['response']['docs'] as $doc) {
+						if (array_key_exists('show_in_explore_more', $doc)) {
+							$hasShowInExploreMore = true;
+							break;
+						}
+					}
+				}
+				// If field exists, re-run with filter.
+				if ($hasShowInExploreMore) {
+					$searchObjectSolr = SearchObjectFactory::initSearchObject('Websites');
+					$searchObjectSolr->init();
+					$searchObjectSolr->disableSpelling();
+					$searchObjectSolr->setSearchTerms([
+						'lookfor' => $searchTerm,
+						'index' => 'WebsiteKeyword',
+					]);
+					$searchObjectSolr->addHiddenFilter('show_in_explore_more', 'true');
+					$searchObjectSolr->setPage(1);
+					$searchObjectSolr->setLimit($this->numEntriesToAdd + 1);
+					$results = $searchObjectSolr->processSearch(true, false);
+				}
+				// End temporary check code.
+
 				if ($results && isset($results['response'])) {
 					$numCatalogResultsAdded = 0;
 					$numCatalogResults = $results['response']['numFound'];

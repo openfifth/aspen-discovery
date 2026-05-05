@@ -4898,11 +4898,13 @@ class UserAPI extends AbstractAPI {
 		if ($user && !($user instanceof AspenError)) {
 			$newStatus = $_REQUEST['status'] ?? null;
 			$userToken = $_REQUEST['token'] ?? null;
+			$tokenType = $_REQUEST['type'] ?? 'expo';
 			if($newStatus && $userToken) {
 				require_once ROOT_DIR . '/sys/Account/UserNotificationToken.php';
 				$token = new UserNotificationToken();
 				$token->pushToken = $userToken;
 				$token->userId = $user->id;
+				$token->tokenType = $tokenType;
 				if($token->find(true)) {
 					$token->onboardAppNotifications = 0;
 					$user->onboardAppNotifications = 0;
@@ -5565,7 +5567,8 @@ class UserAPI extends AbstractAPI {
 		if ($user && !($user instanceof AspenError)) {
 			if (isset($_POST['pushToken'])) {
 				$device = $_POST['deviceModel'] ?? "Unknown";
-				$result = $user->saveNotificationPushToken($_POST['pushToken'], $device);
+				$tokenType = $_POST['tokenType'] ?? "expo";
+				$result = $user->saveNotificationPushToken($_POST['pushToken'], $device, $tokenType);
 				if ($result === true) {
 					return [
 						'success' => true,

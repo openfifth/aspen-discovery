@@ -1294,6 +1294,25 @@ function loadModuleActionId() {
 	}catch (Exception $e) {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
+	
+	if ($library->AspenPWASettingId != -1)
+	{
+		$pwaAction = null;
+		$routes = array(
+			"/manifest.json" => "Manifest",
+			"/.well-known/assetlinks.json" => "AssetLinks",
+			"/firebase-messaging-sw.js" => "Firebase",
+			"/pwa-icon.png" => "Icon"
+		);
+		if(array_key_exists($requestURI, $routes))
+		{
+			$action = $routes[$requestURI];
+			$_GET['module'] = "AspenPWA";
+			$_GET['action'] = $action;
+			$_REQUEST['module'] = "AspenPWA";
+			$_REQUEST['action'] = $action;
+		}
+	}
 	//Correct some old actions
 	if (isset($_GET['action'])) {
 		if ($_GET['action'] == 'OverdriveHolds') {
