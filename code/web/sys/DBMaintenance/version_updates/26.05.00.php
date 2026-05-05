@@ -74,6 +74,14 @@ function getUpdates26_05_00(): array {
 				"ALTER TABLE self_check_completion_message ADD COLUMN name TEXT"
 			]
 		], //self_check_completion_message_name
+		'sort_search_interpreter_terms' => [
+			'title' => 'Sort Search Interpreter Special Terms',
+			'description' => 'Sort Search Interpreter Special Terms',
+			'sql' => [
+				'ALTER TABLE search_interpreter_special_terms ADD COLUMN weight int(11) NOT NULL DEFAULT 0',
+				'UPDATE search_interpreter_special_terms set weight = id'
+			]
+		], //sort_search_interpreter_terms
 
 		//kirstien
 
