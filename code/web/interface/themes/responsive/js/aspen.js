@@ -15721,6 +15721,43 @@ AspenDiscovery.Record = (function () {
 			return false;
 		},
 
+		submitBookingForm: function (button) {
+			const form = document.getElementById('placeBookingForm');
+			const data = $(form).serialize();
+			AspenDiscovery.toggleButtonSpinner(button, true);
+			$.getJSON(Globals.path + '/Record/AJAX?method=placeBooking&' + data, function (result) {
+				AspenDiscovery.toggleButtonSpinner(button, false);
+				AspenDiscovery.showMessage(result.title, result.message);
+			}).fail(function () {
+				AspenDiscovery.toggleButtonSpinner(button, false);
+				AspenDiscovery.ajaxFail.apply(this, arguments);
+			});
+			return false;
+		},
+
+		showPlaceBooking: function (id, button) {
+			if (Globals.loggedIn) {
+				AspenDiscovery.toggleButtonSpinner(button, true);
+				const url = Globals.path + '/Record/' + id + '/AJAX?method=getBookingForm&id=' + encodeURIComponent(id);
+				$.getJSON(url, function (data) {
+					AspenDiscovery.toggleButtonSpinner(button, false);
+					if (data.success) {
+						AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons);
+					} else {
+						AspenDiscovery.showMessage(data.title, data.message);
+					}
+				}).fail(function () {
+					AspenDiscovery.toggleButtonSpinner(button, false);
+					AspenDiscovery.ajaxFail.apply(this, arguments);
+				});
+			} else {
+				AspenDiscovery.Account.ajaxLogin(null, function () {
+					AspenDiscovery.Record.showPlaceBooking(id, button);
+				}, false);
+			}
+			return false;
+		},
+
 		showVdxRequest: function (module, source, id) {
 			if (Globals.loggedIn) {
 				document.body.style.cursor = "wait";
