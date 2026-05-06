@@ -3157,6 +3157,32 @@ class Koha extends AbstractIlsDriver {
 		return $result;
 	}
 
+	public function getRenewalFeeForItem(string $itemType, string $locationCode): float|null {
+		$rawRentalCharge = $this->getItemTypeRentalCharge($itemType);
+		if (!$rawRentalCharge || (float)$rawRentalCharge === 0.0) {
+			return null;
+		}
+
+		$patron = UserAccount::getActiveUserObj();
+		$discount = $this->getRawCirculationRule('rentaldiscount', [
+			'patronCategoryId' => $patron->patronType,
+			'itemTypeId'       => $itemType,
+			'locationId'       => $locationCode,
+		]);
+		
+		return $this->calculateRenewalFeeForItem((float)$rawRentalCharge, $discount);
+	}
+
+	public function calculateRenewalFeeForItem(float $rentalCharge, float $discount): float|null {
+		if ($discount && $discount > 0) {
+			$rentalCharge = $rentalCharge * (1 - $discount / 100);
+		}
+		if ($rentalCharge === 0.0) {
+			return null;
+		}
+		return $rentalCharge;
+	}
+
 	private function getItemTypeRentalCharge(string $itemType): string|null {
 		$response = $this->kohaApiUserAgent->get('/api/v1/item_types', 'koha.getItemTypeRentalCharge');
 
