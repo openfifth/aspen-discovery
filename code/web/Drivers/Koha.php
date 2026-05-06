@@ -2021,38 +2021,28 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function getPreHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
-		if (!UserAccount::isLoggedIn()) {
-			return "You must be logged in to place holds.";
-		}
-		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
-		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000"){
-			return null;
-		}
-		$fee = $this->formatFee($rawFee);
-		return  $this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected' ? "You will be charged a hold fee of $fee when you collect this item." : "You will be charged a hold fee of $fee for placing this hold." ;
-	}
-		
-	public function getPostHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
-		if (!UserAccount::isLoggedIn()) {
-			return "You must be logged in to place holds.";
-		}
-		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
-		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000"){
-			return null;
-		}
-		$fee = $this->formatFee($rawFee);
-		return  $this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected' ? "You will be charged a hold fee of $fee when you collect this item." : "You have been charged a hold fee of $fee for placing this hold." ;
+		return $this->getHoldFeeMessage($marcRecordDriver, false);
 	}
 
-	private function formatFee($rawFee): string|null {
-		global $activeLanguage;
-		$currencyCode = 'USD';
-		$variables = new SystemVariables();
-		if ($variables->find(true)) {
-			$currencyCode = $variables->currencyCode;
+	public function getPostHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
+		return $this->getHoldFeeMessage($marcRecordDriver, true);
+	}
+
+	private function getHoldFeeMessage(MarcRecordDriver $marcRecordDriver, bool $placed): string|null {
+		if (!UserAccount::isLoggedIn()) {
+			return "You must be logged in to place holds.";
 		}
-		$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
-		return $currencyFormatter->formatCurrency($rawFee, $currencyCode);
+		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
+		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000") {
+			return null;
+		}
+		$fee = $this->formatFee($rawFee);
+		if ($this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected') {
+			return "You will be charged a hold fee of $fee when you collect this item.";
+		}
+		return $placed
+			? "You have been charged a hold fee of $fee for placing this hold."
+			: "You will be charged a hold fee of $fee for placing this hold.";
 	}
 
 	// Replicates the logic in Koha's _calculate_title_hold_fee() for bib-level holds
