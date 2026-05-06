@@ -1079,4 +1079,8 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	public function getPatronHoldGroups($patronId): ?array {
 		return null;
 	}
+
+	public function hasBookingsSupport(): bool {
+		return false;
+	}
 }
