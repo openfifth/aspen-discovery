@@ -3373,7 +3373,6 @@ class Library extends DataObject {
 				'forcesReindex' => true,
 			],
 
-
 			// Searching //
 			'searchingSection' => [
 				'property' => 'searchingSection',
