@@ -3786,6 +3786,44 @@ class Library extends DataObject {
 				]
 			],
 
+			// Holidays and Special Hours Display //
+			'holidaysSection' => [
+				'property' => 'holidaysSection',
+				'type' => 'section',
+				'label' => 'Holidays and Special Hours',
+				'hideInLists' => true,
+				'helpLink' => '',
+				'renderAsHeading' => false,
+				'permissions' => ['Library ILS Connection', 'Library Holidays'],
+				'properties' => [
+					'allowUpdatingHolidaysFromILS' => [
+						'property' => 'allowUpdatingHolidaysFromILS',
+						'type' => 'checkbox',
+						'label' => 'Automatically Update Holidays from the ILS',
+						'description' => 'Whether holidays should be automatically updated from the ILS.',
+						'hideInLists' => true,
+						'default' => 1,
+						'permissions' => ['Library ILS Connection'],
+					],
+					'holidays' => [
+						'property' => 'holidays',
+						'type' => 'oneToMany',
+						'label' => 'Holidays and Special Hours',
+						'renderAsHeading' => false,
+						'description' => 'Holidays (automatically loaded from Koha)',
+						'keyThis' => 'libraryId',
+						'keyOther' => 'libraryId',
+						'subObjectType' => 'Holiday',
+						'structure' => $holidaysStructure,
+						'sortable' => false,
+						'storeDb' => true,
+						'permissions' => ['Library Holidays'],
+						'canAddNew' => true,
+						'canDelete' => true,
+					],
+				],
+			],
+
 			// Full Record Display //
 			'fullRecordSection' => [
 				'property' => 'fullRecordSection',
@@ -4821,43 +4859,6 @@ class Library extends DataObject {
 						'type' => 'enum',
 						'values' => $galeSettingsList,
 						'label' => 'Gale Settings',
-					],
-				],
-			],
-
-			'holidaysSection' => [
-				'property' => 'holidaysSection',
-				'type' => 'section',
-				'label' => 'Holidays and Special Hours',
-				'hideInLists' => true,
-				'helpLink' => '',
-				'renderAsHeading' => false,
-				'permissions' => ['Library ILS Connection', 'Library Holidays'],
-				'properties' => [
-					'allowUpdatingHolidaysFromILS' => [
-						'property' => 'allowUpdatingHolidaysFromILS',
-						'type' => 'checkbox',
-						'label' => 'Automatically Update Holidays from the ILS',
-						'description' => 'Whether holidays should be automatically updated from the ILS.',
-						'hideInLists' => true,
-						'default' => 1,
-						'permissions' => ['Library ILS Connection'],
-					],
-					'holidays' => [
-						'property' => 'holidays',
-						'type' => 'oneToMany',
-						'label' => 'Holidays and Special Hours',
-						'renderAsHeading' => false,
-						'description' => 'Holidays (automatically loaded from Koha)',
-						'keyThis' => 'libraryId',
-						'keyOther' => 'libraryId',
-						'subObjectType' => 'Holiday',
-						'structure' => $holidaysStructure,
-						'sortable' => false,
-						'storeDb' => true,
-						'permissions' => ['Library Holidays'],
-						'canAddNew' => true,
-						'canDelete' => true,
 					],
 				],
 			],
