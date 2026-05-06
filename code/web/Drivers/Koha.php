@@ -3157,6 +3157,19 @@ class Koha extends AbstractIlsDriver {
 		return $result;
 	}
 
+	private function getRawCirculationRule(string $ruleName, array $context): string|null {
+		['itemTypeId' => $itemTypeId, 'locationId' => $locationId, 'patronCategoryId' => $patronCategoryId] = $context;
+
+		$endpoint = "/api/v1/circulation_rules?effective=true&item_type_id=$itemTypeId&library_id=$locationId&patron_category_id=$patronCategoryId&rules=$ruleName";
+		$response = $this->kohaApiUserAgent->get($endpoint, "koha.getCirculationRule.$ruleName");
+
+		if ($response && $response['code'] == 200) {
+			return $response['content'][0][$ruleName] ?? null;
+		}
+
+		return null;
+	}
+
 	/**
 	 * Get a list of fines for the user.
 	 * Code taken from C4::Account getcharges method
