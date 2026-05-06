@@ -4,6 +4,9 @@ require_once __DIR__ . '/../bootstrap_aspen.php';
 require_once __DIR__ . '/../sys/SolrUtils.php';
 
 require_once ROOT_DIR . '/sys/CronLogEntry.php';
+
+set_time_limit(0);
+
 $cronLogEntry = new CronLogEntry();
 $cronLogEntry->startTime = time();
 $cronLogEntry->name = 'Check Solr For Deleted Works';
@@ -67,18 +70,27 @@ if (!$result instanceof AspenError && empty($result['error'])) {
 		}
 	}
 
+	$cronLogEntry->notes .= date('g:i:s A') . " Deleting " . count($recordsToDeleteFromSolr) . " works.<br/>";
+	$cronLogEntry->update();
 	foreach ($recordsToDeleteFromSolr as $groupedWorkId) {
 		if (!$solrConnection->deleteRecord($groupedWorkId)) {
 			$cronLogEntry->notes .= date('g:i:s A') . " ERROR $groupedWorkId could not be deleted.<br/>";
 			$cronLogEntry->numErrors++;
+			$cronLogEntry->update();
 		}else{
 			$numRecordsDeleted++;
+			if ($numRecordsDeleted % 1000 == 0) {
+				$cronLogEntry->notes .= date('g:i:s A') . " Deleted $numRecordsDeleted.<br/>";
+				$cronLogEntry->update();
+			}
 		}
 	}
 }else{
 	$cronLogEntry->notes .= date('g:i:s A') . " Could not connect to Solr.<br/>";
 }
 if ($numRecordsDeleted > 0) {
+	$cronLogEntry->notes .= date('g:i:s A') . " Starting final commit of solr after deleting works.<br/>";
+	$cronLogEntry->update();
 	$solrConnection->commit();
 }
 
