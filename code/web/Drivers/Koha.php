@@ -3157,6 +3157,14 @@ class Koha extends AbstractIlsDriver {
 		return $result;
 	}
 
+	private function getItemForRenewal(string $itemId): array|null {
+		$response = $this->kohaApiUserAgent->get('/api/v1/items/' . (int)$itemId, 'koha.getItemForRenewal');
+		if ($response && $response['code'] == 200) {
+			return $response['content'];
+		}
+		return null;
+	}
+
 	private function formatFee($rawFee): string|null {
 		global $activeLanguage;
 		$currencyCode = 'USD';
