@@ -2885,6 +2885,18 @@ class Koha extends AbstractIlsDriver {
 			return $hold_result;
 		}
 
+		if (empty($_REQUEST['confirmedRenewal']) && $itemId) {
+			$feeMessage = $this->getPreRenewalFeeMessage($itemId);
+			if ($feeMessage) {
+				$result['success'] = false;
+				$result['message'] = $feeMessage;
+				$result['confirmRenewalFee'] = true;
+				$result['api']['title'] = translate(['text' => 'Confirm Renewal', 'isPublicFacing' => true]);
+				$result['api']['message'] = $feeMessage;
+				return $result;
+			}
+		}
+
 		/** @noinspection PhpBooleanCanBeSimplifiedInspection */
 		if (false && $this->getKohaVersion() >= 19.11) {
 			/** @noinspection PhpUnreachableStatementInspection */
@@ -3157,6 +3169,24 @@ class Koha extends AbstractIlsDriver {
 		return $result;
 	}
 
+	public function getPreRenewalFeeMessage(string $itemId): string|null {
+		$item = $this->getItemForRenewal($itemId);
+		if (!$item) {
+			return null;
+		}
+
+		$rawFee = $this->getRenewalFeeForItem($item['item_type_id'],$item['home_library_id']);
+		if (!$rawFee) {
+			return null;
+		}
+
+		return translate([
+			'text'           => 'You will be charged a renewal fee of %1%.',
+			'1'              => $this->formatFee($rawFee),
+			'isPublicFacing' => true,
+		]);
+	}
+
 	public function getRenewalFeeForItem(string $itemType, string $locationCode): float|null {
 		$rawRentalCharge = $this->getItemTypeRentalCharge($itemType);
 		if (!$rawRentalCharge || (float)$rawRentalCharge === 0.0) {
@@ -3205,7 +3235,7 @@ class Koha extends AbstractIlsDriver {
 		return null;
 	}
 
-	private function formatFee($rawFee): string|null {
+	private function formatFee(float $rawFee): string|null {
 		global $activeLanguage;
 		$currencyCode = 'USD';
 		$variables = new SystemVariables();
