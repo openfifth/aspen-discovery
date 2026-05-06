@@ -3157,6 +3157,17 @@ class Koha extends AbstractIlsDriver {
 		return $result;
 	}
 
+	private function formatFee($rawFee): string|null {
+		global $activeLanguage;
+		$currencyCode = 'USD';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+		$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
+		return $currencyFormatter->formatCurrency($rawFee, $currencyCode);
+	}
+
 	private function getRawCirculationRule(string $ruleName, array $context): string|null {
 		['itemTypeId' => $itemTypeId, 'locationId' => $locationId, 'patronCategoryId' => $patronCategoryId] = $context;
 
