@@ -42,7 +42,7 @@ function getUpdates26_07_00(): array {
 			'description' => 'Adds a setting to control whether the hold fee message is shown to patrons',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE library ADD COLUMN showHoldFeeMessage TINYINT(1) DEFAULT 0',
+				'ALTER TABLE library ADD COLUMN showHoldFeeMessage TINYINT(1) DEFAULT 1',
 			]
 		], //library_show_hold_fee_message
 	

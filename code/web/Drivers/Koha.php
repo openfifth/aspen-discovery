@@ -2017,7 +2017,8 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function hasHoldFeeMessage(): bool {
-		return true;
+		global $library;
+		return !empty($library->showHoldFeeMessage);
 	}
 
 	public function getPreHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
