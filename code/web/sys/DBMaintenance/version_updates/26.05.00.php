@@ -401,6 +401,14 @@ function getUpdates26_05_00(): array {
 		//lucas
 
 		//tomas
+		'custom_grouped_work_search_specs' => [
+			'title' => 'Custom Grouped Work Search Specs',
+			'description' => 'Add customGroupedWorkSearchSpecs setting to system variables for grouped work search specs configuration',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN IF NOT EXISTS customGroupedWorkSearchSpecs TEXT DEFAULT NULL COMMENT "Path to custom grouped work search specs YAML file"'
+			]
+		], //custom_grouped_work_search_specs
 
 		// stephen
 
