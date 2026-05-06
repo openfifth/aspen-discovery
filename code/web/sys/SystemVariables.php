@@ -213,7 +213,6 @@ class SystemVariables extends DataObject {
 						'description' => 'Path to custom grouped work search specs YAML file (e.g., /data/aspen-discovery/custom/groupedWorkSearchSpecs.yaml). Overrides default catalog search field configuration. Leave empty to use default search specs. If you do not have access to the server you can also put the yaml directly into this field instead.',
 						'hideInLists' => true,
 						//'size' => 100,
-						'permissions' => ['Library Catalog Options'],
 						'warning' => 'Warning: Adding a custom file here can cause searches to fail, and can have a large impact on the relevancy of results. Larger sites may find a performance boost, but this file should only be provided by a trusted source.',
 					],
 					'loadCoversFrom020z' => [
