@@ -1065,4 +1065,8 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 	public function supportsHyperholdsGrouping() {
 		return false;
 	}
+
+	public function hasBookingsSupport(): bool {
+		return false;
+	}
 }
