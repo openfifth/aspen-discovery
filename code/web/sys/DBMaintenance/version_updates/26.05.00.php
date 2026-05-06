@@ -165,6 +165,37 @@ function getUpdates26_05_00(): array {
 				"UPDATE grouped_work_facet SET facetName = 'content_rating', displayName = 'Content Rating', displayNamePlural = 'Content Ratings' WHERE facetName = 'mpaa_rating';",
 			],
 		], //migrate_old_mpaa_rating_to_content_rating
+		'extend_holiday_table' => [
+			'title' => 'Extend Holiday Table',
+			'description' => 'Extend Holiday Table, add special hours fields',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE holiday ADD COLUMN locationId INT(11) NOT NULL DEFAULT -1",
+				"ALTER TABLE holiday ADD COLUMN closed TINYINT(1) NOT NULL DEFAULT 1",
+				"ALTER TABLE holiday ADD COLUMN open varchar(10) DEFAULT NULL",
+				"ALTER TABLE holiday ADD COLUMN close varchar(10) DEFAULT NULL",
+				"ALTER TABLE holiday DROP INDEX LibraryDate",
+			]
+		], //extend_holiday_table
+		'add_show_in_holiday_hours_table_to_location_table' => [
+			'title' => 'Add Show In Holiday Hours table to Location Table',
+			'description' => 'Add a column to the location table to indicate whether the library uses the holiday hours table',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE location ADD COLUMN showInHolidayHoursTable TINYINT(1) NOT NULL DEFAULT 1',
+			]
+		], //add_use_holiday_hours_table_to_location_table
+		'holiday_table_migration' => [
+			'title' => 'Holiday Table Migration',
+			'description' => 'Backfill old library-level holiday rows into per-location rows',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO holiday (libraryId, date, name, locationId, closed, `open`, `close`) SELECT h.libraryId, h.date, h.name, l.locationId, h.closed, h.`open`, h.`close` FROM holiday h INNER JOIN location l ON h.libraryId = l.libraryId WHERE h.locationId = -1 AND l.showInHolidayHoursTable = 1",
+				"DELETE FROM holiday WHERE locationId = -1",
+				"ALTER TABLE holiday ADD UNIQUE KEY LocationDate (locationId, date)",
+				"ALTER TABLE holiday ADD INDEX LibraryDate (libraryId, date)",
+			]
+		], //holiday_table_migration
 
 		//imani
 		// Aspen Progressive Web Application(PWA) updates moved
