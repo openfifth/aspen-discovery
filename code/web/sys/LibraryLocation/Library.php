@@ -1293,7 +1293,7 @@ class Library extends DataObject {
 						'values' => $layoutSettings,
 						'label' => 'Layout Settings',
 						'description' => 'Layout Settings to apply to this interface',
-						'permissions' => ['Library Theme Configuration'],
+						'permissions' => ['Administer Library Layout Settings','Administer All Layout Settings'],
 					],
 					'homeLink' => [
 						'property' => 'homeLink',
