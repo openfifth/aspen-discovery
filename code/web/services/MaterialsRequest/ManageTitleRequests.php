@@ -25,26 +25,38 @@ class MaterialsRequest_ManageTitleRequests extends Admin_Admin {
 			$materialsRequestTitles = new MaterialsRequestTitle();
 
 			if (isset($_REQUEST['pageSize']) && (is_numeric($_REQUEST['pageSize']) || $_REQUEST['pageSize'] == 'all')) {
-				$materialsRequestTitlessPerPage =  $_REQUEST['pageSize'];
-				PageDefaults::updatePageDefaultsForUser($user->id, 'MaterialsRequest', 'ManageTitleRequests',null, $materialsRequestTitlessPerPage, null);
+				$materialsRequestTitlesPerPage =  $_REQUEST['pageSize'];
+				PageDefaults::updatePageDefaultsForUser($user->id, 'MaterialsRequest', 'ManageTitleRequests',null, $materialsRequestTitlesPerPage, null);
 			} else {
-				$pageDefaults = PageDefaults::getPageDefaultsForUser($user->id, 'MaterialsRequest', 'ManageRequests',null);
+				$pageDefaults = PageDefaults::getPageDefaultsForUser($user->id, 'MaterialsRequest', 'ManageTitleRequests',null);
 				if ($pageDefaults !== null && !empty($pageDefaults->pageSize)) {
-					$materialsRequestTitlessPerPage =  $pageDefaults->pageSize;
+					$materialsRequestTitlesPerPage =  $pageDefaults->pageSize;
 				}else{
-					$materialsRequestTitlessPerPage = 30;
+					$materialsRequestTitlesPerPage = 30;
 				}
 			}
-			if($materialsRequestTitlessPerPage == 'all') {
-				$materialsRequestTitlessPerPage = $materialsRequestTitles->count();
+			if($materialsRequestTitlesPerPage == 'all') {
+				$materialsRequestTitlesPerPage = $materialsRequestTitles->count();
 				$interface->assign('showingAllRequests', true);
 			} else {
 				$interface->assign('showingAllRequests', false);
 			}
-			$interface->assign('materialsRequestsPerPage', $materialsRequestTitlessPerPage);
+			$interface->assign('materialsRequestsPerPage', $materialsRequestTitlesPerPage);
 			$page = $_REQUEST['page'] ?? 1;
+			if (isset($_REQUEST['sort']) && in_array($_REQUEST['sort'], ['title', 'author', 'format', 'dateFirstRequested', 'dateLastRequested desc', 'numRequests desc'])) {
+				$materialsRequestSort =  $_REQUEST['sort'];
+				PageDefaults::updatePageDefaultsForUser($user->id, 'MaterialsRequest', 'ManageTitleRequests',null, null, $materialsRequestSort);
+			} else {
+				$pageDefaults = PageDefaults::getPageDefaultsForUser($user->id, 'MaterialsRequest', 'ManageTitleRequests',null);
+				if ($pageDefaults !== null && !empty($pageDefaults->pageSize)) {
+					$materialsRequestSort =  $pageDefaults->pageSort;
+				}else{
+					$materialsRequestSort = 'dateLastRequested';
+				}
+			}
+			$interface->assign('materialsRequestSort', $materialsRequestSort);
 			if (!isset($_REQUEST['exportAll'])) {
-				$materialsRequestTitles->limit(((int)$page - 1) * (int)$materialsRequestTitlessPerPage,(int)$materialsRequestTitlessPerPage);
+				$materialsRequestTitles->limit(((int)$page - 1) * (int)$materialsRequestTitlesPerPage,(int)$materialsRequestTitlesPerPage);
 			}
 			$materialsRequestTitleCount = $materialsRequestTitles->count();
 
@@ -53,14 +65,14 @@ class MaterialsRequest_ManageTitleRequests extends Admin_Admin {
 							FROM materials_request_title mrt
 							LEFT JOIN materials_request mr ON mrt.id = mr.materialsRequestTitleId
 							GROUP BY mrt.id
-							ORDER BY mrt.dateLastRequested DESC
+							ORDER BY $materialsRequestSort
 							");
 				$allRequests = $stmt->fetchAll(PDO::FETCH_CLASS, 'MaterialsRequestTitle');
 			}
 
 			$options = [
 				'totalItems' => $materialsRequestTitleCount,
-				'perPage' => $materialsRequestTitlessPerPage,
+				'perPage' => $materialsRequestTitlesPerPage,
 			];
 
 			$pager = new Pager($options);
@@ -78,7 +90,7 @@ class MaterialsRequest_ManageTitleRequests extends Admin_Admin {
 			];
 			$interface->assign('columnsToDisplay', $columnsToDisplay);
 
-			// Find Date Columns for Javascript Table sorter
+			// Find Date Columns for JavaScript Table sorter
 			$dateColumns = [];
 			foreach (array_keys($columnsToDisplay) as $index => $column) {
 				if (in_array($column, [

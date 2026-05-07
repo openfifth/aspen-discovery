@@ -66,6 +66,14 @@ class MaterialsRequestTitle extends DataObject
 				'label' => 'Date Last Requested',
 				'description' => 'The date the last materials request for this title was made.',
 			],
+			'numRequests' => [
+				'property' => 'numRequests',
+				'type' => 'calculatedInteger',
+				'label' => 'Number of Requests',
+				'description' => 'The number of requests for the title',
+				'readOnly' => true,
+				'canFilter' => true
+			]
 		];
 
 		self::$_objectStructure[$context] = $structure;
