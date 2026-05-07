@@ -3773,21 +3773,8 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function getPatronBookings() : array {
-		$user = $this->getUserForApiCall();
-		if (!$user || $user instanceof AspenError) {
-			return [
-				'success' => false,
-				'message' => 'Login unsuccessful',
-			];
-		}
-
-		global $library;
-		if (empty($library) || !$library->enableBookings) {
-			return [
-				'success' => true,
-				'bookings' => [],
-			];
-		}
+		$user = $this->requireBookingsApiUser(true);
+		if (is_array($user)) return $user;
 
 		require_once ROOT_DIR . '/sys/User/Booking.php';
 		require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
@@ -3864,21 +3851,8 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function placeBooking() : array {
-		$user = $this->getUserForApiCall();
-		if (!$user || $user instanceof AspenError) {
-			return [
-				'success' => false,
-				'message' => 'Login unsuccessful',
-			];
-		}
-
-		global $library;
-		if (empty($library) || !$library->enableBookings) {
-			return [
-				'success' => false,
-				'message' => translate(['text' => 'Bookings are not enabled for your library.', 'isPublicFacing' => true]),
-			];
-		}
+		$user = $this->requireBookingsApiUser();
+		if (is_array($user)) return $user;
 
 		foreach (['recordId', 'itemId', 'startDate', 'endDate'] as $required) {
 			if (empty($_REQUEST[$required])) {
@@ -3924,21 +3898,8 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function cancelBooking() : array {
-		$user = $this->getUserForApiCall();
-		if (!$user || $user instanceof AspenError) {
-			return [
-				'success' => false,
-				'message' => 'Login unsuccessful',
-			];
-		}
-
-		global $library;
-		if (empty($library) || !$library->enableBookings) {
-			return [
-				'success' => false,
-				'message' => translate(['text' => 'Bookings are not enabled for your library.', 'isPublicFacing' => true]),
-			];
-		}
+		$user = $this->requireBookingsApiUser();
+		if (is_array($user)) return $user;
 
 		if (empty($_REQUEST['bookingId'])) {
 			return [
@@ -3977,21 +3938,8 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function updateBooking() : array {
-		$user = $this->getUserForApiCall();
-		if (!$user || $user instanceof AspenError) {
-			return [
-				'success' => false,
-				'message' => 'Login unsuccessful',
-			];
-		}
-
-		global $library;
-		if (empty($library) || !$library->enableBookings) {
-			return [
-				'success' => false,
-				'message' => translate(['text' => 'Bookings are not enabled for your library.', 'isPublicFacing' => true]),
-			];
-		}
+		$user = $this->requireBookingsApiUser();
+		if (is_array($user)) return $user;
 
 		foreach (['bookingId', 'startDate', 'endDate'] as $required) {
 			if (empty($_REQUEST[$required])) {
@@ -4031,21 +3979,8 @@ class UserAPI extends AbstractAPI {
 	 * @noinspection PhpUnused
 	 */
 	function getBookableItems() : array {
-		$user = $this->getUserForApiCall();
-		if (!$user || $user instanceof AspenError) {
-			return [
-				'success' => false,
-				'message' => 'Login unsuccessful',
-			];
-		}
-
-		global $library;
-		if (empty($library) || !$library->enableBookings) {
-			return [
-				'success' => false,
-				'message' => translate(['text' => 'Bookings are not enabled for your library.', 'isPublicFacing' => true]),
-			];
-		}
+		$user = $this->requireBookingsApiUser();
+		if (is_array($user)) return $user;
 
 		if (empty($_REQUEST['recordId'])) {
 			return [
@@ -5386,6 +5321,28 @@ class UserAPI extends AbstractAPI {
 			}
 			return $user;
 		}
+	}
+
+	private function requireBookingsApiUser(bool $emptyOnDisabled = false) : User|array {
+		$user = $this->getUserForApiCall();
+		if (!$user || $user instanceof AspenError) {
+			return [
+				'success' => false,
+				'message' => 'Login unsuccessful',
+			];
+		}
+
+		global $library;
+		if (empty($library) || !$library->enableBookings) {
+			return $emptyOnDisabled
+				? ['success' => true, 'bookings' => []]
+				: [
+					'success' => false,
+					'message' => translate(['text' => 'Bookings are not enabled for your library.', 'isPublicFacing' => true]),
+				];
+		}
+
+		return $user;
 	}
 
 	/** @noinspection PhpUnused */
