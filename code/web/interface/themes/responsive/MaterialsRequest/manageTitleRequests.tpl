@@ -10,6 +10,7 @@
 		</div>
 	{/if}
 	{if !empty($loggedIn)}
+	<div id="materialsRequestFilters" class="accordion">
 		{if count($allRequests) > 0}
 			<form id="updateRequests" method="post" action="/MaterialsRequest/ManageRequests" class="form form-horizontal">
 				<div class="form-group col-xs-4">
@@ -22,6 +23,17 @@
 						<option value="250"{if $materialsRequestsPerPage == 250} selected="selected"{/if}>250</option>
 						<option value="500"{if $materialsRequestsPerPage == 500} selected="selected"{/if}>500</option>
 						<option value="all"{if $showingAllRequests} selected="selected"{/if}>{translate text="All" isAdminFacing=true inAttribute=true}</option>
+					</select>
+				</div>
+				<div class="form-group col-xs-4">
+					<label for="sort" class="control-label">{translate text="Sort By" isAdminFacing=true}&nbsp;</label>
+					<select id="sort" name="sort" class="sort form-control input-sm" onchange="AspenDiscovery.changeSort()">
+						<option value="title"{if $materialsRequestSort == 'title'} selected="selected"{/if}>{translate text="Title" isPublicFacing=true inAttribute=true}</option>
+						<option value="author"{if $materialsRequestSort == 'author'} selected="selected"{/if}>{translate text="Author" isPublicFacing=true inAttribute=true}</option>
+						<option value="format"{if $materialsRequestSort == 'format'} selected="selected"{/if}>{translate text="Format" isPublicFacing=true inAttribute=true}</option>
+						<option value="dateFirstRequested"{if $materialsRequestSort == 'dateFirstRequested'} selected="selected"{/if}>{translate text="Date First Requested" isPublicFacing=true inAttribute=true}</option>
+						<option value="dateLastRequested desc"{if $materialsRequestSort == 'dateLastRequested'} selected="selected"{/if}>{translate text="Date Last Requested" isPublicFacing=true inAttribute=true}</option>
+						<option value="numRequests desc"{if $materialsRequestSort == 'numRequests'} selected="selected"{/if}>{translate text="Number of Requests" isPublicFacing=true inAttribute=true}</option>
 					</select>
 				</div>
 				<table id="requestedMaterials" class="table tablesorter table-striped table-hover table-sticky">
