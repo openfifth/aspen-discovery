@@ -1750,7 +1750,9 @@ abstract class Solr {
 		$this->pingServer();
 
 		// Set up XML
-		$this->client->addCustomHeaders(['Content-Type: text/xml; charset=utf-8'], false);
+		if (!in_array('Content-Type: text/xml; charset=utf-8', $this->client->getHeaders())) {
+			$this->client->addCustomHeaders(['Content-Type: text/xml; charset=utf-8'], false);
+		}
 
 		// Send Request
 		$result = $this->client->curlPostBodyData($this->host . "/update?commit=true", $xml, false);
