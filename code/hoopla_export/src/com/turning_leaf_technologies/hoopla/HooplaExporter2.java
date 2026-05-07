@@ -1048,7 +1048,7 @@ public class HooplaExporter2 {
 			Long libraryId = librarySetting.getLibraryId();
 			String hooplaLibraryId = librarySetting.getHooplaLibraryId();
 
-			logEntry.addNote("Updating Flex availability for library " + libraryId);
+			logEntry.addNote("Updating Flex availability for library " + librarySetting.getLibraryDisplayName() + " (Hoopla Library ID: " + librarySetting.getHooplaLibraryId() + ")");
 			logEntry.saveResults();
 
 			ArrayList<Long> flexTitleIds = loadFlexEntitlementsForLibrary(libraryId);
