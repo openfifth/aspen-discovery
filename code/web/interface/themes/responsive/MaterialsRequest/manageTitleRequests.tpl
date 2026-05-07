@@ -32,8 +32,8 @@
 						<option value="author"{if $materialsRequestSort == 'author'} selected="selected"{/if}>{translate text="Author" isPublicFacing=true inAttribute=true}</option>
 						<option value="format"{if $materialsRequestSort == 'format'} selected="selected"{/if}>{translate text="Format" isPublicFacing=true inAttribute=true}</option>
 						<option value="dateFirstRequested"{if $materialsRequestSort == 'dateFirstRequested'} selected="selected"{/if}>{translate text="Date First Requested" isPublicFacing=true inAttribute=true}</option>
-						<option value="dateLastRequested desc"{if $materialsRequestSort == 'dateLastRequested'} selected="selected"{/if}>{translate text="Date Last Requested" isPublicFacing=true inAttribute=true}</option>
-						<option value="numRequests desc"{if $materialsRequestSort == 'numRequests'} selected="selected"{/if}>{translate text="Number of Requests" isPublicFacing=true inAttribute=true}</option>
+						<option value="dateLastRequested desc"{if $materialsRequestSort == 'dateLastRequested desc'} selected="selected"{/if}>{translate text="Date Last Requested" isPublicFacing=true inAttribute=true}</option>
+						<option value="numRequests desc"{if $materialsRequestSort == 'numRequests desc'} selected="selected"{/if}>{translate text="Number of Requests" isPublicFacing=true inAttribute=true}</option>
 					</select>
 				</div>
 				<table id="requestedMaterials" class="table tablesorter table-striped table-hover table-sticky">
