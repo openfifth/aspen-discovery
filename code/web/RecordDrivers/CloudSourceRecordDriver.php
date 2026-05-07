@@ -112,47 +112,70 @@ class CloudSourceRecordDriver extends RecordInterface {
 		return $this->record->doi;
 	}
 
-	public function getPatronUrl($recordView = false): string {
-		require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
+	private static ?string $teValue = null;
+	public function getTeValue() : string {
+		if (CloudSourceRecordDriver::$teValue === null) {
+			CloudSourceRecordDriver::$teValue = '';
 
-		global $library;
-		$patronUrl = '';
-		require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
-		$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
-		$libraryCloudSourceSetting->libraryId = $library->libraryId;
-		if ($libraryCloudSourceSetting->find(true)){
-			require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
-			$cloudSourceSetting = new CloudSourceSetting();
-			$cloudSourceSetting->id = $libraryCloudSourceSetting->cloudsourceSettingId;
-			if ($cloudSourceSetting->find(true)){
-				if ($recordView) {
-					$patronUrl = $cloudSourceSetting->patronUrl . "/search/results?qu=" . $this->getDoi();
-				} else {
-					$patronUrl = $cloudSourceSetting->patronUrl . "/search/results?qu=" . $_REQUEST["lookfor"];
+			global $library;
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $library->libraryId;
+			if ($libraryCloudSourceSetting->find(true)){
+				require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
+				$cloudSourceSetting = new CloudSourceSetting();
+				$cloudSourceSetting->id = $libraryCloudSourceSetting->cloudsourceSettingId;
+				if ($cloudSourceSetting->find(true)){
+					$patronUrl = $cloudSourceSetting->patronUrl . "/search/results";
+
+					$ch = curl_init();
+					curl_setopt($ch, CURLOPT_URL, $patronUrl);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
+					$html = curl_exec($ch);
+					curl_close($ch);
+
+					// First grab the full input tag with id="targetValue"
+					if ($html && preg_match('/<input[^>]*id="targetValue"[^>]*>/', $html, $tag)) {
+						// Then extract the number from its value attribute
+						if (preg_match('/value="(-\d+):/', $tag[0], $matches)) {
+							CloudSourceRecordDriver::$teValue = $matches[1]; // e.g. "-261243320"
+						}
+					}
 				}
 			}
 		}
-
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $patronUrl);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
-		$html = curl_exec($ch);
-		curl_close($ch);
-
-		$searchToken = '';
-		// First grab the full input tag with id="targetValue"
-		if ($html && preg_match('/<input[^>]*id="targetValue"[^>]*>/', $html, $tag)) {
-			// Then extract the number from its value attribute
-			if (preg_match('/value="(-\d+):/', $tag[0], $matches)) {
-				$searchToken = $matches[1]; // e.g. "-261243320"
-			}
-		}
-
-		return $patronUrl . "&te=" . $searchToken;
+		return CloudSourceRecordDriver::$teValue;
 	}
-	public function getSearchResult($view = 'list', $showListsAppearingOn = true)
-	{
+
+	private $patronUrl = null;
+	public function getPatronUrl($recordView = false): string {
+		if ($this->patronUrl == null) {
+			require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
+
+			global $library;
+			$patronUrl = '';
+			require_once ROOT_DIR . '/sys/CloudSource/LibraryCloudSourceSetting.php';
+			$libraryCloudSourceSetting = new LibraryCloudSourceSetting();
+			$libraryCloudSourceSetting->libraryId = $library->libraryId;
+			if ($libraryCloudSourceSetting->find(true)){
+				require_once ROOT_DIR . '/sys/CloudSource/CloudSourceSetting.php';
+				$cloudSourceSetting = new CloudSourceSetting();
+				$cloudSourceSetting->id = $libraryCloudSourceSetting->cloudsourceSettingId;
+				if ($cloudSourceSetting->find(true)){
+					if (!empty($this->getDoi())) {
+						$patronUrl = $cloudSourceSetting->patronUrl . "/search/results?qu=doi:" . $this->getDoi();
+					} else {
+						$patronUrl = $cloudSourceSetting->patronUrl . "/search/results?qu=" . $_REQUEST["lookfor"];
+					}
+				}
+			}
+
+			$this->patronUrl = $patronUrl . "&te=" . $this->getTeValue();
+		}
+		return $this->patronUrl;
+	}
+	public function getSearchResult($view = 'list', $showListsAppearingOn = true) : string {
 		if ($view == 'covers') {
 			return $this->getBrowseResult();
 		}
@@ -168,7 +191,7 @@ class CloudSourceRecordDriver extends RecordInterface {
 		$interface->assign('module', $this->getModule());
 		$interface->assign('summFormats', $formats);
 		$interface->assign('summUrl', $this->getLinkUrl(false, $redirectUrl));
-		$interface->assign('externalUrl', $this->getRecordUrl());
+		$interface->assign('externalUrl', $redirectUrl);
 		$interface->assign('summTitle', $this->getTitle());
 		$interface->assign('summAuthor', $this->getAuthor());
 		$interface->assign('summPublicationDates', $this->getPublicationDate());
@@ -185,21 +208,6 @@ class CloudSourceRecordDriver extends RecordInterface {
 		$interface->assign('bookCoverUrlMedium', $this->getBookcoverUrl('medium'));
 		$interface->assign('bypassAspenPage', $this->bypassAspenCloudSourcePageSetting());
 
-		/*require_once ROOT_DIR . '/sys/CloudSource/CloudSourceRecordUsage.php';
-		global $aspenUsage;
-		$recordUsage = new CloudSourceRecordUsage();
-		$recordUsage->instance = $aspenUsage->getInstance();
-		$recordUsage->cloudsourceId = $this->getUniqueID();
-		$recordUsage->year = date('Y');
-		$recordUsage->month = date('n');
-		if ($recordUsage->find(true)) {
-			$recordUsage->timesViewedInSearch++;
-			$recordUsage->update();
-		} else {
-			$recordUsage->timesViewedInSearch = 1;
-			$recordUsage->timesUsed = 0;
-			$recordUsage->insert();
-		}*/
 		return 'RecordDrivers/CloudSource/result.tpl';
 	}
 
