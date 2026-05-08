@@ -1182,7 +1182,7 @@ class OverDriveDriver extends AbstractEContentDriver {
 			]);
 
 			$this->incrementStat('numHoldsCancelled');
-			$this->updateCachesForCancelledHold($patron, $holdToCancel);
+			$this->updateCachesForCancelledHold($patron, $holdToCancel, 'overdrive');
 		} else {
 			$cancelHoldResult['message'] = translate([
 				'text' => 'There was an error cancelling your hold.',

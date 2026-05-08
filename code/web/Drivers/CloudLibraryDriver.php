@@ -515,7 +515,7 @@ class CloudLibraryDriver extends AbstractEContentDriver {
 				'isPublicFacing' => true,
 			]);
 
-			$this->updateCachesForCancelledHold($patron, $holdToCancel);
+			$this->updateCachesForCancelledHold($patron, $holdToCancel, 'cloud_library');
 		} elseif ($responseCode == '400') {
 			$result['message'] = translate([
 				'text' => "Bad Request cancelling hold.",

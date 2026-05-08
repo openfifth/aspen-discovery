@@ -432,7 +432,7 @@ class Axis360Driver extends AbstractEContentDriver {
 				]);
 
 				$this->incrementStat('numHoldsCancelled');
-				$this->updateCachesForCancelledHold($patron, $holdToCancel);
+				$this->updateCachesForCancelledHold($patron, $holdToCancel, 'axis360');
 			}
 		} else {
 			$result['message'] = translate([
