@@ -421,6 +421,13 @@ function getUpdates26_05_00(): array {
 				"ALTER TABLE user_agent DROP INDEX userAgent, ADD UNIQUE INDEX userAgent (userAgent(512))"
 			]
 		], //user_agent_consolidation
+		'default_is_bot_for_user_agents' => [
+			'title' => 'Setup Default Is Bot For User Agents',
+			'description' => 'Setup Default Is Bot For User Agents after consolidating user agents.',
+			'sql' => [
+				"UPDATE user_agent SET isBot = 1 WHERE userAgent REGEXP 'Bot|Spider|Spyder|Crawl|SearchHelper|Aspen Discovery'",
+			]
+		], //default_is_bot_for_user_agents
 		'web_resource_show_in_explore_more' => [
 			'title' => 'Add Option to Web Resources to Show in Explore More',
 			'description' => 'Add option in web builder resource settings to show in explore more',
