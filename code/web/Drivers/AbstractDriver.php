@@ -35,7 +35,7 @@ abstract class AbstractDriver {
 	 * @return Checkout[]        Array of the patron's transactions on success
 	 * @access public
 	 */
-	public abstract function getCheckouts(User $patron, array $options): array;
+	public abstract function getCheckouts(User $patron, array $options = []): array;
 
 	/**
 	 * @return boolean true if the driver can renew all titles in a single pass

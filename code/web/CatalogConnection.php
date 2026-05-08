@@ -576,11 +576,11 @@ class CatalogConnection {
 	 * AspenError otherwise.
 	 * @access public
 	 */
-	public function getCheckouts(User $user, ?bool $forceRefresh = false): array {
+	public function getCheckouts(User $user, ?bool $forceRefresh = false, array $options = []): array {
 		$accountSummary = $user->getCachedAccountSummary('ils');
 		$cachedCheckouts = $user->getCachedCheckoutsForSource('ils');
 		if ($forceRefresh || $accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
-			$checkouts = $this->driver->getCheckouts($user);
+			$checkouts = $this->driver->getCheckouts($user, $options);
 
 			$cachedCheckouts = $this->driver->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
