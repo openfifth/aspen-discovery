@@ -3889,7 +3889,8 @@ class Koha extends AbstractIlsDriver {
 				$result['error'] = trim($error);
 				// Koha pre-fills the username field only when it found the patron.
 				// If it's empty, the patron doesn't exist and we should let other account profiles (e.g. db-auth) try to handle the request.
-				if (preg_match('/<input[^>]+name="username"[^>]+value="([^"]+)"/', $postResults, $foundMatch)) {
+				// The resend link is only generated from a prior Koha response that contained the resend form, which Koha only renders for existing patrons.
+				if ($isResendRequest || preg_match('/<input[^>]+name="username"[^>]+value="([^"]+)"/', $postResults, $foundMatch)) {
 					$result['foundPatron'] = true;
 				}
 			}
