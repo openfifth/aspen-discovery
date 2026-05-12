@@ -4996,7 +4996,7 @@ class Koha extends AbstractIlsDriver {
 			}
 
 			$postVariables = $this->buildPatronRegistrationPostVariables($input, AbstractIlsDriver::ILS_REG_MODE_PUBLIC_SELF);
-			$result = $this->submitPatronRegistrationToKoha($postVariables);
+			$result = $this->submitPatronRegistrationToKoha($postVariables, ['input' => $input]);
 
 			if (!$library->ilsConsentEnabled) {
 				return $result;
@@ -5094,6 +5094,7 @@ class Koha extends AbstractIlsDriver {
 
 		$autoBarcode = $this->getKohaSystemPreference('autoMemberNum');
 		$skipEmailVerification = !empty($options['skipEmailVerification']);
+		$requestSource = $options['input'];
 		$verificationRequired = $skipEmailVerification ? '0' : $this->getKohaSystemPreference('PatronSelfRegistrationVerifyByEmail');
 
 		$oauthToken = $this->getOAuthToken();
@@ -5108,12 +5109,12 @@ class Koha extends AbstractIlsDriver {
 			if ($this->getKohaVersion() > 21.05) {
 				$formattedExtendedAttributes = [];
 				foreach ($this->setExtendedAttributes() as $extendedAttribute) {
-					if (!isset($_REQUEST["borrower_attribute_" . $extendedAttribute['code']])) {
+					if (!isset($requestSource["borrower_attribute_" . $extendedAttribute['code']])) {
 						continue;
 					}
 					$formattedExtendedAttributes[] = [
 						'type' =>  $extendedAttribute['code'],
-						'value' => $_REQUEST["borrower_attribute_" . $extendedAttribute['code']]
+						'value' => $requestSource["borrower_attribute_" . $extendedAttribute['code']]
 					];
 				}
 				$postVariables['extended_attributes'] = $formattedExtendedAttributes;
@@ -5163,10 +5164,10 @@ class Koha extends AbstractIlsDriver {
 					if ($autoBarcode == "1") {
 						$result['barcode'] = $jsonResponse->cardnumber;
 						$patronId = $jsonResponse->patron_id;
-						if (isset($_REQUEST['borrower_password'])) {
-							$tmpResult = $this->resetPinInKoha($patronId, $_REQUEST['borrower_password'], $oauthToken);
+						if (isset($requestSource['borrower_password'])) {
+							$tmpResult = $this->resetPinInKoha($patronId, $requestSource['borrower_password'], $oauthToken);
 							if ($tmpResult['success']) {
-								$result['password'] = $_REQUEST['borrower_password'];
+								$result['password'] = $requestSource['borrower_password'];
 							}
 						}
 						$newUser = $this->findNewUser($jsonResponse->cardnumber, null);
@@ -5328,7 +5329,9 @@ class Koha extends AbstractIlsDriver {
 	public function registerPatronToILS(string $mode, array $input): array {
 		if ($mode === AbstractIlsDriver::ILS_REG_MODE_STAFF) {
 			$postVariables = $this->buildPatronRegistrationPostVariables($input, $mode);
-			return $this->submitPatronRegistrationToKoha($postVariables, $this->registrationOptionsFor($mode));
+			$options = $this->registrationOptionsFor($mode);
+			$options['input'] = $input;
+			return $this->submitPatronRegistrationToKoha($postVariables, $options);
 		}
 		if ($mode === AbstractIlsDriver::ILS_REG_MODE_PUBLIC_SELF || $mode === AbstractIlsDriver::ILS_REG_MODE_MINIMAL_SELF) {
 			return $this->selfRegister();
@@ -8800,7 +8803,7 @@ class Koha extends AbstractIlsDriver {
 			}
 			$postVariables['library_id'] = $patronHomeLocation;
 
-			$result = $this->submitPatronRegistrationToKoha($postVariables);
+			$result = $this->submitPatronRegistrationToKoha($postVariables, ['input' => $_REQUEST]);
 
 			return $result;
 		}
