@@ -2649,7 +2649,7 @@ AspenDiscovery.Account = (function () {
 						} else {
 							$(".ils-overdue-placeholder").html("0");
 						}
-						$(".ils-holds-placeholder").html(summary.numHolds);
+						$(".ils-holds-placeholder").html(Math.max(0, summary.numHolds));
 						totalHolds += parseInt(summary.numHolds);
 						$(".holds-placeholder").html(totalHolds);
 						if (summary.numAvailableHolds > 0) {

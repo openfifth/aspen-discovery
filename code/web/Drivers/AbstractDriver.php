@@ -144,8 +144,8 @@ abstract class AbstractDriver {
 		return null;
 	}
 
-	public function updateCachesForCancelledHold(User $patron, Hold $hold) : void {
-		$accountProfile = $patron->getCachedAccountSummary('ils');
+	public function updateCachesForCancelledHold(User $patron, Hold $hold, string $source) : void {
+		$accountProfile = $patron->getCachedAccountSummary($source);
 		if ($hold->available) {
 			$accountProfile->decrementAvailableHolds();
 		}else{

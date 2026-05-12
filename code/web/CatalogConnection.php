@@ -1401,7 +1401,7 @@ class CatalogConnection {
 		if ($okToCancel) {
 			$result = $this->driver->cancelHold($patron, $recordId, $cancelId, $isIll);
 			if ($result['success']) {
-				$this->driver->updateCachesForCancelledHold($patron, $holdToCancel);
+				$this->driver->updateCachesForCancelledHold($patron, $holdToCancel, 'ils');
 			}
 			return $result;
 		} else {
