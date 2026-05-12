@@ -281,7 +281,7 @@ class Pay360_Client  {
 					'amountInMinorUnits' => $amountInMinorUnits,
 					'displayableReference' => $fineDetails['reason'], 
 				],
-				'IgItemDetails' => [
+				'lgItemDetails' => [
 					'additionalReference' => $fineDetails['reason'],
 					'narrative' => $fineDetails['reason'],
 					'customerInfo' => $fineDetails['message'],
@@ -292,7 +292,7 @@ class Pay360_Client  {
 				$item['tax'] = $fineDetails['sap_vat'];
 			}
 			if (isset($fineDetails['sap_gl'])) {
-				$item['IgItemDetails']['fundCode'] = $fineDetails['sap_gl'];
+				$item['lgItemDetails']['fundCode'] = $fineDetails['sap_gl'];
 			}
 			if (isset($fineDetails['reference'])) {
 				$item['itemSummary']['reference'] = $fineDetails['reference'];
