@@ -3887,7 +3887,11 @@ class Koha extends AbstractIlsDriver {
 						$error);
 				}
 				$result['error'] = trim($error);
-				$result['foundPatron'] = true;
+				// Koha pre-fills the username field only when it found the patron.
+				// If it's empty, the patron doesn't exist and we should let other account profiles (e.g. db-auth) try to handle the request.
+				if (preg_match('/<input[^>]+name="username"[^>]+value="([^"]+)"/', $postResults, $foundMatch)) {
+					$result['foundPatron'] = true;
+				}
 			}
 			elseif (preg_match('%<div id="password-recovery">\s*<div class="alert alert-info">\s*<p>(.*?)</p>\s*<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s*</div>%s', $postResults, $messageInformation) ||
 					preg_match('%<div id="password-recovery">\s+<div class="alert alert-info">(.*?)<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s+</div>\s+</div>%s', $postResults, $messageInformation)) {
