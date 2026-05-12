@@ -1124,7 +1124,7 @@ class HooplaDriver extends AbstractEContentDriver {
 					'text' => 'Your Hoopla hold was cancelled successfully',
 					'isPublicFacing' => true,
 				]);
-				$this->updateCachesForCancelledHold($patron, $holdToCancel);
+				$this->updateCachesForCancelledHold($patron, $holdToCancel, 'hoopla');
 			} else {
 				$result['message'] = translate([
 					'text' => 'Could not cancel Hoopla hold.',

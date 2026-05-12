@@ -544,7 +544,7 @@ class PalaceProjectDriver extends AbstractEContentDriver {
 					]);
 
 					$this->incrementStat('numHoldsCancelled');
-					$this->updateCachesForCancelledHold($patron, $hold);
+					$this->updateCachesForCancelledHold($patron, $hold, 'palace_project');
 					$cancelWorked = true;
 				}
 			}
