@@ -15096,7 +15096,7 @@ AspenDiscovery.Record = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					AspenDiscovery.Record.showPlaceHold(module, source, id, volume, variationId, button, allowFormatSelection);
+					AspenDiscovery.Record.showPlaceHold(module, source, id, volume, variationId, button, allowEditionSelection, format);
 				}, false);
 			}
 			return false;
