@@ -6224,7 +6224,7 @@ class User extends DataObject {
 
 		// if the ILS supports account/card renewal, check whether it enables them for the active ILS user.
 		if ($userLibrary->enableCardRenewal == 1 && $catalogDriver->hasCardRenewalSupport()) {
-			if (!$ilsAccountSummary->isExpired()) {
+			if (!$ilsAccountSummary->isExpired() && !$ilsAccountSummary->isExpirationClose()) {
 				return false;
 			} 
 			return $catalogDriver->canUserRenewAccount($this->unique_ils_id);
