@@ -415,6 +415,7 @@ class EventRegistrationService {
 			if (!$event->find(true)) {
 				continue;
 			}
+			require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
 			$humanEventDate = DateUtils::formatHumanDate($instance->date);
 			$formatted[] = [
 				'eventTitle' => $event->title,
