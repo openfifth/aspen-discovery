@@ -402,8 +402,8 @@ class SystemAPI extends AbstractAPI {
 		$aspenEventWaitingListUpdates = getAspenEventWaitingListUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_notification_updates.php';
 		$aspenEventNotificationUpdates = getAspenEventNotificationUpdates();
-		require_once ROOT_DIR . '/sys/DBMaintenance/sefton_event_updates.php';
-		$seftonEventUpdates = getSeftonEventUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/sefton_event_phase_two_updates.php';
+		$seftonEventUpdates = getSeftonEventPhaseTwoUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/api_oauth_updates.php';
 		$apiOAuthUpdates = getApiOAuthUpdates();
 
