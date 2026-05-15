@@ -1,14 +1,16 @@
 <?php
 
 use League\OAuth2\Server\Exception\OAuthServerException;
+use Laminas\Diactoros\Response;
+use Laminas\Diactoros\ServerRequestFactory;
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
 
 require_once ROOT_DIR . '/Action.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2ServerConfig.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/RateLimiter/OAuth2RateLimiter.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2UserEntity.php';
-require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleServerRequest.php';
-require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleResponse.php';
 require_once ROOT_DIR . '/sys/UserAccount.php';
 
 class Authentication_OAuth2_Authorize extends Action {
@@ -196,24 +198,24 @@ class Authentication_OAuth2_Authorize extends Action {
 	/**
 	 * Create a PSR-7 server request from the current HTTP request
 	 */
-	private function createServerRequest(): SimpleServerRequest {
-		return new SimpleServerRequest();
+	private function createServerRequest(): ServerRequestInterface {
+		return ServerRequestFactory::fromGlobals($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
 	}
 
 	/**
 	 * Create a PSR-7 response
 	 */
-	private function createResponse(): SimpleResponse {
-		return new SimpleResponse();
+	private function createResponse(): ResponseInterface {
+		return new Response();
 	}
 
 	/**
 	 * Send a PSR-7 response
 	 */
-	private function sendPsr7Response($response): void {
+	private function sendPsr7Response(ResponseInterface $response): void {
 		http_response_code($response->getStatusCode());
 		foreach ($response->getHeaders() as $name => $values) {
-			foreach ((array)$values as $value) {
+			foreach ($values as $value) {
 				header($name . ': ' . $value, false);
 			}
 		}

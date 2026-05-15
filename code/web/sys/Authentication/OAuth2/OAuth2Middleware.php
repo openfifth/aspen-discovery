@@ -1,6 +1,8 @@
 <?php
 
 use League\OAuth2\Server\Exception\OAuthServerException;
+use Laminas\Diactoros\ServerRequestFactory;
+use Psr\Http\Message\ServerRequestInterface;
 
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2ServerConfig.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
@@ -112,9 +114,8 @@ class OAuth2Middleware {
 		return self::$authenticatedClientId;
 	}
 
-	private static function createPsr7Request() {
-		require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleServerRequest.php';
-		return new SimpleServerRequest();
+	private static function createPsr7Request(): ServerRequestInterface {
+		return ServerRequestFactory::fromGlobals($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
 	}
 
 	private static function sendOAuthErrorResponse(OAuthServerException $exception): void {

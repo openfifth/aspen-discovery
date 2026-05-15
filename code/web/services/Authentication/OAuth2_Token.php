@@ -2,12 +2,12 @@
 
 use League\OAuth2\Server\Exception\OAuthServerException;
 use Psr\Http\Message\ResponseInterface;
+use Laminas\Diactoros\Response;
+use Laminas\Diactoros\ServerRequestFactory;
 
 require_once ROOT_DIR . '/JSON_Action.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2ServerConfig.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/RateLimiter/OAuth2RateLimiter.php';
-require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleServerRequest.php';
-require_once ROOT_DIR . '/sys/Authentication/OAuth2/PSR7/SimpleResponse.php';
 
 class Authentication_OAuth2_Token extends JSON_Action {
 
@@ -32,8 +32,8 @@ class Authentication_OAuth2_Token extends JSON_Action {
 
 		try {
 			$logger->log("[OAuth2] OAuth2_Token - Creating PSR7 request and response objects", Logger::LOG_DEBUG);
-			$request = new SimpleServerRequest();
-			$response = new SimpleResponse();
+			$request = ServerRequestFactory::fromGlobals($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES);
+			$response = new Response();
 			$response = $server->respondToAccessTokenRequest($request, $response);
 
 			$requestedScopes = $this->getRequestedScopes();
@@ -77,25 +77,16 @@ class Authentication_OAuth2_Token extends JSON_Action {
 		}
 	}
 
-	private function sendPsr7Response($response): void {
+	private function sendPsr7Response(ResponseInterface $response): void {
 		http_response_code($response->getStatusCode());
 
 		foreach ($response->getHeaders() as $name => $values) {
-			if (is_array($values)) {
-				foreach ($values as $value) {
-					header($name . ': ' . $value, false);
-				}
-			} else {
-				header($name . ': ' . $values);
+			foreach ($values as $value) {
+				header($name . ': ' . $value, false);
 			}
 		}
 
-		$body = $response->getBody();
-		if (method_exists($body, '__toString')) {
-			echo $body->__toString();
-		} else {
-			echo $body;
-		}
+		echo $response->getBody();
 	}
 
 	private function getRequestedScopes(): array {
@@ -175,7 +166,7 @@ class Authentication_OAuth2_Token extends JSON_Action {
 			$idToken = OAuth2ServerConfig::generateIDToken($userData, $clientId, $issuer);
 			$body['id_token'] = $idToken;
 
-			$newResponse = new SimpleResponse();
+			$newResponse = new Response();
 			$newResponse->getBody()->write(json_encode($body));
 
 			$newResponse = $newResponse->withStatus($response->getStatusCode());
