@@ -157,7 +157,6 @@ abstract class AbstractAPI extends Action{
 				$this->logPatronRequest($user->id);
 			}
 			$this->_userForAPICall = $user;
-		}
 
 		return $this->_userForAPICall;
 	}
