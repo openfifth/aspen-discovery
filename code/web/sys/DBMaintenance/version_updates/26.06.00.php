@@ -146,8 +146,6 @@ function getUpdates26_06_00(): array {
 		//tomas
 
 		// stephen
-		
-		//pedro
 
 		//other
 
