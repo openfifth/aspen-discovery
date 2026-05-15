@@ -38,7 +38,7 @@ class OAuth2ServerConfig {
 
 			$logger->log("[OAuth2] OAuth2ServerConfig::getAuthorizationServer() - All repositories initialized", Logger::LOG_DEBUG);
 
-			$privateKeyPath = ROOT_DIR . '/services/Authentication/OAuth2Server/private.key';
+			$privateKeyPath = ROOT_DIR . '/sys/Authentication/OAuth2/private.key';
 			$encryptionKey = self::getEncryptionKey();
 
 			$logger->log("[OAuth2] OAuth2ServerConfig::getAuthorizationServer() - Using private key path: " . $privateKeyPath, Logger::LOG_DEBUG);
@@ -87,7 +87,7 @@ class OAuth2ServerConfig {
 			$logger->log("[OAuth2] OAuth2ServerConfig::getResourceServer() - Initializing resource server", Logger::LOG_DEBUG);
 			
 			$accessTokenRepository = new AccessTokenRepository();
-			$publicKeyPath = ROOT_DIR . '/services/Authentication/OAuth2Server/public.key';
+			$publicKeyPath = ROOT_DIR . '/sys/Authentication/OAuth2/public.key';
 
 			$logger->log("[OAuth2] OAuth2ServerConfig::getResourceServer() - Using public key path: " . $publicKeyPath, Logger::LOG_DEBUG);
 
@@ -101,8 +101,8 @@ class OAuth2ServerConfig {
 
 	private static function getEncryptionKey(): string {
 		global $logger;
-		
-		$keyFile = ROOT_DIR . '/services/Authentication/OAuth2Server/encryption.key';
+
+		$keyFile = ROOT_DIR . '/sys/Authentication/OAuth2/encryption.key';
 
 		if (!file_exists($keyFile)) {
 			$logger->log("[OAuth2] OAuth2ServerConfig::getEncryptionKey() - Encryption key file not found, generating new key: " . $keyFile, Logger::LOG_DEBUG);
@@ -119,9 +119,9 @@ class OAuth2ServerConfig {
 
 	public static function generateKeyPairIfNeeded(): void {
 		global $logger;
-		
-		$privateKeyPath = ROOT_DIR . '/services/Authentication/OAuth2Server/private.key';
-		$publicKeyPath = ROOT_DIR . '/services/Authentication/OAuth2Server/public.key';
+
+		$privateKeyPath = ROOT_DIR . '/sys/Authentication/OAuth2/private.key';
+		$publicKeyPath = ROOT_DIR . '/sys/Authentication/OAuth2/public.key';
 
 		if (!file_exists($privateKeyPath) || !file_exists($publicKeyPath)) {
 			$logger->log("[OAuth2] OAuth2ServerConfig::generateKeyPairIfNeeded() - RSA key pair not found, generating new pair", Logger::LOG_DEBUG);
@@ -198,7 +198,7 @@ class OAuth2ServerConfig {
 		$header64 = self::base64urlEncode(json_encode($header));
 		$payload64 = self::base64urlEncode(json_encode($claims));
 
-		$privateKeyPath = ROOT_DIR . '/services/Authentication/OAuth2Server/private.key';
+		$privateKeyPath = ROOT_DIR . '/sys/Authentication/OAuth2/private.key';
 		$privateKey = file_get_contents($privateKeyPath);
 
 		$signature = '';

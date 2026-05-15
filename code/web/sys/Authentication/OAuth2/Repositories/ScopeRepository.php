@@ -54,6 +54,13 @@ class ScopeRepository implements ScopeRepositoryInterface {
 		$allowedClaims = $client->getClaimsArray();
 		$finalScopes = [];
 
+		if (!empty($allowedScopes)) {
+			$firstItem = reset($allowedScopes);
+			if (!is_string($firstItem) || !str_contains($firstItem, ':')) {
+				$allowedScopes = array_keys($allowedScopes);
+			}
+		}
+
 		$requestedScopesList = [];
 		foreach ($scopes as $scope) {
 			$requestedScopesList[] = $scope->getIdentifier();
