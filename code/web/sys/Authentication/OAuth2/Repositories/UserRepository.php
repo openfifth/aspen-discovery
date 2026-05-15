@@ -3,7 +3,6 @@
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Repositories\UserRepositoryInterface;
 
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2UserEntity.php';
 
 class UserRepository implements UserRepositoryInterface {

@@ -3,7 +3,6 @@
 use League\OAuth2\Server\Exception\OAuthServerException;
 
 require_once ROOT_DIR . '/Action.php';
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2ServerConfig.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/RateLimiter/OAuth2RateLimiter.php';

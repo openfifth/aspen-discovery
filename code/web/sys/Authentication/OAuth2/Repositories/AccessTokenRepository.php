@@ -4,7 +4,6 @@ use League\OAuth2\Server\Entities\AccessTokenEntityInterface;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
 
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Tokens/OAuth2AccessToken.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2AccessTokenEntity.php';
 

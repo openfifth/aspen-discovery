@@ -3,7 +3,6 @@
 use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
 use League\OAuth2\Server\Repositories\RefreshTokenRepositoryInterface;
 
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Tokens/OAuth2RefreshToken.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2RefreshTokenEntity.php';
 

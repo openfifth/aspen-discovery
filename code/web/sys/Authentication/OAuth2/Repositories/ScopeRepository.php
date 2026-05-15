@@ -5,7 +5,6 @@ use League\OAuth2\Server\Entities\ScopeEntityInterface;
 use League\OAuth2\Server\Exception\OAuthServerException;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
 
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2ScopeEntity.php';
 
 class ScopeRepository implements ScopeRepositoryInterface {

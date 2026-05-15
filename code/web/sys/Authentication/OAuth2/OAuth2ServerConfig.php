@@ -7,7 +7,6 @@ use League\OAuth2\Server\Grant\PasswordGrant;
 use League\OAuth2\Server\Grant\RefreshTokenGrant;
 use League\OAuth2\Server\ResourceServer;
 
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/ClientRepository.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/AccessTokenRepository.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Repositories/ScopeRepository.php';

@@ -3,7 +3,6 @@
 use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
 use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
 
-require_once ROOT_DIR . '/services/Authentication/OAuth2Server/_toolkit_loader.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Entities/OAuth2AuthCodeEntity.php';
 require_once ROOT_DIR . '/sys/Authentication/OAuth2/Tokens/OAuth2AuthCode.php';
 
