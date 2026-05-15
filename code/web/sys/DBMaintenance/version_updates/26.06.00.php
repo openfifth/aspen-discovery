@@ -120,12 +120,35 @@ function getUpdates26_06_00(): array {
 			'description' => 'Add OpenID Connect support to OAuth2',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE oauth2_clients ADD COLUMN supports_openid TINYINT(1) DEFAULT 0;
-				ALTER TABLE oauth2_clients ADD COLUMN allowed_claims TEXT;
-				ALTER TABLE oauth2_clients ADD INDEX idx_supports_openid (supports_openid);"
+				"CREATE TABLE IF NOT EXISTS oauth2_openid_clients (
+				id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				name VARCHAR(255) NOT NULL,
+				client_id VARCHAR(255) NOT NULL UNIQUE,
+				client_secret VARCHAR(255) NOT NULL,
+				allowed_claims TEXT,
+				redirect_uri VARCHAR(2000),
+				is_active TINYINT(1) DEFAULT 1,
+				created_by INT,
+				created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+				last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+				INDEX idx_client_id (client_id),
+				INDEX idx_is_active (is_active),
+				INDEX idx_created_by (created_by)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 			]
 		],
 		//Add OpenID Connect
+		'Add OpenID Connect Permissions' => [
+			'title' => 'Add OpenID Connect Permissions',
+			'description' => 'Add OpenID Connect permissions',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT IGNORE INTO permissions (sectionName, name, requiredModule, weight, description) VALUES
+			('System Administration', 'Administer OpenID Connect', '', 325, 'Controls if the user can manage OpenID Connect clients');
+			"
+			]
+		],
+		//Add OpenID Connect Permissions
 
 		//kodi
 

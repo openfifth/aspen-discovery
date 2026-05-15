@@ -8782,24 +8782,11 @@ AspenDiscovery.Admin = (function () {
 		},
 		updateOAuth2GrantType: function () {
 			var clientType = $("#client_typeSelect").val();
-			// Show/hide supports_openid and redirect_uri fields based on client_type
+			// Show/hide redirect_uri fields based on client_type
 			if (clientType === "web_application") {
-				$("#propertyRowsupports_openid").show();
 				$("#propertyRowredirect_uri").show();
 			} else {
-				$("#propertyRowsupports_openid").hide();
 				$("#propertyRowredirect_uri").hide();
-				$("#propertyRowallowed_claims").hide();
-			}
-		},
-		updateOAuth2SupportsOpenId: function () {
-			var supportsOpenId = $("#supports_openid").is(":checked");
-			if (supportsOpenId) {
-				$("#propertyRowallowed_claims").show();
-				$("#propertyRowscopes").hide();
-			} else {
-				$("#propertyRowallowed_claims").hide();
-				$("#propertyRowscopes").show();
 			}
 		},
 		updateOAuth2Scopes: function (element) {

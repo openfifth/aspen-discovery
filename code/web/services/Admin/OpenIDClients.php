@@ -1,15 +1,15 @@
 <?php
 
 require_once ROOT_DIR . '/services/Admin/ObjectEditor.php';
-require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Client.php';
+require_once ROOT_DIR . '/sys/Authentication/OAuth2/OpenIDClient.php';
 
-class Admin_OAuth2Clients extends ObjectEditor {
+class Admin_OpenIDClients extends ObjectEditor {
 	function getObjectType(): string {
-		return 'OAuth2Client';
+		return 'OpenIDClient';
 	}
 
 	function getToolName(): string {
-		return 'OAuth2Clients';
+		return 'OpenIDClients';
 	}
 
 	function getModule(): string {
@@ -17,11 +17,11 @@ class Admin_OAuth2Clients extends ObjectEditor {
 	}
 
 	function getPageTitle(): string {
-		return 'OAuth2 Clients';
+		return 'OpenID Connect (OIDC) Clients';
 	}
 
 	function getAllObjects($page, $recordsPerPage): array {
-		$object = new OAuth2Client();
+		$object = new OpenIDClient();
 		$object->orderBy('name');
 		$this->applyFilters($object);
 		$object->limit(($page - 1) * $recordsPerPage, $recordsPerPage);
@@ -38,7 +38,7 @@ class Admin_OAuth2Clients extends ObjectEditor {
 	}
 
 	function getObjectStructure($context = ''): array {
-		return OAuth2Client::getObjectStructure($context);
+		return OpenIDClient::getObjectStructure($context);
 	}
 
 	function getPrimaryKeyColumn(): string {
@@ -53,7 +53,7 @@ class Admin_OAuth2Clients extends ObjectEditor {
 		$breadcrumbs = [];
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home', 'Administration Home');
 		$breadcrumbs[] = new Breadcrumb('/Admin/Home#system_admin', 'System Administration');
-		$breadcrumbs[] = new Breadcrumb('/Admin/OAuth2Clients', 'OAuth2 Clients');
+		$breadcrumbs[] = new Breadcrumb('/Admin/OpenIDClients', 'OpenID Connect (OIDC) Clients');
 		return $breadcrumbs;
 	}
 
@@ -62,7 +62,7 @@ class Admin_OAuth2Clients extends ObjectEditor {
 	}
 
 	function getViewPermissions(): array {
-		return ['Administer OpenID Connect'];
+		return ['Administer OAuth2'];
 	}
 
 	function canBatchEdit(): bool {
@@ -77,23 +77,7 @@ class Admin_OAuth2Clients extends ObjectEditor {
 		return false;
 	}
 
-	function updateFromUI($object, $structure, $fieldLocks): array {
-		$clientSecretBackup = null;
-		if ($this->objectAction == 'addNew' && isset($object->client_secret)) {
-			$clientSecretBackup = $object->client_secret;
-			unset($object->client_secret);
-		}
-
-		$result = parent::updateFromUI($object, $structure, $fieldLocks);
-
-		if ($clientSecretBackup !== null) {
-			$object->client_secret = $clientSecretBackup;
-		}
-
-		return $result;
-	}
-
 	function getInitializationJs(): string {
-		return 'AspenDiscovery.Admin.updateOAuth2GrantType(); AspenDiscovery.Admin.maskOAuth2ClientSecret(); return false;';
+		return 'AspenDiscovery.Admin.maskOAuth2ClientSecret(); return false;';
 	}
 }

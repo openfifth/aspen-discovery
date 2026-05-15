@@ -30,7 +30,7 @@ class Logger {
 		$this->logAlerts = true;
 		$this->logErrors = true;
 
-		$this->logFilePath = '/var/log/' . $configArray['System']['applicationName'] . '/' . $serverName . '/messages.log';
+		$this->logFilePath = '/Users/kirstien/GitHub/aspen-discovery-data/' . $serverName . '/messages.log';
 	}
 
 	public function log($msg, $level, $forceLog = false) {
