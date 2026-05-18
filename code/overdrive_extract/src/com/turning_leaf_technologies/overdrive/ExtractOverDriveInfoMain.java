@@ -64,7 +64,7 @@ public class ExtractOverDriveInfoMain {
 		while (true) {
 
 			Date startTime = new Date();
-			logger.info(startTime + ": Starting OverDrive Extract");
+			logger.info("{}: Starting OverDrive Extract", startTime);
 
 			// Read the base INI file to get information about the server (current directory/cron/config.ini)
 			Ini configIni = ConfigUtil.loadConfigFile("config.ini", serverName, logger);
@@ -79,9 +79,9 @@ public class ExtractOverDriveInfoMain {
 			try (Connection dbConn = DriverManager.getConnection(databaseConnectionInfo)) {
 				//Remove log entries older than 45 days
 				long earliestLogToKeep = (startTime.getTime() / 1000) - (60 * 60 * 24 * 45);
-				try (PreparedStatement deleteOldLogEntries = dbConn.prepareStatement("DELETE from overdrive_extract_log WHERE startTime < " + earliestLogToKeep);) {
+				try (PreparedStatement deleteOldLogEntries = dbConn.prepareStatement("DELETE from overdrive_extract_log WHERE startTime < " + earliestLogToKeep)) {
 					int numDeletions = deleteOldLogEntries.executeUpdate();
-					logger.info("Deleted " + numDeletions + " old log entries");
+					logger.info("Deleted {} old log entries", numDeletions);
 				} catch (SQLException e) {
 					logger.error("Error deleting old log entries", e);
 				}
@@ -97,6 +97,7 @@ public class ExtractOverDriveInfoMain {
 				break;
 			} // End connecting to database
 
+			//noinspection resource in Java 17 The cached thread pool does not have an auto close
 			ExecutorService es = Executors.newCachedThreadPool();
 			AtomicInteger numChanges = new AtomicInteger(0);
 			AtomicBoolean errorOccurred = new AtomicBoolean();
@@ -198,6 +199,8 @@ public class ExtractOverDriveInfoMain {
 				logger.error("Error with database connection", e);
 			} // End connecting to database
 		} //end infinite loop for near real-time indexing
+		logger = null;
+		System.exit(0);
 	}
 
 	private static boolean checkForUpdatedJars(long myChecksumAtStart, String processName, Connection dbConn, long reindexerChecksumAtStart) {

@@ -82,6 +82,22 @@ function getUpdates26_05_00(): array {
 				'UPDATE search_interpreter_special_terms set weight = id'
 			]
 		], //sort_search_interpreter_terms
+        '26_05_index_improvements' => [
+            'title' => '26.05 Index Improvements',
+            'description' => 'Index improvements to improve indexing performance',
+            'continueOnError' => true,
+            'sql' => [
+                'ALTER TABLE author_authority_alternative ADD index normalized_id (normalized, authorId)',
+                'ALTER TABLE author_authority ADD index id_normalized (id, normalized)',
+                'ALTER TABLE user_reading_history_work DROP index groupedWorkPermanentId',
+                'ALTER TABLE user_reading_history_work ADD index groupedWork_userId (groupedWorkPermanentId, userId)',
+                'ALTER TABLE user_work_review DROP index userId',
+                'ALTER TABLE user_work_review DROP index groupedRecordPermanentId',
+                'ALTER TABLE user_work_review ADD index groupedWork_userId (groupedRecordPermanentId, userId)',
+                'ALTER TABLE grouped_work_alternate_titles DROP index alternateTitle',
+                'ALTER TABLE grouped_work_alternate_titles ADD INDEX alternateInfo(alternateTitle, alternateAuthor, alternateGroupingCategory)'
+            ]
+        ], //26_05_index_improvements
 
 		//kirstien
 
@@ -209,6 +225,7 @@ function getUpdates26_05_00(): array {
 		'create_aspen_pwa_settings' => [
 			'title' => 'Create Aspen Progressive Web Application(PWA) Settings',
 			'description' => 'Create database table for Aspen Progressive Web Application(PWA) settings',
+            'continueOnError' => true,
 			'sql' => [
 				"CREATE TABLE IF NOT EXISTS aspen_pwa_settings (
 					id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
