@@ -296,6 +296,7 @@ class GroupedWork_AJAX extends JSON_Action {
 	function getMoreLikeThis() : array {
 		$this->checkRequiredParameters(['id']);
 
+		global $library;
 		global $configArray;
 		global $memoryWatcher;
 
@@ -322,8 +323,18 @@ class GroupedWork_AJAX extends JSON_Action {
 				$db = new GroupedWorksSolrConnector2($url);
 			}
 
-			$db->disableScoping();
-			$similar = $db->getMoreLikeThis($id);
+			if ($library->moreLikeThisSettings == 1 || $library->moreLikeThisSettings == 4) {
+				$selectedAvailabilityToggle = 'global';
+			} else {
+				$selectedAvailabilityToggle = 'local';
+			}
+			UserAccount::getActiveUserObj();
+			if (($library->moreLikeThisSettings == 3 || $library->moreLikeThisSettings == 4) && !empty($_REQUEST['format'])) {
+				$format = $_REQUEST['format'];
+				$similar = $db->getMoreLikeThis($id, $selectedAvailabilityToggle, false, true, null, $format);
+			} else{
+				$similar = $db->getMoreLikeThis($id, $selectedAvailabilityToggle);
+			}
 			$memoryWatcher->logMemory('Loaded More Like This data from Solr');
 			// Send the similar items to the template; if there is only one, we need
 			// to force it to be an array or things will not display correctly.

@@ -20,6 +20,13 @@ function getUpdates26_06_00(): array {
 		//kirstien
 
 		//kodi
+		'scoped_more_like_this' => [
+			'title' => 'Scoped More Like This',
+			'description' => 'Add setting for scoping options for More Like This feature.',
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN moreLikeThisSettings tinyint(1) DEFAULT 1',
+			]
+		], //scoped_more_like_this
 
 		//yanjun
 

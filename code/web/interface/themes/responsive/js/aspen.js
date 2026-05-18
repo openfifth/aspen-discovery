@@ -11838,10 +11838,11 @@ AspenDiscovery.GroupedWork = (function(){
 			});
 		},
 
-		loadMoreLikeThis: function (id, forceReload) {
+		loadMoreLikeThis: function (id, format, forceReload) {
 			var url = Globals.path + "/GroupedWork/" + encodeURIComponent(id) + "/AJAX";
 			var params = {
-				'method':'getMoreLikeThis'
+				'method':'getMoreLikeThis',
+				'format':format
 			};
 			if (forceReload !== undefined){
 				params['reload'] = true;
