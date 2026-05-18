@@ -496,7 +496,6 @@ class ExtractOverDriveInfo implements AutoCloseable {
 			lastExtractDate = new Date(settings.getLastUpdateOfChangedRecords() * 1000);
 			SimpleDateFormat lastUpdateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 			//lastUpdateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-			logger.info("Loading all records that have changed since " + lastUpdateFormat.format(lastExtractDate));
 			logEntry.addNote("Loading all records that have changed since " + lastUpdateFormat.format(lastExtractDate));
 			lastUpdateTimeParam = lastUpdateFormat.format(lastExtractDate);
 			//Simple Date Format doesn't give us quite the right timezone format, so adjust
@@ -1349,7 +1348,6 @@ class ExtractOverDriveInfo implements AutoCloseable {
 
 					existingAvailabilities.put(existingAvailability.getLibraryId(), existingAvailability);
 				}
-				existingAvailabilityRS.close();
 			}
 		}catch (SQLException e){
 			logger.warn("Could not load existing availability for Libby product " + databaseId);
@@ -1401,14 +1399,13 @@ class ExtractOverDriveInfo implements AutoCloseable {
 					}
 					for (Long aspenLibraryId : collectionInfo.getAspenLibraryIds()) {
 						if (existingAvailabilities.containsKey(aspenLibraryId)) {
-							try (PreparedStatement deleteAllAvailabilityStmt = dbConn.prepareStatement("DELETE FROM overdrive_api_product_availability where productId = ? and libraryId = ? and settingId = ?");) {
+							try (PreparedStatement deleteAllAvailabilityStmt = dbConn.prepareStatement("DELETE FROM overdrive_api_product_availability where productId = ? and libraryId = ? and settingId = ?")) {
 								deleteAllAvailabilityStmt.setLong(1, overDriveInfo.getDatabaseId());
 								deleteAllAvailabilityStmt.setLong(2, aspenLibraryId);
 								deleteAllAvailabilityStmt.setLong(3, settings.getId());
 								deleteAllAvailabilityStmt.executeUpdate();
 								changesMade[0] = true;
 								existingAvailabilities.remove(aspenLibraryId);
-								deleteAllAvailabilityStmt.close();
 							} catch (SQLException e) {
 								logEntry.incErrors("SQL Error deleting all availability for title " + overDriveInfo.getId(), e);
 							}
@@ -1690,12 +1687,13 @@ class ExtractOverDriveInfo implements AutoCloseable {
 	}
 
 	public void close(){
-		logger.info("Closing the Libby extractor");
+		logger.info("Closing the Libby extractor for setting {}", settings.getId());
 		if (recordGroupingProcessorSingleton != null) {
 			recordGroupingProcessorSingleton.close();
 			recordGroupingProcessorSingleton = null;
 		}
 		if (groupedWorkIndexer != null) {
+			logger.info("Closing Grouped Work Indexer for setting {}", settings.getId());
 			groupedWorkIndexer.close();
 			groupedWorkIndexer = null;
 		}
