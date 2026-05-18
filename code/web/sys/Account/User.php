@@ -3139,7 +3139,7 @@ class User extends DataObject {
 				]),
 				'totalPaid' => StringUtils::formatCurrency($userPayment->totalPaid),
 				'paymentType' => $userPayment->paymentType,
-				'stripeReceiptUrl' => $userPayment->stripeReceiptUrl,
+				'receiptUrl' => $userPayment->receiptUrl,
 			];
 		}
 

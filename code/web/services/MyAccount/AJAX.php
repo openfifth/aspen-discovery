@@ -5911,18 +5911,54 @@ class MyAccount_AJAX extends JSON_Action {
 			$paymentId = null;
 			$paymentAmount = null;
 			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+			require_once ROOT_DIR . '/sys/Account/UserPaymentLine.php';
+
 			$payment = new UserPayment();
 			$payment->squareToken = $paymentToken;
 			if ($payment->find(true)) {
 				$paymentId = $payment->id;
+
+				$lines = new UserPaymentLine();
+				$lines->paymentId = $payment->id;
+
+				$lineItems = [];
+
+				if ($lines->find()) {
+					while ($lines->fetch()) {
+						$lineItems[] = [
+							'name' => $lines->description,
+							'quantity' => '1',
+							'base_price_money' => [
+								'amount' => (int)round($lines->amountPaid * 100),
+								'currency' => 'USD'
+							]
+						];
+					}
+				}
+
+				$orderBody = [
+					'idempotency_key' => strval($paymentId) . '-order',
+					'order' => [
+						'location_id' => strval($squareSettings->locationId),
+						'line_items' => $lineItems
+					]
+				];
+
+				$orderUrl = $baseUrl . '/v2/orders';
+
+				$orderResponse = $paymentRequest->curlPostBodyData($orderUrl, $orderBody);
+				$decodedOrder = json_decode($orderResponse);
+
+				$squareOrderId = $decodedOrder->order->id ?? null;
+
 				$body = [
 					'idempotency_key' => strval($paymentId),
-					// Square needs this to be a string, so guarantee it
 					'amount_money' => [
 						'amount' => (int)round($payment->totalPaid * 100),
 						'currency' => 'USD'
 					],
-					'source_id' => $paymentToken
+					'source_id' => $paymentToken,
+					'order_id' => $squareOrderId
 				];
 
 				$paymentUrl = $baseUrl . '/v2/payments';
@@ -5965,6 +6001,7 @@ class MyAccount_AJAX extends JSON_Action {
 							} else {
 								$payment->transactionId = $paymentResults->id;
 								$payment->orderId = $paymentResults->order_id;
+								$payment->receiptUrl = $paymentResults->receipt_url;
 								$payment->update();
 								$user = UserAccount::getActiveUserObj();
 								$patron = $user->getUserReferredTo($patronId);
@@ -5974,7 +6011,7 @@ class MyAccount_AJAX extends JSON_Action {
 									$payment->update();
 									$result['message'] = $payment->message;
 								}
-
+								$result['message'] = $payment->receiptUrl;
 								return $result;
 							}
 						}

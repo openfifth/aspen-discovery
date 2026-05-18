@@ -49,11 +49,11 @@
 						</div>
 					</div>
 				{/if}
-				{if $paymentDetails.paymentType == 'stripe' && !empty($paymentDetails.stripeReceiptUrl)}
+				{if $paymentDetails.paymentType == 'stripe' && !empty($paymentDetails.receiptUrl)}
 					<div class="row">
 						<div class="result-label col-sm-3 col-xs-12">{translate text="Receipt" isPublicFacing=true}</div>
 						<div class="result-value col-sm-9 col-xs-12">
-							<a href="{$paymentDetails.stripeReceiptUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
+							<a href="{$paymentDetails.receiptUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-primary">
 								<i class="fas fa-receipt"></i> {translate text="View Stripe Receipt" isPublicFacing=true}
 							</a>
 						</div>
