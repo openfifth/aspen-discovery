@@ -6011,10 +6011,13 @@ class MyAccount_AJAX extends JSON_Action {
 				$paymentResults = $decodedPaymentRequestResults->payment;
 
 				if ($paymentResults->status == 'COMPLETED' || $paymentResults->status == 'APPROVED') {
+
+					$payment->transactionId = $paymentResults->id;
+					$payment->receiptUrl = $paymentResults->receipt_url;
+					$payment->orderId = $paymentResults->order_id;
+
 					if ($transactionType == 'donation') {
 						$payment->completed = 1;
-						$payment->transactionId = $paymentResults->id;
-						$payment->orderId = $paymentResults->order_id;
 						$payment->update();
 
 						$donation = new Donation();
@@ -6028,6 +6031,8 @@ class MyAccount_AJAX extends JSON_Action {
 								'isDonation' => true,
 								'paymentId' => $payment->id,
 								'donationId' => $donation->id,
+								'message' => 'Your payment has been completed.',
+								'receiptUrl' => $payment->receiptUrl
 							];
 						} else {
 							return [
@@ -6042,24 +6047,21 @@ class MyAccount_AJAX extends JSON_Action {
 						if ($payment->completed) {
 							return $this->failureResult(null, 'This payment has already been processed');
 						} else {
-							$payment->transactionId = $paymentResults->id;
-							$payment->orderId = $paymentResults->order_id;
-							$payment->receiptUrl = $paymentResults->receipt_url;
-							$payment->update();
 
+							$payment->update();
 							$user = UserAccount::getActiveUserObj();
 							$patron = $user->getUserReferredTo($patronId);
 
 							$result = $patron->completeFinePayment($payment);
 
+
 							if (!$result['success']) {
 								$payment->message .= 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt. ' . $result['message'];
 
 								$payment->update();
-								$result['message'] = $payment->message;
 							}
 
-							$result['message'] = $payment->receiptUrl;
+							$result['receiptUrl'] = $payment->receiptUrl;
 
 							return $result;
 						}
