@@ -359,7 +359,7 @@ public class PolarisExportMain {
 			HashSet<Long> existingSublocationIds;
 			try (
 				PreparedStatement existingAspenSublocationStmt = dbConn.prepareStatement("SELECT id, name, isValidHoldPickupAreaILS, weight from sublocation where locationId = ? AND ilsId = ?");
-				PreparedStatement updateAspenSublocationStmt = dbConn.prepareStatement("UPDATE sublocation SET name = ?, isValidHoldPickupAreaILS = ?, weight = ? where id = ?");
+				PreparedStatement updateAspenSublocationStmt = dbConn.prepareStatement("UPDATE sublocation SET isValidHoldPickupAreaILS = ?, weight = ? where id = ?");
 				PreparedStatement addAspenSublocationStmt = dbConn.prepareStatement("INSERT INTO sublocation (locationId, name, ilsId, isValidHoldPickupAreaILS, isValidHoldPickupAreaAspen, weight) VALUES (?, ?, ?, ?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
 				PreparedStatement activateSublocationForAllPTypesStmt = dbConn.prepareStatement("INSERT INTO sublocation_ptype (sublocationId, patronTypeId) SELECT ?, id from ptype");
 				PreparedStatement getExistingAspenLocationsStmt = dbConn.prepareStatement("SELECT locationId, displayName, code from location", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
@@ -414,13 +414,11 @@ public class PolarisExportMain {
 										String existingName = existingAspenSublocationRS.getString("name");
 										boolean existingSelected = existingAspenSublocationRS.getBoolean("isValidHoldPickupAreaILS");
 										long existingWeight = existingAspenSublocationRS.getLong("weight");
-										if (!existingName.equals(name)
-											|| existingSelected != selected
+										if (existingSelected != selected
 											|| existingWeight != sequence) {
-											updateAspenSublocationStmt.setString(1, name);
-											updateAspenSublocationStmt.setInt(2, selected ? 1 : 0);
-											updateAspenSublocationStmt.setLong(3, sequence);
-											updateAspenSublocationStmt.setLong(4, existingId);
+											updateAspenSublocationStmt.setInt(1, selected ? 1 : 0);
+											updateAspenSublocationStmt.setLong(2, sequence);
+											updateAspenSublocationStmt.setLong(3, existingId);
 											updateAspenSublocationStmt.executeUpdate();
 										}
 									} else {
