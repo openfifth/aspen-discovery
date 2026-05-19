@@ -4234,7 +4234,6 @@ AspenDiscovery.Account = (function () {
 			};
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
-				console.log(data);
 				if (data.success) {
 					let buttons = '';
 					// noinspection JSUnresolvedReference
