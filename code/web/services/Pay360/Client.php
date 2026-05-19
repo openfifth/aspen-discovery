@@ -1,6 +1,7 @@
 <?php
 	require_once ROOT_DIR . '/sys/ECommerce/Pay360Setting.php';
 	require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+	require_once ROOT_DIR . '/services/Pay360/Tax.php';
 
 // Interacts with the Pay360 API
 class Pay360_Client  {
@@ -289,7 +290,13 @@ class Pay360_Client  {
 				'lineId' => $fineDetails['fineId']
 			];
 			if (isset($fineDetails['sap_vat'])) {
-				$item['tax'] = $fineDetails['sap_vat'];
+				$tax = new Tax();
+				$vatResult = $tax->calculateVat((int)$amountInMinorUnits, $fineDetails['sap_vat']);
+				$item['tax'] = [
+					'vatCode' => $fineDetails['sap_vat'],
+					'vatRate' => $vatResult['rate'],
+					'vatAmountInMinorUnits' => (int)$vatResult['vatAmountInMinorUnits'],
+				];
 			}
 			if (isset($fineDetails['sap_gl'])) {
 				$item['lgItemDetails']['fundCode'] = $fineDetails['sap_gl'];
