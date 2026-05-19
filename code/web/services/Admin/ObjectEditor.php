@@ -1458,7 +1458,7 @@ abstract class ObjectEditor extends Admin_Admin {
 						$object->whereAdd("$fullFieldName >= $fieldValue");
 					}
 				}
-				$fieldValue2 = strtotime($filter['filterValue2']);
+				$fieldValue2 = $filter['filterValue2'];
 				if ($fieldValue2 !== false) {
 					if ($addAsHaving) {
 						$object->havingAdd("$fieldName <= $fieldValue2");
