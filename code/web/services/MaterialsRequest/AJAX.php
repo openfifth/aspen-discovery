@@ -415,6 +415,7 @@ class MaterialsRequest_AJAX extends JSON_Action {
 				$materialsRequests = [];
 				$materialsRequest = new MaterialsRequest();
 				$materialsRequest->materialsRequestTitleId = $id;
+				$materialsRequest->libraryId = $staffLibrary->libraryId;
 
 				if ($materialsRequest->find()) {
 					while ($materialsRequest->fetch()) {
@@ -564,12 +565,14 @@ class MaterialsRequest_AJAX extends JSON_Action {
 	}
 	/** @noinspection PhpUnused */
 	function updateSelectedTitleRequests(): array {
+		$this->requireLoggedInUser();
+		$this->checkRequiredPermission(['Manage Library Materials Requests']);
 		$selectedRequests = $_REQUEST['selectedRequests'];
 		$newStatus = $_REQUEST['newStatus'] === 'unselected' ? null : $_REQUEST['newStatus'];
 		$newAssignee = $_REQUEST['newAssignee'] === 'unselected' ? null : $_REQUEST['newAssignee'];
 
 		if (!empty($selectedRequests)) {
-			preg_match_all('/select\[(\d+)\]/', $selectedRequests, $matches);
+			preg_match_all('/select(?:edObject)?\[(\d+)]/', $selectedRequests, $matches);
 			$titleRequestIds = $matches[1];
 
 			$numAssigneeUpdates = 0;
