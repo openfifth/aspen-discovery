@@ -1270,6 +1270,7 @@ abstract class ObjectEditor extends Admin_Admin {
 					'text',
 					'integer',
 					'calculatedInteger',
+					'calculatedBoolean',
 					'email',
 					'url'
 				])) {
@@ -1305,6 +1306,7 @@ abstract class ObjectEditor extends Admin_Admin {
 					'text',
 					'integer',
 					'calculatedInteger',
+					'calculatedBoolean',
 					'email',
 					'url',
 				])) {
@@ -1356,8 +1358,7 @@ abstract class ObjectEditor extends Admin_Admin {
 
 	function applyFilter(DataObject $object, string $fieldName, array $filter) : void {
 		$table = empty($filter['field']['filterOmitTablename']) ? "$object->__table." : '';
-		/** @noinspection PhpInArrayCanBeReplacedWithComparisonInspection */
-		$addAsHaving = in_array($filter['field']['type'], ['calculatedInteger']);
+		$addAsHaving = in_array($filter['field']['type'], ['calculatedInteger', 'calculatedBoolean']);
 		$fullFieldName = "$table$fieldName";
 		switch ($filter['filterType']) {
 			case 'matches':
@@ -1368,7 +1369,11 @@ abstract class ObjectEditor extends Admin_Admin {
 				if ($filter['filterValue'] == '') {
 					$object->whereAdd("$fullFieldName IS NULL OR $fullFieldName = ''");
 				} else {
-					$object->$fieldName = $filter['filterValue'];
+					if ($addAsHaving) {
+						$object->havingAdd("$fieldName = {$filter['filterValue']}");
+					} else {
+						$object->$fieldName = $filter['filterValue'];
+					}
 				}
 				break;
 			case 'contains':

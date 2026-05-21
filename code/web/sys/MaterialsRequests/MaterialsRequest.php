@@ -58,6 +58,8 @@ class MaterialsRequest extends DataObject {
 	protected $_holdCandidateRecords;
 	protected $_selectedHoldCandidate;
 
+	protected $_hasDuplicates;
+
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
@@ -1037,5 +1039,16 @@ class MaterialsRequest extends DataObject {
 			}
 		}
 		return parent::update($context);
+	}
+
+	public function hasDuplicates() : bool {
+		if ($this->_hasDuplicates == null) {
+			$requestTitle = new MaterialsRequest();
+			$requestTitle->materialsRequestTitleId = $this->materialsRequestTitleId;
+			$requestTitle->libraryId = $this->libraryId;
+			$requestTitle->whereAdd("id != $this->id");
+			$this->_hasDuplicates = $requestTitle->count() > 0;
+		}
+		return $this->_hasDuplicates;
 	}
 }
