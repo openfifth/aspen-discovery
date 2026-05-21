@@ -1651,6 +1651,7 @@ class ExtractOverDriveInfo implements AutoCloseable {
 				overDriveAPIToken = parser.getString("access_token");
 				overDriveAPITokenType = parser.getString("token_type");
 				overDriveAPIExpiration = new Date().getTime() + (parser.getLong("expires_in") * 1000) - 10000;
+				conn.disconnect();
 			} else {
 				logger.error("Received error " + conn.getResponseCode() + " connecting to Libby authentication service. Encoded auth header: " + encoded);
 				// Get any errors
@@ -1661,6 +1662,7 @@ class ExtractOverDriveInfo implements AutoCloseable {
 					}
 					logger.debug("  Finished reading response\r\n" + response);
 				}
+				conn.disconnect();
 				return false;
 			}
 		} catch (SocketTimeoutException toe){
@@ -1717,6 +1719,7 @@ class ExtractOverDriveInfo implements AutoCloseable {
 		closeStatement(getExistingAvailabilityForProductStmt);
 		closeStatement(deleteAvailabilityStmt);
 		closeStatement(updateProductAvailabilityStmt);
+		closeStatement(logExternalRequestStmt);
 	}
 
 	private void closeStatement(PreparedStatement statement) {

@@ -42,6 +42,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	private boolean waitAfterDeleteCommit = false;
 	private boolean removeTheWordSeriesFromEndOfSeries;
 	private int totalRecordsHandled = 0;
+	private Http2SolrClient http2Client;
 	private ConcurrentUpdateHttp2SolrClient updateServer;
 	private RecordGroupingProcessor recordGroupingProcessor;
 	private final HashMap<String, MarcRecordProcessor> ilsRecordProcessors = new HashMap<>();
@@ -394,7 +395,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			//noinspection HttpUrlsUsage
 			solrUrl = "http://" + solrHost + ":" + solrPort + "/solr/grouped_works_v2";
 		}
-		Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+		http2Client = new Http2SolrClient.Builder().build();
 		try {
 			updateServer = new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, http2Client)
 				.withThreadCount(1)
@@ -592,6 +593,8 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			updateServer.shutdownNow();
 			updateServer.close();
 			updateServer = null;
+			http2Client.close();
+			http2Client = null;
 		}
 		ilsRecordProcessors.clear();
 		sideLoadProcessors.clear();
@@ -774,7 +777,11 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			System.exit(-4);
 		}
 		try {
+			updateServer.shutdownNow();
 			updateServer.close();
+			updateServer = null;
+			http2Client.close();
+			http2Client = null;
 		}catch (Exception e) {
 			logEntry.incErrors("Error closing update server ", e);
 			logEntry.setFinished();
@@ -923,7 +930,11 @@ public class GroupedWorkIndexer implements AutoCloseable {
 				updateServer.commit(false, false, true);
 				logEntry.addNote("Shutting down the update server");
 				updateServer.blockUntilFinished();
+				updateServer.shutdownNow();
 				updateServer.close();
+				updateServer = null;
+				http2Client.close();
+				http2Client = null;
 			} catch (Exception e) {
 				logEntry.incErrors("Error shutting down update server", e);
 			}
