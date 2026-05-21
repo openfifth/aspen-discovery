@@ -124,7 +124,7 @@ public class ExtractOverDriveInfoMain {
 								logger.info("Finished OverDrive extraction");
 								Date endTime = new Date();
 								long elapsedTime = (endTime.getTime() - startTime.getTime()) / 1000;
-								logger.info("Elapsed time " + String.format("%f2", ((float) elapsedTime / 60f)) + " minutes");
+								logger.info("Elapsed time {} minutes", String.format("%f2", ((float) elapsedTime / 60f)));
 							}
 						} catch (Exception e) {
 							logger.error("Could not setup OverDrive log entry", e);
@@ -200,7 +200,7 @@ public class ExtractOverDriveInfoMain {
 			} // End connecting to database
 		} //end infinite loop for near real-time indexing
 		logger = null;
-		System.exit(0);
+		//System.exit(0);
 	}
 
 	private static boolean checkForUpdatedJars(long myChecksumAtStart, String processName, Connection dbConn, long reindexerChecksumAtStart) {
