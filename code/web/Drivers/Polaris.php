@@ -48,7 +48,15 @@ class Polaris extends AbstractIlsDriver {
 			//Get additional information
 			$basicDataResponse = $this->getBasicDataResponse($patron->getBarcode(), $patron->getPasswordOrPin(), UserAccount::isUserMasquerading());
 			if ($basicDataResponse != null) {
-				$summary->totalFines = $basicDataResponse->ChargeBalance;
+				$chargeBalance = $basicDataResponse->ChargeBalance;
+				$creditBalance = $basicDataResponse->CreditBalance;
+				// If the credit balance is 0 or greater than the charge balance,
+				// let's default to showing the charge balance.
+				$summary->totalFines = $chargeBalance;
+				// ...otherwise we can subtract credits from the total.
+				if ($chargeBalance > $creditBalance) {
+					$summary->totalFines = $chargeBalance - $creditBalance;
+				}				
 			}
 
 			//Get expiration information
@@ -1904,6 +1912,21 @@ class Polaris extends AbstractIlsDriver {
 						'amountOutstandingVal' => $fineRow->OutstandingAmount,
 						'amount' => $currencyFormatter->formatCurrency($fineRow->TransactionAmount, $currencyCode),
 						'amountOutstanding' => $currencyFormatter->formatCurrency($fineRow->OutstandingAmount, $currencyCode),
+					];
+					$fines[] = $curFine;
+				}
+				// Credits should have negative values since they reduce the amount owed.
+				elseif ($fineRow->TransactionTypeDescription == "Credit") {
+					$curFine = [
+						'fineId' => $fineRow->TransactionID,
+						'date' => $this->parsePolarisDate($fineRow->TransactionDate),
+						'type' => $fineRow->TransactionTypeDescription,
+						'reason' => (!empty($fineRow->FeeDescription) ? $fineRow->FeeDescription : 'Credit'),
+						'message' => $fineRow->Title . " " . $fineRow->Author . ' ' . $fineRow->FreeTextNote,
+						'amountVal' => '-' . $fineRow->TransactionAmount,
+						'amountOutstandingVal' => '-' . $fineRow->OutstandingAmount,
+						'amount' => '-' . $currencyFormatter->formatCurrency($fineRow->TransactionAmount, $currencyCode),
+						'amountOutstanding' => '-' . $currencyFormatter->formatCurrency($fineRow->OutstandingAmount, $currencyCode),
 					];
 					$fines[] = $curFine;
 				}
