@@ -34,7 +34,7 @@ function getAspenEventWaitingListUpdates() {
 			'title' => 'Add Waiting List Invite Expiry Hours to Event Type',
 			'description' => 'Add a configurable invite expiry window for waiting list invitations',
 			'sql' => [
-				'ALTER TABLE event_type ADD COLUMN waitingListInviteExpiryHours INT DEFAULT 24',
+				'ALTER TABLE event_type ADD COLUMN IF NOT EXISTS waitingListInviteExpiryHours INT DEFAULT 24',
 			],
 		], // add_waiting_list_invite_expiry_hours_to_event_type
 	];
