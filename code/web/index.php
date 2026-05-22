@@ -1294,6 +1294,25 @@ function loadModuleActionId() {
 	}catch (Exception $e) {
 		//This happens if web builder is not fully installed, ignore the error.
 	}
+	
+	if ($library->AspenPWASettingId != -1)
+	{
+		$pwaAction = null;
+		$routes = array(
+			"/manifest.json" => "Manifest",
+			"/.well-known/assetlinks.json" => "AssetLinks",
+			"/firebase-messaging-sw.js" => "Firebase",
+			"/pwa-icon.png" => "Icon"
+		);
+		if(array_key_exists($requestURI, $routes))
+		{
+			$action = $routes[$requestURI];
+			$_GET['module'] = "AspenPWA";
+			$_GET['action'] = $action;
+			$_REQUEST['module'] = "AspenPWA";
+			$_REQUEST['action'] = $action;
+		}
+	}
 	//Correct some old actions
 	if (isset($_GET['action'])) {
 		if ($_GET['action'] == 'OverdriveHolds') {
@@ -1564,6 +1583,7 @@ function checkForMaliciouslyFormattedParameters(): void {
 }
 
 function checkForTooManyFailedLogins() : void {
+	global $logger;
 	$activeIP = IPAddress::getActiveIp();
 	$subnet = IPAddress::getIPAddressForIP($activeIP);
 
@@ -1582,6 +1602,7 @@ function checkForTooManyFailedLogins() : void {
 		if ($failedLogins->count() >= 5) {
 			http_response_code(403);
 			echo("<h1>Forbidden</h1><p><strong>We are unable to handle your request.</strong></p>");
+			$logger->log("Blocked request from " . IPAddress::getClientIP() . " for too many login attempts", Logger::LOG_ERROR);
 			die();
 		}
 		//Slow if we have more than 10 logins in 5 minutes
@@ -1590,6 +1611,7 @@ function checkForTooManyFailedLogins() : void {
 		$failedLogins->whereAdd('timestamp > ' . ($currentTime - 300));
 		if ($failedLogins->count() >= 10) {
 			sleep(10);
+			$logger->log("Delayed request from " . IPAddress::getClientIP() . " for too many login attempts", Logger::LOG_ERROR);
 		}
 	}catch (Exception $e) {
 		//This fails if the table has not been created, ignore

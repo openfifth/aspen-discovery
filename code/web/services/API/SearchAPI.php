@@ -626,6 +626,7 @@ class SearchAPI extends AbstractAPI {
 		//Check cron to be sure it doesn't have errors either
 		require_once ROOT_DIR . '/sys/CronLogEntry.php';
 		$cronLogEntry = new CronLogEntry();
+		$cronLogEntry->name = 'Primary Cron';
 		$cronLogEntry->orderBy("id DESC");
 		$cronLogEntry->limit(0, 1);
 		if ($cronLogEntry->find(true)) {
@@ -1342,7 +1343,7 @@ class SearchAPI extends AbstractAPI {
 								$pageToLoad = 1;
 								require_once ROOT_DIR . '/services/Search/History.php';
 								$savedSearch = History::getSavedSearchObject($temp->id);
-								SearchObjectFactory::initSearchObject($savedSearch['source']);
+								SearchObjectFactory::initSearchObject($savedSearch['source'] ?? 'GroupedWork');
 								$minSO = unserialize($savedSearch['search_object']);
 								$searchObject = SearchObjectFactory::deminify($minSO);
 								$searchObject->getFilterList();
@@ -2819,7 +2820,7 @@ class SearchAPI extends AbstractAPI {
 									$eventSource = 'assabet';
 									$bypass = $assabetBypass;
 									$addToList = $assabetAddToList;
-								} else if (str_starts_with($record['id'], 'aspenEvent')) {
+								} else if (str_starts_with($record['id'], 'aspenEvents')) {
 									$eventSource = 'aspenEvents';
 									$bypass = $aspenEventsBypass;
 									$addToList = $aspenEventsAddToList;
@@ -3527,7 +3528,7 @@ class SearchAPI extends AbstractAPI {
 						$eventSource = 'assabet';
 						$bypass = $assabetBypass;
 						$addToList = $assabetAddToList;
-					} else if (str_starts_with($record['id'], 'aspenEvent')) {
+					} else if (str_starts_with($record['id'], 'aspenEvents')) {
 						$eventSource = 'aspenEvents';
 						$bypass = $aspenEventsBypass;
 						$addToList = $aspenEventsAddToList;
