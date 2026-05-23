@@ -1352,7 +1352,9 @@ abstract class ObjectEditor extends Admin_Admin {
 		$filterFields = $this->getFilterFields($object::getObjectStructure($this->getContext()));
 		$appliedFilters = $this->getAppliedFilters($filterFields);
 		foreach ($appliedFilters as $fieldName => $filter) {
-			$this->applyFilter($object, $fieldName, $filter);
+			if ($filter['field']['type'] != "calculatedInteger" || !empty($filter->filterValue)) {
+				$this->applyFilter($object, $fieldName, $filter);
+			}
 		}
 	}
 
