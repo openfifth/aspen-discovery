@@ -4064,6 +4064,27 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('showPosition', $showPosition);
 			$interface->assign('showNotInterested', false);
 
+			$filterOptions = [
+				'format' => [
+					'label' => 'Format',
+					'name' => 'format',
+					'type' => 'multiselect',
+					'options' => [],
+				],
+				'account' => [
+					'label' => 'Linked Account',
+					'name' => 'account',
+					'type' => 'multiselect',
+					'options' => [],
+				],
+				'status' => [
+					'label' => 'Status',
+					'name' => 'status',
+					'type' => 'multiselect',
+					'options' => [],
+				],
+			];
+
 			global $offlineMode;
 			$allHolds = null;
 			if (!$offlineMode) {
@@ -4130,7 +4151,56 @@ class MyAccount_AJAX extends JSON_Action {
 						}
 					}
 				}
+
+				if (!empty($allHolds)) {
+					foreach ($allHolds['available'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format'], true)) {
+							$filterOptions['format']['options'][] = $hold->format;
+						}
+						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (!in_array($hold->status, $filterOptions['status'], true)) {
+							$filterOptions['status']['options'][] = $hold->status;
+						}
+					}
+					foreach ($allHolds['unavailable'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format'], true)) {
+							$filterOptions['format']['options'][] = $hold->format;
+						}
+						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (!in_array($hold->status, $filterOptions['status'], true)) {
+							$filterOptions['status']['options'][] = $hold->status;
+						}
+					}
+					foreach ($allHolds['cancelled'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format'], true)) {
+							$filterOptions['format']['options'][] = $hold->format;
+						}
+						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (!in_array($hold->status, $filterOptions['status'], true)) {
+							$filterOptions['status']['options'][] = $hold->status;
+						}
+					}
+				}
 			}
+
+			if (!empty($filterOptions['account']['options'])) {
+				foreach ($filterOptions['account']['options'] as $i => $account) {
+					$tmp = $user->getUserReferredTo($account);
+					if ($tmp) {
+						$filterOptions['account']['options'][$account] = $tmp->getDisplayName();
+					}
+					unset($filterOptions['account']['options'][$i]);
+				}
+			}
+
+			$interface->assign('filterOptions', $filterOptions);
+
 
 			$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
 			$interface->assign('notification_method', strtolower($notification_method));

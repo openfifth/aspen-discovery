@@ -37,6 +37,23 @@
 			</div>
 		{/if}
 
+		{if is_array($filterOptions)}
+			<div class="btn-group">
+			    {foreach from=$filterOptions item=filterOption key=filterKey}
+				    <button type="button" class="btn">{$filterKey}</button>
+				    {*<div>
+						<label for="{$sectionKey}HoldFilter_{$source}" class="control-label">{translate text='Filter' isPublicFacing=true}&nbsp;{$filterKey}</label>
+						<select name="{$sectionKey}HoldFilter_{$source}" id="{$sectionKey}HoldFilter_{$source}" class="form-control" onchange="AspenDiscovery.Account.loadHolds('{$source}', $('#availableHoldSort_{$source} option:selected').val(), $('#unavailableHoldSort_{$source} option:selected').val(), null, $('#{$sectionKey}HoldFilter_{$source} option:selected').val());">
+							<option value=""{if empty($defaultFilterOption[$sectionKey])} selected="selected"{/if}>{translate text='All' isPublicFacing=true}</option>
+			                {foreach from=$filterOption item=filterDesc key=filterVal}
+								<option value="{$filterVal}">{translate text=$filterDesc isPublicFacing=true}</option>
+			                {/foreach}
+						</select>
+					</div>*}
+			    {/foreach}
+			</div>
+		{/if}
+
 		{if $sectionKey != 'cancelled'}
 			<div id="pager" class="navbar form-inline">
 				<label for="{$sectionKey}HoldSort_{$source}" class="control-label">{translate text='Sort by' isPublicFacing=true}&nbsp;</label>
