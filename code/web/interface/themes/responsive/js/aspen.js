@@ -15071,7 +15071,7 @@ AspenDiscovery.Record = (function () {
 							AspenDiscovery.Account.loadMenuData();
 						}
 					}
-					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody || data.message, data.modalButtons);
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody || data.message, data.modalButtons || '');
 					AspenDiscovery.Account.reloadHolds();
 				}).fail(function() {
 					AspenDiscovery.toggleButtonSpinner(button, false);
