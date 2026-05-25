@@ -1892,7 +1892,6 @@ class Polaris extends AbstractIlsDriver {
 			$jsonResponse = json_decode($response);
 			$finesRows = $jsonResponse->PatronAccountGetRows;
 			foreach ($finesRows as $fineRow) {
-				$debug = true;
 				// TODO: It might be most accurate to use the TransactionTypeID for each, but I cannot find what the ID is for "Credit."
 				if ($fineRow->TransactionTypeDescription != "Credit" && $fineRow->TransactionTypeDescription != "Deposit" && is_null($type)) {
 					$curFine = [
