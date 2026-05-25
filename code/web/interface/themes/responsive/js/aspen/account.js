@@ -2185,8 +2185,9 @@ AspenDiscovery.Account = (function () {
 				}
 			);
 
-			if (document.getElementById('convenienceFee')) {
-				var feeAmt = document.getElementById('convenienceFee').getAttribute('data-fee_amt');
+			var convenienceFeeElement = $(finesFormId + " [id^='convenienceFee']").get(0);
+			if (convenienceFeeElement) {
+				var feeAmt = convenienceFeeElement.getAttribute('data-fee_amt');
 				outstandingGrandTotalAmt += feeAmt * 1;
 			}
 

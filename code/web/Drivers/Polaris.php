@@ -48,15 +48,7 @@ class Polaris extends AbstractIlsDriver {
 			//Get additional information
 			$basicDataResponse = $this->getBasicDataResponse($patron->getBarcode(), $patron->getPasswordOrPin(), UserAccount::isUserMasquerading());
 			if ($basicDataResponse != null) {
-				$chargeBalance = $basicDataResponse->ChargeBalance;
-				$creditBalance = $basicDataResponse->CreditBalance;
-				// If the credit balance is 0 or greater than the charge balance,
-				// let's default to showing the charge balance.
-				$summary->totalFines = $chargeBalance;
-				// ...otherwise we can subtract credits from the total.
-				if ($chargeBalance > $creditBalance) {
-					$summary->totalFines = $chargeBalance - $creditBalance;
-				}				
+				$summary->totalFines = $basicDataResponse->ChargeBalance;		
 			}
 
 			//Get expiration information
@@ -1879,7 +1871,7 @@ class Polaris extends AbstractIlsDriver {
 		return $result;
 	}
 
-	public function getFines(User $patron, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 
 		global $activeLanguage;
@@ -1900,8 +1892,9 @@ class Polaris extends AbstractIlsDriver {
 			$jsonResponse = json_decode($response);
 			$finesRows = $jsonResponse->PatronAccountGetRows;
 			foreach ($finesRows as $fineRow) {
+				$debug = true;
 				// TODO: It might be most accurate to use the TransactionTypeID for each, but I cannot find what the ID is for "Credit."
-				if ($fineRow->TransactionTypeDescription != "Credit" && $fineRow->TransactionTypeDescription != "Deposit") {
+				if ($fineRow->TransactionTypeDescription != "Credit" && $fineRow->TransactionTypeDescription != "Deposit" && is_null($type)) {
 					$curFine = [
 						'fineId' => $fineRow->TransactionID,
 						'date' => $this->parsePolarisDate($fineRow->TransactionDate),
@@ -1916,17 +1909,18 @@ class Polaris extends AbstractIlsDriver {
 					$fines[] = $curFine;
 				}
 				// Credits should have negative values since they reduce the amount owed.
-				elseif ($fineRow->TransactionTypeDescription == "Credit") {
+				elseif ($fineRow->TransactionTypeDescription == "Credit" && $type == 'credit') {
 					$curFine = [
 						'fineId' => $fineRow->TransactionID,
 						'date' => $this->parsePolarisDate($fineRow->TransactionDate),
 						'type' => $fineRow->TransactionTypeDescription,
 						'reason' => (!empty($fineRow->FeeDescription) ? $fineRow->FeeDescription : 'Credit'),
 						'message' => $fineRow->Title . " " . $fineRow->Author . ' ' . $fineRow->FreeTextNote,
-						'amountVal' => '-' . $fineRow->TransactionAmount,
-						'amountOutstandingVal' => '-' . $fineRow->OutstandingAmount,
-						'amount' => '-' . $currencyFormatter->formatCurrency($fineRow->TransactionAmount, $currencyCode),
-						'amountOutstanding' => '-' . $currencyFormatter->formatCurrency($fineRow->OutstandingAmount, $currencyCode),
+						'amountVal' => $fineRow->TransactionAmount,
+						'amountOutstandingVal' => $fineRow->OutstandingAmount,
+						'amount' => $currencyFormatter->formatCurrency($fineRow->TransactionAmount, $currencyCode),
+						'amountOutstanding' => $currencyFormatter->formatCurrency($fineRow->OutstandingAmount, $currencyCode),
+						'canPayFine' => false,
 					];
 					$fines[] = $curFine;
 				}

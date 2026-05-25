@@ -2387,6 +2387,31 @@ class User extends DataObject {
 		return $ilsFines;
 	}
 
+	public function getCredits($includeLinkedUsers = true, $APIRequest = false): array {
+
+		if (!isset($this->ilsCreditsForUser)) {
+			$this->ilsCreditsForUser = $this->getCatalogDriver()->getFines($this, false, 'credit');
+			if ($this->ilsCreditsForUser instanceof AspenError) {
+				$this->ilsCreditsForUser = [];
+			}
+		}
+
+		if ($APIRequest && !$includeLinkedUsers) {
+			$ilsCredits = $this->ilsCreditsForUser;
+		} else {
+			$ilsCredits[$this->id] = $this->ilsCreditsForUser;
+		}
+
+		if ($includeLinkedUsers) {
+			if ($this->getLinkedUsers() != null) {
+				foreach ($this->getLinkedUsers() as $user) {
+					$ilsCredits += $user->getCredits(false, $APIRequest); // keep keys as userId
+				}
+			}
+		}
+		return $ilsCredits;
+	}
+
 	public function getNameAndLibraryLabel() {
 		return $this->getDisplayName() . ' - ' . $this->getHomeLibrarySystemName();
 	}
