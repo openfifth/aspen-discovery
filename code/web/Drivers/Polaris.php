@@ -48,7 +48,7 @@ class Polaris extends AbstractIlsDriver {
 			//Get additional information
 			$basicDataResponse = $this->getBasicDataResponse($patron->getBarcode(), $patron->getPasswordOrPin(), UserAccount::isUserMasquerading());
 			if ($basicDataResponse != null) {
-				$summary->totalFines = $basicDataResponse->ChargeBalance;		
+				$summary->totalFines = $basicDataResponse->ChargeBalance;
 			}
 
 			//Get expiration information
