@@ -401,6 +401,7 @@ class Library extends DataObject {
 	public $optInToReadingHistoryUpdatesILS;
 	public $optOutOfReadingHistoryUpdatesILS;
 	public $enableCostSavings;
+	public $forceReadingHistoryOptIn;
 	/** @noinspection PhpUnused */
 	protected $_costSavingsExplanationEnabled;
 	/** @noinspection PhpUnused */
@@ -3038,6 +3039,15 @@ class Library extends DataObject {
 								'permissions' => ['Library ILS Connection'],
 								'relatedIls' => ['evergreen', 'koha'],
 							],
+							'forceReadingHistoryOptIn' => [
+								'property' => 'forceReadingHistoryOptIn',
+								'type' => 'checkbox',
+								'label' => 'Force patrons to opt-in to Reading History',
+								'description' => 'Whether patrons logging in for the first time should be forced to opt-in to Reading History in Aspen and ignore ILS settings.',
+								'hideInLists' => true,
+								'permissions' => ['Library ILS Options'],
+								'relatedIls' => ['koha'],
+							]
 						],
 					],
 				],
