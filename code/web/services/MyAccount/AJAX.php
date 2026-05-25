@@ -4136,24 +4136,24 @@ class MyAccount_AJAX extends JSON_Action {
 
 				if (!empty($allHolds)) {
 					foreach ($allHolds['available'] as $hold) {
-						if (!in_array($hold->format, $filterOptions['format'], true)) {
+						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
 							$filterOptions['format']['options'][] = $hold->format;
 						}
-						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
 							$filterOptions['account']['options'][] = $hold->userId;
 						}
-						if (!in_array($hold->status, $filterOptions['status'], true)) {
+						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
 							$filterOptions['status']['options'][] = $hold->status;
 						}
 					}
 					foreach ($allHolds['unavailable'] as $hold) {
-						if (!in_array($hold->format, $filterOptions['format'], true)) {
+						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
 							$filterOptions['format']['options'][] = $hold->format;
 						}
-						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
 							$filterOptions['account']['options'][] = $hold->userId;
 						}
-						if (!in_array($hold->status, $filterOptions['status'], true)) {
+						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
 							$filterOptions['status']['options'][] = $hold->status;
 						}
 					}
