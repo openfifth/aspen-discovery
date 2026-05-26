@@ -37,22 +37,48 @@
 			</div>
 		{/if}
 
-		{if is_array($filterOptions)}
-			<div class="btn-group">
-			    {foreach from=$filterOptions item=filterOption key=filterKey}
-				    <button type="button" class="btn">{$filterKey}</button>
-				    {*<div>
-						<label for="{$sectionKey}HoldFilter_{$source}" class="control-label">{translate text='Filter' isPublicFacing=true}&nbsp;{$filterKey}</label>
-						<select name="{$sectionKey}HoldFilter_{$source}" id="{$sectionKey}HoldFilter_{$source}" class="form-control" onchange="AspenDiscovery.Account.loadHolds('{$source}', $('#availableHoldSort_{$source} option:selected').val(), $('#unavailableHoldSort_{$source} option:selected').val(), null, $('#{$sectionKey}HoldFilter_{$source} option:selected').val());">
-							<option value=""{if empty($defaultFilterOption[$sectionKey])} selected="selected"{/if}>{translate text='All' isPublicFacing=true}</option>
-			                {foreach from=$filterOption item=filterDesc key=filterVal}
-								<option value="{$filterVal}">{translate text=$filterDesc isPublicFacing=true}</option>
-			                {/foreach}
-						</select>
-					</div>*}
-			    {/foreach}
+        {if is_array($filterOptions)}
+			<div class="row" id="holdsFilterRow">
+                {foreach from=$filterOptions item=filterOption key=filterKey}
+					<div class="col-sm-2">
+						<div class="form-group">
+							<fieldset>
+								<legend>{$filterOption.label}</legend>
+								<select
+										name="HoldFilter_{$filterKey}[]"
+										id="HoldFilter_{$filterKey}"
+										class="multipleSelect"
+										aria-label="{translate text='Filter by %1%' 1=$filterOption.label isPublicFacing=true inAttribute=true}"
+	                                    {if $filterOption.type === "multiselect"}multiple="multiple"{/if}
+								>
+	                                {foreach from=$filterOption.options item=optionVal}
+										<option value="{$optionVal}"{if isset($filterOption.optionsSelected) && in_array($optionVal, $filterOption.optionsSelected)} selected="selected"{/if}>{$optionVal}</option>
+	                                {/foreach}
+								</select>
+							</fieldset>
+						</div>
+					</div>
+                {/foreach}
+				<div class="col-sm-2">
+					<button type="button" style="margin-top: .5em;" class="btn btn-block btn-default" id="applyHoldsFilters">Apply Filters</button>
+				</div>
 			</div>
-		{/if}
+			<script type="text/javascript">
+                {literal}
+				$(document).ready(function() {
+					$('.multipleSelect').multipleSelect({});
+					$('#applyHoldsFilters').on('click', function() {
+						let filters = {};
+						$('#holdsFilterRow select').each(function() {
+							let key = $(this).attr('id').replace('HoldFilter_', '');
+							filters[key] = $(this).val() || [];
+						});
+						console.log(filters); // ****** for debugging - remove later *******
+					});
+					});
+                {/literal}
+			</script>
+        {/if}
 
 		{if $sectionKey != 'cancelled'}
 			<div id="pager" class="navbar form-inline">

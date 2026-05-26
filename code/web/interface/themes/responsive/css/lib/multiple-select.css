@@ -20,6 +20,7 @@
   display: inline-block;
   position: relative;
   vertical-align: middle;
+  width: 100% !important;
 }
 
 .ms-choice {
@@ -29,10 +30,9 @@
   padding: 0;
   overflow: hidden;
   cursor: pointer;
-  border: 1px solid #aaa;
+  border: none;
   text-align: left;
   white-space: nowrap;
-  line-height: 26px;
   color: #444;
   text-decoration: none;
   border-radius: 4px;
@@ -79,7 +79,7 @@
   height: 0;
   top: 50%;
   right: 8px;
-  margin-top: -2px;
+  margin-top: -6px;
   border-color: #888 transparent transparent transparent;
   border-style: solid;
   border-width: 5px 4px 0 4px;
@@ -256,6 +256,40 @@
 }
 .ms-drop .ms-no-results {
   display: none;
+}
+
+#holdsFilterRow.row {
+  display: flex;
+  align-items: stretch;
+  margin-bottom: 2em;
+}
+
+#holdsFilterRow .col-sm-2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+#holdsFilterRow .form-group {
+  margin-bottom: 0;
+}
+
+#holdsFilterRow fieldset {
+  border: 1px solid #c0c0c0;
+  margin: 0 2px;
+  padding-left: 0.35em;
+  padding-right: 0.35em;
+}
+
+#holdsFilterRow legend {
+  font-size: 1em;
+  margin-bottom: unset;
+  padding-left: 3px;
+  padding-right: 3px;
+  border: unset;
+  border-bottom: unset;
+  width: unset;
+
 }
 
 /*# sourceMappingURL=multiple-select.css.map */
