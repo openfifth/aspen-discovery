@@ -4052,19 +4052,22 @@ class MyAccount_AJAX extends JSON_Action {
 					'name' => 'format',
 					'type' => 'multiselect',
 					'options' => [],
+					'selected' => [],
 				],
 				'account' => [
 					'label' => 'Linked Account',
 					'name' => 'account',
 					'type' => 'multiselect',
 					'options' => [],
+					'selected' => [],
 				],
 				'status' => [
 					'label' => 'Status',
 					'name' => 'status',
 					'type' => 'multiselect',
 					'options' => [],
-				],
+					'selected' => [],
+				]
 			];
 
 			global $offlineMode;
@@ -4139,33 +4142,66 @@ class MyAccount_AJAX extends JSON_Action {
 						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
 							$filterOptions['format']['options'][] = $hold->format;
 						}
+						if (isset($_GET['formats']) && is_array($_GET['formats']) && in_array($hold->format, $_GET['formats'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][] = $hold->format;
+						}
+
 						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
 							$filterOptions['account']['options'][] = $hold->userId;
 						}
+						if (isset($_GET['account']) && is_array($_GET['accounts']) && in_array($hold->format, $_GET['accounts'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->format;
+						}
+
 						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
 							$filterOptions['status']['options'][] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['statuses']) && in_array($hold->format, $_GET['statuses'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][] = $hold->format;
 						}
 					}
 					foreach ($allHolds['unavailable'] as $hold) {
 						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
 							$filterOptions['format']['options'][] = $hold->format;
 						}
+						if (isset($_GET['formats']) && is_array($_GET['formats']) && in_array($hold->format, $_GET['formats'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][] = $hold->format;
+						}
+
 						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
 							$filterOptions['account']['options'][] = $hold->userId;
 						}
+						if (isset($_GET['account']) && is_array($_GET['accounts']) && in_array($hold->format, $_GET['accounts'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->format;
+						}
+
 						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
 							$filterOptions['status']['options'][] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['statuses']) && in_array($hold->format, $_GET['statuses'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][] = $hold->format;
 						}
 					}
 					foreach ($allHolds['cancelled'] as $hold) {
 						if (!in_array($hold->format, $filterOptions['format'], true)) {
 							$filterOptions['format']['options'][] = $hold->format;
 						}
+						if (isset($_GET['formats']) && is_array($_GET['formats']) && in_array($hold->format, $_GET['formats'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][] = $hold->format;
+						}
+
 						if (!in_array($hold->userId, $filterOptions['account'], true)) {
 							$filterOptions['account']['options'][] = $hold->userId;
 						}
+						if (isset($_GET['account']) && is_array($_GET['accounts']) && in_array($hold->format, $_GET['accounts'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->format;
+						}
+
 						if (!in_array($hold->status, $filterOptions['status'], true)) {
 							$filterOptions['status']['options'][] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['statuses']) && in_array($hold->format, $_GET['statuses'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][] = $hold->format;
 						}
 					}
 				}
