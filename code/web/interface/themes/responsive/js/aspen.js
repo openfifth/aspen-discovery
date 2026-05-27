@@ -1990,6 +1990,25 @@ var AspenDiscovery = (function(){
 				$button.removeClass('disabled');
 				$button.find('.fa-spinner').remove();
 			}
+		},
+
+		/**
+		 * Build a query string from an object
+		 * @param query
+		 * @returns {string}
+		 */
+		buildQueryString: function (query) {
+			const params = [];
+			for (const key in query) {
+				if (Array.isArray(query[key])) {
+					query[key].forEach(val => {
+						params.push(encodeURIComponent(key) + '[]=' + encodeURIComponent(val));
+					});
+				} else if (query[key] !== undefined && query[key] !== null) {
+					params.push(encodeURIComponent(key) + '=' + encodeURIComponent(query[key]));
+				}
+			}
+			return params.join('&');
 		}
 	}
 
@@ -2510,14 +2529,13 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		loadHolds: function (source, availableHoldSort, unavailableHoldSort, showCovers, selectedUser) {
+		loadHolds: function (source, availableHoldSort, unavailableHoldSort, showCovers, selectedUser, filters) {
 			AspenDiscovery.Account.currentHoldSource = source;
 			var url = Globals.path + "/MyAccount/AJAX?method=getHolds&source=" + source;
 
 			if (selectedUser || selectedUser == "") {
 				url += "&selectedUser=" + selectedUser;
 			}
-
 
 			if (availableHoldSort !== undefined) {
 				url += "&availableHoldSort=" + availableHoldSort;
@@ -2528,6 +2546,11 @@ AspenDiscovery.Account = (function () {
 			if (showCovers !== undefined) {
 				url += "&showCovers=" + showCovers;
 			}
+
+			if (filters !== undefined) {
+				url += "&" + AspenDiscovery.buildQueryString(filters);
+			}
+
 			var stateObj = {
 				page: 'Holds',
 				source: source,
