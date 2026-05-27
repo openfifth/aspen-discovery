@@ -591,6 +591,7 @@ class UserAccount {
 						return $cardExpired;
 					} elseif ($library->allowLoginToPatronsOfThisLibraryOnly && ($tempUser->getHomeLibrary() != null && ($tempUser->getHomeLibrary()->libraryId != $library->libraryId))) {
 						$disallowedMessage = empty(trim(strip_tags($library->messageForPatronsOfOtherLibraries))) ? 'Sorry, this catalog can only be accessed by patrons of ' . $library->displayName : $library->messageForPatronsOfOtherLibraries;
+						$disallowedMessage .= ' Your home library catalog is <a href="' . $tempUser->getHomeLibrary()->baseUrl . '">' . $tempUser->getHomeLibrary()->displayName . '</a>';
 						return new AspenError($disallowedMessage);
 					} elseif ($tempUser->getHomeLibrary() != null && ($tempUser->getHomeLibrary()->preventLogin)) {
 						$disallowedMessage = empty(trim(strip_tags($tempUser->getHomeLibrary()->preventLoginMessage))) ? 'Sorry, patrons of ' . $library->displayName . ' cannot login at this time.' : $tempUser->getHomeLibrary()->preventLoginMessage;
