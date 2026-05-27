@@ -4259,6 +4259,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$interface->assign('showHoldHelpMessages', $user->showHoldHelpMessages);
 
+			$result['filterOptions'] = $interface->fetch('MyAccount/holdsFilters.tpl');
 			$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 
 		} else {
