@@ -56,7 +56,7 @@ class LocalHopSetting extends DataObject
 			'baseUrl' => [
 				'property' => 'baseUrl',
 				'type' => 'url',
-				'label' => 'Base URL (i.e. https://yoursite.localhopinteractive.com/calendar/upcoming-events)',
+				'label' => 'Base URL (i.e. https://events.getlocalhop.com/rss-feed/?o=XXXXXXX&n=1000&f=json)',
 				'description' => 'The URL for the site',
 			],
 			'numberOfDaysToIndex' => [
