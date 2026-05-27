@@ -4612,6 +4612,10 @@ class User extends DataObject {
 			'View eCommerce Reports for All Libraries',
 			'View eCommerce Reports for Home Library'
 		]);
+		$sections['ecommerce']->addAction(new AdminAction('Payment Details Report', 'View individual payment line items', '/Admin/PaymentDetailsReport'), [
+			'View eCommerce Reports for All Libraries',
+			'View eCommerce Reports for Home Library'
+		]);
 		$sections['ecommerce']->addAction(new AdminAction('Donations Report', 'View donations initiated and completed within the system', '/Admin/DonationsReport'), [
 			'View Donations Reports for All Libraries',
 			'View Donations Reports for Home Library'
