@@ -4223,6 +4223,13 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			}
 
+			foreach ($filterOptions as $filterKey => &$filterOption) {
+				if (empty($filterOption['selected']) || count($filterOption['selected']) === 0) {
+					$filterOption['selected'] = array_keys($filterOption['options']);
+				}
+			}
+			unset($filterOption);
+
 			$interface->assign('filterOptions', $filterOptions);
 
 
