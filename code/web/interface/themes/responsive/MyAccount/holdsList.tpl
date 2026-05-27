@@ -59,8 +59,9 @@
 						</div>
 					</div>
                 {/foreach}
-				<div class="col-sm-2">
+				<div class="col-sm-3">
 					<button type="button" style="margin-top: .5em;" class="btn btn-block btn-default" id="applyHoldsFilters">Apply Filters</button>
+					<button type="button" style="margin-top: .5em;" class="btn btn-block btn-default" id="clearHoldsFilters">Clear Filters</button>
 				</div>
 			</div>
 			<script type="text/javascript">
