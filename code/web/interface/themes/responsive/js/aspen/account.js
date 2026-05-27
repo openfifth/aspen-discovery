@@ -3459,6 +3459,11 @@ AspenDiscovery.Account = (function () {
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
-		}
+		},
+		initializeHorizontalHoldFiltersSwipers: function (id) {
+			var container = document.getElementById('slider-' + id);
+			AspenDiscovery.initializeHorizontalSwiper(container, function (slide) {
+			});
+		},
 	};
 }(AspenDiscovery.Account || {}));

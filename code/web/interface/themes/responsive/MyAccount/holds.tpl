@@ -49,14 +49,13 @@
 					<li role="presentation"{if $tab=='axis360'} class="active"{/if}><a href="#axis360" aria-controls="axis360" role="tab" data-toggle="tab">{translate text="Boundless" isPublicFacing=true} <span class="badge"><span class="axis360-holds-placeholder">&nbsp;</span></span></a></li>
 				{/if}
 			</ul>
-            <div id="holdsFiltersBar"></div>
 
 			<div class="refresh-indicator small pull-right">
-				{* {translate text="Last Loaded <span id='accountLoadTime'>%1%</span>" 1=$profile->getFormattedHoldInfoLastLoaded() isPublicFacing=true} *}
+                {* {translate text="Last Loaded <span id='accountLoadTime'>%1%</span>" 1=$profile->getFormattedHoldInfoLastLoaded() isPublicFacing=true} *}
 				<a class="btn btn-default btn-sm" href="#" onclick="return AspenDiscovery.Account.reloadHolds();" title="{translate text="Refresh" isPublicFacing=true}">{translate text="Refresh" isPublicFacing=true inAttribute=true} <i class="fas fa-sync-alt" role="presentation"></i></a>
 			</div>
 
-			<div style="clear: both"></div> {*clear the floats*}
+            <div id="holdsFiltersBar"></div>
 
 			<!-- Tab panes -->
 			<div class="tab-content" id="holds">
