@@ -278,31 +278,31 @@ class Pay360_Client  {
 			$amountInMinorUnits = $this->getMinorUnitsAmount($fineDetails['amountVal']);
 			$item = [
 				'itemSummary' =>[
-					'description' => $fineDetails['reason'],
+					'description' =>  mb_substr($fineDetails['reason'], 0, 100),
 					'amountInMinorUnits' => $amountInMinorUnits,
-					'displayableReference' => $fineDetails['reason'], 
+					'displayableReference' => mb_substr($fineDetails['reason'], 0, 50),
 				],
 				'lgItemDetails' => [
-					'additionalReference' => $fineDetails['reason'],
-					'narrative' => $fineDetails['reason'],
-					'customerInfo' => $fineDetails['message'],
+					'additionalReference' => 'LIB01',
+					'narrative' => mb_substr($fineDetails['reason'], 0, 50),
+					'fundCode' => 'LIB',
 				],
-				'lineId' => $fineDetails['fineId']
+				'customerInfo' => [
+					'customerString1' => mb_substr($fineDetails['message'], 0, 50),
+				],
+				'lineId' => $fineDetails['fineId'],
 			];
 			if (isset($fineDetails['sap_vat'])) {
 				$tax = new Tax();
 				$vatResult = $tax->calculateVat((int)$amountInMinorUnits, $fineDetails['sap_vat']);
-				$item['tax'] = [
+				$item['tax']['vat'] = [
 					'vatCode' => $fineDetails['sap_vat'],
 					'vatRate' => $vatResult['rate'],
-					'vatAmountInMinorUnits' => (int)$vatResult['vatAmountInMinorUnits'],
+					'vatAmountInMinorUnits' => $vatResult['vatAmountInMinorUnits'],
 				];
 			}
 			if (isset($fineDetails['sap_gl'])) {
-				$item['lgItemDetails']['fundCode'] = $fineDetails['sap_gl'];
-			}
-			if (isset($fineDetails['reference'])) {
-				$item['itemSummary']['reference'] = $fineDetails['reference'];
+				$item['itemSummary']['reference'] = $fineDetails['sap_gl'];
 			}
 			array_push($items, $item);
 		}
