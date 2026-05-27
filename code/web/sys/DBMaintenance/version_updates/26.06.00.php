@@ -37,11 +37,11 @@ function getUpdates26_06_00(): array {
 					id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 					name VARCHAR(100) NOT NULL UNIQUE,
 					baseUrl VARCHAR(255) NOT NULL,
-    				eventsInLists tinyint(1) default 1,
-    				bypassAspenEventPages tinyint(1) default 0,
-    				registrationModalBody mediumtext,
-    				registrationModalBodyApp varchar(500),
-    				numberOfDaysToIndex INT DEFAULT 365
+					eventsInLists tinyint(1) default 1,
+					bypassAspenEventPages tinyint(1) default 0,
+					registrationModalBody mediumtext,
+					registrationModalBodyApp varchar(500),
+					numberOfDaysToIndex INT DEFAULT 365
 				) ENGINE INNODB',
 			],
 		], // localhop_settings
