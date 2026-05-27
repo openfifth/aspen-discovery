@@ -3802,20 +3802,20 @@ class MyAccount_AJAX extends JSON_Action {
 		$allUsersSelected = (empty($selectedUser) || $selectedUser === '[""]');
 
 		foreach ($allHolds['available'] as $key => $hold) {
-			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'], true)) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'], true)) && (empty($filters['formats']) || in_array($hold->format, $filters['formats'], true))) {
+			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 				$filteredHolds['available'][$key] = $hold;
 			}
 		}
 
 		foreach ($allHolds['unavailable'] as $key => $hold) {
-			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'], true)) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'], true)) && (empty($filters['formats']) || in_array($hold->format, $filters['formats'], true))) {
+			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 				$filteredHolds['unavailable'][$key] = $hold;
 			}
 		}
 
 		if (isset($allHolds['cancelled'])) {
 			foreach ($allHolds['cancelled'] as $key => $hold) {
-				if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'], true)) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'], true)) && (empty($filters['formats']) || in_array($hold->format, $filters['formats'], true))) {
+				if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 					$filteredHolds['cancelled'][$key] = $hold;
 				}
 			}
