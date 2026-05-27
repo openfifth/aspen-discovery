@@ -52,7 +52,7 @@
 	                                    {if $filterOption.type === "multiselect"}multiple="multiple"{/if}
 								>
 	                                {foreach from=$filterOption.options item=optionVal key=optionKey}
-										<option value="{$optionKey}"{if isset($filterOption.optionsSelected) && in_array($optionVal, $filterOption.optionsSelected)} selected="selected"{/if}>{$optionVal}</option>
+										<option value="{$optionKey}"{if isset($filterOption.selected) && in_array($optionKey, $filterOption.selected)} selected="selected"{/if}>{$optionVal}</option>
 	                                {/foreach}
 								</select>
 							</fieldset>
@@ -74,7 +74,6 @@
 							let key = $(this).attr('id').replace('HoldFilter_', '');
 							filters[key] = $(this).val() || [];
 						});
-						console.log(filters); // ****** for debugging - remove later *******
 						AspenDiscovery.Account.loadHolds('{/literal}{$source}{literal}', $('#availableHoldSort_{/literal}{$source}{literal} option:selected').val(), $('#unavailableHoldSort_{/literal}{$source}{literal} option:selected').val(), null, null, filters);
 					});
 					$('#clearHoldsFilters').on('click', function() {
