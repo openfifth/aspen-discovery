@@ -154,6 +154,7 @@ abstract class AbstractAPI extends Action{
 				'event_libcal',
 				'library_calendar_event',
 				'event_aspenEvent',
+				'event_localhop',
 				'grouped_work'
 			];
 		} elseif ($context == 'list') {
