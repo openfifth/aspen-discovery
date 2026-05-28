@@ -12,25 +12,22 @@
 				{/if}
 				{if !empty($duration)}
 					{if $multipleDurations == false}
-						{translate text='Duration: ' isPublicFacing=true}
 						{math equation="floor(x/60)" x=$duration assign="hours"}
 						{math equation="x%60" x=$duration assign="minutes"}
-						{$hours} hours {$minutes} minutes <br>
+						{translate text='Duration is %1% hours %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}<br/>
 					{else}
 						{if $withinOneHour == true}
-							{translate text='Duration: ~' isPublicFacing=true}
 							{math equation="floor(x/60)" x=$duration assign="hours"}
 							{math equation="x%60" x=$duration assign="minutes"}
-							{$hours} hours {$minutes} minutes <br>
+							{translate text='Duration is approximately %1% hours %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}. <a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='See editions' isPublicFacing=true}</a> <br>
 						{else}
-							{translate text='Duration: Varies, see editions' isPublicFacing=true} <br>
+							<a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='Duration varies, see editions' isPublicFacing=true}</a> <br>
 						{/if}
 					{/if}
-
 				{/if}
 				{if !empty($firstRecord->edition)} {$firstRecord->edition}{/if}
 				{* {if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if} *}
-				{if !empty($firstRecord->physical) && empty($duration)} {$firstRecord->physical} {if $firstRecord->closedCaptioned}<i class="fas fa-closed-captioning"></i> {/if}{/if}
+				{if !empty($firstRecord->physical)} {$firstRecord->physical} {if $firstRecord->closedCaptioned}<i class="fas fa-closed-captioning"></i> {/if}{/if}
 				{if !empty($firstRecord->languageNote)} {$firstRecord->languageNote}{/if}
 			</div>
 		</div>

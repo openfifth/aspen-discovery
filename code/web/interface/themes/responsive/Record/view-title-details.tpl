@@ -121,7 +121,7 @@
 		{/if}
 	{/if}
 
-	{if !empty($showPhysicalDescriptions) && !empty($physicalDescriptions) && empty($duration)}
+	{if !empty($showPhysicalDescriptions) && !empty($physicalDescriptions)}
 		<div class="row">
 			<div class="result-label col-sm-4 col-xs-12">{translate text='Physical Desc' isPublicFacing=true}</div>
 			<div class="result-value col-sm-8 col-xs-12">
@@ -139,7 +139,7 @@
 			<div class="result-value col-sm-8 col-xs-12">
 				{math equation="floor(x/60)" x=$duration assign="hours"}
 				{math equation="x%60" x=$duration assign="minutes"}
-				{$hours} hours {$minutes} minutes
+				{translate text='%1% hours %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}
 			</div>
 		</div>
 	{/if}
