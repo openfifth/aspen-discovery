@@ -97,7 +97,7 @@ class Grouping_Item {
 		$this->isVirtual = $itemDetails['isVirtual'];
 		$this->variationId = $itemDetails['groupedWorkVariationId'];
 		$this->barcode = $itemDetails['barcode'] ?? '';
-		$this->dueDate = $itemDetails['dueDate'] ?? '';
+		$this->dueDate = $this->normalizeDueDate($itemDetails['dueDate'] ?? '');
 		$this->note = $itemDetails['note'] ?? '';
 
 		if ($this->status == 'Library Use Only' && !$this->available) {
@@ -110,6 +110,18 @@ class Grouping_Item {
 				$this->_displayByDefault = $this->libraryOwned || $this->locallyOwned || $this->isEContent;
 			}
 		}
+	}
+
+	private function normalizeDueDate(mixed $dueDate): string|int {
+		if ($dueDate === '') {
+			return '';
+		}
+		$dueDate = (string)$dueDate;
+		// Normalize YYYYMMDD to unix timestamps
+		if (ctype_digit($dueDate) && strlen($dueDate) == 8) {
+			return DateTime::createFromFormat('Ymd', $dueDate)->getTimestamp();
+		}
+		return $dueDate;
 	}
 
 	/**
