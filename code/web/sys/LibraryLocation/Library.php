@@ -418,6 +418,7 @@ class Library extends DataObject {
 	public $localIllRequestType;
 	public $maximumLocalIllRequests;
 	public $includeRemoteCheckoutsInMaxLocalIllRequests;
+	public $allowToRenewILL;
 	public $localIllEmail;
 	/** @noinspection PhpUnused */
 	public $_localIllEmailSuccessMessage;
@@ -4212,6 +4213,15 @@ class Library extends DataObject {
 						'description' => 'Include Remote Checkouts in Max Local ILL requests',
 						'note' => "Remote checkouts are checkouts that were picked up from the item's owning home group (but that are not owned by the patron's home group)",
 						'default' => 1
+					],
+					'allowToRenewILL' => [
+						'property' => 'allowToRenewILL',
+						'type' => 'checkbox',
+						'label' => 'Allow ILL Renewals',
+						'description' => 'Whether or not patrons can renew ILL items.',
+						'note' => 'Applies to Sierra Only',
+						'default' => 1,
+						'relatedIls' => ['sierra'],
 					],
 					'ILLSystem' => [
 						'property' => 'ILLSystem',

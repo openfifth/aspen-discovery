@@ -845,6 +845,10 @@ class Sierra extends AbstractIlsDriver {
 						$curCheckout->author = 'Unknown';
 					}
 					$curCheckout->formats = ['Unknown'];
+					$homeLibrary = $patron->getHomeLibrary();
+					if ($homeLibrary !== null && !$homeLibrary->allowToRenewILL) {
+						$curCheckout->canRenew = false;
+					}
 				} else {
 					preg_match($this->urlIdRegExp, $entry->item, $m);
 					$itemIdShort = $m[1];
