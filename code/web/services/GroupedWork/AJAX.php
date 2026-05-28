@@ -2982,11 +2982,47 @@ class GroupedWork_AJAX extends JSON_Action {
 
 			if ($foundVariation) {
 				$relatedRecords = $variation->getRelatedRecords();
+				if (count($relatedRecords) > 1) {
+					// Extract and filter out null/empty durations
+					$durations = array_values(array_filter(
+						array_map(fn($item) => $item->duration ?? null, $relatedRecords),
+						fn($d) => $d !== null && $d !== ''
+					));
+
+					if (!empty($durations)) {
+						// Calculate median
+						sort($durations);
+						$count = count($durations);
+						$middle = (int)floor($count / 2);
+
+						$median = ($count % 2 === 0)
+							? (int)(($durations[$middle - 1] + $durations[$middle]) / 2)
+							: $durations[$middle];
+
+						// Check if all durations are within 60 minutes of the median
+						$withinOneHour = true;
+						foreach ($durations as $duration) {
+							if (abs($duration - $median) > 60) {
+								$withinOneHour = false; // Not all within range
+							}
+						}
+
+						$interface->assign('duration', $median);
+						$interface->assign('withinOneHour', $withinOneHour);
+						$interface->assign('multipleDurations', true);
+
+					}
+				}
+
 				/** @var Grouping_Record $firstRecord */
 				$firstRecord = reset($relatedRecords);
 				$interface->assign('firstRecord', $firstRecord);
 				$interface->assign('isEContent', $firstRecord->isEContent());
 				$interface->assign('itemSummary', $firstRecord->getItemSummary());
+				if (count($relatedRecords) === 1){
+					$interface->assign('duration', $firstRecord->duration);
+					$interface->assign('multipleDurations', false);
+				}
 				$interface->assign('relatedRecords', $relatedRecords);
 				$interface->assign('relatedManifestation', $relatedManifestation);
 				$interface->assign('variationId', $variation->databaseId);

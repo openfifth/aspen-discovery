@@ -8,11 +8,29 @@
 			</div>
 			<div style="margin-bottom: 3px; font-size: smaller">
 				{if !empty($firstRecord->publicationDate) || !empty($firstRecord->publisher)}
-					{$firstRecord->publicationDate} {$firstRecord->publisher}
+					{$firstRecord->publicationDate} {$firstRecord->publisher} <br>
+				{/if}
+				{if !empty($duration)}
+					{if $multipleDurations == false}
+						{translate text='Duration: ' isPublicFacing=true}
+						{math equation="floor(x/60)" x=$duration assign="hours"}
+						{math equation="x%60" x=$duration assign="minutes"}
+						{$hours} hours {$minutes} minutes <br>
+					{else}
+						{if $withinOneHour == true}
+							{translate text='Duration: ~' isPublicFacing=true}
+							{math equation="floor(x/60)" x=$duration assign="hours"}
+							{math equation="x%60" x=$duration assign="minutes"}
+							{$hours} hours {$minutes} minutes <br>
+						{else}
+							{translate text='Duration: Varies, see editions' isPublicFacing=true} <br>
+						{/if}
+					{/if}
+
 				{/if}
 				{if !empty($firstRecord->edition)} {$firstRecord->edition}{/if}
 				{* {if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if} *}
-				{if !empty($firstRecord->physical)} {$firstRecord->physical} {if $firstRecord->closedCaptioned}<i class="fas fa-closed-captioning"></i> {/if}{/if}
+				{if !empty($firstRecord->physical) && empty($duration)} {$firstRecord->physical} {if $firstRecord->closedCaptioned}<i class="fas fa-closed-captioning"></i> {/if}{/if}
 				{if !empty($firstRecord->languageNote)} {$firstRecord->languageNote}{/if}
 			</div>
 		</div>
