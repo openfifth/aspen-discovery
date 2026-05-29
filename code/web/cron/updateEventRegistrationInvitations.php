@@ -25,6 +25,18 @@ foreach ($expiredRowIds as $rowId) {
 		continue;
 	}
 	$affectedInstanceIds[$row->eventInstanceId] = true;
+
+	$eventInstance = new EventInstance();
+	$eventInstance->id = $row->eventInstanceId;
+	if ($eventInstance->find(true)) {
+		$event = $eventInstance->getParentEvent();
+		$eventInstance->sendEventEmail((int)$row->userId, 'eventWaitingListInviteExpired', [
+			'eventTitle' => $event->title,
+			'eventDate' => DateUtils::formatHumanDate($eventInstance->date),
+			'eventTime' => $eventInstance->time,
+		]);
+	}
+
 	$row->delete();
 	$expiredCount++;
 }

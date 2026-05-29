@@ -41,6 +41,7 @@ class EmailTemplate extends DataObject {
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
 				'registerForEventFromWaitingList' => 'Register for Event From Waiting List',
+				'eventWaitingListInviteExpired' => 'Waiting List Invitation Expired',
 				'eventCancellationRegistered' => 'Cancellation of an Event (Registered Patron)',
 				'eventCancellationInvited' => 'Cancellation of an Event (Invited from Waiting List)',
 				'eventCancellationWaiting' => 'Cancellation of an Event (On Waiting List)',
@@ -365,7 +366,7 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%searchHistory.updatedSearchesWithSampleTitles%', $parameters['searchHistory']['updatedSearchesWithSampleTitles'] ?? '', $text);
 			$text = str_replace('%searchHistory.updatedSearchesHtml%', $parameters['searchHistory']['updatedSearchesHtml'] ?? '', $text);
 			$text = str_replace('%searchHistory.updatedSearches%', $parameters['searchHistory']['updatedSearches'] ?? '', $text);
-		} elseif ($this->templateType == 'registerForEventFromWaitingList') {
+		} elseif (in_array($this->templateType, ['registerForEventFromWaitingList', 'eventWaitingListInviteExpired'], true)) {
 			$text = str_replace('%event.title%', $parameters['eventTitle'] ?? '', $text);
 			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
 			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
