@@ -192,10 +192,8 @@ class UserAspenEventInstanceRegistration extends DataObject {
 			return [];
 		}
 
-		$instanceIdList = implode(',', array_map('intval', $eventInstanceIds));
-
 		$registration = new UserAspenEventInstanceRegistration();
-		$registration->whereAdd("eventInstanceId IN ($instanceIdList)");
+		$registration->whereAddIn('eventInstanceId', $eventInstanceIds, false);
 		$registration->find();
 
 		$grouped = [];
