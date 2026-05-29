@@ -50,7 +50,7 @@ class SearchAPI extends AbstractAPI {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
 					APIUsage::incrementStat('SearchAPI', $method);
-					$jsonOutput = json_encode(['result' => $this->$method()]);
+					$jsonOutput = json_encode(['result' => $this->logPatronRequestExternal($this->$method())]);
 				} else {
 					$output = json_encode(['error' => 'invalid_method']);
 				}

@@ -56,7 +56,7 @@ class SystemAPI extends AbstractAPI {
 					'getHomeScreenLinks',
 				])) {
 					$result = [
-						'result' => $this->$method(),
+						'result' => $this->logPatronRequestExternal($this->$method()),
 					];
 					$output = json_encode($result);
 					header("Cache-Control: max-age=10800");
