@@ -6,6 +6,13 @@ require_once ROOT_DIR . '/sys/CronLogEntry.php';
 require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 
+// prevent a new run from starting if the previous has not terminated.
+$lockFile = sys_get_temp_dir() . '/aspen_event_registration_invitations.lock';
+$lockHandle = fopen($lockFile, 'c');
+if (!$lockHandle || !flock($lockHandle, LOCK_EX | LOCK_NB)) {
+	exit(0);
+}
+
 $cronLogEntry = new CronLogEntry();
 $cronLogEntry->startTime = time();
 $cronLogEntry->name = 'Update Event Registration Invites';
