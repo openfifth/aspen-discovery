@@ -58,7 +58,7 @@ class Admin_OpenIDClients extends ObjectEditor {
 	}
 
 	function getActiveAdminSection(): string {
-		return 'admin';
+		return 'system_admin';
 	}
 
 	function getViewPermissions(): array {

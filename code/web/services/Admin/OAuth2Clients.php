@@ -58,11 +58,11 @@ class Admin_OAuth2Clients extends ObjectEditor {
 	}
 
 	function getActiveAdminSection(): string {
-		return 'admin';
+		return 'system_admin';
 	}
 
 	function getViewPermissions(): array {
-		return ['Administer OpenID Connect'];
+		return ['Administer OAuth2'];
 	}
 
 	function canBatchEdit(): bool {
