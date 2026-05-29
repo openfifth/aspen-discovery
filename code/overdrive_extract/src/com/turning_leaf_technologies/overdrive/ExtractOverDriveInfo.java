@@ -1497,7 +1497,7 @@ class ExtractOverDriveInfo implements AutoCloseable {
 		AvailabilityProcessingResult result = new AvailabilityProcessingResult();
 
 		BlockingQueue<Runnable> blockingQueue = new ArrayBlockingQueue<>(overDriveInfo.getCollections().size());
-		ThreadPoolExecutor es = new ThreadPoolExecutor(overDriveInfo.getCollections().size() / 2, overDriveInfo.getCollections().size(), 5000, TimeUnit.MILLISECONDS, blockingQueue);
+		ThreadPoolExecutor es = new ThreadPoolExecutor(Math.max(1, overDriveInfo.getCollections().size() / 2), overDriveInfo.getCollections().size(), 5000, TimeUnit.MILLISECONDS, blockingQueue);
 		List<Future<AvailabilityProcessingResult>> futures = new ArrayList<>();
 
 		for (AdvantageCollectionInfo collectionInfo : overDriveInfo.getCollections()) {
