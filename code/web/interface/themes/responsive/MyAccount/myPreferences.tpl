@@ -197,7 +197,7 @@
 							</div>
 						{/if}
 
-						{if array_key_exists('Events', $enabledModules)}
+						{if $aspenNativeEventsEnabled}
 							<div class="panel" id="eventsNotificationsPreferencesPanel">
 								<a data-toggle="collapse" href="#eventsNotificationsPreferencesPanel" class="active">
 									<div class="panel-heading">
