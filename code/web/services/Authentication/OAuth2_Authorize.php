@@ -236,7 +236,7 @@ class Authentication_OAuth2_Authorize extends Action {
 	private function handleLogin(string $username, string $password): bool {
 		$user = UserAccount::validateAccount($username, $password);
 		if ($user && !($user instanceof AspenError)) {
-			UserAccount::login($user);
+			UserAccount::login();
 			return true;
 		}
 		return false;
