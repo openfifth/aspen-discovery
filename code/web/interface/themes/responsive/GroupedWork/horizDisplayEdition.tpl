@@ -8,7 +8,22 @@
 			</div>
 			<div style="margin-bottom: 3px; font-size: smaller">
 				{if !empty($firstRecord->publicationDate) || !empty($firstRecord->publisher)}
-					{$firstRecord->publicationDate} {$firstRecord->publisher}
+					{$firstRecord->publicationDate} {$firstRecord->publisher} <br>
+				{/if}
+				{if !empty($duration)}
+					{if $multipleDurations == false}
+						{math equation="floor(x/60)" x=$duration assign="hours"}
+						{math equation="x%60" x=$duration assign="minutes"}
+						{translate text='Duration is %1% hours %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}<br/>
+					{else}
+						{if $withinOneHour == true}
+							{math equation="floor(x/60)" x=$duration assign="hours"}
+							{math equation="x%60" x=$duration assign="minutes"}
+							{translate text='Duration is approximately %1% hours %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}. <a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='See editions' isPublicFacing=true}</a> <br>
+						{else}
+							<a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='Duration varies, see editions' isPublicFacing=true}</a> <br>
+						{/if}
+					{/if}
 				{/if}
 				{if !empty($firstRecord->edition)} {$firstRecord->edition}{/if}
 				{* {if !empty($firstRecord->getEContentSource())} {translate text=$firstRecord->getEContentSource() isPublicFacing=true}{/if} *}
