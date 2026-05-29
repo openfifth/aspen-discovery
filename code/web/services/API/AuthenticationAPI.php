@@ -92,7 +92,7 @@ class AuthenticationAPI extends AbstractAPI {
 		$password = $input['password'] ?? '';
 		$clientId = $input['client_id'] ?? '';
 		$clientSecret = $input['client_secret'] ?? '';
-		$scope = $input['scope'] ?? 'user:read catalog:read catalog:write';
+		$scope = $input['scope'] ?? '';
 
 		if (empty($username) || empty($password) || empty($clientId) || empty($clientSecret)) {
 			return [
