@@ -3,7 +3,7 @@
 	<div class="card-body">
 		<div class="text-left">
 			<h2 class="card-title text-primary">
-				{translate text="Events to Register in!"}
+				{translate text="Events to Register in!" isPublicFacing=true}
 			</h2>
 			<p class="card-text fs-5">
 				{translate text="Events you were on a waiting list for have space to register." isPublicFacing=true}
