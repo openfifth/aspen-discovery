@@ -140,23 +140,47 @@ class OAuth2Middleware {
 
 		$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Validating token scopes for client: " . $clientId, Logger::LOG_DEBUG);
 
+		$clientType = '';
 		$client = new OAuth2Client();
 		$client->setClientId($clientId);
+		$client->setIsActive(1);
+		if ($client->find(true)) {
+			$clientType = 'oauth2';
+		} else {
+			$client = null;
+		}
 
-		if (!$client->find(true)) {
-			$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Client not found: " . $clientId, Logger::LOG_WARNING);
+		if ($client === null) {
+			$client = new OpenIDClient();
+			$client->setClientId($clientId);
+			$client->setIsActive(1);
+			if ($client->find(true)) {
+				$clientType = 'openid';
+			} else {
+				$client = null;
+			}
+		}
+
+		if ($client === null) {
+			$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - CLIENT NOT FOUND for ID: " . $clientId, Logger::LOG_DEBUG);
 			return false;
 		}
 
-		$allowedScopes = $client->getScopesArray();
-		$allowedClaims = $client->getClaimsArray();
+		$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - FOUND {$clientType} client: " . $client->getName(), Logger::LOG_DEBUG);
 
-		$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Client allowed scopes: " . implode(', ', $allowedScopes), Logger::LOG_DEBUG);
-		$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Client allowed claims: " . implode(', ', $allowedClaims), Logger::LOG_DEBUG);
+		if ($clientType === 'openid') {
+			$allowed = $client->getClaimsArray();
+			$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Client allowed claims: " . implode(', ', $allowed), Logger::LOG_DEBUG);
+		} else {
+			$allowed = $client->getScopesArray();
+			$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Client allowed scopes: " . implode(', ', $allowed), Logger::LOG_DEBUG);
+
+		}
+
 		$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - Token has scopes: " . implode(', ', $tokenScopes), Logger::LOG_DEBUG);
 
 		foreach ($tokenScopes as $tokenScope) {
-			$isAllowed = in_array($tokenScope, $allowedScopes) || in_array($tokenScope, $allowedClaims) || $tokenScope === 'openid';
+			$isAllowed = in_array($tokenScope, $allowed) || $tokenScope === 'openid';
 
 			if (!$isAllowed) {
 				$logger->log("[OAuth2] OAuth2Middleware::validateClientTokenScopes() - SECURITY: Token scope NOT allowed for client: " . $tokenScope, Logger::LOG_ERROR);

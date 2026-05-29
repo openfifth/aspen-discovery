@@ -14,7 +14,7 @@ class ScopeRepository implements ScopeRepositoryInterface {
 		$logger->log("[OAuth2] ScopeRepository::getScopeEntityByIdentifier() - Looking up scope: " . $identifier, Logger::LOG_DEBUG);
 		
 		$validScopes = OAuth2Client::getScopeOptions();
-		$validClaims = OAuth2Client::getClaimsOptions();
+		$validClaims = OpenIDClient::getClaimsOptions();
 
 		if (array_key_exists($identifier, $validScopes)) {
 			$logger->log("[OAuth2] ScopeRepository::getScopeEntityByIdentifier() - Found scope in validScopes: " . $identifier, Logger::LOG_DEBUG);
@@ -50,14 +50,47 @@ class ScopeRepository implements ScopeRepositoryInterface {
 
 		$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Client found, processing scopes", Logger::LOG_DEBUG);
 
-		$allowedScopes = $client->getScopesArray();
-		$allowedClaims = $client->getClaimsArray();
 		$finalScopes = [];
+		$clientType = '';
+		$client = new OAuth2Client();
+		$client->setClientId($clientEntity->getIdentifier());
+		$client->setIsActive(1);
+		if ($client->find(true)) {
+			$clientType = 'oauth2';
+		} else {
+			$client = null;
+		}
 
-		if (!empty($allowedScopes)) {
-			$firstItem = reset($allowedScopes);
+		if ($client === null) {
+			$client = new OpenIDClient();
+			$client->setClientId($clientEntity->getIdentifier());
+			$client->setIsActive(1);
+			if ($client->find(true)) {
+				$clientType = 'openid';
+			} else {
+				$client = null;
+			}
+		}
+
+		if ($client === null) {
+			$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - CLIENT NOT FOUND", Logger::LOG_DEBUG);
+			return [];
+		}
+
+		$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - FOUND {$clientType} client: " . $client->getName(), Logger::LOG_DEBUG);
+
+		if ($clientType === 'openid') {
+			$allowed = $client->getClaimsArray();
+			$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Allowed claims: " . implode(', ', $allowed), Logger::LOG_DEBUG);
+		} else {
+			$allowed = $client->getScopesArray();
+			$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Allowed scopes: " . implode(', ', $allowed), Logger::LOG_DEBUG);
+		}
+
+		if (!empty($allowed)) {
+			$firstItem = reset($allowed);
 			if (!is_string($firstItem) || !str_contains($firstItem, ':')) {
-				$allowedScopes = array_keys($allowedScopes);
+				$allowed = array_keys($allowed);
 			}
 		}
 
@@ -66,18 +99,16 @@ class ScopeRepository implements ScopeRepositoryInterface {
 			$requestedScopesList[] = $scope->getIdentifier();
 		}
 		$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Requested scopes: " . implode(', ', $requestedScopesList), Logger::LOG_DEBUG);
-		$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Allowed scopes: " . implode(', ', $allowedScopes), Logger::LOG_DEBUG);
-		$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Allowed claims: " . implode(', ', $allowedClaims), Logger::LOG_DEBUG);
 
 		foreach ($scopes as $scope) {
 			$scopeIdentifier = $scope->getIdentifier();
-			if (in_array($scopeIdentifier, $allowedScopes)) {
+			if (in_array($scopeIdentifier, $allowed)) {
 				$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Scope approved (in allowedScopes): " . $scopeIdentifier, Logger::LOG_DEBUG);
 				$finalScopes[] = $scope;
 			} elseif ($scopeIdentifier === 'openid') {
 				$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Scope approved (openid): " . $scopeIdentifier, Logger::LOG_DEBUG);
 				$finalScopes[] = $scope;
-			} elseif (in_array($scopeIdentifier, $allowedClaims)) {
+			} elseif (in_array($scopeIdentifier, $allowed)) {
 				$logger->log("[OAuth2] ScopeRepository::finalizeScopes() - Scope approved (in allowedClaims): " . $scopeIdentifier, Logger::LOG_DEBUG);
 				$finalScopes[] = $scope;
 			} else {
