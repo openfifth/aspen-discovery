@@ -16,21 +16,36 @@ class DateUtils {
 
 	static function formatHumanDate(string $date): string {
 		$dt = DateTimeImmutable::createFromFormat('Y-m-d', $date);
-
-		if ($dt === false) {
+		if (!$dt) {
 			return $date;
 		}
-
-		return $dt->format('l jS F Y');
+		return self::formatDate($dt) ?: $date;
 	}
 
 	static function formatHumanDateTime(string $dateTime): string {
 		$dt = DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dateTime);
-
-		if ($dt === false) {
+		if (!$dt) {
 			return $dateTime;
 		}
+		return self::formatDateTime($dt) ?: $dateTime;
+	}
 
-		return $dt->format('l jS F Y \a\t H:i');
+	static function formatDate(DateTimeImmutable $date): string|false {
+		global $locale;
+		$formatter = new IntlDateFormatter(self::formatLocale($locale), IntlDateFormatter::FULL, IntlDateFormatter::NONE);
+		return $formatter->format($date);
+	}
+
+	static function formatDateTime(DateTimeImmutable $dateTime): string|false {
+		global $locale;
+		$formatter = new IntlDateFormatter(self::formatLocale($locale), IntlDateFormatter::FULL, IntlDateFormatter::SHORT);
+		return $formatter->format($dateTime);
+	}
+
+	static function formatLocale(?string $locale): string {
+		if (!$locale) {
+			return 'en_US';
+		}
+		return str_replace('-', '_', $locale);
 	}
 }
