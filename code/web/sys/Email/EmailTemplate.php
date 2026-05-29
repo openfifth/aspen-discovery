@@ -41,7 +41,9 @@ class EmailTemplate extends DataObject {
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
 				'registerForEventFromWaitingList' => 'Register for Event From Waiting List',
-				'eventCancellation' => 'Cancellation of an Event',
+				'eventCancellationRegistered' => 'Cancellation of an Event (Registered Patron)',
+				'eventCancellationInvited' => 'Cancellation of an Event (Invited from Waiting List)',
+				'eventCancellationWaiting' => 'Cancellation of an Event (On Waiting List)',
 			];
 		}
 		if ($isCarlX){
@@ -368,14 +370,7 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
 			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
 			$text = str_replace('%canRegisterUntil%', $parameters['canRegisterUntil'] ?? '', $text);
-		} elseif ($this->templateType == 'eventCancellation') {
-			$statusMessages = [
-				'waiting' => 'The event you were on the waiting list for has been cancelled.',
-				'invited' => 'You had been invited from the waiting list for an event that has now been cancelled.',
-				'registered' => 'The event you registered for has been cancelled.',
-			];
-			$status = $parameters['status'] ?? 'registered';
-			$text = str_replace('%statusMessage%', $statusMessages[$status] ?? $statusMessages['registered'], $text);
+		} elseif (in_array($this->templateType, ['eventCancellationRegistered', 'eventCancellationInvited', 'eventCancellationWaiting'], true)) {
 			$text = str_replace('%changeType%', $parameters['changeType'] ?? 'cancelled', $text);
 			$instancesText = '';
 			if (isset($parameters['instances']) && is_array($parameters['instances'])) {

@@ -579,11 +579,18 @@ class EventInstance extends DataObject {
 			return;
 		}
 		$formattedInstances = $this->formatEmailTemplateEventInstances($upcomingInstances);
+		$templateTypesByStatus = [
+			'registered' => 'eventCancellationRegistered',
+			'invited' => 'eventCancellationInvited',
+			'waiting' => 'eventCancellationWaiting',
+		];
 		foreach ($affectedUsersByStatus as $status => $userIds) {
+			if (!isset($templateTypesByStatus[$status])) {
+				continue;
+			}
 			foreach ($userIds as $userId) {
-				$this->sendEventEmail($userId, 'eventCancellation', [
+				$this->sendEventEmail($userId, $templateTypesByStatus[$status], [
 					'instances' => $formattedInstances,
-					'status' => $status,
 				]);
 			}
 		}
