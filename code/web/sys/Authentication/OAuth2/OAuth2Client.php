@@ -15,9 +15,7 @@ class OAuth2Client extends DataObject {
 	protected $created_by;
 	protected $created_date;
 	protected $last_modified;
-	protected $supports_openid;
-	protected $allowed_claims;
-
+	
 	static $_objectStructure = [];
 
 	static function getObjectStructure(string $context = ''): array {
