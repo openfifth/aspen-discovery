@@ -24,7 +24,7 @@ if (count($_SERVER['argv']) > 1) {
 					$lines[] = "######################################\n";
 					$lines[] = "# Update Event Registration Invites Job\n";
 					$lines[] = "######################################\n";
-					$lines[] = "0 6 * * * root php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvites.php $serverName\n";
+					$lines[] = "*/5 * * * * root php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvites.php $serverName\n";
 					$updateEventRegistrationInvitesInserted = true;
 				}
 			}
@@ -38,7 +38,7 @@ if (count($_SERVER['argv']) > 1) {
 			$lines[] = "######################################\n";
 			$lines[] = "# Update Event Registration Invites Job\n";
 			$lines[] = "######################################\n";
-			$lines[] = "0 6 * * * root php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvites.php $serverName\n";
+			$lines[] = "*/5 * * * root php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvites.php $serverName\n";
 		}
 		
 		// Write the updated content back into the crontab settings file
