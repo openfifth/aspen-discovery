@@ -143,20 +143,22 @@ class Events_AttendanceManagement extends Admin_Admin {
 		return EventRegistrationService::canStaffManagePatronEventAttendance();
 	}
 
-	private function buildBaseRegistrationRow(UserAspenEventInstanceRegistration $registration): array {
-		$user = $registration->getUser();
+	private function buildBaseRegistrationRow(UserAspenEventInstanceRegistration $registration, User $user): array {
+		$user->loadContactInformation(); // so that we get the postcode and dob
 		$staffUser = $registration->getStaffUser();
 		return [
-			$user ? $user->getDisplayName() : 'Unknown',
-			$user ? $user->ils_barcode : '',
-			$user ? $user->email : '',
+			$user->getDisplayName(),
+			$user->ils_barcode,
+			$user->email,
+			$user->_zip,
+			$user->_dateOfBirth,
+			$registration->status,
 			$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
 			$registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : '-',
-			$registration->status,
 		];
 	}
 
-	private function downloadRegistrationsList($eventInstanceId) {
+	private function downloadRegistrationsList(int $eventInstanceId): void {
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
@@ -164,7 +166,7 @@ class Events_AttendanceManagement extends Admin_Admin {
 		}
 
 		$parentEvent = $eventInstance->getParentEvent();
-		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId, true);
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent($eventInstanceId);
 
 		header('Content-Type: text/plain');
 		header('Content-Disposition: attachment; filename="registrations_list_' . $eventInstanceId . '.txt"');
@@ -175,36 +177,76 @@ class Events_AttendanceManagement extends Admin_Admin {
 		echo "Total Registrations: " . count($registrations) . "\n";
 		echo str_repeat("=", 80) . "\n\n";
 
-		echo str_pad("Patron Name", 30) . str_pad("Barcode", 15) . str_pad("Email", 40) . str_pad("Registered By", 20) . str_pad("Date Registered", 20) . str_pad("Status", 15) . "Attended\n";
-		echo str_repeat("-", 152) . "\n";
+		echo str_pad("Patron Name", 30)
+		 . str_pad("ILS Barcode", 15)
+		 . str_pad("Email", 40)
+		 . str_pad("Post Code", 12)
+		 . str_pad("Date of Birth", 15)
+		 . str_pad("Registered By", 20)
+		 . str_pad("Date Registered", 20)
+		 . str_pad("Status", 15)
+		 . "Attended\n";
+		echo str_repeat("-", 200) . "\n";
 
 		foreach ($registrations as $registration) {
-			[$patronName, $barcode, $email, $registeredBy, $dateRegistered, $registrationStatus] = $this->buildBaseRegistrationRow($registration);
-			echo str_pad($patronName, 30) . str_pad($barcode, 15) . str_pad($email, 40) . str_pad($registeredBy, 20) . str_pad($dateRegistered, 20) . str_pad($registrationStatus, 15) . "[ ]\n";
+			if (!$user = $registration->getUser()) {
+				continue;
+			}
+			[$patronName, $barcode, $email, $postCode, $dateOfBirth, $status, $registeredBy, $dateRegistered] = $this->buildBaseRegistrationRow($registration, $user);
+			echo str_pad($patronName, 30)
+			 . str_pad($barcode, 15)
+			 . str_pad($email, 40)
+			 . str_pad($postCode, 12)
+			 . str_pad($dateOfBirth, 15)
+			 . str_pad($registeredBy, 20)
+			 . str_pad($dateRegistered, 20)
+			 . str_pad($status, 15)
+			 . "[ ]\n";
 		}
 		exit;
 	}
 
-	private function downloadRegistrationsCSV($eventInstanceId) {
+	private function downloadRegistrationsCSV(int $eventInstanceId): void {
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
 			return;
 		}
 
-		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$eventInstanceId);
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent($eventInstanceId);
 
-		$eventType = $eventInstance->getEventType();
-		$customFields = $eventType !== null ? $eventType->getFieldSetFieldsByUse(2) : [];
-		$attendeeCategories = $eventType !== null ? $eventType->getEventTypeAttendeeCategories() : [];
+		if (!$parentEvent = $eventInstance->getParentEvent()) {
+			return;
+		}
+		
+		if (!$eventType = $eventInstance->getEventType()) {
+			return;
+		}
+
+		$customFields = $eventType->getFieldSetFieldsByUse(2);
+		$attendeeCategories = $eventType->getEventTypeAttendeeCategories();
 
 		header('Content-Type: text/csv');
 		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
 
 		$output = fopen('php://output', 'w');
 
-		$headers = ['Patron Name', 'Barcode', 'Email', 'Registered By', 'Date Registered', 'Registration Status', 'Attended'];
-
+		$headers = [
+			'Event date',
+			'Event title',
+			'Event start time',
+			'Library location',
+			'Event Type',
+			'Patron Name',
+			'ILS Barcode',
+			'Email',
+			'Post Code',
+			'Date of Birth',
+			'Status',
+			'Registered By',
+			'Date Registered',
+			'Attended'
+		];
 		foreach ($customFields as $fieldId => $field) {
 			$headers[] = $field['label'];
 		}
@@ -219,11 +261,27 @@ class Events_AttendanceManagement extends Admin_Admin {
 		fputcsv($output, $headers);
 
 		foreach ($registrations as $registration) {
-			$row = [...$this->buildBaseRegistrationRow($registration), $registration->attended ? 'Yes' : 'No'];
+			if (!$user = $registration->getUser()) {
+				continue;
+			}
+			$row = array_merge([
+					$eventInstance->date,
+					$parentEvent->title,
+					$eventInstance->time,
+					$eventInstance->getLocation(),
+					$eventType->title,
+				],
+				[...$this->buildBaseRegistrationRow($registration, $user), $registration->attended ? 'Yes' : 'No']
+			);
 
 			$customFieldValues = $registration->getCustomFieldValues();
 			foreach ($customFields as $fieldId => $field) {
-				$row[] = $customFieldValues[(int)$fieldId] ?? '';
+				$raw = $customFieldValues[(int)$fieldId] ?? '';
+				if (($field['type'] ?? '') === 'enum' && isset($field['values'][$raw])) {
+					$row[] = $field['values'][$raw];
+				} else {
+					$row[] = $raw;
+				}
 			}
 
 			$attendeeCounts = $registration->getAttendeeCounts();
