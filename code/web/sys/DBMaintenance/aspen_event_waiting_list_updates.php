@@ -23,11 +23,11 @@ function getAspenEventWaitingListUpdates() {
 			'description' => 'Update the aspen event instance registration table to support waiting lists',
 			'continueOnError' => true,
 			'sql' => [
-				  'ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS createdAt DATETIME DEFAULT CURRENT_TIMESTAMP',
-				  'ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS notifiedAt DATETIME DEFAULT NULL',
-				  'ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT "waiting"',
-  				  'UPDATE user_aspen_event_instance_registrations SET status = "registered" WHERE registered = 1',
-  				  'ALTER TABLE user_aspen_event_instance_registrations DROP COLUMN IF EXISTS registered',
+				'ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS createdAt DATETIME DEFAULT CURRENT_TIMESTAMP',
+				'ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS notifiedAt DATETIME DEFAULT NULL',
+				'ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(20) NOT NULL DEFAULT "waiting"',
+				'UPDATE user_aspen_event_instance_registrations SET status = "registered" WHERE registered = 1',
+				'ALTER TABLE user_aspen_event_instance_registrations DROP COLUMN IF EXISTS registered',
 			],
 		], // replace_registered_with_status_in_user_aspen_event_instance_registrations
 		'add_waiting_list_invite_expiry_hours_to_event_type' => [
