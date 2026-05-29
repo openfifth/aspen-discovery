@@ -86,7 +86,7 @@ class Authentication_OAuth2_UserInfo extends JSON_Action {
 			return false;
 		}
 
-		$client = new OAuth2Client();
+		$client = new OpenIDClient();
 		$client->setClientId($clientId);
 		
 		if (!$client->find(true)) {
@@ -95,10 +95,9 @@ class Authentication_OAuth2_UserInfo extends JSON_Action {
 		}
 
 		$logger->log("[OAuth2] OAuth2_UserInfo::validateClientOpenIDSupport() - Client found: " . $client->getName(), Logger::LOG_DEBUG);
-		$logger->log("[OAuth2] OAuth2_UserInfo::validateClientOpenIDSupport() - OpenID support enabled: " . ($client->supports_openid ? 'yes' : 'no'), Logger::LOG_DEBUG);
 
-		// Check if client has OpenID Connect support enabled
-		return (bool)$client->supports_openid;
+		// if we found a valid OIDC client they are allowed here
+		return true;
 	}
 
 
