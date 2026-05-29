@@ -78,7 +78,7 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Add library setting to allow staff to register users for events',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE library ADD COLUMN allowStaffToRegisterUsersForEvents TINYINT(1) DEFAULT 0",
+				"ALTER TABLE library ADD COLUMN IF NOT EXISTS allowStaffToRegisterUsersForEvents TINYINT(1) DEFAULT 0",
 			]
 		], //staff_event_registration_library_setting
 		'staff_event_registration_tracking' => [
@@ -86,8 +86,8 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Add tracking fields for staff registrations',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN registeredByStaffId INT DEFAULT NULL",
-				"ALTER TABLE user_events_entry ADD COLUMN savedByStaffId INT DEFAULT NULL",
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS registeredByStaffId INT DEFAULT NULL",
+				"ALTER TABLE user_events_entry ADD COLUMN IF NOT EXISTS savedByStaffId INT DEFAULT NULL",
 			]
 		], //staff_event_registration_tracking
 		'patron_attendance_tracking' => [
@@ -95,7 +95,7 @@ function getAspenEventRegistrationUpdates() {
 			'description' => 'Add attended column to track patron attendance at events',
 			'continueOnError' => false,
 			'sql' => [
-				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN attended TINYINT(1) DEFAULT NULL",
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS attended TINYINT(1) DEFAULT NULL",
 			]
 		] //patron_attendance_tracking
 	];
