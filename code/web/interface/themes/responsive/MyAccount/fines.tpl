@@ -222,6 +222,151 @@
 		{else}
 			<p class="alert alert-success">{translate text="You do not have any fines within the system." isPublicFacing=true}</p>
 		{/if}
+		{if count($userCredits) > 0}
+			<h2>{translate text='Credits' isPublicFacing=true}</h2>
+			{foreach from=$userCredits item=credits key=userId name=creditTable}
+				<form id="credits{$userId}" method="post">
+					{if count($userCredits) > 1}<h2>{$userAccountLabel.$userId|escape}</h2>{/if}{* Only show account name if there is more than one account. *}
+					{if !empty($credits)}
+						<div class="table-responsive">
+							<table id="creditsTable{$smarty.foreach.creditTable.index}" class="credits-table table table-condensed table-striped" style="table-layout: fixed">
+								<thead>
+								<tr>
+									{if ($finePaymentType >= 2) && $finesToPay >= 1 && $creditTotalsVal.$userId > $minimumFineAmount}
+										<th scope="col" style="width: 5%"><input type="checkbox" checked name="selectAllCredits{$userId}" id="selectAllCredits{$userId}" aria-label="Select all credits" onclick="$('#credits{$userId} .selectedFine').prop('checked', $('#selectAllCredits{$userId}').prop('checked'));AspenDiscovery.Account.updateFineTotal('#credits{$userId}', 'credit{$userId}', '{$finesToPay}');"></th>
+									{/if}
+									<th scope="col"><span>{translate text="Details" isPublicFacing=true}</span></th>
+									<th scope="col">
+										<div style="width: 100%">
+											<span style="white-space:pre-line">{translate text="Fine/Fee Amount" isPublicFacing=true}</span>
+										</div>
+									</th>
+									{if !empty($showOutstanding)}
+										<th scope="col">
+											<div style="width: 100%">
+												<span style="white-space:pre-line">{translate text="Amount Outstanding" isPublicFacing=true}</span>
+											</div>
+										</th>
+									{/if}
+									{if $finesToPay == 2 && $creditTotalsVal.$userId > $minimumFineAmount}
+										<th scope="col">
+											<div style="width: 100%">
+												<span style="white-space:pre-line">{translate text="Amount To Pay" isPublicFacing=true}</span>
+											</div>
+										</th>
+									{/if}
+								</tr>
+								</thead>
+								<tbody>
+								{assign var=counter value=0}
+								{foreach from=$credits item=credit }
+									{assign var=counter value=$counter++}
+									<tr>
+										{if ($finePaymentType >= 2) && $finesToPay >= 1 && $creditTotalsVal.$userId > $minimumFineAmount && $credit.canPayFine !== false}
+											<td>
+												<input type="checkbox" checked class="selectedFine" name="selectedFine[{$credit.fineId}]" aria-label="Pay Credit {$credit.reason|escapeCSS}" onchange="AspenDiscovery.Account.updateFineTotal('#credits{$userId}', 'credit{$userId}', '{$finesToPay}')" data-fine_id="{$credit.fineId}" data-fine_reason="{$credit.reason}" data-fine_type="{$credit.type}" data-fine_item_description="{$credit.message}" data-fine_item_barcode="{if isset($credit.barcode)}{$credit.barcode}{else}{/if}" data-fine_amt="{$credit.amountVal}" data-outstanding_amt="{if !empty($showOutstanding)}{$credit.amountOutstandingVal}{else}0{/if}">
+											</td>
+										{elseif ($finePaymentType >= 2) && $finesToPay >= 1 && $creditTotalsVal.$userId > $minimumFineAmount}
+											<td></td>
+										{/if}
+										<td>
+											<div style="width: 100%">
+											{if !empty($showDate)}
+												<p class="credits-table-date" style="white-space:pre-line">{$credit.date}</p>
+											{/if}
+											<p class="credits-table-reason" style="white-space:pre-line">{$credit.reason}</p>
+											<p class="credits-table-message" style="white-space:pre-line">{$credit.message|removeTrailingPunctuation}</p>
+											{if !empty($credit.details)}
+												{foreach from=$credit.details item=detail}
+													<div class="row credits-table-details">
+														<div class="col-xs-5 credits-table-details-label" style="white-space:pre-line"><strong>{$detail.label}</strong></div>
+														<div class="col-xs-7 credits-table-details-value" style="white-space:pre-line">{$detail.value}</div>
+													</div>
+												{/foreach}
+											{/if}
+											{if !empty($showSystem)}
+												<p class="credits-table-system" style="white-space:pre-line">{$credit.system}</p>
+											{/if}
+											</div>
+										</td>
+
+										<td>{$credit.amountVal|formatCurrency}</td>
+										{if !empty($showOutstanding)}
+											<td>{$credit.amountOutstandingVal|formatCurrency}</td>
+										{/if}
+										{if $finesToPay == 2 && $creditTotalsVal.$userId > $minimumFineAmount && $credit.canPayFine !== false}
+											{if !empty($showOutstanding)}
+												<td><input aria-label="Amount to Pay for credit {$counter}" type="text" min="0" max="{$credit.amountOutstandingVal}" class="form-control amountToPay" name="amountToPay[{$credit.fineId}]" id="amountToPay{$credit.fineId}" value="{$credit.amountOutstandingVal|string_format:'%.2f'}" onchange="AspenDiscovery.Account.updateFineTotal('#credits{$userId}', 'credit{$userId}', '{$finesToPay}');"> {if !empty($overPayWarning)}
+														<div style="width: 100%"><span id="overPayWarning{$credit.fineId}" class="text-danger" style="white-space:pre-line; display:none;"><i class="fas fa-exclamation-triangle"></i> {$overPayWarning}</span></div>{/if}</td>
+											{else}
+												<td><input aria-label="Amount to Pay for credit {$counter}" type="text" min="0" max="{$credit.amountVal}" name="amountToPay[{$credit.fineId}]" id="amountToPay{$credit.fineId}" value="{$credit.amountVal|string_format:'%.2f'}" class="form-control amountToPay" onchange="AspenDiscovery.Account.updateFineTotal('#credits{$userId}', 'credit{$userId}', '{$finesToPay}');">
+													{if !empty($overPayWarning)}<div style="width: 100%"><span id="overPayWarning{$credit.fineId}" class="text-danger" style="white-space:pre-line; display:none;"><i class="fas fa-exclamation-triangle"></i> {$overPayWarning}</span></div>{/if}</td>
+											{/if}
+										{elseif $finesToPay == 2 && $creditTotalsVal.$userId > $minimumFineAmount}
+											<td></td>
+										{/if}
+									</tr>
+								{/foreach}
+								</tbody>
+								<tfoot>
+								<tr class="info">
+									{if ($finePaymentType >= 2) && $finesToPay >= 1 && $creditTotalsVal.$userId > $minimumFineAmount}
+										<td></td>
+									{/if}
+									<th>
+										<div style="width: 100%">
+											<span style="white-space:pre-line">{translate text="Total" isPublicFacing=true}</span>
+										</div>
+									</th>
+									<th id="formattedTotalcredit{$userId}">{$creditTotalsVal.$userId|formatCurrency}</th>
+									{if !empty($showOutstanding)}
+										<th id="formattedOutstandingTotalcredit{$userId}">{$creditOutstandingTotalVal.$userId|formatCurrency}</th>
+									{/if}
+									{if $finesToPay == 2}
+										<th></th>
+									{/if}
+								</tr>
+								{if !empty($convenienceFee) && $convenienceFee > 0}
+									<tr>
+										{if ($finePaymentType >= 2) && $finesToPay >= 1 && $creditTotalsVal.$userId > $minimumFineAmount}
+											<td></td>
+										{/if}
+										{if empty($showOutstanding)}<td></td>{/if}
+										<th>
+											<div style="width: 100%">
+												<span style="white-space:pre-line">{translate text="Convenience Fee" isPublicFacing=true}</span>
+											</div>
+										</th>
+										<th></th>
+										<th id="convenienceFee" data-fee_amt="{$convenienceFee}">{$convenienceFee|formatCurrency}</th>
+										<th></th>
+									</tr>
+									<tr>
+										{if ($finePaymentType >= 2) && $finesToPay >= 1 && $creditTotalsVal.$userId > $minimumFineAmount}
+											<td></td>
+										{/if}
+										{if empty($showOutstanding)}<td></td>{/if}
+										<th>
+											<div style="width: 100%">
+												<span style="white-space:pre-line">{translate text="Grand Total" isPublicFacing=true}</span>
+											</div>
+										</th>
+										<th></th>
+										<th id="outstandingGrandTotalcredit{$userId}">{$creditOutstandingGrandTotalVal.$userId|formatCurrency}</th>
+										<th></th>
+									</tr>
+								{/if}
+								</tfoot>
+							</table>
+						</div>
+					{else}
+						<p class="alert alert-success">{translate text="This account does not have any credits within the system." isPublicFacing=true}</p>
+					{/if}
+				</form>
+			{/foreach}
+		{else}
+			<p class="alert alert-success">{translate text="You do not have any credits within the system." isPublicFacing=true}</p>
+		{/if}
 	{/if}
 {else}
 	{translate text="You must sign in to view this information." isPublicFacing=true}<a href='/MyAccount/Login' class="btn btn-primary">{translate text="Sign In" isPublicFacing=true}</a>

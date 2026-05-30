@@ -70,7 +70,7 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 		];
 	}
 
-	public abstract function getFines(User $patron, $includeMessages = false): array;
+	public abstract function getFines(User $patron, $includeMessages = false, ?string $type = null): array;
 
 	/**
 	 * @return IndexingProfile|null

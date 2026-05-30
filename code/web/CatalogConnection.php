@@ -599,8 +599,8 @@ class CatalogConnection {
 	 * otherwise.
 	 * @access public
 	 */
-	public function getFines(User $patron, bool $includeMessages = false): array {
-		$fines = $this->driver->getFines($patron, $includeMessages);
+	public function getFines(User $patron, bool $includeMessages = false, ?string $type = null): array {
+		$fines = $this->driver->getFines($patron, $includeMessages, $type);
 		foreach ($fines as &$fine) {
 			if (!array_key_exists('canPayFine', $fine)) {
 				$fine['canPayFine'] = true;
