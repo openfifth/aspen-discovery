@@ -112,8 +112,16 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE library ADD COLUMN allowToRenewILL TINYINT(1) DEFAULT 1'
 			]
 		], //allow_to_renew_ill_items
-
-
+		'store_original_cover_urls_by_size' => [
+			'title' => 'Store Original Cover URLs by Size',
+			'description' => 'Store original cover URLs separately for small, medium, and large cover requests.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_small TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_medium TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_large TEXT DEFAULT NULL",
+			]
+		], //store_original_cover_urls_by_size
 
 		//imani
 
