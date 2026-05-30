@@ -2061,11 +2061,14 @@ AspenDiscovery.Account = (function () {
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
-					if (data.isDonation) {
-						window.location.href = Globals.path + '/Donations/DonationCompleted?id=' + data.paymentId;
-					} else {
-						AspenDiscovery.showMessage('Thank you', data.message, false, true);
+					let buttons = '';
+					// noinspection JSUnresolvedReference
+					if (data.receiptUrl) {
+						const safeReceiptUrl = encodeURI(data.receiptUrl);
+						buttons = '<a href="' + safeReceiptUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">' +
+							'<i class="fas fa-receipt"></i> View Receipt</a>';
 					}
+					AspenDiscovery.showMessageWithButtons('Thank You', data.message, buttons, true);
 				} else {
 					if (data.isDonation) {
 						window.location.href = Globals.path + '/Donations/DonationCancelled?id=' + data.paymentId;
@@ -2185,8 +2188,9 @@ AspenDiscovery.Account = (function () {
 				}
 			);
 
-			if (document.getElementById('convenienceFee')) {
-				var feeAmt = document.getElementById('convenienceFee').getAttribute('data-fee_amt');
+			var convenienceFeeElement = $(finesFormId + " [id^='convenienceFee']").get(0);
+			if (convenienceFeeElement) {
+				var feeAmt = convenienceFeeElement.getAttribute('data-fee_amt');
 				outstandingGrandTotalAmt += feeAmt * 1;
 			}
 
