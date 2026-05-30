@@ -49,7 +49,7 @@
 						</div>
 					</div>
 				{/if}
-				{if $paymentDetails.paymentType == 'stripe' && !empty($paymentDetails.receiptUrl)}
+				{if ($paymentDetails.paymentType == 'stripe' || $paymentDetails.paymentType == 'square') && !empty($paymentDetails.receiptUrl)}
 					<div class="row">
 						<div class="result-label col-sm-3 col-xs-12">{translate text="Receipt" isPublicFacing=true}</div>
 						<div class="result-value col-sm-9 col-xs-12">
