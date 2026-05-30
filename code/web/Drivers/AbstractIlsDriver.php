@@ -70,7 +70,17 @@ abstract class AbstractIlsDriver extends AbstractDriver {
 		];
 	}
 
+	/**
+	 * @param User $patron
+	 * @param $includeMessages
+	 * @param string|null $type - null for Fines, credit for Credits
+	 * @return array
+	 */
 	public abstract function getFines(User $patron, $includeMessages = false, ?string $type = null): array;
+
+	public function supportsCredits() : bool {
+		return false;
+	}
 
 	/**
 	 * @return IndexingProfile|null

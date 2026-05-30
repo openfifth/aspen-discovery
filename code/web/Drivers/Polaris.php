@@ -1882,6 +1882,10 @@ class Polaris extends AbstractIlsDriver {
 		return $result;
 	}
 
+	public function supportsCredits() : bool {
+		return true;
+	}
+
 	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 

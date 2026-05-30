@@ -45,6 +45,7 @@ class MyAccount_Fines extends MyAccount {
 				$credits = $user->getCredits();
 				$useOutstanding = $user->getCatalogDriver()->showOutstandingFines();
 				$interface->assign('showOutstanding', $useOutstanding);
+				$interface->assign('supportsCredits', $user->supportsCredits());
 
 				//PayPal
 				if ($paymentLibrary->finePaymentType == 2) {
