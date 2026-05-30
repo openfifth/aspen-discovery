@@ -102,6 +102,7 @@ class Record_Home extends GroupedWorkSubRecordHomeAction {
 
 			if ($this->recordDriver instanceof MarcRecordDriver) {
 				$interface->assign('physicalDescriptions', $this->recordDriver->getPhysicalDescriptions());
+				$interface->assign('duration', $this->recordDriver->getDuration());
 			}else{
 				$marcFields = $marcRecord->getFields('300');
 				if ($marcFields) {

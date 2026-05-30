@@ -5947,155 +5947,154 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	/** @noinspection PhpUnused */
+/** @noinspection PhpUnused */
 	function completeSquareOrder(): array {
 		global $configArray;
+		global $library;
 
 		$patronId = $_REQUEST['patronId'];
 		$transactionType = $_REQUEST['type'];
 		$paymentToken = $_REQUEST['token'];
 
-		global $library;
 		$paymentLibrary = $library;
 
 		require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+
 		$payment = new UserPayment();
 		$payment->squareToken = $paymentToken;
+		$payment->userId = $patronId;
+
 		if ($transactionType == 'donation') {
-			//Get the order information
 			$payment->transactionType = 'donation';
-			if ($payment->find(true)) {
-				$paymentId = $payment->id;
-				require_once ROOT_DIR . '/sys/Donations/Donation.php';
-				$donation = new Donation();
-				$donation->paymentId = $payment->id;
-				if (!$donation->find(true)) {
-					header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
-				}
-			} else {
+		}
+
+		if (!$payment->find(true)) {
+			if ($transactionType == 'donation') {
 				header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
 			}
+
+			return $this->failureResult(
+				null,
+				'Your payment with Square could not be completed. Please contact library staff for assistance.'
+			);
+		}
+
+		if ($transactionType == 'donation') {
+			require_once ROOT_DIR . '/sys/Donations/Donation.php';
+
+			$donation = new Donation();
+			$donation->paymentId = $payment->id;
+
+			if (!$donation->find(true)) {
+				header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+				return $this->failureResult( null, 'Your payment with Square could not be completed. Please contact library staff for assistance.');
+			}
+
 		} else {
-			//Get the order information
-			$payment->userId = $patronId;
-			if ($payment->find(true)) {
-				$paymentId = $payment->id;
-				$user = UserAccount::getLoggedInUser();
-				$patronId = $_REQUEST['patronId'];
-				$patron = $user->getUserReferredTo($patronId);
-				$userLibrary = $patron->getHomeLibrary();
-				global $library;
-				$paymentLibrary = $library;
-				$systemVariables = SystemVariables::getSystemVariables();
-				if ($systemVariables->libraryToUseForPayments == 0) {
-					$paymentLibrary = $userLibrary;
-				}
+			$user = UserAccount::getLoggedInUser();
+			$patron = $user->getUserReferredTo($patronId);
+			$userLibrary = $patron->getHomeLibrary();
+
+			$systemVariables = SystemVariables::getSystemVariables();
+
+			if ($systemVariables->libraryToUseForPayments == 0) {
+				$paymentLibrary = $userLibrary;
+			}
+
+			if ($payment->completed) {
+				return $this->failureResult(null, 'This payment has already been processed');
 			}
 		}
 
 		require_once ROOT_DIR . '/sys/ECommerce/SquareSetting.php';
+
 		$squareSettings = new SquareSetting();
 		$squareSettings->id = $paymentLibrary->squareSettingId;
-		if ($squareSettings->find(true)) {
-			require_once ROOT_DIR . '/sys/CurlWrapper.php';
-			$paymentRequest = new CurlWrapper();
-			$baseUrl = 'https://connect.squareup.com';
-			if ($squareSettings->sandboxMode == 1) {
-				$baseUrl = 'https://connect.squareupsandbox.com';
-			}
 
-			$paymentRequest->addCustomHeaders([
-				'Content-Type: application/json',
-				'Square-Version: 2023-06-08',
-				"Authorization: Bearer $squareSettings->accessToken",
-			], true);
-
-			$paymentId = null;
-			$paymentAmount = null;
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			$payment = new UserPayment();
-			$payment->squareToken = $paymentToken;
-			if ($payment->find(true)) {
-				$paymentId = $payment->id;
-				$body = [
-					'idempotency_key' => strval($paymentId),
-					// Square needs this to be a string, so guarantee it
-					'amount_money' => [
-						'amount' => (int)round($payment->totalPaid * 100),
-						'currency' => 'USD'
-					],
-					'source_id' => $paymentToken
-				];
-
-				$paymentUrl = $baseUrl . '/v2/payments';
-				$paymentRequestResults = $paymentRequest->curlPostBodyData($paymentUrl, $body);
-				$decodedPaymentRequestResults = json_decode($paymentRequestResults);
-
-				ExternalRequestLogEntry::logRequest('fine_payment.completeSquareOrder', 'POST', $paymentUrl, $paymentRequest->getHeaders(), json_encode($body), $paymentRequest->getResponseCode(), $paymentRequestResults, []);
-
-				if ($decodedPaymentRequestResults->payment) {
-					$paymentResults = $decodedPaymentRequestResults->payment;
-					if ($paymentResults->status == 'COMPLETED' || $paymentResults->status == 'APPROVED') {
-						if ($transactionType == 'donation') {
-							$payment->completed = 1;
-							$payment->transactionId = $paymentResults->id;
-							$payment->orderId = $paymentResults->order_id;
-							$payment->update();
-							$donation = new Donation();
-							$donation->paymentId = $payment->id;
-
-							if ($donation->find(true)) {
-								$donation->sendReceiptEmail();
-								return [
-									'success' => true,
-									'isDonation' => true,
-									'paymentId' => $payment->id,
-									'donationId' => $donation->id,
-								];
-							} else {
-								return [
-									'success' => false,
-									'message' => 'Unable to find donation with provided id',
-									'isDonation' => true,
-									'paymentId' => $payment->id,
-									'donationId' => '',
-								];
-							}
-						} else {
-							if ($payment->completed) {
-								return $this->failureResult(null, 'This payment has already been processed');
-							} else {
-								$payment->transactionId = $paymentResults->id;
-								$payment->orderId = $paymentResults->order_id;
-								$payment->update();
-								$user = UserAccount::getActiveUserObj();
-								$patron = $user->getUserReferredTo($patronId);
-								$result = $patron->completeFinePayment($payment);
-								if (!$result['success']) {
-									$payment->message .= 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt. ' . $result['message'];
-									$payment->update();
-									$result['message'] = $payment->message;
-								}
-
-								return $result;
-							}
-						}
-					} else {
-						return $this->failureResult(null, 'Payment status is ' . ($paymentResults->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.');
-					}
-				} else {
-					$error = $decodedPaymentRequestResults->error;
-					$payment->error = 1;
-					$payment->message = $error->detail;
-					$payment->update();
-					return [
-						'success' => false,
-						'message' => $error->detail,
-					];
-				}
-			}
+		if (!$squareSettings->find(true)) {
+			return $this->failureResult(
+				null,
+				'Your payment with Square could not be completed. Please contact library staff for assistance.'
+			);
 		}
-		return $this->failureResult(null, 'Your payment with Square could not be completed. Please contact library staff for assistance.');
+
+		$lineItemResult = $squareSettings->createLineItems($payment);
+
+		if (!$lineItemResult['success']) {
+			return $lineItemResult;
+		}
+
+		$paymentResult = $squareSettings->submitTransaction(
+			$payment,
+			$paymentToken,
+			$lineItemResult['orderId'],
+			$lineItemResult['amountMoney']
+		);
+
+		if (!$paymentResult['success']) {
+			$payment->error = 1;
+			$payment->message = $paymentResult['message'];
+			$payment->update();
+
+			return $paymentResult;
+		}
+
+		if ($paymentResult['payment']->status != 'COMPLETED' && $paymentResult['payment']->status != 'APPROVED') {
+			return $this->failureResult(
+				null,
+				'Payment status is ' . ($paymentResult['payment']->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.'
+			);
+		}
+
+		$payment->transactionId = $paymentResult['payment']->id;
+		$payment->receiptUrl = $paymentResult['payment']->receipt_url;
+		$payment->orderId = $paymentResult['payment']->order_id;
+
+		if ($transactionType == 'donation') {
+			$payment->completed = 1;
+			$payment->update();
+
+			$donation = new Donation();
+			$donation->paymentId = $payment->id;
+
+			if (!$donation->find(true)) {
+				return [
+					'success' => false,
+					'message' => 'Unable to find donation with provided id',
+					'isDonation' => true,
+					'paymentId' => $payment->id,
+					'donationId' => '',
+				];
+			}
+
+			$donation->sendReceiptEmail();
+
+			return [
+				'success' => true,
+				'isDonation' => true,
+				'paymentId' => $payment->id,
+				'donationId' => $donation->id,
+				'message' => 'Your payment has been completed.',
+				'receiptUrl' => $payment->receiptUrl,
+			];
+		}
+
+		$payment->update();
+
+		$user = UserAccount::getActiveUserObj();
+		$patron = $user->getUserReferredTo($patronId);
+
+		$result = $patron->completeFinePayment($payment);
+
+		if (!$result['success']) {
+			$payment->message .= 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt. ' . $result['message'];
+
+			$payment->update();
+		}
+
+		$result['receiptUrl'] = $payment->receiptUrl;
+
+		return $result;
 	}
 
 	/** @noinspection PhpUnused */
