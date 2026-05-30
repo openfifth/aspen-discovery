@@ -4235,11 +4235,14 @@ AspenDiscovery.Account = (function () {
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
-					if (data.isDonation) {
-						window.location.href = Globals.path + '/Donations/DonationCompleted?id=' + data.paymentId;
-					} else {
-						AspenDiscovery.showMessage('Thank you', data.message, false, true);
+					let buttons = '';
+					// noinspection JSUnresolvedReference
+					if (data.receiptUrl) {
+						const safeReceiptUrl = encodeURI(data.receiptUrl);
+						buttons = '<a href="' + safeReceiptUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">' +
+							'<i class="fas fa-receipt"></i> View Receipt</a>';
 					}
+					AspenDiscovery.showMessageWithButtons('Thank You', data.message, buttons, true);
 				} else {
 					if (data.isDonation) {
 						window.location.href = Globals.path + '/Donations/DonationCancelled?id=' + data.paymentId;
@@ -9412,9 +9415,13 @@ AspenDiscovery.Browse = (function(){
 					var resultsTabPanel = document.getElementById('swiper-browse-category-' + categoryTextId) ;
 					resultsTabPanel.innerHTML = "";
 					var browseSwiper = new Swiper('.swiper-browse-category-' + categoryTextId, {
-						slidesPerView: 3,
-						slidesPerGroup: 3,
+						slidesPerView: 7,
+						slidesPerGroup: 7,
 						breakpoints: {
+							1: {
+								slidesPerView: 3,
+								slidesPerGroup: 3,
+							},
 							640: {
 								slidesPerView: 4,
 								slidesPerGroup: 4,
@@ -9697,9 +9704,13 @@ AspenDiscovery.Browse = (function(){
 					if (wrapper) wrapper.innerHTML = '';
 
 					const browseSwiper = new Swiper(container, {
-						slidesPerView: 3,
-						slidesPerGroup: 3,
+						slidesPerView: 7,
+						slidesPerGroup: 7,
 						breakpoints: {
+							1: {
+								slidesPerView: 3,
+								slidesPerGroup: 3,
+							},
 							640: {
 								slidesPerView: 4,
 								slidesPerGroup: 4,
@@ -11838,43 +11849,45 @@ AspenDiscovery.GroupedWork = (function(){
 			});
 		},
 
-		loadMoreLikeThis: function (id, forceReload) {
+		loadMoreLikeThis: function (id, format, forceReload) {
 			var url = Globals.path + "/GroupedWork/" + encodeURIComponent(id) + "/AJAX";
+
 			var params = {
-				'method':'getMoreLikeThis'
+				'method':'getMoreLikeThis',
+				'format':format
 			};
-			if (forceReload !== undefined){
-				params['reload'] = true;
+
+			if (forceReload !== undefined) {
+				params.reload = true;
 			}
+
 			$.getJSON(url, params, function(data) {
-				try{
-					var similarTitleData = data.similarTitles;
-					if (similarTitleData && similarTitleData.titles.length > 0) {
-						//Create an unordered list for display
-						var html = '<ul>';
 
-						$.each(similarTitleData.titles, function() {
-							html += '<li class="carouselTitleWrapper">' + this.formattedTitle + '</li>';
-						});
+				var similarTitleData = data?.similarTitles || {};
+				var titles = Array.isArray(similarTitleData.titles)
+					? similarTitleData.titles
+					: [];
 
-						html += '</ul>';
-						var carouselElement = $('#moreLikeThisCarousel');
-						var jCarousel = carouselElement.jcarousel();
-
-						carouselElement.html(html);
-
-						// Reload carousel
-						jCarousel.jcarousel('reload');
-					}else{
-						$('#moreLikeThisPanel').hide();
-					}
-
-				} catch (e) {
-					setTimeout(function (){
-						var jCarousel = carouselElement.jcarousel();
-						jCarousel.jcarousel('reload');
-					},1000);
+				if (titles.length === 0) {
+					$('#moreLikeThisPanel').hide();
+					return;
 				}
+
+				var html = '<ul>';
+
+				$.each(titles, function() {
+					html += '<li class="carouselTitleWrapper">' +
+						this.formattedTitle +
+						'</li>';
+				});
+
+				html += '</ul>';
+
+				var carouselElement = $('#moreLikeThisCarousel');
+				carouselElement.html(html);
+
+				var jCarousel = carouselElement.jcarousel();
+				jCarousel.jcarousel('reload');
 			});
 		},
 

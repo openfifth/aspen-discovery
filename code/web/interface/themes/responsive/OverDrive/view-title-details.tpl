@@ -71,6 +71,17 @@
 		</div>
 	{/if}
 
+	{if !empty($showPhysicalDescriptions) && $recordDriver->getDuration()}
+		<div class="row">
+			<div class="result-label col-sm-4 col-xs-12">{translate text='Duration' isPublicFacing=true}</div>
+			<div class="result-value col-sm-8 col-xs-12">
+				{math equation="floor(x/60)" x=$recordDriver->getDuration() assign="hours"}
+				{math equation="x%60" x=$recordDriver->getDuration() assign="minutes"}
+				{translate text='%1% hours %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}
+			</div>
+		</div>
+	{/if}
+
 
 	{if !empty($showISBNs) && count($recordDriver->getISBNs()) > 0}
 		<div class="row">
