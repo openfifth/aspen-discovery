@@ -6394,6 +6394,7 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function findNewUser($patronBarcode, $patronUsername) {
+		global $library;
 		// Check the Koha database to see if the patron exists
 		//Use MySQL connection to load data
 		$this->initDatabaseConnection();
@@ -6409,6 +6410,10 @@ class Koha extends AbstractIlsDriver {
 				$lookupUserRow = $lookupUserResult->fetch_assoc();
 				$patronId = $lookupUserRow['borrowernumber'];
 				$newUser = $this->loadPatronInfoFromDB($patronId, null, $patronBarcode);
+				if ($library->forceReadingHistoryOptIn) {
+					$newUser->trackReadingHistory = false;
+					$newUser->update();
+				}
 				if (!empty($newUser) && !($newUser instanceof AspenError)) {
 					return $newUser;
 				}
@@ -6424,6 +6429,10 @@ class Koha extends AbstractIlsDriver {
 				$lookupUserRow = $lookupUserResult->fetch_assoc();
 				$patronId = $lookupUserRow['borrowernumber'];
 				$newUser = $this->loadPatronInfoFromDB($patronId, null, $patronUsername);
+				if ($library->forceReadingHistoryOptIn) {
+					$newUser->trackReadingHistory = false;
+					$newUser->update();
+				}
 				if (!empty($newUser) && !($newUser instanceof AspenError)) {
 					return $newUser;
 				}

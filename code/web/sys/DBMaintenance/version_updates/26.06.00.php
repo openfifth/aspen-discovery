@@ -18,6 +18,15 @@ function getUpdates26_06_00(): array {
 		//mark n
 
 		//kirstien
+		'addForceReadingHistoryOptIn' => [
+			'title' => 'Add option force patrons to opt-in to reading history',
+			'description' => 'Add option to ignore Koha/ILS settings and force new patrons to opt-in to reading history',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN forceReadingHistoryOptIn TINYINT(1) DEFAULT 0',
+			]
+		],
+		//addForceReadingHistoryOptIn
 
 		//kodi
 		'scheduled_offline_mode' => [
