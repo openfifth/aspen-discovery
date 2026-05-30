@@ -609,6 +609,10 @@ class CatalogConnection {
 		return $fines;
 	}
 
+	public function supportsCredits() : bool {
+		return $this->driver->supportsCredits();
+	}
+
 	/**
 	 * Get Reading History for the user account.
 	 *

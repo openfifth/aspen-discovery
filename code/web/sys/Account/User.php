@@ -2360,15 +2360,20 @@ class User extends DataObject {
 		return false;
 	}
 
+	public function supportsCredits() : bool {
+		if ($this->hasIlsConnection()) {
+			return $this->getCatalogDriver()->supportsCredits();
+		}
+		return false;
+	}
+
 	private $ilsFinesForUser;
+	private $ilsCreditsForUser;
 
 	public function getFines($includeLinkedUsers = true, $APIRequest = false): array {
 
 		if (!isset($this->ilsFinesForUser)) {
 			$this->ilsFinesForUser = $this->getCatalogDriver()->getFines($this);
-			if ($this->ilsFinesForUser instanceof AspenError) {
-				$this->ilsFinesForUser = [];
-			}
 		}
 
 		if ($APIRequest && !$includeLinkedUsers) {
@@ -2391,9 +2396,6 @@ class User extends DataObject {
 
 		if (!isset($this->ilsCreditsForUser)) {
 			$this->ilsCreditsForUser = $this->getCatalogDriver()->getFines($this, false, 'credit');
-			if ($this->ilsCreditsForUser instanceof AspenError) {
-				$this->ilsCreditsForUser = [];
-			}
 		}
 
 		if ($APIRequest && !$includeLinkedUsers) {
