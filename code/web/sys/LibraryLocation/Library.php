@@ -356,6 +356,7 @@ class Library extends DataObject {
 		$includeDplaResults;
 	public $showWhileYouWait;
 	public $showYouMightAlsoLike;
+	public $moreLikeThisSettings;
 
 	public $messageBeeSettingId;
 	public $useAllCapsWhenSubmittingSelfRegistration;
@@ -401,6 +402,7 @@ class Library extends DataObject {
 	public $optInToReadingHistoryUpdatesILS;
 	public $optOutOfReadingHistoryUpdatesILS;
 	public $enableCostSavings;
+	public $forceReadingHistoryOptIn;
 	/** @noinspection PhpUnused */
 	protected $_costSavingsExplanationEnabled;
 	/** @noinspection PhpUnused */
@@ -418,6 +420,7 @@ class Library extends DataObject {
 	public $localIllRequestType;
 	public $maximumLocalIllRequests;
 	public $includeRemoteCheckoutsInMaxLocalIllRequests;
+	public $allowToRenewILL;
 	public $localIllEmail;
 	/** @noinspection PhpUnused */
 	public $_localIllEmailSuccessMessage;
@@ -1576,6 +1579,21 @@ class Library extends DataObject {
 						],
 						'label' => 'Show You Might Also Like',
 						'description' => 'Whether or not the user should be shown suggestions of other titles they might like.',
+						'hideInLists' => true,
+						'default' => 1,
+						'permissions' => ['Library ILS Options'],
+					],
+					'moreLikeThisSettings' => [
+						'property' => 'moreLikeThisSettings',
+						'type' => 'enum',
+						'values' => [
+							'1' => 'Include materials in global scope in any format.',
+							'4' => 'Include materials in global scope in the same format only.',
+							'2' => 'Include materials in local scope in any format.',
+							'3' => 'Include materials in local scope in the same format only.'
+						],
+						'label' => 'More Like This Settings',
+						'description' => 'Scoping settings for More Like This feature.',
 						'hideInLists' => true,
 						'default' => 1,
 						'permissions' => ['Library ILS Options'],
@@ -3038,6 +3056,15 @@ class Library extends DataObject {
 								'permissions' => ['Library ILS Connection'],
 								'relatedIls' => ['evergreen', 'koha'],
 							],
+							'forceReadingHistoryOptIn' => [
+								'property' => 'forceReadingHistoryOptIn',
+								'type' => 'checkbox',
+								'label' => 'Force patrons to opt-in to Reading History',
+								'description' => 'Whether patrons logging in for the first time should be forced to opt-in to Reading History in Aspen and ignore ILS settings.',
+								'hideInLists' => true,
+								'permissions' => ['Library ILS Options'],
+								'relatedIls' => ['koha'],
+							]
 						],
 					],
 				],
@@ -4212,6 +4239,15 @@ class Library extends DataObject {
 						'description' => 'Include Remote Checkouts in Max Local ILL requests',
 						'note' => "Remote checkouts are checkouts that were picked up from the item's owning home group (but that are not owned by the patron's home group)",
 						'default' => 1
+					],
+					'allowToRenewILL' => [
+						'property' => 'allowToRenewILL',
+						'type' => 'checkbox',
+						'label' => 'Allow ILL Renewals',
+						'description' => 'Whether or not patrons can renew ILL items.',
+						'note' => 'Applies to Sierra Only',
+						'default' => 1,
+						'relatedIls' => ['sierra'],
 					],
 					'ILLSystem' => [
 						'property' => 'ILLSystem',
