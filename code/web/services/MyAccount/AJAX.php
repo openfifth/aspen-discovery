@@ -10111,15 +10111,14 @@ class MyAccount_AJAX extends JSON_Action {
 		$code = $_REQUEST['code'] ?? '0';
 		$isLoggingIn = $_REQUEST['loggingIn'] ?? false;
 		$secretId = $_REQUEST['secretId'] ?? null;
-		$authMethod = $_REQUEST['authMethod'] ?? null;
+		$authMethod = $_REQUEST['authMethod'] ?? $_SESSION['authMethod'] ?? null;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 
 		if ($secretId !== null) {
 			// TOTP enrollment verification
-			$result = $twoFactorAuth->validateCode($code, $secretId);
-			return $result;
+			return $twoFactorAuth->validateCode($code, $secretId);
 		}
 
 		if ($isLoggingIn) {
@@ -10129,6 +10128,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if ($result['success']) {
 				UserAccount::$isAuthenticated = true;
 				try {
+					$_REQUEST['authMethod'] = $authMethod;
 					UserAccount::login();
 				} catch (UnknownAuthenticationMethodException $e) {
 					$logger->log("Error logging authenticated user in $e", Logger::LOG_DEBUG);
