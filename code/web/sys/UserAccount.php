@@ -971,6 +971,15 @@ class UserAccount {
 		return false;
 	}
 
+	static function typeOf2FAEnabled() {
+		UserAccount::loadUserObjectFromDatabase();
+		if (UserAccount::$primaryUserObjectFromDB != false && UserAccount::$ssoAuthOnly === false) {
+			return UserAccount::$primaryUserObjectFromDB->get2FAMethod();
+		}
+		return null;
+	}
+
+
 
 	/**
 	 * Look up in ILS for a user that has never logged into Aspen before, based on the patron's barcode.
