@@ -161,6 +161,10 @@ class Events_AJAX extends JSON_Action {
 						require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
 						$driver = new AspenEventRecordDriver($eventId);
 						break;
+					case 'event_localhop':
+						require_once ROOT_DIR . '/RecordDrivers/LocalHopEventRecordDriver.php';
+						$driver = new LocalHopEventRecordDriver($eventId);
+						break;
 					default:
 						return [
 							'success' => false,

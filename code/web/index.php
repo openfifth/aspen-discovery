@@ -56,9 +56,17 @@ $interface->assign('cssJsCacheCounter', 47);
 global $language;
 global $serverName;
 //Get the active language
+require_once ROOT_DIR . '/sys/Translation/Language.php';
 $userLanguage = UserAccount::getUserInterfaceLanguage();
 if ($userLanguage == '') {
-	$language = strip_tags((isset($_SESSION['language'])) ? $_SESSION['language'] : 'en');
+	if (!empty($_COOKIE['aspenInterfaceLanguage'])) {
+		$language = strip_tags($_COOKIE['aspenInterfaceLanguage']);
+	} elseif (!empty($_SESSION['language'])) {
+		$language = strip_tags($_SESSION['language']);
+	} else {
+		$browserLanguage = Language::getLanguageFromBrowser();
+		$language = $browserLanguage ?: Language::getDefaultLanguageCode();
+	}
 } else {
 	$language = $userLanguage;
 }
@@ -71,7 +79,8 @@ if (isset($_REQUEST['myLang'])) {
 	}
 	if ($language != $newLanguage) {
 		$language = $newLanguage;
-		$_SESSION['language'] = $language;
+		setcookie('aspenInterfaceLanguage', $language, time() + (3 * 365 * 24 * 3600), '/');
+		$_COOKIE['aspenInterfaceLanguage'] = $language;
 		//Clear the preference cookie
 		if (isset($_COOKIE['searchPreferenceLanguage'])) {
 			//Clear the cookie when we change languages
@@ -94,11 +103,10 @@ if (!UserAccount::isLoggedIn() && isset($_COOKIE['searchPreferenceLanguage'])) {
 $interface->assign('showLanguagePreferencesBar', $showLanguagePreferencesBar);
 
 // Make sure language code is valid, reset to default if bad:
-require_once ROOT_DIR . '/sys/Translation/Language.php';
 $validLanguages = Language::getValidLanguages();
 
 if (!array_key_exists($language, $validLanguages)) {
-	$language = 'en';
+	$language = Language::getDefaultLanguageCode();
 }
 global $activeLanguage;
 global $translator;
@@ -1078,7 +1086,7 @@ function loadModuleActionId() {
 	}
 	/** IndexingProfile[] $indexingProfiles */ global $indexingProfiles;
 	/** SideLoad[] $sideLoadSettings */ global $sideLoadSettings;
-	$allRecordModules = "OverDrive|GroupedWork|Record|ExternalEContent|Person|Library|Hoopla|CloudLibrary|Files|Axis360|WebBuilder|ProPay|CourseReserves|Springshare|LibraryMarket|Communico|PalaceProject|Assabet|AspenEvents|Series";
+	$allRecordModules = "OverDrive|GroupedWork|Record|ExternalEContent|Person|Library|Hoopla|CloudLibrary|Files|Axis360|WebBuilder|ProPay|CourseReserves|Springshare|LibraryMarket|Communico|PalaceProject|Assabet|AspenEvents|Series|LocalHop";
 	foreach ($indexingProfiles as $profile) {
 		$allRecordModules .= '|' . $profile->recordUrlComponent;
 	}
