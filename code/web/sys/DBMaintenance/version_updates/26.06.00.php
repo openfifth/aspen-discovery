@@ -80,13 +80,12 @@ function getUpdates26_06_00(): array {
 			'ALTER TABLE user_payments CHANGE stripeReceiptUrl receiptUrl VARCHAR(255) DEFAULT NULL'
 		]
 	], //user_payments_receipt_url_rename
-		'search_add_send_notification' => [
+	'search_add_send_notification' => [
 		'title' => 'Add column sendNotification to search table',
 		'description' => 'Adds a column to toggle saved search emails.',
 		'continueOnError' => false,
 		'sql' => [
-			'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 0',
-			'UPDATE search SET sendNotification = saved',
+			'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 1',
 		]
 	], //search_add_send_notification
 
