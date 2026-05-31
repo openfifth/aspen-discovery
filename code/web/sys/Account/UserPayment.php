@@ -1290,4 +1290,13 @@ class UserPayment extends DataObject {
 		$paymentLines->paymentId = $this->id;
 		return $paymentLines->fetchAll();
 	}
+
+	public function getAdditionalListJavascriptActions(): array {
+		$objectActions[] = [
+			'text' => 'View Details',
+			'onClick' => "return AspenDiscovery.Admin.showPaymentDetails($this->id);",
+			'icon' => 'fas fa-list',
+		];
+		return $objectActions;
+	}
 }
