@@ -4397,8 +4397,9 @@ AspenDiscovery.Account = (function () {
 				}
 			);
 
-			if (document.getElementById('convenienceFee')) {
-				var feeAmt = document.getElementById('convenienceFee').getAttribute('data-fee_amt');
+			var convenienceFeeElement = $(finesFormId + " [id^='convenienceFee']").get(0);
+			if (convenienceFeeElement) {
+				var feeAmt = convenienceFeeElement.getAttribute('data-fee_amt');
 				outstandingGrandTotalAmt += feeAmt * 1;
 			}
 
@@ -8802,6 +8803,14 @@ AspenDiscovery.Admin = (function () {
 				processData: false
 			});
 			return false;
+		},
+		toggle2FAMethodOptions: function () {
+			var method = $("#allowedMethodSelect").val();
+			if (method === "totp") {
+				$('#propertyRowissuerTOTP').show();
+			} else {
+				$('#propertyRowissuerTOTP').hide();
+			}
 		},
 	};
 }(AspenDiscovery.Admin || {}));

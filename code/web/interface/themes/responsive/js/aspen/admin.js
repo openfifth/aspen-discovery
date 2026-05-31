@@ -3127,5 +3127,13 @@ AspenDiscovery.Admin = (function () {
 			});
 			return false;
 		},
+		toggle2FAMethodOptions: function () {
+			var method = $("#allowedMethodSelect").val();
+			if (method === "totp") {
+				$('#propertyRowissuerTOTP').show();
+			} else {
+				$('#propertyRowissuerTOTP').hide();
+			}
+		},
 	};
 }(AspenDiscovery.Admin || {}));

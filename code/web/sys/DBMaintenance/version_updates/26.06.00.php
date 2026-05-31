@@ -27,6 +27,15 @@ function getUpdates26_06_00(): array {
 			]
 		],
 		//addForceReadingHistoryOptIn
+		'extend2FAforTOTP' => [
+			'title' => 'Extend 2FA to support TOTP apps',
+			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
+			'sql' => [
+				'ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT NULL',
+				'ALTER TABLE two_factor_auth_settings ADD COLUMN issuerTOTP VARCHAR(255) DEFAULT NULL',
+			]
+		],
+		//extend2FAforTOTP
 
 		//kodi
 		'scheduled_offline_mode' => [
