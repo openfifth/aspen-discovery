@@ -88,6 +88,24 @@ function getUpdates26_06_00(): array {
 		], //scoped_more_like_this
 
 		//yanjun
+		'add_overdriveAdvantageId' => [
+			'title' => 'Add overdriveAdvantageId column',
+			'description' => 'Add overdriveAdvantageId column to library_overdrive_settings',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN overdriveAdvantageId int(11) DEFAULT 0'
+			]
+		],//add_overdriveAdvantageId
+		'allow_to_renew_ill_items' => [
+			'title' => 'Allow Renewing ILL Items',
+			'description' => 'Add allowToRenewILL to the library table to control whether patrons can renew ILL items.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library ADD COLUMN allowToRenewILL TINYINT(1) DEFAULT 1'
+			]
+		], //allow_to_renew_ill_items
+
+
 
 		//imani
 
@@ -98,6 +116,14 @@ function getUpdates26_06_00(): array {
 		//pedro
 
 		//mark j
+		'load_libraries_and_locations_from_ils' => [
+				'title' => 'Add "load libraries and locations from ILS" to the indexing_profiles table',
+				'description' => 'Adds a checkbox to control whether library/location data is imported from the ILS during Polaris export',
+				'continueOnError' => false,
+				'sql' => [
+						"ALTER TABLE indexing_profiles ADD COLUMN loadLibrariesAndLocationsFromIls TINYINT(1) NOT NULL DEFAULT 1"
+				]
+		], //load_libraries_and_locations_from_ils
 
 		//lucas
 		'language_add_is_default' => [
@@ -121,6 +147,14 @@ function getUpdates26_06_00(): array {
 			'ALTER TABLE user_payments CHANGE stripeReceiptUrl receiptUrl VARCHAR(255) DEFAULT NULL'
 		]
 	], //user_payments_receipt_url_rename
+	'search_add_send_notification' => [
+		'title' => 'Add column sendNotification to search table',
+		'description' => 'Adds a column to toggle saved search emails.',
+		'continueOnError' => false,
+		'sql' => [
+			'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 1',
+		]
+	], //search_add_send_notification
 
 		//other
 

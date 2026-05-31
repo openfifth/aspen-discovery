@@ -720,6 +720,10 @@ class UserAPI extends AbstractAPI {
 	function getPatronProfile(): array {
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
+			
+			// Fetch the latest contact information from the ILS
+			$user->updatePatronInfo(true);
+
 			//Remove a bunch of junk from the user data
 			unset($user->query);
 			$userData = new stdClass();

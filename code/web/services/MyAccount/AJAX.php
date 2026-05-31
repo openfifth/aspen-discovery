@@ -350,6 +350,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$search->user_id = UserAccount::getActiveUserId();
 					$search->saved = 1;
 					$search->title = $title;
+					$search->sendNotification = 1;
 					if ($search->update() !== FALSE) {
 						$result['success'] = true;
 						$result['message'] = translate([
@@ -391,6 +392,45 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 		return $result;
 	}
+
+	/** @noinspection PhpUnused */
+	function toggleSearchNotification(): array {
+		$this->requireLoggedInUser();
+
+		$result = [
+			'success' => false,
+			'message' => 'Unable to update notification setting',
+		];
+
+		$searchId = $_REQUEST['searchId'] ?? null;
+		$sendNotification = $_REQUEST['sendNotification'] ?? null;
+
+		if ($searchId === null || $sendNotification === null) {
+			return $result;
+		}
+
+		$search = new SearchEntry();
+		$search->id = $searchId;
+
+		if (!$search->find(true)) {
+			return $result;
+		}
+
+		if ($search->session_id != session_id() && $search->user_id != UserAccount::getActiveUserId()) {
+			return $result;
+		}
+
+		$search->sendNotification = (int)$sendNotification;
+
+		if ($search->update() === false) {
+			return $result;
+		}
+
+		return [
+			'success' => true,
+		];
+	}
+
 
 	/** @noinspection PhpUnused */
 	function getSaveSearchForm() : array {
@@ -11257,6 +11297,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$interface->assign('limit', $limit);
 		$interface->assign('sort', $sort);
 		$interface->assign('filter', $filter);
+		$interface->assign('showNotificationColumn', $user->notifySavedSearches === 1);
 
 		$searches = [];
 		$savedSearches = [];
@@ -11332,6 +11373,7 @@ class MyAccount_AJAX extends JSON_Action {
 				// It's the size of the serialized, minified search in the database.
 				'size' => round($size / 1024, 3) . "kb",
 				'hasNewResults' => $savedSearch->hasNewResults == 1,
+				'sendNotification' => $savedSearch->sendNotification,
 			];
 
 			if ($savedSearch->hasNewResults) {
