@@ -3159,12 +3159,12 @@ class Koha extends AbstractIlsDriver {
 	/**
 	 * Get a list of fines for the user.
 	 * Code taken from C4::Account getcharges method
-	 *
-	 * @param User $patron
-	 * @param bool $includeMessages
-	 * @return array
 	 */
-	public function getFines($patron, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
+		$fines = [];
+//		if ($type == 'credit'){
+//			return $fines;
+//		}
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 
 		global $activeLanguage;
@@ -3185,7 +3185,6 @@ class Koha extends AbstractIlsDriver {
 
 		$allFeesRS = mysqli_query($this->dbConnection, $query);
 
-		$fines = [];
 		if ($allFeesRS->num_rows > 0) {
 			while ($allFeesRow = $allFeesRS->fetch_assoc()) {
 				if (isset($allFeesRow['accountType'])) {
@@ -6395,6 +6394,7 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function findNewUser($patronBarcode, $patronUsername) {
+		global $library;
 		// Check the Koha database to see if the patron exists
 		//Use MySQL connection to load data
 		$this->initDatabaseConnection();
@@ -6410,6 +6410,10 @@ class Koha extends AbstractIlsDriver {
 				$lookupUserRow = $lookupUserResult->fetch_assoc();
 				$patronId = $lookupUserRow['borrowernumber'];
 				$newUser = $this->loadPatronInfoFromDB($patronId, null, $patronBarcode);
+				if ($library->forceReadingHistoryOptIn) {
+					$newUser->trackReadingHistory = false;
+					$newUser->update();
+				}
 				if (!empty($newUser) && !($newUser instanceof AspenError)) {
 					return $newUser;
 				}
@@ -6425,6 +6429,10 @@ class Koha extends AbstractIlsDriver {
 				$lookupUserRow = $lookupUserResult->fetch_assoc();
 				$patronId = $lookupUserRow['borrowernumber'];
 				$newUser = $this->loadPatronInfoFromDB($patronId, null, $patronUsername);
+				if ($library->forceReadingHistoryOptIn) {
+					$newUser->trackReadingHistory = false;
+					$newUser->update();
+				}
 				if (!empty($newUser) && !($newUser instanceof AspenError)) {
 					return $newUser;
 				}

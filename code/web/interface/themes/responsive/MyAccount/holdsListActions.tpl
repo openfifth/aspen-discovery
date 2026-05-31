@@ -27,6 +27,7 @@
 						<a href="#" onclick="return AspenDiscovery.Account.exportOnlySelectedHolds('{$source}', $('#{$sectionKey}HoldSort_{$source} option:selected').val()" class="btn btn-sm btn-default" aria-description="{translate text="Click here to export selected holds in the $sectionLabel section to CSV"}">{translate text="Export Selected $sectionLabel to CSV" isPublicFacing=true}</a>
 					{/if}
 					<a href="#" onclick="return AspenDiscovery.Account.exportHolds('{$source}', $('#{$sectionKey}HoldSort_{$source} option:selected').val());" class="btn btn-sm btn-default" aria-description="{translate text="Click here to export all holds in the $sectionLabel section to CSV"}">{translate text="Export All $sectionLabel to CSV" isPublicFacing=true}</a>
+					<a class="btn btn-default btn-sm" href="#" onclick="return AspenDiscovery.Account.reloadHolds();" title="{translate text="Refresh" isPublicFacing=true}">{translate text="Refresh" isPublicFacing=true inAttribute=true} <i class="fas fa-sync-alt" role="presentation"></i></a>
 				</div>
 			</form>
 		{elseif $showCancelled}
