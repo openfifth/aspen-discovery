@@ -4963,6 +4963,7 @@ class User extends DataObject {
 			$sections['events']->addAction(new AdminAction('Assabet - Interactive Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/AssabetSettings'), 'Administer Assabet Settings');
 			$sections['events']->addAction(new AdminAction('Communico - Attend Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/CommunicoSettings'), 'Administer Communico Settings');
 			$sections['events']->addAction(new AdminAction('Library Market - Calendar Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LMLibraryCalendarSettings'), 'Administer LibraryMarket LibraryCalendar Settings');
+			$sections['events']->addAction(new AdminAction('LocalHop - Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LocalHopSettings'), 'Administer LocalHop Settings');
 			$sections['events']->addAction(new AdminAction('Springshare - LibCal Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/SpringshareLibCalSettings'), 'Administer Springshare LibCal Settings');
 			$sections['events']->addAction(new AdminAction('Calendar Display Settings', 'Define display settings for event calendar.', '/Events/CalendarDisplaySettings'), 'Print Calendars with Header Images and Footer');
 			$sections['events']->addAction(new AdminAction('Event Facet Settings', 'Define facets for event searches.', '/Events/EventsFacets'), 'Administer Events Facet Settings');
