@@ -34,37 +34,17 @@ AspenDiscovery.Record = (function () {
 					let existingButton;
 					AspenDiscovery.toggleButtonSpinner(button, false);
 					if (data.holdFormBypassed) {
-						if (data.success) {
-							if (data.needsItemLevelHold) {
-								AspenDiscovery.showMessageWithButtons(data.title, data.message, data.modalButtons);
-							} else {
-								existingButton = $("#onHoldAction" + id);
-								if (existingButton.length === 0) {
-									$(data.viewHoldsAction).insertBefore('#actionButton' + id);
-									$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
-									$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
-								}
-								AspenDiscovery.showMessage(data.title, data.message, false, false);
-								AspenDiscovery.Account.loadMenuData();
-							}
-						} else if (data.confirmationNeeded) {
-							AspenDiscovery.showMessageWithButtons(data.title, data.message, data.modalButtons);
-						} else {
-							existingButton = $("#onHoldAction" + id);
-							if (existingButton.length === 0) {
-								$(data.viewHoldsAction).insertBefore('#actionButton' + id);
-								$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
-								$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
-							}
-							AspenDiscovery.showMessage(data.title, data.message, false, false);
+						existingButton = $("#onHoldAction" + id);
+						if (existingButton.length === 0) {
+							$(data.viewHoldsAction).insertBefore('#actionButton' + id);
+							$(data.viewHoldsAction).insertBefore('#relatedRecordactionButton' + id);
+							$(data.viewHoldsAction).insertBefore('#firstRecordactionButton' + id);
 						}
-					} else {
 						if (data.success) {
-							AspenDiscovery.showMessageWithButtons(data.title, data.modalBody, data.modalButtons, false);
-						} else {
-							AspenDiscovery.showMessage(data.title, data.message);
+							AspenDiscovery.Account.loadMenuData();
 						}
 					}
+					AspenDiscovery.showMessageWithButtons(data.title, data.modalBody || data.message, data.modalButtons || '');
 					AspenDiscovery.Account.reloadHolds();
 				}).fail(function() {
 					AspenDiscovery.toggleButtonSpinner(button, false);

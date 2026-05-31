@@ -1,5 +1,6 @@
 package org.aspen_discovery.reindexer;
 
+import com.turning_leaf_technologies.hoopla.HooplaUtils;
 import com.turning_leaf_technologies.indexing.HooplaScope;
 import com.turning_leaf_technologies.indexing.Scope;
 import com.turning_leaf_technologies.logging.BaseIndexingLogEntry;
@@ -130,16 +131,7 @@ class HooplaProcessor {
 				groupedWork.addFullTitle(fullTitle);
 
 
-				String primaryAuthor = "";
-				if (rawResponse.has("artist")){
-					primaryAuthor = rawResponse.getString("artist");
-					//Don't swap artist names for music since these are typically group names.
-					if (!kind.equals("MUSIC")) {
-						primaryAuthor = AspenStringUtils.swapFirstLastNames(primaryAuthor);
-					}
-				}else if (rawResponse.has("publisher")){
-					primaryAuthor = rawResponse.getString("publisher");
-				}
+				String primaryAuthor = HooplaUtils.getPrimaryAuthor(rawResponse, kind);
 				groupedWork.setAuthor(primaryAuthor);
 				groupedWork.setAuthAuthor(primaryAuthor);
 				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, hooplaRecord);

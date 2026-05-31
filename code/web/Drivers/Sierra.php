@@ -2697,8 +2697,11 @@ class Sierra extends AbstractIlsDriver {
 		}
 	}
 
-	public function getFines($patron = null, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		$fines = [];
+		if ($type == 'credit'){
+			return $fines;
+		}
 
 		$params = [
 			'fields' => 'default,assessedDate,itemCharge,processingFee,billingFee,chargeType,paidAmount,datePaid,description,returnDate,location,description,invoiceNumber',

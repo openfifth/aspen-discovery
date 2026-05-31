@@ -28,7 +28,7 @@ class UserPayment extends DataObject {
 	public $pay360TransactionStateMessage;
 	public $pay360Timestamp;
 	public $requestingUrl;
-	public $stripeReceiptUrl;
+	public $receiptUrl;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
@@ -155,11 +155,11 @@ class UserPayment extends DataObject {
 				'description' => 'Where the payment was requested from',
 				'readOnly' => true,
 			],
-			'stripeReceiptUrl' => [
-				'property' => 'stripeReceiptUrl',
+			'receiptUrl' => [
+				'property' => 'receiptUrl',
 				'type' => 'url',
-				'label' => 'Stripe Receipt URL',
-				'description' => 'The URL to the Stripe payment receipt.',
+				'label' => 'Receipt URL',
+				'description' => 'The URL to the payment receipt.',
 				'readOnly' => true,
 			]
 		];
