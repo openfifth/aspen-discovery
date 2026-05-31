@@ -2726,9 +2726,10 @@ AspenDiscovery.Account = (function () {
 			}
 			return false;
 		},
-		show2FAEnrollmentBackupCodes: function (mandatoryEnroll, method) {
+		show2FAEnrollmentBackupCodes: function (mandatoryEnroll, method, secretId) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=backup&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=backup&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons)
 					} else {
@@ -2737,14 +2738,15 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnroll, method);
+					return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnroll, method, null);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentSuccess: function (mandatoryEnroll, method) {
+		show2FAEnrollmentSuccess: function (mandatoryEnroll, method, secretId) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=complete&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=complete&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.body, false, 2000)
 					}
@@ -2853,7 +2855,8 @@ AspenDiscovery.Account = (function () {
 			var referer = $("#referer").val();
 			var name = $("#name").val();
 			var myAccountAuth = $("#myAccountAuth").val();
-			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code, function (data) {
+			var authMethod = $("#authMethod").val();
+			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code + "&authMethod=" + authMethod, function (data) {
 				// update #codeVerificationFailedPlaceholder with failed verification status, otherwise move onto next step
 				if (data.success === "true") {
 					Globals.loggedIn = true;

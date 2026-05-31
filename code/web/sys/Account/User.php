@@ -5870,14 +5870,7 @@ class User extends DataObject {
 	}
 
 	public function get2FAMethod(): ?string {
-		$status = $this->twoFactorStatus;
-		if ($status == '1') {
-			$twoFactorAuthByPType = $this->get2FAStatusForPType();
-			if ($twoFactorAuthByPType) {
-				return $this->twoFactorMethod;
-			}
-		}
-		return null;
+		return $this->twoFactorMethod;
 	}
 
 	public function canReceiveNotifications($alertType): bool {

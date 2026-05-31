@@ -1769,6 +1769,8 @@ class MyAccount_AJAX extends JSON_Action {
 				//We have an abandoned 2-factor authentication enrollment
 				UserAccount::softLogout();
 			} else {
+				$authMethod = UserAccount::typeOf2FAEnabled();
+				$interface->assign('authMethod', $authMethod);
 				$interface->assign('codeSent', !empty($_SESSION['codeSent']));
 				$referer = $_REQUEST['referer'] ?? null;
 				$interface->assign('referer', $referer);
@@ -10035,6 +10037,8 @@ class MyAccount_AJAX extends JSON_Action {
 			$twoFactorAuth = new TwoFactorAuthCode();
 			$twoFactorAuth->createCode();
 
+			$secretId = $_REQUEST['secretId'] ?? null;
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -10042,7 +10046,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-verify.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\", \"$method\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\", \"$method\", \"$secretId\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10057,6 +10061,8 @@ class MyAccount_AJAX extends JSON_Action {
 			$backupCodes = $backupCode->getBackups();
 			$interface->assign('backupCodes', $backupCodes);
 
+			$secretId = $_REQUEST['secretId'] ?? null;
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -10064,7 +10070,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-backup.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentSuccess(\"$mandatoryEnrollment\", \"$method\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentSuccess(\"$mandatoryEnrollment\", \"$method\", \"$secretId\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10075,8 +10081,18 @@ class MyAccount_AJAX extends JSON_Action {
 			$user->id = UserAccount::getActiveUserId();
 			if ($user->find(true)) {
 				$user->twoFactorStatus = 1;
+				$user->twoFactorMethod = $method;
 				$user->update();
 			}
+
+			if ($method == 'totp' && isset($_REQUEST['secretId'])) {
+				require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+				$unverifiedSecret = new TwoFactorAuthTOTPSecret();
+				$unverifiedSecret->id = $_REQUEST['secretId'];
+				$unverifiedSecret->verified = 1;
+				$unverifiedSecret->update();
+			}
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -10095,13 +10111,15 @@ class MyAccount_AJAX extends JSON_Action {
 		$code = $_REQUEST['code'] ?? '0';
 		$isLoggingIn = $_REQUEST['loggingIn'] ?? false;
 		$secretId = $_REQUEST['secretId'] ?? null;
+		$authMethod = $_REQUEST['authMethod'] ?? null;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 
 		if ($secretId !== null) {
 			// TOTP enrollment verification
-			return $twoFactorAuth->validateCode($code, $secretId);
+			$result = $twoFactorAuth->validateCode($code, $secretId);
+			return $result;
 		}
 
 		if ($isLoggingIn) {
