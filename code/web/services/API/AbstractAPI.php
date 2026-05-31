@@ -101,6 +101,24 @@ abstract class AbstractAPI extends Action{
 		}
 	}
 
+	/**
+	 * Add debug output if user has enabled App Request Logging in Discovery
+	 * This forces responses to be logged into Aspen LiDA instead of just errors
+	 * @param mixed $result
+	 * @return mixed
+	 */
+	protected function logPatronRequestExternal(mixed $result): mixed {
+		$user = $this->getUserForApiCall();
+		if ($user !== false && $user->allowAppRequestLogging) {
+			if (is_array($result)) {
+				$result['debug'] = true;
+			} elseif (is_object($result)) {
+				$result->debug = true;
+			}
+		}
+		return $result;
+	}
+
 	private $_userForAPICall = null;
 	/**
 	 * @return bool|User
@@ -154,6 +172,7 @@ abstract class AbstractAPI extends Action{
 				'event_libcal',
 				'library_calendar_event',
 				'event_aspenEvent',
+				'event_localhop',
 				'grouped_work'
 			];
 		} elseif ($context == 'list') {

@@ -1911,7 +1911,7 @@ class User extends DataObject {
 	 * @param string $source
 	 * @return Checkout[]
 	 */
-	public function getCheckouts(bool $includeLinkedUsers = true, string $source = 'all'): array {
+	public function getCheckouts(bool $includeLinkedUsers = true, string $source = 'all', bool $isNightlyUpdate = false): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
 
 		$checkoutsToReturn = [];
@@ -1920,7 +1920,7 @@ class User extends DataObject {
 		global $offlineMode;
 		if ($this->hasIlsConnection() && !$offlineMode) {
 			if ($source == 'all' || $source == 'ils') {
-				$ilsCheckouts = $this->getCatalogDriver()->getCheckouts($this);
+				$ilsCheckouts = $this->getCatalogDriver()->getCheckouts($this, false, [ "isNightlyUpdate" => $isNightlyUpdate ]);
 				$checkoutsToReturn = $ilsCheckouts;
 				$timer->logTime("Loaded transactions from catalog. $this->id");
 			}
@@ -2360,15 +2360,20 @@ class User extends DataObject {
 		return false;
 	}
 
+	public function supportsCredits() : bool {
+		if ($this->hasIlsConnection()) {
+			return $this->getCatalogDriver()->supportsCredits();
+		}
+		return false;
+	}
+
 	private $ilsFinesForUser;
+	private $ilsCreditsForUser;
 
 	public function getFines($includeLinkedUsers = true, $APIRequest = false): array {
 
 		if (!isset($this->ilsFinesForUser)) {
 			$this->ilsFinesForUser = $this->getCatalogDriver()->getFines($this);
-			if ($this->ilsFinesForUser instanceof AspenError) {
-				$this->ilsFinesForUser = [];
-			}
 		}
 
 		if ($APIRequest && !$includeLinkedUsers) {
@@ -2385,6 +2390,28 @@ class User extends DataObject {
 			}
 		}
 		return $ilsFines;
+	}
+
+	public function getCredits($includeLinkedUsers = true, $APIRequest = false): array {
+
+		if (!isset($this->ilsCreditsForUser)) {
+			$this->ilsCreditsForUser = $this->getCatalogDriver()->getFines($this, false, 'credit');
+		}
+
+		if ($APIRequest && !$includeLinkedUsers) {
+			$ilsCredits = $this->ilsCreditsForUser;
+		} else {
+			$ilsCredits[$this->id] = $this->ilsCreditsForUser;
+		}
+
+		if ($includeLinkedUsers) {
+			if ($this->getLinkedUsers() != null) {
+				foreach ($this->getLinkedUsers() as $user) {
+					$ilsCredits += $user->getCredits(false, $APIRequest); // keep keys as userId
+				}
+			}
+		}
+		return $ilsCredits;
 	}
 
 	public function getNameAndLibraryLabel() {
@@ -3139,7 +3166,7 @@ class User extends DataObject {
 				]),
 				'totalPaid' => StringUtils::formatCurrency($userPayment->totalPaid),
 				'paymentType' => $userPayment->paymentType,
-				'stripeReceiptUrl' => $userPayment->stripeReceiptUrl,
+				'receiptUrl' => $userPayment->receiptUrl,
 			];
 		}
 
@@ -4612,6 +4639,10 @@ class User extends DataObject {
 			'View eCommerce Reports for All Libraries',
 			'View eCommerce Reports for Home Library'
 		]);
+		$sections['ecommerce']->addAction(new AdminAction('Payment Details Report', 'View individual payment line items', '/Admin/PaymentDetailsReport'), [
+			'View eCommerce Reports for All Libraries',
+			'View eCommerce Reports for Home Library'
+		]);
 		$sections['ecommerce']->addAction(new AdminAction('Donations Report', 'View donations initiated and completed within the system', '/Admin/DonationsReport'), [
 			'View Donations Reports for All Libraries',
 			'View Donations Reports for Home Library'
@@ -4936,6 +4967,7 @@ class User extends DataObject {
 			$sections['events']->addAction(new AdminAction('Assabet - Interactive Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/AssabetSettings'), 'Administer Assabet Settings');
 			$sections['events']->addAction(new AdminAction('Communico - Attend Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/CommunicoSettings'), 'Administer Communico Settings');
 			$sections['events']->addAction(new AdminAction('Library Market - Calendar Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LMLibraryCalendarSettings'), 'Administer LibraryMarket LibraryCalendar Settings');
+			$sections['events']->addAction(new AdminAction('LocalHop - Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LocalHopSettings'), 'Administer LocalHop Settings');
 			$sections['events']->addAction(new AdminAction('Springshare - LibCal Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/SpringshareLibCalSettings'), 'Administer Springshare LibCal Settings');
 			$sections['events']->addAction(new AdminAction('Calendar Display Settings', 'Define display settings for event calendar.', '/Events/CalendarDisplaySettings'), 'Print Calendars with Header Images and Footer');
 			$sections['events']->addAction(new AdminAction('Event Facet Settings', 'Define facets for event searches.', '/Events/EventsFacets'), 'Administer Events Facet Settings');

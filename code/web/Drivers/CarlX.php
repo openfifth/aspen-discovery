@@ -629,7 +629,7 @@ class CarlX extends AbstractIlsDriver {
 		return $this->placeHoldViaSIP($patron, $holdId, $newPickupLocation, null, 'update', $queuePosition, $freeze, $freezeReactivationDate);
 	}
 
-	public function getCheckouts(User $patron): array {
+	public function getCheckouts(User $patron, array $options = []): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
 		$checkedOutTitles = [];
 
@@ -1549,8 +1549,11 @@ class CarlX extends AbstractIlsDriver {
 		return null;
 	}
 
-	public function getFines(User $patron, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		$myFines = [];
+		if ($type == 'credit'){
+			return $myFines;
+		}
 		$request = $this->getSearchbyPatronIdRequest($patron);
 
 		$request->TransactionType = 'Fine';

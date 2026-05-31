@@ -93,7 +93,11 @@ class BookCoverProcessor {
 			if ($this->getAssabetCover($this->id)){
 				return true;
 			}
-		} elseif ($this->type == 'aspenEvent_event') {
+		} elseif ($this->type == 'localhop_event') {
+			if ($this->getLocalHopCover($this->id)){
+				return true;
+			}
+		}elseif ($this->type == 'aspenEvent_event') {
 			if ($this->getAspenEventsDateCover($this->id)){
 				return true;
 			}
@@ -490,7 +494,9 @@ class BookCoverProcessor {
 		//If this is external eContent, we don't care about that part, just use the remaining id
 		$this->id = str_replace('external_econtent:', '', $this->id);
 		//ampersands may cause the wrong cover to load. covering our bases here.
-		$this->id = urlencode($this->id);
+		//$this->id = urlencode($this->id);
+		//using str_replace instead of urlencode because some ids are ils:1234
+		$this->id = str_replace('&', '%26', $this->id);
 		if (isset($_GET['type'])) {
 			$this->type = $_GET['type'];
 		} else {
@@ -2039,6 +2045,53 @@ class BookCoverProcessor {
 		}
 		require_once ROOT_DIR . '/RecordDrivers/AssabetEventRecordDriver.php';
 		$driver = new AssabetEventRecordDriver($id);
+		require_once ROOT_DIR . '/sys/Covers/EventCoverBuilder.php';
+		if (!($driver->isValid())){ //if driver isn't valid, likely a past event on a list
+			require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
+			$coverBuilder = new EventCoverBuilder();
+			$userEntry = new UserEventsEntry();
+			$userEntry->sourceId = $id;
+			if ($userEntry->find(true)){
+				$startDate = new DateTime("@$userEntry->eventDate");
+				/** @noinspection PhpUnhandledExceptionInspection */
+				$startDate->setTimezone(new DateTimeZone(date_default_timezone_get()));
+				$props = [
+					'eventDate' => $startDate,
+					'isPastEvent' => true,
+				];
+				$title = $userEntry->title;
+			} else{
+				$props = [
+					'eventDate' => $driver->getStartDateFromDB($id),
+					'isPastEvent' => true,
+				];
+				$title = $driver->getTitleFromDB($id);
+			}
+			$coverBuilder->getCover($title, $this->cacheFile, $props);
+		} else {
+			$coverBuilder = new EventCoverBuilder();
+			$isPast = false;
+			if (array_key_exists('isPast', $_REQUEST)){
+				$isPast = $_REQUEST['isPast'];
+			}
+			$props = [
+				'eventDate' => $driver->getStartDate(),
+				'isPastEvent' => $isPast,
+			];
+			$coverBuilder->getCover($driver->getTitle(), $this->cacheFile, $props);
+		}
+		return $this->processImageURL('default_event', $this->cacheFile, false);
+	}
+
+	private function getLocalHopCover($id) : bool {
+		if (str_contains($id, ':')) {
+			[
+				,
+				$id,
+			] = explode(":", $id);
+		}
+		require_once ROOT_DIR . '/RecordDrivers/LocalHopEventRecordDriver.php';
+		$driver = new LocalHopEventRecordDriver($id);
 		require_once ROOT_DIR . '/sys/Covers/EventCoverBuilder.php';
 		if (!($driver->isValid())){ //if driver isn't valid, likely a past event on a list
 			require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
