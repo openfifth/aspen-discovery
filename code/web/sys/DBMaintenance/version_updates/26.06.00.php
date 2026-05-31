@@ -88,6 +88,14 @@ function getUpdates26_06_00(): array {
 		], //scoped_more_like_this
 
 		//yanjun
+		'add_overdriveAdvantageId' => [
+			'title' => 'Add overdriveAdvantageId column',
+			'description' => 'Add overdriveAdvantageId column to library_overdrive_settings',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN overdriveAdvantageId int(11) DEFAULT 0'
+			]
+		],//add_overdriveAdvantageId
 		'allow_to_renew_ill_items' => [
 			'title' => 'Allow Renewing ILL Items',
 			'description' => 'Add allowToRenewILL to the library table to control whether patrons can renew ILL items.',
