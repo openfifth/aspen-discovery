@@ -3830,7 +3830,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 
-	private function filterHolds(array $allHolds, string $selectedUser): array {
+	private function filterHolds(array $allHolds, string $selectedUser, array $filters): array {
 
 		$filteredHolds = [
 			'available' => [],
@@ -3842,20 +3842,20 @@ class MyAccount_AJAX extends JSON_Action {
 		$allUsersSelected = (empty($selectedUser) || $selectedUser === '[""]');
 
 		foreach ($allHolds['available'] as $key => $hold) {
-			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 				$filteredHolds['available'][$key] = $hold;
 			}
 		}
 
 		foreach ($allHolds['unavailable'] as $key => $hold) {
-			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 				$filteredHolds['unavailable'][$key] = $hold;
 			}
 		}
 
 		if (isset($allHolds['cancelled'])) {
 			foreach ($allHolds['cancelled'] as $key => $hold) {
-				if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+				if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 					$filteredHolds['cancelled'][$key] = $hold;
 				}
 			}
@@ -4086,10 +4086,40 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('showPosition', $showPosition);
 			$interface->assign('showNotInterested', false);
 
+			$filterOptions = [
+				'format' => [
+					'label' => 'Format',
+					'name' => 'format',
+					'type' => 'multiselect',
+					'options' => [],
+					'selected' => [],
+				],
+				'account' => [
+					'label' => 'Linked Account',
+					'name' => 'account',
+					'type' => 'multiselect',
+					'options' => [],
+					'selected' => [],
+				],
+				'status' => [
+					'label' => 'Status',
+					'name' => 'status',
+					'type' => 'multiselect',
+					'options' => [],
+					'selected' => [],
+				]
+			];
+
+			$setFilters = [
+				'formats' => $_GET['format'] ?? [],
+				'accounts' => $_GET['account'] ?? [],
+				'statuses' => $_GET['status'] ?? [],
+			];
+
 			global $offlineMode;
 			$allHolds = null;
 			if (!$offlineMode) {
-				$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
+				$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser, $setFilters);
 				$hyperHolds = [];
 				$hiddenHoldIds = [];
 
@@ -4152,7 +4182,96 @@ class MyAccount_AJAX extends JSON_Action {
 						}
 					}
 				}
+
+				if (!empty($allHolds)) {
+					foreach ($allHolds['available'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
+							$filterOptions['format']['options'][$hold->format] = $hold->format;
+						}
+						if (isset($_GET['format']) && is_array($_GET['format']) && in_array($hold->format, $_GET['format'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][$hold->format] = $hold->format;
+						}
+
+						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (isset($_GET['account']) && is_array($_GET['account']) && in_array($hold->format, $_GET['account'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->userId;
+						}
+
+						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
+							$filterOptions['status']['options'][$hold->status] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['status']) && in_array($hold->format, $_GET['status'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][$hold->status] = $hold->status;
+						}
+					}
+					foreach ($allHolds['unavailable'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
+							$filterOptions['format']['options'][$hold->format] = $hold->format;
+						}
+						if (isset($_GET['format']) && is_array($_GET['format']) && in_array($hold->format, $_GET['format'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][$hold->format] = $hold->format;
+						}
+
+						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (isset($_GET['account']) && is_array($_GET['account']) && in_array($hold->format, $_GET['account'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->userId;
+						}
+
+						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
+							$filterOptions['status']['options'][$hold->status] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['status']) && in_array($hold->format, $_GET['status'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][$hold->status] = $hold->status;
+						}
+					}
+					foreach ($allHolds['cancelled'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format'], true)) {
+							$filterOptions['format']['options'][$hold->format] = $hold->format;
+						}
+						if (isset($_GET['format']) && is_array($_GET['format']) && in_array($hold->format, $_GET['format'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][$hold->format] = $hold->format;
+						}
+
+						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (isset($_GET['account']) && is_array($_GET['account']) && in_array($hold->format, $_GET['account'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->userId;
+						}
+
+						if (!in_array($hold->status, $filterOptions['status'], true)) {
+							$filterOptions['status']['options'][$hold->status] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['status']) && in_array($hold->format, $_GET['status'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][$hold->status] = $hold->status;
+						}
+					}
+				}
 			}
+
+			if (!empty($filterOptions['account']['options'])) {
+				foreach ($filterOptions['account']['options'] as $i => $account) {
+					$tmp = $user->getUserReferredTo($account);
+					if ($tmp) {
+						$filterOptions['account']['options'][$account] = $tmp->getDisplayName();
+					}
+					unset($filterOptions['account']['options'][$i]);
+				}
+			}
+
+			foreach ($filterOptions as $filterKey => &$filterOption) {
+				if (empty($filterOption['selected']) || count($filterOption['selected']) === 0) {
+					$filterOption['selected'] = array_keys($filterOption['options']);
+				}
+			}
+			unset($filterOption);
+
+			$interface->assign('filterOptions', $filterOptions);
+
 
 			$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
 			$interface->assign('notification_method', strtolower($notification_method));
@@ -4180,6 +4299,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$interface->assign('showHoldHelpMessages', $user->showHoldHelpMessages);
 
+			$result['filterOptions'] = $interface->fetch('MyAccount/holdsFilters.tpl');
 			$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 
 		} else {
