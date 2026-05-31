@@ -29,7 +29,7 @@ class EventAPI extends AbstractAPI {
 					header('Cache-Control: max-age=10800');
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
 					APIUsage::incrementStat('EventAPI', $method);
-					$output = json_encode($this->$method());
+					$output = json_encode($this->logPatronRequestExternal($this->$method()));
 				} else {
 					header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
 					$output = json_encode(['error' => 'invalid_method']);
