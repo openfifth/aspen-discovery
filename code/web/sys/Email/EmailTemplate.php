@@ -250,7 +250,7 @@ class EmailTemplate extends DataObject {
 		}
 	}
 
-	public static function getActiveTemplate(string $templateType, ?User $user) : ?EmailTemplate{
+	public static function getActiveTemplate(string $templateType, ?User $user = null) : ?EmailTemplate{
 		global $library;
 		global $activeLanguage;
 		$libraryId = $user == null ? $library->libraryId : ($user->getHomeLibrary() == null ? $library->libraryId : $user->getHomeLibrary()->libraryId);
