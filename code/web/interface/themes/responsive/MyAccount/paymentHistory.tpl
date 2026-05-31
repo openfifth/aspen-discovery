@@ -51,8 +51,8 @@
 							<td>{$payment.completed}</td>
 							{if $hasStripePayments}
 								<td>
-									{if !empty($payment.stripeReceiptUrl)}
-										<a href="{$payment.stripeReceiptUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-default" title="{translate text='View Stripe Receipt' isPublicFacing=true inAttribute=true}">
+									{if !empty($payment.receiptUrl)}
+										<a href="{$payment.receiptUrl}" target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-default" title="{translate text='View Stripe Receipt' isPublicFacing=true inAttribute=true}">
 											<i class="fas fa-receipt"></i> {translate text="View" isPublicFacing=true}
 										</a>
 									{/if}

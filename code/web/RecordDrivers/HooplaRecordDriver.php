@@ -607,6 +607,20 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 		return $physicalDescriptions;
 	}
 
+	/**
+	 * Get duration of the item.
+	 *
+	 * @access  protected
+	 * @return  string
+	 */
+	public function getDuration() {
+		$duration = '';
+		if (!empty($this->hooplaRawMetadata->duration)) {
+			$duration = StringUtils::extractTotalMinutes($this->hooplaRawMetadata->duration);
+		}
+		return $duration;
+	}
+
 	function getHooplaCoverUrl() {
 		return $this->hooplaRawMetadata->coverImageUrl ?? '';
 	}
