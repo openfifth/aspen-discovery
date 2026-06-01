@@ -91,7 +91,7 @@ if ($search->getNumResults() > 0) {
 					$newTitles = $searchResult['response']['docs'];
 
 					$searchUpdateLogEntry->numUpdated++;
-					if ($searchEntry->hasNewResults && $userForSearch->canReceiveNotifications('notifySavedSearch')) {
+					if ($searchEntry->hasNewResults && $searchEntry->sendNotification && $userForSearch->canReceiveNotifications('notifySavedSearch')) {
 						global $logger;
 						$logger->log("New results in search " . $searchEntry->title . " for user " . $userForSearch->id, Logger::LOG_ERROR);
 						$appScheme = 'aspen-lida';
@@ -118,7 +118,7 @@ if ($search->getNumResults() > 0) {
 						$userForSearch->sendPushNotification($body, "saved_search");
 					}
 					// If the user wishes to receive saved search emails, keep track of those here.
-					if ($searchEntry->hasNewResults && $userForSearch->notifySavedSearches) {
+					if ($searchEntry->hasNewResults && $searchEntry->sendNotification && $userForSearch->notifySavedSearches) {
 						$userLibrary = $userForSearch->getHomeLibrary();
 						$baseUrl = $userLibrary->getBaseUrl();
 						$key = $userForSearch->id . '|' . $baseUrl;

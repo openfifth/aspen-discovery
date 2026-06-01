@@ -291,6 +291,19 @@ class UserAccount {
 		return 'false';
 	}
 
+	public static function isAuthorizedToActOnBehalfOf(int $userId): bool {
+		$activeUserId = (int)self::getActiveUserId();
+		if ($userId === $activeUserId) {
+			return true;
+		}
+		foreach (self::getActiveUserObj()->getLinkedUsers() as $linkedUser) {
+			if ($linkedUser->id == $userId) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function getUserHomeLocationId() {
 		UserAccount::loadUserObjectFromDatabase();
 		if (UserAccount::$primaryUserObjectFromDB != false) {
@@ -591,6 +604,7 @@ class UserAccount {
 						return $cardExpired;
 					} elseif ($library->allowLoginToPatronsOfThisLibraryOnly && ($tempUser->getHomeLibrary() != null && ($tempUser->getHomeLibrary()->libraryId != $library->libraryId))) {
 						$disallowedMessage = empty(trim(strip_tags($library->messageForPatronsOfOtherLibraries))) ? 'Sorry, this catalog can only be accessed by patrons of ' . $library->displayName : $library->messageForPatronsOfOtherLibraries;
+						$disallowedMessage .= ' Your home library is ' . $tempUser->getHomeLibrary()->displayName . '. <a href="' . $tempUser->getHomeLibrary()->baseUrl . '">Go to your library’s website to login</a>.';
 						return new AspenError($disallowedMessage);
 					} elseif ($tempUser->getHomeLibrary() != null && ($tempUser->getHomeLibrary()->preventLogin)) {
 						$disallowedMessage = empty(trim(strip_tags($tempUser->getHomeLibrary()->preventLoginMessage))) ? 'Sorry, patrons of ' . $library->displayName . ' cannot login at this time.' : $tempUser->getHomeLibrary()->preventLoginMessage;

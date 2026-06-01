@@ -2255,13 +2255,11 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 	}
 
-	/**
-	 * @param User $patron
-	 * @param $includeMessages
-	 * @return array
-	 */
-	public function getFines($patron, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		$fines = [];
+		if ($type == 'credit'){
+			return $fines;
+		}
 		$sessionToken = $this->getSessionToken($patron);
 		if ($sessionToken) {
 

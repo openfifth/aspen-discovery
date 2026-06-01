@@ -137,6 +137,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$isFirst = false;
 		}
+
+		global $library;
+		$displaySettings = $library->getGroupedWorkDisplaySettings();
+
+		if ($summPubDate == null && $displaySettings->showEarliestPublicationDateFullRecord) {
+			$summPubDate = $this->getEarliestPublicationDate();
+		}
 		$interface->assign('summPublisher', $summPublisher);
 		$interface->assign('summPubDate', $summPubDate);
 		$interface->assign('summPlaceOfPublication', $summPlaceOfPublication);
@@ -2203,6 +2210,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$isFirst = false;
 		}
+		$displaySettings = $library->getGroupedWorkDisplaySettings();
+		if ($summPubDate == null && $displaySettings->showEarliestPublicationDateSearchResults) {
+			$summPubDate = $this->getEarliestPublicationDate();
+		}
 		$interface->assign('summPublisher', rtrim($summPublisher, ','));
 		$interface->assign('summPubDate', $summPubDate);
 		$interface->assign('summPlaceOfPublication', $summPlaceOfPublication);
@@ -3047,6 +3058,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			if (count($this->getSeriesMembers()) > 0) {
 				return true;
 			}
+		}
+		$displayInfo = $this->getDisplayInfo();
+		if ($displayInfo != null && !empty($displayInfo->seriesName)) {
+			return true;
 		}
 		//Get a list of isbns from the record
 		$novelist = NovelistFactory::getNovelist();
