@@ -3,7 +3,7 @@
     {if !empty($isEContent)}
 		<div class="itemSummary">
 			<a href="#" onclick="return AspenDiscovery.GroupedWork.showCopyDetails('{$workId}', '{if !empty($relatedManifestation)}{$relatedManifestation->format|urlencode}{else}{$format}{/if}', '{$itemSummaryId}');">
-                {translate text="where_is_it_button" defaultText="Where is it?" isPublicFacing=true}
+                {translate text="where_is_it_button" defaultText="View All Locations" isPublicFacing=true}
 			</a>
 		</div>
     {else}
@@ -37,7 +37,7 @@
                     {if $totalCopies > 0}
 						<div class="col-tn-4 pull-right">
 							<button class="btn btn-default btn-sm btn-wrap viewAllLocationsBtn" href="#" onclick="return AspenDiscovery.GroupedWork.showCopyDetails('{$workId}', '{if !empty($relatedManifestation)}{$relatedManifestation->format|urlencode}{else}{$format}{/if}', '{$itemSummaryId}');">
-                                {translate text="where_is_it_button" defaultText="Where is it?" isPublicFacing=true}
+                                {translate text="where_is_it_button" defaultText="View All Locations" isPublicFacing=true}
 							</button>
 						</div>
                     {/if}
