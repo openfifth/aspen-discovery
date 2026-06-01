@@ -58,6 +58,7 @@ class User extends DataObject {
 	public $optInToAllCampaignLeaderboards;
 	public $campaignNotificationsByEmail;
 	public $notifySavedSearches;
+	public $eventRegistrationNotificationsByEmail;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
@@ -240,6 +241,10 @@ class User extends DataObject {
 			'source',
 			'username',
 		];
+	}
+
+	public function canReceiveEventNotifications(): bool {
+		return !empty($this->email) && $this->eventRegistrationNotificationsByEmail == 1;
 	}
 
 	function getLists() {
@@ -1777,6 +1782,7 @@ class User extends DataObject {
 
 		$this->__set('optInToAllCampaignLeaderboards', (isset($_POST['optInToAllCampaignLeaderboards']) && $_POST['optInToAllCampaignLeaderboards'] == 'on') ? 1 : 0);
 		$this->__set('campaignNotificationsByEmail', (isset($_POST['campaignNotificationsByEmail']) && $_POST['campaignNotificationsByEmail'] == 'on') ? 1 : 0);
+		$this->__set('eventRegistrationNotificationsByEmail', (isset($_POST['eventRegistrationNotificationsByEmail']) && $_POST['eventRegistrationNotificationsByEmail'] == 'on') ? 1 : 0);
 
 		if ($library->holdPromptForEditions > 0) {
 			if (isset($_POST['rememberHoldPromptForEdition'])) {
@@ -4957,10 +4963,16 @@ class User extends DataObject {
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Fields', 'Define event fields for Aspen Events.', '/Events/EventFields'), 'Administer Field Sets');
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Field Sets', 'Define sets of event fields to use for Aspen Events.', '/Events/EventFieldSets'), 'Administer Field Sets');
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Types', 'Define event types to use for Aspen Events.', '/Events/EventTypes'), 'Administer Event Types');
+				$aspenEventsAction->addSubAction(new AdminAction('Configure Attendee Categories', 'Define attendee categories for Aspen Events.', '/Events/AttendeeCategories'), 'Administer Event Types');
 				$aspenEventsAction->addSubAction(new AdminAction('Indexing Settings', 'Aspen Event Indexing Settings including indexing and library scope.', '/Events/IndexingSettings'), 'Administer Events for All Locations');
 				$aspenEventsAction->addSubAction(new AdminAction('Event Reports', 'Aspen Events Reporting.', '/Events/EventGraphs'), [
 					'View Event Reports for All Libraries',
 					'View Event Reports for Home Library'
+				]);
+				$aspenEventsAction->addSubAction(new AdminAction('Attendance Management', 'Manage Aspen Events including patron registrations.', '/Events/AttendanceManagement'), [
+					'Manage Patron Event Attendance for All Locations',
+					'Manage Patron Event Attendance for Home Library Locations',
+					'Manage Patron Event Attendance for Home Location',
 				]);
 			}
 			$sections['events']->addAction(new AdminAction('Aspen Events Settings', 'Aspen Native Events Settings that will apply to all events for a given library, regardless of type.', '/Events/AspenEventSettings'), 'Administer Events for All Locations');

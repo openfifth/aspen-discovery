@@ -128,6 +128,16 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageId int(11) DEFAULT 0'
 			]
 		], //add_overdrive_advantage_products_id_additional
+		'store_original_cover_urls_by_size' => [
+			'title' => 'Store Original Cover URLs by Size',
+			'description' => 'Store original cover URLs separately for small, medium, and large cover requests.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_small TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_medium TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_large TEXT DEFAULT NULL",
+			]
+		], //store_original_cover_urls_by_size
 
 		//imani
 
