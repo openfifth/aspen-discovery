@@ -10127,6 +10127,21 @@ class MyAccount_AJAX extends JSON_Action {
 			$result = $twoFactorAuth->validateCode($code);
 			if ($result['success']) {
 				UserAccount::$isAuthenticated = true;
+				if ($authMethod === 'totp') {
+					require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
+					$authCodeForSession = new TwoFactorAuthCode();
+					$authCodeForSession->sessionId = session_id();
+					$authCodeForSession->userId = $_SESSION['activeUserId'] ?? UserAccount::getActiveUserId();
+					if ($authCodeForSession->find(true)) {
+						$authCodeForSession->status = 'used';
+						$authCodeForSession->update();
+					} else {
+						$authCodeForSession->code = 'totp'; // we don't actually use TOTP verification, its just to make needsToComplete2FA() happy
+						$authCodeForSession->expirationDate = time() + 300;
+						$authCodeForSession->status = 'used';
+						$authCodeForSession->insert();
+					}
+				}
 				try {
 					$_REQUEST['authMethod'] = $authMethod;
 					UserAccount::login();
