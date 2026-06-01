@@ -37,7 +37,7 @@ class Grouping_Item {
 	public bool $available = false;
 	public bool $isVirtual = false;
 	public string $barcode = '';
-	public string $dueDate = '';
+	public string|int $dueDate = '';
 	public string $note = '';
 	private array $_relatedUrls = [];
 	private array $_actions = [];
@@ -97,7 +97,7 @@ class Grouping_Item {
 		$this->isVirtual = $itemDetails['isVirtual'];
 		$this->variationId = $itemDetails['groupedWorkVariationId'];
 		$this->barcode = $itemDetails['barcode'] ?? '';
-		$this->dueDate = $this->normalizeDueDate($itemDetails['dueDate'] ?? '');
+		$this->dueDate = $this->normalizeDueDate($itemDetails['dueDate'] ?? '', $itemDetails['dueDateFormat'] ?? null);
 		$this->note = $itemDetails['note'] ?? '';
 
 		if ($this->status == 'Library Use Only' && !$this->available) {
@@ -112,16 +112,26 @@ class Grouping_Item {
 		}
 	}
 
-	private function normalizeDueDate(mixed $dueDate): string|int {
+	private function normalizeDueDate(mixed $dueDate, ?string $dueDateFormat): string|int {
 		if ($dueDate === '') {
 			return '';
 		}
 		$dueDate = (string)$dueDate;
-		// Normalize YYYYMMDD to unix timestamps
-		if (ctype_digit($dueDate) && strlen($dueDate) == 8) {
-			return DateTime::createFromFormat('Ymd', $dueDate)->getTimestamp();
+		if (ctype_digit($dueDate) && strlen($dueDate) > 8) {
+			return (int)$dueDate;
 		}
-		return $dueDate;
+
+		if (!empty($dueDateFormat)) {
+			$dueDateFormat = str_replace('yyyy', 'Y', $dueDateFormat);
+			$dueDateFormat = str_replace('yy', 'y', $dueDateFormat);
+			$dueDateFormat = str_replace('MM', 'm', $dueDateFormat);
+			$dueDateFormat = str_replace('dd', 'd', $dueDateFormat);
+			$normalizedDueDate = DateTime::createFromFormat($dueDateFormat, $dueDate);
+			if ($normalizedDueDate != false) {
+				return $normalizedDueDate->getTimestamp();
+			}
+		}
+		return strtotime($dueDate) !== false ? strtotime($dueDate) : $dueDate;
 	}
 
 	/**
