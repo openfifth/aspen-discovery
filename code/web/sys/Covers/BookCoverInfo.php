@@ -95,6 +95,7 @@ class BookCoverInfo extends DataObject {
 	 * Get the original URL of the cover image
 	 * @return string|null
 	 */
+	//TODO: Keep original_url as a legacy fallback for one release, then remove the fallback and drop the column
 	public function getOriginalUrl(string $size): ?string
 	{
 		$sizeProperty = $this->getOriginalUrlPropertyForSize($size);
