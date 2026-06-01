@@ -3059,6 +3059,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				return true;
 			}
 		}
+		$displayInfo = $this->getDisplayInfo();
+		if ($displayInfo != null && !empty($displayInfo->seriesName)) {
+			return true;
+		}
 		//Get a list of isbns from the record
 		$novelist = NovelistFactory::getNovelist();
 		return $novelist->doesGroupedWorkHaveCachedSeries($this->getPermanentId());

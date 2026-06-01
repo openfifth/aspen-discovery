@@ -112,8 +112,32 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE library ADD COLUMN allowToRenewILL TINYINT(1) DEFAULT 1'
 			]
 		], //allow_to_renew_ill_items
-
-
+		'add_overdrive_advantage_products_key_additional' => [
+			'title' => 'Add OverDrive Advantage Products Key Additional',
+			'description' => 'Add a field for additional advantage collection tokens per library',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageProductsKey varchar(255) DEFAULT \'\''
+			]
+		], //add_overdrive_advantage_products_key_additional
+		'add_overdrive_advantage_products_id_additional' => [
+			'title' => 'Add OverDrive Advantage Products ID Additional',
+			'description' => 'Add a field for additional advantage collection ID per library',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageId int(11) DEFAULT 0'
+			]
+		], //add_overdrive_advantage_products_id_additional
+		'store_original_cover_urls_by_size' => [
+			'title' => 'Store Original Cover URLs by Size',
+			'description' => 'Store original cover URLs separately for small, medium, and large cover requests.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_small TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_medium TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_large TEXT DEFAULT NULL",
+			]
+		], //store_original_cover_urls_by_size
 
 		//imani
 
