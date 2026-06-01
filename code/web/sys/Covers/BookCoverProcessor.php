@@ -43,13 +43,9 @@ class BookCoverProcessor {
 
 		if (!$this->reload) {
 			$this->log("Looking for Cached cover", Logger::LOG_NOTICE);
-			if ($this->getCachedCover()) {
+			if ($this->getCachedCover() || $this->checkForEarlyRedirect()) {
 				return true;
 			}
-		}
-
-		if ($this->checkForEarlyRedirect()) {
-			return true;
 		}
 
 		if($this->bookCoverInfo->getImageSource() == 'upload') {
@@ -2361,7 +2357,7 @@ class BookCoverProcessor {
 								return false;
 							}
 
-							$originalUrl = $referencedCoverInfo->getOriginalUrl();
+							$originalUrl = $referencedCoverInfo->getOriginalUrl($this->size);
 							if (!empty($originalUrl)) {
 								$url = $originalUrl;
 								$maybeHash = substr($originalUrl, 0, 32);
@@ -2649,7 +2645,7 @@ class BookCoverProcessor {
 				];
 				$validationHash = md5(implode('|', $validationFields));
 				$urlToStore = $validationHash . $url;
-				$this->bookCoverInfo->setOriginalUrl($urlToStore);
+				$this->bookCoverInfo->setOriginalUrl($urlToStore, $this->size);
 				$this->bookCoverInfo->update();
 
 				header("HTTP/1.1 301 Moved Permanently");
@@ -2672,7 +2668,7 @@ class BookCoverProcessor {
 	 */
 	private function checkForEarlyRedirect(): bool {
 		if ($this->bookCoverInfo &&
-			!empty($this->bookCoverInfo->getOriginalUrl()) &&
+			!empty($this->bookCoverInfo->getOriginalUrl($this->size)) &&
 			SystemVariables::getSystemVariables()->useOriginalCoverUrls &&
 			!str_starts_with($this->bookCoverInfo->getImageSource(), 'reference')
 		) {
@@ -2684,13 +2680,12 @@ class BookCoverProcessor {
 				$this->bookCoverInfo->getDisallowThirdPartyCover()
 			];
 			$currentHash = md5(implode('|', $validationFields));
-			$storedHash = substr($this->bookCoverInfo->getOriginalUrl(), 0, 32);
-			$url = substr($this->bookCoverInfo->getOriginalUrl(), 32);
+			$originalUrl = $this->bookCoverInfo->getOriginalUrl($this->size);
+			$storedHash = substr($originalUrl, 0, 32);
+			$url = substr($originalUrl, 32);
 
 			if ($currentHash === $storedHash && !empty($url)) {
-				// Check if URL needs to be validated based upon the expiration time; force validation if reload flag is set.
-				$forceValidation = $this->reload;
-				$validationResult = $this->validateCoverUrl($url, $this->bookCoverInfo->getImageSource(), $forceValidation);
+				$validationResult = $this->validateCoverUrl($url, $this->bookCoverInfo->getImageSource(), false);
 				if ($validationResult !== false) {
 					header("HTTP/1.1 301 Moved Permanently");
 					header("Location: $url");
@@ -2702,7 +2697,7 @@ class BookCoverProcessor {
 			}
 		} else {
 			$this->log("Debug - Early conditions failed: BookCoverInfo exists: " . ($this->bookCoverInfo ? "Yes" : "No") .
-				", Original URL exists: " . (!empty($this->bookCoverInfo) && !empty($this->bookCoverInfo->getOriginalUrl()) ? "Yes" : "No") .
+				", Original URL exists: " . (!empty($this->bookCoverInfo) && !empty($this->bookCoverInfo->getOriginalUrl($this->size)) ? "Yes" : "No") .
 				", useOriginalCoverUrls enabled: " . (SystemVariables::getSystemVariables()->useOriginalCoverUrls ? "Yes" : "No"));
 		}
 		return false;

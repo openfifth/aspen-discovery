@@ -2861,7 +2861,7 @@ class GroupedWork_AJAX extends JSON_Action {
 			$bookcoverInfo->setImageSource('');
 			require_once ROOT_DIR . '/sys/SystemVariables.php';
 			if (SystemVariables::getSystemVariables()->useOriginalCoverUrls) {
-				$bookcoverInfo->setOriginalUrl(null);
+				$bookcoverInfo->clearOriginalUrls();
 				$bookcoverInfo->setLastUrlValidation(null);
 			}
 			$bookcoverInfo->update();
