@@ -156,6 +156,8 @@ class TwoFactorAuthTOTPSecret extends DataObject {
 	}
 
 	public static function generateQRCodeURI(TwoFactorAuthTOTPSecret $secret, string $issuer, User $user = null): string {
+		global $configArray;
+
 		if ($user === null) {
 			$user = new User();
 			$user->id = UserAccount::getActiveUserId();
@@ -174,7 +176,7 @@ class TwoFactorAuthTOTPSecret extends DataObject {
 		];
 
 		if (!empty($library->logoApp)) {
-			$params[] = 'image=' . urlencode($library->logoApp);
+			$params[] = 'image=' . urlencode($configArray['Site']['local'] . '/files/original/' . $library->logoApp);
 		} else {
 			$params[] = 'image=';
 		}
