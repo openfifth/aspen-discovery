@@ -141,7 +141,31 @@ class UInterface extends Smarty {
 		require_once ROOT_DIR . '/sys/SystemVariables.php';
 		$systemVariables = SystemVariables::getSystemVariables();
 		if (!empty($systemVariables)) {
-			if ($systemVariables->catalogStatus == 2) {
+			$now = time();
+			$scheduledStart = $systemVariables->scheduledOfflineStart ?? 0;
+			$scheduledEnd   = $systemVariables->scheduledOfflineEnd   ?? 0;
+
+			$inScheduledWindow = $scheduledStart && $scheduledEnd
+				&& $now >= $scheduledStart
+				&& $now <= $scheduledEnd;
+
+			if (!empty($scheduledStart) && !empty($scheduledEnd)) {
+				if ($inScheduledWindow) {
+					$systemVariables->catalogStatus = 1;
+					if ($systemVariables->scheduledEcontentAccess) {
+						$systemVariables->catalogStatus = 2;
+						$loginAllowedWhileOffline = true;
+					}
+					$offlineMode = true;
+					$this->assign('enableEContentWhileOffline', $loginAllowedWhileOffline);
+					$this->assign('offlineMessage', $systemVariables->offlineMessage);
+				} else {
+					$systemVariables->scheduledOfflineStart = 0;
+					$systemVariables->scheduledOfflineEnd = 0;
+					$systemVariables->catalogStatus = 0;
+				}
+				$systemVariables->update();
+			} elseif ($systemVariables->catalogStatus == 2) {
 				$offlineMode = true;
 				$loginAllowedWhileOffline = true;
 				$this->assign('enableEContentWhileOffline', true);

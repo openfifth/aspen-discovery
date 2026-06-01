@@ -40,7 +40,7 @@ class ListAPI extends AbstractAPI {
 					'editListGroup',
 					'editListGroupParent'
 				])) {
-					$result = ['result' => $this->$method()];
+					$result = ['result' => $this->logPatronRequestExternal($this->$method())];
 					$output = json_encode($result);
 					header('Content-type: application/json');
 					header("Cache-Control: max-age=300");
