@@ -32,6 +32,16 @@ class Events_AttendanceManagement extends Admin_Admin {
 			return;
 		}
 
+		if (isset($_GET['download_list']) && $_GET['download_list'] === 'true') {
+			$this->downloadRegistrationsList($eventInstanceId);
+			return;
+		}
+
+		if (isset($_GET['download_csv']) && $_GET['download_csv'] === 'true') {
+			$this->downloadRegistrationsCSV($eventInstanceId);
+			return;
+		}
+
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		global $library;
 
@@ -129,4 +139,162 @@ class Events_AttendanceManagement extends Admin_Admin {
 		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 		return EventRegistrationService::canStaffManagePatronEventAttendance();
 	}
+
+	private function buildBaseRegistrationRow(UserAspenEventInstanceRegistration $registration, User $user): array {
+		$user->loadContactInformation(); // so that we get the postcode and dob
+		$staffUser = $registration->getStaffUser();
+		return [
+			$user->getDisplayName(),
+			$user->ils_barcode,
+			$user->email,
+			$user->_zip,
+			$user->_dateOfBirth,
+			$registration->status,
+			$registration->wasRegisteredByStaff() ? ($staffUser ? $staffUser->getDisplayName() : 'Staff') : 'Self',
+			$registration->createdAt ? date('Y-m-d H:i', strtotime($registration->createdAt)) : '-',
+		];
+	}
+
+	private function downloadRegistrationsList(int $eventInstanceId): void {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return;
+		}
+
+		$parentEvent = $eventInstance->getParentEvent();
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent($eventInstanceId);
+
+		header('Content-Type: text/plain');
+		header('Content-Disposition: attachment; filename="registrations_list_' . $eventInstanceId . '.txt"');
+
+		echo "Event: " . $parentEvent->title . "\n";
+		echo "Date: " . $eventInstance->date . " " . $eventInstance->time . "\n";
+		echo "Location: " . $eventInstance->getLocation() . "\n";
+		echo "Total Registrations: " . count($registrations) . "\n";
+		echo str_repeat("=", 80) . "\n\n";
+
+		echo str_pad("Patron Name", 30)
+		 . str_pad("ILS Barcode", 15)
+		 . str_pad("Email", 40)
+		 . str_pad("Post Code", 12)
+		 . str_pad("Date of Birth", 15)
+		 . str_pad("Registered By", 20)
+		 . str_pad("Date Registered", 20)
+		 . str_pad("Status", 15)
+		 . "Attended\n";
+		echo str_repeat("-", 200) . "\n";
+
+		foreach ($registrations as $registration) {
+			if (!$user = $registration->getUser()) {
+				continue;
+			}
+			[$patronName, $barcode, $email, $postCode, $dateOfBirth, $status, $registeredBy, $dateRegistered] = $this->buildBaseRegistrationRow($registration, $user);
+			echo str_pad($patronName, 30)
+			 . str_pad($barcode, 15)
+			 . str_pad($email, 40)
+			 . str_pad($postCode, 12)
+			 . str_pad($dateOfBirth, 15)
+			 . str_pad($registeredBy, 20)
+			 . str_pad($dateRegistered, 20)
+			 . str_pad($status, 15)
+			 . "[ ]\n";
+		}
+		exit;
+	}
+
+	private function downloadRegistrationsCSV(int $eventInstanceId): void {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			return;
+		}
+
+		$registrations = UserAspenEventInstanceRegistration::getRegistrationsForEvent($eventInstanceId);
+
+		if (!$parentEvent = $eventInstance->getParentEvent()) {
+			return;
+		}
+		
+		if (!$eventType = $eventInstance->getEventType()) {
+			return;
+		}
+
+		$customFields = $eventType->getFieldSetFieldsByUse(2);
+		$attendeeCategories = $eventType->getEventTypeAttendeeCategories();
+
+		header('Content-Type: text/csv');
+		header('Content-Disposition: attachment; filename="registrations_' . $eventInstanceId . '.csv"');
+
+		$output = fopen('php://output', 'w');
+
+		$headers = [
+			'Event date',
+			'Event title',
+			'Event start time',
+			'Library location',
+			'Event Type',
+			'Patron Name',
+			'ILS Barcode',
+			'Email',
+			'Post Code',
+			'Date of Birth',
+			'Status',
+			'Registered By',
+			'Date Registered',
+			'Attended'
+		];
+
+		foreach ($customFields as $fieldId => $field) {
+			$headers[] = $field['label'];
+		}
+
+		foreach ($attendeeCategories as $eventTypeCategory) {
+			$category = $eventTypeCategory->getCategory();
+			if ($category !== null) {
+				$headers[] = $category->name . ' (attendees)';
+			}
+		}
+
+		fputcsv($output, $headers);
+
+		foreach ($registrations as $registration) {
+			if (!$user = $registration->getUser()) {
+				continue;
+			}
+			$row = array_merge([
+					$eventInstance->date,
+					$parentEvent->title,
+					$eventInstance->time,
+					$eventInstance->getLocation(),
+					$eventType->title,
+				],
+				[...$this->buildBaseRegistrationRow($registration, $user), $registration->attended ? 'Yes' : 'No']
+			);
+
+			$customFieldValues = $registration->getCustomFieldValues();
+			foreach ($customFields as $fieldId => $field) {
+				$raw = $customFieldValues[(int)$fieldId] ?? '';
+				if (($field['type'] ?? '') === 'enum' && isset($field['values'][$raw])) {
+					$row[] = $field['values'][$raw];
+				} else {
+					$row[] = $raw;
+				}
+			}
+
+			$attendeeCounts = $registration->getAttendeeCounts();
+			foreach ($attendeeCategories as $eventTypeCategory) {
+				$category = $eventTypeCategory->getCategory();
+				if ($category !== null) {
+					$row[] = $attendeeCounts[(int)$eventTypeCategory->attendeeCategoryId] ?? 0;
+				}
+			}
+
+			fputcsv($output, $row);
+		}
+
+		fclose($output);
+		exit;
+	}
+
 }

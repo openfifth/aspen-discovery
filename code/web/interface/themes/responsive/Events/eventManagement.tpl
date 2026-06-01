@@ -108,6 +108,21 @@
 				<h3>{translate text="Registered Patrons" isAdminFacing=true}</h3>
 				<div id="registrationsList">
 					{if !empty($registrations)}
+						<div style="margin-bottom: 15px;">
+							 <form method="get" action="" style="display: inline-block; margin-right: 10px;">
+								<input type="hidden" name="eventInstanceId" value="{$eventInstanceId}">
+								<button type="submit" class="btn btn-sm btn-default" name="download_list" value="true">
+									{translate text="Download as List" isAdminFacing=true}
+								</button>
+							</form>
+
+							<form method="get" action="" style="display: inline-block;">
+								<input type="hidden" name="eventInstanceId" value="{$eventInstanceId}">
+								<button type="submit" class="btn btn-sm btn-default" name="download_csv" value="true">
+									{translate text="Download as CSV" isAdminFacing=true}
+								</button>
+							</form>
+						</div>
 						<table class="table table-striped table-bordered" id="registrationsTable">
 							<thead>
 								<tr>

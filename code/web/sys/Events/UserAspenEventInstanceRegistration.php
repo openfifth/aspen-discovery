@@ -193,6 +193,29 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	}
 
 	/**
+	 * @return array<int, string> [eventFieldId => value, ...]
+	 */
+	public function getCustomFieldValues(): array {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
+		$values = [];
+		$field = new UserAspenEventInstanceRegistrationEventField();
+		$field->eventInstanceRegistrationId = (int)$this->id;
+		$field->find();
+		while ($field->fetch()) {
+			$values[(int)$field->eventFieldId] = $field->value;
+		}
+		return $values;
+	}
+
+	/**
+	 * @return array<int, int> [attendeeCategoryId => count, ...]
+	 */
+	public function getAttendeeCounts(): array {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		return UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$this->id);
+	}
+
+	/**
 	 * Deletes all registration rows tied to the given event instance.
 	 * Returns the number of rows deleted (or false on failure).
 	 */
