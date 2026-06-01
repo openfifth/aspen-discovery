@@ -43,10 +43,7 @@ class BookCoverProcessor {
 
 		if (!$this->reload) {
 			$this->log("Looking for Cached cover", Logger::LOG_NOTICE);
-			if ($this->getCachedCover()) {
-				return true;
-			}
-			if ($this->checkForEarlyRedirect()) {
+			if ($this->getCachedCover() || $this->checkForEarlyRedirect()) {
 				return true;
 			}
 		}
