@@ -310,10 +310,7 @@ class EmailTemplate extends DataObject {
 			return false;
 		}
 		$updatedPlainTextBody = $this->applyParameters($this->plainTextBody, $parameters);
-		if (empty($this->htmlBody)) {
-			$updatedHtmlBody = $updatedPlainTextBody;
-			$updatedHtmlBody = str_replace("\r\n", "<br/>", $updatedHtmlBody);
-		}else{
+		if (!empty($this->htmlBody)){
 			$updatedHtmlBody = $this->applyParameters($this->htmlBody, $parameters);
 		}
 		$updatedSubject = $this->applyParameters($this->subject, $parameters);
