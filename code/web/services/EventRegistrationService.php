@@ -16,7 +16,7 @@ class EventRegistrationService {
 	 * @param int|null $staffUserId The staff user performing the registration (null for self-registration)
 	 * @return array Result with success status and message
 	 */
-	public static function registerUserForEvent(int $userId, int $eventInstanceId, ?int $staffUserId = null): array {
+	public static function registerUserForEvent(int $userId, int $eventInstanceId, ?int $staffUserId = null, array $attendeeCounts = []): array {
 		$eventInstance = new EventInstance();
 		$eventInstance->id = $eventInstanceId;
 		if (!$eventInstance->find(true)) {
@@ -30,18 +30,27 @@ class EventRegistrationService {
 			return self::publicErrorResult(translate(['text' => 'User not found.', 'isPublicFacing' => true]));
 		}
 
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$validatedCounts = UserAspenEventInstanceRegistrationAttendee::validateAttendeeCounts($eventInstance, $attendeeCounts);
+		if ($validatedCounts === false) {
+			return self::publicErrorResult(translate(['text' => 'Invalid attendee counts. One or more categories exceed the allowed maximum.', 'isPublicFacing' => true]));
+		}
+
+		$requestedSeats = !empty($validatedCounts) ? array_sum($validatedCounts) : 1;
+
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
 
 		$waitingListInfo = $registration->getWaitingListInfo();
-		if (!self::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
+		if (!self::hasAvailableSeats($eventInstance, $requestedSeats) && !$waitingListInfo['canRegister']) {
 			return self::publicErrorResult(translate(['text' => 'This event is full. No seats available.', 'isPublicFacing' => true]));
 		}
 
 		$registration->registeredByStaffId = $staffUserId;
 
 		if ($registration->registerUser()) {
+			UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts);
 			self::saveToUserEvents($eventInstance, $userId, $staffUserId);
 			return [
 				'success' => true,
@@ -76,9 +85,51 @@ class EventRegistrationService {
 		return self::publicErrorResult(translate(['text' => 'Failed to cancel registration.', 'isPublicFacing' => true]));
 	}
 
-	/**
-	 * Check if a user is registered for an event instance
-	 */
+	public static function getAttendeeCategoryBreakdown(int $eventInstanceId): array {
+		$categories = self::getEventTypeAttendeeCategories($eventInstanceId);
+		if (empty($categories)) {
+			return [];
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$countsByCategory = UserAspenEventInstanceRegistrationAttendee::getCategoryAttendeeCountsForInstance($eventInstanceId);
+
+		$breakdown = [];
+		foreach ($categories as $eventTypeAttendeeCategory) {
+			$attendeeCategory = $eventTypeAttendeeCategory->getCategory();
+			if ($attendeeCategory === null) {
+				continue;
+			}
+			$breakdown[] = [
+				'name' => $attendeeCategory->name,
+				'count' => $countsByCategory[(int)$eventTypeAttendeeCategory->attendeeCategoryId] ?? 0,
+			];
+		}
+
+		return $breakdown;
+	}
+
+	public static function getRegistrationCount(int $eventInstanceId): int {
+		if (!empty(self::getEventTypeAttendeeCategories($eventInstanceId))) {
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+			$attendeeTotal = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeesForInstance($eventInstanceId);
+			if ($attendeeTotal > 0) {
+				return $attendeeTotal;
+			}
+		}
+		return UserAspenEventInstanceRegistration::getRegistrationCount($eventInstanceId);
+	}
+
+	private static function getEventTypeAttendeeCategories(int $eventInstanceId): array {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		$eventInstance->find(true);
+		$eventType = $eventInstance->getEventType();
+		if ($eventType === null) {
+			return [];
+		}
+		return $eventType->getEventTypeAttendeeCategories() ?: [];
+	}
 
 	public static function getAvailableSeats(EventInstance $instance): ?int {
 		$capacity = $instance->getEffectiveNumberOfSeats();
@@ -92,7 +143,7 @@ class EventRegistrationService {
 			return 0;
 		}
 
-		return max(0, $capacity - UserAspenEventInstanceRegistration::getRegistrationCount((int)$instance->id));
+		return max(0, $capacity - self::getRegistrationCount((int)$instance->id));
 	}
 
 	public static function hasAvailableSeats(EventInstance $instance, int $requestedSeats = 1): bool {

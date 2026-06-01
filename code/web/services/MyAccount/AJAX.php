@@ -4420,11 +4420,18 @@ class MyAccount_AJAX extends JSON_Action {
 				$eventType = $eventInstance->getEventType();
 				$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
 				$interface->assign('registrationFormStructure', $registrationFormStructure);
+				$interface->assign('attendeeCategories', $eventType->getEventTypeAttendeeCategories());
 
 				$savedRegistrationFieldValues = [];
 				if ($registration && $aspenEventRegistration->id) {
 					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
 					$savedRegistrationFieldValues = UserAspenEventInstanceRegistrationEventField::getValuesForRegistration((int)$aspenEventRegistration->id);
+				}
+
+				$savedAttendeeCounts = [];
+				if ($registration && $aspenEventRegistration->id) {
+					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+					$savedAttendeeCounts = UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$aspenEventRegistration->id);
 				}
 			} else {
 				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
@@ -4465,6 +4472,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$events[$entry->sourceId]['registeredByStaff'] = $registeredByStaff;
 				$events[$entry->sourceId]['savedByStaff'] = $savedByStaff;
 				$events[$entry->sourceId]['savedRegistrationFieldValues'] = $savedRegistrationFieldValues;
+				$events[$entry->sourceId]['savedAttendeeCounts'] = $savedAttendeeCounts;
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;
@@ -8578,6 +8586,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$eventType = $eventInstance->getEventType();
 			$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
 			$interface->assign('registrationFormStructure', $registrationFormStructure);
+			$interface->assign('attendeeCategories', $eventType->getEventTypeAttendeeCategories());
 
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
@@ -8885,8 +8894,25 @@ class MyAccount_AJAX extends JSON_Action {
 			EventRegistrationService::saveToUserEvents($eventInstance, $viewerId);
 		}
 
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$attendeeCounts = [];
+		if (isset($_REQUEST['attendeeCategory']) && is_array($_REQUEST['attendeeCategory'])) {
+			$attendeeCounts = $_REQUEST['attendeeCategory'];
+		}
+
+		$validatedCounts = UserAspenEventInstanceRegistrationAttendee::validateAttendeeCounts($eventInstance, $attendeeCounts);
+		if ($validatedCounts === false) {
+			$result['message'] = translate([
+				'text' => 'Invalid attendee counts. One or more categories exceed the allowed maximum.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		$requestedSeats = !empty($validatedCounts) ? array_sum($validatedCounts) : 1;
 		$waitingListInfo = $registration->getWaitingListInfo();
-		if (!EventRegistrationService::hasAvailableSeats($eventInstance, 1) && !$waitingListInfo['canRegister']) {
+
+		if (!EventRegistrationService::hasAvailableSeats($eventInstance, $requestedSeats) && !$waitingListInfo['canRegister']) {
 			$result['message'] = translate([
 				'text' => 'This event is full - no seats currently available. We have saved it to your events list so you can keep track of it.',
 				'isPublicFacing' => true
@@ -8899,6 +8925,10 @@ class MyAccount_AJAX extends JSON_Action {
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
 		$registration->registerUser();
+
+		if (!empty($validatedCounts)) {
+			UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts);
+		}
 
 		// save the user inputed registration information
 		foreach ($_REQUEST as $key => $value) {

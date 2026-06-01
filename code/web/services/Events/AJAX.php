@@ -676,7 +676,11 @@ class Events_AJAX extends JSON_Action {
 		$interface->assign('eventTime', $eventInstance->time);
 		$interface->assign('numberOfSeats', $eventInstance->getEffectiveNumberOfSeats());
 		$interface->assign('availableSeats', EventRegistrationService::getAvailableSeats($eventInstance));
-		$interface->assign('registrationCount', UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventInstance->id));
+		$interface->assign('registrationCount', EventRegistrationService::getRegistrationCount((int)$eventInstance->id));
+
+		$eventType = $eventInstance->getEventType();
+		$attendeeCategories = $eventType !== null ? $eventType->getEventTypeAttendeeCategories() : [];
+		$interface->assign('attendeeCategories', $attendeeCategories);
 
 		return [
 			'success' => true,
@@ -745,8 +749,13 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 
+		$attendeeCounts = [];
+		if (isset($_REQUEST['attendeeCategory']) && is_array($_REQUEST['attendeeCategory'])) {
+			$attendeeCounts = $_REQUEST['attendeeCategory'];
+		}
+
 		$staffUserId = UserAccount::getActiveUserId();
-		return EventRegistrationService::registerUserForEvent((int)$userId, (int)$eventInstanceId, (int)$staffUserId);
+		return EventRegistrationService::registerUserForEvent((int)$userId, (int)$eventInstanceId, (int)$staffUserId, $attendeeCounts);
 	}
 
 	/**
