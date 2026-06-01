@@ -2304,10 +2304,10 @@ class MyAccount_AJAX extends JSON_Action {
 
 	function renewCheckout(): array {
 		$this->requireLoggedInUser();
-		$this->checkRequiredParameters(['patronId', 'recordId']);
+		$this->checkRequiredParameters(['patronId']);
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
-		$recordId = $_REQUEST['recordId'];
+		$recordId = $_REQUEST['recordId'] ?? '';
 		$renewIndicator = $_REQUEST['renewIndicator'] ?? '';
 		$patron = $user->getUserReferredTo($patronId);
 		$itemId = null;
@@ -2315,8 +2315,17 @@ class MyAccount_AJAX extends JSON_Action {
 
 		if ($patron) {
 			$accountProfile = $patron->getAccountProfile();
+			$driver = $accountProfile?->driver ?? '';
+
+			// Sierra ILL does not have recordId
+			$requiresRecordId = $driver !== 'Sierra';
+
 			// Evolve does not require a renew indicator
-			$requiresRenewIndicator = !($accountProfile && $accountProfile->driver === 'Evolve');
+			$requiresRenewIndicator = $driver !== 'Evolve';
+
+			if ($requiresRecordId) {
+				$this->checkRequiredParameters(['recordId']);
+			}
 			if ($requiresRenewIndicator) {
 				$this->checkRequiredParameters(['renewIndicator']);
 				if (strpos($renewIndicator, '|') > 0) {
@@ -2333,6 +2342,7 @@ class MyAccount_AJAX extends JSON_Action {
 		} else {
 			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
 		}
+
 
 		global $interface;
 		$interface->assign('renewResults', $renewResults);
