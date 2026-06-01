@@ -138,6 +138,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('numberOfSeats', $this->getNumberOfSeats());
 	$interface->assign('availableSeats', $this->getAvailableSeats());
 	$interface->assign('isEventFull', $this->isEventFull());
+	$this->assignWaitingListTemplateVars();
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -388,7 +389,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return $data->title;
 	}
 
-	private function getIdentifier() {
+	public function getIdentifier() {
 		return $this->fields['identifier'];
 	}
 
@@ -486,12 +487,103 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return false;
 	}
 
+	public function isWaitingListFull(): bool {
+		$eventObject = $this->getEventObject();
+
+		if ($eventObject) {
+			return $eventObject->isWaitingListFull();
+		}
+		return false;
+	}
+
 	public function inEvents() {
 		if (UserAccount::isLoggedIn()) {
 			return UserAccount::getActiveUserObj()->inUserEvents($this->getId());
 		}else{
 			return false;
 		}
+	}
+
+	public function isWaitingListEnabled(): bool {
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return false;
+		}
+		return $eventObject->isWaitingListEnabled();
+	}
+
+	public function getUserWaitingListInfo(): array {
+		$default = ['onWaitingList' => false, 'position' => null, 'canRegister' => false];
+
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return $default;
+		}
+
+		$eventInstanceId = $this->getIdentifier();
+		if (!$eventInstanceId) {
+			return $default;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->userId = $user->id;
+
+		return $registration->getWaitingListInfo();
+	}
+
+	public function getWaitingListNumberOfSeats(): ?int {
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return null;
+		}
+		return $eventObject->getEffectiveWaitingListNumberOfSeats();
+	}
+
+	
+	public function getAvailableNumberOfWaitingListSeats(): ?int {
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return null;
+		}
+		return $eventObject->getAvailableWaitingListSeats();
+	}
+
+	public function getDisplayWaitingListSeats(): ?string {
+
+		$eventObject = $this->getEventObject();
+		if (!$eventObject) {
+			return null;
+		}
+		return $eventObject->getDisplayWaitingListSeats();
+	}
+
+	public function assignWaitingListTemplateVars(): void {
+		global $interface;
+		$interface->assign('waitingList', $this->isWaitingListEnabled());
+		$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
+		$waitingListInfo = $this->getUserWaitingListInfo();
+		$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
+		$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
+		$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
+		$interface->assign('availableNumberOfWaitingListSeats', $this->getAvailableNumberOfWaitingListSeats());
+		$isWaitingListFull = $this->isWaitingListFull();
+		$interface->assign('isWaitingListFull', $isWaitingListFull);
+		$eventObject = $this->getEventObject();
+		$registrationAction = $eventObject ? $eventObject->getRegistrationAction(
+			$this->isRegisteredForEvent(),
+			$this->isEventFull(),
+			$this->isWaitingListEnabled(),
+			$waitingListInfo['onWaitingList'],
+			$waitingListInfo['canRegister'],
+			$isWaitingListFull
+		) : 'none';
+		if ($registrationAction === 'showPosition' && $eventObject !== null && $eventObject->hasUnregisteredLinkedUsers()) {
+			$registrationAction = 'joinWaitingList';
+		}
+		$interface->assign('registrationAction', $registrationAction);
+		$interface->assign('displayWaitingListSeats', $this->getDisplayWaitingListSeats());
 	}
 
 	/**
@@ -577,6 +669,8 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			'registration_required' => $this->isRegistrationRequired(),
 			'number_of_seats' => $this->getNumberOfSeats(),
 			'available_seats' => $this->getAvailableSeats(),
+			'waiting_list' => $this->isWaitingListEnabled(),
+			'waiting_list_number_of_seats' => $this->getWaitingListNumberOfSeats(),
 			'bypass' => $this->getBypassSetting(),
 			'url' => null,
 			'source' => 'aspenEvents',
