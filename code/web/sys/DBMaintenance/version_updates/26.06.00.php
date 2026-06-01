@@ -16,6 +16,14 @@ function getUpdates26_06_00(): array {
 		 ], //name*/
 
 		//mark n
+		'options_for_earliest_publication_date' => [
+			'title' => 'Earliest Publication Date Visibility',
+			'description' => 'Add options for when to show the earliest publication date',
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN showEarliestPublicationDateSearchResults TINYINT(1) UNSIGNED NOT NULL DEFAULT 1',
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN showEarliestPublicationDateFullRecord TINYINT(1) UNSIGNED NOT NULL DEFAULT 1',
+			]
+		], //options_for_earliest_publication_date
 
 		//kirstien
 		'addForceReadingHistoryOptIn' => [
