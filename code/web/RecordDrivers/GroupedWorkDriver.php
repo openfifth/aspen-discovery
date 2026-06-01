@@ -137,6 +137,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$isFirst = false;
 		}
+
+		global $library;
+		$displaySettings = $library->getGroupedWorkDisplaySettings();
+
+		if ($summPubDate == null && $displaySettings->showEarliestPublicationDateFullRecord) {
+			$summPubDate = $this->getEarliestPublicationDate();
+		}
 		$interface->assign('summPublisher', $summPublisher);
 		$interface->assign('summPubDate', $summPubDate);
 		$interface->assign('summPlaceOfPublication', $summPlaceOfPublication);
@@ -2202,6 +2209,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				}
 			}
 			$isFirst = false;
+		}
+		$displaySettings = $library->getGroupedWorkDisplaySettings();
+		if ($summPubDate == null && $displaySettings->showEarliestPublicationDateSearchResults) {
+			$summPubDate = $this->getEarliestPublicationDate();
 		}
 		$interface->assign('summPublisher', rtrim($summPublisher, ','));
 		$interface->assign('summPubDate', $summPubDate);
