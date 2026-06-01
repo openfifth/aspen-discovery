@@ -5,6 +5,9 @@
 	<section class="well">
 		{include file='AspenEvents/registrationUserSelector.tpl' eventSourceId=$event.sourceId}
 		{include file='AspenEvents/registrationUserDetails.tpl' eventSourceId=$event.sourceId}
+		{if !empty($event.registeredByStaff)}
+			<p class="text-info"><em>{translate text="You were registered for this event by a staff member." isPublicFacing=true}</em></p>
+		{/if}
 		{include file='AspenEvents/registrationToggleButton.tpl' eventSourceId=$event.sourceId registrationAction=$event.registrationAction userWaitingListPosition=$event.userWaitingListPosition}
 	</section>
 {/strip}

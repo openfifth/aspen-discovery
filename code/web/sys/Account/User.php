@@ -4968,6 +4968,11 @@ class User extends DataObject {
 					'View Event Reports for All Libraries',
 					'View Event Reports for Home Library'
 				]);
+				$aspenEventsAction->addSubAction(new AdminAction('Attendance Management', 'Manage Aspen Events including patron registrations.', '/Events/AttendanceManagement'), [
+					'Manage Patron Event Attendance for All Locations',
+					'Manage Patron Event Attendance for Home Library Locations',
+					'Manage Patron Event Attendance for Home Location',
+				]);
 			}
 			$sections['events']->addAction(new AdminAction('Aspen Events Settings', 'Aspen Native Events Settings that will apply to all events for a given library, regardless of type.', '/Events/AspenEventSettings'), 'Administer Events for All Locations');
 			$sections['events']->addAction(new AdminAction('Assabet - Interactive Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/AssabetSettings'), 'Administer Assabet Settings');

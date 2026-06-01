@@ -9,6 +9,8 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	public $status;
 	public $createdAt;
 	public $notifiedAt;
+	public $registeredByStaffId;
+	public $attended;
 
 	const VALID_STATUSES = ['waiting', 'invited', 'registered'];
 
@@ -16,6 +18,15 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		return [
 			'userId',
 			'eventInstanceId',
+		];
+	}
+
+	public function getNumericColumnNames(): array {
+		return [
+			'userId',
+			'eventInstanceId',
+			'registeredByStaffId',
+			'attended'
 		];
 	}
 
@@ -102,6 +113,31 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	private function validateStatus(string $status): bool {
 		return in_array($status, self::VALID_STATUSES, true);
 	}
+	
+	public static function getRegistrationCount(int $eventInstanceId): int {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->status = 'registered';
+		return $registration->count();
+	}
+
+	public static function getWaitingListCount(int $eventInstanceId): int {
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->whereAdd('status IN ("waiting", "invited")');
+		return $registration->count();
+	}
+
+	public static function getRegistrationsForEvent(int $eventInstanceId): array {
+		$registrations = [];
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->find();
+		while ($registration->fetch()) {
+			$registrations[] = clone $registration;
+		}
+		return $registrations;
+	}
 
 	/**
 	 * Returns IDs of invited registrations whose invite window has expired.
@@ -141,7 +177,7 @@ class UserAspenEventInstanceRegistration extends DataObject {
 	/**
 	 * Checks whether a user has at least one event instance to register to.
 	*/
-	static function isUserInvitedToRegister(int $userId): bool {
+	public static function isUserInvitedToRegister(int $userId): bool {
 		$registration = new UserAspenEventInstanceRegistration();
 		$registration->userId = $userId;
 		$registration->status = 'invited';
@@ -202,5 +238,57 @@ class UserAspenEventInstanceRegistration extends DataObject {
 		}
 
 		return array_map('array_keys', $grouped);
+	}
+
+	/**
+	 * Get the user object for the registered patron
+	 * @return User|false
+	 */
+	public function getUser(): User|false {
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		$user = new User();
+		$user->id = $this->userId;
+		if ($user->find(true)) {
+			return $user;
+		}
+		return false;
+	}
+
+	/**
+	 * Get the staff user who registered this patron (if applicable)
+	 * @return User|false
+	 */
+	public function getStaffUser(): User|false {
+		if (empty($this->registeredByStaffId)) {
+			return false;
+		}
+		require_once ROOT_DIR . '/sys/Account/User.php';
+		$user = new User();
+		$user->id = $this->registeredByStaffId;
+		if ($user->find(true)) {
+			return $user;
+		}
+		return false;
+	}
+
+	/**
+	 * Get the event instance this registration is for
+	 * @return EventInstance|false
+	 */
+	public function getEventInstance(): EventInstance|false {
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $this->eventInstanceId;
+		if ($eventInstance->find(true)) {
+			return $eventInstance;
+		}
+		return false;
+	}
+
+	/**
+	 * Check if this registration was made by staff
+	 * @return bool
+	 */
+	public function wasRegisteredByStaff(): bool {
+		return !empty($this->registeredByStaffId);
 	}
 }

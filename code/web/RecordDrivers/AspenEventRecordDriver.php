@@ -3,6 +3,7 @@
 require_once 'IndexRecordDriver.php';
 require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 require_once ROOT_DIR . '/sys/Events/Event.php';
+require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 class AspenEventRecordDriver extends IndexRecordDriver {
 	private $valid;
@@ -138,7 +139,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	$interface->assign('numberOfSeats', $this->getNumberOfSeats());
 	$interface->assign('availableSeats', $this->getAvailableSeats());
 	$interface->assign('isEventFull', $this->isEventFull());
-	$this->assignWaitingListTemplateVars();
+	$this->assignRegistrationTemplateVars();
 
 //		require_once ROOT_DIR . '/sys/Events/EventsUsage.php';
 //		$eventsUsage = new EventsUsage();
@@ -466,7 +467,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	public function getAvailableSeats(): ?int {
 		$eventObject = $this->getEventObject();
 		if ($eventObject) {
-			return $eventObject->getAvailableSeats();
+			return EventRegistrationService::getAvailableSeats($eventObject);
 		}
 		return null;
 	}
@@ -474,7 +475,8 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	public function getRegistrationCount(): int {
 		$eventObject = $this->getEventObject();
 		if ($eventObject) {
-			return $eventObject->getRegistrationCount();
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+			return UserAspenEventInstanceRegistration::getRegistrationCount((int)$eventObject->id);
 		}
 		return 0;
 	}
@@ -482,16 +484,15 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 	public function isEventFull(): bool {
 		$eventObject = $this->getEventObject();
 		if ($eventObject) {
-			return !$eventObject->hasAvailableSeats();
+			return !EventRegistrationService::hasAvailableSeats($eventObject);
 		}
 		return false;
 	}
 
 	public function isWaitingListFull(): bool {
 		$eventObject = $this->getEventObject();
-
 		if ($eventObject) {
-			return $eventObject->isWaitingListFull();
+			return EventRegistrationService::isWaitingListFull($eventObject);
 		}
 		return false;
 	}
@@ -547,19 +548,18 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		if (!$eventObject) {
 			return null;
 		}
-		return $eventObject->getAvailableWaitingListSeats();
+		return EventRegistrationService::getAvailableWaitingListSeats($eventObject);
 	}
 
 	public function getDisplayWaitingListSeats(): ?string {
-
 		$eventObject = $this->getEventObject();
 		if (!$eventObject) {
 			return null;
 		}
-		return $eventObject->getDisplayWaitingListSeats();
+		return EventRegistrationService::getDisplayWaitingListSeats($eventObject);
 	}
 
-	public function assignWaitingListTemplateVars(): void {
+	public function assignRegistrationTemplateVars(): void {
 		global $interface;
 		$interface->assign('waitingList', $this->isWaitingListEnabled());
 		$interface->assign('waitingListNumberOfSeats', $this->getWaitingListNumberOfSeats());
@@ -571,7 +571,7 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		$isWaitingListFull = $this->isWaitingListFull();
 		$interface->assign('isWaitingListFull', $isWaitingListFull);
 		$eventObject = $this->getEventObject();
-		$registrationAction = $eventObject ? $eventObject->getRegistrationAction(
+		$registrationAction = $eventObject ? EventRegistrationService::getRegistrationAction(
 			$this->isRegisteredForEvent(),
 			$this->isEventFull(),
 			$this->isWaitingListEnabled(),
@@ -579,11 +579,23 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 			$waitingListInfo['canRegister'],
 			$isWaitingListFull
 		) : 'none';
-		if ($registrationAction === 'showPosition' && $eventObject !== null && $eventObject->hasUnregisteredLinkedUsers()) {
+		if ($registrationAction === 'showPosition' && $eventObject !== null && EventRegistrationService::hasUnregisteredLinkedUsers($eventObject)) {
 			$registrationAction = 'joinWaitingList';
 		}
 		$interface->assign('registrationAction', $registrationAction);
 		$interface->assign('displayWaitingListSeats', $this->getDisplayWaitingListSeats());
+
+		$canStaffRegister = false;
+		$eventInstanceId = null;
+		if ($eventObject) {
+			$eventInstanceId = $eventObject->id;
+			$parentEvent = $eventObject->getParentEvent();
+			if ($parentEvent && $parentEvent->registrationRequired) {
+				$canStaffRegister = EventRegistrationService::canStaffManagePatronAttendanceForLocation($parentEvent->locationId);
+			}
+		}
+		$interface->assign('canStaffRegister', $canStaffRegister);
+		$interface->assign('eventInstanceId', $eventInstanceId);
 	}
 
 	/**
@@ -767,21 +779,4 @@ class AspenEventRecordDriver extends IndexRecordDriver {
 		return false;
 	}
 
-	public function saveUserEventEntry($sourceId, $userId): void {
-		require_once ROOT_DIR . '/sys/Events/UserEventsEntry.php';
-		$userEventsEntry = new UserEventsEntry();
-		$userEventsEntry->sourceId = $sourceId;
-		$userEventsEntry->userId = $userId;
-
-		if ($userEventsEntry->find(true)) {
-			return;
-		}
-
-		$userEventsEntry->title = mb_substr($this->getTitle(), 0, 50);
-		$userEventsEntry->eventDate = $this->getStartDate()->getTimestamp();
-		$userEventsEntry->regRequired = $this->isRegistrationRequired() ? 1 : 0;
-		$userEventsEntry->location = $this->getBranch();
-		$userEventsEntry->dateAdded = time();
-		$userEventsEntry->insert();
-	}
 }

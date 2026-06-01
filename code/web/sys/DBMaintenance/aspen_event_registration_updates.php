@@ -49,5 +49,54 @@ function getAspenEventRegistrationUpdates() {
 				"ALTER TABLE library ADD COLUMN IF NOT EXISTS allowEventRegistration TINYINT(1) NOT NULL DEFAULT 0",
 			],
 		], //add_allowEventRegistration_to_library
+
+		//jacob - Staff Event Registration
+		'staff_event_registration_permissions' => [
+			'title' => 'Staff Event Registration Permissions',
+			'description' => 'Add permissions for staff to register users for Aspen native events',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Register Users for Events for All Locations', 'Events', 55, 'Allows the user to register patrons for native events at all locations.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Register Users for Events for Home Library Locations', 'Events', 56, 'Allows the user to register patrons for native events at home library locations.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Register Users for Events for Home Location', 'Events', 57, 'Allows the user to register patrons for native events at home location.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Register Users for Events for All Locations'))",
+			]
+		], //staff_event_registration_permissions
+		'staff_patron_event_attendance_management_permissions' => [
+			'title' => 'Staff Event Registration Permissions',
+			'description' => 'Add permissions for staff to register users for Aspen native events',
+			'continueOnError' => false,
+			'sql' => [
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Manage Patron Event Attendance for All Locations', 'Events', 55, 'Allows the user manage patron attendance for native events at all locations.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Manage Patron Event Attendance for Home Library Locations', 'Events', 56, 'Allows the user manage patron attendance for native events at home library locations.')",
+				"INSERT INTO permissions (sectionName, name, requiredModule, weight, description) VALUES ('Events', 'Manage Patron Event Attendance for Home Location', 'Events', 57, 'Allows the user manage patron attendance for native events at home location.')",
+				"INSERT INTO role_permissions(roleId, permissionId) VALUES ((SELECT roleId from roles where name='opacAdmin'), (SELECT id from permissions where name='Manage Patron Event Attendance for All Locations'))",
+			]
+		], //staff_patron_event_attendance_management_permissions
+		'staff_event_registration_library_setting' => [
+			'title' => 'Staff Event Registration Library Setting',
+			'description' => 'Add library setting to allow staff to register users for events',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE library ADD COLUMN IF NOT EXISTS allowStaffToRegisterUsersForEvents TINYINT(1) DEFAULT 0",
+			]
+		], //staff_event_registration_library_setting
+		'staff_event_registration_tracking' => [
+			'title' => 'Staff Event Registration Tracking',
+			'description' => 'Add tracking fields for staff registrations',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS registeredByStaffId INT DEFAULT NULL",
+				"ALTER TABLE user_events_entry ADD COLUMN IF NOT EXISTS savedByStaffId INT DEFAULT NULL",
+			]
+		], //staff_event_registration_tracking
+		'patron_attendance_tracking' => [
+			'title' => 'Add Attended Column',
+			'description' => 'Add attended column to track patron attendance at events',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE user_aspen_event_instance_registrations ADD COLUMN IF NOT EXISTS attended TINYINT(1) DEFAULT NULL",
+			]
+		] //patron_attendance_tracking
 	];
 }
