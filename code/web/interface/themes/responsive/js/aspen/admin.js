@@ -3127,6 +3127,19 @@ AspenDiscovery.Admin = (function () {
 			});
 			return false;
 		},
+		showPaymentDetails: function (paymentId) {
+			var url = Globals.path + "/Admin/AJAX";
+			var params = {
+				method: 'getPaymentDetails',
+				paymentId: paymentId
+			};
+
+			// noinspection JSUnresolvedFunction
+			$.getJSON(url, params, function (data) {
+				AspenDiscovery.showMessage(data.title, data.modalBody);
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
 		toggle2FAMethodOptions: function () {
 			var method = $("#allowedMethodSelect").val();
 			if (method === "totp") {

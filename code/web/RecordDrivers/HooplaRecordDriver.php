@@ -461,7 +461,9 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 	}
 
 	public function getAuthor() {
-		if (!empty($this->hooplaRawMetadata->artist)) {
+		if (!empty($this->hooplaRawMetadata->artists[0]->artistFormal)) {
+			return $this->hooplaRawMetadata->artists[0]->artistFormal;
+		} elseif (!empty($this->hooplaRawMetadata->artist)) {
 			return $this->hooplaRawMetadata->artist;
 		} else {
 			return '';
