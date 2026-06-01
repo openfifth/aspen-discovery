@@ -27,7 +27,7 @@ class Admin_CronRunner extends Admin_Admin {
 			'updateNYTLists' => 'Update New York Times Lists',
 			'updateSavedSearches' => 'Update Saved Searches',
 			'updateSuggesters' => 'Update Suggesters',
-			'updateEventRegistrationInvites' => 'Update Event Registration Invites',
+			'updateEventRegistrationInvitations' => 'Update Event Registration Invites',
 		];
 		$interface->assign('availableCronProcesses', $availableCronProcesses);
 

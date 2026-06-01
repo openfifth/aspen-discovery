@@ -9,12 +9,12 @@ if (count($_SERVER['argv']) > 1) {
 		$lines = [];
 		$insert = true;
 		$insertUpdateEventRegistrationInvites = true;
-		$updateEventRegistrationInvitesInserted = false;
+		$updateEventRegistrationInvitationsInserted = false;
 		
 		
 		// Go through each line of the cron settings file
 		while (($line = fgets($fhnd)) !== false) {
-			if (strpos($line, 'updateEventRegistrationInvites') > 0) {
+			if (strpos($line, 'updateEventRegistrationInvitations') > 0) {
 				$insertUpdateEventRegistrationInvites = false;
 			}
 			// Check for the specific marker for event invites cron job
@@ -24,8 +24,8 @@ if (count($_SERVER['argv']) > 1) {
 					$lines[] = "######################################\n";
 					$lines[] = "# Update Event Registration Invites Job\n";
 					$lines[] = "######################################\n";
-					$lines[] = "*/5 * * * * root php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvites.php $serverName\n";
-					$updateEventRegistrationInvitesInserted = true;
+					$lines[] = "*/5 * * * * aspen php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvitations.php $serverName\n";
+					$updateEventRegistrationInvitationsInserted = true;
 				}
 			}
 			$lines[] = $line;
@@ -33,12 +33,12 @@ if (count($_SERVER['argv']) > 1) {
 		
 		fclose($fhnd);
 
-		if ($insertUpdateEventRegistrationInvites && !$updateEventRegistrationInvitesInserted) {
+		if ($insertUpdateEventRegistrationInvites && !$updateEventRegistrationInvitationsInserted) {
 			// If the cron job was not found, add it at the end
 			$lines[] = "######################################\n";
 			$lines[] = "# Update Event Registration Invites Job\n";
 			$lines[] = "######################################\n";
-			$lines[] = "*/5 * * * root php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvites.php $serverName\n";
+			$lines[] = "*/5 * * * * aspen php /usr/local/aspen-discovery/code/web/cron/updateEventRegistrationInvitations.php $serverName\n";
 		}
 		
 		// Write the updated content back into the crontab settings file
