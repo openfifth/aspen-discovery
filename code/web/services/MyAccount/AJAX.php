@@ -350,6 +350,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$search->user_id = UserAccount::getActiveUserId();
 					$search->saved = 1;
 					$search->title = $title;
+					$search->sendNotification = 1;
 					if ($search->update() !== FALSE) {
 						$result['success'] = true;
 						$result['message'] = translate([
@@ -391,6 +392,45 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 		return $result;
 	}
+
+	/** @noinspection PhpUnused */
+	function toggleSearchNotification(): array {
+		$this->requireLoggedInUser();
+
+		$result = [
+			'success' => false,
+			'message' => 'Unable to update notification setting',
+		];
+
+		$searchId = $_REQUEST['searchId'] ?? null;
+		$sendNotification = $_REQUEST['sendNotification'] ?? null;
+
+		if ($searchId === null || $sendNotification === null) {
+			return $result;
+		}
+
+		$search = new SearchEntry();
+		$search->id = $searchId;
+
+		if (!$search->find(true)) {
+			return $result;
+		}
+
+		if ($search->session_id != session_id() && $search->user_id != UserAccount::getActiveUserId()) {
+			return $result;
+		}
+
+		$search->sendNotification = (int)$sendNotification;
+
+		if ($search->update() === false) {
+			return $result;
+		}
+
+		return [
+			'success' => true,
+		];
+	}
+
 
 	/** @noinspection PhpUnused */
 	function getSaveSearchForm() : array {
@@ -3790,7 +3830,7 @@ class MyAccount_AJAX extends JSON_Action {
 	}
 
 
-	private function filterHolds(array $allHolds, string $selectedUser): array {
+	private function filterHolds(array $allHolds, string $selectedUser, array $filters): array {
 
 		$filteredHolds = [
 			'available' => [],
@@ -3802,20 +3842,20 @@ class MyAccount_AJAX extends JSON_Action {
 		$allUsersSelected = (empty($selectedUser) || $selectedUser === '[""]');
 
 		foreach ($allHolds['available'] as $key => $hold) {
-			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 				$filteredHolds['available'][$key] = $hold;
 			}
 		}
 
 		foreach ($allHolds['unavailable'] as $key => $hold) {
-			if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+			if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 				$filteredHolds['unavailable'][$key] = $hold;
 			}
 		}
 
 		if (isset($allHolds['cancelled'])) {
 			foreach ($allHolds['cancelled'] as $key => $hold) {
-				if ($allUsersSelected || intval($hold->userId) === intval($selectedUser)) {
+				if (($allUsersSelected || intval($hold->userId) === intval($selectedUser)) && (empty($filters['accounts']) || in_array($hold->userId, $filters['accounts'])) && (empty($filters['statuses']) || in_array($hold->status, $filters['statuses'])) && (empty($filters['formats']) || in_array($hold->format, $filters['formats']))) {
 					$filteredHolds['cancelled'][$key] = $hold;
 				}
 			}
@@ -4046,10 +4086,40 @@ class MyAccount_AJAX extends JSON_Action {
 			$interface->assign('showPosition', $showPosition);
 			$interface->assign('showNotInterested', false);
 
+			$filterOptions = [
+				'format' => [
+					'label' => 'Format',
+					'name' => 'format',
+					'type' => 'multiselect',
+					'options' => [],
+					'selected' => [],
+				],
+				'account' => [
+					'label' => 'Linked Account',
+					'name' => 'account',
+					'type' => 'multiselect',
+					'options' => [],
+					'selected' => [],
+				],
+				'status' => [
+					'label' => 'Status',
+					'name' => 'status',
+					'type' => 'multiselect',
+					'options' => [],
+					'selected' => [],
+				]
+			];
+
+			$setFilters = [
+				'formats' => $_GET['format'] ?? [],
+				'accounts' => $_GET['account'] ?? [],
+				'statuses' => $_GET['status'] ?? [],
+			];
+
 			global $offlineMode;
 			$allHolds = null;
 			if (!$offlineMode) {
-				$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser);
+				$allHolds = $this->filterHolds($user->getHolds(true, $selectedUnavailableSortOption, $selectedAvailableSortOption, $source, $defaultCancelledSortOption), $selectedUser, $setFilters);
 				$hyperHolds = [];
 				$hiddenHoldIds = [];
 
@@ -4112,7 +4182,96 @@ class MyAccount_AJAX extends JSON_Action {
 						}
 					}
 				}
+
+				if (!empty($allHolds)) {
+					foreach ($allHolds['available'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
+							$filterOptions['format']['options'][$hold->format] = $hold->format;
+						}
+						if (isset($_GET['format']) && is_array($_GET['format']) && in_array($hold->format, $_GET['format'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][$hold->format] = $hold->format;
+						}
+
+						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (isset($_GET['account']) && is_array($_GET['account']) && in_array($hold->format, $_GET['account'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->userId;
+						}
+
+						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
+							$filterOptions['status']['options'][$hold->status] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['status']) && in_array($hold->format, $_GET['status'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][$hold->status] = $hold->status;
+						}
+					}
+					foreach ($allHolds['unavailable'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format']['options'], true)) {
+							$filterOptions['format']['options'][$hold->format] = $hold->format;
+						}
+						if (isset($_GET['format']) && is_array($_GET['format']) && in_array($hold->format, $_GET['format'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][$hold->format] = $hold->format;
+						}
+
+						if (!in_array($hold->userId, $filterOptions['account']['options'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (isset($_GET['account']) && is_array($_GET['account']) && in_array($hold->format, $_GET['account'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->userId;
+						}
+
+						if (!in_array($hold->status, $filterOptions['status']['options'], true)) {
+							$filterOptions['status']['options'][$hold->status] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['status']) && in_array($hold->format, $_GET['status'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][$hold->status] = $hold->status;
+						}
+					}
+					foreach ($allHolds['cancelled'] as $hold) {
+						if (!in_array($hold->format, $filterOptions['format'], true)) {
+							$filterOptions['format']['options'][$hold->format] = $hold->format;
+						}
+						if (isset($_GET['format']) && is_array($_GET['format']) && in_array($hold->format, $_GET['format'], true) && !in_array($hold->format, $filterOptions['format']['selected'], true)) {
+							$filterOptions['format']['selected'][$hold->format] = $hold->format;
+						}
+
+						if (!in_array($hold->userId, $filterOptions['account'], true)) {
+							$filterOptions['account']['options'][] = $hold->userId;
+						}
+						if (isset($_GET['account']) && is_array($_GET['account']) && in_array($hold->format, $_GET['account'], true) && !in_array($hold->format, $filterOptions['account']['selected'], true)) {
+							$filterOptions['account']['selected'][] = $hold->userId;
+						}
+
+						if (!in_array($hold->status, $filterOptions['status'], true)) {
+							$filterOptions['status']['options'][$hold->status] = $hold->status;
+						}
+						if (isset($_GET['status']) && is_array($_GET['status']) && in_array($hold->format, $_GET['status'], true) && !in_array($hold->format, $filterOptions['status']['selected'], true)) {
+							$filterOptions['status']['selected'][$hold->status] = $hold->status;
+						}
+					}
+				}
 			}
+
+			if (!empty($filterOptions['account']['options'])) {
+				foreach ($filterOptions['account']['options'] as $i => $account) {
+					$tmp = $user->getUserReferredTo($account);
+					if ($tmp) {
+						$filterOptions['account']['options'][$account] = $tmp->getDisplayName();
+					}
+					unset($filterOptions['account']['options'][$i]);
+				}
+			}
+
+			foreach ($filterOptions as $filterKey => &$filterOption) {
+				if (empty($filterOption['selected']) || count($filterOption['selected']) === 0) {
+					$filterOption['selected'] = array_keys($filterOption['options']);
+				}
+			}
+			unset($filterOption);
+
+			$interface->assign('filterOptions', $filterOptions);
+
 
 			$notification_method = ($user->_noticePreferenceLabel != 'Unknown') ? $user->_noticePreferenceLabel : '';
 			$interface->assign('notification_method', strtolower($notification_method));
@@ -4140,6 +4299,7 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$interface->assign('showHoldHelpMessages', $user->showHoldHelpMessages);
 
+			$result['filterOptions'] = $interface->fetch('MyAccount/holdsFilters.tpl');
 			$result['holds'] = $interface->fetch('MyAccount/holdsList.tpl');
 
 		} else {
@@ -5827,155 +5987,154 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 	}
 
-	/** @noinspection PhpUnused */
+/** @noinspection PhpUnused */
 	function completeSquareOrder(): array {
 		global $configArray;
+		global $library;
 
 		$patronId = $_REQUEST['patronId'];
 		$transactionType = $_REQUEST['type'];
 		$paymentToken = $_REQUEST['token'];
 
-		global $library;
 		$paymentLibrary = $library;
 
 		require_once ROOT_DIR . '/sys/Account/UserPayment.php';
+
 		$payment = new UserPayment();
 		$payment->squareToken = $paymentToken;
+		$payment->userId = $patronId;
+
 		if ($transactionType == 'donation') {
-			//Get the order information
 			$payment->transactionType = 'donation';
-			if ($payment->find(true)) {
-				$paymentId = $payment->id;
-				require_once ROOT_DIR . '/sys/Donations/Donation.php';
-				$donation = new Donation();
-				$donation->paymentId = $payment->id;
-				if (!$donation->find(true)) {
-					header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
-				}
-			} else {
+		}
+
+		if (!$payment->find(true)) {
+			if ($transactionType == 'donation') {
 				header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
 			}
+
+			return $this->failureResult(
+				null,
+				'Your payment with Square could not be completed. Please contact library staff for assistance.'
+			);
+		}
+
+		if ($transactionType == 'donation') {
+			require_once ROOT_DIR . '/sys/Donations/Donation.php';
+
+			$donation = new Donation();
+			$donation->paymentId = $payment->id;
+
+			if (!$donation->find(true)) {
+				header('Location: ' . $configArray['Site']['url'] . '/Donations/DonationCancelled?id=' . $payment->id);
+				return $this->failureResult( null, 'Your payment with Square could not be completed. Please contact library staff for assistance.');
+			}
+
 		} else {
-			//Get the order information
-			$payment->userId = $patronId;
-			if ($payment->find(true)) {
-				$paymentId = $payment->id;
-				$user = UserAccount::getLoggedInUser();
-				$patronId = $_REQUEST['patronId'];
-				$patron = $user->getUserReferredTo($patronId);
-				$userLibrary = $patron->getHomeLibrary();
-				global $library;
-				$paymentLibrary = $library;
-				$systemVariables = SystemVariables::getSystemVariables();
-				if ($systemVariables->libraryToUseForPayments == 0) {
-					$paymentLibrary = $userLibrary;
-				}
+			$user = UserAccount::getLoggedInUser();
+			$patron = $user->getUserReferredTo($patronId);
+			$userLibrary = $patron->getHomeLibrary();
+
+			$systemVariables = SystemVariables::getSystemVariables();
+
+			if ($systemVariables->libraryToUseForPayments == 0) {
+				$paymentLibrary = $userLibrary;
+			}
+
+			if ($payment->completed) {
+				return $this->failureResult(null, 'This payment has already been processed');
 			}
 		}
 
 		require_once ROOT_DIR . '/sys/ECommerce/SquareSetting.php';
+
 		$squareSettings = new SquareSetting();
 		$squareSettings->id = $paymentLibrary->squareSettingId;
-		if ($squareSettings->find(true)) {
-			require_once ROOT_DIR . '/sys/CurlWrapper.php';
-			$paymentRequest = new CurlWrapper();
-			$baseUrl = 'https://connect.squareup.com';
-			if ($squareSettings->sandboxMode == 1) {
-				$baseUrl = 'https://connect.squareupsandbox.com';
-			}
 
-			$paymentRequest->addCustomHeaders([
-				'Content-Type: application/json',
-				'Square-Version: 2023-06-08',
-				"Authorization: Bearer $squareSettings->accessToken",
-			], true);
-
-			$paymentId = null;
-			$paymentAmount = null;
-			require_once ROOT_DIR . '/sys/Account/UserPayment.php';
-			$payment = new UserPayment();
-			$payment->squareToken = $paymentToken;
-			if ($payment->find(true)) {
-				$paymentId = $payment->id;
-				$body = [
-					'idempotency_key' => strval($paymentId),
-					// Square needs this to be a string, so guarantee it
-					'amount_money' => [
-						'amount' => (int)round($payment->totalPaid * 100),
-						'currency' => 'USD'
-					],
-					'source_id' => $paymentToken
-				];
-
-				$paymentUrl = $baseUrl . '/v2/payments';
-				$paymentRequestResults = $paymentRequest->curlPostBodyData($paymentUrl, $body);
-				$decodedPaymentRequestResults = json_decode($paymentRequestResults);
-
-				ExternalRequestLogEntry::logRequest('fine_payment.completeSquareOrder', 'POST', $paymentUrl, $paymentRequest->getHeaders(), json_encode($body), $paymentRequest->getResponseCode(), $paymentRequestResults, []);
-
-				if ($decodedPaymentRequestResults->payment) {
-					$paymentResults = $decodedPaymentRequestResults->payment;
-					if ($paymentResults->status == 'COMPLETED' || $paymentResults->status == 'APPROVED') {
-						if ($transactionType == 'donation') {
-							$payment->completed = 1;
-							$payment->transactionId = $paymentResults->id;
-							$payment->orderId = $paymentResults->order_id;
-							$payment->update();
-							$donation = new Donation();
-							$donation->paymentId = $payment->id;
-
-							if ($donation->find(true)) {
-								$donation->sendReceiptEmail();
-								return [
-									'success' => true,
-									'isDonation' => true,
-									'paymentId' => $payment->id,
-									'donationId' => $donation->id,
-								];
-							} else {
-								return [
-									'success' => false,
-									'message' => 'Unable to find donation with provided id',
-									'isDonation' => true,
-									'paymentId' => $payment->id,
-									'donationId' => '',
-								];
-							}
-						} else {
-							if ($payment->completed) {
-								return $this->failureResult(null, 'This payment has already been processed');
-							} else {
-								$payment->transactionId = $paymentResults->id;
-								$payment->orderId = $paymentResults->order_id;
-								$payment->update();
-								$user = UserAccount::getActiveUserObj();
-								$patron = $user->getUserReferredTo($patronId);
-								$result = $patron->completeFinePayment($payment);
-								if (!$result['success']) {
-									$payment->message .= 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt. ' . $result['message'];
-									$payment->update();
-									$result['message'] = $payment->message;
-								}
-
-								return $result;
-							}
-						}
-					} else {
-						return $this->failureResult(null, 'Payment status is ' . ($paymentResults->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.');
-					}
-				} else {
-					$error = $decodedPaymentRequestResults->error;
-					$payment->error = 1;
-					$payment->message = $error->detail;
-					$payment->update();
-					return [
-						'success' => false,
-						'message' => $error->detail,
-					];
-				}
-			}
+		if (!$squareSettings->find(true)) {
+			return $this->failureResult(
+				null,
+				'Your payment with Square could not be completed. Please contact library staff for assistance.'
+			);
 		}
-		return $this->failureResult(null, 'Your payment with Square could not be completed. Please contact library staff for assistance.');
+
+		$lineItemResult = $squareSettings->createLineItems($payment);
+
+		if (!$lineItemResult['success']) {
+			return $lineItemResult;
+		}
+
+		$paymentResult = $squareSettings->submitTransaction(
+			$payment,
+			$paymentToken,
+			$lineItemResult['orderId'],
+			$lineItemResult['amountMoney']
+		);
+
+		if (!$paymentResult['success']) {
+			$payment->error = 1;
+			$payment->message = $paymentResult['message'];
+			$payment->update();
+
+			return $paymentResult;
+		}
+
+		if ($paymentResult['payment']->status != 'COMPLETED' && $paymentResult['payment']->status != 'APPROVED') {
+			return $this->failureResult(
+				null,
+				'Payment status is ' . ($paymentResult['payment']->status ?? 'NO STATUS RECEIVED') . '. Please make sure the information you entered is correct.'
+			);
+		}
+
+		$payment->transactionId = $paymentResult['payment']->id;
+		$payment->receiptUrl = $paymentResult['payment']->receipt_url;
+		$payment->orderId = $paymentResult['payment']->order_id;
+
+		if ($transactionType == 'donation') {
+			$payment->completed = 1;
+			$payment->update();
+
+			$donation = new Donation();
+			$donation->paymentId = $payment->id;
+
+			if (!$donation->find(true)) {
+				return [
+					'success' => false,
+					'message' => 'Unable to find donation with provided id',
+					'isDonation' => true,
+					'paymentId' => $payment->id,
+					'donationId' => '',
+				];
+			}
+
+			$donation->sendReceiptEmail();
+
+			return [
+				'success' => true,
+				'isDonation' => true,
+				'paymentId' => $payment->id,
+				'donationId' => $donation->id,
+				'message' => 'Your payment has been completed.',
+				'receiptUrl' => $payment->receiptUrl,
+			];
+		}
+
+		$payment->update();
+
+		$user = UserAccount::getActiveUserObj();
+		$patron = $user->getUserReferredTo($patronId);
+
+		$result = $patron->completeFinePayment($payment);
+
+		if (!$result['success']) {
+			$payment->message .= 'Your payment was received, but was not cleared in our library software. Your account will be updated within the next business day. If you need more immediate assistance, please visit the library with your receipt. ' . $result['message'];
+
+			$payment->update();
+		}
+
+		$result['receiptUrl'] = $payment->receiptUrl;
+
+		return $result;
 	}
 
 	/** @noinspection PhpUnused */
@@ -11138,6 +11297,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$interface->assign('limit', $limit);
 		$interface->assign('sort', $sort);
 		$interface->assign('filter', $filter);
+		$interface->assign('showNotificationColumn', $user->notifySavedSearches === 1);
 
 		$searches = [];
 		$savedSearches = [];
@@ -11213,6 +11373,7 @@ class MyAccount_AJAX extends JSON_Action {
 				// It's the size of the serialized, minified search in the database.
 				'size' => round($size / 1024, 3) . "kb",
 				'hasNewResults' => $savedSearch->hasNewResults == 1,
+				'sendNotification' => $savedSearch->sendNotification,
 			];
 
 			if ($savedSearch->hasNewResults) {

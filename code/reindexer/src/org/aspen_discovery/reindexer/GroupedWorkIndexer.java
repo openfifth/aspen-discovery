@@ -1390,12 +1390,24 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					ResultSet arBookInfoRS = getArBookInfoStmt.executeQuery();
 					if (arBookInfoRS.next()){
 						String bookLevel = arBookInfoRS.getString("bookLevel");
-						if (!bookLevel.isEmpty()){
+						String arPoints = arBookInfoRS.getString("arPoints");
+						String interestLevel = arBookInfoRS.getString("interestLevel");
+						boolean foundUsableArData = false;
+						if (bookLevel != null && !bookLevel.trim().isEmpty()){
 							groupedWork.setAcceleratedReaderReadingLevel(bookLevel);
+							foundUsableArData = true;
 						}
-						groupedWork.setAcceleratedReaderPointValue(arBookInfoRS.getString("arPoints"));
-						groupedWork.setAcceleratedReaderInterestLevel(arBookInfoRS.getString("interestLevel"));
-						break;
+						if (arPoints != null && !arPoints.trim().isEmpty()){
+							groupedWork.setAcceleratedReaderPointValue(arPoints);
+							foundUsableArData = true;
+						}
+						if (interestLevel != null && !interestLevel.trim().isEmpty()){
+							groupedWork.setAcceleratedReaderInterestLevel(interestLevel);
+							foundUsableArData = true;
+						}
+						if (foundUsableArData){
+							break;
+						}
 					}
 					arBookInfoRS.close();
 				}

@@ -197,6 +197,13 @@ class SideFacets implements RecommendationInterface {
 					if ($eventSettings->find(true)) {
 						$interface->assign('maxEventDate', strtotime("+" . $eventSettings->numberOfDaysToIndex . " days"));
 					}
+				} else if ($facetSettings->settingSource == 'localhop') {
+					require_once ROOT_DIR . '/sys/Events/LocalHopSetting.php';
+					$eventSettings = new LocalHopSetting;
+					$eventSettings->id = $facetSettings->settingId;
+					if ($eventSettings->find(true)) {
+						$interface->assign('maxEventDate', strtotime("+" . $eventSettings->numberOfDaysToIndex . " days"));
+					}
 				} else {
 					require_once ROOT_DIR . '/sys/Events/LMLibraryCalendarSetting.php';
 					$eventSettings = new LMLibraryCalendarSetting;
