@@ -563,6 +563,7 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function getStaffRegistrationModal(): array {
+		$this->requireLoggedInUser();
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
 		if (empty($eventInstanceId)) {
@@ -617,6 +618,8 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function lookupPatronByBarcode(): array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		if (!EventRegistrationService::canStaffRegisterUsers()) {
@@ -635,6 +638,8 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function staffRegisterUserForEvent(): array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
@@ -676,6 +681,8 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function staffUnregisterUserFromEvent(): array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
@@ -716,6 +723,8 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function getEventRegistrations(): array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$eventInstanceId = $_REQUEST['eventInstanceId'] ?? null;
@@ -780,6 +789,8 @@ class Events_AJAX extends JSON_Action {
 	 * @return array
 	 */
 	public function markAttendance(): array {
+		$this->requireLoggedInUser();
+
 		require_once ROOT_DIR . '/services/EventRegistrationService.php';
 
 		$registrationId = $_REQUEST['registrationId'] ?? null;
