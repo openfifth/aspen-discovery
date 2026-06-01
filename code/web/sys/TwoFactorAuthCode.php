@@ -370,6 +370,7 @@ class TwoFactorAuthCode extends DataObject {
 		$user->id = UserAccount::getActiveUserId();
 		if ($user->find(true)) {
 			$user->twoFactorStatus = 0;
+			$user->twoFactorMethod = null;
 			$user->update();
 
 			$userCodes = new TwoFactorAuthCode();
