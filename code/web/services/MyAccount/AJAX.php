@@ -4415,6 +4415,17 @@ class MyAccount_AJAX extends JSON_Action {
 						$userCanRegisterFromWaitingList = $waitingListInfo['canRegister'];
 					}
 				}
+
+				// Generate registration form using custom fields
+				$eventType = $eventInstance->getEventType();
+				$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+				$interface->assign('registrationFormStructure', $registrationFormStructure);
+
+				$savedRegistrationFieldValues = [];
+				if ($registration && $aspenEventRegistration->id) {
+					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
+					$savedRegistrationFieldValues = UserAspenEventInstanceRegistrationEventField::getValuesForRegistration((int)$aspenEventRegistration->id);
+				}
 			} else {
 				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
 			}
@@ -4453,6 +4464,7 @@ class MyAccount_AJAX extends JSON_Action {
 			if($nativeAspenEvent) {
 				$events[$entry->sourceId]['registeredByStaff'] = $registeredByStaff;
 				$events[$entry->sourceId]['savedByStaff'] = $savedByStaff;
+				$events[$entry->sourceId]['savedRegistrationFieldValues'] = $savedRegistrationFieldValues;
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;
@@ -8561,6 +8573,12 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 			$interface->assign('userIsRegistered', $isRegistered);
 			$interface->assign('registrationAction', $registrationAction);
+
+			// Generate registration form using custom fields
+			$eventType = $eventInstance->getEventType();
+			$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+			$interface->assign('registrationFormStructure', $registrationFormStructure);
+
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
 		}
@@ -8881,6 +8899,14 @@ class MyAccount_AJAX extends JSON_Action {
 		$registration->userId = $userId;
 		$registration->eventInstanceId = $eventInstanceId;
 		$registration->registerUser();
+
+		// save the user inputed registration information
+		foreach ($_REQUEST as $key => $value) {
+		    if (is_numeric($key)) {
+				$registration->saveEventFieldValue($key, $value); 
+		    }
+		}
+
 
 		$result['success'] = true;
 		$result['title'] = translate([

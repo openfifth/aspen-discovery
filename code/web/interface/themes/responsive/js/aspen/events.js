@@ -17,6 +17,82 @@ AspenDiscovery.Events = (function(){
 		},
 
 		//For Aspen Events
+		displayFieldOptionsForSelectedUse: function(selectedFieldUse) {
+			const fieldUse = selectedFieldUse ?? document.getElementById('fieldSetUseSelect')?.value;
+			if (!fieldUse || fieldUse === "0") {
+				return;
+			}
+	
+			const fieldSetId = document.getElementById('id').value;
+
+			// handle new fieldset creation
+			if (!fieldSetId) {
+				AspenDiscovery.Events.getFieldOptionsByUse(fieldUse)
+				return;
+			}
+
+			// loads existing fieldset
+			const url = Globals.path + '/Events/AJAX';
+			const params = {
+				method: 'getFieldSetFields',
+				fieldSetId
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (!data.success) {
+					AspenDiscovery.showMessage('An error occurred ', data.message);
+					return;
+				}
+				AspenDiscovery.Events.getFieldOptionsByUse(fieldUse, data.selectedFields)
+				return;
+			});	
+		},
+
+		getFieldOptionsByUse: function(fieldUse, selectedFields = null) {
+			const url = Globals.path + '/Events/AJAX';
+			const params = {
+				method: 'getFieldsByUse',
+				fieldUse
+			};
+
+			$.getJSON(url, params, function (data) {
+				if (!data.success) {
+					AspenDiscovery.showMessage('An error occurred ', data.message);
+					return;
+				}
+
+				const propertyRoweventFields = $("#propertyRoweventFields");
+				const checkboxWrapper = $("#propertyRoweventFields > .controls > .checkbox:not(.form-group)");
+				checkboxWrapper.addClass('eventFieldWrapper');
+				checkboxWrapper.empty();
+
+				if (data.useFields && Object.keys(data.useFields).length > 0) {
+					propertyRoweventFields.show();
+				} else {
+					propertyRoweventFields.hide();
+				}
+				
+				$.each(data.useFields, (index, fieldName) => {
+						const checkboxLabel = $('<label />', {
+							for: 'eventFields_' + index,
+						}).appendTo(checkboxWrapper);
+						$('<input />', {
+							type: 'checkbox',
+							id: 'eventFields_' + index, 
+							value: index,
+							class: 'eventFields',
+							name: 'eventFields[]',
+							checked: !!selectedFields?.includes(parseInt(index))
+						}).appendTo(checkboxLabel);
+						$('<strong></strong>', {
+							text: ' ' + fieldName 
+						}).appendTo(checkboxLabel);
+						$('<br>').appendTo(checkboxLabel);
+					}
+				)
+			})
+		},
+
 		getEventTypesForLocation: function(locationId) {
 			var url = Globals.path + '/Events/AJAX';
 			var params = {

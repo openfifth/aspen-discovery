@@ -80,7 +80,7 @@ class Events_AJAX extends JSON_Action {
 			$eventType = new EventType();
 			$eventType->id = $_REQUEST['eventTypeId'];
 			if ($eventType->find(true)) {
-				$fieldStructure = $eventType->getFieldSetFields();
+				$fieldStructure = $eventType->getFieldSetFieldsByUse(1);
 				global $interface;
 				$fieldHTML = [];
 				foreach ($fieldStructure as $property) {
@@ -105,6 +105,78 @@ class Events_AJAX extends JSON_Action {
 			];
 		}
 		return $result;
+	}
+
+	/** @noinspection PhpUnused */
+	public function getFieldSetFields(): array {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => "Error",
+				'isAdminFacing' => true,
+			]),
+			'message' =>  translate([
+				'text' => 'You must log in first.',
+				'isAdminFacing' => true,
+			])
+		];
+		if (!UserAccount::isLoggedIn()) {
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventFieldSet.php';
+		$fieldSet = new EventFieldSet();
+		$fieldSet->id = $_REQUEST['fieldSetId'];
+
+		$selectedFields = [];
+
+		foreach ($fieldSet->getEventFields() as $field) {
+			array_push($selectedFields, $field->eventFieldId);
+		}
+
+		return [
+			'success' => true,
+			'selectedFields' => $selectedFields,
+		];
+	}
+
+	/** @noinspection PhpUnused */
+	public function getFieldsByUse() {
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => "Error",
+				'isAdminFacing' => true,
+			]),
+			'message' =>  translate([
+				'text' => 'You must log in first.',
+				'isAdminFacing' => true,
+			])
+		];
+		if (!UserAccount::isLoggedIn()) {
+			return $result;
+		}
+
+		$fieldUse = $_REQUEST['fieldUse'];
+
+		if (is_null($fieldUse) || $fieldUse == "0") {
+			$result['message'] = 'You must select a valid field use.';
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventField.php';
+
+		if ($fieldUse == '1'){
+			$fieldList = EventField::getEventInformationFieldList();
+		}
+		if ($fieldUse == '2'){
+			$fieldList = EventField::getEventRegistrationFieldList();
+		}
+		
+		return [
+			'success' => true,
+			'useFields' => $fieldList,
+		];
 	}
 
 	/** @noinspection PhpUnused */

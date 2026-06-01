@@ -16,7 +16,8 @@ class EventType extends DataObject {
 	public $eventLength; // in hours
 	public $lengthCustomizable;
 	public $archived;
-	public $eventFieldSetId;
+	public $eventInformationFieldSetId;
+	public $eventRegistrationFieldSetId;
 	public $includeInReports;
 	public $displayEventBranchOnThumbnail;
 	public $displayEventBranchOnThumbnailCustomizable;
@@ -47,7 +48,8 @@ class EventType extends DataObject {
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
 		}
-		$eventSets = EventFieldSet::getEventFieldSetList();
+		$eventInformationSets = EventFieldSet::getEventInformationFieldSetList(); 
+		$eventRegistrationSets = EventFieldSet::getEventRegistrationFieldSetList(); 
 		$libraryList = Library::getLibraryList(!UserAccount::userHasPermission('Administer All Libraries'));
 		$locationList = Location::getLocationList(!UserAccount::userHasPermission('Administer All Libraries') || UserAccount::userHasPermission('Administer Home Library Locations'));
 		$structure = [
@@ -155,13 +157,29 @@ class EventType extends DataObject {
 				'description' => 'Define locations that use this type',
 				'values' => $locationList,
 			],
-			'eventFieldSetId' => [
-				'property' => 'eventFieldSetId',
-				'type' => 'enum',
-				'label' => 'Event Field Set',
-				'description' => 'The event field set that contains the right fields to use with this event type',
-				'values' => $eventSets,
-				'required' => true,
+			'eventFieldSets' => [
+				'property' => 'eventFieldSets',
+				'type' => 'section',
+				'label' => 'Event Field Sets',
+				'expandByDefault' => true,
+				'properties' => [
+					'eventInformationFieldSetId' => [
+						'property' => 'eventInformationFieldSetId',
+						'type' => 'enum',
+						'label' => 'Additional Information',
+						'description' => 'The event field set that contains the right information fields for staff to use when adding information to this type of event.',
+						'values' => $eventInformationSets,
+						'required' => true,
+					],
+					'eventRegistrationFieldSetId' => [
+						'property' => 'eventRegistrationFieldSetId',
+						'type' => 'enum',
+						'label' => 'Registration form',
+						'description' => 'The event field set that contains the right registration fields for patrons to fill in when they register to an event of this type.',
+						'values' => $eventRegistrationSets,
+						'required' => true,
+					],
+				]
 			],
 			'includeInReports' => [
 				'property' => 'includeInReports',
@@ -414,14 +432,21 @@ class EventType extends DataObject {
 
 	}
 
-	public function getFieldSetFields() : array {
+	public function getFieldSetFieldsByUse($fieldSetUse) : array {
 		$fieldSet = new EventFieldSet();
-		if ($this->eventFieldSetId) {
-			$fieldSet->id = $this->eventFieldSetId;
-			if ($fieldSet->find(true)) {
-				return $fieldSet->getFieldObjectStructure();
-			}
+
+		if ($fieldSetUse ==  1 && $this->eventInformationFieldSetId) {
+			$fieldSet->id = $this->eventInformationFieldSetId;
 		}
+
+		if ($fieldSetUse == 2 && $this->eventRegistrationFieldSetId) {
+			$fieldSet->id = $this->eventRegistrationFieldSetId;
+		}
+
+		if ($fieldSet->find(true)) {
+			return $fieldSet->getFieldObjectStructure();
+		}
+
 		return [];
 	}
 

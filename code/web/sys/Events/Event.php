@@ -27,6 +27,7 @@ class Event extends DataObject {
 	public $numberOfSeats;
 	public $waitingList;
 	public $waitingListNumberOfSeats;
+	public $staffNotes;
 	/** @noinspection PhpUnused */
 	public $recurrenceInterval;
 	public $recurrenceFrequency;
@@ -200,6 +201,13 @@ class Event extends DataObject {
 				'type' => 'integer',
 				'hiddenByDefault' => true,
 				'hideInLists' => true,
+			],
+			'staffNotes' => [
+				'property' => 'staffNotes',
+				'label' => 'Staff notes',
+				'description' => 'Staff-only notes that are only visible on this page.',
+				'type' => 'textarea',
+				'hideInLists' => true,
 			]
 		];
 
@@ -248,7 +256,7 @@ class Event extends DataObject {
 		}
 
 		// Add empty, hidden, readonly copies of all potential fields so that data can be added if they exist for any selected event type
-		$eventFieldList = EventField::getEventFieldList();
+		$eventFieldList = EventField::getEventInformationFieldList();
 		foreach ($eventFieldList as $fieldId => $field) {
 			$structure['infoSection']['properties']['fieldSetFieldSection']['properties'][$fieldId] = [
 				'property' => $fieldId,
@@ -1030,11 +1038,12 @@ class Event extends DataObject {
 					$structure['scheduleSection']['properties']['eventLength']['readOnly'] = true;
 					$this->eventLength = $eventType->eventLength;
 				}
+
 				if (!$eventType->displayEventBranchOnThumbnailCustomizable) {
 					$structure['infoSection']['properties']['displayEventBranchOnThumbnail']['readOnly'] = true;
 					$this->displayEventBranchOnThumbnail = $eventType->displayEventBranchOnThumbnail;
 				}
-				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getFieldSetFields();
+				$structure['infoSection']['properties']['fieldSetFieldSection']['properties'] = $eventType->getFieldSetFieldsByUse(1);
 				// Update scheduling sections
 				switch ($this->recurrenceOption) {
 					case '2':
