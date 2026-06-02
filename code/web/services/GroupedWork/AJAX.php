@@ -642,10 +642,11 @@ class GroupedWork_AJAX extends JSON_Action {
 		}
 		$interface->assign('recordDriver', $recordDriver);
 
-		// if the grouped work consists of only 1 related item, return the record url, otherwise return the grouped-work url
+		//Load the Related Manifestations. This causes formats to be hidden appropriately
+		$recordDriver->getRelatedManifestations();
 		$relatedRecords = $recordDriver->getRelatedRecords();
 
-		// short version
+		// if the grouped work consists of only 1 related item, return the record url, otherwise return the grouped-work url
 		if (count($relatedRecords) == 1) {
 			$firstRecord = reset($relatedRecords);
 			$url = $firstRecord->getUrl();
