@@ -335,12 +335,12 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				: 0,
 			fn() => GroupedWorkDriver::compareHoldability($a, $b),
 			fn() => GroupedWorkDriver::compareLanguagesForRecords($a, $b),
-			fn() => GroupedWorkDriver::compareEditionsForRecords($literaryForm, $a, $b),
 			fn() => GroupedWorkDriver::compareLocalAvailableItemsForRecords($a, $b),
 			fn() => GroupedWorkDriver::compareAvailabilityForRecords($a, $b),
 			fn() => GroupedWorkDriver::compareLocalItemsForRecords($a, $b),
 			//Status rankings should be between 4 (checked out and 1 currently available), we prefer the highest but could group some
-			fn() => $b->getStatusRanking() <=> $a->getStatusRanking(), 
+			fn() => $b->getStatusRanking() <=> $a->getStatusRanking(),
+			fn() => GroupedWorkDriver::compareEditionsForRecords($literaryForm, $a, $b),
 			fn() => $a->getHoldRatio() <=> $b->getHoldRatio(),
 			fn() => $b->getCopies() <=> $a->getCopies(),
 		];
@@ -355,7 +355,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		return 0;
 	}
 
-	private function getPrimaryLiteraryForm(): string {
+	public function getPrimaryLiteraryForm(): string {
 		if (!isset($this->fields['literary_form'])) {
 			return '';
 		}
