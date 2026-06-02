@@ -116,7 +116,7 @@ function getAspenEventRegistrationUpdates() {
 			'title' => 'Update Event Type Table',
 			'description' => 'Update the Event Type table to link to information and/or registration field set ids',
 			'sql' => [
-				'ALTER TABLE event_type RENAME COLUMN eventFieldSetId to eventInformationFieldSetId',
+				'ALTER TABLE event_type CHANGE COLUMN eventFieldSetId eventInformationFieldSetId INT NOT NULL',
 				'ALTER TABLE event_type ADD COLUMN eventRegistrationFieldSetId TINYINT(1) DEFAULT 0',
 			],
 		], // update_event_type_table
