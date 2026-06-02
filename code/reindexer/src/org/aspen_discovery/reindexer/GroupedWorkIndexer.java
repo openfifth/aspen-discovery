@@ -1584,7 +1584,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					// generate the permanent series id
 					String seriesPermanentId = getSeriesPermanentId(null, normalizedSeriesName, seriesAuthor, seriesLanguage);
 
-					if (!seriesInDb.containsKey(normalizedSeriesName)) { // Skip if this work is already in the serie
+					if (!seriesInDb.containsKey(normalizedSeriesName)) { // Skip if this work is already in the series
 						ResultSet seriesRS;
 						if (!isVersion2) {
 							getSeriesStmt.setString(1, series[0]);
@@ -1652,7 +1652,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 								addSeriesV2Stmt.setString(2, groupedWork.getTargetAudiencesAsString());
 								addSeriesV2Stmt.setLong(3, timeNow);
 								addSeriesV2Stmt.setLong(4, timeNow);
-								addSeriesV2Stmt.setString(5, AspenStringUtils.trimTo(500, groupedWork.getPrimaryAuthor()));
+								addSeriesV2Stmt.setString(5, AspenStringUtils.trimTo(500, series.length > 2 ? displayTitle[2] : ""));
 								addSeriesV2Stmt.executeUpdate();
 								ResultSet generatedKeys = addSeriesV2Stmt.getGeneratedKeys();
 								if (generatedKeys.next()) {
