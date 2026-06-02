@@ -1,6 +1,8 @@
 {strip}
 	<div id="main-content">
 		{if !empty($loggedIn)}
+
+			<h1>{translate text='Preferences' isPublicFacing=true}</h1>
 			{if !empty($profile->_web_note)}
 				<div class="row">
 					<div id="web_note" class="alert alert-info text-center col-xs-12">{$profile->_web_note}</div>
@@ -13,7 +15,6 @@
 				{include file='ilsMessages.tpl' messages=$ilsMessages}
 			{/if}
 
-			<h1>{translate text='Preferences' isPublicFacing=true}</h1>
 			{if !empty($profileUpdateErrors)}
 				{foreach from=$profileUpdateErrors item=errorMsg}
 					<div class="alert alert-danger">{$errorMsg}</div>
@@ -447,7 +448,7 @@
 											{else}
 												&nbsp;{if $profile->notifySavedSearches==0} {translate text='No' isPublicFacing=true}{else} {translate text='Yes' isPublicFacing=true}{/if}
 											{/if}
-									</div> 
+									</div>
 
 									{* Course Reserves *}
 									{if !empty($validCourseReservesSorts)}
