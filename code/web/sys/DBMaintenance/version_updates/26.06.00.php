@@ -40,7 +40,9 @@ function getUpdates26_06_00(): array {
 			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
 			'sql' => [
 				'ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT NULL',
-				'ALTER TABLE two_factor_auth_settings ADD COLUMN issuerTOTP VARCHAR(255) DEFAULT NULL',
+				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT 'totp'",
+				//Default to email for previous setups
+				"UPDATE two_factor_auth_settings SET allowedMethod = 'email' WHERE 1",
 			]
 		],
 		//extend2FAforTOTP
