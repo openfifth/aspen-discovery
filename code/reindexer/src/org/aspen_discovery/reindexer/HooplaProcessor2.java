@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 class HooplaProcessor2 {
@@ -459,6 +460,11 @@ class HooplaProcessor2 {
 				boolean profanity = productRS.getBoolean("profanity");
 				String rating = productRS.getString("rating");
 
+				String normalizedRating = normalizeHooplaContentRating(rating);
+				if (normalizedRating != null) {
+					groupedWork.addContentRating(normalizedRating);
+				}
+
 				ItemInfo baseItemInfo = new ItemInfo();
 				baseItemInfo.setIsEContent(true);
 				baseItemInfo.seteContentUrl(rawResponse.getString("url"));
@@ -605,6 +611,43 @@ class HooplaProcessor2 {
 			}
 		}
 		return entitlementsByScope;
+	}
+
+	private String normalizeHooplaContentRating(String rating) {
+		if (rating == null) {
+			return null;
+		}
+
+		String normalizedRating = rating.toUpperCase(Locale.ROOT).replaceAll("[-\\s]", "");
+		if (normalizedRating.isEmpty()) {
+			return null;
+		}
+		if (normalizedRating.startsWith("NR")) {
+			return "Not Rated";
+		}
+
+		switch (normalizedRating) {
+			case "UNK":
+				return "Unknown";
+			case "PG13":
+				return "PG-13 Rated";
+			case "NC17":
+				return "NC-17 Rated";
+			case "TVY7":
+				return "TV-Y7 Rated";
+			case "TVY":
+				return "TV-Y Rated";
+			case "TVG":
+				return "TV-G Rated";
+			case "TVPG":
+				return "TV-PG Rated";
+			case "TV14":
+				return "TV-14 Rated";
+			case "TVMA":
+				return "TV-MA Rated";
+			default:
+				return normalizedRating + " Rated";
+		}
 	}
 
 }

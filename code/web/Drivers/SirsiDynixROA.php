@@ -4389,8 +4389,8 @@ class SirsiDynixROA extends AbstractIlsDriver {
 				$forceVolumeHold = false;
 				$itemId = '';
 				if (array_key_exists('volumeSelected', $_REQUEST)) {
-					$forceVolumeHold = boolval($_REQUEST['volumeSelected']);
-					if (empty($volumeId)) {
+					$forceVolumeHold = filter_var($_REQUEST['volumeSelected'], FILTER_VALIDATE_BOOLEAN);
+					if (empty($volumeId) && $forceVolumeHold) {
 						//To place a volume hold on a blank volume, we need to find an item without a volume, preferably owned by this system.
 						require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 						$marcRecord = new MarcRecordDriver($this->getIndexingProfile()->name . ':' . $catalogKey);

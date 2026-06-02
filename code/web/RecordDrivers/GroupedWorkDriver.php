@@ -137,6 +137,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$isFirst = false;
 		}
+
+		global $library;
+		$displaySettings = $library->getGroupedWorkDisplaySettings();
+
+		if ($summPubDate == null && $displaySettings->showEarliestPublicationDateFullRecord) {
+			$summPubDate = $this->getEarliestPublicationDate();
+		}
 		$interface->assign('summPublisher', $summPublisher);
 		$interface->assign('summPubDate', $summPubDate);
 		$interface->assign('summPlaceOfPublication', $summPlaceOfPublication);
@@ -328,12 +335,12 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				: 0,
 			fn() => GroupedWorkDriver::compareHoldability($a, $b),
 			fn() => GroupedWorkDriver::compareLanguagesForRecords($a, $b),
-			fn() => GroupedWorkDriver::compareEditionsForRecords($literaryForm, $a, $b),
 			fn() => GroupedWorkDriver::compareLocalAvailableItemsForRecords($a, $b),
 			fn() => GroupedWorkDriver::compareAvailabilityForRecords($a, $b),
 			fn() => GroupedWorkDriver::compareLocalItemsForRecords($a, $b),
 			//Status rankings should be between 4 (checked out and 1 currently available), we prefer the highest but could group some
-			fn() => $b->getStatusRanking() <=> $a->getStatusRanking(), 
+			fn() => $b->getStatusRanking() <=> $a->getStatusRanking(),
+			fn() => GroupedWorkDriver::compareEditionsForRecords($literaryForm, $a, $b),
 			fn() => $a->getHoldRatio() <=> $b->getHoldRatio(),
 			fn() => $b->getCopies() <=> $a->getCopies(),
 		];
@@ -348,7 +355,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 		return 0;
 	}
 
-	private function getPrimaryLiteraryForm(): string {
+	public function getPrimaryLiteraryForm(): string {
 		if (!isset($this->fields['literary_form'])) {
 			return '';
 		}
@@ -2203,6 +2210,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 			}
 			$isFirst = false;
 		}
+		$displaySettings = $library->getGroupedWorkDisplaySettings();
+		if ($summPubDate == null && $displaySettings->showEarliestPublicationDateSearchResults) {
+			$summPubDate = $this->getEarliestPublicationDate();
+		}
 		$interface->assign('summPublisher', rtrim($summPublisher, ','));
 		$interface->assign('summPubDate', $summPubDate);
 		$interface->assign('summPlaceOfPublication', $summPlaceOfPublication);
@@ -3048,6 +3059,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				return true;
 			}
 		}
+		$displayInfo = $this->getDisplayInfo();
+		if ($displayInfo != null && !empty($displayInfo->seriesName)) {
+			return true;
+		}
 		//Get a list of isbns from the record
 		$novelist = NovelistFactory::getNovelist();
 		return $novelist->doesGroupedWorkHaveCachedSeries($this->getPermanentId());
@@ -3367,6 +3382,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						$scopedItem['isEContent'] = $relatedVariation->isEContent;
 						$scopedItem['eContentSource'] = $relatedVariation->econtentSource;
 						$scopedItem['scopeId'] = $scopeId;
+						$recordDriver = $relatedRecord->getDriver();
+						if ($recordDriver instanceof MarcRecordDriver) {
+							$indexingProfile = $recordDriver->getIndexingProfile();
+							if (!empty($indexingProfile?->dueDateFormat)) {
+								$scopedItem['dueDateFormat'] = $indexingProfile->dueDateFormat;
+							}
+						}
 						//Look for urls for the item
 						$itemUrlQuery = "SELECT url from grouped_work_record_item_url where groupedWorkItemId = {$scopedItem['groupedWorkItemId']} AND (scopeId = -1 OR scopeId = $scopeId) ORDER BY scopeId desc limit 1";
 						$results = $aspen_db->query($itemUrlQuery, PDO::FETCH_ASSOC);

@@ -16,6 +16,14 @@ function getUpdates26_06_00(): array {
 		 ], //name*/
 
 		//mark n
+		'options_for_earliest_publication_date' => [
+			'title' => 'Earliest Publication Date Visibility',
+			'description' => 'Add options for when to show the earliest publication date',
+			'sql' => [
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN showEarliestPublicationDateSearchResults TINYINT(1) UNSIGNED NOT NULL DEFAULT 1',
+				'ALTER TABLE grouped_work_display_settings ADD COLUMN showEarliestPublicationDateFullRecord TINYINT(1) UNSIGNED NOT NULL DEFAULT 1',
+			]
+		], //options_for_earliest_publication_date
 
 		//kirstien
 		'addForceReadingHistoryOptIn' => [
@@ -31,8 +39,9 @@ function getUpdates26_06_00(): array {
 			'title' => 'Extend 2FA to support TOTP apps',
 			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
 			'sql' => [
-				'ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT NULL',
-				'ALTER TABLE two_factor_auth_settings ADD COLUMN issuerTOTP VARCHAR(255) DEFAULT NULL',
+				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT 'totp'",
+				//Default to email for previous setups
+				"UPDATE two_factor_auth_settings SET allowedMethod = 'email' WHERE 1",
 			]
 		],
 		//extend2FAforTOTP
@@ -143,8 +152,32 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE library ADD COLUMN allowToRenewILL TINYINT(1) DEFAULT 1'
 			]
 		], //allow_to_renew_ill_items
-
-
+		'add_overdrive_advantage_products_key_additional' => [
+			'title' => 'Add OverDrive Advantage Products Key Additional',
+			'description' => 'Add a field for additional advantage collection tokens per library',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageProductsKey varchar(255) DEFAULT \'\''
+			]
+		], //add_overdrive_advantage_products_key_additional
+		'add_overdrive_advantage_products_id_additional' => [
+			'title' => 'Add OverDrive Advantage Products ID Additional',
+			'description' => 'Add a field for additional advantage collection ID per library',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageId int(11) DEFAULT 0'
+			]
+		], //add_overdrive_advantage_products_id_additional
+		'store_original_cover_urls_by_size' => [
+			'title' => 'Store Original Cover URLs by Size',
+			'description' => 'Store original cover URLs separately for small, medium, and large cover requests.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_small TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_medium TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_large TEXT DEFAULT NULL",
+			]
+		], //store_original_cover_urls_by_size
 
 		//imani
 
@@ -179,21 +212,21 @@ function getUpdates26_06_00(): array {
 		// stephen
 
 		'user_payments_receipt_url_rename' => [
-		'title' => 'Rename Receipt URL Column',
-		'description' => 'Rename column from stripeReceiptUrl to receiptUrl.',
-		'continueOnError' => false,
-		'sql' => [
-			'ALTER TABLE user_payments CHANGE stripeReceiptUrl receiptUrl VARCHAR(255) DEFAULT NULL'
-		]
-	], //user_payments_receipt_url_rename
-	'search_add_send_notification' => [
-		'title' => 'Add column sendNotification to search table',
-		'description' => 'Adds a column to toggle saved search emails.',
-		'continueOnError' => false,
-		'sql' => [
-			'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 1',
-		]
-	], //search_add_send_notification
+			'title' => 'Rename Receipt URL Column',
+			'description' => 'Rename column from stripeReceiptUrl to receiptUrl.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user_payments CHANGE stripeReceiptUrl receiptUrl VARCHAR(255) DEFAULT NULL'
+			]
+		], //user_payments_receipt_url_rename
+		'search_add_send_notification' => [
+			'title' => 'Add column sendNotification to search table',
+			'description' => 'Adds a column to toggle saved search emails.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 1',
+			]
+		], //search_add_send_notification
 
 		//other
 
