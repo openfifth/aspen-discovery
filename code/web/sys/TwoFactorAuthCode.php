@@ -170,15 +170,24 @@ class TwoFactorAuthCode extends DataObject {
 		require_once ROOT_DIR . '/sys/TwoFactorAuthSetting.php';
 		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
 
-		$authSetting = new TwoFactorAuthSetting();
-		$authSetting->id = $library->twoFactorAuthSettingId;
-		if ($authSetting->find(true)) {
+		$userId = UserAccount::getActiveUserId();
+		$user = new User();
+		$user->id = $userId;
+		if (!$user->find(true)) {
+			return [
+				'success' => 'false',
+				'message' => translate([
+					'text' => 'No user found',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+		$authSetting = $user->getTwoFactorAuthenticationSetting();
+		if ($authSetting) {
 			$deniedMessage = $authSetting->deniedMessage;
 		} else {
 			$deniedMessage = "";
 		}
-
-		$userId = UserAccount::getActiveUserId();
 
 		// Check if TOTP is the enabled method
 		if ($authSetting->allowedMethod === 'totp') {

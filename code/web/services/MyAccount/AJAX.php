@@ -10106,24 +10106,29 @@ class MyAccount_AJAX extends JSON_Action {
 					$email = mask_email($user->email);
 					$hasValidEmail = true;
 				}
+			}else{
+				//No valid user
+				$this->failureResult(null, 'Unable to retrieve user information');
 			}
 			$interface->assign('hasValidEmail', $hasValidEmail);
 			$interface->assign('emailAddress', $email);
 
-			if ($method == 'totp') {
+			global $library;
+
+			$twoFactorAuthSetting = $user->getTwoFactorAuthenticationSetting();
+			if ($method == 'undefined') {
+				$method = $twoFactorAuthSetting->allowedMethod ?? 'email';
+			}
+
+			$secret = null;
+			if ($method == 'totp' || $method == 'undefined') {
 				require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+				// Generate QR code
 
 				$secret = TwoFactorAuthTOTPSecret::getOrCreateSecret(true);
 
-				// Generate QR code
-				$user = new User();
-				$user->id = UserAccount::getActiveUserId();
-				$user->find(true);
 
-				global $library;
-
-				$twoFactorAuthSetting = $user->getTwoFactorAuthenticationSetting();
-				$issuer = $twoFactorAuthSetting ? $twoFactorAuthSetting->issuerTOTP : $library->displayName . ' Catalog';
+				$issuer = !empty($twoFactorAuthSetting->issuerTOTP) ? $twoFactorAuthSetting->issuerTOTP : $library->displayName . ' Catalog';
 
 				// the issuer needs to be the 2FA Setting value, not raw
 				$qrCodeUri = TwoFactorAuthTOTPSecret::generateQRCodeURI($secret, $issuer, $user);
@@ -10134,12 +10139,12 @@ class MyAccount_AJAX extends JSON_Action {
 			}
 
 			if ($hasValidEmail && $method == 'email') {
-				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\", \"$method\", null); return false;'>" . translate([
+				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\", \"email\", null); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>";
 			} elseif ($method == 'totp') {
-				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\", \"$method\", \"$secret->id\"); return false;'>" . translate([
+				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\", \"totp\", \"$secret->id\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>";
