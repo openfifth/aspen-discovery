@@ -39,7 +39,6 @@ function getUpdates26_06_00(): array {
 			'title' => 'Extend 2FA to support TOTP apps',
 			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
 			'sql' => [
-				'ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT NULL',
 				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT 'totp'",
 				//Default to email for previous setups
 				"UPDATE two_factor_auth_settings SET allowedMethod = 'email' WHERE 1",
@@ -213,21 +212,21 @@ function getUpdates26_06_00(): array {
 		// stephen
 
 		'user_payments_receipt_url_rename' => [
-		'title' => 'Rename Receipt URL Column',
-		'description' => 'Rename column from stripeReceiptUrl to receiptUrl.',
-		'continueOnError' => false,
-		'sql' => [
-			'ALTER TABLE user_payments CHANGE stripeReceiptUrl receiptUrl VARCHAR(255) DEFAULT NULL'
-		]
-	], //user_payments_receipt_url_rename
-	'search_add_send_notification' => [
-		'title' => 'Add column sendNotification to search table',
-		'description' => 'Adds a column to toggle saved search emails.',
-		'continueOnError' => false,
-		'sql' => [
-			'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 1',
-		]
-	], //search_add_send_notification
+			'title' => 'Rename Receipt URL Column',
+			'description' => 'Rename column from stripeReceiptUrl to receiptUrl.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE user_payments CHANGE stripeReceiptUrl receiptUrl VARCHAR(255) DEFAULT NULL'
+			]
+		], //user_payments_receipt_url_rename
+		'search_add_send_notification' => [
+			'title' => 'Add column sendNotification to search table',
+			'description' => 'Adds a column to toggle saved search emails.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE search ADD COLUMN sendNotification TINYINT(1) DEFAULT 1',
+			]
+		], //search_add_send_notification
 
 		//other
 
