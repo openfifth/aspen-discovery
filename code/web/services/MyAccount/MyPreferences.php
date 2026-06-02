@@ -376,7 +376,7 @@ class MyAccount_MyPreferences extends MyAccount {
 			$aspenNativeEventsEnabled = false;
 			if (array_key_exists('Events', $enabledModules)) {
 				require_once ROOT_DIR . '/sys/Events/LibraryEventsSetting.php';
-				$aspenNativeEventsEnabled = LibraryEventsSetting::libraryHasSource($library->id, 'aspenEvents');
+				$aspenNativeEventsEnabled = LibraryEventsSetting::libraryHasSource($library->libraryId, 'aspenEvents');
 			}
 			$interface->assign('aspenNativeEventsEnabled', $aspenNativeEventsEnabled);
 		}
