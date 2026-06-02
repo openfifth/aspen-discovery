@@ -3059,6 +3059,10 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				return true;
 			}
 		}
+		$displayInfo = $this->getDisplayInfo();
+		if ($displayInfo != null && !empty($displayInfo->seriesName)) {
+			return true;
+		}
 		//Get a list of isbns from the record
 		$novelist = NovelistFactory::getNovelist();
 		return $novelist->doesGroupedWorkHaveCachedSeries($this->getPermanentId());
@@ -3378,6 +3382,13 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						$scopedItem['isEContent'] = $relatedVariation->isEContent;
 						$scopedItem['eContentSource'] = $relatedVariation->econtentSource;
 						$scopedItem['scopeId'] = $scopeId;
+						$recordDriver = $relatedRecord->getDriver();
+						if ($recordDriver instanceof MarcRecordDriver) {
+							$indexingProfile = $recordDriver->getIndexingProfile();
+							if (!empty($indexingProfile?->dueDateFormat)) {
+								$scopedItem['dueDateFormat'] = $indexingProfile->dueDateFormat;
+							}
+						}
 						//Look for urls for the item
 						$itemUrlQuery = "SELECT url from grouped_work_record_item_url where groupedWorkItemId = {$scopedItem['groupedWorkItemId']} AND (scopeId = -1 OR scopeId = $scopeId) ORDER BY scopeId desc limit 1";
 						$results = $aspen_db->query($itemUrlQuery, PDO::FETCH_ASSOC);

@@ -7,12 +7,15 @@ class TwoFactorAuthSetting extends DataObject {
 	public $name;
 	public $isEnabled;
 	public $deniedMessage;
+	public $allowedMethod;
+	public $issuerTOTP;
 
 	private $_libraries;
 	private $_ptypes;
 
 	static $_objectStructure = [];
 	static function getObjectStructure(string $context = ''): array {
+		global $library;
 		if (isset(self::$_objectStructure[$context]) && self::$_objectStructure[$context] !== null) {
 			return self::$_objectStructure[$context];
 		}
@@ -62,6 +65,25 @@ class TwoFactorAuthSetting extends DataObject {
 				'type' => 'enum',
 				'label' => 'Is Enabled',
 				'values' => $requiredList,
+			],
+			'allowedMethod' => [
+				'property' => 'allowedMethod',
+				'type' => 'enum',
+				'label' => '2FA Method',
+				'values' => [
+					'totp' => 'TOTP apps (Google Authenticator, Authy, etc.)',
+					'email' => 'Email'
+				],
+				'description' => 'Which method of 2FA should be allowed for this setting',
+				'onchange' => 'return AspenDiscovery.Admin.toggle2FAMethodOptions();',
+			],
+			'issuerTOTP' => [
+				'property' => 'issuerTOTP',
+				'type' => 'text',
+				'label' => 'TOTP Issuer Name',
+				'description' => 'The name of the service displayed in the authenticator app.',
+				'default' => $library->displayName . ' Catalog',
+				'required' => true,
 			],
 			'deniedMessage' => [
 				'property' => 'deniedMessage',

@@ -35,6 +35,47 @@ function getUpdates26_06_00(): array {
 			]
 		],
 		//addForceReadingHistoryOptIn
+		'extend2FAforTOTP' => [
+			'title' => 'Extend 2FA to support TOTP apps',
+			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
+			'sql' => [
+				'ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT NULL',
+				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT 'totp'",
+				//Default to email for previous setups
+				"UPDATE two_factor_auth_settings SET allowedMethod = 'email' WHERE 1",
+			]
+		],
+		//extend2FAforTOTP
+		'addTOTPSecretsTable' => [
+			'title' => 'Add table to store TOTP user secrets',
+			'description' => 'Add table to store TOTP user secrets',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS two_factor_auth_totp_secrets (
+				  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				  userId INT NOT NULL,
+				  secretKey VARCHAR(32) NOT NULL COLLATE utf8mb4_unicode_ci,
+				  createdDate INT NOT NULL,
+				  verified TINYINT(1) NOT NULL DEFAULT 0
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;',
+			]
+		],
+		//addTOTPSecretsTable
+		'addTwoFactorMethodToUserTable' => [
+			'title' => 'Add TwoFactorMethod to User table',
+			'description' => 'Add a column to store what 2FA method the user has setup. If the user had 2FA setup prior to TOTP, set the twoFactorMethod to email, else null.',
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN twoFactorMethod VARCHAR(75) DEFAULT NULL',
+				"UPDATE user
+				 SET twoFactorMethod = CASE
+				   WHEN twoFactorStatus = 1 THEN 'email'
+				   ELSE NULL
+				 END
+				 WHERE twoFactorMethod IS NULL
+					OR (twoFactorStatus = 1 AND twoFactorMethod <> 'email')
+					OR (twoFactorStatus <> 1 AND twoFactorMethod IS NOT NULL)",
+			]
+		],
+		//addTwoFactorMethodToUserTable
 
 		//kodi
 		'permissions_create_events_localhop' => [
@@ -112,8 +153,32 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE library ADD COLUMN allowToRenewILL TINYINT(1) DEFAULT 1'
 			]
 		], //allow_to_renew_ill_items
-
-
+		'add_overdrive_advantage_products_key_additional' => [
+			'title' => 'Add OverDrive Advantage Products Key Additional',
+			'description' => 'Add a field for additional advantage collection tokens per library',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageProductsKey varchar(255) DEFAULT \'\''
+			]
+		], //add_overdrive_advantage_products_key_additional
+		'add_overdrive_advantage_products_id_additional' => [
+			'title' => 'Add OverDrive Advantage Products ID Additional',
+			'description' => 'Add a field for additional advantage collection ID per library',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE library_overdrive_settings ADD COLUMN additionalAdvantageId int(11) DEFAULT 0'
+			]
+		], //add_overdrive_advantage_products_id_additional
+		'store_original_cover_urls_by_size' => [
+			'title' => 'Store Original Cover URLs by Size',
+			'description' => 'Store original cover URLs separately for small, medium, and large cover requests.',
+			'continueOnError' => false,
+			'sql' => [
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_small TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_medium TEXT DEFAULT NULL",
+				"ALTER TABLE bookcover_info ADD COLUMN IF NOT EXISTS original_url_large TEXT DEFAULT NULL",
+			]
+		], //store_original_cover_urls_by_size
 
 		//imani
 

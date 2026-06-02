@@ -2,11 +2,19 @@
 	<div id="page-content" class="col-xs-12">
 		<h1>{translate text='Two-factor Authentication' isPublicFacing=true}</h1>
 		<div id="loginFormWrapper">
-			{if !$codeSent}
-				<div class="alert alert-warning">{translate text="Unable to send your authentication code. Verify your account has a valid email address. To access your account now, you may provide a backup code." isPublicFacing=true}</div>
-			{else}
-				<p>{translate text="Enter the code sent to your authentication method or provide a backup code." isPublicFacing=true}</p>
-			{/if}
+            {if $authMethod === 'totp'}
+                {if !$codeSent}
+					<p>{translate text="Enter the 6-digit code from your authenticator app or provide a backup code." isPublicFacing=true}</p>
+                {else}
+					<p>{translate text="Enter the 6-digit code from your authenticator app or provide a backup code." isPublicFacing=true}</p>
+                {/if}
+            {else}
+                {if !$codeSent}
+					<div class="alert alert-warning">{translate text="Unable to send your authentication code. Verify your account has a valid email address. To access your account now, you may provide a backup code." isPublicFacing=true}</div>
+                {else}
+					<p>{translate text="Enter the code sent to your authentication method or provide a backup code." isPublicFacing=true}</p>
+                {/if}
+            {/if}
 			<p class="alert alert-danger" id="codeVerificationFailedPlaceholder" style="display: none;"></p>
 			<p id="newCodeSentPlaceholder" class="alert alert-info" style="display: none;"></p>
 			<p class="alert alert-info" id="loading" style="display: none">
@@ -34,10 +42,11 @@
 						<input type="submit" name="submit" value="{translate text="Verify" isPublicFacing=true}" id="loginFormVerify" class="btn btn-primary" onclick="return AspenDiscovery.Account.verify2FALogin();">
 						&nbsp;<a id="loginFormCancelLogin" class="btn btn-warning" href="/MyAccount/Logout">{translate text="Cancel Sign In" isPublicFacing=true}</a>
 					</div>
-					<div class="col-xs-12 col-sm-offset-4 col-sm-8">
-						<a class="btn btn-xs btn-link" style="display: inline-block; margin-top: 1em" onclick="return AspenDiscovery.Account.new2FACode();">{translate text="Code expired? Send another" isPublicFacing=true}</a>
-
-					</div>
+                    {if $authMethod !== 'totp'}
+						<div class="col-xs-12 col-sm-offset-4 col-sm-8">
+							<a class="btn btn-xs btn-link" style="display: inline-block; margin-top: 1em" onclick="return AspenDiscovery.Account.new2FACode();">{translate text="Code expired? Send another" isPublicFacing=true}</a>
+						</div>
+					{/if}
 				</div>
 			</form>
 		</div>

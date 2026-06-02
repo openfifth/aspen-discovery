@@ -29,18 +29,27 @@
 				<div class="col-xs-6">
 					<label for="2faStatus" style="font-size: 18px">{translate text='2-Factor Authentication' isPublicFacing=true}</label>
 					<small class="text-muted help-block">{translate text="Two-factor authentication is an enhanced security measure. Once enabled, you'll be required to give two types of identification when you log into the catalog." isPublicFacing=true}</small>
-					<small class="text-muted help-block bold">{translate text="Email is currently the only authentication method available." isPublicFacing=true}</small>
 				</div>
 				<div class="col-xs-6 text-right">
-					{if $twoFactorStatus == '0'}
-						<button type="button" name="2faStatus" class="btn btn-primary" onclick="return AspenDiscovery.Account.show2FAEnrollment(false);">{translate text="Set up" isPublicFacing=true}</button>
+                    {if ($twoFactorStatus == '0') || (!empty($migrationRequired))}
+						<button type="button" name="2faStatus" class="btn btn-primary" onclick="return AspenDiscovery.Account.show2FAEnrollment(false, '{$twoFactorMethodAllowed}');">{translate text="Set up" isPublicFacing=true}</button>
 					{else}
 						<button type="button" name="2faStatus" class="btn btn-primary" onclick="return AspenDiscovery.Account.showCancel2FA();" {if empty($enableDeactivation)}disabled{/if}>{translate text="Turn off" isPublicFacing=true}</button>
 						{if empty($enableDeactivation)}<small class="help-block">{translate text="Your account is required to have 2FA enabled" isPublicFacing=true}</small>{/if}
 					{/if}
 				</div>
 			</div>
-			{if $twoFactorStatus == '1'}
+            {if !empty($migrationRequired)}
+			<div class="row">
+				<div class="col-xs-12">
+					<div class="alert alert-warning">
+						<strong>{translate text="Action Required" isPublicFacing=true}</strong><br>
+                        {$migrationMessage}
+					</div>
+				</div>
+			</div>
+			{/if}
+            {if $twoFactorStatus == 1 && empty($migrationRequired)}
 				<div class="row">
 					<div class="col-xs-6">
 						<label for="2faStatus">{translate text='Backup codes' isPublicFacing=true}</label>
