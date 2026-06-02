@@ -352,6 +352,7 @@ class Record_AJAX extends JSON_Action {
 			}
 
 			$marcRecord = new MarcRecordDriver($id);
+			$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
 
 			$allowEditionSelection = (isset($_REQUEST['allowEditionSelection']) && $_REQUEST['allowEditionSelection'] == '1');
 			$interface->assign('allowEditionSelection', $allowEditionSelection);
@@ -365,7 +366,6 @@ class Record_AJAX extends JSON_Action {
 			if (isset($_REQUEST['format']) && !empty($_REQUEST['format'])) {
 				$currentFormat = $_REQUEST['format'];
 			} elseif ($selectedVariationId !== -1) {
-				$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
 				if ($groupedWorkDriver) {
 					$relatedRecord = $groupedWorkDriver->getRelatedRecord($marcRecord->getIdWithSource());
 					if ($relatedRecord && !empty($relatedRecord->recordVariations)) {
@@ -2106,6 +2106,42 @@ class Record_AJAX extends JSON_Action {
 
 		global $library;
 
+		//Check to see if this is a non-fiction work
+		$isNonFiction = false;
+		$groupedWorkDriver = $marcRecord->getGroupedWorkDriver();
+		if ($groupedWorkDriver->getPrimaryLiteraryForm()) {
+			$literaryForm = $groupedWorkDriver->getPrimaryLiteraryForm();
+			$isNonFiction = $literaryForm == 'Non Fiction';
+		}
+
+		//If it is a non-fiction work, we will prompt the user for the edition if they aren't placing a hold on the latest
+		if ($isNonFiction) {
+			$selectedRecordLatestPubDate = 0;
+			foreach ($marcRecord->getPublicationDates() as $selectedRecordPubDate) {
+				if (preg_match('/(\d{4})/', $selectedRecordPubDate, $matches)) {
+					$selectedRecordLatestPubDate = max($selectedRecordLatestPubDate, $matches[1]);
+				}
+			}
+			$marcRecordFormat = $marcRecord->getPrimaryFormat();
+			foreach ($groupedWorkDriver->getRelatedRecords() as $relatedRecord) {
+				if ($relatedRecord->getFormat() == $marcRecordFormat) {
+					foreach ($relatedRecord->getDriver()->getPublicationDates() as $relatedRecordPubDate) {
+						if (preg_match('/(\d{4})/', $relatedRecordPubDate, $matches)) {
+							if ($matches[1] > $selectedRecordLatestPubDate) {
+								$holdPromptForEditions = 2;
+								$promptForEdition = true;
+								$interface->assign('holdEditionPromptMessage', 'You are placing a hold on an earlier version of this title. If you need the latest information, you can request the newer edition instead, though wait times may be longer.');
+								break;
+							}
+						}
+					}
+				}
+				if ($promptForEdition && $holdPromptForEditions == 2) {
+					break;
+				}
+			}
+		}
+
 		//This needs to come before determining if the hold prompt can be bypassed
 		$editionOptions = [];
 		if ($holdPromptForEditions > 0 && $promptForEdition) {
@@ -2162,8 +2198,10 @@ class Record_AJAX extends JSON_Action {
 		}else{
 			//We are not prompting for a specific edition, make sure the hold prompt can still be bypassed.
 			$holdPromptForEditions = 0;
-			$interface->assign('holdPromptForEditions', $holdPromptForEditions);
 		}
+
+		$interface->assign('holdPromptForEditions', $holdPromptForEditions);
+
 		$interface->assign('editionOptions', $editionOptions);
 
 		//Check to see if we can bypass the holds popup and just place the hold
