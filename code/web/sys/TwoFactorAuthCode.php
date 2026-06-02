@@ -165,9 +165,11 @@ class TwoFactorAuthCode extends DataObject {
 		}
 	}
 
-	function validateCode($code) : array {
+	function validateCode($code, $secretId = null): array {
 		global $library;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthSetting.php';
+		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+
 		$authSetting = new TwoFactorAuthSetting();
 		$authSetting->id = $library->twoFactorAuthSettingId;
 		if ($authSetting->find(true)) {
@@ -176,10 +178,102 @@ class TwoFactorAuthCode extends DataObject {
 			$deniedMessage = "";
 		}
 
+		$userId = UserAccount::getActiveUserId();
+
+		// Check if TOTP is the enabled method
+		if ($authSetting->allowedMethod === 'totp') {
+			return $this->validateTOTPCode($code, $userId, $deniedMessage, $secretId);
+		}
+
+		// Otherwise, validate email code
+		return $this->validateEmailCode($code, $userId, $deniedMessage);
+	}
+
+	function createNewBackups() : void {
+		$oldBackupCodes = new TwoFactorAuthCode();
+		$oldBackupCodes->userId = UserAccount::getActiveUserId();
+		$oldBackupCodes->status = "backup";
+		$oldBackupCodes->find();
+		while ($oldBackupCodes->fetch()) {
+			$this->deleteCode($oldBackupCodes->code);
+		}
+
+		$this->createCode(5, true);
+	}
+
+	private function validateTOTPCode($code, $userId, $deniedMessage, $secretId = null): array {
+		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+		$totpSecret = new TwoFactorAuthTOTPSecret();
+		$totpSecret->userId = $userId;
+
+		if ($secretId !== null) {
+			$totpSecret->id = $secretId;
+			if (!$totpSecret->find(true)) {
+				return [
+					'success' => 'false',
+					'message' => translate([
+						'text' => 'TOTP secret not found. ' . $deniedMessage,
+						'isPublicFacing' => true,
+					]),
+				];
+			}
+		} else {
+			$totpSecret->verified = 1;
+			if (!$totpSecret->find(true)) {
+				return [
+					'success' => 'false',
+					'message' => translate([
+						'text' => 'TOTP not configured. ' . $deniedMessage,
+						'isPublicFacing' => true,
+					]),
+				];
+			}
+		}
+
+		// Verify TOTP code
+		if (TwoFactorAuthTOTPSecret::verifyCode($totpSecret->secretKey, $code, 1)) {
+			return [
+				'success' => 'true',
+				'message' => translate([
+					'text' => 'Code OK',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		// Check if it's a backup code
+		$backupCode = new TwoFactorAuthCode();
+		$backupCode->code = $code;
+		$backupCode->userId = $userId;
+		$backupCode->status = 'backup';
+
+		if ($backupCode->find(true)) {
+			$backupCode->status = 'used';
+			$backupCode->sessionId = session_id();
+			$backupCode->update();
+			return [
+				'success' => 'true',
+				'message' => translate([
+					'text' => 'Backup code accepted',
+					'isPublicFacing' => true,
+				]),
+			];
+		}
+
+		return [
+			'success' => 'false',
+			'message' => translate([
+				'text' => 'Invalid code. ' . $deniedMessage,
+				'isPublicFacing' => true,
+			]),
+		];
+	}
+
+	private function validateEmailCode($code, $userId, $deniedMessage): array {
 		$codeToCheck = new TwoFactorAuthCode();
 		$codeToCheck->code = $code;
 		if ($codeToCheck->find(true)) {
-			if ($codeToCheck->userId == UserAccount::getActiveUserId()) {
+			if ($codeToCheck->userId == $userId) {
 				if ($codeToCheck->status != "used") {
 					$codeToCheck->status = "used";
 					$codeToCheck->sessionId = session_id();
@@ -222,18 +316,6 @@ class TwoFactorAuthCode extends DataObject {
 		}
 
 		return $result;
-	}
-
-	function createNewBackups() : void {
-		$oldBackupCodes = new TwoFactorAuthCode();
-		$oldBackupCodes->userId = UserAccount::getActiveUserId();
-		$oldBackupCodes->status = "backup";
-		$oldBackupCodes->find();
-		while ($oldBackupCodes->fetch()) {
-			$this->deleteCode($oldBackupCodes->code);
-		}
-
-		$this->createCode(5, true);
 	}
 
 	function getBackups() : array {
@@ -284,11 +366,11 @@ class TwoFactorAuthCode extends DataObject {
 	}
 
 	function deactivate2FA() : void {
-
 		$user = new User();
 		$user->id = UserAccount::getActiveUserId();
 		if ($user->find(true)) {
 			$user->twoFactorStatus = 0;
+			$user->twoFactorMethod = null;
 			$user->update();
 
 			$userCodes = new TwoFactorAuthCode();
@@ -297,6 +379,9 @@ class TwoFactorAuthCode extends DataObject {
 			while ($userCodes->fetch()) {
 				$userCodes->deleteCode($userCodes->code);
 			}
+
+			require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+			TwoFactorAuthTOTPSecret::deleteUserSecrets(UserAccount::getActiveUserId());
 		}
 	}
 

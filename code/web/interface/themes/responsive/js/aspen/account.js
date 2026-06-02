@@ -2763,10 +2763,10 @@ AspenDiscovery.Account = (function () {
 				$('#thisDonation').hide();
 			}
 		},
-		show2FAEnrollment: function (mandatoryEnroll) {
+		show2FAEnrollment: function (mandatoryEnroll, method) {
 			if (Globals.loggedIn || mandatoryEnroll) {
 				AspenDiscovery.loadingMessage();
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=register&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=register&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false, '/MyAccount/Logout')
 					} else {
@@ -2775,14 +2775,15 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll, method);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentVerify: function (mandatoryEnroll) {
+		show2FAEnrollmentVerify: function (mandatoryEnroll, method, secretId = null) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=verify&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=verify&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false, '/MyAccount/Logout')
 					} else {
@@ -2791,14 +2792,15 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll, method, secret);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentBackupCodes: function (mandatoryEnroll) {
+		show2FAEnrollmentBackupCodes: function (mandatoryEnroll, method, secretId) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=backup&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=backup&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons)
 					} else {
@@ -2807,21 +2809,22 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnroll, method, null);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentSuccess: function (mandatoryEnroll) {
+		show2FAEnrollmentSuccess: function (mandatoryEnroll, method, secretId) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=complete&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=complete&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.body, false, 2000)
 					}
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentSuccess(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentSuccess(mandatoryEnroll, method);
 				}, false);
 			}
 			return false;
@@ -2860,21 +2863,22 @@ AspenDiscovery.Account = (function () {
 			}
 			return false;
 		},
-		verify2FA: function (mandatoryEnrollment) {
+		verify2FA: function (mandatoryEnrollment, method, secretId) {
 			var code = $("#code").val();
 			var loggingIn = mandatoryEnrollment ? true : false;
+			var secret = secretId ? secretId : ""; // only needed during enrollment verification for TOTP
 			if (Globals.loggedIn || mandatoryEnrollment) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=" + loggingIn + "&code=" + code + "&mandatoryEnrollment=" + mandatoryEnrollment, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=" + loggingIn + "&code=" + code + "&mandatoryEnrollment=" + mandatoryEnrollment + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					// update #codeVerificationFailedPlaceholder with failed verification status, otherwise move onto next step
 					if (data.success === "true") {
-						return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnrollment);
+						return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnrollment, method, secretId);
 					}
 					$("#codeVerificationFailedPlaceholder").html(data.message).show();
 					return data;
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.verify2FA();
+					return AspenDiscovery.Account.verify2FA(mandatoryEnrollment, method, null);
 				}, false);
 			}
 			return false;
@@ -2922,7 +2926,8 @@ AspenDiscovery.Account = (function () {
 			var referer = $("#referer").val();
 			var name = $("#name").val();
 			var myAccountAuth = $("#myAccountAuth").val();
-			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code, function (data) {
+			var authMethod = $("#authMethod").val();
+			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code + "&authMethod=" + authMethod, function (data) {
 				// update #codeVerificationFailedPlaceholder with failed verification status, otherwise move onto next step
 				if (data.success === "true") {
 					Globals.loggedIn = true;

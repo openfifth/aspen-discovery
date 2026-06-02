@@ -35,6 +35,45 @@ function getUpdates26_06_00(): array {
 			]
 		],
 		//addForceReadingHistoryOptIn
+		'extend2FAforTOTP' => [
+			'title' => 'Extend 2FA to support TOTP apps',
+			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
+			'sql' => [
+				'ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT NULL',
+				'ALTER TABLE two_factor_auth_settings ADD COLUMN issuerTOTP VARCHAR(255) DEFAULT NULL',
+			]
+		],
+		//extend2FAforTOTP
+		'addTOTPSecretsTable' => [
+			'title' => 'Add table to store TOTP user secrets',
+			'description' => 'Add table to store TOTP user secrets',
+			'sql' => [
+				'CREATE TABLE IF NOT EXISTS two_factor_auth_totp_secrets (
+				  id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+				  userId INT NOT NULL,
+				  secretKey VARCHAR(32) NOT NULL COLLATE utf8mb4_unicode_ci,
+				  createdDate INT NOT NULL,
+				  verified TINYINT(1) NOT NULL DEFAULT 0
+				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;',
+			]
+		],
+		//addTOTPSecretsTable
+		'addTwoFactorMethodToUserTable' => [
+			'title' => 'Add TwoFactorMethod to User table',
+			'description' => 'Add a column to store what 2FA method the user has setup. If the user had 2FA setup prior to TOTP, set the twoFactorMethod to email, else null.',
+			'sql' => [
+				'ALTER TABLE user ADD COLUMN twoFactorMethod VARCHAR(75) DEFAULT NULL',
+				"UPDATE user
+				 SET twoFactorMethod = CASE
+				   WHEN twoFactorStatus = 1 THEN 'email'
+				   ELSE NULL
+				 END
+				 WHERE twoFactorMethod IS NULL
+					OR (twoFactorStatus = 1 AND twoFactorMethod <> 'email')
+					OR (twoFactorStatus <> 1 AND twoFactorMethod IS NOT NULL)",
+			]
+		],
+		//addTwoFactorMethodToUserTable
 
 		//kodi
 		'permissions_create_events_localhop' => [

@@ -3127,7 +3127,7 @@ AspenDiscovery.Admin = (function () {
 			});
 			return false;
 		},
-		showPaymentDetails: function(paymentId) {
+		showPaymentDetails: function (paymentId) {
 			var url = Globals.path + "/Admin/AJAX";
 			var params = {
 				method: 'getPaymentDetails',
@@ -3139,6 +3139,14 @@ AspenDiscovery.Admin = (function () {
 				AspenDiscovery.showMessage(data.title, data.modalBody);
 			}).fail(AspenDiscovery.ajaxFail);
 			return false;
-		}
+		},
+		toggle2FAMethodOptions: function () {
+			var method = $("#allowedMethodSelect").val();
+			if (method === "totp") {
+				$('#propertyRowissuerTOTP').show();
+			} else {
+				$('#propertyRowissuerTOTP').hide();
+			}
+		},
 	};
 }(AspenDiscovery.Admin || {}));

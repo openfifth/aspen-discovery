@@ -90,6 +90,7 @@ class User extends DataObject {
 	public $lastLoginValidation;
 
 	public $twoFactorStatus; //Whether the user has enrolled
+	public $twoFactorMethod; //What 2FA method the user has setup
 
 	public $updateMessage;
 	public $updateMessageIsError;
@@ -5883,6 +5884,10 @@ class User extends DataObject {
 			}
 		}
 		return false;
+	}
+
+	public function get2FAMethod(): ?string {
+		return $this->twoFactorMethod;
 	}
 
 	public function canReceiveNotifications($alertType): bool {
