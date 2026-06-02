@@ -677,11 +677,11 @@ class Record_AJAX extends JSON_Action {
 						}
 					}
 					if ($isOnHold) {
-						if ($allowEditionSelection) {
-							$results['modalButtons'] = "buttin type='submit' name='submit' id=requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+						if ($allowEditionSelection && $allowHoldsToBeGrouped) {
+							$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 								'text' => "Yes, Place Hold",
 								'isPublicFacing' => true,
-							]) . "</button";
+							]) . "</button>";
 						} else {
 								$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHoldForm();'><i class='fas fa-spinner fa-spin hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 								'text' => "Yes, Place Hold",
@@ -690,7 +690,7 @@ class Record_AJAX extends JSON_Action {
 						}
 					} else {
 						if ($allowEditionSelection && $allowHoldsToBeGrouped) {
-							$results['modalButtons'] = "<button type='submit' name='submit' id=requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
+							$results['modalButtons'] = "<button type='submit' name='submit' id='requestTitleButton' class='btn btn-primary' onclick='return AspenDiscovery.Record.submitHyperhold(\"$groupedWorkId\");'><i class='fas fa-spinner hidden' role='status' aria-hidden='true'></i>&nbsp;" . translate([
 								'text' => "Submit Hold Request",
 								'isPublicFacing' => true,
 							]) . "</button>";
@@ -2105,39 +2105,8 @@ class Record_AJAX extends JSON_Action {
 		}
 
 		global $library;
-		//Check to see if we can bypass the holds popup and just place the hold
-		if (!$multipleAccountPickupLocations && !$promptForHoldNotifications && $library->allowRememberPickupLocation && !$holdPromptForEditions) {
-			//If the patron's preferred pickup location is not valid, then force them to pick a new location
-			if ($preferredPickupLocationIsValid && $preferredPickupSublocationIsValid) {
-				$rememberHoldPickupLocation = $user->rememberHoldPickupLocation;
-			} else {
-				$rememberHoldPickupLocation = false;
-				if (!$preferredPickupSublocationIsValid) {
-					if ($user->pickupSublocationId > 0) {
-						$interface->assign('pickupLocationInvalidMessage', translate([
-							'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
-							'isPublicFacing' => true,
-						]));
-					}
-				}
-			}
-		} else {
-			$rememberHoldPickupLocation = false;
-			if ($multipleAccountPickupLocations) {
-				$interface->assign('pickupLocationInvalidMessage', translate([
-					'text' => 'You have linked accounts with different pickup locations. Please select which location and account to use for this hold.',
-					'isPublicFacing' => true,
-				]));
-			} elseif ($promptForHoldNotifications) {
-				$interface->assign('pickupLocationInvalidMessage', translate([
-					'text' => 'Your library system requires you to choose notification preferences for each hold.',
-					'isPublicFacing' => true,
-				]));
-			}
-			// If the Library System does not allow remembering pickup location (i.e., !$library->allowRememberPickupLocation),
-			// then no need to display a message because the patron cannot choose a preferred pickup location anyway.
-		}
 
+		//This needs to come before determining if the hold prompt can be bypassed
 		$editionOptions = [];
 		if ($holdPromptForEditions > 0 && $promptForEdition) {
 			if (count($relatedRecord->recordVariations) > 1) {
@@ -2190,9 +2159,45 @@ class Record_AJAX extends JSON_Action {
 					$editionOptions = $variation->getRelatedRecords();
 				}
 			}
+		}else{
+			//We are not prompting for a specific edition, make sure the hold prompt can still be bypassed.
+			$holdPromptForEditions = 0;
+			$interface->assign('holdPromptForEditions', $holdPromptForEditions);
 		}
 		$interface->assign('editionOptions', $editionOptions);
 
+		//Check to see if we can bypass the holds popup and just place the hold
+		if (!$multipleAccountPickupLocations && !$promptForHoldNotifications && $library->allowRememberPickupLocation && !$holdPromptForEditions) {
+			//If the patron's preferred pickup location is not valid, then force them to pick a new location
+			if ($preferredPickupLocationIsValid && $preferredPickupSublocationIsValid) {
+				$rememberHoldPickupLocation = $user->rememberHoldPickupLocation;
+			} else {
+				$rememberHoldPickupLocation = false;
+				if (!$preferredPickupSublocationIsValid) {
+					if ($user->pickupSublocationId > 0) {
+						$interface->assign('pickupLocationInvalidMessage', translate([
+							'text' => 'Your preferred pickup area is not available for your patron type. Please select a pickup location.',
+							'isPublicFacing' => true,
+						]));
+					}
+				}
+			}
+		} else {
+			$rememberHoldPickupLocation = false;
+			if ($multipleAccountPickupLocations) {
+				$interface->assign('pickupLocationInvalidMessage', translate([
+					'text' => 'You have linked accounts with different pickup locations. Please select which location and account to use for this hold.',
+					'isPublicFacing' => true,
+				]));
+			} elseif ($promptForHoldNotifications) {
+				$interface->assign('pickupLocationInvalidMessage', translate([
+					'text' => 'Your library system requires you to choose notification preferences for each hold.',
+					'isPublicFacing' => true,
+				]));
+			}
+			// If the Library System does not allow remembering pickup location (i.e., !$library->allowRememberPickupLocation),
+			// then no need to display a message because the patron cannot choose a preferred pickup location anyway.
+		}
 
 		$locationKeys = array_keys($locations);
 		$interface->assign('preferredPickupLocationIsValid', $preferredPickupLocationIsValid);

@@ -33,6 +33,7 @@ import org.marc4j.MarcWriter;
 import org.marc4j.marc.DataField;
 import org.marc4j.marc.MarcFactory;
 import org.marc4j.marc.Record;
+import org.marc4j.marc.VariableField;
 
 public class GroupedWorkIndexer implements AutoCloseable {
 	private final int indexerInstanceId = (int)(Math.random() * 1000) ;
@@ -1405,12 +1406,24 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					ResultSet arBookInfoRS = getArBookInfoStmt.executeQuery();
 					if (arBookInfoRS.next()){
 						String bookLevel = arBookInfoRS.getString("bookLevel");
-						if (!bookLevel.isEmpty()){
+						String arPoints = arBookInfoRS.getString("arPoints");
+						String interestLevel = arBookInfoRS.getString("interestLevel");
+						boolean foundUsableArData = false;
+						if (bookLevel != null && !bookLevel.trim().isEmpty()){
 							groupedWork.setAcceleratedReaderReadingLevel(bookLevel);
+							foundUsableArData = true;
 						}
-						groupedWork.setAcceleratedReaderPointValue(arBookInfoRS.getString("arPoints"));
-						groupedWork.setAcceleratedReaderInterestLevel(arBookInfoRS.getString("interestLevel"));
-						break;
+						if (arPoints != null && !arPoints.trim().isEmpty()){
+							groupedWork.setAcceleratedReaderPointValue(arPoints);
+							foundUsableArData = true;
+						}
+						if (interestLevel != null && !interestLevel.trim().isEmpty()){
+							groupedWork.setAcceleratedReaderInterestLevel(interestLevel);
+							foundUsableArData = true;
+						}
+						if (foundUsableArData){
+							break;
+						}
 					}
 					arBookInfoRS.close();
 				}
@@ -3409,6 +3422,9 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	 * @return int 0 if the MARC has not changed, 1 if the MARC is new, and 2 if the MARC has changes
 	 */
 	public synchronized MarcStatus saveMarcRecordToDatabase(BaseIndexingSettings indexingProfile, String ilsId, Record marcRecord) {
+		// Filter out any private fields from the record
+		marcRecord = filterPrivateFields(marcRecord);
+		
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MarcWriter writer = new MarcJsonWriter(outputStream);
 		writer.write(marcRecord);
@@ -3438,7 +3454,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					updateRecordInDBStmt.executeUpdate();
 					returnValue = MarcStatus.CHANGED;
 				}
-			}else{
+			}else {
 				long lastModified = new Date().getTime() / 1000;
 
 				addRecordToDBStmt.setString(1, ilsId);
@@ -3458,6 +3474,21 @@ public class GroupedWorkIndexer implements AutoCloseable {
 		marcRecordCache.put(indexingProfile.getName() + ilsId, marcRecord);
 
 		return returnValue;
+	}
+
+	private Record filterPrivateFields(Record marcRecord){
+		String[] privateFields = {"541", "542", "561", "583"};
+		for (String tag : privateFields) {
+			List<VariableField> fields = new ArrayList<>(marcRecord.getVariableFields(tag));
+			for (VariableField field : fields) {
+				DataField dataField = (DataField) field;
+				if (dataField.getIndicator1() == '0') {
+					marcRecord.removeVariableField(dataField);
+				}
+			}
+		}
+
+		return marcRecord;
 	}
 
 	//Create a small cache to hold recently used marc records to avoid time reloading them.

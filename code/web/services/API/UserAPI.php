@@ -119,7 +119,7 @@ class UserAPI extends AbstractAPI {
 					header("Cache-Control: max-age=10800");
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
 					APIUsage::incrementStat('UserAPI', $method);
-					$output = json_encode(['result' => $this->$method()]);
+					$output = json_encode(['result' => $this->logPatronRequestExternal($this->$method())]);
 				} else {
 					header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
 					$output = json_encode(['error' => 'invalid_method']);
@@ -720,6 +720,10 @@ class UserAPI extends AbstractAPI {
 	function getPatronProfile(): array {
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
+			
+			// Fetch the latest contact information from the ILS
+			$user->updatePatronInfo(true);
+
 			//Remove a bunch of junk from the user data
 			unset($user->query);
 			$userData = new stdClass();

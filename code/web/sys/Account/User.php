@@ -58,6 +58,7 @@ class User extends DataObject {
 	public $optInToAllCampaignLeaderboards;
 	public $campaignNotificationsByEmail;
 	public $notifySavedSearches;
+	public $eventRegistrationNotificationsByEmail;
 
 	public $onboardAppNotifications;
 	public $shouldAskBrightness;
@@ -240,6 +241,10 @@ class User extends DataObject {
 			'source',
 			'username',
 		];
+	}
+
+	public function canReceiveEventNotifications(): bool {
+		return !empty($this->email) && $this->eventRegistrationNotificationsByEmail == 1;
 	}
 
 	function getLists() {
@@ -1777,6 +1782,7 @@ class User extends DataObject {
 
 		$this->__set('optInToAllCampaignLeaderboards', (isset($_POST['optInToAllCampaignLeaderboards']) && $_POST['optInToAllCampaignLeaderboards'] == 'on') ? 1 : 0);
 		$this->__set('campaignNotificationsByEmail', (isset($_POST['campaignNotificationsByEmail']) && $_POST['campaignNotificationsByEmail'] == 'on') ? 1 : 0);
+		$this->__set('eventRegistrationNotificationsByEmail', (isset($_POST['eventRegistrationNotificationsByEmail']) && $_POST['eventRegistrationNotificationsByEmail'] == 'on') ? 1 : 0);
 
 		if ($library->holdPromptForEditions > 0) {
 			if (isset($_POST['rememberHoldPromptForEdition'])) {
@@ -2360,15 +2366,20 @@ class User extends DataObject {
 		return false;
 	}
 
+	public function supportsCredits() : bool {
+		if ($this->hasIlsConnection()) {
+			return $this->getCatalogDriver()->supportsCredits();
+		}
+		return false;
+	}
+
 	private $ilsFinesForUser;
+	private $ilsCreditsForUser;
 
 	public function getFines($includeLinkedUsers = true, $APIRequest = false): array {
 
 		if (!isset($this->ilsFinesForUser)) {
 			$this->ilsFinesForUser = $this->getCatalogDriver()->getFines($this);
-			if ($this->ilsFinesForUser instanceof AspenError) {
-				$this->ilsFinesForUser = [];
-			}
 		}
 
 		if ($APIRequest && !$includeLinkedUsers) {
@@ -2385,6 +2396,28 @@ class User extends DataObject {
 			}
 		}
 		return $ilsFines;
+	}
+
+	public function getCredits($includeLinkedUsers = true, $APIRequest = false): array {
+
+		if (!isset($this->ilsCreditsForUser)) {
+			$this->ilsCreditsForUser = $this->getCatalogDriver()->getFines($this, false, 'credit');
+		}
+
+		if ($APIRequest && !$includeLinkedUsers) {
+			$ilsCredits = $this->ilsCreditsForUser;
+		} else {
+			$ilsCredits[$this->id] = $this->ilsCreditsForUser;
+		}
+
+		if ($includeLinkedUsers) {
+			if ($this->getLinkedUsers() != null) {
+				foreach ($this->getLinkedUsers() as $user) {
+					$ilsCredits += $user->getCredits(false, $APIRequest); // keep keys as userId
+				}
+			}
+		}
+		return $ilsCredits;
 	}
 
 	public function getNameAndLibraryLabel() {
@@ -3139,7 +3172,7 @@ class User extends DataObject {
 				]),
 				'totalPaid' => StringUtils::formatCurrency($userPayment->totalPaid),
 				'paymentType' => $userPayment->paymentType,
-				'stripeReceiptUrl' => $userPayment->stripeReceiptUrl,
+				'receiptUrl' => $userPayment->receiptUrl,
 			];
 		}
 
@@ -4612,6 +4645,10 @@ class User extends DataObject {
 			'View eCommerce Reports for All Libraries',
 			'View eCommerce Reports for Home Library'
 		]);
+		$sections['ecommerce']->addAction(new AdminAction('Payment Details Report', 'View individual payment line items', '/Admin/PaymentDetailsReport'), [
+			'View eCommerce Reports for All Libraries',
+			'View eCommerce Reports for Home Library'
+		]);
 		$sections['ecommerce']->addAction(new AdminAction('Donations Report', 'View donations initiated and completed within the system', '/Admin/DonationsReport'), [
 			'View Donations Reports for All Libraries',
 			'View Donations Reports for Home Library'
@@ -4926,16 +4963,23 @@ class User extends DataObject {
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Fields', 'Define event fields for Aspen Events.', '/Events/EventFields'), 'Administer Field Sets');
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Field Sets', 'Define sets of event fields to use for Aspen Events.', '/Events/EventFieldSets'), 'Administer Field Sets');
 				$aspenEventsAction->addSubAction(new AdminAction('Configure Event Types', 'Define event types to use for Aspen Events.', '/Events/EventTypes'), 'Administer Event Types');
+				$aspenEventsAction->addSubAction(new AdminAction('Configure Attendee Categories', 'Define attendee categories for Aspen Events.', '/Events/AttendeeCategories'), 'Administer Event Types');
 				$aspenEventsAction->addSubAction(new AdminAction('Indexing Settings', 'Aspen Event Indexing Settings including indexing and library scope.', '/Events/IndexingSettings'), 'Administer Events for All Locations');
 				$aspenEventsAction->addSubAction(new AdminAction('Event Reports', 'Aspen Events Reporting.', '/Events/EventGraphs'), [
 					'View Event Reports for All Libraries',
 					'View Event Reports for Home Library'
+				]);
+				$aspenEventsAction->addSubAction(new AdminAction('Attendance Management', 'Manage Aspen Events including patron registrations.', '/Events/AttendanceManagement'), [
+					'Manage Patron Event Attendance for All Locations',
+					'Manage Patron Event Attendance for Home Library Locations',
+					'Manage Patron Event Attendance for Home Location',
 				]);
 			}
 			$sections['events']->addAction(new AdminAction('Aspen Events Settings', 'Aspen Native Events Settings that will apply to all events for a given library, regardless of type.', '/Events/AspenEventSettings'), 'Administer Events for All Locations');
 			$sections['events']->addAction(new AdminAction('Assabet - Interactive Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/AssabetSettings'), 'Administer Assabet Settings');
 			$sections['events']->addAction(new AdminAction('Communico - Attend Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/CommunicoSettings'), 'Administer Communico Settings');
 			$sections['events']->addAction(new AdminAction('Library Market - Calendar Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LMLibraryCalendarSettings'), 'Administer LibraryMarket LibraryCalendar Settings');
+			$sections['events']->addAction(new AdminAction('LocalHop - Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/LocalHopSettings'), 'Administer LocalHop Settings');
 			$sections['events']->addAction(new AdminAction('Springshare - LibCal Settings', 'Define collections to be loaded into Aspen Discovery.', '/Events/SpringshareLibCalSettings'), 'Administer Springshare LibCal Settings');
 			$sections['events']->addAction(new AdminAction('Calendar Display Settings', 'Define display settings for event calendar.', '/Events/CalendarDisplaySettings'), 'Print Calendars with Header Images and Footer');
 			$sections['events']->addAction(new AdminAction('Event Facet Settings', 'Define facets for event searches.', '/Events/EventsFacets'), 'Administer Events Facet Settings');

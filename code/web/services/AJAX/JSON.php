@@ -604,7 +604,7 @@ class AJAX_JSON extends Action {
 		global $interface;
 		$userLanguage = UserAccount::getUserInterfaceLanguage();
 		if ($userLanguage == '') {
-			$language = strip_tags((isset($_SESSION['language'])) ? $_SESSION['language'] : 'en');
+			$language = strip_tags(!empty($_SESSION['language']) ? $_SESSION['language'] : 'en');
 		} else {
 			$language = $userLanguage;
 		}
@@ -613,6 +613,8 @@ class AJAX_JSON extends Action {
 		if ($language != $preferredLanguage) {
 			$language = $preferredLanguage;
 			$_SESSION['language'] = $language;
+			setcookie('aspenInterfaceLanguage', $language, time() + (3 * 365 * 24 * 3600), '/');
+			$_COOKIE['aspenInterfaceLanguage'] = $language;
 			//Clear the preference cookie
 			if (isset($_COOKIE['searchPreferenceLanguage'])) {
 				//Clear the cookie when we change languages

@@ -1,5 +1,6 @@
 package org.aspen_discovery.reindexer;
 
+import com.turning_leaf_technologies.hoopla.HooplaUtils;
 import com.turning_leaf_technologies.indexing.HooplaScope;
 import com.turning_leaf_technologies.indexing.Scope;
 import com.turning_leaf_technologies.logging.BaseIndexingLogEntry;
@@ -18,6 +19,7 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 class HooplaProcessor2 {
@@ -145,17 +147,7 @@ class HooplaProcessor2 {
 				groupedWork.setTitle(title, subTitle, sortableTitle, formatCategory, false, hooplaRecord);
 				groupedWork.addFullTitle(fullTitle);
 
-
-				String primaryAuthor = "";
-				if (rawResponse.has("artist")){
-					primaryAuthor = rawResponse.getString("artist");
-					//Don't swap artist names for music since these are typically group names.
-					if (!format.equals("MUSIC")) {
-						primaryAuthor = AspenStringUtils.swapFirstLastNames(primaryAuthor);
-					}
-				}else if (rawResponse.has("publisher")){
-					primaryAuthor = rawResponse.getString("publisher");
-				}
+				String primaryAuthor = HooplaUtils.getPrimaryAuthor(rawResponse, format);
 				groupedWork.setAuthor(primaryAuthor);
 				groupedWork.setAuthAuthor(primaryAuthor);
 				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, hooplaRecord);
@@ -468,6 +460,11 @@ class HooplaProcessor2 {
 				boolean profanity = productRS.getBoolean("profanity");
 				String rating = productRS.getString("rating");
 
+				String normalizedRating = normalizeHooplaContentRating(rating);
+				if (normalizedRating != null) {
+					groupedWork.addContentRating(normalizedRating);
+				}
+
 				ItemInfo baseItemInfo = new ItemInfo();
 				baseItemInfo.setIsEContent(true);
 				baseItemInfo.seteContentUrl(rawResponse.getString("url"));
@@ -614,6 +611,38 @@ class HooplaProcessor2 {
 			}
 		}
 		return entitlementsByScope;
+	}
+
+	private String normalizeHooplaContentRating(String rating) {
+		if (rating == null) {
+			return null;
+		}
+
+		String normalizedRating = rating.toUpperCase(Locale.ROOT).replaceAll("[-\\s]", "");
+		if (normalizedRating.isEmpty()) {
+			return null;
+		}
+
+		switch (normalizedRating) {
+			case "PG13":
+				return "PG-13 Rated";
+			case "NC17":
+				return "NC-17 Rated";
+			case "TVY7":
+				return "TV-Y7 Rated";
+			case "TVY":
+				return "TV-Y Rated";
+			case "TVG":
+				return "TV-G Rated";
+			case "TVPG":
+				return "TV-PG Rated";
+			case "TV14":
+				return "TV-14 Rated";
+			case "TVMA":
+				return "TV-MA Rated";
+			default:
+				return normalizedRating + " Rated";
+		}
 	}
 
 }
