@@ -15654,12 +15654,13 @@ AspenDiscovery.Record = (function () {
 				}
 				var volumeId;
 				var volumeIdField = $('#volumeId');
-				var volumeIdSelectField = $('#volumeIdSelect option:selected');
+				var volumeIdSelectField = $('#volumeIdSelect');
+				var volumeIdSelectedOption = $('#volumeIdSelect option:selected');
 				var volumeSelected = false;
-				if (volumeIdSelectField !== undefined) {
-					volumeId = volumeIdSelectField.val()
+				if (volumeIdSelectField.length > 0) {
+					volumeId = volumeIdSelectedOption.val()
 					volumeSelected = true;
-				} else if (volumeIdField !== undefined) {
+				} else if (volumeIdField.length > 0) {
 					volumeId = volumeIdField.val();
 					volumeSelected = true;
 				}
