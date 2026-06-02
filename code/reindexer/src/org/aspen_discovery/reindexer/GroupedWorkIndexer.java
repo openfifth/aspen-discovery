@@ -192,7 +192,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	private PreparedStatement setSeriesDateUpdated;
 	private PreparedStatement updateSeriesAuthor;
 	private PreparedStatement updateSeriesScore;
-	private PreparedStatement updateSeriesPermanentId;
+	private PreparedStatement updateSeriesPermanentIdStmt;
 
 	private final CRC32 checksumCalculator = new CRC32();
 
@@ -380,7 +380,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			getNumberOfSeriesMembersStmt = dbConn.prepareStatement("SELECT COUNT(*) as numMembers FROM series_member WHERE seriesId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			updateSeriesAuthor = dbConn.prepareStatement("UPDATE series SET author = ? WHERE id = ?;");
 			updateSeriesScore = dbConn.prepareStatement("UPDATE series_member SET priorityScore = ? WHERE seriesId = ? AND groupedWorkPermanentId = ?");
-			updateSeriesPermanentId = dbConn.prepareStatement("UPDATE series SET seriesPermanentId = ? WHERE id = ?");
+			updateSeriesPermanentIdStmt = dbConn.prepareStatement("UPDATE series SET seriesPermanentId = ? WHERE id = ?");
 			setSeriesDateUpdated = dbConn.prepareStatement("UPDATE series SET dateUpdated = ? WHERE id = ?;");
 		} catch (Exception e){
 			logEntry.incErrors("Could not load statements to get identifiers ", e);
@@ -1595,7 +1595,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 						}
 						// Check if the series exists
 						long timeNow = new Date().getTime() / 1000;
-						long seriesId;
+						long seriesId = -1;
 						if (seriesRS.next()) { // Should only be one match
 							seriesId = seriesRS.getLong("id");
 							// Check if the series has been deleted
@@ -1640,30 +1640,52 @@ public class GroupedWorkIndexer implements AutoCloseable {
 								if (generatedKeys.next()) {
 									seriesId = generatedKeys.getLong(1);
 									addSeriesMemberStmt.setLong(1, seriesId);
-								} else {
-									seriesId = -1;
 								}
 								generatedKeys.close();
 							} else {
-								addSeriesV2Stmt.setString(1, AspenStringUtils.trimTo(500, displayTitle[0])); //displayTitle (user can edit)
-								addSeriesV2Stmt.setString(6, AspenStringUtils.trimTo(500, displayTitle[0])); //groupedWorkSeriesTitle (to match on)
-								addSeriesV2Stmt.setString(7, seriesPermanentId);
-								addSeriesV2Stmt.setString(8, seriesLanguage);
-								addSeriesV2Stmt.setString(2, groupedWork.getTargetAudiencesAsString());
-								addSeriesV2Stmt.setLong(3, timeNow);
-								addSeriesV2Stmt.setLong(4, timeNow);
-								addSeriesV2Stmt.setString(5, AspenStringUtils.trimTo(500, series.length > 2 ? displayTitle[2] : ""));
-								addSeriesV2Stmt.executeUpdate();
-								ResultSet generatedKeys = addSeriesV2Stmt.getGeneratedKeys();
-								if (generatedKeys.next()) {
-									seriesId = generatedKeys.getLong(1);
-									addSeriesMemberStmt.setLong(1, seriesId);
-								} else {
-									seriesId = -1;
-								}
-								generatedKeys.close();
-							}
+								//Add the series
+								boolean noAuthor = displayTitle.length <= 2 || displayTitle[2] == null || displayTitle[2].isEmpty();
+								boolean entryWithAuthorExists = false;
+								boolean entryWithoutAuthorNeedsUpdate = false;
+								getSeriesStmt.setString(1, series[0]);
+								ResultSet seriesCheckRS = getSeriesStmt.executeQuery();
 
+								if (seriesCheckRS.next()) { // there should only be one match
+									if (noAuthor) { // check for matching entry with author
+										if (seriesCheckRS.getString("seriesLanguage").equals(seriesLanguage) && !seriesCheckRS.getString("author").isEmpty()) {
+											seriesId = seriesCheckRS.getLong("id");
+											entryWithAuthorExists = true;
+											addSeriesMemberStmt.setLong(1, seriesId);
+										}
+									} else { // check for matching entry without author and update permanent id if match exists
+										if (seriesCheckRS.getString("seriesLanguage").equals(seriesLanguage) && seriesCheckRS.getString("author").isEmpty()) {
+											seriesId = seriesCheckRS.getLong("id");
+											entryWithoutAuthorNeedsUpdate = true;
+											addSeriesMemberStmt.setLong(1, seriesId);
+											updateSeriesPermanentIdStmt.setString(1, seriesPermanentId);
+											updateSeriesPermanentIdStmt.setLong(2, seriesId);
+											updateSeriesPermanentIdStmt.executeUpdate();
+										}
+									}
+								}
+								if (!entryWithAuthorExists && !entryWithoutAuthorNeedsUpdate) {
+									addSeriesV2Stmt.setString(1, AspenStringUtils.trimTo(500, displayTitle[0])); //displayTitle (user can edit)
+									addSeriesV2Stmt.setString(6, AspenStringUtils.trimTo(500, displayTitle[0])); //groupedWorkSeriesTitle (to match on)
+									addSeriesV2Stmt.setString(7, seriesPermanentId);
+									addSeriesV2Stmt.setString(8, seriesLanguage);
+									addSeriesV2Stmt.setString(2, groupedWork.getTargetAudiencesAsString());
+									addSeriesV2Stmt.setLong(3, timeNow);
+									addSeriesV2Stmt.setLong(4, timeNow);
+									addSeriesV2Stmt.setString(5, AspenStringUtils.trimTo(500, series.length > 2 ? displayTitle[2] : ""));
+									addSeriesV2Stmt.executeUpdate();
+									ResultSet generatedKeys = addSeriesV2Stmt.getGeneratedKeys();
+									if (generatedKeys.next()) {
+										seriesId = generatedKeys.getLong(1);
+										addSeriesMemberStmt.setLong(1, seriesId);
+									}
+									generatedKeys.close();
+								}
+							}
 						}
 						addSeriesMemberStmt.setString(2, groupedWork.getId());
 						if (series.length == 2) {
@@ -3424,7 +3446,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	public synchronized MarcStatus saveMarcRecordToDatabase(BaseIndexingSettings indexingProfile, String ilsId, Record marcRecord) {
 		// Filter out any private fields from the record
 		marcRecord = filterPrivateFields(marcRecord);
-		
+
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		MarcWriter writer = new MarcJsonWriter(outputStream);
 		writer.write(marcRecord);
