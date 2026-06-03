@@ -1,6 +1,9 @@
 <?php
 
-require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Middleware.php';
+global $composerActive;
+if ($composerActive) {
+	require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Middleware.php';
+}
 require_once ROOT_DIR . '/sys/API/APIMethodConfiguration.php';
 
 abstract class AbstractAPI extends Action{
@@ -130,22 +133,25 @@ abstract class AbstractAPI extends Action{
 	 * @return bool|User
 	 */
 	function getUserForApiCall() {
-		// Check if this is an OAuth2 authenticated request first
-		$oauthUser = OAuth2Middleware::getAuthenticatedUser();
-		if ($oauthUser) {
-			if (empty($_REQUEST['language'])) {
-				global $activeLanguage;
-				global $translator;
-				$userLanguage = new Language();
-				$userLanguage->code = $oauthUser->interfaceLanguage;
-				if ($userLanguage->find(true)) {
-					if ($userLanguage->code != $activeLanguage->code) {
-						$activeLanguage = $userLanguage;
-						$translator = new Translator('lang', $userLanguage->code);
+		global $composerActive;
+		if ($composerActive) {
+			// Check if this is an OAuth2 authenticated request first
+			$oauthUser = OAuth2Middleware::getAuthenticatedUser();
+			if ($oauthUser) {
+				if (empty($_REQUEST['language'])) {
+					global $activeLanguage;
+					global $translator;
+					$userLanguage = new Language();
+					$userLanguage->code = $oauthUser->interfaceLanguage;
+					if ($userLanguage->find(true)) {
+						if ($userLanguage->code != $activeLanguage->code) {
+							$activeLanguage = $userLanguage;
+							$translator = new Translator('lang', $userLanguage->code);
+						}
 					}
 				}
+				return $oauthUser;
 			}
-			return $oauthUser;
 		}
 
 		// Fall back to previous authentication
