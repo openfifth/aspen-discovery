@@ -1,7 +1,7 @@
 <?php
 
 global $composerActive;
-if (!$composerActive) {
+if ($composerActive) {
 	require_once ROOT_DIR . '/sys/Authentication/OAuth2/OAuth2Middleware.php';
 }
 require_once ROOT_DIR . '/sys/API/APIMethodConfiguration.php';
@@ -133,7 +133,8 @@ abstract class AbstractAPI extends Action{
 	 * @return bool|User
 	 */
 	function getUserForApiCall() {
-		if (!$composerActive) {
+		global $composerActive;
+		if ($composerActive) {
 			// Check if this is an OAuth2 authenticated request first
 			$oauthUser = OAuth2Middleware::getAuthenticatedUser();
 			if ($oauthUser) {
