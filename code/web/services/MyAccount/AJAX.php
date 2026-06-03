@@ -10077,7 +10077,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$step = $_REQUEST['step'] ?? "register";
 		$mandatoryEnrollment = $_REQUEST['mandatoryEnrollment'] ?? 'false';
-		$method = $_REQUEST['authMethod'] ?? 'email';
+		$method = $_REQUEST['authMethod'];
 
 		if ($step == "register") {
 			function mask($str, $first, $last) : string {
