@@ -283,6 +283,13 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE library ADD COLUMN moreLikeThisSettings tinyint(1) DEFAULT 1',
 			]
 		], //scoped_more_like_this
+		'accelerated_reading_points' => [
+			'title' => 'Accelerated Reading Points',
+			'description' => 'Update column for AR points to store decimal values.',
+			'sql' => [
+				'ALTER TABLE accelerated_reading_titles CHANGE COLUMN arPoints arPoints decimal(3,1) DEFAULT NULL',
+			]
+		], //accelerated_reading_points
 
 		//yanjun
 		'add_overdriveAdvantageId' => [
