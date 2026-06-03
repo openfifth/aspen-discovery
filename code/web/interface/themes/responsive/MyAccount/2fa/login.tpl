@@ -5,13 +5,9 @@
 	<form id="twoFactorAuthForm" onsubmit="AspenDiscovery.Account.verify2FALogin(); return false;">
 		<div class="row">
 			<div class="col-md-10 col-md-offset-1">
-                {if $authMethod === 'totp'}
-	                {if !$codeSent}
-						<p>{translate text="Enter the 6-digit code from your authenticator app or provide a backup code." isPublicFacing=true}</p>
-	                {else}
-						<p>{translate text="Enter the 6-digit code from your authenticator app or provide a backup code." isPublicFacing=true}</p>
-	                {/if}
-				{else}
+                {if $authMethods.hasTotp}
+	                <p>{translate text="Enter the 6-digit code from your authenticator app" isPublicFacing=true}</p>
+                {else}
                     {if !$codeSent}
 		                <div class="alert alert-warning">{translate text="Unable to send your authentication code. Verify your account has a valid email address. To access your account now, you may provide a backup code." isPublicFacing=true}</div>
                     {else}
@@ -23,15 +19,18 @@
 					<input type="text" class="form-control" id="code" name="code" maxlength="6" spellcheck="false" autocomplete="false">
 				</div>
 				<div class="alert alert-danger" id="codeVerificationFailedPlaceholder" style="display: none;"></div>
-                {if $authMethod !== 'totp'}
+                {if !$authMethods.hasTotp}
 					<a class="btn btn-xs btn-link" style="margin-top: 2em" onclick="return AspenDiscovery.Account.new2FACode();">{translate text="Code expired? Send another" isPublicFacing=true}</a>
 					<div id="newCodeSentPlaceholder" class="alert alert-info" style="display: none;"></div>
 				{/if}
+				<div>
+					<a class="btn btn-xs btn-link" style="margin-top: 2em" href="#">{translate text="Try a different way" isPublicFacing=true}</a>
+				</div>
 			</div>
 		</div>
 		<input type="hidden" id="referer" value="{$referer}" />
 		<input type="hidden" id="name" value="{$name}" />
 		<input type="hidden" id="myAccountAuth" value="false">
-		<input type="hidden" id="authMethod" value="{$authMethod}">
+		<input type="hidden" id="authMethod" value="{if $authMethods.hasTotp}totp{else}email{/if}">
 	</form>
 </div>

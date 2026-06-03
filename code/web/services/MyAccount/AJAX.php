@@ -1809,8 +1809,8 @@ class MyAccount_AJAX extends JSON_Action {
 				//We have an abandoned 2-factor authentication enrollment
 				UserAccount::softLogout();
 			} else {
-				$authMethod = UserAccount::typeOf2FAEnabled();
-				$interface->assign('authMethod', $authMethod);
+				$authMethods = UserAccount::get2FAMethodStatus();
+				$interface->assign('authMethods', $authMethods);
 				$interface->assign('codeSent', !empty($_SESSION['codeSent']));
 				$referer = $_REQUEST['referer'] ?? null;
 				$interface->assign('referer', $referer);
@@ -10077,7 +10077,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$step = $_REQUEST['step'] ?? "register";
 		$mandatoryEnrollment = $_REQUEST['mandatoryEnrollment'] ?? 'false';
-		$method = $_REQUEST['authMethod'];
+		$method = $_REQUEST['useMethod'] ?? '';
 
 		if ($step == "register") {
 			function mask($str, $first, $last) : string {
@@ -10116,18 +10116,16 @@ class MyAccount_AJAX extends JSON_Action {
 			global $library;
 
 			$twoFactorAuthSetting = $user->getTwoFactorAuthenticationSetting();
-			if ($method == 'undefined') {
-				$method = $twoFactorAuthSetting->allowedMethod ?? 'email';
+			if ($method == 'undefined' || $method == '') {
+				$method = $twoFactorAuthSetting->allowTotp ? 'totp' : 'email';
 			}
 
 			$secret = null;
-			if ($method == 'totp' || $method == 'undefined') {
+			if ($method == 'totp') {
 				require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
 				// Generate QR code
 
 				$secret = TwoFactorAuthTOTPSecret::getOrCreateSecret(true);
-
-
 				$issuer = !empty($twoFactorAuthSetting->issuerTOTP) ? $twoFactorAuthSetting->issuerTOTP : $library->displayName . ' Catalog';
 
 				// the issuer needs to be the 2FA Setting value, not raw
