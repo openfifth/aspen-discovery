@@ -809,6 +809,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 			}
 
 			$foundValidBarcode = false;
+			$barcode = '';
 			if ($selfRegistrationForm != null){
 				$barcodePrefix = $selfRegistrationForm->selfRegistrationBarcodePrefix;
 				$barcodeSuffixLength = $selfRegistrationForm->selfRegBarcodeSuffixLength;
@@ -824,7 +825,6 @@ class SirsiDynixROA extends AbstractIlsDriver {
 					$foundValidBarcode = true;
 				}
 			}
-			$barcode = '';
 			if (!$foundValidBarcode) {
 				$barcodeVariable = new Variable();
 				$barcodeVariable->name = 'self_registration_card_number';
@@ -844,7 +844,7 @@ class SirsiDynixROA extends AbstractIlsDriver {
 				}
 			}
 
-			if ($foundValidBarcode) {
+			if ($foundValidBarcode && !empty($barcode)) {
 				$createPatronInfoParameters['fields']['barcode'] = (string)$barcode;
 
 				//global $configArray;
@@ -1048,13 +1048,17 @@ class SirsiDynixROA extends AbstractIlsDriver {
 	}
 
 	/**
-	 * @param User $patron
-	 * @param int $page
-	 * @param int $recordsPerPage
-	 * @param string $sortOption
-	 * @return Checkout[]
+	 * Get Patron Checkouts
+	 *
+	 * This is responsible for retrieving all checkouts (i.e. checked out items)
+	 * by a specific patron.
+	 *
+	 * @param User $patron       The user to load transactions for
+	 * @param array $options     Additional options
+	 * @return Checkout[]        Array of the patron's transactions on success
+	 * @access public
 	 */
-	public function getCheckouts(User $patron, int $page = 1, int $recordsPerPage = -1, string $sortOption = 'dueDate'): array {
+	public function getCheckouts(User $patron, array $options = []): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
 		$checkedOutTitles = [];
 
@@ -2251,13 +2255,11 @@ class SirsiDynixROA extends AbstractIlsDriver {
 
 	}
 
-	/**
-	 * @param User $patron
-	 * @param $includeMessages
-	 * @return array
-	 */
-	public function getFines($patron, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		$fines = [];
+		if ($type == 'credit'){
+			return $fines;
+		}
 		$sessionToken = $this->getSessionToken($patron);
 		if ($sessionToken) {
 
@@ -4387,8 +4389,8 @@ class SirsiDynixROA extends AbstractIlsDriver {
 				$forceVolumeHold = false;
 				$itemId = '';
 				if (array_key_exists('volumeSelected', $_REQUEST)) {
-					$forceVolumeHold = boolval($_REQUEST['volumeSelected']);
-					if (empty($volumeId)) {
+					$forceVolumeHold = filter_var($_REQUEST['volumeSelected'], FILTER_VALIDATE_BOOLEAN);
+					if (empty($volumeId) && $forceVolumeHold) {
 						//To place a volume hold on a blank volume, we need to find an item without a volume, preferably owned by this system.
 						require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 						$marcRecord = new MarcRecordDriver($this->getIndexingProfile()->name . ':' . $catalogKey);

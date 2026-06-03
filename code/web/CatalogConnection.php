@@ -576,11 +576,11 @@ class CatalogConnection {
 	 * AspenError otherwise.
 	 * @access public
 	 */
-	public function getCheckouts(User $user, ?bool $forceRefresh = false): array {
+	public function getCheckouts(User $user, ?bool $forceRefresh = false, array $options = []): array {
 		$accountSummary = $user->getCachedAccountSummary('ils');
 		$cachedCheckouts = $user->getCachedCheckoutsForSource('ils');
 		if ($forceRefresh || $accountSummary->areCheckoutsStale() || isset($_REQUEST['reload']) || isset($_REQUEST['refreshCheckouts'])) {
-			$checkouts = $this->driver->getCheckouts($user);
+			$checkouts = $this->driver->getCheckouts($user, $options);
 
 			$cachedCheckouts = $this->driver->updateCachedCheckoutsBasedOnActiveCheckouts($cachedCheckouts, $checkouts, $accountSummary);
 		}
@@ -599,14 +599,18 @@ class CatalogConnection {
 	 * otherwise.
 	 * @access public
 	 */
-	public function getFines(User $patron, bool $includeMessages = false): array {
-		$fines = $this->driver->getFines($patron, $includeMessages);
+	public function getFines(User $patron, bool $includeMessages = false, ?string $type = null): array {
+		$fines = $this->driver->getFines($patron, $includeMessages, $type);
 		foreach ($fines as &$fine) {
 			if (!array_key_exists('canPayFine', $fine)) {
 				$fine['canPayFine'] = true;
 			}
 		}
 		return $fines;
+	}
+
+	public function supportsCredits() : bool {
+		return $this->driver->supportsCredits();
 	}
 
 	/**
@@ -655,13 +659,50 @@ class CatalogConnection {
 			}
 		}
 
+		$validWorks = [];
+		if (!empty($filter)) {
+			/** @var SearchObject_AbstractGroupedWorkSearcher $searchObject */
+			$searchObject = SearchObjectFactory::initSearchObject();
+			$searchObject->init();
+
+			$searchObject->setSearchTermWithIndex('TitleAuthorSeries', $filter);
+			$searchObject->setFieldsToReturn('id');
+			$searchObject->addFilter("user_reading_history_link:$patron->id");
+			$searchObject->setPage(1);
+			$numPages = 1;
+			$pageSize = 50;
+			$searchObject->setLimit(50);
+			$solrSearchResult = $searchObject->processSearch();
+			if (!empty($solrSearchResult)) {
+				if ($solrSearchResult['response']['numFound'] == 0) {
+					return $result;
+				}
+				if ($solrSearchResult['response']['numFound'] > $pageSize) {
+					$numPages = ceil($solrSearchResult['response']['numFound'] / $pageSize);
+				}
+				foreach ($solrSearchResult['response']['docs'] as $doc) {
+					$validWorks[] = $doc['id'];
+				}
+				//Load additional pages
+				for ($i = 2; $i <= $numPages; $i++) {
+					$searchObject->setPage($i);
+					$solrSearchResult = $searchObject->processSearch();
+					foreach ($solrSearchResult['response']['docs'] as $doc) {
+						$validWorks[] = $doc['id'];
+					}
+				}
+			}
+		}
+
+
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
 		$readingHistoryDB = new ReadingHistoryEntry();
 		$readingHistoryDB->userId = $patron->id;
 		$readingHistoryDB->whereAdd('deleted =  0');
 		if (!empty($filter)) {
-			$escapedFilter = $readingHistoryDB->escape('%' . $filter . '%');
-			$readingHistoryDB->whereAdd("title LIKE $escapedFilter OR author LIKE $escapedFilter OR format LIKE $escapedFilter");
+			//$escapedFilter = $readingHistoryDB->escape('%' . $filter . '%');
+			//$readingHistoryDB->whereAdd("title LIKE $escapedFilter OR author LIKE $escapedFilter OR format LIKE $escapedFilter");
+			$readingHistoryDB->whereAddIn('groupedWorkPermanentId', $validWorks, true);
 		}
 		$readingHistoryDB->selectAdd();
 		$readingHistoryDB->selectAdd('MAX(id) as id');
@@ -1250,7 +1291,7 @@ class CatalogConnection {
 			}
 		}
 
-		$checkouts = $patron->getCheckouts(false);
+		$checkouts = $patron->getCheckouts(false, isNightlyUpdate: $isNightlyUpdate);
 		foreach ($checkouts as $checkout) {
 			$source = $checkout->source;
 			$sourceId = $checkout->sourceId;
@@ -1401,7 +1442,7 @@ class CatalogConnection {
 		if ($okToCancel) {
 			$result = $this->driver->cancelHold($patron, $recordId, $cancelId, $isIll);
 			if ($result['success']) {
-				$this->driver->updateCachesForCancelledHold($patron, $holdToCancel);
+				$this->driver->updateCachesForCancelledHold($patron, $holdToCancel, 'ils');
 			}
 			return $result;
 		} else {

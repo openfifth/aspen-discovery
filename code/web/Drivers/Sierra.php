@@ -787,7 +787,18 @@ class Sierra extends AbstractIlsDriver {
 		return null;
 	}
 
-	public function getCheckouts(User $patron): array {
+	/**
+	 * Get Patron Checkouts
+	 *
+	 * This is responsible for retrieving all checkouts (i.e. checked out items)
+	 * by a specific patron.
+	 *
+	 * @param User $patron       The user to load transactions for
+	 * @param array $options     Additional options
+	 * @return Checkout[]        Array of the patron's transactions on success
+	 * @access public
+	 */
+	public function getCheckouts(User $patron, array $options = []): array {
 		require_once ROOT_DIR . '/sys/User/Checkout.php';
 		$checkedOutTitles = [];
 		global $library;
@@ -834,6 +845,8 @@ class Sierra extends AbstractIlsDriver {
 						$curCheckout->author = 'Unknown';
 					}
 					$curCheckout->formats = ['Unknown'];
+					$homeLibrary = $patron->getHomeLibrary();
+					$curCheckout->canRenew = !($homeLibrary && !$homeLibrary->allowToRenewILL);
 				} else {
 					preg_match($this->urlIdRegExp, $entry->item, $m);
 					$itemIdShort = $m[1];
@@ -2686,8 +2699,11 @@ class Sierra extends AbstractIlsDriver {
 		}
 	}
 
-	public function getFines($patron = null, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		$fines = [];
+		if ($type == 'credit'){
+			return $fines;
+		}
 
 		$params = [
 			'fields' => 'default,assessedDate,itemCharge,processingFee,billingFee,chargeType,paidAmount,datePaid,description,returnDate,location,description,invoiceNumber',

@@ -291,6 +291,19 @@ class UserAccount {
 		return 'false';
 	}
 
+	public static function isAuthorizedToActOnBehalfOf(int $userId): bool {
+		$activeUserId = (int)self::getActiveUserId();
+		if ($userId === $activeUserId) {
+			return true;
+		}
+		foreach (self::getActiveUserObj()->getLinkedUsers() as $linkedUser) {
+			if ($linkedUser->id == $userId) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function getUserHomeLocationId() {
 		UserAccount::loadUserObjectFromDatabase();
 		if (UserAccount::$primaryUserObjectFromDB != false) {
@@ -591,6 +604,7 @@ class UserAccount {
 						return $cardExpired;
 					} elseif ($library->allowLoginToPatronsOfThisLibraryOnly && ($tempUser->getHomeLibrary() != null && ($tempUser->getHomeLibrary()->libraryId != $library->libraryId))) {
 						$disallowedMessage = empty(trim(strip_tags($library->messageForPatronsOfOtherLibraries))) ? 'Sorry, this catalog can only be accessed by patrons of ' . $library->displayName : $library->messageForPatronsOfOtherLibraries;
+						$disallowedMessage .= ' Your home library is ' . $tempUser->getHomeLibrary()->displayName . '. <a href="' . $tempUser->getHomeLibrary()->baseUrl . '">Go to your library’s website to login</a>.';
 						return new AspenError($disallowedMessage);
 					} elseif ($tempUser->getHomeLibrary() != null && ($tempUser->getHomeLibrary()->preventLogin)) {
 						$disallowedMessage = empty(trim(strip_tags($tempUser->getHomeLibrary()->preventLoginMessage))) ? 'Sorry, patrons of ' . $library->displayName . ' cannot login at this time.' : $tempUser->getHomeLibrary()->preventLoginMessage;
@@ -624,14 +638,22 @@ class UserAccount {
 				$_SESSION['enroll2FA'] = true;
 				$_SESSION['has2FA'] = false;
 				$_SESSION['codeSent'] = false;
+				$_SESSION['authMethod'] = UserAccount::typeOf2FAEnabled();
 				return new TwoFactorAuthenticationError(UserAccount::getActiveUserId(), TwoFactorAuthenticationError:: MUST_ENROLL, "User needs to enroll in two-factor authentication");
 			} elseif (!$validatedViaSSO && UserAccount::has2FAEnabled() && UserAccount::$isAuthenticated === false) {
 				UserAccount::$isLoggedIn = false;
 				$logger->log("User needs to two-factor authenticate", Logger::LOG_DEBUG);
+				$_SESSION['enroll2FA'] = false;
+				$_SESSION['authMethod'] = UserAccount::typeOf2FAEnabled();
+				if (UserAccount::typeOf2FAEnabled() === 'totp') {
+					$_SESSION['has2FA'] = true;
+					$_SESSION['codeSent'] = false;
+					return new TwoFactorAuthenticationError(UserAccount::getActiveUserId(), TwoFactorAuthenticationError::MUST_COMPLETE_AUTHENTICATION, 'You must authenticate before logging in. Please provide a code from your authenticator app.');
+				}
+				// else just assume email at this point
 				require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 				$twoFactorAuth = new TwoFactorAuthCode();
 				$codeSent = $twoFactorAuth->createCode();
-				$_SESSION['enroll2FA'] = false;
 				$_SESSION['codeSent'] = $codeSent;
 				$_SESSION['has2FA'] = $codeSent;
 				return new TwoFactorAuthenticationError(UserAccount::getActiveUserId(), TwoFactorAuthenticationError::MUST_COMPLETE_AUTHENTICATION, 'You must authenticate before logging in. Please provide the 6-digit code that was emailed to you.');
@@ -643,6 +665,7 @@ class UserAccount {
 				$_SESSION['enroll2FA'] = false;
 				$_SESSION['has2FA'] = false;
 				$_SESSION['codeSent'] = false;
+				$_SESSION['authMethod'] = UserAccount::typeOf2FAEnabled();
 				UserAccount::$isLoggedIn = true;
 				UserAccount::$primaryUserData = $primaryUser;
 				if (isset($_COOKIE['searchPreferenceLanguage']) && $primaryUser->searchPreferenceLanguage == -1) {
@@ -969,6 +992,15 @@ class UserAccount {
 		}
 		return false;
 	}
+
+	static function typeOf2FAEnabled(): ?string {
+		UserAccount::loadUserObjectFromDatabase();
+		if (UserAccount::$primaryUserObjectFromDB != false && UserAccount::$ssoAuthOnly === false) {
+			return UserAccount::$primaryUserObjectFromDB->get2FAMethod();
+		}
+		return null;
+	}
+
 
 
 	/**

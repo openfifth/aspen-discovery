@@ -29,7 +29,7 @@ class EventAPI extends AbstractAPI {
 					header('Cache-Control: max-age=10800');
 					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
 					APIUsage::incrementStat('EventAPI', $method);
-					$output = json_encode($this->$method());
+					$output = json_encode($this->logPatronRequestExternal($this->$method()));
 				} else {
 					header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
 					$output = json_encode(['error' => 'invalid_method']);
@@ -85,6 +85,8 @@ class EventAPI extends AbstractAPI {
 			return $this->getSpringshareEventDetails();
 		} else if ($source == 'assabet') {
 			return $this->getAssabetEventDetails();
+		} else if ($source == 'localhop') {
+			return $this->getLocalHopEventDetails();
 		} else if ($source == 'aspenEvents') {
 			return $this->getAspenEventDetails();
 		} else {
@@ -295,6 +297,60 @@ class EventAPI extends AbstractAPI {
 				$itemData['userIsRegistered'] = $user->isRegistered($_REQUEST['id']);
 				$itemData['inUserEvents'] = $user->inUserEvents($_REQUEST['id']);
 				$itemData['canAddToList'] = $user->isAllowedToAddEventsToList($assabetDriver->getSource());
+			}
+
+
+			return $itemData;
+		}
+		return [
+			'success' => false,
+			'message' => 'Event id not valid',
+		];
+	}
+
+	function getLocalHopEventDetails(): array {
+		require_once ROOT_DIR . '/RecordDrivers/LocalHopEventRecordDriver.php';
+		$localHopDriver = new LocalHopEventRecordDriver($_REQUEST['id']);
+		if($localHopDriver->isValid()) {
+			$registrationInformation = null;
+			if($localHopDriver->getRegistrationModalBodyForAPI()) {
+				$registrationInformation = strip_tags($localHopDriver->getRegistrationModalBodyForAPI());
+			} elseif ($localHopDriver->getRegistrationModalBody()) { // use the regular registration modal as a backup if needed
+				$registrationInformation = strip_tags($localHopDriver->getRegistrationModalBody());
+			}
+
+			$itemData['success'] = true;
+			$itemData['id'] = $_REQUEST['id'];
+			$itemData['title'] = $localHopDriver->getTitle();
+			$itemData['isAllDay'] = (bool)$localHopDriver->isAllDayEvent();
+			$itemData['startDate'] = $localHopDriver->getStartDate();
+			$itemData['endDate'] = $localHopDriver->getEndDate();
+			$itemData['description'] = strip_tags($localHopDriver->getDescription());
+			$itemData['registrationRequired'] = $localHopDriver->isRegistrationRequired();
+			$itemData['userIsRegistered'] = false;
+			$itemData['inUserEvents'] = false;
+			$itemData['registrationBody'] = $registrationInformation;
+			$itemData['bypass'] = (bool)$localHopDriver->getBypassSetting();
+			$itemData['cover'] = $localHopDriver->getEventCoverUrl();
+			$itemData['url'] = $localHopDriver->getExternalUrl();
+			$itemData['audiences'] = $localHopDriver->getAudiences();
+			$itemData['categories'] = null;
+			$itemData['programTypes'] = null;
+			$itemData['room'] = null;
+
+			// check if event has passed
+			$today = new DateTime('now');
+			$eventDay = $localHopDriver->getStartDate();
+			$itemData['pastEvent'] = $today >= $eventDay;
+
+			$itemData['location'] = $this->getDiscoveryBranchDetails($localHopDriver->getBranch());
+			$itemData['canAddToList'] = false;
+
+			$user = $this->getUserForApiCall();
+			if ($user && !($user instanceof AspenError)) {
+				$itemData['userIsRegistered'] = $user->isRegistered($_REQUEST['id']);
+				$itemData['inUserEvents'] = $user->inUserEvents($_REQUEST['id']);
+				$itemData['canAddToList'] = $user->isAllowedToAddEventsToList($localHopDriver->getSource());
 			}
 
 

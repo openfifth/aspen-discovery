@@ -22,7 +22,7 @@
 						<p class="alert alert-info">
 							{translate text="Select which editions of this format you want to place holds on. By default, all editions are selected." isPublicFacing=true}
 						</p>
-						
+
 						<div class="editions-list">
 							<ul class="list-unstyled">
 								<li>
@@ -31,9 +31,9 @@
 									{foreach from=$editions item=edition}
 										<li class="edition-item mb-2" style="display: none;">
 											<label>
-												<input type="checkbox" 
-													name="hyperholdRecord[]" 
-													value="{$edition.id}" 
+												<input type="checkbox"
+													name="hyperholdRecord[]"
+													value="{$edition.id}"
 													checked="checked"
 													class="edition-checkbox">
 												<strong>{$edition.title|escape}</strong>
@@ -44,9 +44,9 @@
 									{/foreach}
 							</ul>
 						</div>
-						
+
 						<hr>
-					</div>	
+					</div>
 				{/if}
 
 				<div class="holdsSummary">
@@ -137,36 +137,6 @@
 								</div>
 							</div>
 						{/if}
-						<div id="pickupLocationOptions" class="form-group">
-							<label class="control-label" for="pickupBranch">{translate text="I want to pick this up at" isPublicFacing=true} </label>
-							<div class="controls">
-								<select name="pickupBranch" id="pickupBranch hyperholdPickupBranch" class="form-control" onchange="AspenDiscovery.Record.generateSublocationSelect();">
-									{if count($pickupLocations) > 0}
-										{foreach from=$pickupLocations item=location}
-											{if is_string($location)}
-												<option value="undefined">{$location}</option>
-											{else}
-												<option value="{$location->code}" data-users="[{implode subject=$location->getPickupUsers() glue=','}]" {if $location->code == $user->getPickupLocationCode() || ($location->code == $onlyValidPickupLocation && $preferredPickupLocationIsValid)}selected{/if}>{$location->displayName|escape}</option>
-											{/if}
-										{/foreach}
-									{else}
-										<option>placeholder</option>
-									{/if}
-								</select>
-
-								<div id="pickupSublocationOptions" style="margin-top:15px">
-									<div id="sublocationSelectPlaceHolder"></div>
-								</div>
-
-								{if empty($multipleUsers) && $allowRememberPickupLocation}
-									<div class="form-group">
-										<label for="rememberHoldPickupLocation" class="checkbox"><input type="checkbox" name="rememberHoldPickupLocation" id="rememberHoldPickupLocation"> {translate text="Always use this pickup location" isPublicFacing=true}</label>
-									</div>
-								{else}
-									<input type="hidden" name="rememberHoldPickupLocation"  id="rememberHoldPickupLocation" value="off">
-								{/if}
-							</div>
-						</div>
 						<div id="userOption" class="form-group"{if empty($multipleUsers)} style="display: none"{/if}>{* display if there are multiple accounts *}
 							<label for="user" class="control-label">
 								{if $hidePickupLocationPrompt}
@@ -296,6 +266,9 @@
 					{/if}
 					<input type="hidden" name="holdPromptForEditions" id="holdPromptForEditions" value="{$holdPromptForEditions}">
 					{if $holdPromptForEditions > 0 && count($editionOptions) > 0 && $promptForEdition}
+						{if !empty($holdEditionPromptMessage)}
+							<div class="alert alert-info">{translate text=$holdEditionPromptMessage isPublicFacing=true}</div>
+						{/if}
 						<div id="editionSelectionOptions" class="form-group">
 							<label class="control-label" for="selectedEditionOption">{translate text="Do you want to place a hold on the suggested edition or a specific edition?" isPublicFacing=true}</label>
 							<select name="selectedEditionOption" id="selectedEditionOption" class="form-control"  onchange="AspenDiscovery.GroupedWork.showEditionSwiper()">
@@ -325,7 +298,7 @@
 														</div>
 														<div class="edition-data">
 															{$edition->publicationDate}. {$edition->publisher}. {$edition->physical}.<br/>
-															{include file='GroupedWork/statusIndicator.tpl' statusInformation=$relatedRecord->getStatusInformation() viewingIndividualRecord=1}
+															{include file='GroupedWork/statusIndicator.tpl' statusInformation=$edition->getStatusInformation() viewingIndividualRecord=1}
 															<span>{$current} of {count($editionOptions)}</span>
 														</div>
 													</label>
@@ -385,7 +358,7 @@
 <script>
 	$('#toggleEditions').on('click', function(e){
 		e.preventDefault();
-		$('.edition-item').toggle(); 
+		$('.edition-item').toggle();
 		if ($('.edition-item:visible').length) {
 			$(this).text('Hide Editions');
 		} else {

@@ -56,7 +56,7 @@ class SystemAPI extends AbstractAPI {
 					'getHomeScreenLinks',
 				])) {
 					$result = [
-						'result' => $this->$method(),
+						'result' => $this->logPatronRequestExternal($this->$method()),
 					];
 					$output = json_encode($result);
 					header("Cache-Control: max-age=10800");
@@ -401,6 +401,10 @@ class SystemAPI extends AbstractAPI {
 		$galeUpdates = getGaleUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_registration_updates.php';
 		$aspenEventRegistrationUpdates = getAspenEventRegistrationUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_waiting_list_updates.php';
+		$aspenEventWaitingListUpdates = getAspenEventWaitingListUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_notification_updates.php';
+		$aspenEventNotificationUpdates = getAspenEventNotificationUpdates();
 
 		//having these on separate lines should make merges easier to manage
 		$baseUpdates = array_merge(
@@ -414,7 +418,9 @@ class SystemAPI extends AbstractAPI {
 			$hooplaVersion2Updates,
 			$pay360Updates,
 			$galeUpdates,
-			$aspenEventRegistrationUpdates
+			$aspenEventRegistrationUpdates,
+			$aspenEventWaitingListUpdates,
+			$aspenEventNotificationUpdates
 		);
 
 		//Get version updates

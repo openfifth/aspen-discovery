@@ -180,9 +180,9 @@ class Search_Results extends ResultsAction {
 				$from = (isset($_REQUEST[$filter . 'from']) && preg_match('/^\d+(\.\d*)?$/', $_REQUEST[$filter . 'from'])) ? $_REQUEST[$filter . 'from'] : '*';
 				$to = (isset($_REQUEST[$filter . 'to']) && preg_match('/^\d+(\.\d*)?$/', $_REQUEST[$filter . 'to'])) ? $_REQUEST[$filter . 'to'] : '*';
 
-				if ($filter = 'duration') {
-					$from = $from === '*' ? '*' : $from * 60;
-					$to = $to === '*' ? '*' : $to * 60;
+				if ($filter == 'duration') {
+					$from = $from === '*' ? '*' : intval($from * 60);
+					$to = $to === '*' ? '*' : intval($to * 60);
 				}
 
 				if ($to != '*' && $from != '*' && $to < $from) {

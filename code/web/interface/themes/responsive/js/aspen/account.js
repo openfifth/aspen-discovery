@@ -325,14 +325,13 @@ AspenDiscovery.Account = (function () {
 			return false;
 		},
 
-		loadHolds: function (source, availableHoldSort, unavailableHoldSort, showCovers, selectedUser) {
+		loadHolds: function (source, availableHoldSort, unavailableHoldSort, showCovers, selectedUser, filters) {
 			AspenDiscovery.Account.currentHoldSource = source;
 			var url = Globals.path + "/MyAccount/AJAX?method=getHolds&source=" + source;
 
 			if (selectedUser || selectedUser == "") {
 				url += "&selectedUser=" + selectedUser;
 			}
-
 
 			if (availableHoldSort !== undefined) {
 				url += "&availableHoldSort=" + availableHoldSort;
@@ -343,6 +342,11 @@ AspenDiscovery.Account = (function () {
 			if (showCovers !== undefined) {
 				url += "&showCovers=" + showCovers;
 			}
+
+			if (filters !== undefined) {
+				url += "&" + AspenDiscovery.buildQueryString(filters);
+			}
+
 			var stateObj = {
 				page: 'Holds',
 				source: source,
@@ -378,6 +382,7 @@ AspenDiscovery.Account = (function () {
 				if (data.success) {
 					$('#accountLoadTime').html(data.holdInfoLastLoaded);
 					$("#" + source + "HoldsPlaceholder").html(data.holds);
+					$("#holdsFiltersBar").html(data.filterOptions);
 					AspenDiscovery.Account.loadMenuData();
 				} else {
 					$("#" + source + "HoldsPlaceholder").html(data.message);
@@ -475,7 +480,7 @@ AspenDiscovery.Account = (function () {
 						} else {
 							$(".ils-overdue-placeholder").html("0");
 						}
-						$(".ils-holds-placeholder").html(summary.numHolds);
+						$(".ils-holds-placeholder").html(Math.max(0, summary.numHolds));
 						totalHolds += parseInt(summary.numHolds);
 						$(".holds-placeholder").html(totalHolds);
 						if (summary.numAvailableHolds > 0) {
@@ -2061,11 +2066,14 @@ AspenDiscovery.Account = (function () {
 			// noinspection JSUnresolvedFunction
 			$.getJSON(url, params, function (data) {
 				if (data.success) {
-					if (data.isDonation) {
-						window.location.href = Globals.path + '/Donations/DonationCompleted?id=' + data.paymentId;
-					} else {
-						AspenDiscovery.showMessage('Thank you', data.message, false, true);
+					let buttons = '';
+					// noinspection JSUnresolvedReference
+					if (data.receiptUrl) {
+						const safeReceiptUrl = encodeURI(data.receiptUrl);
+						buttons = '<a href="' + safeReceiptUrl + '" target="_blank" rel="noopener noreferrer" class="btn btn-primary">' +
+							'<i class="fas fa-receipt"></i> View Receipt</a>';
 					}
+					AspenDiscovery.showMessageWithButtons('Thank You', data.message, buttons, true);
 				} else {
 					if (data.isDonation) {
 						window.location.href = Globals.path + '/Donations/DonationCancelled?id=' + data.paymentId;
@@ -2185,8 +2193,9 @@ AspenDiscovery.Account = (function () {
 				}
 			);
 
-			if (document.getElementById('convenienceFee')) {
-				var feeAmt = document.getElementById('convenienceFee').getAttribute('data-fee_amt');
+			var convenienceFeeElement = $(finesFormId + " [id^='convenienceFee']").get(0);
+			if (convenienceFeeElement) {
+				var feeAmt = convenienceFeeElement.getAttribute('data-fee_amt');
 				outstandingGrandTotalAmt += feeAmt * 1;
 			}
 
@@ -2386,11 +2395,15 @@ AspenDiscovery.Account = (function () {
 			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
 			const userId = userSelector ? userSelector.value : (userIdField ? userIdField.value : null);
 
+			const informationForm = document.getElementById(`eventRegistrationForm-${eventSourceId}`);
+			const registrationInformation = Object.fromEntries(new FormData(informationForm).entries());
+
 			const url = Globals.path + "/MyAccount/AJAX";
 			const params = {
 				method: 'toggleUserRegistrationToEvent',
 				eventSourceId,
-				userId
+				userId,
+				...registrationInformation,
 			};
 
 			$.getJSON(url, params, function (data) {
@@ -2399,17 +2412,27 @@ AspenDiscovery.Account = (function () {
 		},
 
 		updateEventRegistrationUser: function (selector, eventSourceId) {
-			const selectedOption = selector.options[selector.selectedIndex];
-			const email = selectedOption.dataset.email || '';
-			const location = selectedOption.dataset.location || '';
-
 			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
 			const userId = selector ? selector.value : (userIdField ? userIdField.value : null);
 
 			AspenDiscovery.Account.isUserRegisteredForEvent(eventSourceId, userId).then((data) => AspenDiscovery.Account.updateEventButtonTextContent(data, eventSourceId));
-			document.getElementById(`eventRegistrationUserId-${eventSourceId}`).value = selector.value;
-			document.getElementById(`eventUserEmail-${eventSourceId}`).textContent = email;
-			document.getElementById(`eventUserLocation-${eventSourceId}`).textContent = location;
+
+			if (userIdField) {
+				userIdField.value = selector.value;
+			}
+
+			const email = document.getElementById(`eventUserEmail-${eventSourceId}`);
+			if (!email) {
+				return;
+			}
+	
+			const selectedOption = selector.options[selector.selectedIndex];
+			email.textContent = selectedOption.dataset.email || '';
+
+			const location = document.getElementById(`eventUserLocation-${eventSourceId}`);
+			if (location) {
+				location.textContent = selectedOption.dataset.location || '';
+			}
 
 			const changeLink = document.getElementById(`eventUserEmailChangeLink-${eventSourceId}`);
 			if (changeLink) {
@@ -2419,13 +2442,70 @@ AspenDiscovery.Account = (function () {
 		},
 
 		updateEventButtonTextContent: function (userRegistrationData, eventSourceId) {
-			if (!userRegistrationData.success) {
-				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = 'Unavailable';
-				document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).setAttribute('disabled', true);
+			const actionButton = document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`);
+			if (!actionButton) {
 				return;
 			}
-			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).textContent = userRegistrationData.body.isRegistered ? 'Unregister' : 'Register';
-			document.getElementById(`aspen-events-toggle-registration-button-${eventSourceId}`).removeAttribute('disabled');
+
+			const positionBtnId = `aspen-events-waiting-list-position-${eventSourceId}`;
+			let positionBtn = document.getElementById(positionBtnId);
+
+			if (!userRegistrationData.success) {
+				actionButton.textContent = 'Unavailable';
+				actionButton.setAttribute('disabled', true);
+				if (positionBtn) { positionBtn.remove(); }
+				return;
+			}
+
+			const userRegistration = userRegistrationData.body;
+			const inModal = document.getElementById('modalDialog')?.contains(actionButton);
+			const userIdField = document.getElementById(`eventRegistrationUserId-${eventSourceId}`);
+			const selectedUserId = userIdField ? userIdField.value : null;
+
+			actionButton.className = 'btn btn-primary';
+			actionButton.removeAttribute('disabled');
+			actionButton.onclick = null;
+
+			if (userRegistration.isOnWaitingList) {
+				if (!positionBtn) {
+					positionBtn = document.createElement('button');
+					positionBtn.id = positionBtnId;
+					positionBtn.className = 'btn btn-primary';
+					positionBtn.setAttribute('disabled', true);
+					actionButton.parentNode.insertBefore(positionBtn, actionButton);
+				}
+				positionBtn.textContent = userRegistration.waitingListPositionMessage;
+				actionButton.className = 'btn btn-warning';
+				actionButton.textContent = 'Leave Waiting List';
+				actionButton.onclick = () => (AspenDiscovery.Account.leaveEventWaitingList(eventSourceId, selectedUserId));
+				return;
+			}
+
+			positionBtn?.remove();
+
+			switch (userRegistration.registrationAction) {
+				case 'registered':
+					actionButton.textContent = 'Unregister';
+					actionButton.onclick = function() { return AspenDiscovery.Account.toggleUserEventRegistration(eventSourceId); };
+					break;
+				case 'joinWaitingList':
+					actionButton.textContent = 'Join Waiting List';
+					actionButton.onclick = inModal
+						? function() { return AspenDiscovery.Account.submitJoinWaitlist(eventSourceId); }
+						: function() { return AspenDiscovery.Account.joinEventWaitingList(eventSourceId); };
+					break;
+				case 'completeRegistration':
+					actionButton.textContent = 'Complete Your Registration';
+					actionButton.onclick = function() { return AspenDiscovery.Account.toggleUserEventRegistration(eventSourceId); };
+					break;
+				case 'eventFull':
+					actionButton.textContent = 'Cannot Register - Event Full';
+					actionButton.setAttribute('disabled', true);
+					break;
+				default:
+					actionButton.textContent = 'Register';
+					actionButton.onclick = function() { return AspenDiscovery.Account.toggleUserEventRegistration(eventSourceId); };
+			}
 		},
 
 		isUserRegisteredForEvent: function (eventSourceId, userId) {
@@ -2683,10 +2763,10 @@ AspenDiscovery.Account = (function () {
 				$('#thisDonation').hide();
 			}
 		},
-		show2FAEnrollment: function (mandatoryEnroll) {
+		show2FAEnrollment: function (mandatoryEnroll, method) {
 			if (Globals.loggedIn || mandatoryEnroll) {
 				AspenDiscovery.loadingMessage();
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=register&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=register&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false, '/MyAccount/Logout')
 					} else {
@@ -2695,14 +2775,15 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll, method);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentVerify: function (mandatoryEnroll) {
+		show2FAEnrollmentVerify: function (mandatoryEnroll, method, secretId = null) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=verify&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=verify&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons, false, '/MyAccount/Logout')
 					} else {
@@ -2711,14 +2792,15 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentVerify(mandatoryEnroll, method, secret);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentBackupCodes: function (mandatoryEnroll) {
+		show2FAEnrollmentBackupCodes: function (mandatoryEnroll, method, secretId) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=backup&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=backup&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons)
 					} else {
@@ -2727,21 +2809,22 @@ AspenDiscovery.Account = (function () {
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnroll, method, null);
 				}, false);
 			}
 			return false;
 		},
-		show2FAEnrollmentSuccess: function (mandatoryEnroll) {
+		show2FAEnrollmentSuccess: function (mandatoryEnroll, method, secretId) {
+			const secret = secretId ? secretId : '';
 			if (Globals.loggedIn || mandatoryEnroll) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=complete&mandatoryEnrollment=" + mandatoryEnroll, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=get2FAEnrollment&step=complete&mandatoryEnrollment=" + mandatoryEnroll + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.body, false, 2000)
 					}
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.show2FAEnrollmentSuccess(mandatoryEnroll);
+					return AspenDiscovery.Account.show2FAEnrollmentSuccess(mandatoryEnroll, method);
 				}, false);
 			}
 			return false;
@@ -2780,21 +2863,22 @@ AspenDiscovery.Account = (function () {
 			}
 			return false;
 		},
-		verify2FA: function (mandatoryEnrollment) {
+		verify2FA: function (mandatoryEnrollment, method, secretId) {
 			var code = $("#code").val();
 			var loggingIn = mandatoryEnrollment ? true : false;
+			var secret = secretId ? secretId : ""; // only needed during enrollment verification for TOTP
 			if (Globals.loggedIn || mandatoryEnrollment) {
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=" + loggingIn + "&code=" + code + "&mandatoryEnrollment=" + mandatoryEnrollment, function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=" + loggingIn + "&code=" + code + "&mandatoryEnrollment=" + mandatoryEnrollment + "&authMethod=" + method + "&secretId=" + secret, function (data) {
 					// update #codeVerificationFailedPlaceholder with failed verification status, otherwise move onto next step
 					if (data.success === "true") {
-						return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnrollment);
+						return AspenDiscovery.Account.show2FAEnrollmentBackupCodes(mandatoryEnrollment, method, secretId);
 					}
 					$("#codeVerificationFailedPlaceholder").html(data.message).show();
 					return data;
 				});
 			} else {
 				AspenDiscovery.Account.ajaxLogin(null, function () {
-					return AspenDiscovery.Account.verify2FA();
+					return AspenDiscovery.Account.verify2FA(mandatoryEnrollment, method, null);
 				}, false);
 			}
 			return false;
@@ -2842,7 +2926,8 @@ AspenDiscovery.Account = (function () {
 			var referer = $("#referer").val();
 			var name = $("#name").val();
 			var myAccountAuth = $("#myAccountAuth").val();
-			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code, function (data) {
+			var authMethod = $("#authMethod").val();
+			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code + "&authMethod=" + authMethod, function (data) {
 				// update #codeVerificationFailedPlaceholder with failed verification status, otherwise move onto next step
 				if (data.success === "true") {
 					Globals.loggedIn = true;
@@ -3454,6 +3539,83 @@ AspenDiscovery.Account = (function () {
 			}).fail(function(jqXHR, textStatus, errorThrown) {
 				AspenDiscovery.ajaxFail(jqXHR, textStatus, errorThrown);
 			});
+		},
+		initializeHorizontalHoldFiltersSwipers: function (id) {
+			var container = document.getElementById('slider-' + id);
+			AspenDiscovery.initializeHorizontalSwiper(container, function (slide) {
+			});
+		},
+		joinEventWaitingList: function (eventSourceId) {
+			const userIdField = document.getElementById('eventRegistrationUserId-' + eventSourceId);
+			const modalDialog = document.getElementById('modalDialog');
+			if (userIdField && !(modalDialog && modalDialog.contains(userIdField))) {
+				AspenDiscovery.Account._submitJoinWaitlist(eventSourceId, userIdField.value);
+				return false;
+			}
+			const url = Globals.path + '/MyAccount/AJAX?method=getJoinWaitlistModal';
+			$.getJSON(url, {sourceId: eventSourceId}, function(data) {
+				if (!data.success) {
+					AspenDiscovery.showMessage(data.title, data.message);
+					return;
+				}
+				if (data.hasLinkedAccounts) {
+					AspenDiscovery.showMessageWithButtons(data.title, data.body, '');
+					const initialUserIdField = document.getElementById('eventRegistrationUserId-' + eventSourceId);
+					if (initialUserIdField) {
+						AspenDiscovery.Account.isUserRegisteredForEvent(eventSourceId, initialUserIdField.value)
+							.then((regData) => AspenDiscovery.Account.updateEventButtonTextContent(regData, eventSourceId));
+					}
+				} else {
+					AspenDiscovery.Account._submitJoinWaitlist(eventSourceId, null);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
+		},
+		submitJoinWaitlist: function (eventSourceId) {
+			const selector = document.getElementById('eventUserSelector-' + eventSourceId);
+			const userId = selector ? selector.value : null;
+			AspenDiscovery.Account._submitJoinWaitlist(eventSourceId, userId);
+		},
+		_submitJoinWaitlist: function (eventSourceId, userId) {
+			const url = Globals.path + '/MyAccount/AJAX?method=joinEventWaitingList';
+			const params = {
+				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
+				sourceId: eventSourceId
+			};
+			if (userId) {
+				params.userId = userId;
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, false, true);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+		},
+		leaveEventWaitingList: function (eventSourceId, userId) {
+			var url = Globals.path + "/MyAccount/AJAX?method=leaveEventWaitingList";
+			var params = {
+				eventInstanceId: eventSourceId.replace(/aspenEvent_\d+_/, ''),
+				sourceId: eventSourceId
+			};
+			if (userId) {
+				params.userId = userId;
+			} else {
+				const userIdField = document.getElementById('eventRegistrationUserId-' + eventSourceId);
+				const modalDialog = document.getElementById('modalDialog');
+				if (userIdField && !(modalDialog && modalDialog.contains(userIdField))) {
+					params.userId = userIdField.value;
+				}
+			}
+			$.getJSON(url, params, function(data) {
+				if (data.success) {
+					AspenDiscovery.showMessage(data.title, data.message, true, true);
+				} else {
+					AspenDiscovery.showMessage(data.title, data.message);
+				}
+			}).fail(AspenDiscovery.ajaxFail);
+			return false;
 		}
 	};
 }(AspenDiscovery.Account || {}));

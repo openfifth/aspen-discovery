@@ -38,6 +38,9 @@ class SystemVariables extends DataObject {
 	public $solrQueryTimeout;
 	public $spellcheckMaxCollationTries;
 	public $catalogStatus;
+	public $scheduledOfflineStart;
+	public $scheduledOfflineEnd;
+	public $scheduledEcontentAccess;
 	public $offlineMessage;
 	public $appScheme;
 	public $enableBrandedApp;
@@ -368,25 +371,51 @@ class SystemVariables extends DataObject {
 				'min' => 1,
 				'max' => 50,
 			],
-			'catalogStatus' => [
-				'property' => 'catalogStatus',
-				'type' => 'enum',
-				'values' => [
-					0 => 'Catalog Online',
-					1 => 'Catalog Offline, no login allowed',
-					2 => 'Catalog Offline, login allowed with eContent active',
-				],
+			'offlineModeSection' => [
+				'property' => 'offlineModeSection',
+				'type' => 'section',
 				'label' => 'Catalog Online/Offline',
-				'description' => 'Allows Aspen to be placed in offline mode for use during migrations and upgrade processes',
-				'default' => 0,
-			],
-			'offlineMessage' => [
-				'property' => 'offlineMessage',
-				'type' => 'html',
-				'label' => 'Offline Message',
-				'description' => 'A message to be displayed while Aspen is offline.',
-				'default' => 'The catalog is down for maintenance, please check back later.',
 				'hideInLists' => true,
+				'expandByDefault' => false,
+				'properties' => [
+					'catalogStatus' => [
+						'property' => 'catalogStatus',
+						'type' => 'enum',
+						'values' => [
+							0 => 'Catalog Online',
+							1 => 'Catalog Offline, no login allowed',
+							2 => 'Catalog Offline, login allowed with eContent active',
+							],
+						'label' => 'Catalog Online/Offline',
+						'description' => 'Allows Aspen to be placed in offline mode for use during migrations and upgrade processes',
+						'default' => 0,
+					],
+					'scheduledOfflineStart' => [
+						'property' => 'scheduledOfflineStart',
+						'type' => 'timestamp',
+						'label' => 'Schedule Offline Start',
+						'description' => 'Schedule a time to start the catalog offline mode.',
+					],
+					'scheduledOfflineEnd' => [
+						'property' => 'scheduledOfflineEnd',
+						'type' => 'timestamp',
+						'label' => 'Schedule Offline End',
+						'description' => 'Schedule a time to end the catalog offline mode.',
+					],
+					'scheduledEcontentAccess' => [
+						'property' => 'scheduledEcontentAccess',
+						'type' => 'checkbox',
+						'label' => 'Allow Login with eContent Active for Scheduled Offline Mode',
+					],
+					'offlineMessage' => [
+						'property' => 'offlineMessage',
+						'type' => 'html',
+						'label' => 'Offline Message',
+						'description' => 'A message to be displayed while Aspen is offline.',
+						'default' => 'The catalog is down for maintenance, please check back later.',
+						'hideInLists' => true,
+					],
+				],
 			],
 			'appScheme' => [
 				'property' => 'appScheme',

@@ -404,7 +404,11 @@ abstract class MarcRecordProcessor {
 				//Separate out the volume so we can link specially
 				volume = seriesField.getSubfield('v').getData();
 			}
-			groupedWork.addSeriesWithVolume(series, volume, 3, false);
+			String seriesAuthor = "";
+			if (seriesField.getIndicator2() == '1' && seriesField.getSubfield('a') != null) {
+				seriesAuthor = seriesField.getSubfield('a').getData();
+			}
+			groupedWork.addSeriesWithVolume(series, volume, 3, false, seriesAuthor);
 			groupedWork.addSeries(series);
 		}
 
@@ -434,7 +438,11 @@ abstract class MarcRecordProcessor {
 				//Separate out the volume so we can link specially
 				volume = seriesField.getSubfield('v').getData();
 			}
-			groupedWork.addSeriesWithVolume(series, volume, 5, false);
+			String seriesAuthor = "";
+			if (seriesField.getSubfield('a') != null) {
+				seriesAuthor = seriesField.getSubfield('a').getData();
+			}
+			groupedWork.addSeriesWithVolume(series, volume, 5, false, seriesAuthor);
 			groupedWork.addSeries(series);
 		}
 
@@ -455,7 +463,11 @@ abstract class MarcRecordProcessor {
 					//Separate out the volume so we can link specially
 					volume = seriesField.getSubfield('v').getData();
 				}
-				groupedWork.addSeriesWithVolume(series, volume, 1, true);
+				String seriesAuthor = "";
+				if (seriesField.getSubfield('a') != null) {
+					seriesAuthor = seriesField.getSubfield('a').getData();
+				}
+				groupedWork.addSeriesWithVolume(series, volume, 1, true, seriesAuthor);
 				groupedWork.addSeries(series);
 			}
 		}
@@ -477,6 +489,7 @@ abstract class MarcRecordProcessor {
 		loadBibCallNumbers(groupedWork, record, identifier);
 		loadLiteraryForms(groupedWork, record, printItems, identifier);
 		loadTargetAudiences(groupedWork, record, printItems, identifier);
+		loadAcceleratedReader(groupedWork, record);
 		loadFountasPinnell(groupedWork, record);
 		loadLexileScore(groupedWork, record);
 		groupedWork.addContentRating(getContentRating(record));
@@ -496,6 +509,30 @@ abstract class MarcRecordProcessor {
 	}
 	private static boolean loggedCustomMarcError = false;
 
+
+	private void loadAcceleratedReader(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record) {
+		List<DataField> acceleratedReaderFields = MarcUtil.getDataFields(record, 526);
+		for (DataField acceleratedReaderField : acceleratedReaderFields){
+			Subfield subfieldA = acceleratedReaderField.getSubfield('a');
+			if (subfieldA != null){
+				String program = subfieldA.getData();
+				if (!(program.equals("AR") || program.startsWith("Accelerated Reader"))) {
+					//This is the wrong program
+					continue;
+				}	
+			}
+			Subfield subfieldC = acceleratedReaderField.getSubfield('c');
+			if (subfieldC != null){
+				String readingLevel = subfieldC.getData();
+				groupedWork.setAcceleratedReaderReadingLevel(readingLevel);
+			}
+			Subfield subfieldD = acceleratedReaderField.getSubfield('d');
+			if (subfieldD != null){
+				String points = subfieldD.getData();
+				groupedWork.setAcceleratedReaderPointValue(points);
+			}
+		}
+	}
 
 	private void loadLexileScore(AbstractGroupedWorkSolr groupedWork, org.marc4j.marc.Record record) {
 		List<DataField> targetAudiences = MarcUtil.getDataFields(record, 521);

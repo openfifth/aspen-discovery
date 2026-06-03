@@ -8,7 +8,7 @@ class MockILS extends AbstractIlsDriver{
 		return false;
 	}
 
-	public function getCheckouts(User $patron): array {
+	public function getCheckouts(User $patron, array $options = []): array {
 		return [];
 	}
 
@@ -97,7 +97,7 @@ class MockILS extends AbstractIlsDriver{
 		];
 	}
 
-	public function getFines(User $patron, $includeMessages = false): array {
+	public function getFines(User $patron, $includeMessages = false, ?string $type = null): array {
 		return [
 			'success' => 'false',
 			'message' => 'Get Fines not implemented for MockILS'

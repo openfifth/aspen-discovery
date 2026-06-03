@@ -179,8 +179,10 @@ class MyAccount_Login extends Action {
 
 		if (!empty($_SESSION['has2FA'])) {
 			$interface->assign('codeSent', !empty($_SESSION['codeSent']));
+			$interface->assign('authMethod', $_SESSION['authMethod']);
 			$this->display('../MyAccount/login-2fa.tpl', 'Login', '');
 		} elseif (!empty($_SESSION['enroll2FA'])) {
+			$interface->assign('authMethod', $_SESSION['authMethod']);
 			$this->display('../MyAccount/login-2fa-enroll.tpl', 'Login', '');
 		} else {
 			$this->display('../MyAccount/login.tpl', 'Login', '');
