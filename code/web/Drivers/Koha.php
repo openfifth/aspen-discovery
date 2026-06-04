@@ -21,6 +21,8 @@ class Koha extends AbstractIlsDriver {
 	/** @var CurlWrapper */
 	private $renewalsCurlWrapper;
 
+	private string $csrfPattern = '%<input type="hidden" name="csrf_token" value="(.*?)" />%s';
+
 	static $fineTypeTranslations = [
 		'A' => 'Account management fee',
 		'C' => 'Credit',
@@ -320,12 +322,8 @@ class Koha extends AbstractIlsDriver {
 				$loginResult = $this->loginToKohaOpac($patron);
 				if ($loginResult['success']) {
 
-					$updatePage = $this->getKohaPage($catalogUrl . '/cgi-bin/koha/opac-memberentry.pl?DISABLE_SYSPREF_OPACUserCSS=1');
 					//Get the csr token
-					$csr_token = '';
-					if (preg_match('%<input type="hidden" name="csrf_token" value="(.*?)" />%s', $updatePage, $matches)) {
-						$csr_token = $matches[1];
-					}
+					$csr_token = $this->getCSRFToken("$catalogUrl/cgi-bin/koha/opac-memberentry.pl?DISABLE_SYSPREF_OPACUserCSS=1");
 
 					$postVariables = [];
 					if (!isset($_REQUEST['borrower_branchcode']) || $_REQUEST['borrower_branchcode'] == -1) {
@@ -3753,9 +3751,7 @@ class Koha extends AbstractIlsDriver {
 
 		$kohaVersion = $this->getKohaVersion();
 		if ($kohaVersion >= 24.05) {
-			$url = "$catalogUrl/cgi-bin/koha/opac-user.pl";
-			$pattern = '/<input type="hidden" name="csrf_token" value="(.*?)" \/>/';
-			$postParams['csrf_token'] = $this->getCSRFToken($url, $pattern);
+			$postParams['csrf_token'] = $this->getCSRFToken("$catalogUrl/cgi-bin/koha/opac-user.pl");
 
 			// After 25.11, op becomes login_op. Account for that here
 			$opKey = $kohaVersion >= 25.11 ? "login_op" : "op";
@@ -3781,11 +3777,11 @@ class Koha extends AbstractIlsDriver {
 		return $result;
 	}
 
-	private function getCSRFToken(string $url, string $pattern) : string {
+	private function getCSRFToken(string $url) : string {
 		// This will only ever be called if Koha version is >= 24.05
 		//First get the page to get the csrf token
 		$getResults = $this->getKohaPage($url);
-		$validMatch = preg_match($pattern, $getResults, $matches);
+		$validMatch = preg_match($this->csrfPattern, $getResults, $matches);
 		return  $validMatch ? $matches[1] : '';
 	}
 
@@ -3831,11 +3827,7 @@ class Koha extends AbstractIlsDriver {
 		$kohaVersion = $this->getKohaVersion();
 		$csrfToken = '';
 		if ($kohaVersion >= 24.05) {
-			//First get the page to get the csrf token
-			$getResults = $this->getKohaPage($catalogUrl . '/cgi-bin/koha/opac-password-recovery.pl');
-			if (preg_match('/<input type="hidden" name="csrf_token" value="(.*?)" \/>/', $getResults, $matches)) {
-				$csrfToken = $matches[1];
-			}
+			$csrfToken = $this->getCSRFToken("$catalogUrl/cgi-bin/koha/opac-password-recovery.pl");
 		}
 
 
@@ -6809,10 +6801,10 @@ class Koha extends AbstractIlsDriver {
 
 			$postParams = [];
 			//Get the csr token
-			$updatePage = $this->getKohaPage($updateMessageUrl);
-			if (preg_match('%<input type="hidden" name="csrf_token" value="(.*?)" />%s', $updatePage, $matches)) {
-				$getParams[] = 'csrf_token=' . $matches[1];
-				$postParams['csrf_token'] = $matches[1];
+			$csrfToken = $this->getCSRFToken($updateMessageUrl);
+			if ($csrfToken) {
+				$getParams[] = 'csrf_token=' . $csrfToken;
+				$postParams['csrf_token'] = $csrfToken;
 			}
 
 			$kohaVersion = $this->getKohaVersion();
