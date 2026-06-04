@@ -404,8 +404,11 @@ abstract class MarcRecordProcessor {
 				//Separate out the volume so we can link specially
 				volume = seriesField.getSubfield('v').getData();
 			}
-			groupedWork.addSeriesWithVolume(series, volume, 3, false);
-			groupedWork.addSeries(series);
+			String seriesAuthor = "";
+			if (seriesField.getIndicator2() == '1' && seriesField.getSubfield('a') != null) {
+				seriesAuthor = seriesField.getSubfield('a').getData();
+			}
+			groupedWork.addSeriesWithVolume(series, seriesAuthor, volume, 3, false);
 		}
 
 		seriesFields = MarcUtil.getDataFields(record, seriesFieldsToIndexWith800);
@@ -434,8 +437,11 @@ abstract class MarcRecordProcessor {
 				//Separate out the volume so we can link specially
 				volume = seriesField.getSubfield('v').getData();
 			}
-			groupedWork.addSeriesWithVolume(series, volume, 5, false);
-			groupedWork.addSeries(series);
+			String seriesAuthor = "";
+			if (seriesField.getSubfield('a') != null) {
+				seriesAuthor = seriesField.getSubfield('a').getData();
+			}
+			groupedWork.addSeriesWithVolume(series, seriesAuthor, volume, 5, false);
 		}
 
 		seriesFields = MarcUtil.getDataFields(record, 490);
@@ -455,8 +461,11 @@ abstract class MarcRecordProcessor {
 					//Separate out the volume so we can link specially
 					volume = seriesField.getSubfield('v').getData();
 				}
-				groupedWork.addSeriesWithVolume(series, volume, 1, true);
-				groupedWork.addSeries(series);
+				String seriesAuthor = "";
+				if (seriesField.getSubfield('a') != null) {
+					seriesAuthor = seriesField.getSubfield('a').getData();
+				}
+				groupedWork.addSeriesWithVolume(series, seriesAuthor, volume, 1, true);
 			}
 		}
 
@@ -468,7 +477,7 @@ abstract class MarcRecordProcessor {
 		groupedWork.addIsbns(MarcUtil.getFieldList(record, "020a"), format);
 		List<DataField> upcFields = MarcUtil.getDataFields(record, 24);
 		for (DataField upcField : upcFields){
-			if (upcField.getIndicator1() == '1' && upcField.getSubfield('a') != null){
+			if (upcField.getSubfield('a') != null){
 				groupedWork.addUpc(upcField.getSubfield('a').getData());
 			}
 		}
@@ -507,7 +516,7 @@ abstract class MarcRecordProcessor {
 				if (!(program.equals("AR") || program.startsWith("Accelerated Reader"))) {
 					//This is the wrong program
 					continue;
-				}	
+				}
 			}
 			Subfield subfieldC = acceleratedReaderField.getSubfield('c');
 			if (subfieldC != null){

@@ -40,6 +40,11 @@ class EmailTemplate extends DataObject {
 				'campaignComplete' => 'Campaign Complete',
 				'milestoneComplete' => 'Milestone Complete',
 				'staffCampaignComplete' => 'Campaign Complete Staff Alert',
+				'registerForEventFromWaitingList' => 'Register for Event From Waiting List',
+				'eventWaitingListInviteExpired' => 'Waiting List Invitation Expired',
+				'eventCancellationRegistered' => 'Cancellation of an Event (Registered Patron)',
+				'eventCancellationInvited' => 'Cancellation of an Event (Invited from Waiting List)',
+				'eventCancellationWaiting' => 'Cancellation of an Event (On Waiting List)',
 			];
 		}
 		if ($isCarlX){
@@ -310,10 +315,8 @@ class EmailTemplate extends DataObject {
 			return false;
 		}
 		$updatedPlainTextBody = $this->applyParameters($this->plainTextBody, $parameters);
-		if (empty($this->htmlBody)) {
-			$updatedHtmlBody = $updatedPlainTextBody;
-			$updatedHtmlBody = str_replace("\r\n", "<br/>", $updatedHtmlBody);
-		}else{
+		$updatedHtmlBody = null;
+		if (!empty($this->htmlBody)){
 			$updatedHtmlBody = $this->applyParameters($this->htmlBody, $parameters);
 		}
 		$updatedSubject = $this->applyParameters($this->subject, $parameters);
@@ -361,6 +364,22 @@ class EmailTemplate extends DataObject {
 			$text = str_replace('%searchHistory.updatedSearchesWithSampleTitles%', $parameters['searchHistory']['updatedSearchesWithSampleTitles'] ?? '', $text);
 			$text = str_replace('%searchHistory.updatedSearchesHtml%', $parameters['searchHistory']['updatedSearchesHtml'] ?? '', $text);
 			$text = str_replace('%searchHistory.updatedSearches%', $parameters['searchHistory']['updatedSearches'] ?? '', $text);
+		} elseif (in_array($this->templateType, ['registerForEventFromWaitingList', 'eventWaitingListInviteExpired'], true)) {
+			$text = str_replace('%event.title%', $parameters['eventTitle'] ?? '', $text);
+			$text = str_replace('%event.date%', $parameters['eventDate'] ?? '', $text);
+			$text = str_replace('%event.time%', $parameters['eventTime'] ?? '', $text);
+			$text = str_replace('%canRegisterUntil%', $parameters['canRegisterUntil'] ?? '', $text);
+		} elseif (in_array($this->templateType, ['eventCancellationRegistered', 'eventCancellationInvited', 'eventCancellationWaiting'], true)) {
+			$text = str_replace('%changeType%', $parameters['changeType'] ?? 'cancelled', $text);
+			$instancesText = '';
+			if (isset($parameters['instances']) && is_array($parameters['instances'])) {
+				foreach ($parameters['instances'] as $instance) {
+					$instancesText .= " Event Title: " . $instance['eventTitle'] . "\n";
+					$instancesText .= " Date: " . $instance['eventDate'] . "\n";
+					$instancesText .= " Time: " . $instance['eventTime'] . "\n";
+				}
+			}
+			$text = str_replace('%eventInstances%', trim($instancesText), $text);
 		}
 		return $text;
 	}

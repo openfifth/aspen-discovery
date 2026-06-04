@@ -350,6 +350,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$search->user_id = UserAccount::getActiveUserId();
 					$search->saved = 1;
 					$search->title = $title;
+					$search->sendNotification = 1;
 					if ($search->update() !== FALSE) {
 						$result['success'] = true;
 						$result['message'] = translate([
@@ -391,6 +392,45 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 		return $result;
 	}
+
+	/** @noinspection PhpUnused */
+	function toggleSearchNotification(): array {
+		$this->requireLoggedInUser();
+
+		$result = [
+			'success' => false,
+			'message' => 'Unable to update notification setting',
+		];
+
+		$searchId = $_REQUEST['searchId'] ?? null;
+		$sendNotification = $_REQUEST['sendNotification'] ?? null;
+
+		if ($searchId === null || $sendNotification === null) {
+			return $result;
+		}
+
+		$search = new SearchEntry();
+		$search->id = $searchId;
+
+		if (!$search->find(true)) {
+			return $result;
+		}
+
+		if ($search->session_id != session_id() && $search->user_id != UserAccount::getActiveUserId()) {
+			return $result;
+		}
+
+		$search->sendNotification = (int)$sendNotification;
+
+		if ($search->update() === false) {
+			return $result;
+		}
+
+		return [
+			'success' => true,
+		];
+	}
+
 
 	/** @noinspection PhpUnused */
 	function getSaveSearchForm() : array {
@@ -1769,6 +1809,10 @@ class MyAccount_AJAX extends JSON_Action {
 				//We have an abandoned 2-factor authentication enrollment
 				UserAccount::softLogout();
 			} else {
+				$authStatus = UserAccount::get2FAMethodStatus();
+				$interface->assign('setupMethods', $authStatus['setupMethods']);
+				$interface->assign('hasTotp', $authStatus['hasTotp']);
+				$interface->assign('hasEmail', $authStatus['hasEmail']);
 				$interface->assign('codeSent', !empty($_SESSION['codeSent']));
 				$referer = $_REQUEST['referer'] ?? null;
 				$interface->assign('referer', $referer);
@@ -2264,10 +2308,10 @@ class MyAccount_AJAX extends JSON_Action {
 
 	function renewCheckout(): array {
 		$this->requireLoggedInUser();
-		$this->checkRequiredParameters(['patronId', 'recordId']);
+		$this->checkRequiredParameters(['patronId']);
 		$user = UserAccount::getLoggedInUser();
 		$patronId = $_REQUEST['patronId'];
-		$recordId = $_REQUEST['recordId'];
+		$recordId = $_REQUEST['recordId'] ?? '';
 		$renewIndicator = $_REQUEST['renewIndicator'] ?? '';
 		$patron = $user->getUserReferredTo($patronId);
 		$itemId = null;
@@ -2275,8 +2319,17 @@ class MyAccount_AJAX extends JSON_Action {
 
 		if ($patron) {
 			$accountProfile = $patron->getAccountProfile();
+			$driver = $accountProfile?->driver ?? '';
+
+			// Sierra ILL does not have recordId
+			$requiresRecordId = $driver !== 'Sierra';
+
 			// Evolve does not require a renew indicator
-			$requiresRenewIndicator = !($accountProfile && $accountProfile->driver === 'Evolve');
+			$requiresRenewIndicator = $driver !== 'Evolve';
+
+			if ($requiresRecordId) {
+				$this->checkRequiredParameters(['recordId']);
+			}
 			if ($requiresRenewIndicator) {
 				$this->checkRequiredParameters(['renewIndicator']);
 				if (strpos($renewIndicator, '|') > 0) {
@@ -2293,6 +2346,7 @@ class MyAccount_AJAX extends JSON_Action {
 		} else {
 			$renewResults = $this->failureResult(null, 'Sorry, it looks like you don\'t have access to that patron.');
 		}
+
 
 		global $interface;
 		$interface->assign('renewResults', $renewResults);
@@ -4348,14 +4402,50 @@ class MyAccount_AJAX extends JSON_Action {
 				$aspenEventRegistration->userId = UserAccount::getActiveUserId();
 				$aspenEventRegistration->eventInstanceId = $eventInstanceId;
 				$registration = $aspenEventRegistration->isUserRegisteredForEvent();
+				$registeredByStaff = $registration && !empty($aspenEventRegistration->registeredByStaffId);
+				$savedByStaff = !empty($event->savedByStaffId);
 
 				require_once ROOT_DIR . '/sys/Events/EventInstance.php';
 				$eventInstance = new EventInstance();
 				$eventInstance->id = $eventInstanceId;
 				if ($eventInstance->find(true)) {
+					require_once ROOT_DIR . '/services/EventRegistrationService.php';
 					$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
-					$availableSeats = $eventInstance->getAvailableSeats();
-					$eventFull = !$eventInstance->hasAvailableSeats();
+					$availableSeats = EventRegistrationService::getAvailableSeats($eventInstance);
+					$eventFull = !EventRegistrationService::hasAvailableSeats($eventInstance);
+					$waitingList = $eventInstance->isWaitingListEnabled();
+					$waitingListNumberOfSeats = $eventInstance->getEffectiveWaitingListNumberOfSeats();
+
+					$userOnWaitingList = false;
+					$userWaitingListPosition = null;
+					$userCanRegisterFromWaitingList = false;
+
+					if (!$waitingList || UserAspenEventInstanceRegistration::getWaitingListCount($eventInstance->id) === 0) {
+						$userCanRegisterFromWaitingList = EventRegistrationService::hasAvailableSeats($eventInstance);
+					} else {
+						$waitingListInfo = $aspenEventRegistration->getWaitingListInfo();
+						$userOnWaitingList = $waitingListInfo['onWaitingList'];
+						$userWaitingListPosition = $waitingListInfo['position'];
+						$userCanRegisterFromWaitingList = $waitingListInfo['canRegister'];
+					}
+				}
+
+				// Generate registration form using custom fields
+				$eventType = $eventInstance->getEventType();
+				$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+				$interface->assign('registrationFormStructure', $registrationFormStructure);
+				$interface->assign('attendeeCategories', $eventType->getEventTypeAttendeeCategories());
+
+				$savedRegistrationFieldValues = [];
+				if ($registration && $aspenEventRegistration->id) {
+					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationEventField.php';
+					$savedRegistrationFieldValues = UserAspenEventInstanceRegistrationEventField::getValuesForRegistration((int)$aspenEventRegistration->id);
+				}
+
+				$savedAttendeeCounts = [];
+				if ($registration && $aspenEventRegistration->id) {
+					require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+					$savedAttendeeCounts = UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$aspenEventRegistration->id);
 				}
 			} else {
 				$registration = UserAccount::getActiveUserObj()->isRegistered($entry->sourceId);
@@ -4393,9 +4483,30 @@ class MyAccount_AJAX extends JSON_Action {
 				];
 			}
 			if($nativeAspenEvent) {
+				$events[$entry->sourceId]['registeredByStaff'] = $registeredByStaff;
+				$events[$entry->sourceId]['savedByStaff'] = $savedByStaff;
+				$events[$entry->sourceId]['savedRegistrationFieldValues'] = $savedRegistrationFieldValues;
+				$events[$entry->sourceId]['savedAttendeeCounts'] = $savedAttendeeCounts;
 				$events[$entry->sourceId]['numberOfSeats'] = $numberOfSeats;
 				$events[$entry->sourceId]['availableSeats'] = $availableSeats;
 				$events[$entry->sourceId]['isEventFull'] = $eventFull;
+				$events[$entry->sourceId]['isEventFull'] = !EventRegistrationService::hasAvailableSeats($eventInstance);
+				$events[$entry->sourceId]['waitingList'] = $waitingList;
+				$events[$entry->sourceId]['waitingListNumberOfSeats'] = $waitingListNumberOfSeats;
+				$events[$entry->sourceId]['userOnWaitingList'] = $userOnWaitingList;
+				$events[$entry->sourceId]['userWaitingListPosition'] = $userWaitingListPosition;
+				$events[$entry->sourceId]['userCanRegisterFromWaitingList'] = $userCanRegisterFromWaitingList;
+				$isWaitingListFull = EventRegistrationService::isWaitingListFull($eventInstance);
+				$events[$entry->sourceId]['waitingListFull'] = $isWaitingListFull;
+				$events[$entry->sourceId]['registrationStatusMessage'] = EventRegistrationService::getRegistrationStatusMessage($waitingList, $userOnWaitingList, $userCanRegisterFromWaitingList, $userWaitingListPosition ?? 0, $eventFull, $isWaitingListFull);
+				$events[$entry->sourceId]['registrationAction'] = EventRegistrationService::getRegistrationAction(
+					$registration,
+					$eventFull,
+					$waitingList,
+					$userOnWaitingList,
+					$userCanRegisterFromWaitingList,
+					$isWaitingListFull
+				);
 			}
 		}
 
@@ -8422,14 +8533,25 @@ class MyAccount_AJAX extends JSON_Action {
 
 			global $interface;
 			$numberOfSeats = $eventInstance->getEffectiveNumberOfSeats();
-			$available = $eventInstance->getAvailableSeats();
+			require_once ROOT_DIR . '/services/EventRegistrationService.php';
+			$available = EventRegistrationService::getAvailableSeats($eventInstance);
+
+			require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+			$aspenEventInstanceUserRegistration = new UserAspenEventInstanceRegistration();
+			$aspenEventInstanceUserRegistration->eventInstanceId = $eventInstanceId;
+			$aspenEventInstanceUserRegistration->userId = UserAccount::getActiveUserId();
+			$waitingListInfo = $aspenEventInstanceUserRegistration->getWaitingListInfo();
+
 			$interface->assign('numberOfSeats', $numberOfSeats);
 			$interface->assign('availableSeats', $available);
-			$interface->assign('isEventFull', !$eventInstance->hasAvailableSeats());
+			$interface->assign('isEventFull', !EventRegistrationService::hasAvailableSeats($eventInstance));
+			$interface->assign('userCanRegisterFromWaitingList', $waitingListInfo['canRegister']);
+			$interface->assign('userOnWaitingList', $waitingListInfo['onWaitingList']);
+			$interface->assign('userWaitingListPosition', $waitingListInfo['position']);
+			$interface->assign('userIsRegistered', false);
 
 			$user = UserAccount::getLoggedInUser();
 			if (empty($user)) {
-				// Marking this as 'success' as there is no server error, and we do want the user to access the login button
 				$result['success'] = true;
 				$result['buttons'] = $interface->fetch('AspenEvents/loginToRegisterButton.tpl');
 				$result['body'] = translate([
@@ -8455,11 +8577,30 @@ class MyAccount_AJAX extends JSON_Action {
 				}
 			}
 			$interface->assign('linkedUsers', $linkedUsers);
-			
-			require_once ROOT_DIR . '/RecordDrivers/AspenEventRecordDriver.php';
-			$sourceId = 'aspenEvent_' . $aspenEventSettings->id . '_' . $eventInstanceId;
-			$recordDriver = new AspenEventRecordDriver($sourceId);	
-			$interface->assign('isRegistered', $recordDriver->isUserRegisteredForEvent());
+
+			$isRegistered = $aspenEventInstanceUserRegistration->status === 'registered';
+			$isEventFull = !EventRegistrationService::hasAvailableSeats($eventInstance);
+			$canRegister = $waitingListInfo['canRegister'];
+			$isWaitingListFull = EventRegistrationService::isWaitingListFull($eventInstance);
+			$registrationAction = EventRegistrationService::getRegistrationAction(
+				$isRegistered,
+				$isEventFull,
+				$eventInstance->isWaitingListEnabled(),
+				$waitingListInfo['onWaitingList'],
+				$canRegister,
+				$isWaitingListFull
+			);
+			if ($registrationAction === 'showPosition' && EventRegistrationService::hasUnregisteredLinkedUsers($eventInstance)) {
+				$registrationAction = 'joinWaitingList';
+			}
+			$interface->assign('userIsRegistered', $isRegistered);
+			$interface->assign('registrationAction', $registrationAction);
+
+			// Generate registration form using custom fields
+			$eventType = $eventInstance->getEventType();
+			$registrationFormStructure = $eventType->getFieldSetFieldsByUse(2);
+			$interface->assign('registrationFormStructure', $registrationFormStructure);
+			$interface->assign('attendeeCategories', $eventType->getEventTypeAttendeeCategories());
 
 			$body .= $interface->fetch('AspenEvents/registrationModalContents.tpl');
 			$result['buttons'] =  $interface->fetch('AspenEvents/registrationToggleButton.tpl');
@@ -8489,38 +8630,28 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
-		$activeUserId = UserAccount::getActiveUserId();
-		if ($userId != $activeUserId) {
-			$isLinkedUser = false;
-			$activeUser = UserAccount::getActiveUserObj();
-			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
-				if ($linkedUser->id == $userId) {
-					$isLinkedUser = true;
-					break;
-				}
-			}
-			if (!$isLinkedUser) {
-				$result['message'] = translate([
-					'text' => 'You do not have permission to view registration information for this user.',
-					'isPublicFacing' => true,
-				]);
-				return $result;
-			}
+		if (!UserAccount::isAuthorizedToActOnBehalfOf((int)$userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to view registration information for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
 		}
 
-		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
-		$registration = new UserAspenEventInstanceRegistration();
-		$registration->userId = $userId;
-		$registration->eventInstanceId = $eventInstanceId;
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate(['text' => 'Event not found.', 'isPublicFacing' => true]);
+			return $result;
+		}
 
 		$result['success'] = true;
 		$result['message'] = translate([
 			'text' => 'Registration information found',
 			'isPublicFacing' => true,
 		]);
-		$result['body'] = [
-			'isRegistered' => $registration->isUserRegisteredForEvent($userId),
-		];
+		$result['body'] = $eventInstance->getUserEventRegistrationStatus((int)$userId);
 		return $result;
 	}
 
@@ -8702,30 +8833,20 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		$this->requireLoggedInUser(null, 'You must be logged in to register for events.');
+		$activeUserId = (int)UserAccount::getActiveUserId();
 
-		$activeUserId = UserAccount::getActiveUserId();
-		if ($userId != $activeUserId) {
-			$isLinkedUser = false;
-			$activeUser = UserAccount::getActiveUserObj();
-			foreach ($activeUser->getLinkedUsers() as $linkedUser) {
-				if ($linkedUser->id == $userId) {
-					$isLinkedUser = true;
-					break;
-				}
-			}
-			if (!$isLinkedUser) {
-				$result['message'] = translate([
-					'text' => 'You do not have permission to manage registrations for this user.',
-					'isPublicFacing' => true,
-				]);
-				return $result;
-			}
+		if (!UserAccount::isAuthorizedToActOnBehalfOf((int)$userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to manage registrations for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
 		}
 
 		require_once ROOT_DIR . '/sys/Account/User.php';
 		$user = new User();
 		$user->id = $userId;
-		if(!$user->find(true)) {
+		if (!$user->find(true)) {
 			$result['message']['text'] = 'User not found';
 			return $result;
 		}
@@ -8750,6 +8871,8 @@ class MyAccount_AJAX extends JSON_Action {
 			return $result;
 		}
 
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+
 		// unregister the user if registered
 		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
 		$registration = new UserAspenEventInstanceRegistration();
@@ -8758,7 +8881,8 @@ class MyAccount_AJAX extends JSON_Action {
 
 		if ($registration->isUserRegisteredForEvent()) {
 			$registration->delete();
-
+			EventRegistrationService::inviteNextOnWaitingList($eventInstance);
+			
 			$result['success'] = true;
 			$result['title'] = translate([
 				'text' => 'Registration Information',
@@ -8772,29 +8896,61 @@ class MyAccount_AJAX extends JSON_Action {
 		}
 
 		// add the event to saved events if it has not yet been saved
-		$recordDriver->saveUserEventEntry($sourceId, $userId);
+		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
 
 		// so the registered may manage their registration, also add the event to the active user's saved events if the user this was added for is a linked user
-		$activeUserId = UserAccount::getActiveUserId();
 		if ($userId != $activeUserId) {
-			$recordDriver->saveUserEventEntry($sourceId, $activeUserId);	
+			EventRegistrationService::saveToUserEvents($eventInstance, $activeUserId);
 		}
 
 		// so the parent linked account display all events their linked user is registered to, save the event if the user registering have had their account linked.
 		foreach ($user->getViewerIds() as $viewerId) {
-			$recordDriver->saveUserEventEntry($sourceId, $viewerId);	
+			EventRegistrationService::saveToUserEvents($eventInstance, $viewerId);
 		}
 
-		if (!$eventInstance->hasAvailableSeats(1)) {
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
+		$attendeeCounts = [];
+		if (isset($_REQUEST['attendeeCategory']) && is_array($_REQUEST['attendeeCategory'])) {
+			$attendeeCounts = $_REQUEST['attendeeCategory'];
+		}
+
+		$validatedCounts = UserAspenEventInstanceRegistrationAttendee::validateAttendeeCounts($eventInstance, $attendeeCounts);
+		if ($validatedCounts === false) {
 			$result['message'] = translate([
-				'text' => "This event is full — no seats are currently available. We've saved it to your events list so you can keep track of it.",
+				'text' => 'Invalid attendee counts. One or more categories exceed the allowed maximum.',
+				'isPublicFacing' => true
+			]);
+			return $result;
+		}
+
+		$requestedSeats = !empty($validatedCounts) ? array_sum($validatedCounts) : 1;
+		$waitingListInfo = $registration->getWaitingListInfo();
+
+		if (!EventRegistrationService::hasAvailableSeats($eventInstance, $requestedSeats) && !$waitingListInfo['canRegister']) {
+			$result['message'] = translate([
+				'text' => 'This event is full - no seats currently available. We have saved it to your events list so you can keep track of it.',
 				'isPublicFacing' => true
 			]);
 			return $result;
 		}
 
 		// register the user
-		$registration->insert();
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->userId = $userId;
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->registerUser();
+
+		if (!empty($validatedCounts)) {
+			UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts);
+		}
+
+		// save the user inputed registration information
+		foreach ($_REQUEST as $key => $value) {
+		    if (is_numeric($key)) {
+				$registration->saveEventFieldValue($key, $value); 
+		    }
+		}
+
 
 		$result['success'] = true;
 		$result['title'] = translate([
@@ -9921,10 +10077,9 @@ class MyAccount_AJAX extends JSON_Action {
 	function get2FAEnrollment() : array {
 		global $interface;
 
-		// if there were multiple verification methods available, you'd want to fetch them here for display
-
 		$step = $_REQUEST['step'] ?? "register";
 		$mandatoryEnrollment = $_REQUEST['mandatoryEnrollment'] ?? 'false';
+		$method = $_REQUEST['useMethod'] ?? '';
 
 		if ($step == "register") {
 			function mask($str, $first, $last) : string {
@@ -9953,12 +10108,43 @@ class MyAccount_AJAX extends JSON_Action {
 					$email = mask_email($user->email);
 					$hasValidEmail = true;
 				}
+			}else{
+				//No valid user
+				$this->failureResult(null, 'Unable to retrieve user information');
 			}
 			$interface->assign('hasValidEmail', $hasValidEmail);
 			$interface->assign('emailAddress', $email);
 
-			if ($hasValidEmail) {
-				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\"); return false;'>" . translate([
+			global $library;
+
+			$twoFactorAuthSetting = $user->getTwoFactorAuthenticationSetting();
+			if ($method == 'undefined' || $method == '') {
+				$method = $twoFactorAuthSetting->allowTotp ? 'totp' : 'email';
+			}
+
+			$secret = null;
+			if ($method == 'totp') {
+				require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+				// Generate QR code
+
+				$secret = TwoFactorAuthTOTPSecret::getOrCreateSecret(true);
+				$issuer = !empty($twoFactorAuthSetting->issuerTOTP) ? $twoFactorAuthSetting->issuerTOTP : $library->displayName . ' Catalog';
+
+				// the issuer needs to be the 2FA Setting value, not raw
+				$qrCodeUri = TwoFactorAuthTOTPSecret::generateQRCodeURI($secret, $issuer, $user);
+
+				$interface->assign('secretId', $secret->id);
+				$interface->assign('secret', $secret->secretKey);
+				$interface->assign('qrCodeUri', $qrCodeUri);
+			}
+
+			if ($hasValidEmail && $method == 'email') {
+				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\", \"email\", null); return false;'>" . translate([
+						'text' => 'Next',
+						'isPublicFacing' => true,
+					]) . "</button>";
+			} elseif ($method == 'totp') {
+				$buttons = "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentVerify(\"$mandatoryEnrollment\", \"totp\", \"$secret->id\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>";
@@ -9971,20 +10157,27 @@ class MyAccount_AJAX extends JSON_Action {
 					'text' => 'Two-Factor Authentication',
 					'isPublicFacing' => true,
 				]),
-				'body' => $interface->fetch('MyAccount/2fa/enroll-register.tpl'),
+				'body' => $method == 'email' ? $interface->fetch('MyAccount/2fa/enroll-register-email.tpl') : $interface->fetch('MyAccount/2fa/enroll-register-totp.tpl'),
 				'buttons' => $buttons,
+				'closeDestination' => '/MyAccount/Logout'
 			];
 		} elseif ($step == "verify") {
 			require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
-			$twoFactorAuth = new TwoFactorAuthCode();
-			$twoFactorAuth->createCode();
+			if ($method == 'email') {
+				$twoFactorAuth = new TwoFactorAuthCode();
+				$twoFactorAuth->createCode();
+			}
 
 			$invalid = $_REQUEST['invalid'] ?? false;
+			$secretId = $_REQUEST['secretId'] ?? null;
+
 			$alert = null;
 			if ($invalid) {
 				$alert = 'The code entered is invalid.';
 			}
 			$interface->assign('alert', $alert);
+			$interface->assign('twoFactorMethod', $method);
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -9992,17 +10185,18 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-verify.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\", \"$method\", \"$secretId\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
-				'closeDestination' => '/MyAccount/Logout'
 			];
 		} elseif ($step == "validate") {
 			require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 			$twoFactorAuth = new TwoFactorAuthCode();
 			$twoFactorAuth->createCode();
 
+			$secretId = $_REQUEST['secretId'] ?? null;
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -10010,7 +10204,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-verify.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.verify2FA(\"$mandatoryEnrollment\", \"$method\", \"$secretId\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10025,6 +10219,8 @@ class MyAccount_AJAX extends JSON_Action {
 			$backupCodes = $backupCode->getBackups();
 			$interface->assign('backupCodes', $backupCodes);
 
+			$secretId = $_REQUEST['secretId'] ?? null;
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -10032,7 +10228,7 @@ class MyAccount_AJAX extends JSON_Action {
 					'isPublicFacing' => true,
 				]),
 				'body' => $interface->fetch('MyAccount/2fa/enroll-backup.tpl'),
-				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentSuccess(\"$mandatoryEnrollment\"); return false;'>" . translate([
+				'buttons' => "<button class='tool btn btn-primary' onclick='AspenDiscovery.Account.show2FAEnrollmentSuccess(\"$mandatoryEnrollment\", \"$method\", \"$secretId\"); return false;'>" . translate([
 						'text' => 'Next',
 						'isPublicFacing' => true,
 					]) . "</button>",
@@ -10042,9 +10238,27 @@ class MyAccount_AJAX extends JSON_Action {
 			$user = new User();
 			$user->id = UserAccount::getActiveUserId();
 			if ($user->find(true)) {
+				$existingMethods = array_values(array_filter(array_map('trim', explode(',', $user->twoFactorMethod ?? '')), static function ($m) {
+					return $m !== '';
+				}));
+				if (!in_array($method, $existingMethods, true)) {
+					$existingMethods[] = $method;
+					$user->twoFactorMethod = implode(',', $existingMethods);
+				} else {
+					$user->twoFactorMethod = implode(',', $existingMethods);
+				}
 				$user->twoFactorStatus = 1;
 				$user->update();
 			}
+
+			if ($method == 'totp' && isset($_REQUEST['secretId'])) {
+				require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
+				$unverifiedSecret = new TwoFactorAuthTOTPSecret();
+				$unverifiedSecret->id = $_REQUEST['secretId'];
+				$unverifiedSecret->verified = 1;
+				$unverifiedSecret->update();
+			}
+
 			return [
 				'success' => true,
 				'title' => translate([
@@ -10062,15 +10276,40 @@ class MyAccount_AJAX extends JSON_Action {
 	function verify2FA() : array {
 		$code = $_REQUEST['code'] ?? '0';
 		$isLoggingIn = $_REQUEST['loggingIn'] ?? false;
+		$secretId = $_REQUEST['secretId'] ?? null;
+		$authMethod = $_REQUEST['useMethod'] ?? $_SESSION['useMethod'] ?? null;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
+		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
+
+		if ($secretId !== null) {
+			// TOTP enrollment verification
+			return $twoFactorAuth->validateCode($code, $authMethod, $secretId);
+		}
+
 		if ($isLoggingIn) {
 			global $logger;
 			$logger->log("Starting AJAX/2faLogin session: " . session_id(), Logger::LOG_DEBUG);
-			$result = $twoFactorAuth->validateCode($code);
+			$result = $twoFactorAuth->validateCode($code, $authMethod);
 			if ($result['success']) {
 				UserAccount::$isAuthenticated = true;
+				if ($authMethod === 'totp') {
+					require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
+					$authCodeForSession = new TwoFactorAuthCode();
+					$authCodeForSession->sessionId = session_id();
+					$authCodeForSession->userId = $_SESSION['activeUserId'] ?? UserAccount::getActiveUserId();
+					if ($authCodeForSession->find(true)) {
+						$authCodeForSession->status = 'used';
+						$authCodeForSession->update();
+					} else {
+						$authCodeForSession->code = 'totp'; // we don't actually use TOTP verification, its just to make needsToComplete2FA() happy
+						$authCodeForSession->dateSent = time() + 300;
+						$authCodeForSession->status = 'used';
+						$authCodeForSession->insert();
+					}
+				}
 				try {
+					$_REQUEST['authMethod'] = $authMethod;
 					UserAccount::login();
 				} catch (UnknownAuthenticationMethodException $e) {
 					$logger->log("Error logging authenticated user in $e", Logger::LOG_DEBUG);
@@ -10083,7 +10322,7 @@ class MyAccount_AJAX extends JSON_Action {
 				return $result;
 			}
 		} else {
-			$result = $twoFactorAuth->validateCode($code);
+			$result = $twoFactorAuth->validateCode($code, $authMethod);
 		}
 
 		return $result;
@@ -10094,6 +10333,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$this->requireLoggedInUser();
 		global $interface;
 
+		$methodToCancel = $_REQUEST['type'];
 		// on submit of button, update user table for (un)enrollment status
 		return [
 			'success' => true,
@@ -10102,7 +10342,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true,
 			]),
 			'body' => $interface->fetch('MyAccount/2fa/unenroll.tpl'),
-			'buttons' => "<button class='tool btn btn-primary' onclick='return AspenDiscovery.Account.cancel2FA();'>Yes, turn off</button>",
+			'buttons' => "<button class='tool btn btn-primary' onclick='return AspenDiscovery.Account.cancel2FA(\"$methodToCancel\");'>Yes, turn off</button>",
 		];
 	}
 
@@ -10110,9 +10350,10 @@ class MyAccount_AJAX extends JSON_Action {
 	function cancel2FA() : array {
 		$this->requireLoggedInUser();
 
+		$methodToCancel = $_REQUEST['type'];
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
-		$twoFactorAuth->deactivate2FA();
+		$twoFactorAuth->deactivate2FA($methodToCancel);
 
 		return [
 			'success' => true,
@@ -10153,8 +10394,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function new2FACode(): array {
-		$this->requireLoggedInUser();
-
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 		$twoFactorAuth->createCode();
@@ -11257,6 +11496,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$interface->assign('limit', $limit);
 		$interface->assign('sort', $sort);
 		$interface->assign('filter', $filter);
+		$interface->assign('showNotificationColumn', $user->notifySavedSearches === 1);
 
 		$searches = [];
 		$savedSearches = [];
@@ -11332,6 +11572,7 @@ class MyAccount_AJAX extends JSON_Action {
 				// It's the size of the serialized, minified search in the database.
 				'size' => round($size / 1024, 3) . "kb",
 				'hasNewResults' => $savedSearch->hasNewResults == 1,
+				'sendNotification' => $savedSearch->sendNotification,
 			];
 
 			if ($savedSearch->hasNewResults) {
@@ -12247,5 +12488,266 @@ class MyAccount_AJAX extends JSON_Action {
 				];
 			}
 		}
+	}
+
+	public function joinEventWaitingList() {
+		$this->requireLoggedInUser();
+
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Unknown error occurred',
+				'isPublicFacing' => true,
+			])
+		];
+
+		$activeUserId = (int)UserAccount::getActiveUserId();
+		$userId = isset($_REQUEST['userId']) ? (int)$_REQUEST['userId'] : $activeUserId;
+		$eventInstanceId = (int)($_REQUEST['eventInstanceId'] ?? 0);
+
+		if (!UserAccount::isAuthorizedToActOnBehalfOf($userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to manage registrations for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if ($eventInstanceId <= 0) {
+			$result['message'] = translate([
+				'text' => 'Invalid Event ID.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/EventInstance.php';
+		$eventInstance = new EventInstance();
+		$eventInstance->id = $eventInstanceId;
+
+		if (!$eventInstance->find(true)) {
+			$result['message'] = translate([
+				'text' => 'Event not found.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if (!$eventInstance->isWaitingListEnabled()) {
+			$result['message'] = translate([
+				'text' => 'This event does not have a waiting list enabled',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		if (EventRegistrationService::isWaitingListFull($eventInstance)) {
+			$result['message'] = translate([
+				'text' => 'The waiting list for this event is full.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		// Add user to waiting list
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->userId = $userId;
+
+		if (!$registration->addUserToWaitingList()) {
+			$result['success'] = true;
+			$result['title'] = translate([
+				'text' => 'Already on Waiting List',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You are already on the waiting list for this event.',
+				'isPublicFacing' => true,
+			]);
+			$registration->find(true);
+			$result['position'] = UserAspenEventInstanceRegistration::getWaitingListPosition($registration->eventInstanceId, $registration->createdAt);
+			return $result;
+		}
+
+		$position = UserAspenEventInstanceRegistration::getWaitingListPosition($registration->eventInstanceId, $registration->createdAt);
+
+		require_once ROOT_DIR . '/sys/Events/Event.php';
+		$event = new Event();
+		$event->id = $eventInstance->eventId;
+		$event->find(true);
+
+		$result['success'] = true;
+		$result['title'] = translate([
+			'text' => 'Added to Waiting List',
+			'isPublicFacing' => true,
+		]);
+
+		if ($userId !== $activeUserId) {
+			require_once ROOT_DIR . '/sys/Account/User.php';
+			$linkedUser = new User();
+			$linkedUser->id = $userId;
+			$linkedUser->find(true);
+			$subject = $linkedUser->getDisplayName();
+			$auxVerb = 'has';
+			$linkVerb = 'is';
+			$pronoun = 'their';
+			$reflexive = 'them';
+		} else {
+			$subject = 'You';
+			$auxVerb = 'have';
+			$linkVerb = 'are';
+			$pronoun = 'your';
+			$reflexive = 'you';
+		}
+
+		$message = translate([
+			'text' => "%1% %6% been added to the waiting list for %2%. %1% %7% in position #%3%. <br><br> To receive waiting list invites, make sure a contact email is saved to %4% account and that event email notifications are enabled in %4% preferences. Without both, %4% spot is held but, as we have no way to let %5% know when it is %4% turn to register %5% will not be able to access registration",
+			'isPublicFacing' => true,
+		]);
+		$result['message'] = str_replace(['%1%', '%2%', '%3%', '%4%', '%5%', '%6%', '%7%'], [$subject, $event->title, $position, $pronoun, $reflexive, $auxVerb, $linkVerb], $message);
+
+		if ($userId !== $activeUserId) {
+			$fallbackNote = translate([
+				'text' => "If %1% cannot be reached, we will attempt to notify you instead, provided you have a contact email saved and event email notifications enabled on your account.",
+				'isPublicFacing' => true,
+			]);
+			$result['message'] .= ' ' . str_replace('%1%', $subject, $fallbackNote);
+		}
+		$result['position'] = $position;
+
+		EventRegistrationService::saveToUserEvents($eventInstance, $userId);
+
+		return $result;
+	}
+
+	public function leaveEventWaitingList(): array {
+		$this->requireLoggedInUser();
+		$result = [
+			'success' => false,
+			'title' => translate([
+				'text' => 'Error',
+				'isPublicFacing' => true,
+			]),
+			'message' => translate([
+				'text' => 'Unknown error occurred',
+				'isPublicFacing' => true,
+			])
+		];
+
+		$activeUserId = (int)UserAccount::getActiveUserId();
+		$userId = isset($_REQUEST['userId']) ? (int)$_REQUEST['userId'] : $activeUserId;
+		$eventInstanceId = (int)($_REQUEST['eventInstanceId'] ?? 0);
+
+		if (!UserAccount::isAuthorizedToActOnBehalfOf($userId)) {
+			$result['message'] = translate([
+				'text' => 'You do not have permission to manage registrations for this user.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		if ($eventInstanceId <= 0) {
+			$result['message'] = translate([
+				'text' => 'Invalid Event ID.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		require_once ROOT_DIR . '/sys/Events/UserAspenEventInstanceRegistration.php';
+		$registration = new UserAspenEventInstanceRegistration();
+		$registration->eventInstanceId = $eventInstanceId;
+		$registration->userId = $userId;
+		$registration->whereAdd('status IN ("waiting", "invited")');
+
+		if (!$registration->find(true)) {
+			$result['title'] = translate([
+				'text' => 'Waiting List Spot Not Found',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = translate([
+				'text' => 'You were not found on the waiting list for this event instance.',
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$registration->delete();
+
+		$result['success'] = true;
+		$result['title'] = translate([
+			'text' => 'Removed from Waiting List',
+			'isPublicFacing' => true,
+		]);
+
+		if ($userId !== $activeUserId) {
+			require_once ROOT_DIR . '/sys/Account/User.php';
+			$linkedUser = new User();
+			$linkedUser->id = $userId;
+			$linkedUser->find(true);
+			$message = translate([
+				'text' => '%1% has been removed from the waiting list.',
+				'isPublicFacing' => true,
+			]);
+			$result['message'] = str_replace('%1%', $linkedUser->getDisplayName(), $message);
+		} else {
+			$result['message'] = translate([
+				'text' => 'You have been removed from the waiting list.',
+				'isPublicFacing' => true,
+			]);
+		}
+
+		return $result;
+	}
+
+	public function getJoinWaitlistModal(): array {
+		$this->requireLoggedInUser();
+		$result = [
+			'success' => false,
+			'title' => translate(['text' => 'Error', 'isPublicFacing' => true]),
+			'message' => translate(['text' => 'Unknown error occurred', 'isPublicFacing' => true]),
+		];
+
+		$sourceId = $_REQUEST['sourceId'] ?? '';
+		$eventInstanceId = (int)preg_replace("/aspenEvent_\d+_/", '', $sourceId);
+
+		if ($eventInstanceId <= 0) {
+			$result['message'] = translate(['text' => 'Invalid Event ID.', 'isPublicFacing' => true]);
+			return $result;
+		}
+
+		$user = UserAccount::getLoggedInUser();
+		if (!$user) {
+			return $result;
+		}
+
+		global $interface, $library;
+
+		$interface->assign('eventSourceId', $sourceId);
+		$interface->assign('userId', $user->id);
+		$interface->assign('userDisplayName', $user->getDisplayName());
+		$interface->assign('userEmail', $user->email);
+		$interface->assign('userHomeLocation', $user->getHomeLocationName());
+
+		$linkedUsers = [];
+		if ($library->allowLinkedAccounts) {
+			$linkedUsers = $user->getLinkedUsers();
+			foreach ($linkedUsers as $linkedUser) {
+				$linkedUser->loadContactInformation();
+			}
+		}
+		$interface->assign('linkedUsers', $linkedUsers);
+
+		$result['success'] = true;
+		$result['hasLinkedAccounts'] = count($linkedUsers) > 0;
+		$result['title'] = translate(['text' => 'Join Waiting List', 'isPublicFacing' => true]);
+		$result['body'] = $interface->fetch('AspenEvents/joinWaitlistModal.tpl');
+		return $result;
 	}
 }

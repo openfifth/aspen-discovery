@@ -4,14 +4,22 @@ require_once ROOT_DIR . '/sys/Series/SeriesMember.php';
 
 class Series extends DataObject {
 	public $__table = 'series';
+	//ID of the series in the database
 	public $id;
+	//Permanent ID for cross site compatibility
+	public $seriesPermanentId;
+	//Version
+	public $version;
 	public $displayName;
 	/** @noinspection PhpUnused */
 	public $groupedWorkSeriesTitle;
+	public $author;
+	public $seriesLanguage;
+
+
 	public $description;
 	public $cover;
 	public $audience;
-	public $author;
 	public $sortMethod;
 	/** @noinspection PhpUnused */
 	public $isIndexed;
@@ -37,6 +45,24 @@ class Series extends DataObject {
 				'type' => 'label',
 				'label' => 'Id',
 				'description' => 'The unique id',
+			],
+			'version' => [
+				'property' => 'version',
+				'type' => 'label',
+				'label' => 'Version',
+				'description' => 'The version of the series',
+			],
+			'seriesPermanentId' => [
+				'property' => 'seriesPermanentId',
+				'type' => 'label',
+				'label' => 'Series Permanent Id',
+				'description' => 'The unique, permanent id for the series',
+			],
+			'seriesLanguage' => [
+				'property' => 'seriesLanguage',
+				'type' => 'label',
+				'label' => 'Series Language',
+				'description' => 'The language of the series',
 			],
 			'displayName' => [
 				'property' => 'displayName',

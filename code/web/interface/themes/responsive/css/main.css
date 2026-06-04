@@ -8063,6 +8063,7 @@ hr.menu {
   padding: 3px;
 }
 .system-message {
+  margin-top: 5px;
   padding: 5px;
 }
 .system-message-text {
@@ -11380,6 +11381,9 @@ td[data-entry-id]:has(.date-edit:focus)::after {
 }
 .horizDisplayShelfLocations .col-tn-4:last-child {
   padding-right: 0;
+}
+#multiple-variations-column.formatDisplayHorizontal .horizDisplayShelfLocations .col-tn-4:first-child {
+  padding-left: 0;
 }
 .relatedRecord {
   font-size: small;

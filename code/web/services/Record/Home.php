@@ -236,6 +236,8 @@ class Record_Home extends GroupedWorkSubRecordHomeAction {
 
 		$interface->assign('semanticData', json_encode($this->recordDriver->getSemanticData()));
 
+		$interface->assign('formatDisplayStyle', $groupedWorkDisplaySettings->formatDisplayStyle);
+
 		// Display Page
 		$this->display('full-record.tpl', $this->recordDriver->getTitle(), '', false);
 

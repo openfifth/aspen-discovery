@@ -401,6 +401,10 @@ class SystemAPI extends AbstractAPI {
 		$galeUpdates = getGaleUpdates();
 		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_registration_updates.php';
 		$aspenEventRegistrationUpdates = getAspenEventRegistrationUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_waiting_list_updates.php';
+		$aspenEventWaitingListUpdates = getAspenEventWaitingListUpdates();
+		require_once ROOT_DIR . '/sys/DBMaintenance/aspen_event_notification_updates.php';
+		$aspenEventNotificationUpdates = getAspenEventNotificationUpdates();
 
 		//having these on separate lines should make merges easier to manage
 		$baseUpdates = array_merge(
@@ -414,7 +418,9 @@ class SystemAPI extends AbstractAPI {
 			$hooplaVersion2Updates,
 			$pay360Updates,
 			$galeUpdates,
-			$aspenEventRegistrationUpdates
+			$aspenEventRegistrationUpdates,
+			$aspenEventWaitingListUpdates,
+			$aspenEventNotificationUpdates
 		);
 
 		//Get version updates
@@ -434,8 +440,10 @@ class SystemAPI extends AbstractAPI {
 
 		//Get Plugin Updates
 		global $plugins;
-		foreach ($plugins as $plugin) {
-			$baseUpdates = array_merge($baseUpdates, $plugin->getDatabaseUpdates());
+		if (!empty($plugins)) {
+			foreach ($plugins as $plugin) {
+				$baseUpdates = array_merge($baseUpdates, $plugin->getDatabaseUpdates());
+			}
 		}
 
 		return $baseUpdates;
