@@ -369,6 +369,19 @@ class HooplaProcessor2 {
 				}else if (language.equalsIgnoreCase("Spanish")){
 					groupedWork.setLanguageBoostSpanish(10L);
 				}
+
+				// Add languages to translations
+				HashSet<String> translatedLanguages = new HashSet<>();
+				if (rawResponse.has("dubLanguage")) {
+					String translatedLanguage = StringUtils.capitalize(rawResponse.getString("dubLanguage").toLowerCase());
+					translatedLanguages.add(translatedLanguage);
+				}
+				if (rawResponse.has("SubTitleLanguage")) {
+					String translatedLanguage = StringUtils.capitalize(rawResponse.getString("SubTitleLanguage").toLowerCase());
+					translatedLanguages.add(translatedLanguage);
+				}
+				groupedWork.setTranslations(translatedLanguages);
+
 				long formatBoost = 1;
 				try {
 					formatBoost = Long.parseLong(indexer.translateSystemValue("format_boost_hoopla", primaryFormat, identifier));
