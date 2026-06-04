@@ -37,11 +37,12 @@ function getUpdates26_06_00(): array {
 		//addForceReadingHistoryOptIn
 		'extend2FAforTOTP' => [
 			'title' => 'Extend 2FA to support TOTP apps',
-			'description' => 'Allow libraries to select TOTP as an option for 2FA method',
+			'description' => 'Allow libraries to select TOTP and/or email as options for 2FA methods',
 			'sql' => [
-				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowedMethod VARCHAR(255) DEFAULT 'totp'",
+				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowEmail TINYINT(1) DEFAULT 0",
+				"ALTER TABLE two_factor_auth_settings ADD COLUMN allowTotp TINYINT(1) DEFAULT 0",
 				//Default to email for previous setups
-				"UPDATE two_factor_auth_settings SET allowedMethod = 'email' WHERE 1",
+				"UPDATE two_factor_auth_settings SET allowEmail = 1 WHERE 1",
 			]
 		],
 		//extend2FAforTOTP
@@ -67,7 +68,6 @@ function getUpdates26_06_00(): array {
 				"UPDATE user
 				 SET twoFactorMethod = CASE
 				   WHEN twoFactorStatus = 1 THEN 'email'
-				   ELSE NULL
 				 END
 				 WHERE twoFactorMethod IS NULL
 					OR (twoFactorStatus = 1 AND twoFactorMethod <> 'email')
