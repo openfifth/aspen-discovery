@@ -152,17 +152,36 @@ class HooplaProcessor2 {
 				groupedWork.setAuthAuthor(primaryAuthor);
 				groupedWork.setAuthorDisplay(primaryAuthor, formatCategory, hooplaRecord);
 
+				String language = rawResponse.getString("language");
+				language = StringUtils.capitalize(language.toLowerCase());
+				hooplaRecord.setPrimaryLanguage(language);
+				groupedWork.addLanguage(language);
+				if (language.equalsIgnoreCase("English")){
+					groupedWork.setLanguageBoost(10L);
+				}else if (language.equalsIgnoreCase("Spanish")){
+					groupedWork.setLanguageBoostSpanish(10L);
+				}
+
 				String series = rawResponse.optString("seriesName", rawResponse.optString("series", ""));
 
 				if (!series.isEmpty()){
-					groupedWork.addSeries(series);
+					String volume = "";
 					if (rawResponse.has("seriesNumber")) {
-						String volume = rawResponse.optString("seriesNumber", rawResponse.optString("volume", ""));
-						if (rawResponse.has("episodeNumber") || rawResponse.has("episode")) {
-							volume += " Episode " + rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
-						}
-						groupedWork.addSeriesWithVolume(series, volume, 2, false, primaryAuthor);
+						volume = rawResponse.get("seriesNumber").toString();
 					}
+					if (rawResponse.has("volume")) {
+						if (!volume.isEmpty()){
+							volume += " ";
+						}
+						volume += rawResponse.get("volume").toString();
+					}
+					if (rawResponse.has("episodeNumber") || rawResponse.has("episode")) {
+						if (!volume.isEmpty()){
+							volume += " ";
+						}
+						volume += "Episode " + rawResponse.optString("episodeNumber", rawResponse.optString("episode", ""));
+					}
+					groupedWork.addSeriesWithVolume(series, primaryAuthor, volume, 2, false);
 				}
 
 				if (rawResponse.has("atosBookLevel")) {
@@ -358,16 +377,6 @@ class HooplaProcessor2 {
 						groupedWork.addTargetAudienceFull("Adult");
 						if (groupedWork.isDebugEnabled()) {groupedWork.addDebugMessage("Target/full target audience is Adult based on Hoopla record", 2);}
 					}
-				}
-
-				String language = rawResponse.getString("language");
-				language = StringUtils.capitalize(language.toLowerCase());
-				hooplaRecord.setPrimaryLanguage(language);
-				groupedWork.addLanguage(language);
-				if (language.equalsIgnoreCase("English")){
-					groupedWork.setLanguageBoost(10L);
-				}else if (language.equalsIgnoreCase("Spanish")){
-					groupedWork.setLanguageBoostSpanish(10L);
 				}
 
 				// Add languages to translations

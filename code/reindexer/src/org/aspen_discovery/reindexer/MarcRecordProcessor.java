@@ -408,8 +408,7 @@ abstract class MarcRecordProcessor {
 			if (seriesField.getIndicator2() == '1' && seriesField.getSubfield('a') != null) {
 				seriesAuthor = seriesField.getSubfield('a').getData();
 			}
-			groupedWork.addSeriesWithVolume(series, volume, 3, false, seriesAuthor);
-			groupedWork.addSeries(series);
+			groupedWork.addSeriesWithVolume(series, seriesAuthor, volume, 3, false);
 		}
 
 		seriesFields = MarcUtil.getDataFields(record, seriesFieldsToIndexWith800);
@@ -442,8 +441,7 @@ abstract class MarcRecordProcessor {
 			if (seriesField.getSubfield('a') != null) {
 				seriesAuthor = seriesField.getSubfield('a').getData();
 			}
-			groupedWork.addSeriesWithVolume(series, volume, 5, false, seriesAuthor);
-			groupedWork.addSeries(series);
+			groupedWork.addSeriesWithVolume(series, seriesAuthor, volume, 5, false);
 		}
 
 		seriesFields = MarcUtil.getDataFields(record, 490);
@@ -467,8 +465,7 @@ abstract class MarcRecordProcessor {
 				if (seriesField.getSubfield('a') != null) {
 					seriesAuthor = seriesField.getSubfield('a').getData();
 				}
-				groupedWork.addSeriesWithVolume(series, volume, 1, true, seriesAuthor);
-				groupedWork.addSeries(series);
+				groupedWork.addSeriesWithVolume(series, seriesAuthor, volume, 1, true);
 			}
 		}
 
@@ -519,7 +516,7 @@ abstract class MarcRecordProcessor {
 				if (!(program.equals("AR") || program.startsWith("Accelerated Reader"))) {
 					//This is the wrong program
 					continue;
-				}	
+				}
 			}
 			Subfield subfieldC = acceleratedReaderField.getSubfield('c');
 			if (subfieldC != null){
