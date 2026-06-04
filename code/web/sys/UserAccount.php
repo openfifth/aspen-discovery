@@ -738,21 +738,24 @@ class UserAccount {
 			if (!$validatedViaSSO && UserAccount::isRequired2FA() && !UserAccount::has2FAEnabled() && UserAccount::$isAuthenticated === false) {
 				UserAccount::$isLoggedIn = false;
 				$logger->log("User needs to enroll in two-factor authentication", Logger::LOG_DEBUG);
+				$authStatus = UserAccount::get2FAMethodStatus();
 				$_SESSION['enroll2FA'] = true;
 				$_SESSION['has2FA'] = false;
 				$_SESSION['codeSent'] = false;
-				$_SESSION['authMethod'] = UserAccount::typeOf2FAEnabled();
+				$_SESSION['authMethod'] = $authStatus['allowTotp'] ? 'totp' : 'email';
 				return new TwoFactorAuthenticationError(UserAccount::getActiveUserId(), TwoFactorAuthenticationError:: MUST_ENROLL, "User needs to enroll in two-factor authentication");
 			} elseif (!$validatedViaSSO && UserAccount::has2FAEnabled() && UserAccount::$isAuthenticated === false) {
 				UserAccount::$isLoggedIn = false;
 				$logger->log("User needs to two-factor authenticate", Logger::LOG_DEBUG);
+				$authStatus = UserAccount::get2FAMethodStatus();
 				$_SESSION['enroll2FA'] = false;
-				$_SESSION['authMethod'] = UserAccount::typeOf2FAEnabled();
-				if (UserAccount::typeOf2FAEnabled() === 'totp') {
+				$_SESSION['authMethod'] = $authStatus['hasTotp'] ? 'totp' : 'email';
+				if ($authStatus['hasTotp']) {
 					$_SESSION['has2FA'] = true;
 					$_SESSION['codeSent'] = false;
 					return new TwoFactorAuthenticationError(UserAccount::getActiveUserId(), TwoFactorAuthenticationError::MUST_COMPLETE_AUTHENTICATION, 'You must authenticate before logging in. Please provide a code from your authenticator app.');
 				}
+
 				// else just assume email at this point
 				require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 				$twoFactorAuth = new TwoFactorAuthCode();
@@ -765,10 +768,11 @@ class UserAccount {
 					require_once ROOT_DIR . '/sys/YearInReview/YearInReviewGenerator.php';
 					generateYearInReview($primaryUser);
 				}
+				$authStatus = UserAccount::get2FAMethodStatus();
 				$_SESSION['enroll2FA'] = false;
 				$_SESSION['has2FA'] = false;
 				$_SESSION['codeSent'] = false;
-				$_SESSION['authMethod'] = UserAccount::typeOf2FAEnabled();
+				$_SESSION['authMethod'] = 'none';
 				UserAccount::$isLoggedIn = true;
 				UserAccount::$primaryUserData = $primaryUser;
 				if (isset($_COOKIE['searchPreferenceLanguage']) && $primaryUser->searchPreferenceLanguage == -1) {

@@ -44,7 +44,7 @@
                         {if $showSetupTotp}
 							<button type="button" name="enableTOTP" class="btn btn-primary" onclick="return AspenDiscovery.Account.show2FAEnrollment(false, 'totp');">{translate text="Set up" isPublicFacing=true}</button>
                         {else}
-							<button type="button" name="disableTOTP" class="btn btn-primary" onclick="return AspenDiscovery.Account.showCancel2FA();" {if !$canDisableTotp}disabled{/if}>{translate text="Disable" isPublicFacing=true}</button>
+							<button type="button" name="disableTOTP" class="btn btn-primary" onclick="return AspenDiscovery.Account.showCancel2FA('totp');" {if !$canDisableTotp}disabled{/if}>{translate text="Disable" isPublicFacing=true}</button>
                         {/if}
 					</div>
 				</div>
@@ -60,7 +60,7 @@
 	                    {if $showSetupEmail}
 							<button type="button" name="enableEmail" class="btn btn-primary" onclick="return AspenDiscovery.Account.show2FAEnrollment(false, 'email');">{translate text="Set up" isPublicFacing=true}</button>
 	                    {else}
-							<button type="button" name="disableEmail" class="btn btn-primary" onclick="return AspenDiscovery.Account.showCancel2FA();" {if !$canDisableEmail}disabled{/if}>{translate text="Disable" isPublicFacing=true}</button>
+							<button type="button" name="disableEmail" class="btn btn-primary" onclick="return AspenDiscovery.Account.showCancel2FA('email');" {if !$canDisableEmail}disabled{/if}>{translate text="Disable" isPublicFacing=true}</button>
 	                    {/if}
 					</div>
 				</div>

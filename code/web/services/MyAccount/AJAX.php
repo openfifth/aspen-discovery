@@ -1810,6 +1810,7 @@ class MyAccount_AJAX extends JSON_Action {
 				UserAccount::softLogout();
 			} else {
 				$authStatus = UserAccount::get2FAMethodStatus();
+				$interface->assign('setupMethods', $authStatus['setupMethods']);
 				$interface->assign('hasTotp', $authStatus['hasTotp']);
 				$interface->assign('hasEmail', $authStatus['hasEmail']);
 				$interface->assign('codeSent', !empty($_SESSION['codeSent']));
@@ -10332,6 +10333,7 @@ class MyAccount_AJAX extends JSON_Action {
 		$this->requireLoggedInUser();
 		global $interface;
 
+		$methodToCancel = $_REQUEST['type'];
 		// on submit of button, update user table for (un)enrollment status
 		return [
 			'success' => true,
@@ -10340,7 +10342,7 @@ class MyAccount_AJAX extends JSON_Action {
 				'isPublicFacing' => true,
 			]),
 			'body' => $interface->fetch('MyAccount/2fa/unenroll.tpl'),
-			'buttons' => "<button class='tool btn btn-primary' onclick='return AspenDiscovery.Account.cancel2FA();'>Yes, turn off</button>",
+			'buttons' => "<button class='tool btn btn-primary' onclick='return AspenDiscovery.Account.cancel2FA(\"$methodToCancel\");'>Yes, turn off</button>",
 		];
 	}
 
@@ -10348,9 +10350,10 @@ class MyAccount_AJAX extends JSON_Action {
 	function cancel2FA() : array {
 		$this->requireLoggedInUser();
 
+		$methodToCancel = $_REQUEST['type'];
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
-		$twoFactorAuth->deactivate2FA();
+		$twoFactorAuth->deactivate2FA($methodToCancel);
 
 		return [
 			'success' => true,

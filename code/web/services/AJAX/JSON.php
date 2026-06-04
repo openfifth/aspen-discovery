@@ -314,6 +314,7 @@ class AJAX_JSON extends Action {
 							$interface->assign('codeSent', !empty($_SESSION['codeSent']));
 							$interface->assign('hasTotp', $authStatus['hasTotp']);
 							$interface->assign('hasEmail', $authStatus['hasEmail']);
+							$interface->assign('setupMethods', $authStatus['setupMethods']);
 							return [
 								'success' => false,
 								'enroll2FA' => false,

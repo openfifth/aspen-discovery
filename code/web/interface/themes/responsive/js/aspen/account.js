@@ -2829,10 +2829,10 @@ AspenDiscovery.Account = (function () {
 			}
 			return false;
 		},
-		showCancel2FA: function () {
+		showCancel2FA: function (method) {
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=confirmCancel2FA", function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=confirmCancel2FA&type=" + method, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessageWithButtons(data.title, data.body, data.buttons)
 					} else {
@@ -2846,10 +2846,10 @@ AspenDiscovery.Account = (function () {
 			}
 			return false;
 		},
-		cancel2FA: function () {
+		cancel2FA: function (method) {
 			if (Globals.loggedIn) {
 				AspenDiscovery.loadingMessage();
-				$.getJSON(Globals.path + "/MyAccount/AJAX?method=cancel2FA", function (data) {
+				$.getJSON(Globals.path + "/MyAccount/AJAX?method=cancel2FA&type=" + method, function (data) {
 					if (data.success) {
 						AspenDiscovery.showMessage(data.title, data.body, true, 2000)
 					} else {
@@ -2883,11 +2883,15 @@ AspenDiscovery.Account = (function () {
 			}
 			return false;
 		},
-		new2FACode: function () {
+		new2FACode: function (showMessage = true) {
 			$.getJSON(Globals.path + "/MyAccount/AJAX?method=new2FACode", function (data) {
 				// update #newCodeSentPlaceholder with sent status
-				$("#newCodeSentPlaceholder").html(data.body).show();
-				return data;
+				if (showMessage) {
+					$("#newCodeSentPlaceholder").html(data.body).show();
+					return data;
+				} else {
+					return true;
+				}
 			});
 			return false;
 		},
@@ -2927,6 +2931,33 @@ AspenDiscovery.Account = (function () {
 			var name = $("#name").val();
 			var myAccountAuth = $("#myAccountAuth").val();
 			var authMethod = $("#authMethod").val();
+
+			if ($("#altMethodWrapper").is(":visible")) {
+				const $activeToggle = $(".alt-method-toggle.active");
+				let $errorTarget;
+				if ($activeToggle.length) {
+					const target = $activeToggle.data("target"); // #alt-method-email|totp|backup
+					const $panel = $(target);
+
+					if (target === "#alt-method-email") {
+						authMethod = "email";
+						code = $panel.find("#code_email").val() || "";
+					} else if (target === "#alt-method-totp") {
+						authMethod = "totp";
+						code = $panel.find("#code_totp").val() || "";
+					} else if (target === "#alt-method-backup") {
+						authMethod = "backup";
+						code = $panel.find("#code_backup").val() || "";
+					}
+
+					$("#authMethod").val(authMethod);
+					const $panelError = $panel.find(".codeVerificationFailedPlaceholder");
+					if ($panelError.length) {
+						$errorTarget = $panelError;
+					}
+				}
+			}
+
 			$.getJSON(Globals.path + "/MyAccount/AJAX?method=verify2FA&loggingIn=true&code=" + code + "&useMethod=" + authMethod, function (data) {
 				// update #codeVerificationFailedPlaceholder with failed verification status, otherwise move onto next step
 				if (data.success === "true") {

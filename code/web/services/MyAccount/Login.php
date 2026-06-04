@@ -180,6 +180,7 @@ class MyAccount_Login extends Action {
 		if (!empty($_SESSION['has2FA'])) {
 			$interface->assign('codeSent', !empty($_SESSION['codeSent']));
 			$interface->assign('authMethod', $_SESSION['authMethod']);
+			$interface->assign('setupMethods', UserAccount::get2FAMethodStatus());
 			$this->display('../MyAccount/login-2fa.tpl', 'Login', '');
 		} elseif (!empty($_SESSION['enroll2FA'])) {
 			$canUseTotp = false;
