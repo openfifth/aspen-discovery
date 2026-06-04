@@ -3831,8 +3831,11 @@ class Koha extends AbstractIlsDriver {
 		$kohaVersion = $this->getKohaVersion();
 		$csrfToken = '';
 		if ($kohaVersion >= 24.05) {
-			$url = $catalogUrl . '/cgi-bin/koha/opac-password-recovery.pl';
-			$csrfToken = $this->getCSRFToken($url);
+			//First get the page to get the csrf token
+			$getResults = $this->getKohaPage($catalogUrl . '/cgi-bin/koha/opac-password-recovery.pl');
+			if (preg_match('/<input type="hidden" name="csrf_token" value="(.*?)" \/>/', $getResults, $matches)) {
+				$csrfToken = $matches[1];
+			}
 		}
 
 
