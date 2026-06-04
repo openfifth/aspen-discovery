@@ -44,8 +44,15 @@ function getUpdates26_06_00(): array {
 				//Default to email for previous setups
 				"UPDATE two_factor_auth_settings SET allowEmail = 1 WHERE 1",
 			]
-		],
-		//extend2FAforTOTP
+		], //extend2FAforTOTP
+		'addTotpIssuer' => [
+			'title' => 'Add TOTP Issuer for 2FA',
+			'description' => 'Add TOTP Issuer for 2FA',
+			'sql' => [
+				"ALTER TABLE two_factor_auth_settings ADD COLUMN issuerTOTP VARCHAR(255)",
+			]
+		], //addTotpIssuer
+
 		'addTOTPSecretsTable' => [
 			'title' => 'Add table to store TOTP user secrets',
 			'description' => 'Add table to store TOTP user secrets',
