@@ -3736,8 +3736,8 @@ class Koha extends AbstractIlsDriver {
 		//Setup post parameters to the login url
 		$postParams = [
 			'koha_login_context' => 'opac',
-			'password' => $user->ils_password,
-			'userid' => $user->ils_barcode,
+			'login_password' => $user->ils_password,
+			'login_userid' => $user->ils_barcode,
 		];
 
 		if (empty($user->ils_password)) {
@@ -3754,7 +3754,7 @@ class Koha extends AbstractIlsDriver {
 			$postParams['csrf_token'] = $this->getCSRFToken("$catalogUrl/cgi-bin/koha/opac-user.pl");
 
 			// After 25.11, op becomes login_op. Account for that here
-			$opKey = $kohaVersion >= 25.11 ? "login_op" : "op";
+			$opKey = $kohaVersion >= "25.1104" ? "login_op" : "op";
 			$postParams[$opKey] = "cud-login";
 		}
 
