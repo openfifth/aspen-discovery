@@ -10394,8 +10394,6 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function new2FACode(): array {
-		$this->requireLoggedInUser();
-
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 		$twoFactorAuth->createCode();
