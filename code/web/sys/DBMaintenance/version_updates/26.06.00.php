@@ -217,12 +217,20 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE series ADD COLUMN seriesLanguage VARCHAR(20)',
 			]
 		], //series_columns
+		'series_version' => [
+			'title' => 'Store the version of the series',
+			'description' => 'Store the version of the series',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE series ADD COLUMN version TINYINT default 1',
+			]
+		], //series_columns
 		'series_setting_version' => [
 			'title' => 'Add Column in Series Indexing Settings Table',
 			'description' => 'Add column in series settings indexing table for version',
 			'continueOnError' => false,
 			'sql' => [
-				'ALTER TABLE series_indexing_settings ADD COLUMN version tinyint(1) DEFAULT 0',
+				'ALTER TABLE series_indexing_settings ADD COLUMN version tinyint(1) DEFAULT 1',
 				'ALTER TABLE series_indexing_settings ADD COLUMN truncateForVersionSwitch TINYINT(1) NOT NULL DEFAULT 0',
 			]
 		], //series_setting_version
