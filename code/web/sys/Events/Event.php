@@ -273,7 +273,6 @@ class Event extends DataObject {
 				'label' => 'Event Date',
 				'description' => 'The date this event starts',
 				'onchange' => "return AspenDiscovery.Events.updateRecurrenceOptions(this.value);",
-				'canSort' => false
 			],
 			'hideTimestamps' => [
 				'property' => 'hideTimestamps',
