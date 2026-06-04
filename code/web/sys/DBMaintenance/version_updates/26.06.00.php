@@ -48,6 +48,7 @@ function getUpdates26_06_00(): array {
 		'addTotpIssuer' => [
 			'title' => 'Add TOTP Issuer for 2FA',
 			'description' => 'Add TOTP Issuer for 2FA',
+			'continueOnError' => true,
 			'sql' => [
 				"ALTER TABLE two_factor_auth_settings ADD COLUMN issuerTOTP VARCHAR(255)",
 			]
@@ -302,7 +303,7 @@ function getUpdates26_06_00(): array {
 			'title' => 'Accelerated Reading Points',
 			'description' => 'Update column for AR points to store decimal values.',
 			'sql' => [
-				'ALTER TABLE accelerated_reading_titles CHANGE COLUMN arPoints arPoints decimal(3,1) DEFAULT NULL',
+				'ALTER TABLE accelerated_reading_titles CHANGE COLUMN arPoints arPoints decimal(6,1) DEFAULT NULL',
 			]
 		], //accelerated_reading_points
 
