@@ -1809,8 +1809,9 @@ class MyAccount_AJAX extends JSON_Action {
 				//We have an abandoned 2-factor authentication enrollment
 				UserAccount::softLogout();
 			} else {
-				$authMethods = UserAccount::get2FAMethodStatus();
-				$interface->assign('authMethods', $authMethods);
+				$authStatus = UserAccount::get2FAMethodStatus();
+				$interface->assign('hasTotp', $authStatus['hasTotp']);
+				$interface->assign('hasEmail', $authStatus['hasEmail']);
 				$interface->assign('codeSent', !empty($_SESSION['codeSent']));
 				$referer = $_REQUEST['referer'] ?? null;
 				$interface->assign('referer', $referer);
@@ -10157,6 +10158,7 @@ class MyAccount_AJAX extends JSON_Action {
 				]),
 				'body' => $method == 'email' ? $interface->fetch('MyAccount/2fa/enroll-register-email.tpl') : $interface->fetch('MyAccount/2fa/enroll-register-totp.tpl'),
 				'buttons' => $buttons,
+				'closeDestination' => '/MyAccount/Logout'
 			];
 		} elseif ($step == "verify") {
 			require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
@@ -10235,8 +10237,16 @@ class MyAccount_AJAX extends JSON_Action {
 			$user = new User();
 			$user->id = UserAccount::getActiveUserId();
 			if ($user->find(true)) {
+				$existingMethods = array_values(array_filter(array_map('trim', explode(',', $user->twoFactorMethod ?? '')), static function ($m) {
+					return $m !== '';
+				}));
+				if (!in_array($method, $existingMethods, true)) {
+					$existingMethods[] = $method;
+					$user->twoFactorMethod = implode(',', $existingMethods);
+				} else {
+					$user->twoFactorMethod = implode(',', $existingMethods);
+				}
 				$user->twoFactorStatus = 1;
-				$user->twoFactorMethod = $method;
 				$user->update();
 			}
 
@@ -10266,20 +10276,20 @@ class MyAccount_AJAX extends JSON_Action {
 		$code = $_REQUEST['code'] ?? '0';
 		$isLoggingIn = $_REQUEST['loggingIn'] ?? false;
 		$secretId = $_REQUEST['secretId'] ?? null;
-		$authMethod = $_REQUEST['authMethod'] ?? $_SESSION['authMethod'] ?? null;
+		$authMethod = $_REQUEST['useMethod'] ?? $_SESSION['useMethod'] ?? null;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthCode.php';
 		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
 		$twoFactorAuth = new TwoFactorAuthCode();
 
 		if ($secretId !== null) {
 			// TOTP enrollment verification
-			return $twoFactorAuth->validateCode($code, $secretId);
+			return $twoFactorAuth->validateCode($code, $authMethod, $secretId);
 		}
 
 		if ($isLoggingIn) {
 			global $logger;
 			$logger->log("Starting AJAX/2faLogin session: " . session_id(), Logger::LOG_DEBUG);
-			$result = $twoFactorAuth->validateCode($code);
+			$result = $twoFactorAuth->validateCode($code, $authMethod);
 			if ($result['success']) {
 				UserAccount::$isAuthenticated = true;
 				if ($authMethod === 'totp') {
@@ -10292,7 +10302,7 @@ class MyAccount_AJAX extends JSON_Action {
 						$authCodeForSession->update();
 					} else {
 						$authCodeForSession->code = 'totp'; // we don't actually use TOTP verification, its just to make needsToComplete2FA() happy
-						$authCodeForSession->expirationDate = time() + 300;
+						$authCodeForSession->dateSent = time() + 300;
 						$authCodeForSession->status = 'used';
 						$authCodeForSession->insert();
 					}
@@ -10311,7 +10321,7 @@ class MyAccount_AJAX extends JSON_Action {
 				return $result;
 			}
 		} else {
-			$result = $twoFactorAuth->validateCode($code);
+			$result = $twoFactorAuth->validateCode($code, $authMethod);
 		}
 
 		return $result;

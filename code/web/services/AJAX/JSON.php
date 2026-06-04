@@ -312,14 +312,15 @@ class AJAX_JSON extends Action {
 							$name = $_REQUEST['name'] ?? null;
 							$interface->assign('name', $name);
 							$interface->assign('codeSent', !empty($_SESSION['codeSent']));
-							$interface->assign('canUseTotp', $authStatus['allowTotp']);
-							$interface->assign('canUseEmail', $authStatus['allowEmail']);
+							$interface->assign('hasTotp', $authStatus['hasTotp']);
+							$interface->assign('hasEmail', $authStatus['hasEmail']);
 							return [
 								'success' => false,
 								'enroll2FA' => false,
 								'has2FA' => true,
 								'passwordExpired' => false,
-								'authMethod' => UserAccount::typeOf2FAEnabled(),
+								'hasTotp' => $authStatus['hasTotp'],
+								'hasEmail' => $authStatus['hasEmail'],
 								'title' => translate([
 									'text' => 'Two-Factor Authentication',
 									'isPublicFacing' => true,

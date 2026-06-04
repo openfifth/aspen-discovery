@@ -165,7 +165,7 @@ class TwoFactorAuthCode extends DataObject {
 		}
 	}
 
-	function validateCode($code, $secretId = null): array {
+	function validateCode($code, $method, $secretId = null): array {
 		global $library;
 		require_once ROOT_DIR . '/sys/TwoFactorAuthSetting.php';
 		require_once ROOT_DIR . '/sys/TwoFactorAuthTOTPSecret.php';
@@ -189,8 +189,7 @@ class TwoFactorAuthCode extends DataObject {
 			$deniedMessage = "";
 		}
 
-		// Check if TOTP is the enabled method
-		if ($authSetting->allowedMethod === 'totp') {
+		if ($method === 'totp') {
 			return $this->validateTOTPCode($code, $userId, $deniedMessage, $secretId);
 		}
 

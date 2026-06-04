@@ -49,6 +49,9 @@
 					{/if}
 				</div>
 			</form>
+			<div>
+				<a class="btn btn-info" style="margin-top: 2em" href="#">{translate text="Try Another Method" isPublicFacing=true}</a>
+			</div>
 		</div>
 	</div>
 {/strip}
