@@ -353,9 +353,9 @@ AspenDiscovery.Account = (function () {
 				showCovers: showCovers,
 				selectedUser: selectedUser
 			};
-			var newUrl = AspenDiscovery.buildUrl(document.location.origin + document.location.pathname);
+			var newUrl = document.location.origin + document.location.pathname;
 			if (document.location.href) {
-				history.pushState(stateObj, 'Holds', newUrl);
+				history.replaceState(stateObj, 'Holds', newUrl);
 			}
 			document.body.style.cursor = "wait";
 			// noinspection JSUnresolvedFunction
