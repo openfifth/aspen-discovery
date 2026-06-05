@@ -18,7 +18,11 @@ class Event extends DataObject {
 	public $displayEventBranchOnThumbnail;
 	public $_typeFields = [];
 	public $startDate;
+
+	// Used as an alias for startDate at the root of the model structure
+	// so that it can be displayed in lists
 	public $_startDateForList;
+
 	public $hideTimestamps;
 	public $startTime;
 	public $eventLength;
