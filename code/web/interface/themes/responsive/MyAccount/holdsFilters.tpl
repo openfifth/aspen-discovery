@@ -54,11 +54,10 @@
 					let key = $(this).attr('id').replace('HoldFilter_', '');
 					filters[key] = $(this).val() || [];
 				});
-				console.log(filters);
-				AspenDiscovery.Account.loadHolds('{/literal}{$source}{literal}', $('#availableHoldSort_{/literal}{$source}{literal} option:selected').val(), $('#unavailableHoldSort_{/literal}{$source}{literal} option:selected').val(), null, null, filters);
+				AspenDiscovery.Account.loadHolds('all', $('#availableHoldSort_{/literal}{$source}{literal} option:selected').val(), $('#unavailableHoldSort_{/literal}{$source}{literal} option:selected').val(), null, null, filters);
 			});
 			$('#clearHoldsFilters').on('click', function() {
-				AspenDiscovery.Account.loadHolds('{/literal}{$source}{literal}', $('#availableHoldSort_{/literal}{$source}{literal} option:selected').val(), $('#unavailableHoldSort_{/literal}{$source}{literal} option:selected').val());
+				AspenDiscovery.Account.loadHolds('all', $('#availableHoldSort_{/literal}{$source}{literal} option:selected').val(), $('#unavailableHoldSort_{/literal}{$source}{literal} option:selected').val());
 			});
 		});
         {/literal}
