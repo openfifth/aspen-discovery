@@ -1,6 +1,6 @@
 {if is_array($filterOptions)}
 	<div id="holdsFilterDisplayHorizontal">
-		<div class="row horizontalFilterSelector" id="holdsFilterRow">
+		<div class="row row-no-gutters horizontalFilterSelector" id="holdsFilterRow">
 				<div class="col-xs-12">
 					<div class="slider-container" role="region" id="slider-holds-filter">
 					<button type="button" class="slider-button slider-button-prev btn btn-default" id="slider-prev-holds-filter" aria-label="{translate text="Previous Filter" isPublicFacing=true inAttribute=true}"><i class="fas fa-chevron-left"></i></button>
