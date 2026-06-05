@@ -274,7 +274,7 @@ class Event extends DataObject {
 			'startDate' => [
 				'property' => 'startDate',
 				'type' => 'date',
-				'label' => 'Event Date',
+				'label' => 'Start Date',
 				'description' => 'The date this event starts',
 				'onchange' => "return AspenDiscovery.Events.updateRecurrenceOptions(this.value);",
 			],
