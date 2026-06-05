@@ -36,7 +36,7 @@
 				{literal}
 				$(document).ready(function() {
 					{/literal}
-					AspenDiscovery.Account.loadHolds('{$tab}');
+					AspenDiscovery.Account.loadHolds('all');
 					{literal}
 				});
 				{/literal}
