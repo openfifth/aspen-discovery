@@ -127,16 +127,17 @@ class SystemVariables extends DataObject {
 			],
 			'currencyCode' => [
 				'property' => 'currencyCode',
-				'type' => 'enum',
-				'values' => [
-					'USD' => 'USD',
-					'CAD' => 'CAD',
-					'EUR' => 'EUR',
-					'GBP' => 'GBP',
+				'type' => 'text',
+				'suggestions' => [
+					'USD',
+					'CAD',
+					'EUR',
+					'GBP',
 				],
 				'label' => 'Currency Code',
 				'description' => 'Currency code to use when formatting money',
 				'required' => true,
+				'maxLength' => 3,
 				'default' => 'USD',
 			],
 			'indexingSection' => [
