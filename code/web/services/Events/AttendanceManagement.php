@@ -94,7 +94,6 @@ class Events_AttendanceManagement extends Admin_Admin {
 
 		$eventInstance = new EventInstance();
 		$eventInstance->whereAdd("(deleted IS NULL OR deleted = 0)");
-		EventInstance::addUpcomingWhereClause($eventInstance);
 		$eventInstance->orderBy('date ASC, time ASC');
 		$eventInstance->limit(0, 100);
 
