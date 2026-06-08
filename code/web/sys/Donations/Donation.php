@@ -291,24 +291,6 @@ class Donation extends DataObject {
 		}
 	}
 
-	function getCurrencySymbol() {
-		$currencyCode = 'USD';
-		$systemVariables = SystemVariables::getSystemVariables();
-		if (!empty($systemVariables->currencyCode)) {
-			$currencyCode = $systemVariables->currencyCode;
-		}
-		if ($currencyCode == 'USD') {
-			$currencySymbol = '$';
-		} elseif ($currencyCode == 'EUR') {
-			$currencySymbol = '€';
-		} elseif ($currencyCode == 'CAD') {
-			$currencySymbol = '$';
-		} elseif ($currencyCode == 'GBP') {
-			$currencySymbol = '£';
-		}
-		return $currencySymbol;
-	}
-
 	function getDonationFormFields(DonationsSetting $donationSettings) {
 		require_once ROOT_DIR . '/sys/Donations/DonationFormFields.php';
 		$fieldsToSortByCategory = $donationSettings->getDefaultFormFields();

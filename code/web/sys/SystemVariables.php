@@ -580,26 +580,6 @@ class SystemVariables extends DataObject {
 		return SystemVariables::$_systemVariables;
 	}
 
-	public function getCurrencySymbol() : string {
-		$currencyCode = 'USD';
-		$systemVariables = SystemVariables::getSystemVariables();
-		if (!empty($systemVariables->currencyCode)) {
-			$currencyCode = $systemVariables->currencyCode;
-		}
-		if ($currencyCode == 'USD') {
-			$currencySymbol = '$';
-		} elseif ($currencyCode == 'EUR') {
-			$currencySymbol = '€';
-		} elseif ($currencyCode == 'CAD') {
-			$currencySymbol = '$';
-		} elseif ($currencyCode == 'GBP') {
-			$currencySymbol = '£';
-		} else {
-			$currencySymbol = '';
-		}
-		return $currencySymbol;
-	}
-
 	public function update(string $context = '') : int|bool {
 		if ($this->trackIpAddresses == 0) {
 			//Delete all previously stored usage stats.
