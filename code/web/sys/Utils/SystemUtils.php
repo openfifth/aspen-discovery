@@ -35,6 +35,45 @@ class SystemUtils {
 		}
 	}
 
+	static function getUploadErrorMessage(int $uploadError): string {
+		return translate(match ($uploadError) {
+			UPLOAD_ERR_FORM_SIZE => [
+				'text' => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+				'isAdminFacing' => true,
+			],
+			UPLOAD_ERR_INI_SIZE => [
+				'text' => 'The uploaded file exceeds the maximum file size of %1%.',
+				1 => ini_get('upload_max_filesize'),
+				'isAdminFacing' => true,
+			],
+			UPLOAD_ERR_PARTIAL => [
+				'text' => 'The file was only partially uploaded. Please try again.',
+				'isAdminFacing' => true,
+			],
+			UPLOAD_ERR_NO_FILE => [
+				'text' => 'No file was uploaded.',
+				'isAdminFacing' => true,
+			],
+			UPLOAD_ERR_NO_TMP_DIR => [
+				'text' => 'The server is missing a temporary folder for uploads.',
+				'isAdminFacing' => true,
+			],
+			UPLOAD_ERR_CANT_WRITE => [
+				'text' => 'Failed to write the uploaded file to disk.',
+				'isAdminFacing' => true,
+			],
+			UPLOAD_ERR_EXTENSION => [
+				'text' => 'A PHP extension blocked the upload.',
+				'isAdminFacing' => true,
+			],
+			default => [
+				'text' => 'An unknown error occurred during upload (code %1%).',
+				1 => $uploadError,
+				'isAdminFacing' => true,
+			],
+		});
+	}
+
 	static function recursive_rmdir($dir): bool {
 		if (is_dir($dir)) {
 			$objects = scandir($dir);
