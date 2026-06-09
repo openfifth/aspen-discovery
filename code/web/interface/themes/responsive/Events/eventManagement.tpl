@@ -11,7 +11,7 @@
 	{elseif !empty($showEventSelector)}
 		<div class="well">
 			<h2>{translate text="Select an Event" isAdminFacing=true}</h2>
-			<p>{translate text="Choose an upcoming event to manage registrations." isAdminFacing=true}</p>
+			<p>{translate text="Choose an event instance to view registrations and manage attendance." isAdminFacing=true}</p>
 
 			{if !empty($eventInstances)}
 				<table class="table table-striped table-bordered">
