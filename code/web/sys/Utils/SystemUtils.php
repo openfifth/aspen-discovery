@@ -43,7 +43,7 @@ class SystemUtils {
 			],
 			UPLOAD_ERR_INI_SIZE => [
 				'text' => 'The uploaded file exceeds the maximum file size of %1%.',
-				1 => ini_get('upload_max_filesize'),
+				1 => (self::file_upload_max_size() / (1024 * 1024)) . ' MB',
 				'isAdminFacing' => true,
 			],
 			UPLOAD_ERR_PARTIAL => [
