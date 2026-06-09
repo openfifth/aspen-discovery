@@ -23,6 +23,10 @@ class SystemUtils {
 		return $max_size;
 	}
 
+	static function file_upload_max_size_mb(): float {
+		return self::file_upload_max_size() / (1024 * 1024);
+	}
+
 	static function parse_size($size) {
 		$unit = preg_replace('/[^bkmgtpezy]/i', '', $size); // Remove the non-unit characters from the size.
 		/** @noinspection RegExpRedundantEscape */
@@ -43,7 +47,7 @@ class SystemUtils {
 			],
 			UPLOAD_ERR_INI_SIZE => [
 				'text' => 'The uploaded file exceeds the maximum file size of %1%.',
-				1 => (self::file_upload_max_size() / (1024 * 1024)) . ' MB',
+				1 => self::file_upload_max_size_mb() . ' MB',
 				'isAdminFacing' => true,
 			],
 			UPLOAD_ERR_PARTIAL => [
