@@ -68,6 +68,8 @@ public class UpdateReadingHistoryTask implements Runnable {
 				retry = false;
 				// Call the patron API to get their checked out items.
 				// Use localhost to avoid the request leaving the server and being subject to WAF rules.
+				// The Host header routes the request to the correct virtual host. Sending it requires
+				// allowing restricted headers, which is enabled in Cron.main().
 				String hostName = new URL(aspenUrl).getHost();
 				URL patronApiUrl = new URL("http://localhost/API/UserAPI?method=updatePatronReadingHistory&username=" + URLEncoder.encode(ilsBarcode, StandardCharsets.UTF_8));
 				HttpURLConnection conn = (HttpURLConnection) patronApiUrl.openConnection();
