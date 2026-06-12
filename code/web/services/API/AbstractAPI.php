@@ -20,7 +20,7 @@ abstract class AbstractAPI extends Action{
 	function checkIfLiDA(): bool {
 		if (function_exists('getallheaders')) {
 			foreach (getallheaders() as $name => $value) {
-				if ($name == 'User-Agent' || $name == 'user-agent') {
+				if (strcasecmp($name, 'User-Agent') === 0) {
 					if (str_contains($value, "Aspen LiDA")) {
 						return true;
 					}
@@ -33,7 +33,7 @@ abstract class AbstractAPI extends Action{
 	function getLiDAVersion() {
 		if (function_exists('getallheaders')) {
 			foreach (getallheaders() as $name => $value) {
-				if ($name == 'version' || $name == 'Version') {
+				if (strcasecmp($name, 'Version') === 0) {
 					$version = explode(' ', $value);
 					$version = substr($version[0], 1); // remove starting 'v'
 					return floatval($version);
@@ -46,7 +46,7 @@ abstract class AbstractAPI extends Action{
 	function getLiDASession() {
 		if (function_exists('getallheaders')) {
 			foreach (getallheaders() as $name => $value) {
-				if ($name == 'LiDA-SessionID' || $name == 'lida-sessionid') {
+				if (strcasecmp($name, 'LiDA-SessionID') === 0) {
 					$sessionId = explode(' ', $value);
 					return $sessionId[0];
 				}
@@ -69,8 +69,8 @@ abstract class AbstractAPI extends Action{
 	function getLiDAUserAgent() {
 		if (function_exists('getallheaders')) {
 			foreach (getallheaders() as $name => $value) {
-				if ($name == 'User-Agent' || $name == 'user-agent') {
-					if (str_contains($value, 'Aspen LiDA') || str_contains($value, 'aspen lida')) {
+				if (strcasecmp($name, 'User-Agent') === 0) {
+					if (stripos($value, 'Aspen LiDA') !== false) {
 						return true;
 					}
 				}
