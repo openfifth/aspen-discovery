@@ -15,6 +15,7 @@ class User extends DataObject {
 	public $displayName;
 	public $password;
 	public $firstname;
+	public $middlename;
 	public $lastname;
 	public $userPreferredName;
 	public $email;
@@ -5798,19 +5799,29 @@ class User extends DataObject {
 				} elseif ($homeLibrary->patronNameDisplayStyle == 'lastinitial_firstname') {
 					$this->__set('displayName', $this->firstname . ' ' . substr($this->lastname, 0, 1) . '.');
 				} elseif ($homeLibrary->patronNameDisplayStyle == 'firstinitial_middleinitial_lastname') {
+					// Ensure the middle name gets loaded from the ILS before we try to use it.
+					$this->loadContactInformation();
 					$firstNames = explode(' ', $this->firstname);
 					$displayName = '';
 					for ($i = 0; $i < count($firstNames); $i++) {
 						$displayName .= ' ' . substr($firstNames[$i], 0, 1) . '.';
 					}
+					if (!empty($this->middlename)) {
+						$displayName .= ' ' . substr($this->middlename, 0, 1) . '.';
+					}
 					$displayName .= ' ' . $this->lastname;
 
 					$this->__set('displayName', trim($displayName));
 				} elseif ($homeLibrary->patronNameDisplayStyle == 'firstname_middleinitial_lastinitial') {
+					// Ensure the middle name gets loaded from the ILS before we try to use it.
+					$this->loadContactInformation();
 					$firstNames = explode(' ', $this->firstname);
 					$displayName = $firstNames[0];
 					for ($i = 1; $i < count($firstNames); $i++) {
 						$displayName .= ' ' . substr($firstNames[$i], 0, 1) . '.';
+					}
+					if (!empty($this->middlename)) {
+						$displayName .= ' ' . substr($this->middlename, 0, 1) . '.';
 					}
 					$displayName .= ' ' . substr($this->lastname, 0, 1) . '.';
 					$this->__set('displayName', trim($displayName));
