@@ -109,16 +109,23 @@ public class AspenStringUtils {
 		return subfield;
 	}
 
+	static final Pattern discPattern = Pattern.compile("(\\d+)\\s+(?:\\w+\\s+)?discs?");
+	static final Pattern timeColonPattern = Pattern.compile("(\\d+):(\\d{2}):(\\d{2})");
+	static final Pattern hrPattern = Pattern.compile(
+		"(?:ca\\.\\s*)?(\\d+(?:\\.\\d+)?(?:\\s+\\d+/\\d+)?)\\s*(?:hours?|hr\\.|h\\b)"
+	);
+	static final Pattern minPattern = Pattern.compile(
+		"(?:ca\\.\\s*)?(\\d+)\\s*(?:minutes?|min\\.|m(?!s))"
+	);
+
 	public static int extractTotalMinutes(String input) {
 		// Check for "N disc/discs" at the start, used when "each" appears later to calculate total time
 		// Allow a word in-between the number and disc/discs for matching
-		Pattern discPattern = Pattern.compile("(\\d+)\\s+(?:\\w+\\s+)?discs?");
 		Matcher discMatcher = discPattern.matcher(input);
 		int discCount = discMatcher.find() ? Integer.parseInt(discMatcher.group(1)) : 1;
 		boolean hasEach = input.contains("each");
 
 		// Handle HH:mm:ss format (e.g., "06:02:00")
-		Pattern timeColonPattern = Pattern.compile("(\\d+):(\\d{2}):(\\d{2})");
 		Matcher timeColonMatcher = timeColonPattern.matcher(input);
 		if (timeColonMatcher.find()) {
 			int hours = Integer.parseInt(timeColonMatcher.group(1));
@@ -129,13 +136,6 @@ public class AspenStringUtils {
 
 		// Handle hours/minutes in word or abbreviated form, ignore comma separation, include decimal and fraction values
 		// e.g., "16 hours, 10 minutes" / "6 hr. 2 min." / "7.5 hr." / "11 1/2 hr." / "6h 2m"
-		Pattern hrPattern = Pattern.compile(
-			"(?:ca\\.\\s*)?(\\d+(?:\\.\\d+)?(?:\\s+\\d+/\\d+)?)\\s*(?:hours?|hr\\.|h\\b)"
-		);
-		Pattern minPattern = Pattern.compile(
-			"(?:ca\\.\\s*)?(\\d+)\\s*(?:minutes?|min\\.|m(?!s))"
-		);
-
 		Matcher hrMatcher = hrPattern.matcher(input);
 		Matcher minMatcher = minPattern.matcher(input);
 
@@ -152,8 +152,8 @@ public class AspenStringUtils {
 		return 0;
 	}
 
+	static final Pattern mixedPattern = Pattern.compile("(\\d+)\\s+(\\d+)/(\\d+)");
 	private static double parseMixedNumber(String s) {
-		Pattern mixedPattern = Pattern.compile("(\\d+)\\s+(\\d+)/(\\d+)");
 		Matcher m = mixedPattern.matcher(s);
 		if (m.find()) {
 			double whole = Double.parseDouble(m.group(1));
