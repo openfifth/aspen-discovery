@@ -19,7 +19,6 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
-import java.text.Normalizer;
 import java.util.*;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,7 +40,6 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	private final Long indexStartTime;
 	private int deletionCommitInterval = 1000;
 	private int indexCommitInterval = 10000;
-	private boolean waitAfterDeleteCommit = false;
 	private boolean removeTheWordSeriesFromEndOfSeries;
 	private int totalRecordsHandled = 0;
 	private Http2SolrClient http2Client;
@@ -174,10 +172,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 
 	private boolean seriesModuleEnabled = false;
 	private int seriesVersion = 1;
-	private boolean truncateForVersionSwitch = false;
 	private boolean include490_0 = false;
-	private boolean truncationHasHappened = false;
-	private PreparedStatement updateSeriesSettingsStmt;
 	private PreparedStatement getSeriesMemberStmt;
 	private PreparedStatement addSeriesMemberStmt;
 	private PreparedStatement deleteSeriesMemberStmt;
@@ -262,7 +257,6 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					this.enableNovelistSeriesIntegration = systemVariablesRS.getBoolean("enableNovelistSeriesIntegration");
 					this.deletionCommitInterval = systemVariablesRS.getInt("deletionCommitInterval");
 					this.indexCommitInterval = systemVariablesRS.getInt("indexCommitInterval");
-					this.waitAfterDeleteCommit = systemVariablesRS.getBoolean("waitAfterDeleteCommit");
 					if (fullReindex) {
 						this.processEmptyGroupedWorks = systemVariablesRS.getBoolean("processEmptyGroupedWorks");
 					}
@@ -366,11 +360,10 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			removeVariationsForWorkStmt = dbConn.prepareStatement("DELETE FROM grouped_work_variation where groupedWorkId = ?");
 			removeRecordsForWorkStmt = dbConn.prepareStatement("DELETE FROM grouped_work_records where groupedWorkId = ?");
 
-			updateSeriesSettingsStmt = dbConn.prepareStatement("UPDATE series_indexing_settings SET truncateForVersionSwitch = 0 WHERE id = ?");
 			getV1SeriesStmt = dbConn.prepareStatement("SELECT * from series where groupedWorkSeriesTitle = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			getV2SeriesStmt = dbConn.prepareStatement("SELECT * from series where seriesPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 
-			getSeriesMemberStmt = dbConn.prepareStatement("SELECT sm.id as seriesMemberId, sm.seriesId, s.seriesPermanentId, s.version, s.groupedWorkSeriesTitle, s.author, s.seriesLanguage, s.isIndexed, sm.volume, sm.priorityScore, sm.deleted FROM series_member AS sm LEFT JOIN series AS s ON sm.seriesId = s.id WHERE groupedWorkPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+			getSeriesMemberStmt = dbConn.prepareStatement("SELECT sm.id as seriesMemberId, sm.seriesId, s.seriesPermanentId, s.version, s.groupedWorkSeriesTitle, s.author, s.seriesLanguage, s.isIndexed, sm.volume, sm.priorityScore, sm.deleted, sm.userAdded FROM series_member AS sm LEFT JOIN series AS s ON sm.seriesId = s.id WHERE groupedWorkPermanentId = ?", ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 			addSeriesStmt = dbConn.prepareStatement("INSERT INTO series (displayName, audience, created, dateUpdated, author, groupedWorkSeriesTitle, version) VALUES (?, ?, ?, ?, ?, ?, 1)", PreparedStatement.RETURN_GENERATED_KEYS);
 			addSeriesV2Stmt = dbConn.prepareStatement("INSERT INTO series (displayName, audience, created, dateUpdated, author, groupedWorkSeriesTitle, seriesPermanentId, seriesLanguage, version) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 2)", PreparedStatement.RETURN_GENERATED_KEYS);
 			addSeriesMemberStmt = dbConn.prepareStatement("INSERT INTO series_member (seriesId, isPlaceholder, groupedWorkPermanentId, volume, pubDate, displayName, author, description, weight, priorityScore) VALUES (?, 0, ?, ?, ?, ?, ?, ?, ?, ?)");
@@ -404,20 +397,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 				try (ResultSet seriesSettingsRS = getSeriesSettingsStmt.executeQuery()) {
 					if (seriesSettingsRS.next()) {
 						seriesVersion = seriesSettingsRS.getInt("version");
-						truncateForVersionSwitch = seriesSettingsRS.getBoolean("truncateForVersionSwitch");
 						include490_0 = seriesSettingsRS.getBoolean("include490_0");
-						long settingsId = seriesSettingsRS.getLong("id");
-
-						if (truncateForVersionSwitch) {
-							//Truncate series and series_member tables so we don't have messy data when switching indexing versions
-							//dbConn.prepareCall("TRUNCATE TABLE series").executeUpdate();
-							//dbConn.prepareCall("TRUNCATE TABLE series_member").executeUpdate();
-
-							//updateSeriesSettingsStmt.setLong(1, settingsId);
-							//updateSeriesSettingsStmt.executeUpdate();
-
-							//truncationHasHappened = true;
-						}
 					}
 				}
 			} catch (Exception e) {
@@ -1620,7 +1600,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 						key = seriesMember.getSeriesPermanentId();
 					}
 					if (seriesMembersInDb.containsKey(key)) {
-						seriesMembersInDb.get(key).addVolume(seriesMemberRS.getString("volume"));
+						seriesMembersInDb.get(key).addVolume(seriesMemberRS.getString("volume"), seriesMemberRS.getBoolean("deleted"), seriesMemberRS.getBoolean("userAdded"));
 					}else{
 						seriesMembersInDb.put(key,  seriesMember);
 					}
@@ -1640,7 +1620,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					if (existingMember != null) {
 						//Series already exists, update if needed
 						seriesId = existingMember.getSeriesId();
-						updateV1SeriesInDb(seriesInfo, existingMember, groupedWork, timeNow);
+						updateV1SeriesInDb(existingMember, groupedWork);
 					} else {
 						//Need to add the series
 						seriesId = addV1SeriesToDb(seriesInfo, groupedWork, timeNow);
@@ -1691,8 +1671,10 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			for (SeriesMember seriesMember : seriesMembersInDb.values()) {
 				//Loop through volumes to delete the ones that don't exist
 				if (!seriesMember.isFoundInCurrentIndex()) {
-					for (String volume : seriesMember.getVolumes()) {
-						deleteSeriesMember(seriesMember.getSeriesId(), groupedWork.getId(), volume);
+					for (SeriesMemberVolume volume : seriesMember.getSeriesVolumes()) {
+						if (!volume.isUserAdded()) {
+							deleteSeriesMember(seriesMember.getSeriesId(), groupedWork.getId(), volume.getVolume());
+						}
 					}
 					// Also delete the series if it no longer has any members
 					deleteSeriesIfNoMembersExist(seriesMember.getSeriesId());
@@ -1745,7 +1727,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 					hasExistingSeries = true;
 					seriesId = existingSeriesRS.getLong("id");
 					SeriesMember memberToAdd = new SeriesMember(seriesId, existingSeriesRS.getString("groupedWorkSeriesTitle"), existingSeriesRS.getString("author"), existingSeriesRS.getBoolean("isIndexed"), existingSeriesRS.getBoolean("deleted"));
-					updateV1SeriesInDb(seriesInfo, memberToAdd, groupedWork, timeNow);
+					updateV1SeriesInDb(memberToAdd, groupedWork);
 				}
 			}
 
@@ -1774,7 +1756,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 		return seriesId;
 	}
 
-	private void updateV1SeriesInDb(SeriesInfo seriesInfo, SeriesMember memberInDB, AbstractGroupedWorkSolr groupedWork, long timeNow) {
+	private void updateV1SeriesInDb(SeriesMember memberInDB, AbstractGroupedWorkSolr groupedWork) {
 		// Check if the series has been deleted
 		if (memberInDB.isDeleted()) {
 			return;
@@ -1909,9 +1891,9 @@ public class GroupedWorkIndexer implements AutoCloseable {
 
 		//Delete any series members that no longer exist (with the volume)
 		boolean valuesWereDeleted = false;
-		for (String volume : seriesMember.getVolumes()) {
-			if (!seriesMember.volumeFoundInIndex(volume)) {
-				deleteSeriesMember(seriesMember.getSeriesId(), groupedWork.getId(), volume);
+		for (SeriesMemberVolume volume : seriesMember.getSeriesVolumes()) {
+			if (!volume.isFoundInIndex() && !volume.isUserAdded()) {
+				deleteSeriesMember(seriesMember.getSeriesId(), groupedWork.getId(), volume.getVolume());
 				valuesWereDeleted = true;
 			}
 		}
