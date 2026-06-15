@@ -32,6 +32,13 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE user_app_request_log CHANGE COLUMN method method VARCHAR(75) NOT NULL',
 			]
 		], //increase_method_length_in_app_request_log
+		'series_allow_indexing_490_0' => [
+			'title' => 'Allow Indexing of Series using 490 with first indicator 0',
+			'description' => 'Allow indexing of Series using 490 with first indicator 0',
+			'sql' => [
+				'ALTER TABLE series_indexing_settings ADD COLUMN include490_0 TINYINT(1) DEFAULT 0',
+			]
+		],
 
 		//kirstien
 		'addForceReadingHistoryOptIn' => [

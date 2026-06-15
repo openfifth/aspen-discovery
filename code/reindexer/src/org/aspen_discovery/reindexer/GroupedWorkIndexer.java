@@ -175,6 +175,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	private boolean seriesModuleEnabled = false;
 	private int seriesVersion = 1;
 	private boolean truncateForVersionSwitch = false;
+	private boolean include490_0 = false;
 	private boolean truncationHasHappened = false;
 	private PreparedStatement updateSeriesSettingsStmt;
 	private PreparedStatement getSeriesMemberStmt;
@@ -399,11 +400,12 @@ public class GroupedWorkIndexer implements AutoCloseable {
 		}
 
 		if (seriesModuleEnabled) {
-			try (PreparedStatement getSeriesSettingsStmt = dbConn.prepareStatement("SELECT id, version, truncateForVersionSwitch FROM series_indexing_settings")) {
+			try (PreparedStatement getSeriesSettingsStmt = dbConn.prepareStatement("SELECT id, version, truncateForVersionSwitch, include490_0 FROM series_indexing_settings")) {
 				try (ResultSet seriesSettingsRS = getSeriesSettingsStmt.executeQuery()) {
 					if (seriesSettingsRS.next()) {
 						seriesVersion = seriesSettingsRS.getInt("version");
 						truncateForVersionSwitch = seriesSettingsRS.getBoolean("truncateForVersionSwitch");
+						include490_0 = seriesSettingsRS.getBoolean("include490_0");
 						long settingsId = seriesSettingsRS.getLong("id");
 
 						if (truncateForVersionSwitch) {
@@ -796,11 +798,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 			//Allow auto commit functionality to handle this
 			totalRecordsHandled++;
 			if (totalRecordsHandled % this.deletionCommitInterval == 0) {
-				if (this.waitAfterDeleteCommit) {
-					this.commitChangesWithWait();
-				}else{
-					this.commitChanges();
-				}
+				this.commitChanges();
 			}
 
 			/*
@@ -874,14 +872,6 @@ public class GroupedWorkIndexer implements AutoCloseable {
 	}
 
 	public void commitChanges(){
-		try {
-			updateServer.commit(false, false, true);
-		}catch (Exception e) {
-			logEntry.incErrors("Error committing changes ", e);
-		}
-	}
-
-	public void commitChangesWithWait(){
 		try {
 			updateServer.commit(false, false, true);
 		}catch (Exception e) {
@@ -1639,7 +1629,7 @@ public class GroupedWorkIndexer implements AutoCloseable {
 
 			for (SeriesInfo seriesInfo : groupedWork.series.values()) {
 				//Don't create series module records from untraced series
-				if (!seriesInfo.isTraced()) {
+				if (!seriesInfo.isTraced() && !include490_0) {
 					continue;
 				}
 				long timeNow = new Date().getTime() / 1000;
