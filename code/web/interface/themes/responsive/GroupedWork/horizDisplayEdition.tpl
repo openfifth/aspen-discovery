@@ -34,7 +34,7 @@
 								{if $hours == 0}
 									{translate text='Duration is approximately %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}. <a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='See editions' isPublicFacing=true}</a> <br>
 								{else}
-									{translate text='Duration is approximately %2% minutes' 1=$hours 2=$minutes isPublicFacing=true}. <a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='See editions' isPublicFacing=true}</a> <br>
+									{translate text='Duration is approximately %1% hours' 1=$hours 2=$minutes isPublicFacing=true}. <a href="javascript:void(0)" onclick="AspenDiscovery.GroupedWork.showAllEditionsForVariation('{$workId}', '{$format}', '{$variationId}')">{translate text='See editions' isPublicFacing=true}</a> <br>
 								{/if}
 							{/if}
 						{else}
