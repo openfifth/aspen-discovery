@@ -127,6 +127,11 @@ class StringUtils {
 		return substr($haystack, -$length) === $needle;
 	}
 
+	public static function removeSuffix(string $haystack, string $needle) : string {
+		if(!static::endsWith($haystack, $needle)) return $haystack;
+		return substr($haystack, 0, strlen($haystack) - strlen($needle));
+	}
+
 	public static function extractTotalMinutes(string $input): int {
 		// Handle HH:mm:ss format (e.g., "06:02:00")
 		if (preg_match('/(\d+):(\d{2}):(\d{2})/', $input, $matches)) {
