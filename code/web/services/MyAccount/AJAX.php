@@ -3772,7 +3772,7 @@ class MyAccount_AJAX extends JSON_Action {
 	 * @param array $filters - Information about the filters to apply to the holds.
 	 * @return array|array[]
 	 */
-	private function filterHolds(array $allHolds, array $filters): array {
+	private function filterHolds(array $allHolds, string $selectedUser, array $filters = []): array {
 
 		$filteredHolds = [];
 
@@ -9712,22 +9712,22 @@ class MyAccount_AJAX extends JSON_Action {
 		$method = $_REQUEST['useMethod'] ?? '';
 
 		if ($step == "register") {
-			function mask($str, $first, $last) : string {
+			$mask = function($str, $first, $last) : string {
 				$len = strlen($str);
 				$toShow = $first + $last;
 				return substr($str, 0, $len <= $toShow ? 0 : $first) . str_repeat("*", $len - ($len <= $toShow ? 0 : $toShow)) . substr($str, $len - $last, $len <= $toShow ? 0 : $last);
-			}
+			};
 
-			function mask_email($email) : string {
+			$mask_email = function($email) use ($mask) : string {
 				$mail_parts = explode("@", $email);
 				$domain_parts = explode('.', $mail_parts[1]);
 
-				$mail_parts[0] = mask($mail_parts[0], 2, 1); // show first 2 letters and last 1 letter
-				$domain_parts[0] = mask($domain_parts[0], 2, 1); // same here
+				$mail_parts[0] = $mask($mail_parts[0], 2, 1); // show first 2 letters and last 1 letter
+				$domain_parts[0] = $mask($domain_parts[0], 2, 1); // same here
 				$mail_parts[1] = implode('.', $domain_parts);
 
 				return implode("@", $mail_parts);
-			}
+			};
 
 			$email = null;
 			$user = new User();
@@ -9735,7 +9735,7 @@ class MyAccount_AJAX extends JSON_Action {
 			$hasValidEmail = false;
 			if ($user->find(true)) {
 				if (filter_var($user->email, FILTER_VALIDATE_EMAIL)) {
-					$email = mask_email($user->email);
+					$email = $mask_email($user->email);
 					$hasValidEmail = true;
 				}
 			}else{

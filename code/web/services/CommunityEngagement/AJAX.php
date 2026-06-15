@@ -772,7 +772,7 @@ class CommunityEngagement_AJAX extends JSON_Action {
 		}
 
 		if (!$success) {
-			$logger->log("Failed to save template: " . print_r($grapesTemplate->getLastError(), true), LOGGER::LOG_ERROR);
+			$logger->log("Failed to save template: " . print_r($grapesTemplate->getLastError(), true), Logger::LOG_ERROR);
 		}
 	}
 

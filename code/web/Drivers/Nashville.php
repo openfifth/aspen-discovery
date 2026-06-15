@@ -289,7 +289,7 @@ class Nashville extends CarlX {
 		}
 	}
 
-	protected function feePaidViaSIP($SIP2FeeType = '01', $pmtType = '02', $pmtAmount, $curType = 'USD', $feeId = '', $transId = '', $patronId = ''): array {
+	protected function feePaidViaSIP($SIP2FeeType, $pmtType, $pmtAmount, $curType, $feeId, $transId, $patronId): array {
 		$mySip = $this->initSIPConnection();
 		if (!is_null($mySip)) {
 			$in = $mySip->msgFeePaid($pmtAmount, $SIP2FeeType, $pmtType, $curType, $feeId, $transId, $patronId);

@@ -16,15 +16,18 @@ class PayOnlineNashville extends Action {
 	protected $path;
 	protected $cc_host;
 	protected $appId;
-	var $cc_ConvenienceFee;
-	var $cc_fakeit;
-	var $cc_fakeit_result;
-	var $sqldb;
-	var $nplwrapper;
-	var $cc_number;
-	var $cc_month;
-	var $cc_year;
-	var $cc_cvv;
+	protected $cc_ConvenienceFee;
+	protected $cc_fakeit;
+	protected $cc_fakeit_result;
+	protected $sqldb;
+	protected $nplwrapper;
+	protected $cc_number;
+	protected $cc_month;
+	protected $cc_year;
+	protected $cc_cvv;
+	protected $cc_zipcode;
+	protected $cc_fullname;
+	protected $librarycard;
 
 	function __construct() {
 		global $configArray;

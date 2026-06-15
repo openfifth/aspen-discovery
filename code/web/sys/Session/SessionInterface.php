@@ -21,11 +21,11 @@ class SessionInterface implements SessionHandlerInterface {
 	}
 
 	// the following need to be static since they are used as callback functions
-	public function open($sess_path, $sess_name) {
+	public function open($sess_path, $sess_name) : bool {
 		return true;
 	}
 
-	public function close() {
+	public function close() : bool {
 		return true;
 	}
 

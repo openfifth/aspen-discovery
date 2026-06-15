@@ -70,6 +70,7 @@ class CarlX extends AbstractIlsDriver {
 				$request->Modifiers = new stdClass();
 			}
 			if (empty($this->accountProfile->staffUsername)) {
+				global $logger;
 				$logger->log('No Staff Username configured in Account Profile', Logger::LOG_ERROR);
 				$result['message'] = 'No Staff Username configured in Account Profile';
 				return $result;

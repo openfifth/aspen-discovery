@@ -793,11 +793,9 @@ class ItemAPI extends AbstractAPI {
 					if (!isset($filterOnFormat)) {
 						$filterOnFormat[] = [
 							'format' => $filter->manifestation->format,
-							'format' => $filter->manifestation->format,
 						];
 					} elseif (!in_array($filter->manifestation->format, array_column($filterOnFormat, 'format'))) {
 						$filterOnFormat[] = [
-							'format' => $filter->manifestation->format,
 							'format' => $filter->manifestation->format,
 						];
 					}

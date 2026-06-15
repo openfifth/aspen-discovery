@@ -6,6 +6,10 @@ parameters:
         analyse:
             - CAS-1.3.4
             - Minify
+            - services/Authentication/SAML/
             - sys/Email/PHPMailer-6.9.1
+            - sys/File/MARC*
             - sys/Smarty
             - vendor
+    ignoreErrors:
+        - '#Attribute class JetBrains\\PhpStorm\\NoReturn does not exist.#'

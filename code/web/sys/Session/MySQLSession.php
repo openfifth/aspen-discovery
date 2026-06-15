@@ -4,11 +4,11 @@ require_once 'SessionInterface.php';
 require_once ROOT_DIR . '/sys/Session/Session.php';
 
 class MySQLSession extends SessionInterface {
-	public function open($sess_path, $sess_name) {
+	public function open($sess_path, $sess_name) : bool {
 		return true;
 	}
 
-	public function read($sess_id) {
+	public function read($sess_id) : string|false {
 		$s = new Session();
 		$s->setSessionId($sess_id);
 
@@ -26,7 +26,7 @@ class MySQLSession extends SessionInterface {
 			SessionInterface::$activeSessionObject = $s;
 			return $s->getData();
 		} else {
-			return "";
+			return false;
 		}
 	}
 

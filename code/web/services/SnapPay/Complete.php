@@ -171,7 +171,7 @@ class SnapPay_Complete extends Action {
 		}
 	}
 
-	function validateSnapPayHMAC(string $signatureFromSnapPay, $hppHMACParamValue): string {
+	function validateSnapPayHMAC(string $signatureFromSnapPay, $hppHMACParamValue): ?string {
 		global $library;
 		require_once ROOT_DIR . '/sys/ECommerce/SnapPaySetting.php';
 		$snapPaySetting = new SnapPaySetting();
@@ -204,6 +204,7 @@ class SnapPay_Complete extends Action {
 			}
 			return $hmacHeader;
 		}
+		return null;
 	}
 
 	function getBreadcrumbs(): array {
