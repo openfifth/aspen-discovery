@@ -3936,7 +3936,7 @@ class Koha extends AbstractIlsDriver {
 		$this->initDatabaseConnection();
 
 		/** @noinspection SqlResolve */
-		$sql = "SELECT * FROM systempreferences where variable like 'PatronSelf%';";
+		$sql = "SELECT * FROM systempreferences where variable like 'PatronSelf%' or variable = 'BorrowersTitles';";
 		$results = mysqli_query($this->dbConnection, $sql);
 		$kohaPreferences = [];
 		while ($curRow = $results->fetch_assoc()) {
@@ -3959,6 +3959,15 @@ class Koha extends AbstractIlsDriver {
 			$validLibraries = [];
 		} else {
 			$validLibraries = array_flip(explode('|', $kohaPreferences['PatronSelfRegistrationLibraryList']));
+		}
+
+		$validTitles = [
+			'' => ''
+		];
+		if(array_key_exists('BorrowersTitles', $kohaPreferences)) {
+			foreach(explode('|', $kohaPreferences['BorrowersTitles']) as $title) {
+				$validTitles[$title] = $title;
+			}
 		}
 
 		$fields = [];
@@ -4069,32 +4078,29 @@ class Koha extends AbstractIlsDriver {
 			'label' => 'Identity',
 			'hideInLists' => true,
 			'expandByDefault' => true,
-			'properties' => [
-				'borrower_title' => [
-					'property' => 'borrower_title',
-					'type' => 'enum',
-					'label' => 'Salutation',
-					'values' => [
-						'' => '',
-						'Mr' => 'Mr',
-						'Mrs' => 'Mrs',
-						'Ms' => 'Ms',
-						'Miss' => 'Miss',
-						'Dr.' => 'Dr.',
-					],
-					'description' => 'Your preferred salutation',
-					'required' => false,
-				],
-				'borrower_surname' => [
-					'property' => 'borrower_surname',
-					'type' => 'text',
-					'label' => 'Surname',
-					'description' => 'Your last name',
-					'maxLength' => 60,
-					'required' => true,
-					'autocomplete' => false,
-				],
-			],
+			'properties' => []
+		];
+
+		// Always one blank title, show if we have more options than that
+		if(count($validTitles) > 1) {
+			$fields['identitySection']['properties']['borrower_title'] = [
+				'property' => 'borrower_title',
+				'type' => 'enum',
+				'label' => 'Salutation',
+				'values' => $validTitles,
+				'description' => 'Your preferred salutation',
+				'required' => false,
+			];
+		}
+
+		$fields['identitySection']['properties']['borrower_surname'] = [
+			'property' => 'borrower_surname',
+			'type' => 'text',
+			'label' => 'Surname',
+			'description' => 'Your last name',
+			'maxLength' => 60,
+			'required' => true,
+			'autocomplete' => false,
 		];
 
 		if($this->getKohaVersion() >= 22.11) {
