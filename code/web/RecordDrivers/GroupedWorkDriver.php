@@ -2421,7 +2421,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						if ($first) {
 							$seriesInfo = [
 								'seriesTitle' => $series->displayName,
-								'seriesId' => $series->id,
+								'seriesId' => $series->seriesPermanentId ?? $series->id,
 								'volume' => $seriesMember->volume,
 								'fromNovelist' => false,
 								'fromSeriesIndex' => true,
@@ -2431,7 +2431,7 @@ class GroupedWorkDriver extends IndexRecordDriver {
 						} else {
 							$seriesInfo['additionalSeries'][] = [
 								'seriesTitle' => $series->displayName,
-								'seriesId' => $series->id,
+								'seriesId' => $series->seriesPermanentId ?? $series->id,
 								'volume' => $seriesMember->volume,
 								'fromNovelist' => false,
 								'fromSeriesIndex' => true,
