@@ -179,6 +179,7 @@ class Koha extends AbstractIlsDriver {
 					'category_id' => $patron->patronType,
 				];
 
+				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'street_number', 'borrower_streetnumber', $library->useAllCapsWhenUpdatingProfile, false, $validFieldsToUpdate);
 				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address', 'borrower_address', $library->useAllCapsWhenUpdatingProfile, false, $validFieldsToUpdate);
 				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address2', 'borrower_address2', $library->useAllCapsWhenUpdatingProfile, false, $validFieldsToUpdate);
 				$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_address', 'borrower_B_address', $library->useAllCapsWhenUpdatingProfile, false, $validFieldsToUpdate);
@@ -343,6 +344,7 @@ class Koha extends AbstractIlsDriver {
 					$postVariables = $this->setPostField($postVariables, 'borrower_initials', $library->useAllCapsWhenUpdatingProfile);
 					$postVariables = $this->setPostField($postVariables, 'borrower_othernames', $library->useAllCapsWhenUpdatingProfile);
 					$postVariables = $this->setPostField($postVariables, 'borrower_sex', $library->useAllCapsWhenUpdatingProfile);
+					$postVariables = $this->setPostField($postVariables, 'borrower_streetnumber', $library->useAllCapsWhenUpdatingProfile);
 					$postVariables = $this->setPostField($postVariables, 'borrower_address', $library->useAllCapsWhenUpdatingProfile);
 					$postVariables = $this->setPostField($postVariables, 'borrower_address2', $library->useAllCapsWhenUpdatingProfile);
 					$postVariables = $this->setPostField($postVariables, 'borrower_city', $library->useAllCapsWhenUpdatingProfile);
@@ -4399,6 +4401,15 @@ class Koha extends AbstractIlsDriver {
 			'hideInLists' => true,
 			'expandByDefault' => true,
 			'properties' => [
+				'borrower_streetnumber' => [
+					'property' => 'borrower_streetnumber',
+					'type' => 'text',
+					'label' => 'Street Number',
+					'description' => 'Street Number',
+					'maxLength' => 128,
+					'required' => true,
+					'autocomplete' => false,
+				],
 				'borrower_address' => [
 					'property' => 'borrower_address',
 					'type' => 'text',
@@ -4905,6 +4916,7 @@ class Koha extends AbstractIlsDriver {
 				'firstname' => $ssoUser['borrower_firstname'] ?? $ssoUser['firstname'],
 				'surname' => $ssoUser['borrower_surname'] ?? $ssoUser['lastname'],
 				'email' => $ssoUser['borrower_email'] ?? $ssoUser['email'],
+				'street_number' => $ssoUser['borrower_streetnumber'] ?? '',
 				'address' =>  $ssoUser['borrower_address'] ?? 'UNKNOWN',
 				'city' => $ssoUser['borrower_city'] ?? 'UNKNOWN',
 				'library_id' => $mainBranch,
@@ -5057,6 +5069,7 @@ class Koha extends AbstractIlsDriver {
 			$postFields = $this->setPostField($postFields, 'borrower_initials', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postFields = $this->setPostField($postFields, 'borrower_othernames', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postFields = $this->setPostField($postFields, 'borrower_sex', $library->useAllCapsWhenSubmittingSelfRegistration);
+			$postFields = $this->setPostField($postFields, 'borrower_streetnumber', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postFields = $this->setPostField($postFields, 'borrower_address', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postFields = $this->setPostField($postFields, 'borrower_address2', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postFields = $this->setPostField($postFields, 'borrower_city', $library->useAllCapsWhenSubmittingSelfRegistration);
@@ -5142,6 +5155,7 @@ class Koha extends AbstractIlsDriver {
 
 			//Use self registration API
 			$postVariables = [];
+			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'street_number', 'borrower_streetnumber', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address', 'borrower_address', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'address2', 'borrower_address2', $library->useAllCapsWhenSubmittingSelfRegistration);
 			$postVariables = $this->setPostFieldWithDifferentName($postVariables, 'altaddress_address', 'borrower_B_address', $library->useAllCapsWhenSubmittingSelfRegistration);
