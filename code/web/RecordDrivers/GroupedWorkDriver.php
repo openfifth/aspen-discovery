@@ -1940,7 +1940,8 @@ class GroupedWorkDriver extends IndexRecordDriver {
 				$defaultAvailabilityToggle = $searchLibrary->getGroupedWorkDisplaySettings()->defaultAvailabilityToggle;
 			}
 
-			if ($_REQUEST['requestSource'] == 'getMoreLikeThis') {
+			$requestSource = $_REQUEST['requestSource'] ?? '';
+			if ($requestSource == 'getMoreLikeThis') {
 				if ($searchLibrary->moreLikeThisSettings == 2 || $searchLibrary->moreLikeThisSettings == 3) {
 					$defaultAvailabilityToggle = 'local';
 				}
