@@ -2060,7 +2060,18 @@ class UserAPI extends AbstractAPI {
 			}
 		}
 
-		$user = $this->getUserForApiCall();
+		$user = false;
+		//we send up userId from LiDA if we
+		//are requesting for a linked account
+		if (isset($_REQUEST['userId'])) {
+			$user = new User();
+			$user->id = $_REQUEST['userId'];
+			if (!$user->find(true)) {
+				$user = false;
+			}
+		} else {
+			$user = $this->getUserForApiCall();
+		}
 		if ($user && !($user instanceof AspenError)) {
 			global $library;
 			if ($library->showHoldButton) {
