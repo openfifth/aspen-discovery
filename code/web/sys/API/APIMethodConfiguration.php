@@ -34,6 +34,7 @@ trait APIMethodConfiguration {
 			$reflection = new ReflectionMethod($className, $method);
 			//Set a default and then override the value if it's set in the docblock
 			if ($reflection->isPublic()) {
+				$config['oauth'] = true;
 				$config['public'] = true;
 				$config['token'] = true;
 			}
