@@ -83,156 +83,9 @@ class UserAPI extends AbstractAPI {
 		//header('Content-type: text/html');
 		header('Expires: Mon, 26 Jul 1997 05:00:00 GMT'); // Date in the past
 
-		global $activeLanguage;
-		if (isset($_GET['language'])) {
-			$language = new Language();
-			$language->code = $_GET['language'];
-			if ($language->find(true)) {
-				$activeLanguage = $language;
-			}
-		}
+		$this->setLanguage();
 
-		// Check for OAuth2 Bearer token authentication first
-		$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-		if (preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
-			// This is an OAuth2 Bearer token request
-			if ($this->authenticateWithOAuth2($method)) {
-				if (method_exists($this, $method)) {
-					header("Cache-Control: max-age=10800");
-					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
-					APIUsage::incrementStat('UserAPI', $method);
-					$output = json_encode(['result' => $this->$method()]);
-				} else {
-					header('Cache-Control: no-cache, must-revalidate');
-					$output = json_encode(['error' => 'invalid_method']);
-				}
-			} else {
-				// OAuth2Middleware sends its own error response
-				return;
-			}
-			ExternalRequestLogEntry::logRequest('UserAPI.' . $method, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], getallheaders(), '', $_SERVER['REDIRECT_STATUS'], $output, []);
-			echo $output;
-			return;
-		}
-
-		// Traditional authentication (PHP_AUTH_USER)
-		if (isset($_SERVER['PHP_AUTH_USER'])) {
-			if ($this->grantTokenAccess()) {
-				if (in_array($method, [
-					'isLoggedIn',
-					'logout',
-					'login',
-					'loginToLiDA',
-					'resetExpiredPin',
-					'checkoutItem',
-					'placeHold',
-					'renewItem',
-					'renewAll',
-					'viewOnlineItem',
-					'changeHoldPickUpLocation',
-					'getPatronProfile',
-					'validateAccount',
-					'getPatronHolds',
-					'getPatronCheckedOutItems',
-					'cancelHold',
-					'activateHold',
-					'freezeHold',
-					'returnCheckout',
-					'updateOverDriveEmail',
-					'getValidPickupLocations',
-					'getValidSublocations',
-					'getHiddenBrowseCategories',
-					'getILSMessages',
-					'dismissBrowseCategory',
-					'showBrowseCategory',
-					'getLinkedAccounts',
-					'getViewers',
-					'addAccountLink',
-					'removeAccountLink',
-					'saveLanguage',
-					'initMasquerade',
-					'endMasquerade',
-					'saveNotificationPushToken',
-					'deleteNotificationPushToken',
-					'getNotificationPushToken',
-					'submitVdxRequest',
-					'cancelVdxRequest',
-					'submitLocalIllRequest',
-					'submitLocalIllRequestEmail',
-					'getNotificationPreference',
-					'setNotificationPreference',
-					'getNotificationPreferences',
-					'updateBrowseCategoryStatus',
-					'removeViewerLink',
-					'getPatronReadingHistory',
-					'updatePatronReadingHistory',
-					'optIntoReadingHistory',
-					'optOutOfReadingHistory',
-					'deleteAllFromReadingHistory',
-					'deleteSelectedFromReadingHistory',
-					'getReadingHistorySortOptions',
-					'confirmHold',
-					'updateNotificationOnboardingStatus',
-					'resetPassword',
-					'disableAccountLinking',
-					'enableAccountLinking',
-					'validateSession',
-					'prepareSharedSession',
-					'updateScreenBrightnessStatus',
-					'validateUserCredentials',
-					'getAppPreferencesForUser',
-					'getInbox',
-					'markMessageAsRead',
-					'markMessageAsUnread',
-					'updateAlternateLibraryCard',
-					'getMaterialsRequests',
-					'getMaterialsRequestDetails',
-					'createMaterialsRequest',
-					'cancelMaterialsRequest',
-                    'deleteAspenUser',
-					'updateSortPreferences',
-					'updateHoldPickupPreferences',
-					'getUserCampaigns',
-					'enrollUserInCampaign',
-					'unenrollUserFromCampaign',
-					'addActivityProgress',
-					'optUserIntoCampaignEmails',
-					'enrollUserInCampaignLeaderboard',
-					'unenrollUserFromCampaignLeaderboard',
-					'trackAppLaunches',
-					'trackAppResume'
-				])) {
-					header("Cache-Control: max-age=10800");
-					require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
-					APIUsage::incrementStat('UserAPI', $method);
-					$output = json_encode(['result' => $this->logPatronRequestExternal($this->$method())]);
-				} else {
-					header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
-					$output = json_encode(['error' => 'invalid_method']);
-				}
-			} else {
-				header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
-				header('HTTP/1.0 401 Unauthorized');
-				$output = json_encode(['error' => 'unauthorized_access']);
-			}
-			ExternalRequestLogEntry::logRequest('UserAPI.' . $method, $_SERVER['REQUEST_METHOD'], $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], getallheaders(), '', $_SERVER['REDIRECT_STATUS'], $output, []);
-			echo $output;
-		} elseif (IPAddress::allowAPIAccessForClientIP()) {
-			header('Cache-Control: no-cache, must-revalidate'); // HTTP/1.1
-			if (!in_array($method, ['getUserForApiCall', 'checkInILSItem']) && method_exists($this, $method)) {
-				$result = [
-					'result' => $this->$method(),
-				];
-				$output = json_encode($result);
-				require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
-				APIUsage::incrementStat('UserAPI', $method);
-			} else {
-				$output = json_encode(['error' => 'invalid_method']);
-			}
-			echo $output;
-		} else {
-			$this->forbidAPIAccess();
-		}
+		$this->handleAPIRequestAuto($method, 'user_api');
 	}
 
 	/**
@@ -5109,7 +4962,7 @@ class UserAPI extends AbstractAPI {
 	/**
 	 * @return bool|User
 	 */
-	function getUserForApiCall(?String $patronBarcode = null, ?String $patronPassword = null) : bool|User {
+	protected function getUserForApiCall(?String $patronBarcode = null, ?String $patronPassword = null) : bool|User {
 		if ($this->context == 'internal') {
 			if ($patronBarcode == null && $patronPassword == null) {
 				return UserAccount::getActiveUserObj();
@@ -6406,6 +6259,17 @@ class UserAPI extends AbstractAPI {
 		}
 	}
 
+	/**
+	 * @oauth false
+	 * @token false
+	 * @public false
+	 *
+	 * @param $patronBarcode
+	 * @param $patronPassword
+	 * @param $itemBarcode
+	 * @param $activeLocationId
+	 * @return array
+	 */
 	function checkinILSItem($patronBarcode = null, $patronPassword = null, $itemBarcode = null, $activeLocationId = null): array {
 		if ($patronBarcode != null && $patronPassword == null && $this->context == 'internal') {
 			//For self check we don't require the pin, use find new user
@@ -7587,6 +7451,7 @@ class UserAPI extends AbstractAPI {
 	function enrollUserInCampaignLeaderboard() {
 		require_once ROOT_DIR . '/services/CommunityEngagement/AJAX.php';
 
+		global $offlineMode;
 		if ($offlineMode) {
 			return [
 				'success' => false,
@@ -7640,7 +7505,7 @@ class UserAPI extends AbstractAPI {
 
 	function unenrollUserFromCampaignLeaderboard() {
 		require_once ROOT_DIR . '/services/CommunityEngagement/AJAX.php';
-
+		global $offlineMode;
 		if ($offlineMode) {
 			return [
 				'success' => false,

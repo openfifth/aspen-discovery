@@ -40,15 +40,15 @@ class OAuth2Middleware {
 			$tokenFromClient = trim((string) preg_replace('/^\s*Bearer\s/i', '', $header[0]));
 			$oauth2AccessToken->setTokenId($tokenFromClient);
 			if (!$oauth2AccessToken->find(true)) {
-				self::sendGenericErrorResponse();
+				self::sendGenericErrorResponse('Invalid Token');
 				return false;
 			}
 			if ($oauth2AccessToken->isExpired()) {
-				self::sendGenericErrorResponse();
+				self::sendGenericErrorResponse('Token expired');
 				return false;
 			}
 			if ($oauth2AccessToken->isRevoked()) {
-				self::sendGenericErrorResponse();
+				self::sendGenericErrorResponse('Token has been revoked');
 				return false;
 			}
 
@@ -92,7 +92,7 @@ class OAuth2Middleware {
 				foreach ($requiredScopes as $requiredScope) {
 					if (!in_array($requiredScope, self::$currentScopes)) {
 						$logger->log("[OAuth2] OAuth2Middleware::authenticate() - Required scope missing: " . $requiredScope, Logger::LOG_WARNING);
-						self::sendGenericErrorResponse();
+						self::sendGenericErrorResponse('Invalid scope');
 						return false;
 					}
 				}
@@ -209,7 +209,7 @@ class OAuth2Middleware {
 		return true;
 	}
 
-	private static function sendGenericErrorResponse(): void {
+	private static function sendGenericErrorResponse(?string $description = null): void {
 		global $logger;
 		$logger->log("[OAuth2] OAuth2Middleware::sendGenericErrorResponse() - Sending generic 401 unauthorized response", Logger::LOG_WARNING);
 		
@@ -217,7 +217,7 @@ class OAuth2Middleware {
 		header('Content-Type: application/json');
 		echo json_encode([
 			'error' => 'unauthorized',
-			'error_description' => 'Invalid or missing access token',
+			'error_description' => $description ?? 'Invalid or missing access token',
 		]);
 	}
 }

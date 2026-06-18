@@ -73,12 +73,6 @@ trait APIMethodConfiguration {
 				if (empty($config['scopes']) && ($config['oauth'] || $config['token'])) {
 					$config['scopes'] = $this->inferScopesFromMethodName($method);
 				}
-
-				// Default to oauth and token auth if the method is not explicitly public
-				if (!$config['public'] && !$config['oauth'] && !$config['token']) {
-					$config['oauth'] = true;
-					$config['token'] = true;
-				}
 			}
 		} catch (ReflectionException $e) {
 			// Method doesn't exist - return default config
@@ -145,7 +139,10 @@ trait APIMethodConfiguration {
 			$methodName = $method->getName();
 
 			// Skip magic methods and inherited methods from base classes
-			if (str_starts_with($methodName, '__') || $method->getDeclaringClass()->getName() !== get_class($this)) {
+			if (str_starts_with($methodName, '__')
+				|| $method->getDeclaringClass()->getName() !== get_class($this)
+				|| $methodName == 'launch'
+			) {
 				continue;
 			}
 

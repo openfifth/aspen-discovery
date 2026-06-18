@@ -18,7 +18,7 @@ abstract class AbstractAPI extends Action{
 		}
 	}
 
-	function getHeaders() : array {
+	protected function getHeaders() : array {
 		if (function_exists('getallheaders')) {
 			return getallheaders();
 		} else {
@@ -26,7 +26,7 @@ abstract class AbstractAPI extends Action{
 		}
 	}
 
-	function getHeader(string $headerToRetrieve) : ?string {
+	protected function getHeader(string $headerToRetrieve) : ?string {
 		$headers = $this->getHeaders();
 		foreach ($headers as $name => $value) {
 			if (strcasecmp($name, $headerToRetrieve) === 0) {
@@ -36,7 +36,7 @@ abstract class AbstractAPI extends Action{
 		return null;
 	}
 
-	function checkIfLiDA(): bool {
+	protected function checkIfLiDA(): bool {
 		$userAgent = $this->getHeader('User-Agent');
 		if (!is_null($userAgent) && str_contains($userAgent, "Aspen LiDA")) {
 			return true;
@@ -44,7 +44,7 @@ abstract class AbstractAPI extends Action{
 		return false;
 	}
 
-	function getLiDAVersion() : float {
+	protected function getLiDAVersion() : float {
 		$versionHeader = $this->getHeader('Version');
 		if (!is_null($versionHeader)) {
 			$version = explode(' ', $versionHeader);
@@ -54,7 +54,7 @@ abstract class AbstractAPI extends Action{
 		return 0.0;
 	}
 
-	function getLiDASession() : string|false {
+	protected function getLiDASession() : string|false {
 		$lidaSessionHeader = $this->getHeader('LiDA-SessionID');
 		if (!is_null($lidaSessionHeader)) {
 			$sessionId = explode(' ', $lidaSessionHeader);
@@ -63,7 +63,7 @@ abstract class AbstractAPI extends Action{
 		return false;
 	}
 
-	function getLiDASlug() : string|false {
+	protected function getLiDASlug() : string|false {
 		$lidaSlugHeader = $this->getHeader('lida-slug');
 		if (!is_null($lidaSlugHeader)) {
 			return $lidaSlugHeader;
@@ -71,7 +71,7 @@ abstract class AbstractAPI extends Action{
 		return false;
 	}
 
-	function getLiDAUserAgent() : bool {
+	protected function getLiDAUserAgent() : bool {
 		$userAgent = $this->getHeader('User-Agent');
 		if (!is_null($userAgent) && (str_contains($userAgent, "Aspen LiDA") || str_contains($userAgent, 'aspen lida'))) {
 			return true;
@@ -83,7 +83,7 @@ abstract class AbstractAPI extends Action{
 	 * @return array
 	 * @noinspection PhpUnused
 	 */
-	function loadUsernameAndPassword() : array {
+	protected function loadUsernameAndPassword() : array {
 		$username = $_REQUEST['username'] ?? '';
 		$password = $_REQUEST['password'] ?? '';
 
@@ -101,7 +101,7 @@ abstract class AbstractAPI extends Action{
 		return [$username, $password];
 	}
 
-	function logPatronRequest($userId): void {
+	protected function logPatronRequest($userId): void {
 		if ($this->context == 'lida') {
 			require_once ROOT_DIR . '/sys/SystemLogging/UserAppRequestLogEntry.php';
 			UserAppRequestLogEntry::logRequest($userId, $_GET['action'], $_GET['method'], json_encode($_REQUEST), $this->getLiDAVersion());
@@ -129,9 +129,15 @@ abstract class AbstractAPI extends Action{
 	private $_userForAPICall = null;
 	/**
 	 * Get user for API call - supports both OAuth2 and traditional authentication
-	 * @return bool|User
+	 * Not for use with direct call
+	 *
+	 * @oauth false
+	 * @token false
+	 * @public false
+	 *
+	 * @return bool|User|null
 	 */
-	function getUserForApiCall() {
+	protected function getUserForApiCall(): User|bool|null {
 		if ($this->_userForAPICall != null) {
 			return $this->_userForAPICall;
 		}
