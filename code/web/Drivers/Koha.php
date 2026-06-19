@@ -1670,65 +1670,7 @@ class Koha extends AbstractIlsDriver {
 					$pageCheckouts = $checkoutsResponse['content'];
 
 					foreach ($pageCheckouts as $checkout) {
-						$checkOutDate = null;
-						if (!empty($checkout['checkout_date'])) {
-							$checkOutDate = new DateTime($checkout['checkout_date']);
-						} else if (!empty($checkout['timestamp'])) {
-							$checkOutDate = new DateTime($checkout['timestamp']);
-						}
-
-						$returnDate = null;
-						if (!empty($checkout['checkin_date'])) {
-							$returnDate = new DateTime($checkout['checkin_date']);
-						}
-
-						$biblionumber = null;
-						$title = null;
-						$author = null;
-						if (!empty($checkout['item']) && !empty($checkout['item']['biblio'])) {
-							$biblionumber = $checkout['item']['biblio']['biblio_id'] ?? null;
-							$title = $checkout['item']['biblio']['title'] ?? null;
-							$author = $checkout['item']['biblio']['author'] ?? null;
-						}
-
-						$barcode = null;
-						$iType = null;
-						$callNumber = null;
-						$volume = null;
-						if (!empty($checkout['item'])) {
-							$barcode = $checkout['item']['external_id'] ?? null;
-							$iType = $checkout['item']['item_type_id'] ?? null;
-							$callNumber = $checkout['item']['callnumber'] ?? null;
-							$volume = $checkout['item']['serial_issue_number'] ?? null;
-						}
-
-						$curTitle = [];
-						$curTitle['id'] = $biblionumber;
-						$curTitle['sourceId'] = $biblionumber;
-						$curTitle['barcode'] = $barcode ?: null;
-						$curTitle['title'] = $title;
-						$curTitle['author'] = $author;
-						$curTitle['format'] = $iType;
-						$curTitle['callNumber'] = $callNumber;
-						$curTitle['volume'] = $volume;
-						$curTitle['checkout'] = $checkOutDate ? $checkOutDate->getTimestamp() : null;
-						if (!empty($returnDate)) {
-							$curTitle['checkin'] = $returnDate->getTimestamp();
-						} else {
-							$curTitle['checkin'] = $checkoutType === 'historical' ? -1 : null;
-						}
-
-						if ($illItemTypes) {
-							if (array_search($iType, $illItemTypes)) {
-								$curTitle['isIll'] = true;
-							}
-						} else {
-							if ($iType == 'ILL') {
-								$curTitle['isIll'] = true;
-							}
-						}
-
-						$readingHistoryTitles[] = $curTitle;
+						$readingHistoryTitles[] = $this->mapKohaCheckoutToHistoryTitle($checkout, $checkedIn, $illItemTypes);
 					}
 
 					if (count($pageCheckouts) < $perPage) {
@@ -1813,6 +1755,68 @@ class Koha extends AbstractIlsDriver {
 			}
 		}
 		return $illItemTypes;
+	}
+
+	private function mapKohaCheckoutToHistoryTitle(array $checkout, bool $isHistorical, array $illItemTypes): array {
+		$checkOutDate = null;
+		if (!empty($checkout['checkout_date'])) {
+			$checkOutDate = new DateTime($checkout['checkout_date']);
+		} else if (!empty($checkout['timestamp'])) {
+			$checkOutDate = new DateTime($checkout['timestamp']);
+		}
+
+		$returnDate = null;
+		if (!empty($checkout['checkin_date'])) {
+			$returnDate = new DateTime($checkout['checkin_date']);
+		}
+
+		$biblionumber = null;
+		$title = null;
+		$author = null;
+		if (!empty($checkout['item']) && !empty($checkout['item']['biblio'])) {
+			$biblionumber = $checkout['item']['biblio']['biblio_id'] ?? null;
+			$title = $checkout['item']['biblio']['title'] ?? null;
+			$author = $checkout['item']['biblio']['author'] ?? null;
+		}
+
+		$barcode = null;
+		$iType = null;
+		$callNumber = null;
+		$volume = null;
+		if (!empty($checkout['item'])) {
+			$barcode = $checkout['item']['external_id'] ?? null;
+			$iType = $checkout['item']['item_type_id'] ?? null;
+			$callNumber = $checkout['item']['callnumber'] ?? null;
+			$volume = $checkout['item']['serial_issue_number'] ?? null;
+		}
+
+		$curTitle = [];
+		$curTitle['id'] = $biblionumber;
+		$curTitle['sourceId'] = $biblionumber;
+		$curTitle['barcode'] = $barcode ?: null;
+		$curTitle['title'] = $title;
+		$curTitle['author'] = $author;
+		$curTitle['format'] = $iType;
+		$curTitle['callNumber'] = $callNumber;
+		$curTitle['volume'] = $volume;
+		$curTitle['checkout'] = $checkOutDate ? $checkOutDate->getTimestamp() : null;
+		if (!empty($returnDate)) {
+			$curTitle['checkin'] = $returnDate->getTimestamp();
+		} else {
+			$curTitle['checkin'] = $isHistorical ? -1 : null;
+		}
+
+		if ($illItemTypes) {
+			if (array_search($iType, $illItemTypes)) {
+				$curTitle['isIll'] = true;
+			}
+		} else {
+			if ($iType == 'ILL') {
+				$curTitle['isIll'] = true;
+			}
+		}
+
+		return $curTitle;
 	}
 
 	/**
