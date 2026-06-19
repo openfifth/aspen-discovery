@@ -1650,39 +1650,8 @@ class Koha extends AbstractIlsDriver {
 		ini_set('memory_limit', '2G');
 		set_time_limit(0);
 		$readingHistoryTitles = [];
-		$perPage = 100;
 		foreach ([false, true] as $checkedIn) {
-			$page = 1;
-			$hasMorePages = true;
-			while ($hasMorePages) {
-				$checkedInParam = $checkedIn ? 'true' : 'false';
-				$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage . "&_match=exact";
-				$extraHeaders = [
-					'Accept-Encoding: gzip, deflate',
-					'Content-Type: application/json',
-					'x-koha-embed: item,item.biblio'
-				];
-
-				$checkoutType = $checkedIn ? 'historical' : 'current';
-				$checkoutsResponse = $this->kohaApiUserAgent->get($endpoint, 'koha.getReadingHistory.' . $checkoutType . '.page' . $page, [], $extraHeaders);
-
-				if ($checkoutsResponse && $checkoutsResponse['code'] == 200 && !empty($checkoutsResponse['content'])) {
-					$pageCheckouts = $checkoutsResponse['content'];
-
-					foreach ($pageCheckouts as $checkout) {
-						$readingHistoryTitles[] = $this->mapKohaCheckoutToHistoryTitle($checkout, $checkedIn, $illItemTypes);
-					}
-
-					if (count($pageCheckouts) < $perPage) {
-						$hasMorePages = false;
-					} else {
-						$page++;
-					}
-				} else {
-					// No results or error, so stop pagination.
-					$hasMorePages = false;
-				}
-			}
+			$readingHistoryTitles = array_merge($readingHistoryTitles, $this->fetchReadingHistoryCheckouts($patron, $checkedIn, $illItemTypes));
 		}
 
 		$numTitles = count($readingHistoryTitles);
@@ -1755,6 +1724,36 @@ class Koha extends AbstractIlsDriver {
 			}
 		}
 		return $illItemTypes;
+	}
+
+	private function fetchReadingHistoryCheckouts(User $patron, bool $checkedIn, array $illItemTypes, string $extraQuery = ''): array {
+		$titles = [];
+		$perPage = 100;
+		$page = 1;
+		$checkoutType = $checkedIn ? 'historical' : 'current';
+		$extraHeaders = [
+			'Accept-Encoding: gzip, deflate',
+			'Content-Type: application/json',
+			'x-koha-embed: item,item.biblio',
+		];
+
+		while (true) {
+			$checkedInParam = $checkedIn ? 'true' : 'false';
+			$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage . "&_match=exact" . $extraQuery;
+			$response = $this->kohaApiUserAgent->get($endpoint, 'koha.getReadingHistory.' . $checkoutType . '.page' . $page, [], $extraHeaders);
+			if (!$response || $response['code'] != 200 || empty($response['content'])) {
+				break;
+			}
+			foreach ($response['content'] as $checkout) {
+				$titles[] = $this->mapKohaCheckoutToHistoryTitle($checkout, $checkedIn, $illItemTypes);
+			}
+			if (count($response['content']) < $perPage) {
+				break;
+			}
+			$page++;
+		}
+
+		return $titles;
 	}
 
 	private function mapKohaCheckoutToHistoryTitle(array $checkout, bool $isHistorical, array $illItemTypes): array {
