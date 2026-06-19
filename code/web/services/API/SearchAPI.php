@@ -3465,7 +3465,7 @@ class SearchAPI extends AbstractAPI {
 						$eventSource = 'assabet';
 						$bypass = $assabetBypass;
 						$addToList = $assabetAddToList;
-					} else if (str_starts_with($record['id'], 'aspenEvents')) {
+					} else if (str_starts_with($record['id'], 'aspenEvent')) {
 						$eventSource = 'aspenEvents';
 						$bypass = $aspenEventsBypass;
 						$addToList = $aspenEventsAddToList;
