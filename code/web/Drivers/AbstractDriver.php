@@ -20,6 +20,10 @@ abstract class AbstractDriver {
 		];
 	}
 
+	public function hasHistoricalCheckouts(): bool {
+		return false;
+	}
+
 	public function doReadingHistoryAction(User $patron, string $action, array $selectedTitles): ?array {
 		return null;
 	}

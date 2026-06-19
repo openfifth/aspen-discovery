@@ -1806,6 +1806,10 @@ class Koha extends AbstractIlsDriver {
 		];
 	}
 
+	public function hasHistoricalCheckouts(): bool {
+		return true;
+	}
+
 	/**
 	 * Place Hold
 	 *
