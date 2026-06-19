@@ -1643,17 +1643,7 @@ class Koha extends AbstractIlsDriver {
 			];
 		}
 
-		$illItemTypes = [];
-		if (file_exists(ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php')) {
-			global $library;
-			require_once ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php';
-			$illItemType = new ILLItemType();
-			$illItemType->libraryId = $library->libraryId;
-			$illItemType->find();
-			while ($illItemType->fetch()) {
-				$illItemTypes[$illItemType->code] = $illItemType->code;
-			}
-		}
+		$illItemTypes = $this->getIllItemTypes();
 
 		// Fetch both current and historical checkouts.
 		// Need to make separate calls for current (checked_in=false) and historical (checked_in=true).
@@ -1808,6 +1798,21 @@ class Koha extends AbstractIlsDriver {
 
 	public function hasHistoricalCheckouts(): bool {
 		return true;
+	}
+
+	private function getIllItemTypes(): array {
+		$illItemTypes = [];
+		if (file_exists(ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php')) {
+			global $library;
+			require_once ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php';
+			$illItemType = new ILLItemType();
+			$illItemType->libraryId = $library->libraryId;
+			$illItemType->find();
+			while ($illItemType->fetch()) {
+				$illItemTypes[$illItemType->code] = $illItemType->code;
+			}
+		}
+		return $illItemTypes;
 	}
 
 	/**
