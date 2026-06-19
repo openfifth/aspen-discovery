@@ -4320,9 +4320,9 @@ class UserAPI extends AbstractAPI {
 			$givenId = $_REQUEST['browseCategoryId'];
 			$hide = $_REQUEST['all'] ?? 'single';
 			$label = explode('_', $givenId);
-			$id = $label[3];
 			if ($user && !($user instanceof AspenError)) {
-				if (strpos($givenId, 'system_saved_searches') !== false) {
+				if ($givenId !== 'system_saved_searches' && str_contains($givenId, 'system_saved_searches')) {
+					$id = $label[3];
 					$searchEntry = new SearchEntry();
 					$searchEntry->id = $id;
 					if (!$searchEntry->find(true)) {
@@ -4338,9 +4338,10 @@ class UserAPI extends AbstractAPI {
 							]),
 						];
 					}
-				} elseif (strpos($givenId, 'system_user_lists') !== false) {
+				} elseif ($givenId !== 'system_user_lists' && str_contains($givenId, 'system_user_lists')) {
 					require_once ROOT_DIR . '/sys/UserLists/UserList.php';
 					$userList = new UserList();
+					$id = $label[3];
 					$userList->id = $id;
 					if (!$userList->find(true)) {
 						return [
@@ -4470,7 +4471,8 @@ class UserAPI extends AbstractAPI {
 		$browseCategoryId = $_REQUEST['browseCategoryId'];
 		$user = $this->getUserForApiCall();
 		if ($user && !($user instanceof AspenError)) {
-			if ($browseCategoryId != "system_saved_searches" && strpos($browseCategoryId, "system_saved_searches") !== false) {
+			//Look for a saved search, but not the overall saved searches category
+			if ($browseCategoryId != "system_saved_searches" && str_contains($browseCategoryId, "system_saved_searches")) {
 				$label = explode('_', $browseCategoryId);
 				$id = $label[3];
 				$searchEntry = new SearchEntry();
