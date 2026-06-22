@@ -273,23 +273,6 @@ class MyAccount_AccountRenewal extends MyAccount {
 		return $currentStepName;
 	}
 
-	private function getRenewalInformation(string $sessionKey, string $userIlsId): array {
-		if (session_status() == PHP_SESSION_NONE) {
-			session_start();
-		}
-
-		if (isset($_SESSION[$sessionKey])) {
-			return $_SESSION[$sessionKey];
-		}
-
-		$ilsDriver = CatalogFactory::getCatalogConnectionInstance();
-
-		$renewalInfo = $ilsDriver->getAccountRenewalInformationForPatron($userIlsId);
-		$_SESSION[$sessionKey] = $renewalInfo;
-
-		return $renewalInfo;
-	}
-
 	private function sendRenewalRequest($selfRenewalSettings, $userIlsId, $requestedChanges = []) {
 		$ilsDriver = CatalogFactory::getCatalogConnectionInstance();
 		return $ilsDriver->sendAccountRenewalRequest($userIlsId, $requestedChanges, $selfRenewalSettings);

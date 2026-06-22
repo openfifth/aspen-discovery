@@ -7573,6 +7573,15 @@ class Koha extends AbstractIlsDriver {
 		}
 	}
 
+	/*
+	*  When Koha returns a verdict (404 -> no endpoint, 200 -> user allowed
+	*  to renew, 403 -> bad credentials), cache for a day as the verdict
+	*  will not change for that period. Prevents sending redundant queries.
+	*/
+	public function isRenewalInformationCacheable(array $renewalInfo): bool {
+		return in_array($renewalInfo['code'] ?? null, [200, 403, 404], true);
+	}
+
 	public function canUserRenewAccount(string $uniqueIlsId): bool {
 		if (!$uniqueIlsId) {
 			return false;
