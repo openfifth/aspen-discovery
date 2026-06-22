@@ -6343,39 +6343,37 @@ class User extends DataObject {
 	}
 
 	public function showRenewalLink(AccountSummary $ilsAccountSummary): bool {
-		$showRenewalLink = false;
-
-		$catalogDriver = $this->getCatalogDriver();
 		$userLibrary = $this->getHomeLibrary();
 
-		// if the ILS supports account/card renewal, check whether it enables them for the active ILS user.
-		if ($userLibrary->enableCardRenewal == 1 && $catalogDriver->hasCardRenewalSupport()) {
-			if (!$ilsAccountSummary->isExpired()) {
-				return false;
-			} 
-			return $catalogDriver->canUserRenewAccount($this->unique_ils_id);
+		if (!$this->getPTypeObj()->canRenewOnline) {
+			return false;
 		}
 
-		if ($ilsAccountSummary->isExpirationClose()) { // this has a hardcoded limit and is incompatible with the Koha self renewal feature
-			$pType = $this->getPTypeObj();
-			if ($pType->canRenewOnline) {
-				if ($userLibrary->enableCardRenewal == 2) {
-					if (!empty($userLibrary->cardRenewalUrl)) {
-						$showRenewalLink = true;
-					}
-				} elseif ($userLibrary->enableCardRenewal == 3) {
-					require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
-					$quipuECardSettings = new QuipuECardSetting();
-					if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
-						$showRenewalLink = true;
-					}
-				}
-				if (!$ilsAccountSummary->isExpired() && !$userLibrary->showCardRenewalWhenExpirationIsClose) {
-					$showRenewalLink = false;
-				}
-			}
+		if (!$ilsAccountSummary->isExpired() && !$userLibrary->showCardRenewalWhenExpirationIsClose) {
+			return false;
 		}
-		return $showRenewalLink;
+
+		if ($userLibrary->enableCardRenewal == 1 && $this->getCatalogDriver()->hasCardRenewalSupport()) {
+			require_once ROOT_DIR . '/sys/Account/AccountRenewalService.php';
+			$accountRenewalService = new AccountRenewalService(); 
+			return $accountRenewalService->canRenew($this);
+		}
+
+		if (!$ilsAccountSummary->isExpirationClose()) {
+			return false;
+		}
+
+		if ($userLibrary->enableCardRenewal == 2) {
+			return !empty($userLibrary->cardRenewalUrl);
+		}
+
+		if ($userLibrary->enableCardRenewal == 3) {
+			require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
+			$quipuECardSettings = new QuipuECardSetting();
+			return $quipuECardSettings->find(true) && $quipuECardSettings->hasERenew;
+		}
+
+		return false;
 	}
 
 	public function isNotificationHistoryEnabled() : bool {

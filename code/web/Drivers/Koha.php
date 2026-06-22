@@ -7582,6 +7582,13 @@ class Koha extends AbstractIlsDriver {
 		return in_array($renewalInfo['code'] ?? null, [200, 403, 404], true);
 	}
 
+	public function getSelfRenewalSettings(array $renewalInfo): array {
+		if (($renewalInfo['success'] ?? false) !== true) {
+			return [];
+		}
+		return $renewalInfo['data']['self_renewal_settings'] ?? [];
+	}
+
 	public function canUserRenewAccount(string $uniqueIlsId): bool {
 		if (!$uniqueIlsId) {
 			return false;

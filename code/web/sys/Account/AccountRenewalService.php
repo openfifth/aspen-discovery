@@ -23,4 +23,11 @@ class AccountRenewalService {
 		return $info;
 	}
 
+	public function getSelfRenewalSettings(User $user) : array {
+		return $user->getCatalogDriver()->getSelfRenewalSettings($this->getRenewalInformation($user));
+	}
+
+	public function canRenew(User $user) : bool {
+		return $user->getCatalogDriver()->canPatronSelfRenew($this->getRenewalInformation($user));
+	}
 }
