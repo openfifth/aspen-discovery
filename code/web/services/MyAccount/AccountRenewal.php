@@ -22,9 +22,9 @@ class MyAccount_AccountRenewal extends MyAccount {
 			return;
 		}
 
-		$sessionKey = 'account_renewal_data_' . $user->id;
-		$renewalInfo = $this->getRenewalInformation($sessionKey, $user->unique_ils_id);
-		$selfRenewalSettings = $renewalInfo['data']['self_renewal_settings'];
+		require_once ROOT_DIR . '/sys/Account/AccountRenewalService.php';
+		$accountRenewalService = new AccountRenewalService();
+		$selfRenewalSettings = $accountRenewalService->getSelfRenewalSettings($user);
 
 		// failsafe in case of a unexpected connection issue with the Koha API
 		if (empty($selfRenewalSettings)) {
@@ -34,7 +34,7 @@ class MyAccount_AccountRenewal extends MyAccount {
 		}
 
 		// the patron is not eligible
-		if ((int)$selfRenewalSettings['opac_patron_details'] !== 1) {
+		if (!$user->getCatalogDriver()->isPatronEligibleToRenew($selfRenewalSettings)) {
 			$interface->assign('accessWarningMessage', $selfRenewalSettings['self_renewal_failure_message']);	
 			$this->display('accountRenewal.tpl', 'Renew Your Account');
 			return;

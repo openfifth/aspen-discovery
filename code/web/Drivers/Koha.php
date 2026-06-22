@@ -7589,15 +7589,13 @@ class Koha extends AbstractIlsDriver {
 		return $renewalInfo['data']['self_renewal_settings'] ?? [];
 	}
 
-	public function canUserRenewAccount(string $uniqueIlsId): bool {
-		if (!$uniqueIlsId) {
-			return false;
-		}
-		if (!UserAccount::isLoggedIn()) {
-			return false;
-		}
-		$response = $this->getAccountRenewalInformationForPatron($uniqueIlsId);
-		return $response['success'] == true;
+	public function isPatronEligibleToRenew(array $selfRenewalSettings): bool {
+		return (int)($selfRenewalSettings['opac_patron_details'] ?? 0) === 1;
+	}
+
+	public function canPatronSelfRenew(array $renewalInfo): bool {
+		$selfRenewalSettings = $this->getSelfRenewalSettings($renewalInfo);
+		return !empty($selfRenewalSettings) && $this->isPatronEligibleToRenew($selfRenewalSettings);
 	}
 
 	public function getAccountRenewalInformationForPatron(string $userId): array {
