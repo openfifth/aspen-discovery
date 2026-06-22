@@ -84,6 +84,7 @@ class MyAccount_AccountRenewal extends MyAccount {
 			$renewalResult = $this->sendRenewalRequest($selfRenewalSettings, $user->unique_ils_id, $_POST);
 			$user->clearCachedAccountSummaryForSource('ils');
 			if ($renewalResult['success']) {
+				$accountRenewalService->clearCache($user->id);
 				$interface->assign('renewalSuccess', true);
 				$interface->assign('renewalData', $renewalResult['data']);
 			} else {

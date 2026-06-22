@@ -34,4 +34,9 @@ class AccountRenewalService {
 	public function canRenew(User $user) : bool {
 		return $user->getCatalogDriver()->canPatronSelfRenew($this->getRenewalInformation($user));
 	}
+
+	public function clearCache(string $userId) : void {
+		global $memCache;
+		$memCache->delete($this->cacheKey($userId));
+	}
 }
