@@ -7585,8 +7585,6 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function getAccountRenewalInformationForPatron(string $userId): array {
-		$result = ['success' => false];
-
 		$endpoint = '/api/v1/public/patrons/' . $userId . '/self_renewal';
 		$extraHeaders = [
 			'Accept-Encoding: gzip, deflate',
@@ -7595,15 +7593,17 @@ class Koha extends AbstractIlsDriver {
 
 		$response = $this->kohaApiUserAgent->get($endpoint, 'koha.getAccountRenewalInformationForPatron', [], $extraHeaders);
 
-		if ($response && $response['code'] == 200) {
-			return [
-				'success' => true,
-				'data' => $response['content'],
-			];
+		$code = $response['code'] ?? 'unknown';
+		$result = ['success' => false, 'code' => $code];
+
+		if ($code === 200) {
+			$result['success'] = true;
+			$result['data'] = $response['content'];
+			return $result;
 		}
 
 		global $logger;
-		$logger->log("Failed to fetch account renewal information. Response code: " . ($response['code'] ?? 'unknown'), Logger::LOG_ERROR);
+		$logger->log("Failed to fetch account renewal information. Response code: " . $code, Logger::LOG_ERROR);
 
 		if (!empty($response['content']['error'])) {
 			$result['message'] = translate([
