@@ -6,6 +6,10 @@ class AccountRenewalService {
 	}
 
 	public function getRenewalInformation(User $user) : array {
+		if (empty($user->unique_ils_id)) {
+			return ['success' => false, 'code' => null];
+		}
+
 		global $memCache;
 
 		$key = $this->cacheKey($user->id);
