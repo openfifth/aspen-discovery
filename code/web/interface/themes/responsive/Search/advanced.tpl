@@ -187,8 +187,8 @@
 																	<input type="text" size="4" maxlength="4" class="yearbox form-control" name="durationfrom" id="durationfrom" value="" aria-label="Audiobook Duration From">
 																</div>
 																<div class="col-xs-6 col-md-4 col-lg-3">
-																	<label for="adurationto" class="yearboxlabel">{translate text="To" isPublicFacing=true} </label>
-																	<input type="text" size="4" maxlength="4" class="yearbox form-control" name="adurationto" id="adurationto" value="" aria-label="Audiobook Duration To">
+																	<label for="durationto" class="yearboxlabel">{translate text="To" isPublicFacing=true} </label>
+																	<input type="text" size="4" maxlength="4" class="yearbox form-control" name="durationto" id="durationto" value="" aria-label="Audiobook Duration To">
 																</div>
 															</div>
 														{else}
