@@ -661,7 +661,7 @@ class UserAPI extends AbstractAPI {
 		if ($user && !($user instanceof AspenError)) {
 			
 			// Fetch the latest contact information from the ILS
-			$user->updatePatronInfo(true);
+			$user->loadContactInformation();
 
 			//Remove a bunch of junk from the user data
 			unset($user->query);
