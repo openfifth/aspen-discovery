@@ -1,4 +1,9 @@
 	<div class="holdsWithSelected{$sectionKey}">
+		{if !empty($allowHoldsToBeGrouped)}
+			<div class="alert alert-info">
+				{translate text='"Group Selected Pending ILS Holds" requires two or more ILS Holds to be selected.' isPublicFacing=true}
+			</div>
+		{/if}
 		{assign var="sectionLabel" value=""}
 		{if $sectionKey == "unavailable"}
 			{assign var="sectionLabel" value="Pending"}
