@@ -475,8 +475,8 @@ class Greenhouse_AJAX extends JSON_Action {
 							'greenhouseSiteId' => $scheduledUpdate->siteId,
 						];
 						$response = json_decode($curl->curlPostPage($siteToUpdate->getSiteBaseUrl() . '/API/GreenhouseAPI?method=addScheduledUpdate', $body));
-						if (isset($response->success)) {
-							if($response->success) {
+						if (isset($response->success) || isset($response->result->success)) {
+							if($response->success || $response->result->success) {
 								// update scheduled
 								$numSitesUpdated++;
 							}
@@ -484,6 +484,8 @@ class Greenhouse_AJAX extends JSON_Action {
 							$message = 'Unable to connect to server';
 							if (isset($response->message)) {
 								$message = $response->message;
+							}else if (isset($response->result->message)){
+								$message = $response->result->message;
 							}
 							$scheduledUpdate->notes = $message;
 							$scheduledUpdate->update();
