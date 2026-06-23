@@ -21,10 +21,10 @@
 		{if !empty($offline) && !$enableEContentWhileOffline}
 			<div class="alert alert-warning"><strong>{translate text=$offlineMessage isPublicFacing=true}</strong></div>
 		{else}
-		{if count($linkedUsers) > 0 && $allowFilteringOfLinkedAccountsInHolds}
+		{* {if count($linkedUsers) > 0 && $allowFilteringOfLinkedAccountsInHolds}
 			{assign var="filterType" value="holds"}
 			{include file="./linkedUsersDropdown.tpl"}
-		{/if}
+		{/if} *}
             <div id="holdsFiltersBar"></div>
 
 			<div id="holds">
