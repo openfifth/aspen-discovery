@@ -296,7 +296,7 @@ class AJAX_JSON extends Action {
 									'isPublicFacing' => true
 								]),
 								'body' => $interface->fetch('MyAccount/login-2fa-enroll.tpl'),
-								'buttons' => "<button id='loginFormCancelLogin' class='btn btn-warning' href='/MyAccount/Logout'>" . translate([
+								'buttons' => "<button id='loginFormCancelLogin' class='btn btn-warning' onclick='window.location =\"/MyAccount/Logout\"'>" . translate([
 										'text' => 'Cancel Sign In',
 										'isPublicFacing' => true,
 									]) . "</button>",
