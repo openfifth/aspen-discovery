@@ -39,6 +39,14 @@ function getUpdates26_06_00(): array {
 				'ALTER TABLE series_indexing_settings ADD COLUMN include490_0 TINYINT(1) DEFAULT 0',
 			]
 		],
+		'add_solr_indexing_options' => [
+			'title' => 'Add solr indexing options',
+			'description' => 'Add solr indexing options',
+			'sql' => [
+				'ALTER TABLE system_variables ADD COLUMN solrThreadCount INT UNSIGNED NOT NULL DEFAULT 1',
+				'ALTER TABLE system_variables ADD COLUMN solrQueueSize INT UNSIGNED NOT NULL DEFAULT 25',
+			]
+		],
 
 		//kirstien
 		'addForceReadingHistoryOptIn' => [
