@@ -4013,7 +4013,7 @@ class MyAccount_AJAX extends JSON_Action {
 				$interface->assign('allowFreezeHolds', false);
 			}
 
-			$interface->assign('allowHoldsToBeGrouped', $holdsSource === 'ils' ? $allowHoldsToBeGrouped : false);
+			$interface->assign('allowHoldsToBeGrouped', $allowHoldsToBeGrouped);
 
 			$showPosition = $user->showHoldPosition();
 			$suspendRequiresReactivationDate = $user->suspendRequiresReactivationDate();

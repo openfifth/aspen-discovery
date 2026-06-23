@@ -3391,6 +3391,15 @@ AspenDiscovery.Account = (function () {
 				console.error('AJAX Error: ', textStatus, errorThrown);
 			})
 		},
+		toggleGroupSelectedHoldsButton: function () {
+			// Ensure all holds selected are ILS holds.
+			const selectedHolds = Array.from(document.querySelectorAll('.titleSelect:checked'));
+			const allIlsHolds = selectedHolds.every(checkbox => checkbox.closest('.result.row')?.classList.contains('ilsHold'));
+			const groupingAvailable = selectedHolds.length > 1 && allIlsHolds;
+
+			// target both the top and bottom 'Group Selected Pending Ils Hold' buttons.
+			document.querySelectorAll('.groupSelectedHoldsButton').forEach(button => button.classList.toggle('disabled', !groupingAvailable));
+		},
 		groupSelectedPendingHolds:  function (source, availableSort, interlibrarySort, unavailableSort) {
 			let selectedHolds = [];
 			let userIds = [];
