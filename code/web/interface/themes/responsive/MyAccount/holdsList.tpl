@@ -85,7 +85,9 @@
 		{if $sectionKey == 'available'}
 			{translate text='You do not have any holds that are ready to be picked up.' isPublicFacing=true}
 		{elseif $sectionKey == 'cancelled'}
-			{translate text='You do not have any cancelled holds.' isPublicFacing=true}
+			{if $showCancelled}
+				{translate text='You do not have any cancelled holds.' isPublicFacing=true}
+			{/if}
 		{elseif $sectionKey != 'available'}
 			{if $source == 'interlibrary_loan'}
 				{translate text='You do not have any pending requests.' isPublicFacing=true}
