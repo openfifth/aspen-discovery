@@ -338,21 +338,30 @@ AspenDiscovery.Account = (function () {
 			if (unavailableHoldSort !== undefined) {
 				url += "&unavailableHoldSort=" + unavailableHoldSort;
 			}
-			if (showCovers === undefined) {
-				showCovers = $('#showCovers').prop('checked');
+			if (showCovers === undefined || showCovers === null) {
+				let showCoversCtl = $('#hideCovers_all');
+				if (showCoversCtl.length > 0) {
+					showCovers = showCoversCtl.prop('checked') ? 'false' : 'true';
+				}
 			}
-			url += "&showCovers=" + showCovers;
+			if (showCovers !== undefined && showCovers !== null) {
+				url += "&showCovers=" + showCovers;
+			}
 
 			if (filters === undefined) {
 				//Grab the current state
-				filters = {};
 				let selectOptions = $('#holdsFilterRow select');
-				selectOptions.each(function() {
-					let key = $(this).attr('id').replace('HoldFilter_', '');
-					filters[key] = $(this).val() || [];
-				});
+				if (selectOptions.length > 0) {
+					filters = {};
+					selectOptions.each(function() {
+						let key = $(this).attr('id').replace('HoldFilter_', '');
+						filters[key] = $(this).val() || [];
+					});
+				}
 			}
-			url += "&" + AspenDiscovery.buildQueryString(filters);
+			if (filters !== undefined) {
+				url += "&" + AspenDiscovery.buildQueryString(filters);
+			}
 
 			var stateObj = {
 				page: 'Holds',
