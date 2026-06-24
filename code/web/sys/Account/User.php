@@ -5263,6 +5263,17 @@ class User extends DataObject {
 		$summary->update();
 	}
 
+	public function invalidateCachedAccountSummary(string $source) : void {
+		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
+		$summary = new AccountSummary();
+		$summary->userId = $this->id;
+		$summary->source = $source;
+		if ($summary->find(true)) {
+			$summary->lastLoaded = 0;
+			$summary->update();
+		}
+	}
+
 	public function clearActiveSessions() : void {
 		//Delete any sessions for the patron to ensure they are logged out
 		$session = new Session();
