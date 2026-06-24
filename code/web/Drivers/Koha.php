@@ -3143,7 +3143,13 @@ class Koha extends AbstractIlsDriver {
 			return null;
 		}
 
-		$rawFee = $this->getRenewalFeeForItem($item['item_type_id'],$item['home_library_id']);
+		$branchField = $this->getKohaSystemPreference('HomeOrHoldingBranch', 'homebranch');
+		$itemBranch = $branchField === 'holdingbranch'
+			? ($item['holding_library_id'] ?? null)
+			: ($item['home_library_id'] ?? null);
+		$circBranch = $this->getCircControlBranch(UserAccount::getActiveUserObj(), $itemBranch);
+
+		$rawFee = $this->getRenewalFeeForItem($item['item_type_id'], $circBranch);
 		if (!$rawFee) {
 			return null;
 		}
