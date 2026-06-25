@@ -1711,6 +1711,26 @@ class Koha extends AbstractIlsDriver {
 		return true;
 	}
 
+	public function loadReadingHistoryHistoricalCheckoutsSinceLastUpdate(User $patron, ?int $sinceTimestamp = null): array {
+		$illItemTypes = $this->getIllItemTypes();
+
+		ini_set('memory_limit', '2G');
+		set_time_limit(0);
+
+		$query = '';
+		if (!empty($sinceTimestamp)) {
+			$since = date('Y-m-d H:i:s', $sinceTimestamp);
+			$query = '&q=' . rawurlencode(json_encode(['checkin_date' => ['>=' => $since]]));
+		}
+
+		$titles = $this->fetchReadingHistoryCheckouts($patron, true, $illItemTypes, $query);
+
+		return [
+			'success' => true,
+			'titles' => $titles,
+		];
+	}
+
 	private function getIllItemTypes(): array {
 		$illItemTypes = [];
 		if (file_exists(ROOT_DIR . '/sys/LibraryLocation/ILLItemType.php')) {
