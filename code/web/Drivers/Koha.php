@@ -2851,7 +2851,8 @@ class Koha extends AbstractIlsDriver {
 			return $hold_result;
 		}
 
-		if (empty($_REQUEST['confirmedRenewal']) && $itemId) {
+		$homeLibrary = $patron->getHomeLibrary();
+		if (empty($_REQUEST['confirmedRenewal']) && $itemId && $homeLibrary && $homeLibrary->showCheckoutRenewalFeeMessage) {
 			$feeMessage = $this->getPreRenewalFeeMessage($itemId);
 			if ($feeMessage) {
 				$result['success'] = false;
