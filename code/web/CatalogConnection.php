@@ -1261,7 +1261,6 @@ class CatalogConnection {
 			];
 		}
 		$activeHistoryTitles = [];
-		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
 		// Include deleted titles to prevent duplicates.
 		$readingHistoryDB = new ReadingHistoryEntry();
@@ -1318,22 +1317,18 @@ class CatalogConnection {
 					}
 				}
 
-				$historyEntryDB = new ReadingHistoryEntry();
-				$historyEntryDB->userId = $patron->id;
-				if (!empty($checkout->groupedWorkId)) {
-					$historyEntryDB->groupedWorkPermanentId = $checkout->groupedWorkId;
-				} else {
-					$historyEntryDB->groupedWorkPermanentId = "";
-				}
-				$historyEntryDB->source = $source;
-				$historyEntryDB->sourceId = $sourceId;
-				$historyEntryDB->barcode = $barcode;
-				$historyEntryDB->callNumber = $checkout->callNumber ?? null;
-				$historyEntryDB->volume = $checkout->volume ?? null;
-				$historyEntryDB->title = !empty($checkout->title) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->title, 150, true) : "";
-				$historyEntryDB->author = !empty($checkout->author) ? StringUtils::trimStringToLengthAtWordBoundary($checkout->author, 75, true) : "";
-				$historyEntryDB->format = substr($checkout->format ?? "", 0, 50);
-				$historyEntryDB->checkOutDate = $checkout->checkoutDate ?? time();
+				$historyEntryDB = $this->buildReadingHistoryEntry($patron, [
+					'permanentId' => $checkout->groupedWorkId ?? "",
+					'source' => $source,
+					'sourceId' => $sourceId,
+					'barcode' => $barcode,
+					'callNumber' => $checkout->callNumber ?? null,
+					'volume' => $checkout->volume ?? null,
+					'title' => $checkout->title ?? null,
+					'author' => $checkout->author ?? null,
+					'format' => $checkout->format ?? null,
+					'checkOutDate' => $checkout->checkoutDate ?? time(),
+				]);
 				$historyEntryDB->costSavings = $checkout->getReplacementCost();
 				if (!$historyEntryDB->insert()) {
 					global $logger;
@@ -1381,6 +1376,24 @@ class CatalogConnection {
 			'message' => 'Reading history updated',
 			'skipped' => false
 		];
+	}
+
+	private function buildReadingHistoryEntry(User $patron, array $data): ReadingHistoryEntry {
+		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
+		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+		$entry = new ReadingHistoryEntry();
+		$entry->userId = $patron->id;
+		$entry->groupedWorkPermanentId = $data['permanentId'] ?? "";
+		$entry->source = $data['source'];
+		$entry->sourceId = $data['sourceId'] ?? null;
+		$entry->barcode = $data['barcode'] ?? null;
+		$entry->callNumber = $data['callNumber'] ?? null;
+		$entry->volume = $data['volume'] ?? null;
+		$entry->title = !empty($data['title']) ? StringUtils::trimStringToLengthAtWordBoundary($data['title'], 150, true) : "";
+		$entry->author = !empty($data['author']) ? StringUtils::trimStringToLengthAtWordBoundary($data['author'], 75, true) : "";
+		$entry->format = is_array($data['format'] ?? null) ? implode(', ', $data['format']) : substr($data['format'] ?? "", 0, 50);
+		$entry->checkOutDate = $data['checkOutDate'] ?? null;
+		return $entry;
 	}
 
 	/**
