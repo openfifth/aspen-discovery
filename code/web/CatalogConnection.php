@@ -1369,6 +1369,8 @@ class CatalogConnection {
 			}
 		}
 
+		$this->updateReadingHistoryFromHistoricalCheckouts($patron, $isNightlyUpdate, $patron->lastReadingHistoryUpdate);
+
 		$patron->__set('lastReadingHistoryUpdate', time());
 		$patron->update();
 
@@ -1376,6 +1378,69 @@ class CatalogConnection {
 			'message' => 'Reading history updated',
 			'skipped' => false
 		];
+	}
+
+	public function updateReadingHistoryFromHistoricalCheckouts(User $patron, bool $isNightlyUpdate, ?int $sinceTimestamp): array {
+		if ($this->bypassReadingHistoryUpdate($patron, $isNightlyUpdate)) {
+			return ['skipped' => true];
+		}
+		if (!$this->driver->hasHistoricalCheckouts()) {
+			return ['skipped' => true];
+		}
+
+		$result = $this->driver->loadReadingHistoryHistoricalCheckoutsSinceLastUpdate($patron, $sinceTimestamp);
+		if (empty($result['success'])) {
+			return ['skipped' => true];
+		}
+		if (empty($result['titles'])) {
+			return ['skipped' => false, 'inserted' => 0];
+		}
+
+		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
+
+		$existingKeys = [];
+		$existing = new ReadingHistoryEntry();
+		$existing->userId = $patron->id;
+		$existing->find();
+		while ($existing->fetch()) {
+			$key = $this->getReadingHistoryDedupKey($existing->source, $existing->sourceId, $existing->barcode, $existing->checkOutDate);
+			$existingKeys[$key] = true;
+		}
+
+		$source = $this->accountProfile->recordSource;
+		$inserted = 0;
+		foreach ($result['titles'] as $title) {
+			$checkOutDate = $title['checkout'] ?? null;
+			$key = $this->getReadingHistoryDedupKey($source, $title['sourceId'] ?? null, $title['barcode'] ?? null, $checkOutDate);
+			if (isset($existingKeys[$key])) {
+				continue;
+			}
+			$existingKeys[$key] = true;
+
+			$entry = $this->buildReadingHistoryEntry($patron, [
+				'permanentId' => $title['permanentId'] ?? "",
+				'source' => $source,
+				'sourceId' => $title['sourceId'] ?? null,
+				'barcode' => $title['barcode'] ?? null,
+				'callNumber' => $title['callNumber'] ?? null,
+				'volume' => $title['volume'] ?? null,
+				'title' => $title['title'] ?? null,
+				'author' => $title['author'] ?? null,
+				'format' => $title['format'] ?? null,
+				'checkOutDate' => $checkOutDate,
+			]);
+			$entry->checkInDate = (isset($title['checkin']) && $title['checkin'] !== -1) ? $title['checkin'] : null;
+			$entry->isIll = empty($title['isIll']) ? 0 : 1;
+			$entry->deleted = 0;
+			if ($entry->insert()) {
+				$inserted++;
+			} else {
+				global $logger;
+				$logger->log("Could not insert historical reading history entry for user $patron->id.", Logger::LOG_ERROR);
+			}
+		}
+
+		return ['skipped' => false, 'inserted' => $inserted];
 	}
 
 	private function getReadingHistoryDedupKey(?string $source, ?string $sourceId, ?string $barcode, $checkOutDate): string {
