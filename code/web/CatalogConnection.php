@@ -1378,6 +1378,10 @@ class CatalogConnection {
 		];
 	}
 
+	private function getReadingHistoryDedupKey(?string $source, ?string $sourceId, ?string $barcode, $checkOutDate): string {
+		return strtolower(trim($source . ':' . $sourceId . '_' . ($barcode ?? '') . '_' . ($checkOutDate ?? '')));
+	}
+
 	private function buildReadingHistoryEntry(User $patron, array $data): ReadingHistoryEntry {
 		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		require_once ROOT_DIR . '/sys/ReadingHistoryEntry.php';
