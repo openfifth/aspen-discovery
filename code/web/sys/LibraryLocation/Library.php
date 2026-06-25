@@ -205,6 +205,7 @@ class Library extends DataObject {
 	public $showLogMeOutAfterPlacingHolds;
 	public $displayItemBarcode;
 	public $displayHoldsOnCheckout;
+	public $showCheckoutRenewalFeeMessage;
 	public /** @noinspection PhpUnused */
 		$displayCallNumberInCheckoutHistory;
 	public /** @noinspection PhpUnused */
@@ -2528,6 +2529,15 @@ class Library extends DataObject {
 								'hideInLists' => true,
 								'default' => '0',
 								'permissions' => ['Library ILS Connection'],
+							],
+							'showCheckoutRenewalFeeMessage' => [
+								'property' => 'showCheckoutRenewalFeeMessage',
+								'type' => 'checkbox',
+								'label' => 'Show Checkout Renewal Fee Message',
+								'description' => 'Whether or not to display a fee message to patrons before renewing checkouts. Requires ILS support.',
+								'note' => 'Applies to Koha Only.',
+								'hideInLists' => true,
+								'default' => 1,
 							],
 						],
 					],
