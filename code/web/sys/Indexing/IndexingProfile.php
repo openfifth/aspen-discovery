@@ -237,6 +237,8 @@ class IndexingProfile extends DataObject {
 		$displayTitleStripRegex;
 	public /** @noinspection PhpUnused */
 		$loadLibrariesAndLocationsFromIls;
+	public /** @noinspection PhpUnused */
+		$indexBookableItems;
 
 	private $_translationMaps;
 	private $_timeToReshelve;
@@ -248,6 +250,7 @@ class IndexingProfile extends DataObject {
 		return [
 			'processRecordLinking',
 			'index856Links',
+			'indexBookableItems',
 			'determineAudienceBy',
 			'determineLiteraryFormBy',
 			'hideUnknownLiteraryForm',
@@ -829,6 +832,20 @@ class IndexingProfile extends DataObject {
 						'description' => 'When checked, if there are available records in a grouped work, titles from those available records will be prioritized as the display title for the grouped work.',
 						'default' => 0,
 						'forcesReindex' => true,
+					],
+					'indexBookableItems' => [
+						'property' => 'indexBookableItems',
+						'type' => 'enum',
+						'values' => [
+							'0' => 'Do not index bookability',
+							'1' => 'Index for the owning library only',
+							//'2' => 'Index for all libraries', TODO: implement cross-library booking capabilities
+						],
+						'label' => 'Index Bookable Items',
+						'description' => 'Whether to index item bookability and at what scope. Bookability is always determined by the ILS; this only controls whether Aspen exposes it.',
+						'default' => '0',
+						'forcesReindex' => true,
+						'relatedIls' => ['koha'],
 					],
 					'audienceOptionsSection' => [
 						'property' => 'audienceOptionsSection',

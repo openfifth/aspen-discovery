@@ -69,6 +69,14 @@ function getUpdates26_07_00(): array {
 				) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci",
 			]
 		], //create_user_booking
+		'add_bookable_items_indexing_scope' => [
+			'title' => 'Add Bookable Items Indexing Scope to Indexing Profile',
+			'description' => 'Adds indexBookableItems to indexing_profiles so staff can control whether item bookability is indexed and at what scope. Owning library only for now; all libraries is reserved for the cross-library bookings enhancement.',
+			'continueOnError' => false,
+			'sql' => [
+				'ALTER TABLE indexing_profiles ADD COLUMN IF NOT EXISTS indexBookableItems tinyint(1) DEFAULT 0',
+			]
+		], //add_bookable_items_indexing_scope
 
 		//pedro
 
