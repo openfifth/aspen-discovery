@@ -678,9 +678,14 @@ if (UserAccount::isLoggedIn() && (!isset($_REQUEST['action']) || $_REQUEST['acti
 
 //Find a reasonable default location to go to
 if ($module == null && $action == null) {
-	//We have no information about where to go, go to the default location from config
-	$module = $configArray['Site']['defaultModule'];
-	$action = 'Home';
+	$requestPath = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?: '/';
+	if ($requestPath === '/') {
+		$module = $configArray['Site']['defaultModule'];
+		$action = 'Home';
+	} else {
+		$module = 'Error';
+		$action = 'Handle404';
+	}
 } elseif ($action == null) {
 	$action = 'Home';
 }
