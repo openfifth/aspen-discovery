@@ -23,7 +23,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		require_once ATTENDEE_PATH_TO_ROOT . 'code/web/sys/Events/EventTypeAttendeeCategory.php';
 		require_once ATTENDEE_PATH_TO_ROOT . 'code/web/sys/Events/UserAspenEventInstanceRegistration.php';
 		require_once ATTENDEE_PATH_TO_ROOT . 'code/web/sys/Events/UserAspenEventInstanceRegistrationAttendee.php';
-		require_once ATTENDEE_PATH_TO_ROOT . 'code/web/sys/Events/EventRegistrationService.php';
+		require_once ATTENDEE_PATH_TO_ROOT . 'code/web/services/EventRegistrationService.php';
 		require_once ATTENDEE_PATH_TO_ROOT . 'code/web/sys/Account/User.php';
 	}
 
