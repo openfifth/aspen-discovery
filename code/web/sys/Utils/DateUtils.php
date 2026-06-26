@@ -48,4 +48,59 @@ class DateUtils {
 		}
 		return str_replace('-', '_', $locale);
 	}
+
+	static function formatDateLocale($string, $dateStyle = 'medium', $timeStyle = 'none', $pattern = null): string|false {
+		global $activeLanguage;
+
+		if (empty($string) || $string === '0000-00-00' || $string === '0000-00-00 00:00:00') {
+			return '';
+		}
+
+		if ($string instanceof DateTime) {
+			$timestamp = $string->getTimestamp();
+		} elseif (is_numeric($string)) {
+			$timestamp = (int)$string;
+		} else {
+			$timestamp = strtotime($string);
+		}
+
+		if ($timestamp === false || $timestamp === -1) {
+			return '';
+		}
+
+		$dateStyleMap = [
+			'none'   => IntlDateFormatter::NONE,
+			'short'  => IntlDateFormatter::SHORT,
+			'medium' => IntlDateFormatter::MEDIUM,
+			'long'   => IntlDateFormatter::LONG,
+			'full'   => IntlDateFormatter::FULL,
+		];
+
+		$timeStyleMap = [
+			'none'   => IntlDateFormatter::NONE,
+			'short'  => IntlDateFormatter::SHORT,
+			'medium' => IntlDateFormatter::MEDIUM,
+			'long'   => IntlDateFormatter::LONG,
+			'full'   => IntlDateFormatter::FULL,
+		];
+
+		$dateStyleConstant = $dateStyleMap[strtolower($dateStyle)] ?? IntlDateFormatter::MEDIUM;
+		$timeStyleConstant = $timeStyleMap[strtolower($timeStyle)] ?? IntlDateFormatter::NONE;
+
+		$locale = $activeLanguage->locale ?? 'en_US';
+		$timezone = date_default_timezone_get();
+
+		$formatter = new IntlDateFormatter(
+			$locale,
+			$dateStyleConstant,
+			$timeStyleConstant,
+			$timezone
+		);
+
+		if ($pattern !== null) {
+			$formatter->setPattern($pattern);
+		}
+
+		return $formatter->format($timestamp);
+	}
 }
