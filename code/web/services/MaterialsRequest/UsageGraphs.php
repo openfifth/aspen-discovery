@@ -2,7 +2,8 @@
 
 require_once ROOT_DIR . '/services/Admin/AbstractUsageGraphs.php';
 require_once ROOT_DIR . '/sys/SystemLogging/AspenUsage.php';
-require_once ROOT_DIR . '/sys/MaterialsRequestUsage.php';
+require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestUsage.php';
+require_once ROOT_DIR . '/sys/MaterialsRequests/MaterialsRequestStatus.php';
 require_once ROOT_DIR . '/sys/Utils/GraphingUtils.php';
 
 class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
