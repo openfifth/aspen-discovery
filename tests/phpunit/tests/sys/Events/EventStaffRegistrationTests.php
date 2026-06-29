@@ -19,7 +19,7 @@ class EventStaffRegistrationTests extends TestCase {
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/EventType.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/UserAspenEventInstanceRegistration.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/services/EventRegistrationService.php';
-		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/AspenEventSetting.php';
+		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/EventsIndexingSetting.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/UserEventsEntry.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Account/User.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/LibraryLocation/Location.php';
@@ -66,7 +66,7 @@ class EventStaffRegistrationTests extends TestCase {
 		$aspen_db->exec("DELETE FROM event_instance");
 		$aspen_db->exec("DELETE FROM event");
 		$aspen_db->exec("DELETE FROM user WHERE source = 'phpunit'");
-		$aspen_db->exec("DELETE FROM aspen_event_settings WHERE name = 'PHPUnit Setting'");
+		$aspen_db->exec("DELETE FROM events_indexing_settings WHERE name = 'PHPUnit Setting'");
 
 		parent::tearDown();
 	}
@@ -101,8 +101,8 @@ class EventStaffRegistrationTests extends TestCase {
 		return $reg;
 	}
 
-	private function ensureAspenEventSetting(): AspenEventSetting {
-		$setting = new AspenEventSetting();
+	private function ensureEventsIndexingSetting(): EventsIndexingSetting {
+		$setting = new EventsIndexingSetting();
 		$setting->name = 'PHPUnit Setting';
 		if (!$setting->find(true)) {
 			$setting->insert();
@@ -355,7 +355,7 @@ class EventStaffRegistrationTests extends TestCase {
 	// ── EventInstance::saveToUserEvents ──────────
 
 	public function testSaveToUserEventsCreatesEntry(): void {
-		$setting = $this->ensureAspenEventSetting();
+		$setting = $this->ensureEventsIndexingSetting();
 		$user = $this->insertUser(40700);
 
 		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
@@ -369,7 +369,7 @@ class EventStaffRegistrationTests extends TestCase {
 	}
 
 	public function testSaveToUserEventsIsIdempotent(): void {
-		$this->ensureAspenEventSetting();
+		$this->ensureEventsIndexingSetting();
 		$user = $this->insertUser(40710);
 
 		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
@@ -381,7 +381,7 @@ class EventStaffRegistrationTests extends TestCase {
 	}
 
 	public function testSaveToUserEventsNoOpWithoutSetting(): void {
-		// No AspenEventSetting row — should silently return
+		// No EventsIndexingSetting row — should silently return
 		$user = $this->insertUser(40720);
 		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
 
@@ -428,7 +428,7 @@ class EventStaffRegistrationTests extends TestCase {
 	// ── Integration: register + saveToUserEvents ──
 
 	public function testRegisterUserForEventSavesToUserEvents(): void {
-		$this->ensureAspenEventSetting();
+		$this->ensureEventsIndexingSetting();
 		$user = $this->insertUser(40800);
 
 		$result = EventRegistrationService::registerUserForEvent((int)$user->id, (int)$this->eventInstance->id);
@@ -440,7 +440,7 @@ class EventStaffRegistrationTests extends TestCase {
 	}
 
 	public function testRegisterUserForEventDoesNotSaveOnFailure(): void {
-		$this->ensureAspenEventSetting();
+		$this->ensureEventsIndexingSetting();
 
 		// Fill event
 		for ($i = 0; $i < 3; $i++) {
