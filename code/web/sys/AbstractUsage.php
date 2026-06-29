@@ -1,17 +1,15 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
 abstract class AbstractUsage extends DataObject {
-	public function getCurPeriod($timeframes) {
+	public function getCurPeriod(array $timeframes): string {
+		require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
 		if (in_array('day', $timeframes)) {
-			return "{$this->day}-{$this->month}-{$this->year}";
+			return DateUtils::formatDateLocale("$this->year-$this->month-$this->day", 'short');
 		}
-		if (in_array('month', $timeframes)) {
-			return "{$this->month}-{$this->year}";
+		if (in_array('year', $timeframes) && !in_array('month', $timeframes)) {
+			return (string)$this->year;
 		}
-		if (in_array('year', $timeframes)) {
-			return "{$this->year}";
-		}
-		return "{$this->month}-{$this->year}"; // monthly is the default
+		return DateUtils::formatDateLocale("$this->year-$this->month-01", 'short', 'none', null, 'yMM'); // monthly is the default
 	}
 	public function getCustomPeriod(): string {
 		require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
