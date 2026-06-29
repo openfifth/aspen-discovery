@@ -88,7 +88,7 @@ class SideLoads_UsageGraphs extends Admin_AbstractUsageGraphs {
 		// collect results
 		$usage->find();
 		while ($usage->fetch()) {
-			$curPeriod = $custom ? $usage->period : $usage->getCurPeriod($timeframes);
+			$curPeriod = $custom ? $usage->getCustomPeriod() : $usage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			if ($stat == 'activeUsers') {
 				/** @noinspection PhpUndefinedFieldInspection */

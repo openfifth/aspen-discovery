@@ -66,7 +66,7 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$userUsage->orderBy('year, month');
 			$userUsage->find();
 			while ($userUsage->fetch()) {
-				$curPeriod = $custom ? $userUsage->period : $userUsage->getCurPeriod($timeframes);
+				$curPeriod = $custom ? $userUsage->getCustomPeriod() : $userUsage->getCurPeriod($timeframes);
 				$columnLabels[] = $curPeriod;
 				/** @noinspection PhpUndefinedFieldInspection */
 				$dataSeries['Total Usage']['data'][$curPeriod] = $userUsage->sumUsage;
@@ -111,7 +111,7 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 			$recordUsage->find();
 			while ($recordUsage->fetch()) {
-				$curPeriod = $custom ? $recordUsage->period : $recordUsage->getCurPeriod($timeframes);
+				$curPeriod = $custom ? $recordUsage->getCustomPeriod() : $recordUsage->getCurPeriod($timeframes);
 				if ( $stat != 'general' || !in_array("{$recordUsage->month}-{$recordUsage->year}", $columnLabels)) { // prevents the multiple addition of a curPeriod
 					$columnLabels[] = $curPeriod;
 				}
@@ -187,7 +187,7 @@ class Axis360_UsageGraphs extends Admin_AbstractUsageGraphs {
 			}
 			$stats->find();
 			while ($stats->fetch()) {
-				$curPeriod = $custom ? $stats->period : $stats->getCurPeriod($timeframes);
+				$curPeriod = $custom ? $stats->getCustomPeriod() : $stats->getCurPeriod($timeframes);
 				if ( $stat != 'general' || !in_array("{$stats->month}-{$stats->year}", $columnLabels)) {  // prevents the multiple addition of a curPeriod
 					$columnLabels[] = $curPeriod;
 				}

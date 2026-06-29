@@ -100,7 +100,7 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 
 		$columnLabels = [];
 		while ($materialsRequestUsage->fetch()) {
-			$curPeriod = $custom ? $materialsRequestUsage->period : $materialsRequestUsage->getCurPeriod($timeframes);
+			$curPeriod = $custom ? $materialsRequestUsage->getCustomPeriod() : $materialsRequestUsage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			$dataSeries[$statusDescription]['data'][$curPeriod] = $materialsRequestUsage->numUsed;
 		}
