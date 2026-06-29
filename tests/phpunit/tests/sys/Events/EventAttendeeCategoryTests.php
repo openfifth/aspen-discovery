@@ -718,7 +718,7 @@ class EventAttendeeCategoryTests extends TestCase {
 			[$this->categoryChild->id => 2]
 		);
 		$this->assertFalse($r2['success']);
-		$this->assertStringContainsString('already registered', $r2['message']);
+		$this->assertStringContainsString('Failed to create registration', $r2['message']);
 	}
 
 	// ── Edge: register with empty counts on categoried event ──
