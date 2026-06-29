@@ -404,7 +404,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		$instance->id = $this->eventInstance->id;
 		$instance->find(true);
 
-		$this->assertEquals(4, $instance->getRegistrationCount());
+		$this->assertEquals(4, EventRegistrationService::getRegistrationCount((int)$instance->id));
 	}
 
 	public function testGetRegistrationCountFallsBackToRowCountWhenNoAttendeeRows(): void {
@@ -417,7 +417,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		$instance->id = $this->eventInstance->id;
 		$instance->find(true);
 
-		$this->assertEquals(2, $instance->getRegistrationCount());
+		$this->assertEquals(2, EventRegistrationService::getRegistrationCount((int)$instance->id));
 	}
 
 	// ── EventInstance::getAttendeeCategoryBreakdown ──
@@ -433,7 +433,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		$instance->id = $this->eventInstance->id;
 		$instance->find(true);
 
-		$breakdown = $instance->getAttendeeCategoryBreakdown();
+		$breakdown = EventRegistrationService::getAttendeeCategoryBreakdown((int)$instance->id);
 
 		$this->assertCount(2, $breakdown);
 
@@ -453,7 +453,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		$instance->id = $this->eventInstance->id;
 		$instance->find(true);
 
-		$breakdown = $instance->getAttendeeCategoryBreakdown();
+		$breakdown = EventRegistrationService::getAttendeeCategoryBreakdown((int)$instance->id);
 		$this->assertCount(2, $breakdown);
 
 		foreach ($breakdown as $entry) {
@@ -480,8 +480,8 @@ class EventAttendeeCategoryTests extends TestCase {
 		$instance->find(true);
 
 		// 8 of 10 used → 2 available
-		$this->assertTrue($instance->hasAvailableSeats(2));
-		$this->assertFalse($instance->hasAvailableSeats(3));
+		$this->assertTrue(EventRegistrationService::hasAvailableSeats($instance, 2));
+		$this->assertFalse(EventRegistrationService::hasAvailableSeats($instance, 3));
 	}
 
 	// ── EventRegistrationService::registerUserForEvent ──
@@ -512,7 +512,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		$attendee->registrationId = $reg->id;
 		$this->assertEquals(2, $attendee->count());
 
-		$total = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeeCount((int)$reg->id);
+		$total = array_sum(UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$reg->id));
 		$this->assertEquals(3, $total);
 	}
 
@@ -636,7 +636,7 @@ class EventAttendeeCategoryTests extends TestCase {
 		$reg->eventInstanceId = $this->eventInstance->id;
 		$reg->find(true);
 
-		$total = UserAspenEventInstanceRegistrationAttendee::getTotalAttendeeCount((int)$reg->id);
+		$total = array_sum(UserAspenEventInstanceRegistrationAttendee::getCountsForRegistration((int)$reg->id));
 		$this->assertEquals(5, $total);
 	}
 

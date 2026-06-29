@@ -237,12 +237,12 @@ class EventStaffRegistrationTests extends TestCase {
 		$this->insertRegistration((int)$u2->id, 'waiting');
 		$this->insertRegistration((int)$u3->id, 'invited');
 
-		$regs = EventRegistrationService::getRegistrationsForEvent((int)$this->eventInstance->id);
+		$regs = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$this->eventInstance->id);
 		$this->assertCount(3, $regs);
 	}
 
 	public function testGetRegistrationsReturnsEmptyForNoRegistrations(): void {
-		$regs = EventRegistrationService::getRegistrationsForEvent((int)$this->eventInstance->id);
+		$regs = UserAspenEventInstanceRegistration::getRegistrationsForEvent((int)$this->eventInstance->id);
 		$this->assertEmpty($regs);
 	}
 
@@ -357,7 +357,7 @@ class EventStaffRegistrationTests extends TestCase {
 		$setting = $this->ensureAspenEventSetting();
 		$user = $this->insertUser(40700);
 
-		$this->eventInstance->saveToUserEvents((int)$user->id);
+		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
 
 		$entry = new UserEventsEntry();
 		$entry->sourceId = 'aspenEvent_' . $setting->id . '_' . $this->eventInstance->id;
@@ -371,8 +371,8 @@ class EventStaffRegistrationTests extends TestCase {
 		$this->ensureAspenEventSetting();
 		$user = $this->insertUser(40710);
 
-		$this->eventInstance->saveToUserEvents((int)$user->id);
-		$this->eventInstance->saveToUserEvents((int)$user->id);
+		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
+		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
 
 		$entry = new UserEventsEntry();
 		$entry->userId = $user->id;
@@ -382,7 +382,7 @@ class EventStaffRegistrationTests extends TestCase {
 	public function testSaveToUserEventsNoOpWithoutSetting(): void {
 		// No AspenEventSetting row — should silently return
 		$user = $this->insertUser(40720);
-		$this->eventInstance->saveToUserEvents((int)$user->id);
+		EventRegistrationService::saveToUserEvents($this->eventInstance, (int)$user->id);
 
 		$entry = new UserEventsEntry();
 		$entry->userId = $user->id;
