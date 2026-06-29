@@ -67,4 +67,31 @@ class DateUtilsTests extends TestCase {
 		$timestamp = strtotime('2025-03-15 00:00:00');
 		$this->assertSame('2025-03-15', \DateUtils::formatDateLocale($timestamp, 'medium', 'none', 'yyyy-MM-dd'));
 	}
+
+	public static function skeletonProvider(): array {
+		return [
+			'month and year (en_US)' => ['en_US', '2025-03-15', 'yMMM', 'Mar 2025'],
+			'month and year (en_GB)' => ['en_GB', '2025-03-15', 'yMMM', 'Mar 2025'],
+			'month and year - short (en_GB)' => ['en_GB', '2025-03-15', 'yMM', '03/2025'],
+			'month and year - short (en_US)' => ['en_US', '2025-03-15', 'yMM', '03/2025'],
+		];
+	}
+
+	#[DataProvider('skeletonProvider')]
+	public function testFormatDateLocaleDerivesPatternFromSkeleton($locale, $input, $skeleton, $expected): void {
+		global $activeLanguage;
+		$activeLanguage->locale = $locale;
+		$this->assertSame($expected, \DateUtils::formatDateLocale($input, 'medium', 'none', null, $skeleton));
+	}
+
+	public function testFormatDateLocaleSkeletonRespectsLocaleOrdering(): void {
+		global $activeLanguage;
+		$activeLanguage->locale = 'ja_JP';
+		$result = \DateUtils::formatDateLocale('2025-03-15', 'medium', 'none', null, 'yMMM');
+		$this->assertStringStartsWith('2025', $result);
+	}
+
+	public function testFormatDateLocaleSkeletonOverridesPattern(): void {
+		$this->assertSame('Mar 2025', \DateUtils::formatDateLocale('2025-03-15', 'medium', 'none', 'yyyy-MM-dd', 'yMMM'));
+	}
 }
