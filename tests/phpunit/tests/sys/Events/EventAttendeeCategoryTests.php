@@ -34,7 +34,8 @@ class EventAttendeeCategoryTests extends TestCase {
 		$this->eventType = new EventType();
 		$this->eventType->title = 'PHPUnit Attendee Category Type';
 		if (!$this->eventType->find(true)) {
-			$this->eventType->eventFieldSetId = 1;
+			$this->eventType->eventInformationFieldSetId = 1;
+			$this->eventType->eventRegistrationFieldSetId = 1;
 			$this->eventType->insert();
 		}
 
@@ -192,7 +193,8 @@ class EventAttendeeCategoryTests extends TestCase {
 		// Create an event type with no categories
 		$bareType = new EventType();
 		$bareType->title = 'PHPUnit Bare Type';
-		$bareType->eventFieldSetId = 1;
+		$bareType->eventInformationFieldSetId = 1;
+		$bareType->eventRegistrationFieldSetId = 1;
 		$bareType->insert();
 
 		$bareEvent = new Event();
@@ -566,7 +568,8 @@ class EventAttendeeCategoryTests extends TestCase {
 		// Create event type without categories
 		$bareType = new EventType();
 		$bareType->title = 'PHPUnit No Categories Type';
-		$bareType->eventFieldSetId = 1;
+		$bareType->eventInformationFieldSetId = 1;
+		$bareType->eventRegistrationFieldSetId = 1;
 		$bareType->insert();
 
 		$bareEvent = new Event();

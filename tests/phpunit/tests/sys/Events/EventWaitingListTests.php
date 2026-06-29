@@ -32,7 +32,8 @@ class EventWaitingListTests extends TestCase {
 		$eventType = new EventType();
 		$eventType->title = 'PHPUnit Test Type';
 		if (!$eventType->find(true)) {
-			$eventType->eventFieldSetId = 1;
+			$eventType->eventInformationFieldSetId = 1;
+			$eventType->eventRegistrationFieldSetId = 1;
 			$eventType->insert();
 		}
 
