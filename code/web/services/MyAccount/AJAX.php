@@ -3,6 +3,7 @@
 use JetBrains\PhpStorm\NoReturn;
 
 require_once ROOT_DIR . '/JSON_Action.php';
+require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 
 class MyAccount_AJAX extends JSON_Action {
 	/** @noinspection PhpMissingClassConstantTypeInspection */
@@ -5537,7 +5538,6 @@ class MyAccount_AJAX extends JSON_Action {
 		$finesPaid = '';
 		$purchaseUnits = [];
 		$purchaseUnits['items'] = [];
-		require_once ROOT_DIR . '/sys/Utils/StringUtils.php';
 		$totalFines = 0;
 
 		$currencyCode = 'USD';
@@ -7888,7 +7888,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['am_kohaAdditionalField']));
 					$paymentRequestUrl .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$paymentRequestUrl .= !empty($urlParameterSettings['am_value']) ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
+					$paymentRequestUrl .= !empty($urlParameterSettings['am_value']) ? $urlParameterSettings['am_value'] : str_replace(StringUtils::getCurrencySymbol(), '', $fineDetails['amount']);
 				}
 			}
 			if ($urlParameterSettings["cmt_includeInUrl"]) {
@@ -7962,7 +7962,7 @@ class MyAccount_AJAX extends JSON_Action {
 					$snakeCaseFieldName = str_replace(" ", "_", strtolower($urlParameterSettings['am_kohaAdditionalField']));
 					$hashParams .= urlencode(isset($fineDetails[$snakeCaseFieldName]) && $fineDetails[$snakeCaseFieldName] ? $fineDetails[$snakeCaseFieldName] : "none specified");
 				} else {
-					$hashParams .= isset($urlParameterSettings['am_value']) && $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(SystemVariables::getSystemVariables()->getCurrencySymbol(), '', $fineDetails['amount']);
+					$hashParams .= isset($urlParameterSettings['am_value']) && $urlParameterSettings['am_value'] ? $urlParameterSettings['am_value'] : str_replace(StringUtils::getCurrencySymbol(), '', $fineDetails['amount']);
 				}
 			}
 			if ($urlParameterSettings["cmt_includeInHash"]) {
