@@ -1681,6 +1681,7 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		$titles = $this->fetchReadingHistoryCheckouts($patron, true, $illItemTypes, $query);
+		$titles = $this->enrichReadingHistoryTitles($titles);
 
 		return [
 			'success' => true,
