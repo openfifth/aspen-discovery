@@ -447,7 +447,7 @@ class Donation extends DataObject {
 			$error = $mail->send($this->email, translate([
 				'text' => 'Your Donation Receipt',
 				'isPublicFacing' => true,
-			]), $body, $replyToAddress);
+			]), null, $replyToAddress, $body);
 			if (($error instanceof AspenError)) {
 				global $interface;
 				$interface->assign('error', $error->getMessage());

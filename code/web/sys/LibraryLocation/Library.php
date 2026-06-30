@@ -203,8 +203,10 @@ class Library extends DataObject {
 	public $showHoldCancelDate;
 	public $showHoldPosition;
 	public $showLogMeOutAfterPlacingHolds;
+	public $showHoldFeeMessage;
 	public $displayItemBarcode;
 	public $displayHoldsOnCheckout;
+	public $showCheckoutRenewalFeeMessage;
 	public /** @noinspection PhpUnused */
 		$displayCallNumberInCheckoutHistory;
 	public /** @noinspection PhpUnused */
@@ -2528,6 +2530,24 @@ class Library extends DataObject {
 								'hideInLists' => true,
 								'default' => '0',
 								'permissions' => ['Library ILS Connection'],
+							],
+							'showCheckoutRenewalFeeMessage' => [
+								'property' => 'showCheckoutRenewalFeeMessage',
+								'type' => 'checkbox',
+								'label' => 'Show Checkout Renewal Fee Message',
+								'description' => 'Whether or not to display a fee message to patrons before renewing checkouts. Requires ILS support.',
+								'note' => 'Applies to Koha Only.',
+								'hideInLists' => true,
+								'default' => 1,
+							],
+							'showHoldFeeMessage' => [
+								'property' => 'showHoldFeeMessage',
+								'type' => 'checkbox',
+								'label' => 'Show Hold Fee Message',
+								'description' => 'Whether or not to display a fee message to patrons when placing holds. Requires ILS support.',
+								'note' => 'Applies to Koha Only. Requires the hold_fee circulation rule',
+								'hideInLists' => true,
+								'default' => 1,
 							],
 						],
 					],
