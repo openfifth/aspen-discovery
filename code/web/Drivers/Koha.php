@@ -7573,6 +7573,145 @@ class Koha extends AbstractIlsDriver {
 		}
 	}
 
+	/*
+	*  When Koha returns a verdict (404 -> no endpoint, 200 -> user allowed
+	*  to renew, 403 -> bad credentials), cache for a day as the verdict
+	*  will not change for that period. Prevents sending redundant queries.
+	*/
+	public function isRenewalInformationCacheable(array $renewalInfo): bool {
+		return in_array($renewalInfo['code'] ?? null, [200, 403, 404], true);
+	}
+
+	public function getSelfRenewalSettings(array $renewalInfo): array {
+		if (($renewalInfo['success'] ?? false) !== true) {
+			return [];
+		}
+		return $renewalInfo['data']['self_renewal_settings'] ?? [];
+	}
+
+	public function isPatronEligibleToRenew(array $selfRenewalSettings): bool {
+		return (int)($selfRenewalSettings['opac_patron_details'] ?? 0) === 1;
+	}
+
+	public function canPatronSelfRenew(array $renewalInfo): bool {
+		$selfRenewalSettings = $this->getSelfRenewalSettings($renewalInfo);
+		return !empty($selfRenewalSettings) && $this->isPatronEligibleToRenew($selfRenewalSettings);
+	}
+
+	public function getAccountRenewalInformationForPatron(string $userId): array {
+		$endpoint = '/api/v1/public/patrons/' . $userId . '/self_renewal';
+		$extraHeaders = [
+			'Accept-Encoding: gzip, deflate',
+			'Content-Type: application/json'
+		];
+
+		$response = $this->kohaApiUserAgent->get($endpoint, 'koha.getAccountRenewalInformationForPatron', [], $extraHeaders);
+
+		$code = $response['code'] ?? 'unknown';
+		$result = ['success' => false, 'code' => $code];
+
+		if ($code === 200) {
+			$result['success'] = true;
+			$result['data'] = $response['content'];
+			return $result;
+		}
+
+		global $logger;
+		$logger->log("Failed to fetch account renewal information. Response code: " . $code, Logger::LOG_ERROR);
+
+		if (!empty($response['content']['error'])) {
+			$result['message'] = translate([
+				'text' => $response['content']['error'],
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$result['message'] = translate([
+			'text' => 'Unspecified error fetching account renewal information from Koha.',
+			'isPublicFacing' => true,
+		]);
+		return $result;
+	}
+
+	private function formatPatronAttribute(string $key, $value): array {
+		if (str_contains($key, 'borrower_attribute_')) {
+			return [
+				'type'  => 'extended',
+				'code'  => str_replace('borrower_attribute_', '', $key),
+				'value' => $value
+			];
+		}
+
+		if (str_contains($key, 'borrower_')) {
+			return [
+				'type'  => 'standard',
+				'key'   => str_replace('borrower_', '', $key),
+				'value' => $value,
+			];
+		}
+
+		return ['type' => 'ignored'];
+	}
+
+	public function sendAccountRenewalRequest($userId, $requestedChanges, $selfRenewalSettings): array {		
+		$body = [
+			'self_renewal_settings' => $selfRenewalSettings,
+			'patron' => [],
+		];
+
+		foreach ($requestedChanges as $key => $value) {
+			$result = $this->formatPatronAttribute($key, $value);
+
+			if ($result['type'] === 'standard') {
+				$body['patron'][$result['key']] = $result['value'];
+			} elseif ($result['type'] === 'extended') {
+				$body['patron']['extended_attributes'][] = [
+					'code'	  => $result['code'],
+					'attribute' => $result['value']
+				];
+			}
+		}
+
+		return $this->postAccountRenewalRequestForPatron($userId, $body);
+	}
+
+	private function postAccountRenewalRequestForPatron(string $userId, array $params): array {
+		$result = ['success' => false];
+
+		$endpoint = '/api/v1/public/patrons/' . $userId . '/self_renewal';
+		$extraHeaders = [
+			'Accept-Encoding: gzip, deflate',
+			'Content-Type: application/json'
+		];
+
+		$response = $this->kohaApiUserAgent->post($endpoint, $params, 'koha.postAccountRenewalRequestForPatron', [], $extraHeaders);
+
+		if ($response && $response['code'] == 201) {
+			return [
+				'success' => true,
+				'data' => $response['content'],
+			];
+		}
+
+		global $logger;
+		$logger->log("Failed to post account renewal request information. Response code: " . ($response['code'] ?? 'unknown'), Logger::LOG_ERROR);
+
+		if (!empty($response['content']['error'])) {
+			$result['message'] = translate([
+				'text' => $response['content']['error'],
+				'isPublicFacing' => true,
+			]);
+			return $result;
+		}
+
+		$result['message'] = translate([
+			'text' => 'Unspecified error posting account renewal request to Koha.',
+			'isPublicFacing' => true,
+		]);
+		return $result;
+	}
+
 	function setExtendedAttributes() {
 		$this->initDatabaseConnection();
 		/** @noinspection SqlResolve */
@@ -9501,6 +9640,10 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	public function hasAdditionalFineFields(): bool {
+		return true;
+	}
+
+	public function hasCardRenewalSupport(): bool {
 		return true;
 	}
 

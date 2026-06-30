@@ -5264,6 +5264,17 @@ class User extends DataObject {
 		$summary->update();
 	}
 
+	public function invalidateCachedAccountSummary(string $source) : void {
+		require_once ROOT_DIR . '/sys/User/AccountSummary.php';
+		$summary = new AccountSummary();
+		$summary->userId = $this->id;
+		$summary->source = $source;
+		if ($summary->find(true)) {
+			$summary->lastLoaded = 0;
+			$summary->update();
+		}
+	}
+
 	public function clearActiveSessions() : void {
 		//Delete any sessions for the patron to ensure they are logged out
 		$session = new Session();
@@ -6354,28 +6365,37 @@ class User extends DataObject {
 	}
 
 	public function showRenewalLink(AccountSummary $ilsAccountSummary): bool {
-		$showRenewalLink = false;
-		if ($ilsAccountSummary->isExpirationClose()) {
-			$pType = $this->getPTypeObj();
-			if ($pType->canRenewOnline) {
-				$userLibrary = $this->getHomeLibrary();
-				if ($userLibrary->enableCardRenewal == 2) {
-					if (!empty($userLibrary->cardRenewalUrl)) {
-						$showRenewalLink = true;
-					}
-				} elseif ($userLibrary->enableCardRenewal == 3) {
-					require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
-					$quipuECardSettings = new QuipuECardSetting();
-					if ($quipuECardSettings->find(true) && $quipuECardSettings->hasERenew) {
-						$showRenewalLink = true;
-					}
-				}
-				if (!$ilsAccountSummary->isExpired() && !$userLibrary->showCardRenewalWhenExpirationIsClose) {
-					$showRenewalLink = false;
-				}
-			}
+		$userLibrary = $this->getHomeLibrary();
+
+		if (!$this->getPTypeObj()->canRenewOnline) {
+			return false;
 		}
-		return $showRenewalLink;
+
+		if (!$ilsAccountSummary->isExpired() && !$userLibrary->showCardRenewalWhenExpirationIsClose) {
+			return false;
+		}
+
+		if ($userLibrary->enableCardRenewal == 1 && $this->getCatalogDriver()->hasCardRenewalSupport()) {
+			require_once ROOT_DIR . '/sys/Account/AccountRenewalService.php';
+			$accountRenewalService = new AccountRenewalService(); 
+			return $accountRenewalService->canRenew($this);
+		}
+
+		if (!$ilsAccountSummary->isExpirationClose()) {
+			return false;
+		}
+
+		if ($userLibrary->enableCardRenewal == 2) {
+			return !empty($userLibrary->cardRenewalUrl);
+		}
+
+		if ($userLibrary->enableCardRenewal == 3) {
+			require_once ROOT_DIR . '/sys/Enrichment/QuipuECardSetting.php';
+			$quipuECardSettings = new QuipuECardSetting();
+			return $quipuECardSettings->find(true) && $quipuECardSettings->hasERenew;
+		}
+
+		return false;
 	}
 
 	public function isNotificationHistoryEnabled() : bool {
