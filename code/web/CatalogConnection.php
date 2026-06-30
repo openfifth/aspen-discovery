@@ -1381,10 +1381,10 @@ class CatalogConnection {
 	}
 
 	public function updateReadingHistoryFromHistoricalCheckouts(User $patron, bool $isNightlyUpdate, ?int $sinceTimestamp): array {
-		if ($this->bypassReadingHistoryUpdate($patron, $isNightlyUpdate)) {
-			return ['skipped' => true];
-		}
-		if (!$this->driver->hasHistoricalCheckouts()) {
+		if (
+			$this->bypassReadingHistoryUpdate($patron, $isNightlyUpdate) || 
+			!$this->driver->hasHistoricalCheckouts() ||
+			empty($sinceTimestamp)) { // An empty timestamp means no prior update to sync from; full backfill is loadInitialReadingHistory.php's remit, not the nightly path's.
 			return ['skipped' => true];
 		}
 
