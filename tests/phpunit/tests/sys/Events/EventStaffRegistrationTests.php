@@ -18,7 +18,7 @@ class EventStaffRegistrationTests extends TestCase {
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/EventInstance.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/EventType.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/UserAspenEventInstanceRegistration.php';
-		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/EventRegistrationService.php';
+		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/services/EventRegistrationService.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/AspenEventSetting.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Events/UserEventsEntry.php';
 		require_once STAFF_REG_PATH_TO_ROOT . 'code/web/sys/Account/User.php';
