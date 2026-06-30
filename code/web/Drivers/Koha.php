@@ -1654,7 +1654,41 @@ class Koha extends AbstractIlsDriver {
 			$readingHistoryTitles = array_merge($readingHistoryTitles, $this->fetchReadingHistoryCheckouts($patron, $checkedIn, $illItemTypes));
 		}
 
+		$readingHistoryTitles = $this->enrichReadingHistoryTitles($readingHistoryTitles);
 		$numTitles = count($readingHistoryTitles);
+
+		return [
+			'historyActive' => true,
+			'titles' => $readingHistoryTitles,
+			'numTitles' => $numTitles,
+		];
+	}
+
+	public function hasHistoricalCheckouts(): bool {
+		return true;
+	}
+
+	public function loadReadingHistoryHistoricalCheckoutsSinceLastUpdate(User $patron, ?int $sinceTimestamp = null): array {
+		$illItemTypes = $this->getIllItemTypes();
+
+		ini_set('memory_limit', '2G');
+		set_time_limit(0);
+
+		$query = '';
+		if (!empty($sinceTimestamp)) {
+			$since = date('c', $sinceTimestamp);
+			$query = '&q=' . rawurlencode(json_encode(['checkin_date' => ['>=' => $since], 'patron_id' => $patron->unique_ils_id]));
+		}
+
+		$titles = $this->fetchReadingHistoryCheckouts($patron, true, $illItemTypes, $query);
+
+		return [
+			'success' => true,
+			'titles' => $titles,
+		];
+	}
+
+	private function enrichReadingHistoryTitles(array $readingHistoryTitles): array {
 		$systemVariables = SystemVariables::getSystemVariables();
 		global $aspen_db;
 		require_once ROOT_DIR . '/RecordDrivers/GroupedWorkDriver.php';
@@ -1667,7 +1701,7 @@ class Koha extends AbstractIlsDriver {
 				if ($systemVariables->storeRecordDetailsInDatabase) {
 					/** @noinspection SqlResolve */
 					$getRecordDetailsQuery =
-						'SELECT permanent_id, indexed_format.format FROM grouped_work_records 
+						'SELECT permanent_id, indexed_format.format FROM grouped_work_records
 						LEFT JOIN grouped_work ON groupedWorkId = grouped_work.id
 						LEFT JOIN indexed_record_source ON sourceId = indexed_record_source.id
 						LEFT JOIN indexed_format on formatId = indexed_format.id
@@ -1700,35 +1734,7 @@ class Koha extends AbstractIlsDriver {
 			$readingHistoryTitles[$key] = $historyEntry;
 		}
 
-		return [
-			'historyActive' => true,
-			'titles' => $readingHistoryTitles,
-			'numTitles' => $numTitles,
-		];
-	}
-
-	public function hasHistoricalCheckouts(): bool {
-		return true;
-	}
-
-	public function loadReadingHistoryHistoricalCheckoutsSinceLastUpdate(User $patron, ?int $sinceTimestamp = null): array {
-		$illItemTypes = $this->getIllItemTypes();
-
-		ini_set('memory_limit', '2G');
-		set_time_limit(0);
-
-		$query = '';
-		if (!empty($sinceTimestamp)) {
-			$since = date('c', $sinceTimestamp);
-			$query = '&q=' . rawurlencode(json_encode(['checkin_date' => ['>=' => $since], 'patron_id' => $patron->unique_ils_id]));
-		}
-
-		$titles = $this->fetchReadingHistoryCheckouts($patron, true, $illItemTypes, $query);
-
-		return [
-			'success' => true,
-			'titles' => $titles,
-		];
+		return $readingHistoryTitles;
 	}
 
 	private function getIllItemTypes(): array {
