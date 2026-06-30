@@ -1719,8 +1719,8 @@ class Koha extends AbstractIlsDriver {
 
 		$query = '';
 		if (!empty($sinceTimestamp)) {
-			$since = date('Y-m-d H:i:s', $sinceTimestamp);
-			$query = '&q=' . rawurlencode(json_encode(['checkin_date' => ['>=' => $since]]));
+			$since = date('c', $sinceTimestamp);
+			$query = '&q=' . rawurlencode(json_encode(['checkin_date' => ['>=' => $since], 'patron_id' => $patron->unique_ils_id]));
 		}
 
 		$titles = $this->fetchReadingHistoryCheckouts($patron, true, $illItemTypes, $query);
@@ -1759,7 +1759,13 @@ class Koha extends AbstractIlsDriver {
 
 		while (true) {
 			$checkedInParam = $checkedIn ? 'true' : 'false';
-			$endpoint = "/api/v1/checkouts?patron_id=" . $patron->unique_ils_id . "&checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage . "&_match=exact" . $extraQuery;
+			$endpoint = "/api/v1/checkouts?checked_in=" . $checkedInParam . "&_page=" . $page . "&_per_page=" . $perPage .  "&_match=exact";
+			
+			// if any query filters are passed, then there cannot be any standard parameters that also function as filters
+			// to be able to add 'checkin_date' => ['>=' => $since], we must migrate patron_id from a standard
+			// query parameter to a query filter. Otherwise, Koha will return a 500.
+			$endpoint .= $extraQuery ?: "&patron_id=" . $patron->unique_ils_id;
+
 			$response = $this->kohaApiUserAgent->get($endpoint, 'koha.getReadingHistory.' . $checkoutType . '.page' . $page, [], $extraHeaders);
 			if (!$response || $response['code'] != 200 || empty($response['content'])) {
 				break;
