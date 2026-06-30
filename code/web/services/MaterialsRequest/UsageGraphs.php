@@ -55,12 +55,13 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 		return $thisStatus->fetch()->description;
 	}
 
-	protected function getAndSetInterfaceDataSeries($stat, $instanceName): void {
+	protected function getAndSetInterfaceDataSeries($stat, $instanceName, $timeframes = ['year', 'month'], $custom = false): void {
 		global $interface;
 
-		$status = $_REQUEST['stat'];
-		$interface->assign('curStatus', $status);
+		$statusId = $_REQUEST['stat'];
+		$interface->assign('curStatus', $statusId);
 		$dataSeries = [];
+		$groupByTimeframe = implode(',', $timeframes);
 
 		$userHomeLibrary = Library::getPatronHomeLibrary();
 		if (is_null($userHomeLibrary)) {
@@ -69,25 +70,37 @@ class MaterialsRequest_UsageGraphs extends Admin_AbstractUsageGraphs {
 			$userHomeLibrary = $library;
 		}
 		$libraryId = $userHomeLibrary->libraryId;
-		$statusDescription = $this->getMaterialsRequestStatusDescription($status, $libraryId);
+		$statusDescription = $this->getMaterialsRequestStatusDescription($statusId, $libraryId);
 
 		$title = 'Materials Request Usage Graph - ' . $statusDescription;
 		$materialsRequestUsage = new MaterialsRequestUsage();
-		$materialsRequestUsage->groupBy('year, month');
 		$materialsRequestUsage->selectAdd();
-		$materialsRequestUsage->statusId = $status;
-		$materialsRequestUsage->selectAdd('year');
-		$materialsRequestUsage->selectAdd('month');
 		$materialsRequestUsage->selectAdd('SUM(numUsed) as numUsed');
-		$materialsRequestUsage->orderBy('year, month');
+		if (!empty($instanceName)) {
+			$materialsRequestUsage->instance = $instanceName;
+		}
+	
+		if (is_array($custom)) {
+			$materialsRequestUsage->buildCustomPeriodQuery($custom);
+		} else {
+			$materialsRequestUsage->groupBy($groupByTimeframe);
+			foreach ($timeframes as $timeframe) {
+				$materialsRequestUsage->selectAdd($timeframe);
+			}
+			$materialsRequestUsage->orderBy($groupByTimeframe);
+		}
+
+		$materialsRequestUsage->statusId = $statusId;
+		$materialsRequestUsage->libraryId = $libraryId;
 
 		$dataSeries[$statusDescription] = GraphingUtils::getDataSeriesArray(count($dataSeries));
 
 		//Collect results
 		$materialsRequestUsage->find();
 
+		$columnLabels = [];
 		while ($materialsRequestUsage->fetch()) {
-			$curPeriod = "{$materialsRequestUsage->month}-{$materialsRequestUsage->year}";
+			$curPeriod = $custom ? $materialsRequestUsage->getCustomPeriod() : $materialsRequestUsage->getCurPeriod($timeframes);
 			$columnLabels[] = $curPeriod;
 			$dataSeries[$statusDescription]['data'][$curPeriod] = $materialsRequestUsage->numUsed;
 		}

@@ -532,8 +532,6 @@ class Koha extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/Indexing/IlsRecord.php';
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
-		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
-		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			$curCheckout = new Checkout();
 			$curCheckout->type = 'ils';
@@ -600,22 +598,7 @@ class Koha extends AbstractIlsDriver {
 
 			$patronType = $patron->patronType;
 			$itemType = $curRow['itype'];
-			if ($circControl == 'PatronLibrary') {
-				$circBranch = $patron->getHomeLocationCode();
-			} else if ($circControl == 'PickupLibrary') {
-				$circBranch = $curRow['branchcode'];
-				if ($activeLibrary) {
-					$locations = $activeLibrary->getLocations();
-					if (!empty($locations)) {
-						$firstLocation = reset($locations);
-						if ($firstLocation != null && !empty($firstLocation->code)) {
-							$circBranch = $firstLocation->code;
-						}
-					}
-				}
-			} else {
-				$circBranch = $curRow['branchcode'];
-			}
+			$circBranch = $this->getCircControlBranch($patron, $curRow['branchcode']);
 
 			$curCheckout->returnClaim = '';
 
@@ -2033,6 +2016,96 @@ class Koha extends AbstractIlsDriver {
 		return $hold_result;
 	}
 
+	public function hasHoldFeeMessage(): bool {
+		global $library;
+		return !empty($library->showHoldFeeMessage);
+	}
+
+	public function getPreHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
+		return $this->getHoldFeeMessage($marcRecordDriver, false);
+	}
+
+	public function getPostHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
+		return $this->getHoldFeeMessage($marcRecordDriver, true);
+	}
+
+	private function getHoldFeeMessage(MarcRecordDriver $marcRecordDriver, bool $placed): string|null {
+		if (!UserAccount::isLoggedIn()) {
+			return "You must be logged in to place holds.";
+		}
+		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
+		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000") {
+			return null;
+		}
+		$fee = $this->formatFee($rawFee);
+		if ($this->getKohaSystemPreference('HoldFeeMode') == 'any_time_is_collected') {
+			return "You will be charged a hold fee of $fee when you collect this item.";
+		}
+		return $placed
+			? "You have been charged a hold fee of $fee for placing this hold."
+			: "You will be charged a hold fee of $fee for placing this hold.";
+	}
+
+	// Replicates the logic in Koha's _calculate_title_hold_fee() for bib-level holds
+	public function calculateHoldFeeForRecord(MarcRecordDriver $marcRecordDriver) {
+		/** @var Grouping_Item			- includes relevant location information */
+		$groupingItems 					= $marcRecordDriver->getRelatedRecord()->getItems();
+		/** @var User					- includes relevant user unique identifier and location information */
+		$patron 						= UserAccount::getActiveUserObj();
+		/** @var File_MARC_Record 		- links to relavent item type information */
+		$marcRecordFile 				= $marcRecordDriver->getMarcRecord();
+		/** @var File_MARC_Data_Field 	- contains the item type id*/
+		$itemTypeField 					= $marcRecordFile->getField('952');
+
+		if ($itemTypeField ==  false) {
+			global $logger;
+			$logger->log('No field 952 found on record with id: ' . $marcRecordDriver->getId(), Logger::LOG_ERROR);
+			return 'unknown';
+		}
+
+		$itemTypeSubfield = $itemTypeField->getSubfield('y');
+
+		if ($itemTypeSubfield ==  false) {
+			global $logger;
+			$logger->log('No subfield y found for field 952 on record with id: ' . $marcRecordDriver->getId(), Logger::LOG_ERROR);
+			return 'unknown';
+		}
+		
+		$itemTypeId = trim($itemTypeSubfield->getData());
+
+		$fees = [];
+
+		foreach ($groupingItems as $groupingItem) {
+			$fee = $this->getRawCirculationRule('hold_fee', [
+				'patronCategoryId' => $patron->patronType,
+				'itemTypeId' => $itemTypeId,
+				'locationId' => $groupingItem->locationCode
+			]);
+
+			array_push($fees, $fee);
+		}
+
+		$sortingStrategy = $this->getKohaSystemPreference('TitleHoldFeeStrategy');
+
+    	if ( $sortingStrategy == 'highest' ) {
+    	    return max($fees);
+    	}
+		if ( $sortingStrategy == 'lowest' ) {
+    	    return min($fees);
+    	}
+
+		// If more than one option share an equal number of occurrences, then pick the first one.
+		if ( $sortingStrategy == 'most_common' ) {
+			$feeCounts = array_count_values($fees);
+			// Ensure it is sorted by fee (desc)
+			krsort($feeCounts);
+			// Sort by count (desc)
+			arsort($feeCounts);
+			return array_key_first($feeCounts);
+		}	
+    	
+    	return max($fees);
+	}
 
 	/**
 	 * @param User $patron
@@ -2362,8 +2435,6 @@ class Koha extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/Indexing/IlsRecord.php';
 		IlsRecord::preloadIlsRecords($this->getIndexingProfile()->name, $allBibNumbers);
 
-		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
-		$activeLibrary = Library::getActiveLibrary();
 		foreach ($allRows as $curRow) {
 			//Each row in the table represents a hold
 			$curHold = new Hold();
@@ -2444,22 +2515,7 @@ class Koha extends AbstractIlsDriver {
 				if($this->getKohaVersion() >= 22.11) {
 					$patronType = $patron->patronType;
 					$itemType = $curRow['itype'];
-					if ($circControl == 'PatronLibrary') {
-						$circBranch = $patron->getHomeLocationCode();
-					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = $curRow['branchcode'];
-						if ($activeLibrary) {
-							$locations = $activeLibrary->getLocations();
-							if (!empty($locations)) {
-								$firstLocation = reset($locations);
-								if ($firstLocation != null && !empty($firstLocation->code)) {
-									$circBranch = $firstLocation->code;
-								}
-							}
-						}
-					} else {
-						$circBranch = $curRow['branchcode'];
-					}
+					$circBranch = $this->getCircControlBranch($patron, $curRow['branchcode']);
 					/** @noinspection SqlResolve */
 					$issuingRulesSql = "SELECT *  FROM circulation_rules where rule_name =  'waiting_hold_cancellation' AND (categorycode IN ('$patronType', '*') OR categorycode IS NULL) and (itemtype IN('$itemType', '*') OR itemtype is null) and (branchcode IN ('$circBranch', '*') OR branchcode IS NULL) order by branchcode desc, categorycode desc, itemtype desc limit 1";
 					$issuingRulesRS = mysqli_query($this->dbConnection, $issuingRulesSql);
@@ -2885,6 +2941,19 @@ class Koha extends AbstractIlsDriver {
 			return $hold_result;
 		}
 
+		$homeLibrary = $patron->getHomeLibrary();
+		if (empty($_REQUEST['confirmedRenewal']) && $itemId && $homeLibrary && $homeLibrary->showCheckoutRenewalFeeMessage) {
+			$feeMessage = $this->getPreRenewalFeeMessage($itemId);
+			if ($feeMessage) {
+				$result['success'] = false;
+				$result['message'] = $feeMessage;
+				$result['confirmRenewalFee'] = true;
+				$result['api']['title'] = translate(['text' => 'Confirm Renewal', 'isPublicFacing' => true]);
+				$result['api']['message'] = $feeMessage;
+				return $result;
+			}
+		}
+
 		/** @noinspection PhpBooleanCanBeSimplifiedInspection */
 		if (false && $this->getKohaVersion() >= 19.11) {
 			/** @noinspection PhpUnreachableStatementInspection */
@@ -3007,9 +3076,6 @@ class Koha extends AbstractIlsDriver {
 			$renewResponse = $this->getXMLWebServiceResponse($renewURL);
 			ExternalRequestLogEntry::logRequest('koha.renewCheckout', 'GET', $renewURL, $this->curlWrapper->getHeaders(), '', $this->curlWrapper->getResponseCode(), $renewResponse, []);
 
-			$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
-			$activeLibrary = Library::getActiveLibrary();
-
 			//Parse the result
 			if (isset($renewResponse->success) && ($renewResponse->success == 1)) {
 				$renewResults = mysqli_query($this->dbConnection, $renewSql);
@@ -3017,22 +3083,7 @@ class Koha extends AbstractIlsDriver {
 				while ($curRow = mysqli_fetch_assoc($renewResults)) {
 					$patronType = $patron->patronType;
 					$itemType = $curRow['itype'];
-					if ($circControl == 'PatronLibrary') {
-						$circBranch = $patron->getHomeLocationCode();
-					} else if ($circControl == 'PickupLibrary') {
-						$circBranch = $curRow['branchcode'];
-						if ($activeLibrary) {
-							$locations = $activeLibrary->getLocations();
-							if (!empty($locations)) {
-								$firstLocation = reset($locations);
-								if ($firstLocation != null && !empty($firstLocation->code)) {
-									$circBranch = $firstLocation->code;
-								}
-							}
-						}
-					} else {
-						$circBranch = $curRow['branchcode'];
-					}
+					$circBranch = $this->getCircControlBranch($patron, $curRow['branchcode']);
 					if ($this->getKohaVersion() >= 22.11) {
 						$renewCount = $curRow['renewals_count'];
 					} else {
@@ -3155,6 +3206,122 @@ class Koha extends AbstractIlsDriver {
 			}
 		}
 		return $result;
+	}
+
+	private function getCircControlBranch(User $patron, ?string $itemBranch): ?string {
+		$circControl = $this->getKohaSystemPreference('CircControl', 'PatronLibrary');
+		if ($circControl == 'PatronLibrary') {
+			return $patron->getHomeLocationCode();
+		}
+		if ($circControl == 'PickupLibrary') {
+			$activeLibrary = Library::getActiveLibrary();
+			if ($activeLibrary) {
+				$locations = $activeLibrary->getLocations();
+				if (!empty($locations)) {
+					$firstLocation = reset($locations);
+					if ($firstLocation != null && !empty($firstLocation->code)) {
+						return $firstLocation->code;
+					}
+				}
+			}
+		}
+		return $itemBranch;
+	}
+
+	public function getPreRenewalFeeMessage(string $itemId): string|null {
+		$item = $this->getItemForRenewal($itemId);
+		if (!$item) {
+			return null;
+		}
+
+		$branchField = $this->getKohaSystemPreference('HomeOrHoldingBranch', 'homebranch');
+		$itemBranch = $branchField === 'holdingbranch'
+			? ($item['holding_library_id'] ?? null)
+			: ($item['home_library_id'] ?? null);
+		$circBranch = $this->getCircControlBranch(UserAccount::getActiveUserObj(), $itemBranch);
+
+		$rawFee = $this->getRenewalFeeForItem($item['item_type_id'], $circBranch);
+		if (!$rawFee) {
+			return null;
+		}
+
+		return translate([
+			'text'           => 'You will be charged a renewal fee of %1%.',
+			'1'              => $this->formatFee($rawFee),
+			'isPublicFacing' => true,
+		]);
+	}
+
+	public function getRenewalFeeForItem(string $itemType, string $locationCode): float|null {
+		$rawRentalCharge = $this->getItemTypeRentalCharge($itemType);
+		if (!$rawRentalCharge || (float)$rawRentalCharge === 0.0) {
+			return null;
+		}
+
+		$patron = UserAccount::getActiveUserObj();
+		$discount = $this->getRawCirculationRule('rentaldiscount', [
+			'patronCategoryId' => $patron->patronType,
+			'itemTypeId'       => $itemType,
+			'locationId'       => $locationCode,
+		]);
+		
+		return $this->calculateRenewalFeeForItem((float)$rawRentalCharge, $discount);
+	}
+
+	public function calculateRenewalFeeForItem(float $rentalCharge, float $discount): float|null {
+		if ($discount && $discount > 0) {
+			$rentalCharge = $rentalCharge * (1 - $discount / 100);
+		}
+		if ($rentalCharge === 0.0) {
+			return null;
+		}
+		return $rentalCharge;
+	}
+
+	private function getItemTypeRentalCharge(string $itemType): string|null {
+		$response = $this->kohaApiUserAgent->get('/api/v1/item_types', 'koha.getItemTypeRentalCharge');
+
+		if ($response && $response['code'] == 200) {
+			foreach ($response['content'] as $type) {
+				if ($type['item_type_id'] === $itemType) {
+					return $type['rentalcharge'] ?? null;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	private function getItemForRenewal(string $itemId): array|null {
+		$response = $this->kohaApiUserAgent->get('/api/v1/items/' . (int)$itemId, 'koha.getItemForRenewal');
+		if ($response && $response['code'] == 200) {
+			return $response['content'];
+		}
+		return null;
+	}
+
+	private function formatFee(float $rawFee): string|null {
+		global $activeLanguage;
+		$currencyCode = 'USD';
+		$variables = new SystemVariables();
+		if ($variables->find(true)) {
+			$currencyCode = $variables->currencyCode;
+		}
+		$currencyFormatter = new NumberFormatter($activeLanguage->locale . '@currency=' . $currencyCode, NumberFormatter::CURRENCY);
+		return $currencyFormatter->formatCurrency($rawFee, $currencyCode);
+	}
+
+	private function getRawCirculationRule(string $ruleName, array $context): string|null {
+		['itemTypeId' => $itemTypeId, 'locationId' => $locationId, 'patronCategoryId' => $patronCategoryId] = $context;
+
+		$endpoint = "/api/v1/circulation_rules?effective=true&item_type_id=$itemTypeId&library_id=$locationId&patron_category_id=$patronCategoryId&rules=$ruleName";
+		$response = $this->kohaApiUserAgent->get($endpoint, "koha.getCirculationRule.$ruleName");
+
+		if ($response && $response['code'] == 200) {
+			return $response['content'][0][$ruleName] ?? null;
+		}
+
+		return null;
 	}
 
 	/**
