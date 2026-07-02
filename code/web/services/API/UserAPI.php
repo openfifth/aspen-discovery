@@ -7268,15 +7268,19 @@ class UserAPI extends AbstractAPI {
 			];
 		}
 		$originalGet = $_GET;
+		$originalRequest = $_REQUEST;
 
 		$_GET['campaignId'] = $campaignId;
 		$_GET['userId'] = $userId;
+		$_REQUEST['campaignId'] = $campaignId;
+		$_REQUEST['userId'] = $userId;
 
 		$ajaxHandler = new MyAccount_AJAX();
 
 		$response = $ajaxHandler->enrollCampaign();
 
 		$_GET = $originalGet;
+		$_REQUEST = $originalRequest;
 
 		return $response;
 	}
@@ -7322,15 +7326,19 @@ class UserAPI extends AbstractAPI {
 		}
 
 		$originalGet = $_GET;
+		$originalRequest = $_REQUEST;
 
 		$_GET['campaignId'] = $campaignId;
 		$_GET['userId'] = $userId;
+		$_REQUEST['campaignId'] = $campaignId;
+		$_REQUEST['userId'] = $userId;
 
 		$ajaxHandler = new MyAccount_AJAX();
 
 		$response = $ajaxHandler->unenrollCampaign();
 
 		$_GET = $originalGet;
+		$_REQUEST = $originalRequest;
 
 		return $response;
 	}
