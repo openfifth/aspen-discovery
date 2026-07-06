@@ -538,6 +538,9 @@ class UserAPI extends AbstractAPI {
 			$result = new stdClass();
 			$properties = get_object_vars($user);
 			foreach ($properties as $name => $value) {
+				if ($this->skipUserField($name)) {
+					continue;
+				}
 				if ($name[0] != '_') {
 					$result->$name = $value;
 				} elseif ($name[0] == '_' && strlen($name) > 1 && $name[1] != '_') {
@@ -724,6 +727,9 @@ class UserAPI extends AbstractAPI {
 			unset($user->query);
 			$userData = new stdClass();
 			foreach ($user as $key => $value) {
+				if ($this->skipUserField($key)) {
+					continue;
+				}
 				if ($key[0] == '_') {
 					if ($key[1] == '_') {
 						unset($user->$key);
@@ -1076,6 +1082,15 @@ class UserAPI extends AbstractAPI {
 				'message' => 'Login unsuccessful',
 			];
 		}
+	}
+
+	private function skipUserField(string $fieldName): bool {
+		return in_array($fieldName, [
+			'cat_password',
+			'ils_password',
+			'password',
+			'alternateLibraryCardPassword',
+		], true);
 	}
 
 	/**
