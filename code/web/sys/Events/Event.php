@@ -1013,6 +1013,148 @@ class Event extends DataObject {
 		return null;
 	}
 
+	public static function getRecurrenceTypes(): array {
+		return [
+			1 => 'none',
+			2 => 'daily',
+			3 => 'weekly',
+			4 => 'monthly',
+			5 => 'annually',
+			6 => 'weekdays',
+			7 => 'custom',
+		];
+	}
+
+	public static function getRecurrenceFrequencies(): array {
+		return [
+			1 => 'daily',
+			2 => 'weekly',
+			3 => 'monthly',
+			4 => 'annually',
+		];
+	}
+
+	public static function getDayNames(): array {
+		return [
+			0 => 'Sunday',
+			1 => 'Monday',
+			2 => 'Tuesday',
+			3 => 'Wednesday',
+			4 => 'Thursday',
+			5 => 'Friday',
+			6 => 'Saturday',
+		];
+	}
+
+	public static function getWeekNumbers(): array {
+		return [
+			1 => '1st',
+			2 => '2nd',
+			3 => '3rd',
+			4 => '4th',
+			5 => '5th',
+			-1 => 'Last',
+		];
+	}
+
+	/**
+	 * Describe how this event recurs as a structured array, or null if it does not repeat.
+	 */
+	public function getRecurrence(): ?array {
+		$recurrenceOption = (int)$this->recurrenceOption;
+
+		$doesNotRepeat = $recurrenceOption <= 1;
+		if ($doesNotRepeat) {
+			return null;
+		}
+
+		$recurrenceTypes = self::getRecurrenceTypes();
+		$recurrence = [
+			'type' => $recurrenceTypes[$recurrenceOption] ?? 'unknown',
+		];
+
+		$isCustomRecurrence = $recurrenceOption === 7;
+		if ($isCustomRecurrence) {
+			$recurrence += $this->getCustomRecurrenceDetails();
+		}
+
+		return $recurrence + $this->getRecurrenceEndDetails();
+	}
+
+	private function getCustomRecurrenceDetails(): array {
+		$frequencyLabels = self::getRecurrenceFrequencies();
+		$frequency = (int)$this->recurrenceFrequency;
+
+		$details = [
+			'frequency' => $frequencyLabels[$frequency] ?? 'unknown',
+			'interval' => (int)$this->recurrenceInterval,
+		];
+
+		$repeatsWeekly = $frequency === 2 && !empty($this->weekDays);
+		if ($repeatsWeekly) {
+			$dayNames = self::getDayNames();
+			$weekDays = is_array($this->weekDays) ? $this->weekDays : explode(',', $this->weekDays);
+			$details['weekDays'] = array_map(function ($d) use ($dayNames) {
+				return $dayNames[(int)$d] ?? $d;
+			}, array_values($weekDays));
+		}
+
+		$repeatsMonthly = $frequency === 3;
+		if ($repeatsMonthly) {
+			$details += $this->getMonthlyRecurrenceDetails();
+		}
+
+		return $details;
+	}
+
+	private function getMonthlyRecurrenceDetails(): array {
+		$monthlyOption = (int)$this->monthlyOption;
+
+		$repeatsByDate = $monthlyOption === 2;
+		if ($repeatsByDate) {
+			return [
+				'monthlyPattern' => 'byDate',
+				'monthDate' => (int)$this->monthDate,
+			];
+		}
+
+		$repeatsByWeekday = $monthlyOption === 1;
+		if (!$repeatsByWeekday) {
+			return [];
+		}
+
+		$weekNumbers = self::getWeekNumbers();
+		$dayNames = self::getDayNames();
+		$details = [
+			'monthlyPattern' => 'byWeekday',
+			'weekNumber' => $weekNumbers[(int)$this->weekNumber] ?? (string)$this->weekNumber,
+			'monthDay' => $dayNames[(int)$this->monthDay] ?? $this->monthDay,
+		];
+
+		$hasMonthOffset = (int)$this->monthOffset !== 0;
+		if ($hasMonthOffset) {
+			$details['monthOffset'] = (int)$this->monthOffset;
+		}
+
+		return $details;
+	}
+
+	private function getRecurrenceEndDetails(): array {
+		$endOption = (int)$this->endOption;
+
+		$endsOnDate = $endOption === 1 && !empty($this->recurrenceEnd);
+		if ($endsOnDate) {
+			return ['endsOn' => $this->recurrenceEnd];
+		}
+
+		$endsAfterCount = $endOption === 2 && !empty($this->recurrenceCount);
+		if ($endsAfterCount) {
+			return ['endsAfter' => (int)$this->recurrenceCount];
+		}
+
+		return [];
+	}
+
 	public function updateStructureForEditingObject($structure) : array {
 		$structure['infoSection']['expandByDefault'] = true;
 		if ($eventType = $this->getEventType()) {
