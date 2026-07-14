@@ -409,6 +409,28 @@ abstract class AbstractAPI extends Action{
 	}
 
 	/**
+	 * Parse pagination parameters from the request.
+	 *
+	 * @param int $defaultPageSize Default number of items per page
+	 * @param int $maxPageSize     Maximum allowed page size
+	 * @return array{page: int, pageSize: int, offset: int}
+	 */
+	protected function getPaginationParams(int $defaultPageSize = 100, int $maxPageSize = 100): array {
+		$pageWasRequested = isset($_REQUEST['page']);
+		$pageSizeWasRequested = isset($_REQUEST['pageSize']);
+
+		$page = $pageWasRequested ? max(1, (int)$_REQUEST['page']) : 1;
+		$pageSize = $pageSizeWasRequested ? min($maxPageSize, max(1, (int)$_REQUEST['pageSize'])) : min($defaultPageSize, $maxPageSize);
+		$offset = ($page - 1) * $pageSize;
+
+		return [
+			'page' => $page,
+			'pageSize' => $pageSize,
+			'offset' => $offset,
+		];
+	}
+
+	/**
 	 * Set language for API based on request parameters
 	 */
 	protected function setLanguage(): void {
