@@ -278,6 +278,15 @@ class EventInstance extends DataObject {
 		return $eventTimestamp > time();
 	}
 
+	public function getStartDateTime(): DateTime {
+		return new DateTime($this->date . ' ' . ($this->time ?: '00:00:00'));
+	}
+
+	public function getEndDateTime(): DateTime {
+		$length = $this->length > 0 ? $this->length : ($this->getParentEvent()->eventLength ?? 60);
+		return (clone $this->getStartDateTime())->modify("+{$length} minutes");
+	}
+
 	public static function addUpcomingWhereClause(DataObject $query): void {
 		$cutoffDate = $query->escape(date('Y-m-d'));
 		$cutoffTime = $query->escape(date('H:i:s'));
