@@ -1155,6 +1155,134 @@ class Event extends DataObject {
 		return [];
 	}
 
+	private static $_apiLocationCache = [];
+
+	private static function getCachedLocation($locationId): ?Location {
+		$locationNotCached = !array_key_exists($locationId, self::$_apiLocationCache);
+		if ($locationNotCached) {
+			$location = new Location();
+			$location->locationId = $locationId;
+			self::$_apiLocationCache[$locationId] = $location->find(true) ? $location : null;
+		}
+		return self::$_apiLocationCache[$locationId];
+	}
+
+	private static $_apiLibraryNameCache = [];
+
+	private static function getCachedLibraryName($libraryId): ?string {
+		$libraryNotCached = !array_key_exists($libraryId, self::$_apiLibraryNameCache);
+		if ($libraryNotCached) {
+			require_once ROOT_DIR . '/sys/LibraryLocation/Library.php';
+			$library = new Library();
+			$library->libraryId = $libraryId;
+			self::$_apiLibraryNameCache[$libraryId] = $library->find(true) ? $library->displayName : null;
+		}
+		return self::$_apiLibraryNameCache[$libraryId];
+	}
+
+	private static $_eventsIndexingSettingId = null;
+
+	private static function getEventsIndexingSettingId(): int {
+		$settingNotFetched = self::$_eventsIndexingSettingId === null;
+		if ($settingNotFetched) {
+			require_once ROOT_DIR . '/sys/Events/EventsIndexingSetting.php';
+			$indexingSetting = new EventsIndexingSetting();
+			self::$_eventsIndexingSettingId = $indexingSetting->find(true) ? (int)$indexingSetting->id : 0;
+		}
+		return self::$_eventsIndexingSettingId;
+	}
+
+	/**
+	 * Format this event for harvesting APIs, with its instances nested.
+	 *
+	 * @param array $dateFilters Optional startDate / endDate (YYYY-MM-DD) to limit instances
+	 */
+	public function toHarvestApiResponse(array $dateFilters = []): array {
+		$venueName = null;
+		$organizer = null;
+		$location = self::getCachedLocation($this->locationId);
+		$hasLocation = $location !== null;
+		if ($hasLocation) {
+			$venueName = $location->displayName;
+			$organizer = self::getCachedLibraryName($location->libraryId);
+		}
+
+		$tags = [];
+		$fieldValues = array_filter($this->getAllTypeFields());
+		$hasFieldValues = !empty($fieldValues);
+		if ($hasFieldValues) {
+			require_once ROOT_DIR . '/sys/Events/EventField.php';
+			$fieldDef = new EventField();
+			$fieldDef->whereAdd('id IN (' . implode(', ', array_map('intval', array_keys($fieldValues))) . ')');
+			$fieldDef->find();
+			while ($fieldDef->fetch()) {
+				$tags[] = ['name' => $fieldDef->name, 'value' => $fieldValues[$fieldDef->id]];
+			}
+		}
+
+		$recurrence = $this->getRecurrence();
+
+		$instanceQuery = new EventInstance();
+		$instanceQuery->eventId = $this->id;
+		$instanceQuery->deleted = 0;
+		$hasStartDateFilter = !empty($dateFilters['startDate']);
+		if ($hasStartDateFilter) {
+			$instanceQuery->whereAdd("date >= " . $instanceQuery->escape($dateFilters['startDate']));
+		}
+		$hasEndDateFilter = !empty($dateFilters['endDate']);
+		if ($hasEndDateFilter) {
+			$instanceQuery->whereAdd("date <= " . $instanceQuery->escape($dateFilters['endDate']));
+		}
+		$instanceQuery->orderBy('date ASC, time ASC');
+		$instanceQuery->find();
+
+		global $configArray;
+		$siteUrl = $configArray['Site']['url'];
+
+		$settingsId = self::getEventsIndexingSettingId();
+
+		require_once ROOT_DIR . '/services/EventRegistrationService.php';
+		$instances = [];
+		while ($instanceQuery->fetch()) {
+			$solrId = 'aspenEvent_' . $settingsId . '_' . $instanceQuery->id;
+			$availableSeats = $this->registrationRequired ? EventRegistrationService::getAvailableSeats($instanceQuery) : null;
+			$instances[] = [
+				'id' => (int)$instanceQuery->id,
+				'startDateTime' => $instanceQuery->getStartDateTime()->format('c'),
+				'endDateTime' => $instanceQuery->getEndDateTime()->format('c'),
+				'status' => (bool)$instanceQuery->status,
+				'bookingUrl' => $siteUrl . '/AspenEvents/' . $solrId . '/Event',
+				'ticketAvailability' => [
+					'isSoldOut' => $availableSeats === 0,
+					'hasAvailableTickets' => $availableSeats === null || $availableSeats > 0,
+				],
+			];
+		}
+
+		$eventImageURL = null;
+		$hasCoverImage = $this->cover && !empty($instances);
+		if ($hasCoverImage) {
+			$firstSolrId = 'aspenEvent_' . $settingsId . '_' . $instances[0]['id'];
+			$eventImageURL = $siteUrl . '/bookcover.php?id=' . $firstSolrId . '&size=medium&type=aspenEvent_event';
+		}
+
+		return [
+			'id' => (int)$this->id,
+			'title' => $this->title,
+			'description' => strip_tags($this->description),
+			'isFree' => true,
+			'venueName' => $venueName,
+			'organizer' => $organizer,
+			'eventImageURL' => $eventImageURL,
+			'tags' => $tags,
+			'isRecurring' => $recurrence !== null,
+			'recurrencePattern' => $recurrence['type'] ?? null,
+			'capacity' => $this->numberOfSeats ? (int)$this->numberOfSeats : null,
+			'private' => (bool)$this->private,
+			'instances' => $instances,
+		];
+	}
+
 	public function updateStructureForEditingObject($structure) : array {
 		$structure['infoSection']['expandByDefault'] = true;
 		if ($eventType = $this->getEventType()) {
