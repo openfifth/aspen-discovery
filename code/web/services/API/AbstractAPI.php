@@ -431,6 +431,69 @@ abstract class AbstractAPI extends Action{
 	}
 
 	/**
+	 * Apply pagination to a DataObject query and return a paginated result set.
+	 *
+	 * The DataObject should have any filter properties (e.g. deleted, private, locationId)
+	 * set BEFORE calling this method. The method will count matching rows, validate the
+	 * requested page, apply limit/offset + orderBy, then iterate with fetch() and pass
+	 * each row to the provided callback.
+	 *
+	 * @param DataObject $dataObject   Pre-filtered DataObject (filters set, not yet find()'d)
+	 * @param string     $orderBy      SQL ORDER BY clause (e.g. 'title ASC, id DESC'). Interpolated
+	 *                                 into the query unescaped — must be a literal, never user input
+	 * @param callable   $formatRow    Callback that receives a DataObject row and returns an
+	 *                                 array (the formatted item) or null to skip the row
+	 * @param int        $defaultPageSize Default items per page
+	 * @param int        $maxPageSize     Maximum allowed page size
+	 * @return array Standardised response with pagination metadata and items
+	 */
+	protected function paginateQuery(DataObject $dataObject, string $orderBy, callable $formatRow, int $defaultPageSize = 100, int $maxPageSize = 100): array {
+		$params = $this->getPaginationParams($defaultPageSize, $maxPageSize);
+		$page = $params['page'];
+		$pageSize = $params['pageSize'];
+		$offset = $params['offset'];
+
+		$totalResults = $dataObject->count();
+		$hasResults = $totalResults > 0;
+		$totalPages = $hasResults ? (int)ceil($totalResults / $pageSize) : 0;
+
+		$pageIsBeyondRange = $page > $totalPages;
+		if ($pageIsBeyondRange) {
+			return $this->buildPaginatedResponse($totalResults, $page, $pageSize, $totalPages, []);
+		}
+
+		$dataObject->limit($offset, $pageSize);
+		$dataObject->orderBy($orderBy);
+		$dataObject->find();
+
+		$items = [];
+		while ($dataObject->fetch()) {
+			$formatted = $formatRow($dataObject);
+			$rowWasSkipped = $formatted === null;
+			if ($rowWasSkipped) {
+				continue;
+			}
+			$items[] = $formatted;
+		}
+
+		return $this->buildPaginatedResponse($totalResults, $page, $pageSize, $totalPages, $items);
+	}
+
+	/**
+	 * Build the standard response envelope returned by paginateQuery.
+	 */
+	private function buildPaginatedResponse(int $totalResults, int $page, int $pageSize, int $totalPages, array $items): array {
+		return [
+			'success' => true,
+			'totalResults' => $totalResults,
+			'page' => $page,
+			'pageSize' => $pageSize,
+			'totalPages' => $totalPages,
+			'items' => $items,
+		];
+	}
+
+	/**
 	 * Set language for API based on request parameters
 	 */
 	protected function setLanguage(): void {
