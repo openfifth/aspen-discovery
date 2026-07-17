@@ -107,7 +107,11 @@ class SMTPSetting extends DataObject {
 		$mail = new PHPMailer();
 
 		$mail->isSMTP();
-		// $mail->SMTPDebug = SMTP::DEBUG_SERVER;
+		$mail->SMTPDebug = \PHPMailer\PHPMailer\SMTP::DEBUG_CONNECTION;
+		$mail->Debugoutput = function ($str, $level) {
+			global $logger;
+			$logger->log('SMTP DIAG (' . $level . '): ' . trim($str), Logger::LOG_ERROR);
+		};
 		$mail->Host = $this->host;
 		$mail->Port = $this->port;
 		$mail->SMTPAuth = true;

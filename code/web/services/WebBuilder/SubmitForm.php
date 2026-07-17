@@ -35,7 +35,10 @@ class WebBuilder_SubmitForm extends Action {
 			if (!UserAccount::isLoggedIn()) {
 				if (!$this->form->requireLogin) {
 					require_once ROOT_DIR . '/sys/Enrichment/RecaptchaSetting.php';
+					$diagStart = microtime(true);
 					$recaptchaValid = RecaptchaSetting::validateRecaptcha();
+					global $logger;
+					$logger->log('FORM DIAG: recaptcha validation took ' . round(microtime(true) - $diagStart, 2) . 's', Logger::LOG_ERROR);
 
 					if (!$recaptchaValid) {
 						$interface->assign('submissionError', 'The CAPTCHA response was incorrect, please try again.');
@@ -125,8 +128,10 @@ class WebBuilder_SubmitForm extends Action {
 					$interface->assign('introductoryText', $introText);
 
 					$emailBody = $interface->fetch('WebBuilder/customFormSubmissionEmail.tpl');
+					$diagStart = microtime(true);
 					$emailResult = $mail->send($emailResultsTo, $this->form->title . ' Submission', null, null, $emailBody);
 					global $logger;
+					$logger->log('FORM DIAG: email send to ' . $emailResultsTo . ' took ' . round(microtime(true) - $diagStart, 2) . 's, result: ' . var_export($emailResult, true), Logger::LOG_ERROR);
 					if ($emailResult === false) {
 						$logger->log('Could not email form submission due to an unknown error.', Logger::LOG_ERROR);
 					}
