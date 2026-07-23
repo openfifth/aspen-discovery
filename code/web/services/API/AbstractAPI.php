@@ -230,6 +230,44 @@ abstract class AbstractAPI extends Action{
 	}
 
 	/**
+	 * Transitional support for legacy user OAuth keys sent as HTTP Basic credentials
+	 * (clientId:clientSecret on every request, no token exchange). Off by default;
+	 * subclasses opt in by setting $allowLegacyOAuthKeys until external consumers
+	 * migrate to the OAuth2 token endpoint.
+	 */
+	protected bool $allowLegacyOAuthKeys = false;
+
+	private function authenticateWithLegacyOAuthKey(string $authHeader): bool {
+		require_once ROOT_DIR . '/sys/Account/UserOAuthKey.php';
+
+		$credentials = base64_decode(substr($authHeader, strlen('Basic ')), true);
+		$credentialsAreWellFormed = $credentials !== false && str_contains($credentials, ':');
+		if (!$credentialsAreWellFormed) {
+			$this->sendLegacyOAuthKeyError();
+			return false;
+		}
+
+		[$clientId, $clientSecret] = explode(':', $credentials, 2);
+		$user = UserOAuthKey::validateCredentials($clientId, $clientSecret);
+		if ($user === false) {
+			$this->sendLegacyOAuthKeyError();
+			return false;
+		}
+
+		$this->_userForAPICall = $user;
+		return true;
+	}
+
+	private function sendLegacyOAuthKeyError(): void {
+		http_response_code(401);
+		header('Content-type: application/json');
+		echo json_encode([
+			'error' => 'invalid_client',
+			'error_description' => 'Invalid client credentials',
+		]);
+	}
+
+	/**
 	 * Generic OAuth2 request handler with rate limiting and common response formatting
 	 *
 	 * @param string $method The API method being called
@@ -353,6 +391,16 @@ abstract class AbstractAPI extends Action{
 		$authHeader = $this->getHeader('Authorization');
 		if (!is_null($authHeader) && str_starts_with($authHeader, 'Bearer ')) {
 			if ($this->authenticateWithOAuth2($method)) {
+				$oauthAuthenticated = true;
+			} else {
+				return;
+			}
+		}
+
+		$hasBasicAuthHeader = !is_null($authHeader) && str_starts_with($authHeader, 'Basic ');
+		$shouldTryLegacyOAuthKey = !$oauthAuthenticated && $hasBasicAuthHeader && $this->allowLegacyOAuthKeys;
+		if ($shouldTryLegacyOAuthKey) {
+			if ($this->authenticateWithLegacyOAuthKey($authHeader)) {
 				$oauthAuthenticated = true;
 			} else {
 				return;
