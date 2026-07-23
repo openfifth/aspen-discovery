@@ -124,13 +124,13 @@ class ExpoNotification extends DataObject {
 				if ($systemVariables && !empty($systemVariables->greenhouseUrl)) {
 					if ($result = file_get_contents($systemVariables->greenhouseUrl . '/API/GreenhouseAPI?method=getNotificationAccessToken')) {
 						$data = json_decode($result, true);
-						self::$_notificationAccessToken = $data['token'];
+						self::$_notificationAccessToken = $data['result']['token'] ?? $data['token'] ?? null;
 					}
 				} else {
 					global $configArray;
 					if ($result = file_get_contents($configArray['Site']['url'] . '/API/GreenhouseAPI?method=getNotificationAccessToken')) {
 						$data = json_decode($result, true);
-						self::$_notificationAccessToken = $data['token'];
+						self::$_notificationAccessToken = $data['result']['token'] ?? $data['token'] ?? null;
 					}
 				}
 			}

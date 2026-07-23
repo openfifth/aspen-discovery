@@ -23,6 +23,22 @@ class GreenhouseAPI extends AbstractAPI {
 
 		$this->setLanguage();
 
+		if (in_array($method, [
+			'getLibraries',
+			'getLibrary',
+			'authenticateTokens',
+			'getNotificationAccessToken',
+			'updateAspenLiDABuild',
+		])) {
+			header('Content-type: application/json');
+			$payload = $this->$method();
+			$output = json_encode(['result' => $payload] + $payload);
+			require_once ROOT_DIR . '/sys/SystemLogging/APIUsage.php';
+			APIUsage::incrementStat('GreenhouseAPI', $method);
+			echo $output;
+			return;
+		}
+
 		$this->handleAPIRequestAuto($method, 'greenhouse_api');
 	}
 
@@ -573,11 +589,14 @@ class GreenhouseAPI extends AbstractAPI {
 		$fetchLibraryUrl = $aspenSite->baseUrl . '/API/GreenhouseAPI?method=getLibrary';
 		if ($data = @file_get_contents($fetchLibraryUrl)) {
 			$searchData = json_decode($data);
-			$libraryLocation = new AspenSiteCache();
-			$libraryLocation->siteId = $aspenSite->id;
-			$libraryLocation->delete(true);
+			if ($searchData != null && isset($searchData->result)) {
+				$searchData = $searchData->result;
+			}
+			if ($searchData != null && !empty($searchData->success)) {
+				$libraryLocation = new AspenSiteCache();
+				$libraryLocation->siteId = $aspenSite->id;
+				$libraryLocation->delete(true);
 
-			if ($searchData != null && $searchData->success) {
 				foreach ($searchData->library as $findLibrary) {
 					$libraryLocation = new AspenSiteCache();
 
