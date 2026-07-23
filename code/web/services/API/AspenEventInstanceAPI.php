@@ -2,6 +2,7 @@
 require_once ROOT_DIR . '/services/API/AbstractAPI.php';
 
 class AspenEventInstanceAPI extends AbstractAPI {
+	protected bool $allowLegacyOAuthKeys = true;
 
 	function launch(): void {
 		$method = (isset($_GET['method']) && !is_array($_GET['method'])) ? $_GET['method'] : '';
