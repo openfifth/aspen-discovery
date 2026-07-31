@@ -23,6 +23,11 @@ class Events_Events extends ObjectEditor {
 
 	function getAllObjects(int $page, int $recordsPerPage): array {
 		$object = new Event();
+
+		$todayDate = date('Y-m-d');
+		$todayTime = date('H:i:s');
+		$object->selectAdd("(SELECT COUNT(1) FROM event_instance WHERE eventId=event.id AND deleted = 0 AND date > '$todayDate' OR (date = '$todayDate' AND time > '$todayTime')) AS _instanceCount");
+
 		$object->deleted = 0;
 		$object->orderBy($this->getSort());
 		$user = UserAccount::getLoggedInUser();
@@ -64,6 +69,18 @@ class Events_Events extends ObjectEditor {
 			$list[$object->id] = clone $object;
 		}
 		return $list;
+	}
+
+	function getNumObjects(): int {
+		if ($this->_numObjects === null) {
+			$object = new Event();
+			$todayDate = date('Y-m-d');
+			$todayTime = date('H:i:s');
+			$object->selectAdd("(SELECT COUNT(1) FROM event_instance WHERE eventId=event.id AND deleted = 0 AND date > '$todayDate' OR (date = '$todayDate' AND time > '$todayTime')) AS _instanceCount");
+			$this->applyFilters($object);
+			$this->_numObjects = $object->count();
+		}
+		return $this->_numObjects;
 	}
 
 	function getDefaultSort(): string {
