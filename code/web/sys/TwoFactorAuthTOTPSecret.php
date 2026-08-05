@@ -175,6 +175,7 @@ class TwoFactorAuthTOTPSecret extends DataObject {
 			'period=30',
 		];
 
+		global $library;
 		if (!empty($library->logoApp)) {
 			$params[] = 'image=' . urlencode($configArray['Site']['local'] . '/files/original/' . $library->logoApp);
 		} else {

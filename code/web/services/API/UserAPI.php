@@ -2844,7 +2844,7 @@ class UserAPI extends AbstractAPI {
 
 		if ($user && !($user instanceof AspenError)) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
-			$this->recordDriver = new CloudLibraryRecordDriver($id);
+			$recordDriver = new CloudLibraryRecordDriver($id);
 
 			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 			$driver = new CloudLibraryDriver();
@@ -2870,7 +2870,7 @@ class UserAPI extends AbstractAPI {
 
 		if ($user && !($user instanceof AspenError)) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
-			$this->recordDriver = new CloudLibraryRecordDriver($id);
+			$recordDriver = new CloudLibraryRecordDriver($id);
 
 			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 			$driver = new CloudLibraryDriver();
@@ -2897,7 +2897,7 @@ class UserAPI extends AbstractAPI {
 
 		if ($user && !($user instanceof AspenError)) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
-			$this->recordDriver = new CloudLibraryRecordDriver($id);
+			$recordDriver = new CloudLibraryRecordDriver($id);
 
 			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 			$driver = new CloudLibraryDriver();
@@ -2948,7 +2948,7 @@ class UserAPI extends AbstractAPI {
 
 		if ($user && !($user instanceof AspenError)) {
 			require_once ROOT_DIR . '/RecordDrivers/CloudLibraryRecordDriver.php';
-			$this->recordDriver = new CloudLibraryRecordDriver($cloudLibraryId);
+			$recordDriver = new CloudLibraryRecordDriver($cloudLibraryId);
 
 			require_once ROOT_DIR . '/Drivers/CloudLibraryDriver.php';
 			$driver = new CloudLibraryDriver();

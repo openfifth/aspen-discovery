@@ -24,7 +24,7 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 	 * @param GroupedWork $groupedWork ;
 	 * @access  public
 	 */
-	public function __construct($groupedWork = null) {
+	public function __construct($groupedWork) {
 		if ($groupedWork == null) {
 			$this->loadGroupedWork();
 		} else {
@@ -34,9 +34,7 @@ abstract class GroupedWorkSubDriver extends RecordInterface {
 
 	public abstract function getIdWithSource();
 
-	public function getId() {
-		return $this->id;
-	}
+	public abstract function getId();
 
 	public function getAcceleratedReaderData() {
 		return $this->getGroupedWorkDriver()->getAcceleratedReaderData();

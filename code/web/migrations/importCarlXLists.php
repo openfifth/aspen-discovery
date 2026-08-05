@@ -96,7 +96,7 @@ function importLists($startTime, $exportPath, &$existingUsers, &$missingUsers, &
 		}
 
 		//Figure out the user for the list
-		$userId = getUserIdForBarcode($patronBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
+		$userId = getUserIdForBarcode_carlx($patronBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
 		if ($userId == -1) {
 			$removedLists[$listId] = $listId;
 			continue;
@@ -204,7 +204,7 @@ function getGroupedWorkInfoForRecordId($bibNumber, &$validRecords, &$invalidReco
 	}
 }
 
-function getUserIdForBarcode($userBarcode, &$existingUsers, &$missingUsers, &$usersWithSearchPermissions): int {
+function getUserIdForBarcode_carlx($userBarcode, &$existingUsers, &$missingUsers, &$usersWithSearchPermissions): int {
 	if (array_key_exists($userBarcode, $missingUsers)) {
 		$userId = -1;
 	} elseif (array_key_exists($userBarcode, $existingUsers)) {

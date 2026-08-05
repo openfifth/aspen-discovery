@@ -1140,6 +1140,7 @@ class UInterface extends Smarty {
 			if (!empty($logoName)) {
 				$this->assign('responsiveLogo', '/files/original/' . $logoName);
 			} else {
+				global $configArray;
 				if (isset($configArray['Site']['responsiveLogo'])) {
 					$this->assign('responsiveLogo', $configArray['Site']['responsiveLogo']);
 				}

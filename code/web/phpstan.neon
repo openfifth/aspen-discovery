@@ -9,6 +9,7 @@ parameters:
             - services/Authentication/SAML/
             - sys/Email/PHPMailer-6.9.1
             - sys/File/MARC*
+            - sys/Parsedown/Parsedown.php
             - sys/Smarty
             - vendor
     ignoreErrors:

@@ -6,6 +6,8 @@ class TalpaRecordDriver extends RecordInterface {
 	private $record;
 	private $isn;
 	private $upc;
+	private $title;
+	private $author;
 	/**
 	 * Constructor.  We build the object using all the data retrieved
 	 * @param array|File_MARC_Record||string   $recordData     Data to construct the driver from

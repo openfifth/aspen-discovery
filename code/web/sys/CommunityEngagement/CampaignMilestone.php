@@ -238,6 +238,10 @@ class CampaignMilestone extends DataObject {
 	{
 		require_once ROOT_DIR . '/sys/CommunityEngagement/UserCampaign.php';
 
+		if(self::_campaignMilestoneProgressEntryObjectAlreadyExists($object, $this)) {
+			return;
+		}
+
 		if (!$this->conditionalsCheck($groupedWorkId))
 			return;
 

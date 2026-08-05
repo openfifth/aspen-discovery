@@ -2710,7 +2710,7 @@ abstract class SearchObject_BaseSearcher {
 	 *
 	 * @access  public
 	 * @param array|null $result Existing result set (null to do new search)
-	 * @return  string                  XML document
+	 * @return  string|null                  XML document
 	 */
 	public abstract function buildRSS($result = null);
 

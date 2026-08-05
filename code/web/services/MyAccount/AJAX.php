@@ -10462,10 +10462,6 @@ class MyAccount_AJAX extends JSON_Action {
 					continue;
 				}
 
-				if (_campaignMilestoneProgressEntryObjectAlreadyExists($entity, $campaignMilestone)) {
-					continue;
-				}
-
 				$campaignMilestone->addCampaignMilestoneProgressEntry($entity, $entity->userId, $entityId);
 			}
 		}

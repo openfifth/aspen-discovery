@@ -144,8 +144,8 @@ class UserCampaign extends DataObject {
 			});
 			//Add the completed milestones count to the total 
 			$totalCompletedCampaignMilestones += count($completedCampaignMilestones);
-			return $totalCompletedCampaignMilestones;
 		}
+		return $totalCompletedCampaignMilestones;
 	}
 	/**
 	 * Calculate the user's rank based on completed milestones

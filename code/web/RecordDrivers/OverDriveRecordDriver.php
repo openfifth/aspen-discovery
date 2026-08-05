@@ -59,6 +59,10 @@ class OverDriveRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	public function getId() {
+		return $this->id;
+	}
+
 	public function getIdWithSource() : string {
 		return 'overdrive:' . $this->id;
 	}

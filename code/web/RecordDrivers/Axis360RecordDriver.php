@@ -27,6 +27,10 @@ class Axis360RecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	public function getId() {
+		return $this->id;
+	}
+
 	public function getIdWithSource() {
 		return 'axis360:' . $this->id;
 	}

@@ -37,6 +37,10 @@ class HooplaRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	public function getId() {
+		return $this->id;
+	}
+
 	public function getIdWithSource() {
 		return 'hoopla:' . $this->id;
 	}

@@ -64,9 +64,9 @@ class CASAuthentication implements Authentication {
 				} else {
 					$logger->log("Did not find flcid in user attributes " . print_r($userAttributes, true), Logger::LOG_WARNING);
 				}
-			} else {
-				return false;
 			}
+
+			return false;
 		} else {
 			return new AspenError('Should not pass username and password to account validation for CAS');
 		}

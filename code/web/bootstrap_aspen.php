@@ -122,7 +122,7 @@ function loadSearchInformation() {
 		if ($searchLibrary) {
 			$millenniumScope = $searchLibrary->scope;
 		} elseif (isset($searchLocation)) {
-			Millennium::$scopingLocationCode = $searchLocation->code;
+			$millenniumScope = $searchLocation->code;
 		} else {
 			$millenniumScope = isset($configArray['OPAC']['defaultScope']) ? $configArray['OPAC']['defaultScope'] : '93';
 		}

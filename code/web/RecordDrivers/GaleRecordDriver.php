@@ -226,6 +226,14 @@ class GaleRecordDriver extends RecordInterface {
 		return (string)$title[0] ?? "Unknown";
 	}
 
+	public function getPrimaryAuthor() {
+		$authors = $this->record->xpath('dc:creator') ?: [];
+		if(count($authors) == 0) {
+			return '';
+		}
+		return strval($authors[0]);
+	}
+
 	public function getAuthor() {
 		$authors = $this->record->xpath('dc:creator') ?: [];
 		return implode(', ', array_map('strval', $authors));

@@ -456,10 +456,6 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 		require_once ROOT_DIR . '/sys/User/Hold.php';
 		$availableHolds = [];
 		$unavailableHolds = [];
-		$holds = [
-			'available' => $availableHolds,
-			'unavailable' => $unavailableHolds,
-		];
 
 		$start = 1;
 		$batchSize = 25;
@@ -474,6 +470,7 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 				}
 
 				foreach ($availableHoldsResponse['variable']['AV'] as $availableHoldInfo) {
+					$availableHolds[] = $availableHoldInfo;
 					$ctr++;
 				}
 			} else {
@@ -502,6 +499,7 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 				}
 
 				foreach ($unavailableHoldsResponse['variable']['CD'] as $unavailableHoldInfo) {
+					$unavailableHolds[] = $unavailableHoldInfo;
 					$ctr++;
 				}
 			} else {
@@ -516,5 +514,10 @@ abstract class SIP2Driver extends AbstractIlsDriver {
 				break;
 			}
 		}
+
+		return [
+			'available' => $availableHolds,
+			'unavailable' => $unavailableHolds,
+		];
 	}
 }

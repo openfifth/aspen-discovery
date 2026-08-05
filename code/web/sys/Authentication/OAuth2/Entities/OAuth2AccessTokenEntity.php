@@ -9,6 +9,13 @@ use League\OAuth2\Server\Entities\ScopeEntityInterface;
  * OAuth2 Access Token Entity implementation
  */
 class OAuth2AccessTokenEntity implements AccessTokenEntityInterface {
+	private $privateKey;
+	private $identifier;
+	private $expiryDateTime;
+	private $userIdentifier;
+	private $client;
+	private $scopes;
+
 	/**
 	 * Set a private key used to encrypt the access token.
 	 */

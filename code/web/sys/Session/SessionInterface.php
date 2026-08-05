@@ -29,14 +29,18 @@ class SessionInterface implements SessionHandlerInterface {
 		return true;
 	}
 
-	public function read($sess_id) {}
+	public function read($sess_id) : string|false {
+		return false;
+	}
 
-	public function write($sess_id, $data) {}
+	public function write($sess_id, $data) : bool {
+		return false;
+	}
 
 	// IMPORTANT:  The functionality defined in this method is global to all session
 	//      mechanisms.  If you override this method, be sure to still call
 	//      parent::destroy() in addition to any new behavior.
-	public function destroy($sess_id) {
+	public function destroy($sess_id) : bool {
 		if (class_exists('SearchEntry')) {
 			// Delete the searches stored for this session
 			$search = new SearchEntry();
@@ -65,5 +69,7 @@ class SessionInterface implements SessionHandlerInterface {
 	// Anecdotal testing Today and Yesterday seems to indicate destroy()
 	//   is called by the garbage collector and everything is good.
 	// Something to keep in mind though.
-	public function gc($sess_maxlifetime) {}
+	public function gc($sess_maxlifetime) : int|false {
+		return false;
+	}
 }

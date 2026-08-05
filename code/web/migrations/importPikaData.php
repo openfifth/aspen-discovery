@@ -51,7 +51,7 @@ if (!file_exists($exportPath)) {
 		importSavedSearches($startTime, $exportPath, $existingUsers, $missingUsers, $serverName);
 	}
 	if (file_exists($exportPath . 'mergedGroupedWorks.csv')) {
-		importMergedWorks($startTime, $exportPath, $existingUsers, $missingUsers, $serverName, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks);
+		importMergedWorks($startTime, $exportPath, $existingUsers, $missingUsers, $serverName, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $bibNumberMap);
 	}
 	importLists($startTime, $exportPath, $existingUsers, $missingUsers, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $bibNumberMap);
 	//importListWidgets($startTime, $exportPath, $existingUsers, $missingUsers, $serverName);
@@ -271,7 +271,7 @@ function loadUserInfoFromCSV(?array $userRow, User $existingUser = null): User {
 	return $userFromCSV;
 }
 
-function getUserIdForBarcode($userBarcode, &$existingUsers, &$missingUsers) {
+function getUserIdForBarcode_pika($userBarcode, &$existingUsers, &$missingUsers) {
 	if (array_key_exists($userBarcode, $missingUsers)) {
 		$userId = -1;
 	} elseif (array_key_exists($userBarcode, $existingUsers)) {
@@ -313,7 +313,7 @@ function importReadingHistory($startTime, $exportPath, &$existingUsers, &$missin
 
 		//Figure out the appropriate user for reading history
 		$userBarcode = $patronsReadingHistoryRow[0];
-		$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers);
+		$userId = getUserIdForBarcode_pika($userBarcode, $existingUsers, $missingUsers);
 		if ($userId == -1) {
 			continue;
 		} else {
@@ -345,7 +345,7 @@ function importReadingHistory($startTime, $exportPath, &$existingUsers, &$missin
 		$groupedWorkId = $patronsReadingHistoryRow[9];
 		$groupedWorkResources = $patronsReadingHistoryRow[10];
 
-		if (!validateGroupedWork($groupedWorkId, $groupedWorkTitle, $groupedWorkAuthor, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
+		if (!validateGroupedWork_import($groupedWorkId, $groupedWorkTitle, $groupedWorkAuthor, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
 			$numSkipped++;
 			continue;
 		}
@@ -413,7 +413,7 @@ function importNotInterested($startTime, $exportPath, &$existingUsers, &$missing
 		$numImports++;
 		//Figure out the user for the review
 		$userBarcode = $patronNotInterestedRow[0];
-		$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers);
+		$userId = getUserIdForBarcode_pika($userBarcode, $existingUsers, $missingUsers);
 		if ($userId == -1) {
 			continue;
 		}
@@ -424,7 +424,7 @@ function importNotInterested($startTime, $exportPath, &$existingUsers, &$missing
 		$groupedWorkId = $patronNotInterestedRow[4];
 		$groupedWorkResources = $patronNotInterestedRow[5];
 
-		if (!validateGroupedWork($groupedWorkId, $title, $author, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
+		if (!validateGroupedWork_import($groupedWorkId, $title, $author, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
 			$numSkipped++;
 			continue;
 		}
@@ -470,7 +470,7 @@ function importRatingsAndReviews($startTime, $exportPath, &$existingUsers, &$mis
 		$numImports++;
 		//Figure out the user for the review
 		$userBarcode = $patronsRatingsAndReviewsRow[0];
-		$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers);
+		$userId = getUserIdForBarcode_pika($userBarcode, $existingUsers, $missingUsers);
 		if ($userId == -1) {
 			continue;
 		}
@@ -483,7 +483,7 @@ function importRatingsAndReviews($startTime, $exportPath, &$existingUsers, &$mis
 		$groupedWorkId = cleancsv($patronsRatingsAndReviewsRow[6]);
 		$groupedWorkResources = cleancsv($patronsRatingsAndReviewsRow[7]);
 
-		if (!validateGroupedWork($groupedWorkId, $title, $author, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
+		if (!validateGroupedWork_import($groupedWorkId, $title, $author, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
 			$numSkipped++;
 			continue;
 		}
@@ -548,7 +548,7 @@ function importLists($startTime, $exportPath, &$existingUsers, &$missingUsers, &
 		$userBarcode = $patronListRow[0];
 		$listId = $patronListRow[1];
 
-		$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers);
+		$userId = getUserIdForBarcode_pika($userBarcode, $existingUsers, $missingUsers);
 		if ($userId == -1) {
 			$removedLists[$listId] = $listId;
 			continue;
@@ -636,7 +636,7 @@ function importLists($startTime, $exportPath, &$existingUsers, &$missingUsers, &
 			$listId = $pikaToAspenListIds[$listId];
 		}
 
-		if (!validateGroupedWork($groupedWorkId, $title, $author, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
+		if (!validateGroupedWork_import($groupedWorkId, $title, $author, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $groupedWorkResources, $bibNumberMap)) {
 			$numSkipped++;
 			continue;
 		}
@@ -706,7 +706,7 @@ function importSavedSearches($startTime, $exportPath, &$existingUsers, &$missing
 			$saved = $savedSearchRow[6];
 			$searchObject = cleancsv($savedSearchRow[7]);
 			$searchSource = cleancsv($savedSearchRow[8]);
-			$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers);
+			$userId = getUserIdForBarcode_pika($userBarcode, $existingUsers, $missingUsers);
 			if ($userId == -1) {
 				$removedSearches[$searchId] = $searchId;
 				continue;
@@ -753,7 +753,7 @@ function importSavedSearches($startTime, $exportPath, &$existingUsers, &$missing
 	ob_flush();
 }
 
-function importMergedWorks($startTime, $exportPath, &$existingUsers, &$missingUsers, $serverName, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks) {
+function importMergedWorks($startTime, $exportPath, &$existingUsers, &$missingUsers, $serverName, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $bibNumberMap) {
 	if (file_exists($exportPath . 'mergedGroupedWorks.csv')) {
 		$aspenAdminUser = new User();
 		$aspenAdminUser->source = 'admin';
@@ -774,7 +774,7 @@ function importMergedWorks($startTime, $exportPath, &$existingUsers, &$missingUs
 			$destinationRecords = cleancsv($mergedWorksRow[3]);
 
 			//Find the work for the given title & author
-			if (!validateGroupedWork($destinationGroupedWorkID, $destinationTitle, $destinationAuthor, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $destinationRecords)) {
+			if (!validateGroupedWork_import($destinationGroupedWorkID, $destinationTitle, $destinationAuthor, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $destinationRecords, $bibNumberMap)) {
 				$numSkipped++;
 				continue;
 			}
@@ -1009,7 +1009,7 @@ function cleancsv($field) {
 	return $field;
 }
 
-function validateGroupedWork($groupedWorkId, $title, $author, &$validGroupedWorks, &$invalidGroupedWorks, &$movedGroupedWorks, $groupedWorkResources, $bibNumberMap) {
+function validateGroupedWork_import($groupedWorkId, $title, $author, &$validGroupedWorks, &$invalidGroupedWorks, &$movedGroupedWorks, $groupedWorkResources, $bibNumberMap) {
 	require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 	require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
 

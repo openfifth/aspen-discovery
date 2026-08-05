@@ -6,6 +6,10 @@ use League\OAuth2\Server\Entities\RefreshTokenEntityInterface;
  * OAuth2 Refresh Token Entity implementation
  */
 class OAuth2RefreshTokenEntity implements RefreshTokenEntityInterface {
+	private $identifier;
+	private $expiryDateTime;
+	private $accessToken;
+
 	/**
 	 * Get the token's identifier.
 	 *

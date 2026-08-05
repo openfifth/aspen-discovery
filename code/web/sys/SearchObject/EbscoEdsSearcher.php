@@ -745,14 +745,7 @@ BODY;
 				require_once ROOT_DIR . '/RecordDrivers/EbscoRecordDriver.php';
 				$record = new EbscoRecordDriver($current);
 				if ($record->isValid()) {
-					if (!empty($orderedListOfIDs)) {
-						$position = array_search($current['id'], $orderedListOfIDs);
-						if ($position !== false) {
-							$spotlightResults[$position] = $record->getSpotlightResult($spotlight, $position);
-						}
-					} else {
-						$spotlightResults[] = $record->getSpotlightResult($spotlight, $x);
-					}
+					$spotlightResults[] = $record->getSpotlightResult($spotlight, $x);
 				} else {
 					$spotlightResults[] = "Unable to find record";
 				}

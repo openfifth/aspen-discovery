@@ -40,6 +40,10 @@ class PalaceProjectRecordDriver extends GroupedWorkSubDriver {
 		}
 	}
 
+	public function getId() {
+		return $this->id;
+	}
+
 	public function getIdWithSource() : string {
 		return 'palace_project:' . $this->id;
 	}

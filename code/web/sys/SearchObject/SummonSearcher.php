@@ -932,6 +932,7 @@ class SearchObject_SummonSearcher extends SearchObject_BaseSearcher{
 
 	public function buildRSS($result = null) {
 		// TODO: Implement buildRSS() method.
+		return null;
 	}
 
 	public function buildExcel($result = null) {

@@ -11,6 +11,7 @@ require_once ROOT_DIR . '/sys/Hooks/registry.php';
  * Each property that starts with _ is runtime data that is reset for each object
  * Each property that starts with [a-zA-Z] is a property that is saved to the database
  */
+/** @phpstan-consistent-constructor */
 abstract class DataObject implements JsonSerializable {
 	public $__table;
 	public $__primaryKey = 'id';

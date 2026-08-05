@@ -64,13 +64,13 @@ class WebBuilder_Template extends Action {
 	function canView(): bool {
 		return true;
 	}
-	function getAdditionalObjectActions($id): array {
+	function getAdditionalObjectActions(?DataObject $existingObject): array {
 		$objectActions = [];
 		if (!empty($existingObject) && $existingObject instanceof GrapesTemplate && !empty($existingObject->id)){
 			$objectActions[] = [
 				'text' => 'Open Editor',
 				//'url' => '/WebBuilder/GrapesJSEditor?objectAction=edit&id=' . $existingObject->templateId,
-				'url' => '/WebBuilder/GrapesJSTemplates?id=' . $id,
+				'url' => '/WebBuilder/GrapesJSTemplates?id=' . $existingObject->id,
 			];
 		}
 		return $objectActions;

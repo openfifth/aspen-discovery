@@ -54,7 +54,7 @@ function importRatings($startTime, $exportPath, &$existingUsers, &$missingUsers,
 		$updatedDate = strtotime($patronRatingRow[5]);
 
 		if ($isPrivate == 'FALSE') {
-			$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
+			$userId = getUserIdForBarcode_biblio($userBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
 			if ($userId == -1) {
 				$ratingsSkipped++;
 				continue;
@@ -131,7 +131,7 @@ function importPatronShelves($startTime, $exportPath, &$existingUsers, &$missing
 		$isPrivate = $patronShelfRow[5];
 
 		//Figure out the user for the list
-		$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
+		$userId = getUserIdForBarcode_biblio($userBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
 		if ($userId == -1) {
 			$usersSkipped++;
 			continue;
@@ -239,7 +239,7 @@ function importStaffLists($startTime, $exportPath, &$existingUsers, &$missingUse
 		$createdDate = strtotime($patronListRow[10]);
 
 		//Figure out the user for the list
-		$userId = getUserIdForBarcode($userBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
+		$userId = getUserIdForBarcode_biblio($userBarcode, $existingUsers, $missingUsers, $usersWithSearchPermissions);
 		if ($userId == -1) {
 			$removedLists[$listId] = $listId;
 			continue;
@@ -352,7 +352,7 @@ function getGroupedWorkForRecordId($bibNumber, &$validRecords, &$invalidRecords)
 	}
 }
 
-function getUserIdForBarcode($userBarcode, &$existingUsers, &$missingUsers, &$usersWithSearchPermissions): int {
+function getUserIdForBarcode_biblio($userBarcode, &$existingUsers, &$missingUsers, &$usersWithSearchPermissions): int {
 	if (array_key_exists($userBarcode, $missingUsers)) {
 		$userId = -1;
 	} elseif (array_key_exists($userBarcode, $existingUsers)) {

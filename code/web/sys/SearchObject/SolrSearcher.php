@@ -927,14 +927,7 @@ abstract class SearchObject_SolrSearcher extends SearchObject_BaseSearcher {
 			$current = &$this->indexResult['response']['docs'][$x];
 			$record = $this->getRecordDriverForResult($current);
 			if (!($record instanceof AspenError)) {
-				if (!empty($orderedListOfIDs)) {
-					$position = array_search($current['id'], $orderedListOfIDs);
-					if ($position !== false) {
-						$spotlightResults[$position] = $record->getSpotlightResult($spotlight, $position);
-					}
-				} else {
-					$spotlightResults[] = $record->getSpotlightResult($spotlight, $x);
-				}
+				$spotlightResults[] = $record->getSpotlightResult($spotlight, $x);
 			} else {
 				$spotlightResults[] = "Unable to find record";
 			}

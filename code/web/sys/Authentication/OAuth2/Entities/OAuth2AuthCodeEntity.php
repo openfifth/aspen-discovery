@@ -9,6 +9,12 @@ use League\OAuth2\Server\Entities\ScopeEntityInterface;
  * Implements the League OAuth2 Server AuthCodeEntityInterface
  */
 class OAuth2AuthCodeEntity implements AuthCodeEntityInterface {
+	private $redirecturi;
+	private $identifier;
+	private $expiryDateTime;
+	private $userIdentifier;
+	private $client;
+	private $scopes;
 
 	protected ?string $codeChallenge = null;
 	protected ?string $codeChallengeMethod = null;

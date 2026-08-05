@@ -14,7 +14,7 @@ class TwoFactorAuthenticationError extends AspenError {
 	 */
 	public $twoFactorAuthStatus;
 
-	public function __construct($userId, $twoFactorAuthStatus, $message) {
+	public function __construct($userId = null, $twoFactorAuthStatus = null, $message = null) {
 		parent::__construct($message, null);
 		$this->userId = $userId;
 		$this->twoFactorAuthStatus = $twoFactorAuthStatus;

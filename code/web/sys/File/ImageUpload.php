@@ -2,7 +2,7 @@
 /** @noinspection PhpMissingFieldTypeInspection */
 
 
-class ImageUpload extends DataObject {
+final class ImageUpload extends DataObject {
 	public $__table = 'image_uploads';
 	public $id;
 	public $title;
@@ -518,7 +518,7 @@ class ImageUpload extends DataObject {
 		$baseDir = '/data/aspen-discovery/' . $serverName . '/uploads/web_builder_image';
 		$cutOff = time() - $olderThanSecs;
 		$expiredIds = [];
-		$fetchObj = new static();
+		$fetchObj = new self();
 		$fetchObj->deleted = 1;
 		// dateDeleted > 0 = Leave images older than the Object Restorations implementation alone for now.
 		$fetchObj->whereAdd("dateDeleted > 0 AND dateDeleted < $cutOff");
@@ -547,7 +547,7 @@ class ImageUpload extends DataObject {
 			return 0;
 		}
 
-		$deleteObj = new static();
+		$deleteObj = new self();
 		$deleteObj->whereAddIn($deleteObj->getPrimaryKey(), $expiredIds, false);
 		return $deleteObj->delete(true, true);
 	}

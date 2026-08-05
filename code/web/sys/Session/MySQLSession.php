@@ -107,7 +107,7 @@ class MySQLSession extends SessionInterface {
 		return $result;
 	}
 
-	public function destroy($sess_id) {
+	public function destroy($sess_id) : bool {
 		// Now do database-specific destruction:
 		$s = new Session();
 		$s->setSessionId($sess_id);
@@ -128,19 +128,21 @@ class MySQLSession extends SessionInterface {
 
 	}
 
-	public function gc($sess_maxlifetime) {
+	public function gc($sess_maxlifetime) : int|false {
+		$total = 0;
+
 		$s = new Session();
 		$earliestValidSession = time() - self::$lifetime;
 		$s->setRememberMe('0');
 		$s->whereAdd('last_used < ' . $earliestValidSession);
-		$s->delete(true);
+		$total += $s->delete(true);
 		//Delete any sessions where remember me was true
 		$s2 = new Session();
 		$earliestValidRememberMeSession = time() - self::$rememberMeLifetime;
 		$s2->setRememberMe ('1');
 		$s2->whereAdd('last_used < ' . $earliestValidRememberMeSession);
-		$numRememberMeDeleted = $s2->delete(true);
+		$total += $s2->delete(true);
 
-		return true;
+		return $total;
 	}
 }

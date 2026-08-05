@@ -93,7 +93,7 @@ abstract class RecordInterface {
 	 * View tab of the record view page.
 	 *
 	 * @access  public
-	 * @return  string              Name of Smarty template file to display.
+	 * @return  ?string              Name of Smarty template file to display.
 	 */
 	public abstract function getStaffView();
 
@@ -108,6 +108,8 @@ abstract class RecordInterface {
 		return $this->getTitle();
 	}
 
+	public abstract function getId();
+
 	/**
 	 * Return the unique identifier of this record within the Solr index;
 	 * useful for retrieving additional information (like tags and user
@@ -119,6 +121,8 @@ abstract class RecordInterface {
 	public abstract function getUniqueID();
 
 	public abstract function getDescription();
+
+	public abstract function getPrimaryAuthor();
 
 	public abstract function getMoreDetailsOptions() : array ;
 

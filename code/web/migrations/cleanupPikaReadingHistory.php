@@ -45,7 +45,7 @@ function cleanupPikaReadingHistory($serverName) {
 	while ($userReadingHistoryEntry->fetch()) {
 		$numProcessed++;
 		$groupedWorkId = $userReadingHistoryEntry->groupedWorkPermanentId;
-		if (!validateGroupedWork($groupedWorkId, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $userReadingHistoryEntry->source . ':' . $userReadingHistoryEntry->sourceId, $serverName)) {
+		if (!validateGroupedWork_cleanup($groupedWorkId, $validGroupedWorks, $invalidGroupedWorks, $movedGroupedWorks, $userReadingHistoryEntry->source . ':' . $userReadingHistoryEntry->sourceId, $serverName)) {
 			$numSkipped++;
 		} else {
 			$newGroupedWorkId = getGroupedWorkId($groupedWorkId, $validGroupedWorks, $movedGroupedWorks);
@@ -78,7 +78,7 @@ function cleanupPikaReadingHistory($serverName) {
 	ob_flush();
 }
 
-function validateGroupedWork($groupedWorkId, &$validGroupedWorks, &$invalidGroupedWorks, &$movedGroupedWorks, $groupedWorkResources, $serverName) {
+function validateGroupedWork_cleanup($groupedWorkId, &$validGroupedWorks, &$invalidGroupedWorks, &$movedGroupedWorks, $groupedWorkResources, $serverName) {
 	require_once ROOT_DIR . '/sys/Grouping/GroupedWork.php';
 	require_once ROOT_DIR . '/sys/Grouping/GroupedWorkPrimaryIdentifier.php';
 

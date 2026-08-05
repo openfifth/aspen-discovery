@@ -911,14 +911,7 @@ class SearchObject_EbscohostSearcher extends SearchObject_BaseSearcher {
 				require_once ROOT_DIR . '/RecordDrivers/EbscohostRecordDriver.php';
 				$record = new EbscohostRecordDriver($current);
 				if ($record->isValid()) {
-					if (!empty($orderedListOfIDs)) {
-						$position = array_search($current['id'], $orderedListOfIDs);
-						if ($position !== false) {
-							$spotlightResults[$position] = $record->getSpotlightResult($spotlight, $position);
-						}
-					} else {
-						$spotlightResults[] = $record->getSpotlightResult($spotlight, $x);
-					}
+					$spotlightResults[] = $record->getSpotlightResult($spotlight, $x);
 				} else {
 					$spotlightResults[] = "Unable to find record";
 				}

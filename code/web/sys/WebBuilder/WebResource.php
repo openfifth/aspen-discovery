@@ -407,6 +407,13 @@ class WebResource extends DB_LibraryLinkedObject {
 		}
 	}
 
+	private function clearLibraries() : void {
+		//Delete links to the libraries
+		$link = new LibraryWebResource();
+		$link->webResourceId = $this->id;
+		$link->delete(true);
+	}
+
 	private function clearAudiences() : void {
 		//Delete links to the libraries
 		$link = new WebResourceAudience();

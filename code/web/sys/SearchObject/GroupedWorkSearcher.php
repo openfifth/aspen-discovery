@@ -375,6 +375,7 @@ class SearchObject_GroupedWorkSearcher extends SearchObject_AbstractGroupedWorkS
 			$this->facetOptions["f.owning_library_$solrScope.facet.method"] = 'enum';
 			$this->facetOptions["f.owning_location_$solrScope.facet.method"] = 'enum';
 
+			$searchLibrary = Library::getActiveLibrary();
 			if (isset($searchLibrary) && $searchLibrary->showAvailableAtAnyLocation) {
 				$this->facetOptions['f.available_at.facet.missing'] = 'true';
 			}

@@ -1,6 +1,6 @@
 <?php /** @noinspection PhpMissingFieldTypeInspection */
 
-class FileUpload extends DataObject {
+final class FileUpload extends DataObject {
 	public $__table = 'file_uploads';
 	public $id;
 	public $title;
@@ -226,7 +226,7 @@ class FileUpload extends DataObject {
 	public static function purgeExpired(int $olderThanSecs = 2592000): int {
 		$cutOff = time() - $olderThanSecs;
 		$expiredIds = [];
-		$fetchObj = new static();
+		$fetchObj = new self();
 		$fetchObj->deleted = 1;
 		// dateDeleted > 0 = Leave files older than the Object Restorations implementation alone for now.
 		$fetchObj->whereAdd("dateDeleted > 0 AND dateDeleted < $cutOff");
@@ -244,7 +244,7 @@ class FileUpload extends DataObject {
 		if (empty($expiredIds)) {
 			return 0;
 		}
-		$deleteObj = new static();
+		$deleteObj = new self();
 		$deleteObj->whereAddIn($deleteObj->getPrimaryKey(), $expiredIds, false);
 		return $deleteObj->delete(true, true);
 	}

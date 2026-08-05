@@ -303,13 +303,6 @@ function getCommunityEngagementUpdates() {
                 "ALTER TABLE user ADD COLUMN optInToAllCampaignLeaderboards TINYINT DEFAULT 0",
             ],
         ],
-		'drop_date_of_birth_from_user_table' => [
-			'title' => 'Drop Date Of Birth From User Table',
-			'description' => 'Remove patron date of birth from user table',
-			'sql' => [
-				"ALTER TABLE user DROP COLUMN dateOfBirth"
-			],
-		],
         'add_individual_campaign_leaderboard_opt_in' => [
             'title' => 'Add Individual Campaign Leaderboard Opt In',
             'description' => 'Add the ability to opt in and out of individual campaigns',
