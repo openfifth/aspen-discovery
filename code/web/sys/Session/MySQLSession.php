@@ -26,7 +26,7 @@ class MySQLSession extends SessionInterface {
 			SessionInterface::$activeSessionObject = $s;
 			return $s->getData();
 		} else {
-			return false;
+			return "";
 		}
 	}
 
