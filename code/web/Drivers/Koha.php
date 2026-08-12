@@ -3862,6 +3862,7 @@ class Koha extends AbstractIlsDriver {
 	function processEmailResetPinForm() : array {
 		$result = [
 			'success' => false,
+			'patronFound' => null,
 			'error' => translate([
 				'text' => "Unknown error sending password reset.",
 				'isPublicFacing' => true,
@@ -3901,6 +3902,16 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		$postResults = $this->postToKohaPage($catalogUrl . '/cgi-bin/koha/opac-password-recovery.pl', $postVariables);
+
+		//TODO: catch curl errors
+
+		if (empty($postResults)) {
+			$result['error'] = translate([
+				'text' => 'There was an error in backend system while resending the password reset email, please contact the library.', //TODO: message specificity
+				'isPublicFacing' => true,
+			]);
+		}
+
 		$messageInformation = [];
 		if ($postResults == 'Internal Server Error') {
 			if (isset($_REQUEST['resendEmail'])) {
@@ -3932,11 +3943,18 @@ class Koha extends AbstractIlsDriver {
 						$error);
 				}
 				$result['error'] = trim($error);
+ 				
+				// No can do (translations) = scrapt that (there is no unique id or class to look for either)
+				// if (str_contains($error, "No account was found with the provided information.")) {
+				//	$result['success'] = true;
+				// 	$result['patronFound'] = false;
+				// }
 			}
 			elseif (preg_match('%<div id="password-recovery">\s*<div class="alert alert-info">\s*<p>(.*?)</p>\s*<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s*</div>%s', $postResults, $messageInformation) ||
 					preg_match('%<div id="password-recovery">\s+<div class="alert alert-info">(.*?)<a href="/cgi-bin/koha/opac-main.pl">Return to the main page</a>\s+</div>\s+</div>%s', $postResults, $messageInformation)) {
 				$message = $messageInformation[1];
 				$result['success'] = true;
+				$result['patronFound'] = true;
 				$result['message'] = translate([
 					'text' => trim($message),
 					'isPublicFacing' => true,
