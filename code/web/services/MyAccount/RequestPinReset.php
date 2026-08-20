@@ -14,8 +14,10 @@ class RequestPinReset extends Action {
 
 		$catalog = CatalogFactory::getCatalogConnectionInstance(null, null);
 		if (isset($_REQUEST['submit'])) {
+			require_once ROOT_DIR . '/services/PinResetService.php';
+			$identifier = PinResetService::getIdentifier($_REQUEST);
 
-			$result = $catalog->processEmailResetPinForm();
+			$result = $catalog->processEmailResetPinForm($identifier);
 
 			$interface->assign('result', $result);
 			$template = $catalog->getEmailResetPinResultsTemplate();

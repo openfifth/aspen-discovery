@@ -12,7 +12,9 @@ class MyAccount_InitiateResetPin extends Action {
 
 		$catalog = CatalogFactory::getCatalogConnectionInstance(null, null);
 		if (isset($_REQUEST['submit'])) {
-			$emailResult = $catalog->processEmailResetPinForm();
+			require_once ROOT_DIR . '/services/PinResetService.php';
+			$identifier = PinResetService::getIdentifier($_REQUEST);
+			$emailResult = $catalog->processEmailResetPinForm($identifier);
 
 			$interface->assign('result', $emailResult);
 			$this->display($catalog->getEmailResetPinResultsTemplate(), 'Email to Reset Pin', '');

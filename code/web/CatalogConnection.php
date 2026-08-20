@@ -1556,7 +1556,7 @@ class CatalogConnection {
 		}
 	}
 
-	function processEmailResetPinForm() : array {
+	function processEmailResetPinForm(string $identifier) : array {
 		global $library;
 		$result = [
 			'success' => false,
@@ -1572,31 +1572,28 @@ class CatalogConnection {
 			if ($library->accountProfileId == $tmpAccountProfile->id) {
 				if ($this->getForgotPasswordType() == 'emailAspenResetLink') {
 					//Get the user from the driver
-					if (empty($_REQUEST['reset_username'])) {
+					if (empty($identifier)) {
 						$result['error'] = translate([
 							'text' => "Barcode not provided. You must provide a barcode to use password reset.",
 							'isPublicFacing' => true,
 						]);
 					} else {
-						$barcode = $_REQUEST['reset_username'];
-						$result = $this->sendAspenPasswordResetEmailForBarcode($accountProfileInfo, $barcode);
+						$result = $this->sendAspenPasswordResetEmailForBarcode($accountProfileInfo, $identifier);
 					}
 				} else {
 					$result = $this->driver->processEmailResetPinForm();
 					if (empty($result['success']) && empty($result['foundPatron'])) {
-						$identifier = $_REQUEST['reset_username'] ?? ($_REQUEST['username'] ?? '');
 						$result['foundPatron'] = $this->findIlsUserForBarcode($accountProfileInfo, $identifier) !== false;
 					}
 				}
 			}elseif ($tmpAccountProfile->authenticationMethod == 'db') {
-				if (empty($_REQUEST['reset_username']) && empty($_REQUEST['username'])) {
+				if (empty($identifier)) {
 					$result['error'] = translate([
 						'text' => "Username not provided. You must provide a username to use password reset.",
 						'isPublicFacing' => true,
 					]);
 				} else {
-					$username = $_REQUEST['reset_username'] ?? $_REQUEST['username'];
-					$result = $this->sendAspenPasswordResetEmailForBarcode($accountProfileInfo, $username);
+					$result = $this->sendAspenPasswordResetEmailForBarcode($accountProfileInfo, $identifier);
 				}
 			}
 			if ($result['success'] || !empty($result['foundPatron'])){

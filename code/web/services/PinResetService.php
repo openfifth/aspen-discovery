@@ -1,6 +1,27 @@
 <?php
 
 class PinResetService {
+	public static function getIdentifier(array $request) : string {
+		foreach ([
+			'reset_username',
+			'username',
+		] as $identifierField) {
+			$identifier = self::getTrimmedRequestString($request, $identifierField);
+			if (!empty($identifier)) {
+				return $identifier;
+			}
+		}
+		return '';
+	}
+
+	public static function getTrimmedRequestString(array $request, string $field) : string {
+		$value = $request[$field] ?? '';
+		if (!is_string($value)) {
+			return '';
+		}
+		return trim($value);
+	}
+
 	static function findIlsUserForBarcode(array $accountProfileInfo, string $barcode) : ?User {
 		$accountProfile = $accountProfileInfo['accountProfile'];
 		$userToResetPin = new User();

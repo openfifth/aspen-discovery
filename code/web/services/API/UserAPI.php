@@ -368,9 +368,10 @@ class UserAPI extends AbstractAPI {
 			'action' => null,
 		];
 
+		require_once ROOT_DIR . '/services/PinResetService.php';
 		$catalog = CatalogFactory::getCatalogConnectionInstance(null, null);
 		if($catalog != null) {
-			$result = $catalog->processEmailResetPinForm();
+			$result = $catalog->processEmailResetPinForm(PinResetService::getIdentifier($_REQUEST));
 			if(empty($result['success']) && $result['error']) {
 				$result = [
 					'message' => $result['error'],

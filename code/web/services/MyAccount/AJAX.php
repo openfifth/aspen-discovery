@@ -2265,10 +2265,11 @@ class MyAccount_AJAX extends JSON_Action {
 
 	/** @noinspection PhpUnused */
 	function requestPinReset() : array {
+		require_once ROOT_DIR . '/services/PinResetService.php';
 		$catalog = CatalogFactory::getCatalogConnectionInstance();
 
 		//Get the list of pickup branch locations for display in the user interface.
-		return $catalog->processEmailResetPinForm();
+		return $catalog->processEmailResetPinForm(PinResetService::getIdentifier($_REQUEST));
 	}
 
 	/** @noinspection PhpUnused */
