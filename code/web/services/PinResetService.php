@@ -5,6 +5,7 @@ class PinResetService {
 		foreach ([
 			'reset_username',
 			'username',
+			'barcode',
 		] as $identifierField) {
 			$identifier = self::getTrimmedRequestString($request, $identifierField);
 			if (!empty($identifier)) {
