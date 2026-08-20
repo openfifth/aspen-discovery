@@ -1966,7 +1966,7 @@ class Koha extends AbstractIlsDriver {
 
 	private function getHoldFeeMessage(MarcRecordDriver $marcRecordDriver, bool $placed, User $patron): string|null {
 		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver, $patron);
-		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000") {
+		if (!$rawFee || $rawFee == 'unknown' || (float)$rawFee === 0.0) {
 			return null;
 		}
 		$fee = $this->formatFee($rawFee);
