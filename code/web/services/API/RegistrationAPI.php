@@ -248,13 +248,15 @@ class API_RegistrationAPI extends AbstractAPI {
 
 	/** @noinspection PhpUnused */
 	function initiatePasswordResetByEmail() : array {
+		require_once ROOT_DIR . '/services/PinResetService.php';
 		$catalog = CatalogFactory::getCatalogConnectionInstance(null, null);
-		return $catalog->initiatePasswordResetByEmail();
+		return $catalog->initiatePasswordResetByEmail(PinResetService::getTrimmedRequestString($_REQUEST, 'email'));
 	}
 
 	/** @noinspection PhpUnused */
 	function initiatePasswordResetByBarcode() : array {
+		require_once ROOT_DIR . '/services/PinResetService.php';
 		$catalog = CatalogFactory::getCatalogConnectionInstance(null, null);
-		return $catalog->initiatePasswordResetByBarcode();
+		return $catalog->initiatePasswordResetByBarcode(PinResetService::getTrimmedRequestString($_REQUEST, 'barcode'));
 	}
 }

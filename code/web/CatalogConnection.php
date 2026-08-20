@@ -1921,54 +1921,67 @@ class CatalogConnection {
 		return $this->driver->showDateInFines();
 	}
 
-	public function initiatePasswordResetByEmail(): array {
-		if ($this->getForgotPasswordType() == 'emailAspenResetLink') {
-			$email = $_REQUEST['email'];
-			if (!filter_var($_REQUEST['email'], FILTER_VALIDATE_EMAIL)) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'This provided email is not valid, please provide a properly formatted email address.',
-						'isPublicFacing' => true,
-					])
-				];
-			} else {
-				//Get the user for this
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'Patron reset by email is not currently supported.',
-						'isPublicFacing' => true,
-					])
-				];
-			}
-		} else {
+	public function initiatePasswordResetByEmail(string $email): array {
+		if ($this->getForgotPasswordType() != 'emailAspenResetLink') {
 			return $this->driver->initiatePasswordResetByEmail();
 		}
+
+		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'This provided email is not valid, please provide a properly formatted email address.',
+					'isPublicFacing' => true,
+				])
+			];
+		}
+		return [
+			'success' => false,
+			'message' => translate([
+				'text' => 'Patron reset by email is not currently supported.',
+				'isPublicFacing' => true,
+			])
+		];
 	}
 
-	public function initiatePasswordResetByBarcode(): array {
-		if ($this->getForgotPasswordType() == 'emailAspenResetLink') {
-			if (!isset($_REQUEST['barcode'])) {
-				return [
-					'success' => false,
-					'message' => translate([
-						'text' => 'The barcode was not provided, please submit the barcode to reset the PIN for.',
-						'isPublicFacing' => true,
-					])
-				];
-			} else {
-				//Get the user for this
-				$barcode = $_REQUEST['barcode'];
-				$result = $this->sendAspenPasswordResetEmailForBarcode($barcode);
-				return [
-					'success' => $result['success'],
-					'message' => $result['success'] ? $result['message'] : $result['error']
-				];
-			}
-		} else {
+	public function initiatePasswordResetByBarcode(string $barcode): array {
+		if ($this->getForgotPasswordType() != 'emailAspenResetLink') {
 			return $this->driver->initiatePasswordResetByBarcode();
 		}
+
+		if (empty($barcode)) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'The barcode was not provided, please submit the barcode to reset the PIN for.',
+					'isPublicFacing' => true,
+				])
+			];
+		}
+		return $this->initiatePasswordReset($barcode);
+	}
+	
+	private function initiatePasswordReset(string $identifier) : array {
+		require_once ROOT_DIR . '/services/PinResetService.php';
+		$accountProfileInfo = null;
+		if ($this->accountProfile != null) {
+			$accountProfileInfo = UserAccount::getAccountProfiles()[$this->accountProfile->name] ?? null;
+		}
+		if ($accountProfileInfo == null) {
+			return [
+				'success' => false,
+				'message' => translate([
+					'text' => 'Could not determine which account profile to use to reset the PIN, please contact the library.',
+					'isPublicFacing' => true,
+				])
+			];
+		}
+
+		$result = PinResetService::sendPasswordResetEmail($accountProfileInfo, $identifier);
+		return [
+			'success' => $result['success'],
+			'message' => $result['success'] ? $result['message'] : $result['error']
+		];
 	}
 
 	public function checkoutBySip(User $patron, string $barcode, $currentLocationId): array {
