@@ -22,6 +22,40 @@ class PinResetService {
 		return trim($value);
 	}
 
+	public static function getMissingIdentifierResult(string $forgotPasswordType) : array {
+		if ($forgotPasswordType == 'emailAspenResetLink') {
+			return self::getErrorResult("Barcode not provided. You must provide a barcode to use password reset.", false);
+		}
+		return self::getErrorResult("Username not provided. You must provide a username to use password reset.", false);
+	}
+
+	public static function getAccountProfilesToCheck(?User $userToResetPin) : array {
+		$accountProfiles = UserAccount::getAccountProfiles();
+		if ($userToResetPin == null) {
+			return $accountProfiles;
+		}
+
+		// Aspen is the only authority for the account, no ILS is involved in the reset - account profile weighing is irrelevant.
+		if (empty($userToResetPin->unique_ils_id)) {
+			$accountProfileInfo = $accountProfiles[$userToResetPin->source] ?? null;
+			if ($accountProfileInfo != null && $accountProfileInfo['authenticationMethod'] == 'db') {
+				return [$userToResetPin->source => $accountProfileInfo];
+			}
+			return $accountProfiles;
+		}
+
+		// A patron that only exists in the ILS must be reset via the ILS - account profile weighing is irrelevant.
+		if (!$userToResetPin->isStaff()) {
+			global $library;
+			return array_filter($accountProfiles, function ($accountProfileInfo) use ($library) {
+				return $accountProfileInfo['accountProfile']->id == $library->accountProfileId;
+			});
+		}
+
+		// Patrons that exist in the ILS and are also staff / admins in Aspen - account profile weighing comes into play here.
+		return $accountProfiles;
+	}
+
 	private static function findUserToResetPin(array $accountProfileInfo, string $identifier, ?User $knownUser) : ?User {
 		global $library;
 		$accountProfile = $accountProfileInfo['accountProfile'];

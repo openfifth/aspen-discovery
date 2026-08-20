@@ -1476,50 +1476,52 @@ class CatalogConnection {
 	}
 
 	function processEmailResetPinForm(string $identifier) : array {
-		global $library;
-		$result = [
-			'success' => false,
-			'error' => translate([
-				'text' => "Unknown error sending password reset.",
-				'isPublicFacing' => true,
-			]),
-		];
+		require_once ROOT_DIR . '/services/PinResetService.php';
+		if (empty($identifier)) {
+			$result = PinResetService::getMissingIdentifierResult($this->getForgotPasswordType());
+		} else {
+			$result = [
+				'success' => false,
+				'error' => translate([
+					'text' => "Unknown error sending password reset.",
+					'isPublicFacing' => true,
+				]),
+			];
+		}
 
-		$accountProfilesToCheck = UserAccount::getAccountProfiles();
-		foreach ($accountProfilesToCheck as $accountProfileInfo) {
-			$tmpAccountProfile = $accountProfileInfo['accountProfile'];
-			if ($library->accountProfileId == $tmpAccountProfile->id) {
-				if ($this->getForgotPasswordType() == 'emailAspenResetLink') {
-					//Get the user from the driver
-					if (empty($identifier)) {
-						$result['error'] = translate([
-							'text' => "Barcode not provided. You must provide a barcode to use password reset.",
-							'isPublicFacing' => true,
-						]);
-					} else {
-						$result = $this->sendAspenPasswordResetEmailForBarcode($accountProfileInfo, $identifier);
-					}
-				} else {
-					$result = $this->driver->processEmailResetPinForm();
-					if (empty($result['success']) && empty($result['foundPatron'])) {
-						$result['foundPatron'] = $this->findIlsUserForBarcode($accountProfileInfo, $identifier) !== false;
-					}
-				}
-			}elseif ($tmpAccountProfile->authenticationMethod == 'db') {
-				if (empty($identifier)) {
-					$result['error'] = translate([
-						'text' => "Username not provided. You must provide a username to use password reset.",
-						'isPublicFacing' => true,
-					]);
-				} else {
-					$result = $this->sendAspenPasswordResetEmailForBarcode($accountProfileInfo, $identifier);
-				}
+		$userToResetPin = UserAccount::findAspenUserForIdentifier($identifier);
+		foreach (PinResetService::getAccountProfilesToCheck($userToResetPin) as $accountProfileInfo) {
+			$resultForAccountProfile = $this->processEmailResetPinFormForAccountProfile($accountProfileInfo, $identifier, $userToResetPin);
+			if ($resultForAccountProfile == null) {
+				continue;
 			}
-			if ($result['success'] || !empty($result['foundPatron'])){
+			$result = $resultForAccountProfile;
+			if ($result['success'] || !empty($result['foundPatron'])) {
 				break;
 			}
 		}
 		return $result;
+	}
+
+	private function processEmailResetPinFormForAccountProfile(array $accountProfileInfo, string $identifier, ?User $userToResetPin) : ?array {
+		global $library;
+		require_once ROOT_DIR . '/services/PinResetService.php';
+		$accountProfile = $accountProfileInfo['accountProfile'];
+		$isLibraryAccountProfile = $library->accountProfileId == $accountProfile->id;
+
+		// ILS pin reset - the ILS is the sole authority for accounts it owns, it validates whatever the patron submitted to it
+		if ($isLibraryAccountProfile && $this->getForgotPasswordType() != 'emailAspenResetLink') {
+			return $this->driver->processEmailResetPinForm();
+		}
+
+		// Aspen pin reset
+		if (!$isLibraryAccountProfile && $accountProfile->authenticationMethod != 'db') {
+			return null;
+		}
+		if (empty($identifier)) {
+			return null;
+		}
+		return PinResetService::sendPasswordResetEmail($accountProfileInfo, $identifier, $userToResetPin);
 	}
 
 	function hasMaterialsRequestSupport() {

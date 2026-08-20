@@ -1157,6 +1157,23 @@ class UserAccount {
 		return false;
 	}
 
+	public static function findAspenUserForIdentifier(string $identifier) : ?User {
+		if (empty($identifier)) {
+			return null;
+		}
+		foreach ([
+			'username',
+			'ils_barcode',
+			'ils_username',
+		] as $identifierField) {
+			$user = UserAccount::findNewAspenUser($identifierField, $identifier);
+			if ($user !== false) {
+				return $user;
+			}
+		}
+		return null;
+	}
+
 	/**
 	 * Used to determine if the active user is a staff member (has Aspen privileges or is marked as staff in the PType).
 	 * @return bool
