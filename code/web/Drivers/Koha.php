@@ -1956,19 +1956,16 @@ class Koha extends AbstractIlsDriver {
 		return !empty($library->showHoldFeeMessage);
 	}
 
-	public function getPreHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
-		return $this->getHoldFeeMessage($marcRecordDriver, false);
+	public function getPreHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver, User $patron): string|null {
+		return $this->getHoldFeeMessage($marcRecordDriver, false, $patron);
 	}
 
-	public function getPostHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver): string|null {
-		return $this->getHoldFeeMessage($marcRecordDriver, true);
+	public function getPostHoldSubmissionFeeMessage(MarcRecordDriver $marcRecordDriver, User $patron): string|null {
+		return $this->getHoldFeeMessage($marcRecordDriver, true, $patron);
 	}
 
-	private function getHoldFeeMessage(MarcRecordDriver $marcRecordDriver, bool $placed): string|null {
-		if (!UserAccount::isLoggedIn()) {
-			return "You must be logged in to place holds.";
-		}
-		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver);
+	private function getHoldFeeMessage(MarcRecordDriver $marcRecordDriver, bool $placed, User $patron): string|null {
+		$rawFee = $this->calculateHoldFeeForRecord($marcRecordDriver, $patron);
 		if (!$rawFee || $rawFee == 'unknown' || $rawFee == "0.000000") {
 			return null;
 		}
@@ -1982,11 +1979,9 @@ class Koha extends AbstractIlsDriver {
 	}
 
 	// Replicates the logic in Koha's _calculate_title_hold_fee() for bib-level holds
-	public function calculateHoldFeeForRecord(MarcRecordDriver $marcRecordDriver) {
+	public function calculateHoldFeeForRecord(MarcRecordDriver $marcRecordDriver, User $patron) {
 		/** @var Grouping_Item			- includes relevant location information */
 		$groupingItems 					= $marcRecordDriver->getRelatedRecord()->getItems();
-		/** @var User					- includes relevant user unique identifier and location information */
-		$patron 						= UserAccount::getActiveUserObj();
 		/** @var File_MARC_Record 		- links to relavent item type information */
 		$marcRecordFile 				= $marcRecordDriver->getMarcRecord();
 		/** @var File_MARC_Data_Field 	- contains the item type id*/
