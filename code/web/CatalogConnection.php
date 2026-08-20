@@ -407,19 +407,6 @@ class CatalogConnection {
 		return $this->driver->processBasicRegistrationForm($addressValidated);
 	}
 
-	private function findIlsUserForBarcode(array $accountProfileInfo, mixed $barcode) {
-		$accountProfile = $accountProfileInfo['accountProfile'];
-		$userToResetPin = new User();
-		$userToResetPin->source = $accountProfile->name;
-		$userToResetPin->ils_barcode = $barcode;
-		if ($userToResetPin->find(true)) {
-			return $userToResetPin;
-		}
-		require_once ROOT_DIR . '/CatalogFactory.php';
-		$catalogConnectionInstance = CatalogFactory::getCatalogConnectionInstance($accountProfileInfo['driver'], $accountProfile);
-		return $catalogConnectionInstance->findNewUser($barcode, '');
-	}
-
 	/**
 	 * @param mixed $barcode
 	 * @return array
@@ -439,7 +426,8 @@ class CatalogConnection {
 		$accountProfile = $accountProfileInfo['accountProfile'];
 		if ($library->accountProfileId == $accountProfile->id) {
 			//Check the ILS we are connected to
-			$userToResetPin = $this->findIlsUserForBarcode($accountProfileInfo, $barcode);
+			require_once ROOT_DIR . '/services/PinResetService.php';
+			$userToResetPin = PinResetService::findIlsUserForBarcode($accountProfileInfo, $barcode);
 		}elseif ($accountProfile->authenticationMethod == 'db') {
 			//Check anything we do database authentication for
 			$userToResetPin = new User();

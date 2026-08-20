@@ -1,6 +1,21 @@
 <?php
 
 class PinResetService {
+	static function findIlsUserForBarcode(array $accountProfileInfo, string $barcode) : ?User {
+		$accountProfile = $accountProfileInfo['accountProfile'];
+		$userToResetPin = new User();
+		$userToResetPin->source = $accountProfile->name;
+		$userToResetPin->ils_barcode = $barcode;
+		if ($userToResetPin->find(true)) {
+			return $userToResetPin;
+		}
+
+		require_once ROOT_DIR . '/CatalogFactory.php';
+		$catalogConnectionInstance = CatalogFactory::getCatalogConnectionInstance($accountProfileInfo['driver'], $accountProfile);
+		$ilsUser = $catalogConnectionInstance->findNewUser($barcode, '');
+		return $ilsUser instanceof User ? $ilsUser : null;
+	}
+
 	static function emailPinResetToken(User $userToResetPin, PinResetToken $pinResetToken) : bool {
 		global $configArray;
 		$resetUrl = $configArray['Site']['url'] . '/MyAccount/CompletePinReset?token=' . $pinResetToken->token;
