@@ -2843,7 +2843,7 @@ class Koha extends AbstractIlsDriver {
 
 		$homeLibrary = $patron->getHomeLibrary();
 		if (empty($_REQUEST['confirmedRenewal']) && $itemId && $homeLibrary && $homeLibrary->showCheckoutRenewalFeeMessage) {
-			$feeMessage = $this->getPreRenewalFeeMessage($itemId);
+			$feeMessage = $this->getPreRenewalFeeMessage($itemId, $patron);
 			if ($feeMessage) {
 				$result['success'] = false;
 				$result['message'] = $feeMessage;
@@ -3120,7 +3120,7 @@ class Koha extends AbstractIlsDriver {
 		return $itemBranch;
 	}
 
-	public function getPreRenewalFeeMessage(string $itemId): string|null {
+	public function getPreRenewalFeeMessage(string $itemId, User $patron): string|null {
 		$item = $this->getItemForRenewal($itemId);
 		if (!$item) {
 			return null;
@@ -3130,9 +3130,9 @@ class Koha extends AbstractIlsDriver {
 		$itemBranch = $branchField === 'holdingbranch'
 			? ($item['holding_library_id'] ?? null)
 			: ($item['home_library_id'] ?? null);
-		$circBranch = $this->getCircControlBranch(UserAccount::getActiveUserObj(), $itemBranch);
+		$circBranch = $this->getCircControlBranch($patron, $itemBranch);
 
-		$rawFee = $this->getRenewalFeeForItem($item['item_type_id'], $circBranch);
+		$rawFee = $this->getRenewalFeeForItem($item['item_type_id'], $circBranch, $patron);
 		if (!$rawFee) {
 			return null;
 		}
@@ -3144,13 +3144,12 @@ class Koha extends AbstractIlsDriver {
 		]);
 	}
 
-	public function getRenewalFeeForItem(string $itemType, string $locationCode): float|null {
+	public function getRenewalFeeForItem(string $itemType, string $locationCode, User $patron): float|null {
 		$rawRentalCharge = $this->getItemTypeRentalCharge($itemType);
 		if (!$rawRentalCharge || (float)$rawRentalCharge === 0.0) {
 			return null;
 		}
 
-		$patron = UserAccount::getActiveUserObj();
 		$discount = $this->getRawCirculationRule('rentaldiscount', [
 			'patronCategoryId' => $patron->patronType,
 			'itemTypeId'       => $itemType,
