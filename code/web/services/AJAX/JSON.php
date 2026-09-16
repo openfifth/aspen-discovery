@@ -416,8 +416,6 @@ class AJAX_JSON extends Action {
 
 	/** @noinspection PhpUnused */
 	function getHoursAndLocations() : string {
-		require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
-
 		$libraryLocations = [];
 		$locationsToProcess = Location::getPubliclyListedLocations();
 
@@ -429,15 +427,7 @@ class AJAX_JSON extends Action {
 			$mapsKey = null;
 		}
 		foreach ($locationsToProcess as $locationToProcess) {
-			$hours = $locationToProcess->getHours();
-			foreach ($hours as $key => $hourObj) {
-				if (!$hourObj->closed) {
-					$hourObj->open = DateUtils::formatHour($hourObj->open);
-					$hourObj->close = DateUtils::formatHour($hourObj->close);
-				}
-				$hours[$key] = $hourObj;
-			}
-			$libraryLocations[$locationToProcess->locationId] = $locationToProcess->getPublicLocationInfo($hours, $mapsKey);
+			$libraryLocations[$locationToProcess->locationId] = $locationToProcess->getPublicLocationInfo($locationToProcess->getFormattedHours(), $mapsKey);
 		}
 
 		global $interface;

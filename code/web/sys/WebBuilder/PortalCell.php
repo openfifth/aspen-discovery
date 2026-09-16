@@ -531,7 +531,6 @@ class PortalCell extends DataObject {
 				}
 			}
 		} elseif ($this->sourceType == 'hours_locations') {
-			require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
 			$libraryLocations = [];
 			$locationsToProcess = [];
 			if (!empty($this->staticLocationId) && $this->staticLocationId != -1) {
@@ -552,15 +551,7 @@ class PortalCell extends DataObject {
 				$mapsKey = null;
 			}
 			foreach ($locationsToProcess as $locationToProcess) {
-				$hours = $locationToProcess->getHours();
-				foreach ($hours as $key => $hourObj) {
-					if (!$hourObj->closed) {
-						$hourObj->open = DateUtils::formatHour($hourObj->open);
-						$hourObj->close = DateUtils::formatHour($hourObj->close);
-					}
-					$hours[$key] = $hourObj;
-				}
-				$libraryLocations[$locationToProcess->locationId] = $locationToProcess->getPublicLocationInfo($hours, $mapsKey);
+				$libraryLocations[$locationToProcess->locationId] = $locationToProcess->getPublicLocationInfo($locationToProcess->getFormattedHours(), $mapsKey);
 			}
 
 			global $interface;
