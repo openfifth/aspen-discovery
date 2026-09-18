@@ -534,12 +534,14 @@ class EventRegistrationService {
 		];
 	}
 
-	private static function writeRegistration(UserAspenEventInstanceRegistration $registration, array $validatedCounts, EventInstance $eventInstance, int $userId, ?int $staffUserId): void {
+	private static function writeRegistration(UserAspenEventInstanceRegistration $registration, array $validatedCounts, EventInstance $eventInstance, int $userId, ?int $staffUserId): bool {
 		if (!$registration->registerUser()) {
-			throw new RuntimeException('Failed to create registration row.');
+			return false;
 		}
-		UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts);
-		self::saveToUserEvents($eventInstance, $userId, $staffUserId);
+		if (!UserAspenEventInstanceRegistrationAttendee::saveForRegistration((int)$registration->id, $validatedCounts)) {
+			return false;
+		}
+		return self::saveToUserEvents($eventInstance, $userId, $staffUserId);
 	}
 
 	private static function getRegistrationFor(int $userId, int $eventInstanceId): UserAspenEventInstanceRegistration|false {
