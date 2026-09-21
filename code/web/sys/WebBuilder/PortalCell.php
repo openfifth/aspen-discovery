@@ -531,7 +531,6 @@ class PortalCell extends DataObject {
 				}
 			}
 		} elseif ($this->sourceType == 'hours_locations') {
-			require_once ROOT_DIR . '/sys/Utils/DateUtils.php';
 			global $library;
 			$libraryLocations = [];
 
