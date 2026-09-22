@@ -6,11 +6,6 @@ class BookingServiceTests extends TestCase {
 	private static int $userId = 9901;
 	private static int $nextIlsId = 1;
 
-	public function __construct(string $name) {
-		parent::__construct($name);
-		require_once __DIR__ . '/../../../../code/web/services/BookingService.php';
-	}
-
 	public static function setUpBeforeClass(): void {
 		global $aspen_db;
 		$aspen_db->exec("CREATE TABLE IF NOT EXISTS user_booking (
