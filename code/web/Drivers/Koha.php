@@ -9718,7 +9718,14 @@ class Koha extends AbstractIlsDriver {
 		return $libraries;
 	}
 
-	public function placeBooking(User $patron, string $itemId, string $recordId, string $startDate, string $endDate, string $pickupBranch): array {
+	/**
+	 * Mirrors Koha's place_booking.js: dates are whole local days, sent as start 00:00:00
+	 * and end 23:59:59. Koha compares periods inclusively and sets end_date to the
+	 * checkout's due date on issue, so the end day is fully booked.
+	 * The maximum period counts days after the start, as issuelength does for loans:
+	 * a 1-day maximum allows a booking from the 12th to the 13th.
+	 */
+	public function placeBooking(User $patron,string $itemId, string $recordId, string $startDate, string $endDate, string $pickupBranch): array {
 		$title = translate(['text' => 'Unable to place booking', 'isPublicFacing' => true]);
 		$denied = $this->denyIfActionDisabled((int)$itemId, 'enableBookingPlacement', 'Booking placement is not enabled for the library that owns this item.');
 		if ($denied) {
@@ -9726,7 +9733,7 @@ class Koha extends AbstractIlsDriver {
 		}
 
 		$startDateUtc = DateUtils::formatStartOfDayUtc($startDate);
-		$endDateUtc = DateUtils::formatStartOfDayUtc($endDate);
+		$endDateUtc = DateUtils::formatEndOfDayUtc($endDate);
 		if ($startDateUtc === false || $endDateUtc === false) {
 			return ['success' => false, 'title' => $title, 'message' => translate(['text' => 'Invalid booking dates.', 'isPublicFacing' => true])];
 		}
@@ -9812,7 +9819,7 @@ class Koha extends AbstractIlsDriver {
 		$itemId = (int)$stored->itemId;
 
 		$startDateUtc = DateUtils::formatStartOfDayUtc($startDate);
-		$endDateUtc = DateUtils::formatStartOfDayUtc($endDate);
+		$endDateUtc = DateUtils::formatEndOfDayUtc($endDate);
 		if ($startDateUtc === false || $endDateUtc === false) {
 			return ['success' => false, 'message' => translate(['text' => 'Invalid booking dates.', 'isPublicFacing' => true])];
 		}

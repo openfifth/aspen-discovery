@@ -15,12 +15,20 @@ class DateUtils {
 	}
 
 	static function formatStartOfDayUtc(string $date): string|false {
-		$dt = DateTimeImmutable::createFromFormat('!Y-m-d', $date, new DateTimeZone('UTC'));
+		return self::formatLocalTimeAsUtc($date, '00:00:00');
+	}
+
+	static function formatEndOfDayUtc(string $date): string|false {
+		return self::formatLocalTimeAsUtc($date, '23:59:59');
+	}
+
+	private static function formatLocalTimeAsUtc(string $date, string $time): string|false {
+		$dt = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', "$date $time");
 		$errors = DateTimeImmutable::getLastErrors();
 		if (!$dt || ($errors && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) {
 			return false;
 		}
-		return $dt->format('Y-m-d\T00:00:00\Z');
+		return $dt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z');
 	}
 
 	/**
@@ -55,9 +63,9 @@ class DateUtils {
 		return $firstInstant->getTimestamp() === $secondInstant->getTimestamp();
 	}
 
-	public static function formatUtcDate(string $value): string|false {
+	public static function formatLocalDate(string $value): string|false {
 		try {
-			return (new DateTimeImmutable($value, new DateTimeZone('UTC')))->format('Y-m-d');
+			return (new DateTimeImmutable($value))->setTimezone(new DateTimeZone(date_default_timezone_get()))->format('Y-m-d');
 		} catch (Exception) {
 			return false;
 		}

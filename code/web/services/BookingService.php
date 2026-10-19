@@ -196,8 +196,8 @@ class BookingService {
 			return null;
 		}
 
-		$startDate = DateUtils::formatUtcDate($raw['start_date']);
-		$endDate = DateUtils::formatUtcDate($raw['end_date']);
+		$startDate = DateUtils::formatLocalDate($raw['start_date']);
+		$endDate = DateUtils::formatLocalDate($raw['end_date']);
 		if ($startDate === false || $endDate === false) {
 			global $logger;
 			$logger->log("Unable to parse dates for booking {$raw['booking_id']} from the ILS: {$raw['start_date']} to {$raw['end_date']}", Logger::LOG_ERROR);
