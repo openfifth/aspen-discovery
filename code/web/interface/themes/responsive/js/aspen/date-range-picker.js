@@ -69,6 +69,7 @@ export class DateRangePicker {
 	#range;
 	#startInput;
 	#endInput;
+	#notice;
 	#minIso;
 	#maxIso = '';
 	#disabledRanges = [];
@@ -85,6 +86,7 @@ export class DateRangePicker {
 		this.#range = range;
 		this.#startInput = root.querySelector('[data-date-role="start"]');
 		this.#endInput = root.querySelector('[data-date-role="end"]');
+		this.#notice = root.querySelector('.date-range-picker-notice');
 		this.#minIso = toIsoDate(minDate) || toIsoDate(new Date());
 		this.#applyInputBounds();
 		this.#wireInputs();
@@ -94,6 +96,7 @@ export class DateRangePicker {
 		this.#disabledRanges = disabledRanges ?? [];
 		this.#maxRangeDays = maxRangeDays ?? 0;
 		this.#maxIso = maxDate ? toIsoDate(maxDate) : '';
+		this.#setClampNotice();
 
 		// Reassigning the property re-runs Cally's disable check and re-renders.
 		this.#range.isDateDisallowed = (date) => {
@@ -112,6 +115,7 @@ export class DateRangePicker {
 	clear() {
 		this.#range.value = '';
 		[this.#startInput, this.#endInput].forEach(input => input && (input.value = ''));
+		this.#setClampNotice();
 		this.#applyInputBounds();
 	}
 
@@ -128,7 +132,21 @@ export class DateRangePicker {
 			this.#range.value = `${startIso}/${endIso}`;
 		}
 
+		this.#range.addEventListener('rangestart', () => this.#setClampNotice());
 		this.#range.addEventListener('change', () => this.#onCalendarChange());
+	}
+
+	#setClampNotice(clampedEndIso = '') {
+		if (!this.#notice) {
+			return;
+		}
+		if (!clampedEndIso) {
+			this.#notice.textContent = '';
+			return;
+		}
+		const locale = this.#range.getAttribute('locale') || undefined;
+		const endDate = new Intl.DateTimeFormat(locale, {dateStyle: 'medium'}).format(parseIsoDate(clampedEndIso));
+		this.#notice.textContent = this.#notice.dataset.clampNotice.replace('%date%', endDate);
 	}
 
 	// Native validation for the part the attributes can carry: the selectable
@@ -158,7 +176,9 @@ export class DateRangePicker {
 		if (role === 'start' && startIso && endIso && startIso > endIso) {
 			endIso = startIso;
 		}
-		endIso = clampRangeEnd(startIso, endIso, this.#maxRangeDays);
+		const clampedEndIso = clampRangeEnd(startIso, endIso, this.#maxRangeDays);
+		this.#setClampNotice(clampedEndIso !== endIso ? clampedEndIso : '');
+		endIso = clampedEndIso;
 		if (this.#endInput && this.#endInput.value !== endIso) {
 			this.#endInput.value = endIso;
 		}
@@ -169,7 +189,9 @@ export class DateRangePicker {
 	#onCalendarChange() {
 		const [startIso, rawEndIso] = this.#range.value ? this.#range.value.split('/') : [];
 		const endIso = clampRangeEnd(startIso, rawEndIso, this.#maxRangeDays);
-		if (endIso !== rawEndIso) {
+		const clamped = endIso !== rawEndIso;
+		this.#setClampNotice(clamped ? endIso : '');
+		if (clamped) {
 			this.#range.value = `${startIso}/${endIso}`;
 		}
 		if (this.#startInput) {

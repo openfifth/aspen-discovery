@@ -111,3 +111,8 @@
 .date-range-picker-status {
 	margin: .5rem 0 1rem;
 }
+
+/* Kept in the DOM while empty so screen readers register the live region before it speaks. */
+.date-range-picker-notice:empty {
+	display: none;
+}
