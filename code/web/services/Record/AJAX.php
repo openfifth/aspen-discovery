@@ -2801,7 +2801,7 @@ class Record_AJAX extends JSON_Action {
 			$_REQUEST['pickupBranch'],
 			(int)($_REQUEST['excludeBookingId'] ?? 0) ?: null
 		);
-		if (!empty($availability['apiAccessDenied'])) {
+		if (!empty($availability['availabilityUnknown'])) {
 			return $this->failureResult('Bookings', 'Bookings are not available at the moment. Please contact the library.');
 		}
 

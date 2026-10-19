@@ -4522,7 +4522,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		$availability = BookingService::getAvailability($user, (int)$stored->itemId, $stored->ils_pickup_library_id, $bookingId);
 
-		if (!empty($availability['apiAccessDenied'])) {
+		if (!empty($availability['availabilityUnknown'])) {
 			return $this->failureResult('Update Booking', 'Bookings are not available at the moment. Please contact the library.');
 		}
 

@@ -10005,12 +10005,15 @@ class Koha extends AbstractIlsDriver {
 	 * every existing booking, rather than each one using its own pickup branch's
 	 * rules. Koha does the same in place_booking.js and in bug 43108's endpoint.
 	 *
-	 * @return array{bookedDates: array[], constraints: array{maxPeriod: int, maxDate: ?string}}
+	 * Returns ['availabilityUnknown' => true] when availability can't be established,
+	 * so the caller blocks booking rather than showing every date as free.
+	 *
+	 * @return array{bookedDates: array[], constraints: array{maxPeriod: int, maxDate: ?string}}|array{availabilityUnknown: true}
 	 */
 	public function getBookingAvailability(int $itemId, User $patron, string $pickupBranch, ?int $excludeBookingId = null): array {
 		$context = $this->getItemCirculationContext($itemId, $patron, $pickupBranch);
 		if ($context === null) {
-			return ['bookedDates' => [], 'constraints' => ['maxPeriod' => 0, 'maxDate' => null]];
+			return ['availabilityUnknown' => true];
 		}
 
 		$rules = $this->getRawCirculationRules([
@@ -10027,7 +10030,7 @@ class Koha extends AbstractIlsDriver {
 		$response = $this->requestBookingAvailability($context['biblioId'], $itemId, $patron, $pickupBranch, $excludeBookingId);
 
 		if ($response && in_array($response['code'], [401, 403])) {
-			return ['apiAccessDenied' => true, 'bookedDates' => [], 'constraints' => ['maxPeriod' => 0, 'maxDate' => null]];
+			return ['availabilityUnknown' => true];
 		}
 
 		$constraints = $this->buildBookingWindowConstraints($rules, $patron);
@@ -10036,9 +10039,12 @@ class Koha extends AbstractIlsDriver {
 		if ($response && $response['code'] == 200) {
 			$bookedDates = self::collapseBlockedDates($response['content']['availability'] ?? [], $itemId);
 		} else {
-			$bookings = $this->excludeBooking($this->getBookingsForItem($itemId, $patron), $excludeBookingId);
+			$bookings = $this->getBookingsForItem($itemId, $patron);
+			if ($bookings === null) {
+				return ['availabilityUnknown' => true];
+			}
 			$bookedDates = self::buildBookedRanges(
-				$bookings,
+				$this->excludeBooking($bookings, $excludeBookingId),
 				(int)($rules['bookings_lead_period'] ?? 0),
 				(int)($rules['bookings_trail_period'] ?? 0)
 			);
@@ -10170,8 +10176,8 @@ class Koha extends AbstractIlsDriver {
 		return $bookings;
 	}
 
-	private function getBookingsForItem(int $itemId, User $patron): array {
-		return $this->getPagedCurrentBookings($patron, ['item_id' => $itemId], 'koha.getBookingsForItem') ?? [];
+	private function getBookingsForItem(int $itemId, User $patron): ?array {
+		return $this->getPagedCurrentBookings($patron, ['item_id' => $itemId], 'koha.getBookingsForItem');
 	}
 
 	public function getBookingsForUser(User $patron): array {
