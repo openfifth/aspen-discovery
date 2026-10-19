@@ -1,7 +1,7 @@
 {strip}
 <div id="page-content" class="content">
 	<form name="placeBookingForm" id="place-booking-form" method="post" class="form">
-		<input type="hidden" name="id" id="id" value="{$recordId}">
+		<input type="hidden" name="id" id="id" value="{$recordId|escape}">
 		<fieldset>
 			<div id="booking-error" class="pageWarning" style="display: none"></div>
 

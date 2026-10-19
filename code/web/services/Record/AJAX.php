@@ -2746,6 +2746,9 @@ class Record_AJAX extends JSON_Action {
 
 		require_once ROOT_DIR . '/RecordDrivers/MarcRecordDriver.php';
 		$marcRecord = new MarcRecordDriver($shortId);
+		if (!$marcRecord->isValid()) {
+			return $this->failureResult('Unable to place booking', 'Record not found.');
+		}
 
 		$catalogDriver = $marcRecord->getCatalogDriver();
 		if (!$catalogDriver || !$catalogDriver->hasBookingsSupport()) {

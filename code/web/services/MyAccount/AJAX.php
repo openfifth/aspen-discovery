@@ -4582,8 +4582,8 @@ class MyAccount_AJAX extends JSON_Action {
 	function confirmCancelBooking(): array {
 		$this->requireLoggedInUser(null, 'You must be logged in to cancel a booking. Please close this dialog and login again.');
 		$this->checkRequiredParameters(['userId', 'bookingId']);
-		$userId    = $_REQUEST['userId'];
-		$bookingId = $_REQUEST['bookingId'];
+		$userId    = (int)$_REQUEST['userId'];
+		$bookingId = (int)$_REQUEST['bookingId'];
 		$cancelButtonLabel = translate(['text' => 'Confirm Cancel Booking', 'isPublicFacing' => true]);
 		return [
 			'title'   => translate(['text' => 'Cancel Booking', 'isPublicFacing' => true]),
