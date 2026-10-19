@@ -9738,9 +9738,9 @@ class Koha extends AbstractIlsDriver {
 			return ['success' => false, 'title' => $title, 'message' => translate(['text' => 'Invalid booking dates.', 'isPublicFacing' => true])];
 		}
 
-		$windowError = $this->enforceMaxBookingPeriod((int)$itemId, $patron, $startDate, $endDate, $pickupBranch);
-		if ($windowError !== null) {
-			return ['success' => false, 'title' => $title, 'message' => $windowError];
+		$validationError = $this->validateBookingRequest((int)$itemId, $patron, $startDate, $endDate, $pickupBranch);
+		if ($validationError !== null) {
+			return ['success' => false, 'title' => $title, 'message' => $validationError];
 		}
 
 		$params = [
@@ -9761,7 +9761,7 @@ class Koha extends AbstractIlsDriver {
 				'isPublicFacing' => true,
 			]);
 			if (!empty($response['content']['error'])) {
-				$message .= ' ' . $response['content']['error'];
+				$message .= ' ' . strip_tags($response['content']['error']);
 			}
 			return [
 				'success' => false,
@@ -9824,9 +9824,9 @@ class Koha extends AbstractIlsDriver {
 			return ['success' => false, 'message' => translate(['text' => 'Invalid booking dates.', 'isPublicFacing' => true])];
 		}
 
-		$windowError = $this->enforceMaxBookingPeriod($itemId, $patron, $startDate, $endDate, $pickupBranch);
-		if ($windowError !== null) {
-			return ['success' => false, 'message' => $windowError];
+		$validationError = $this->validateBookingRequest($itemId, $patron, $startDate, $endDate, $pickupBranch);
+		if ($validationError !== null) {
+			return ['success' => false, 'message' => $validationError];
 		}
 
 		$params = [
@@ -9889,8 +9889,13 @@ class Koha extends AbstractIlsDriver {
 		return ['Accept-Encoding: gzip, deflate', 'x-koha-library: ' . $patron->getHomeLocationCode()];
 	}
 
-	private function enforceMaxBookingPeriod(int $itemId, User $patron, string $startDate, string $endDate, string $pickupBranch): ?string {
-		$maxEndDate = $this->calculateMaxBookingEndDate($itemId, $patron, $startDate, $pickupBranch);
+	private function validateBookingRequest(int $itemId, User $patron, string $startDate, string $endDate, string $pickupBranch): ?string {
+		$item = $this->getItemFromApi((string)$itemId, 'koha.validateBookingRequest');
+		if (empty($item['effective_bookable'])) {
+			return translate(['text' => 'This item cannot be booked.', 'isPublicFacing' => true]);
+		}
+
+		$maxEndDate = $this->calculateMaxBookingEndDate(self::buildItemCirculationContext($item, $patron, $pickupBranch), $patron, $startDate);
 		if ($endDate > $maxEndDate) {
 			return translate([
 				'text' => 'The booking period is too long. For that start date the latest end date is %1%.',
@@ -9905,13 +9910,8 @@ class Koha extends AbstractIlsDriver {
 	 * Latest permissible booking end date for a given start, as Y-m-d:
 	 * the rule-based period ceiling, clipped by the hardduedate and expiry caps.
 	 */
-	private function calculateMaxBookingEndDate(int $itemId, User $patron, string $startDate, string $pickupBranch): string {
+	private function calculateMaxBookingEndDate(array $context, User $patron, string $startDate): string {
 		$end = new DateTime(substr($startDate, 0, 10));
-
-		$context = $this->getItemCirculationContext($itemId, $patron, $pickupBranch);
-		if ($context === null) {
-			return $end->format('Y-m-d');
-		}
 
 		$rules = $this->getRawCirculationRules(
 			['issuelength', 'renewalsallowed', 'renewalperiod', 'lengthunit', 'hardduedate', 'hardduedatecompare'],
@@ -9938,6 +9938,10 @@ class Koha extends AbstractIlsDriver {
 			return null;
 		}
 
+		return self::buildItemCirculationContext($item, $patron, $pickupBranch);
+	}
+
+	private static function buildItemCirculationContext(array $item, User $patron, string $pickupBranch): array {
 		return [
 			'itemTypeId'       => $item['effective_item_type_id'] ?? null,
 			'locationId'       => $pickupBranch,
