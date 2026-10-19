@@ -978,7 +978,7 @@ AspenDiscovery.Record = (function () {
 			}
 
 			const pickupBranch = document.getElementById('pickupBranch')?.value;
-			if (!pickupBranch || pickupBranch === 'undefined') {
+			if (!pickupBranch) {
 				AspenDiscovery.Record.disableBookingForm(__('A pickup location is required to show availability.'));
 				return;
 			}

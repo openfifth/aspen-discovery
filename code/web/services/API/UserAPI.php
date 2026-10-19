@@ -3967,7 +3967,7 @@ class UserAPI extends AbstractAPI {
 		$bookableItems = BookingService::filterBookableForPlacement($marcRecord->getCopies());
 		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
 		$location = new Location();
-		$pickupLocations = $location->getPickupBranches($user);
+		$pickupLocations = $location->getPickupBranches($user, includePlaceholder: false);
 
 		return [
 			'success' => true,

@@ -2765,7 +2765,7 @@ class Record_AJAX extends JSON_Action {
 
 		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
 		$location = new Location();
-		$pickupLocations = $location->getPickupBranches($user);
+		$pickupLocations = $location->getPickupBranches($user, includePlaceholder: false);
 
 		$interface->assign('recordId', $recordId);
 		$interface->assign('bookableItems', $bookableItems);

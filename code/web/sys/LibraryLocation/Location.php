@@ -1608,9 +1608,10 @@ class Location extends DataObject {
 	/**
 	 * @param User|bool|null $patronProfile
 	 * @param bool $isLinkedUser
+	 * @param bool $includePlaceholder
 	 * @return Location[]
 	 */
-	function getPickupBranches(User|bool|null $patronProfile, bool $isLinkedUser = false): array {
+	function getPickupBranches(User|bool|null $patronProfile, bool $isLinkedUser = false, bool $includePlaceholder = true): array {
 		// Note: Some calls to this function will set $patronProfile to false. (No Patron is logged in)
 		// For example, MaterialsRequest_NewRequest
 		$homeLibraryInList = false;
@@ -1706,7 +1707,7 @@ class Location extends DataObject {
 		}
 		ksort($locationList);
 
-		if (!$homeLibraryInList && !$alternateLibraryInList && !$isLinkedUser) {
+		if ($includePlaceholder && !$homeLibraryInList && !$alternateLibraryInList && !$isLinkedUser) {
 			$locationList['0default'] = "Please Select a Location";
 		}
 

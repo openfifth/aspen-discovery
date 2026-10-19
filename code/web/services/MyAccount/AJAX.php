@@ -4518,7 +4518,7 @@ class MyAccount_AJAX extends JSON_Action {
 
 		require_once ROOT_DIR . '/sys/LibraryLocation/Location.php';
 		$location = new Location();
-		$pickupLocations = $location->getPickupBranches($user);
+		$pickupLocations = $location->getPickupBranches($user, includePlaceholder: false);
 
 		$availability = BookingService::getAvailability($user, (int)$stored->itemId, $stored->ils_pickup_library_id, $bookingId);
 
