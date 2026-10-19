@@ -117,7 +117,7 @@ class BookingService {
 				$booking['linkUrl']  = $driver->getLinkUrl();
 			}
 
-			$booking['isPast'] = in_array($booking['status'], ['fulfilled', 'cancelled'], true)
+			$booking['isPast'] = in_array($booking['status'], ['completed', 'cancelled'], true)
 				|| (!empty($booking['endDate']) && $booking['endDate'] < $today);
 
 			$enriched[] = $booking;
